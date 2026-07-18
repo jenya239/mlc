@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 14:20 (Planner TRACK_EDITOR_AUTO_INDENT STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_AUTO_INDENT |
+| started | 2026-07-18 14:10 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_AUTO_INDENT.md`; Decision: copy leading space/tab of caret line on Enter via `edit_insert_newline`; preserve bytes; no smart indent; L1 `enter_keeps_indent`; PLAN/UX_BACKLOG #10 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_AUTO_INDENT |
+
 ### Turn 2026-07-18 14:10 (Critic TRACK_EDITOR_DRAG_AUTOSCROLL critique-audit)
 
 | field   | value |

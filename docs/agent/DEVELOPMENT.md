@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner pick-next (§46 `#10 EDITOR_AUTO_INDENT`).
+**Queue head:** Driver `TRACK_EDITOR_AUTO_INDENT` (§46 #10) STEP=1.
 **`TRACK_EDITOR_DRAG_AUTOSCROLL` (§46 #9)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_GOTO_LINE` (§46 #8)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_FIND` (§46 #7)** closed 2026-07-18; archived.
