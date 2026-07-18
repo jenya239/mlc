@@ -1,0 +1,28 @@
+// TRACK_EDITOR_SHIFT_CLICK_EXTEND STEP=1 — L2: Shift-click extends from anchor.
+import { line_index_from_string } from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_is_empty
+} from '../document/selection'
+import { editor_ux_shift_click_extend } from '../ux/shift_click'
+
+fn main() -> i32 = do
+  const index = line_index_from_string("hello world")
+  let mut selection = selection_collapsed(0)
+  selection = editor_ux_shift_click_extend(index, selection, 5, 1)
+  if selection_is_empty(selection) then
+    println("ux_fail shift_click empty")
+    return 1
+  end
+  if selection.anchor != 0 then
+    println("ux_fail shift_click anchor")
+    return 2
+  end
+  if selection.focus != 5 then
+    println("ux_fail shift_click focus")
+    return 3
+  end
+
+  println("ux_ok shift_click_extends_selection")
+  0
+end

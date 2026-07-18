@@ -5,12 +5,18 @@ Text mouse-down collapses caret (or multi-click word/line via #4); Shift held
 does not extend selection from the current anchor. `selection_set_focus` /
 `nav_drag` already model Extend.
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L2 scenario first: `shift_click_extends_selection` (Standing
-discipline); red harness if needed.
+**STEP=2** — Shift branch in text-click path + `demo_live` wire; scenario green
++ compile.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `ux/shift_click.mlc` (`editor_ux_shift_click_extend` → always caret)
+- L2 red: `shift_click_extends_selection` (+ run script)
+- `demo_live_fs_compile_ok`
 
 ### STEP=0 done (2026-07-18)
 
@@ -41,15 +47,13 @@ discipline); red harness if needed.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L2 scenario first (`shift_click_extends_selection`) | scenario fails or harness ready |
+| 1 | L2 scenario first (`shift_click_extends_selection`) | **done** (red harness) |
 | 2 | Shift branch in text-click path + `demo_live` wire | scenario + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/shift_click_extends_selection.mlc` (+ run script).
-2. Prefer red before STEP=2 (stub extend returns collapsed caret).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Implement Shift-extend helper; wire `demo_live` text mouse-down (Shift before multi-click).

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:55 (Driver TRACK_EDITOR_SHIFT_CLICK_EXTEND STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SHIFT_CLICK_EXTEND |
+| started | 2026-07-18 16:50 |
+| elapsed | ~5 min |
+| done    | Stub `ux/shift_click.mlc`; L2 red harness `shift_click_extends_selection` (+ run script); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_shift_click_extends_selection.sh` exit 1 (`ux_fail shift_click empty`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SHIFT_CLICK_EXTEND |
+
 ### Turn 2026-07-18 16:45 (Planner PLAN_QUEUE pick-next → open #5)
 
 | field   | value |
