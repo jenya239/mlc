@@ -1,0 +1,26 @@
+// TRACK_EDITOR_CURRENT_LINE_HL STEP=1 — stub current-line draw report (red until STEP=2).
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+
+export type CurrentLineHighlight = {
+  line: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type CurrentLineDrawReport = {
+  highlights: [CurrentLineHighlight]
+}
+
+// Stub: empty report until STEP=2 implements caret-line geometry.
+export fn editor_ux_current_line_draw_report(
+  state: EditorUxState,
+  metrics: EditorTextMetrics
+) -> CurrentLineDrawReport = do
+  let _unused_width = state.window_width
+  let _unused_line_height = metrics.line_height
+  let mut highlights: [CurrentLineHighlight] = []
+  CurrentLineDrawReport { highlights: highlights }
+end

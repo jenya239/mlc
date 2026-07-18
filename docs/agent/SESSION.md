@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:10 (Driver TRACK_EDITOR_CURRENT_LINE_HL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CURRENT_LINE_HL |
+| started | 2026-07-18 15:05 |
+| elapsed | ~10 min |
+| done    | Stub `ux/current_line_hl.mlc`; L2 red harness `current_line_highlight_draws` (+ `run_ux_current_line_highlight_draws.sh`) → `ux_fail current_line highlights count got 0`; `demo_live_fs_compile_ok` |
+| verify  | script exit 1 red; `demo_live_fs_compile_ok` EXIT=0 |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CURRENT_LINE_HL |
+
 ### Turn 2026-07-18 15:00 (Planner TRACK_EDITOR_CURRENT_LINE_HL STEP=0)
 
 | field   | value |
