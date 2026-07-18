@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:40 (Driver TRACK_EDITOR_ENCODING_GUARD STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_ENCODING_GUARD |
+| started | 2026-07-18 16:30 |
+| elapsed | ~10 min |
+| done    | `open_buffer_from_path`: NUL refuse, BOM strip+`had_bom`, UTF-8 validate; save re-prefixes BOM; `binary_file_refused ok`; `utf8_bom_detected ok`; save+crlf+demo ok |
+| verify  | both encoding scripts ok; `save_unit ok`; `crlf_preserved_on_save ok`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_ENCODING_GUARD |
+
 ### Turn 2026-07-18 16:30 (Driver TRACK_EDITOR_ENCODING_GUARD STEP=1)
 
 | field   | value |

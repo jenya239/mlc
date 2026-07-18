@@ -5,11 +5,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#13**.
 no binary refuse — NUL/garbage and UTF-8 BOM pollute the buffer. Review gates:
 `binary_file_refused`, `utf8_bom_detected` (L0). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-18) — STEP=2 done; next Critic
 
 ## Next step
 
-**STEP=2** — BOM strip/preserve + NUL/UTF-8 refuse in `open_buffer_from_path`.
+**STEP=3** — Critic: re-run gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -42,7 +42,7 @@ no binary refuse — NUL/garbage and UTF-8 BOM pollute the buffer. Review gates:
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L0 red harnesses (`binary_file_refused`, `utf8_bom_detected`) | **done** (red: `binary not refused`; `bom not stripped`) |
-| 2 | BOM strip/preserve + NUL/UTF-8 refuse in `open_buffer_from_path` | pending |
+| 2 | BOM strip/preserve + NUL/UTF-8 refuse in `open_buffer_from_path` | **done** (both L0 ok; save+crlf+demo) |
 | 3 | Critic: gates; archive | pending |
 
 ## Out of scope

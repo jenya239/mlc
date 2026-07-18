@@ -1,10 +1,11 @@
-// TRACK_EDITOR_ENCODING_GUARD STEP=1 — OpenBuffer.had_bom stub (logic in STEP=2).
-// TRACK_EDITOR_CRLF_PRESERVE STEP=2 — detect/normalize line endings + preserve on save.
+// TRACK_EDITOR_ENCODING_GUARD STEP=2 — BOM strip/preserve + NUL/UTF-8 refuse.
+// TRACK_EDITOR_CRLF_PRESERVE — detect/normalize line endings + preserve on save.
 import {
   TextDocument,
   document_from_string,
   document_to_string
 } from './piece_table'
+import { utf8_codepoint_byte_length } from './line_index'
 
 extern fn file_read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
@@ -14,6 +15,10 @@ extern fn file_exists(path: string) -> bool
   = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_remove(path: string) -> bool
   = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+extern fn string_byte_u8(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" blocking
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
 
 // 0 = LF, 1 = CRLF
 export fn line_ending_lf() -> i32 = 0
@@ -27,6 +32,9 @@ export type OpenBuffer = {
   line_ending: i32,
   had_bom: i32
 }
+
+export fn utf8_bom_prefix() -> string =
+  string_from_byte_u8(239) + string_from_byte_u8(187) + string_from_byte_u8(191)
 
 export fn detect_line_ending(text: string) -> i32 = do
   if text.contains("\r\n") then
@@ -48,6 +56,79 @@ fn encode_for_save(text: string, line_ending: i32) -> string = do
   text
 end
 
+fn text_contains_nul(text: string) -> bool = do
+  let mut index = 0
+  const length = text.byte_size()
+  while index < length do
+    if string_byte_u8(text, index) == 0 then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn is_utf8_continuation_byte(value: i32) -> bool =
+  value >= 128 && value < 192
+
+export fn utf8_text_is_valid(text: string) -> bool = do
+  let mut index = 0
+  const length = text.byte_size()
+  while index < length do
+    const lead = string_byte_u8(text, index)
+    if lead < 128 then
+      index = index + 1
+    else if lead < 192 then
+      return false
+    else
+      const step = utf8_codepoint_byte_length(lead)
+      if step < 2 || index + step > length then
+        return false
+      end
+      let mut offset = 1
+      while offset < step do
+        if !is_utf8_continuation_byte(string_byte_u8(text, index + offset)) then
+          return false
+        end
+        offset = offset + 1
+      end
+      index = index + step
+    end
+  end
+  true
+end
+
+fn strip_utf8_bom(text: string) -> string = do
+  if text.byte_size() < 3 then
+    return text
+  end
+  if string_byte_u8(text, 0) == 239 &&
+      string_byte_u8(text, 1) == 187 &&
+      string_byte_u8(text, 2) == 191 then
+    return text.byte_substring(3, text.byte_size() - 3)
+  end
+  text
+end
+
+fn raw_starts_with_utf8_bom(text: string) -> bool = do
+  if text.byte_size() < 3 then
+    return false
+  end
+  string_byte_u8(text, 0) == 239 &&
+    string_byte_u8(text, 1) == 187 &&
+    string_byte_u8(text, 2) == 191
+end
+
+fn open_buffer_refuse(path: string, message: string) -> OpenBuffer =
+  OpenBuffer {
+    path: path,
+    document: document_from_string(""),
+    dirty: 0,
+    last_error: message,
+    line_ending: line_ending_lf(),
+    had_bom: 0
+  }
+
 export fn open_buffer_new(path: string, document: TextDocument) -> OpenBuffer =
   OpenBuffer {
     path: path,
@@ -63,25 +144,30 @@ export fn open_buffer_from_text(path: string, text: string) -> OpenBuffer =
 
 export fn open_buffer_from_path(path: string) -> OpenBuffer = do
   if !file_exists(path) then
-    return OpenBuffer {
-      path: path,
-      document: document_from_string(""),
-      dirty: 0,
-      last_error: "File not found: " + path,
-      line_ending: line_ending_lf(),
-      had_bom: 0
-    }
+    return open_buffer_refuse(path, "File not found: " + path)
   end
   const raw = file_read_to_string(path)
-  const ending = detect_line_ending(raw)
-  const normalized = normalize_newlines_to_lf(raw)
+  if text_contains_nul(raw) then
+    return open_buffer_refuse(path, "Binary file refused: " + path)
+  end
+  let mut had_bom = 0
+  let mut body = raw
+  if raw_starts_with_utf8_bom(raw) then
+    had_bom = 1
+    body = strip_utf8_bom(raw)
+  end
+  if !utf8_text_is_valid(body) then
+    return open_buffer_refuse(path, "Invalid UTF-8: " + path)
+  end
+  const ending = detect_line_ending(body)
+  const normalized = normalize_newlines_to_lf(body)
   OpenBuffer {
     path: path,
     document: document_from_string(normalized),
     dirty: 0,
     last_error: "",
     line_ending: ending,
-    had_bom: 0
+    had_bom: had_bom
   }
 end
 
@@ -118,10 +204,13 @@ export fn open_buffer_has_error(buffer: OpenBuffer) -> bool =
 
 // Ctrl+S — write document to path; clear dirty on success.
 export fn open_buffer_save(buffer: OpenBuffer) -> OpenBuffer = do
-  const content = encode_for_save(
+  let mut content = encode_for_save(
     document_to_string(buffer.document),
     buffer.line_ending
   )
+  if buffer.had_bom != 0 then
+    content = utf8_bom_prefix() + content
+  end
   const ok = file_write_string(buffer.path, content)
   if !ok then
     return OpenBuffer {
