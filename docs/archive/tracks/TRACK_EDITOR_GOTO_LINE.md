@@ -1,28 +1,37 @@
 # Track: Editor Go-to-line (Ctrl+G → scroll+caret)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#8**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#8**.
 No go-to-line: cannot jump caret to a numeric line and scroll it into view.
 Review gate: `goto_line_scrolls_caret` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1 + compile. Anti-false-done:
+`586b99ce`…`1be689c8` (STEP=0–2). Wire present: `editor_ux_goto_line`
+(1-based clamp + `ensure_caret_visible`); `editor_ux_goto_line_from_selection`
+(ASCII digits); `CmdGotoLine` Ctrl+G; demo_live; GLFW `g`. **reopen: none**.
+
+Honest residual: no goto-panel chrome (Decision); target seed from digit
+selection only (empty/invalid → no-op); no last-target persistence; L1 calls
+goto API directly (not full Ctrl+G inject path); column-within-line out of scope.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_goto_line_scrolls_caret.sh` | `ux_ok goto_line_scrolls_caret` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#9 EDITOR_DRAG_AUTOSCROLL`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `editor_ux_goto_line` + seed-from-selection; CmdGotoLine Ctrl+G; demo_live;
-  GLFW `g`; `ux_ok goto_line_scrolls_caret`; `demo_live_fs_compile_ok`.
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/goto_line.mlc`; L1 red harness `goto_line_scrolls_caret` (+ run script);
-  `demo_live_fs_compile_ok`.
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #8 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `586b99ce` | Decision freeze + open |
+| 1 | `d4e4ec20` | L1 red harness |
+| 2 | `1be689c8` | goto + CmdGotoLine + demo_live + GLFW g |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -30,7 +39,7 @@ Review gate: `goto_line_scrolls_caret` (L1). Size **S**.
 |------|--------|
 | Problem | No Ctrl+G / go-to-line; caret cannot jump to a chosen line with scroll |
 | Line numbers | **1-based** (Sublime-like). Clamp to `[1, line_count]`. Line 1 = first line |
-| Apply | `editor_ux_goto_line(line_index, line_number_1based)` → collapsed selection at `line_index_line_start` for that line; then `editor_ux_ensure_caret_visible` (existing) so scroll brings caret into viewport |
+| Apply | `editor_ux_goto_line(state, metrics, line_number_1based)` → collapsed selection at `line_index_line_start` for that line; then `editor_ux_ensure_caret_visible` (existing) so scroll brings caret into viewport |
 | Query / entry | **Seed from non-empty selection** if selected text parses as decimal integer (ASCII digits only). Persist last target in thin session/state if useful. **No goto panel chrome** this track (S; same pattern as #7 Find seed). Invalid/empty → no-op (selection/scroll unchanged) |
 | Commands | `CmdGotoLine` (Ctrl+G). Wire command bus + `demo_live`. GLFW binding key `"g"` (like `"f"` for Find) |
 | Scenarios | L1: `goto_line_scrolls_caret` — multi-line doc; goto mid/far line; assert caret line + `scroll_offset_y` such that caret is in viewport (reuse ensure_caret_visible semantics from wheel scenario) |
@@ -52,19 +61,7 @@ Review gate: `goto_line_scrolls_caret` (L1). Size **S**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`goto_line_scrolls_caret`) | **done** (red: `ux_fail goto caret line`) |
 | 2 | goto helper + CmdGotoLine + demo wire (+ ensure visible) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1**
-1. Add `ux_scenarios/goto_line_scrolls_caret.mlc` (+ run script).
-2. Prefer red before STEP=2 (stub goto no-ops / wrong line).
-
-**STEP=2**
-1. Implement `editor_ux_goto_line` (+ seed-from-selection); wire CmdGotoLine + `demo_live`; GLFW `g` if missing.
-2. Gates: scenario ok + `demo_live_fs_compile_ok`.
-
-**STEP=3** — Critic; `next` = Planner (§46 #9).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
