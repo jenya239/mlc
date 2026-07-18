@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8 done; next `#9 EDITOR_DRAG_AUTOSCROLL`
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8 done; **#9 `EDITOR_DRAG_AUTOSCROLL` opened** (STEP=0 done)
 
 ## How to use this backlog
 
@@ -44,7 +44,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 6 | `EDITOR_UNDO_COALESCE` | Group consecutive typing into one undo step (currently every keystroke = separate undo) | `typing_coalesces_into_one_undo` (L1.5) | M | **done** — [archive/tracks/TRACK_EDITOR_UNDO_COALESCE](../archive/tracks/TRACK_EDITOR_UNDO_COALESCE.md) |
 | 7 | `EDITOR_FIND` | Find + next/prev, highlight matches in visible range | `find_highlights_matches` | M | **done** — [archive/tracks/TRACK_EDITOR_FIND](../archive/tracks/TRACK_EDITOR_FIND.md) |
 | 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | **done** — [archive/tracks/TRACK_EDITOR_GOTO_LINE](../archive/tracks/TRACK_EDITOR_GOTO_LINE.md) |
-| 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | pending |
+| 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | **active** — [TRACK_EDITOR_DRAG_AUTOSCROLL](TRACK_EDITOR_DRAG_AUTOSCROLL.md) STEP=1 next (STEP=0 done) |
 | 10 | `EDITOR_AUTO_INDENT` | Enter preserves leading indent of current line | `enter_keeps_indent` | S | pending |
 | 11 | `EDITOR_CURRENT_LINE_HL` | Highlight current line in draw report | `current_line_highlight_draws` (L2) | S | pending |
 | 12 | `EDITOR_CRLF_PRESERVE` | Detect CRLF/LF on open, preserve style on save | `crlf_preserved_on_save` (L0) | M | pending |

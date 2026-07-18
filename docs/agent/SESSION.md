@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 13:40 (Planner TRACK_EDITOR_DRAG_AUTOSCROLL STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_DRAG_AUTOSCROLL |
+| started | 2026-07-18 13:30 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_DRAG_AUTOSCROLL.md`; Decision: past-edge Y; 1 line/frame scroll + clamp hit-test; `editor_ux_drag_text_autoscroll`; demo_live wire; L1.5 `drag_past_edge_autoscrolls`; PLAN/UX_BACKLOG #9 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DRAG_AUTOSCROLL |
+
 ### Turn 2026-07-18 13:30 (Critic TRACK_EDITOR_GOTO_LINE critique-audit)
 
 | field   | value |
