@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_SHIFT_CLICK_EXTEND` STEP=2** (§46 #5).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_SHIFT_CLICK_EXTEND` STEP=3 Critic** (§46 #5).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -87,7 +87,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_KEYBOARD_NAV_WIRE` (§46 #2)** | **closed** 2026-07-18 (Critic OK). Archived. GLFW nav keys + `editor_ux_apply_nav_key` + demo_live. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WORD_BOUNDARIES` (§46 #3)** | **closed** 2026-07-18 (Critic OK). Archived. ASCII word edges + Ctrl nav/edit + demo_live. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_MOUSE_WORD_LINE_SELECT` (§46 #4)** | **closed** 2026-07-18 (Critic OK). Archived. Multi-click word/line + demo_live. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_SHIFT_CLICK_EXTEND` (§46 #5)** | **queue head** — STEP=0 done 2026-07-18 (Decision frozen); STEP=1 L2 scenario |
+| **`TRACK_EDITOR_SHIFT_CLICK_EXTEND` (§46 #5)** | **queue head** — STEP=1 done 2026-07-18 (L2 red harness); STEP=2 implement+wire |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |

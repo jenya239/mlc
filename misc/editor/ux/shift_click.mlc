@@ -1,19 +1,24 @@
-// TRACK_EDITOR_SHIFT_CLICK_EXTEND STEP=1 — stub Shift-click (red until STEP=2).
+// TRACK_EDITOR_SHIFT_CLICK_EXTEND STEP=2 — Shift-click extends from anchor.
 import { LineIndex } from '../document/line_index'
 import {
   EditorSelection,
-  selection_collapsed
+  selection_collapsed,
+  selection_set_focus,
+  selection_clamp
 } from '../document/selection'
 
-// Stub: always collapse to click offset (ignore Shift until STEP=2).
+// If shift_down: keep anchor, move focus to click_offset. Else: collapse.
 export fn editor_ux_shift_click_extend(
   line_index: LineIndex,
   selection: EditorSelection,
   click_offset: i32,
   shift_down: i32
 ) -> EditorSelection = do
-  let _unused_index = line_index.text_length
-  let _unused_selection = selection.anchor
-  let _unused_shift = shift_down
-  selection_collapsed(click_offset)
+  if shift_down != 0 then
+    return selection_clamp(
+      selection_set_focus(selection, click_offset),
+      line_index.text_length
+    )
+  end
+  selection_clamp(selection_collapsed(click_offset), line_index.text_length)
 end
