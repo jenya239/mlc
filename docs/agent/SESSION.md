@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:55 (Planner TRACK_EDITOR_GOTO_LINE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_GOTO_LINE |
+| started | 2026-07-18 12:50 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_GOTO_LINE.md`; Decision: 1-based clamp; `editor_ux_goto_line` + ensure_caret_visible; seed line from digit selection; CmdGotoLine Ctrl+G; no panel; L1 `goto_line_scrolls_caret`; PLAN/UX_BACKLOG #8 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_GOTO_LINE |
+
 ### Turn 2026-07-18 12:50 (Critic TRACK_EDITOR_FIND critique-audit)
 
 | field   | value |
