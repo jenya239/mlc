@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:10 (Critic TRACK_EDITOR_SHIFT_CLICK_EXTEND critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_SHIFT_CLICK_EXTEND |
+| started | 2026-07-18 12:04 |
+| elapsed | ~6 min |
+| done    | Re-ran gates; anti-false-done `f701e34c`…`2355a46e`; wire: `editor_ux_shift_click_extend` + demo_live Shift-before-multi-click; archive → `docs/archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND.md`; PLAN/UX_BACKLOG #5 → done |
+| verify  | `ux_ok shift_click_extends_selection`; `demo_live_fs_compile_ok`; reopen: none; residual: Shift skips multi-click (Decision); #4 unused `nav_click` import |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 17:05 (Driver TRACK_EDITOR_SHIFT_CLICK_EXTEND STEP=2)
 
 | field   | value |

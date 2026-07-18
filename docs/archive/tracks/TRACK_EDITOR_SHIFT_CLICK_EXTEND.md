@@ -1,29 +1,37 @@
 # Track: Editor Shift-click extend selection
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#5**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#5**.
 Text mouse-down collapses caret (or multi-click word/line via #4); Shift held
 does not extend selection from the current anchor. `selection_set_focus` /
 `nav_drag` already model Extend.
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L2 + compile. Anti-false-done:
+`f701e34c`…`2355a46e` (STEP=0–2). Wire present: `editor_ux_shift_click_extend`
+→ `selection_set_focus`+clamp when `shift_down != 0`; `demo_live` text
+mouse-down: Shift before multi-click. **reopen: none**.
+
+Honest residual: Shift skips multi-click by Decision (not a bug); #4 residual
+unused `nav_click` import still present in `demo_live`.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_shift_click_extends_selection.sh` | `ux_ok shift_click_extends_selection` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #6).
+**closed** — Critic OK. Queue → Planner (§46 `#6 EDITOR_UNDO_COALESCE`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `editor_ux_shift_click_extend` → `selection_set_focus` + clamp
-- `demo_live`: Shift before multi-click on text mouse-down
-- Gates: `ux_ok shift_click_extends_selection` + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/shift_click.mlc`; L2 red harness
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #5 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `f701e34c` | Decision freeze + open |
+| 1 | `a3bc4957` | L2 red harness |
+| 2 | `2355a46e` | shift_click + demo_live wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -52,15 +60,7 @@ does not extend selection from the current anchor. `selection_set_focus` /
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenario first (`shift_click_extends_selection`) | **done** (red harness) |
 | 2 | Shift branch in text-click path + `demo_live` wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #6).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
