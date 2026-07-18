@@ -13,12 +13,12 @@ import {
 import { editor_ux_goto_line_from_selection } from '../ux/goto_line'
 import { editor_ux_drag_text_autoscroll } from '../ux/drag_autoscroll'
 import {
-  editor_ux_insert_text,
   editor_ux_insert_newline,
   editor_ux_backspace,
   editor_ux_delete_word_backward_state,
   editor_ux_delete_word_forward_state
 } from '../ux/edit_apply'
+import { editor_ux_insert_text_autoclose } from '../ux/bracket_autoclose'
 import { EditorTextMetrics } from '../ux/overflow'
 import { ShellPanels } from '../ui/shell_panels'
 import {
@@ -370,7 +370,7 @@ export fn editor_app_insert_text(
     history_edit_insert_text(),
     editor_app_clock_ms(app)
   )
-  editor_app_with_ux_and_history(app, editor_ux_insert_text(app.ux, text), history)
+  editor_app_with_ux_and_history(app, editor_ux_insert_text_autoclose(app.ux, text), history)
 end
 
 export fn editor_app_insert_newline(app: EditorAppState) -> EditorAppState = do

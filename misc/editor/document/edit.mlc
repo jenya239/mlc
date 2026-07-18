@@ -88,6 +88,74 @@ export fn edit_insert_text(
   }
 end
 
+fn autoclose_pair_closer(opener: string) -> string = do
+  if opener == "(" then
+    return ")"
+  end
+  if opener == "[" then
+    return "]"
+  end
+  if opener == "{" then
+    return "}"
+  end
+  if opener == "\"" then
+    return "\""
+  end
+  ""
+end
+
+fn autoclose_is_closer(character: string) -> i32 = do
+  if character == ")" || character == "]" || character == "}" || character == "\"" then
+    return 1
+  end
+  0
+end
+
+// TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=2 — pair insert + skip-over + wrap.
+export fn edit_insert_text_autoclose(
+  document: TextDocument,
+  selection: EditorSelection,
+  text: string
+) -> EditResult = do
+  if text.length() != 1 then
+    return edit_insert_text(document, selection, text)
+  end
+  const closer = autoclose_pair_closer(text)
+  if !selection_is_empty(selection) then
+    if closer == "" then
+      return edit_insert_text(document, selection, text)
+    end
+    const range_start = selection_start(selection)
+    const range_end = selection_end(selection)
+    const source = document_to_string(document)
+    const selected = source.byte_substring(range_start, range_end - range_start)
+    return edit_insert_text(document, selection, text + selected + closer)
+  end
+  const caret = selection_start(selection)
+  const source = document_to_string(document)
+  const length = document_byte_length(document)
+  // Skip-over when next byte is already the typed closer (includes quote).
+  if autoclose_is_closer(text) != 0 &&
+     caret < length &&
+     source.byte_at(caret) == text then
+    return EditResult {
+      document: document,
+      selection: selection_clamp(selection_collapsed(caret + 1), length)
+    }
+  end
+  if closer != "" then
+    const paired = edit_insert_text(document, selection, text + closer)
+    return EditResult {
+      document: paired.document,
+      selection: selection_clamp(
+        selection_collapsed(caret + 1),
+        document_byte_length(paired.document)
+      )
+    }
+  end
+  edit_insert_text(document, selection, text)
+end
+
 export fn edit_insert_newline(
   document: TextDocument,
   selection: EditorSelection

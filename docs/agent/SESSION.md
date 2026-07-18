@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 02:05 (Driver TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_BRACKET_AUTOCLOSE |
+| started | 2026-07-19 01:55 |
+| elapsed | ~10 min |
+| done    | Real `edit_insert_text_autoclose` (pair/skip/wrap); `editor_ux_insert_text_autoclose`; `editor_app_insert_text` wires autoclose; L1 green |
+| verify  | `ux_ok typing_paren_autocloses`; `ux_ok enter_keeps_indent`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_BRACKET_AUTOCLOSE |
+
 ### Turn 2026-07-19 01:50 (Driver TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1)
 
 | field   | value |

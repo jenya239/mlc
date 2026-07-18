@@ -1,10 +1,41 @@
-// TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1 — stub (plain insert until STEP=2).
-import { editor_ux_insert_text } from './edit_apply'
+// TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=2 — pair insert + skip-over + wrap.
+import {
+  edit_insert_text_autoclose
+} from '../document/edit'
+import {
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  open_buffer_set_document
+} from '../document/save'
 import { EditorUxState } from './probe'
 
-// Stub: no pair / skip-over — delegates to plain insert.
 export fn editor_ux_insert_text_autoclose(
   state: EditorUxState,
   text: string
-) -> EditorUxState =
-  editor_ux_insert_text(state, text)
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_insert_text_autoclose(
+    active.buffer.document, state.selection, text
+  )
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: edited.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end
