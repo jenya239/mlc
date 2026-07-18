@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:55 (Critic TRACK_EDITOR_WORD_BOUNDARIES critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WORD_BOUNDARIES |
+| started | 2026-07-18 15:50 |
+| elapsed | ~5 min |
+| done    | Re-ran gates; anti-false-done `b41e1680`…`3a3a630c`; wire: `word_boundary_*` + Ctrl nav/edit + demo_live; archive → `docs/archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES.md`; PLAN/UX_BACKLOG #3 → done |
+| verify  | unit ok; `ux_ok ctrl_arrow_word_jump`; `ux_ok ctrl_backspace_deletes_word`; `demo_live_fs_compile_ok`; reopen: none; residual: ASCII-only word class; Ctrl+Delete L2 optional |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 15:45 (Driver TRACK_EDITOR_WORD_BOUNDARIES STEP=2)
 
 | field   | value |

@@ -1,29 +1,39 @@
 # Track: Editor word boundaries (Ctrl+arrows / Ctrl+Backspace/Delete)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#3**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#3**.
 Char-level nav wired (#2); no word-boundary helper; Ctrl+Left/Right still
 move one byte; Ctrl+Backspace/Delete not word-scoped.
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran unit + L2 + compile. Anti-false-done:
+`b41e1680`…`3a3a630c` (STEP=0–2). Wire present: `word_boundary_*`;
+`nav_word_*` / `edit_delete_word_*`; `editor_ux_apply_word_nav_key`;
+`demo_live` Ctrl+left/right, Ctrl+Backspace, Ctrl+Delete (`delete` GLFW edge).
+**reopen: none**.
+
+Honest residual: ASCII word class only (non-ASCII = separator → `#28`);
+no dedicated L2 for Ctrl+Delete (Decision: unit/cheap OK).
+
+| Gate | Result |
+|------|--------|
+| `run_editor_word_boundary_unit.sh` | `word_boundary_unit ok` EXIT=0 |
+| `run_ux_ctrl_arrow_word_jump.sh` | `ux_ok ctrl_arrow_word_jump` EXIT=0 |
+| `run_ux_ctrl_backspace_deletes_word.sh` | `ux_ok ctrl_backspace_deletes_word` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #4).
+**closed** — Critic OK. Queue → Planner (§46 `#4 EDITOR_MOUSE_WORD_LINE_SELECT`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `document/word_boundary.mlc` + unit
-- `nav_word_*` / `edit_delete_word_*`; `ux/word_nav` wired
-- `demo_live`: Ctrl+left/right word nav; Ctrl+Backspace; Ctrl+Delete edge
-- Gates: both scenarios ok + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/word_nav.mlc`; L2 red harness
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #3 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `b41e1680` | Decision freeze + open |
+| 1 | `7cda919f` | L2 red harness |
+| 2 | `3a3a630c` | word_boundary + wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -54,15 +64,7 @@ move one byte; Ctrl+Backspace/Delete not word-scoped.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word`) | **done** (red harness) |
 | 2 | word_boundary + nav/edit + ux/`demo_live` wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #4).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
