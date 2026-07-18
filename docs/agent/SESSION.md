@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 06:00 (Planner TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_L1 |
+| started | 2026-07-19 05:50 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_DIRTY_CLOSE_L1.md`; Decision: extract `dirty_close_overlay_click` with live hit rects; discard/cancel → existing APIs; demo_live uses helper; L1 `dirty_close_overlay_click`; PLAN/UX_BACKLOG #21 → active |
+| verify  | track file + PLAN §46 + backlog #21 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DIRTY_CLOSE_L1 |
+
 ### Turn 2026-07-19 05:45 (Critic TRACK_EDITOR_SESSION_CARET_RESTORE critique-audit)
 
 | field   | value |
