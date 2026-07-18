@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 07:00 (Planner TRACK_EDITOR_MULTI_CURSOR STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_MULTI_CURSOR |
+| started | 2026-07-19 06:50 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_MULTI_CURSOR.md`; Decision: `EditorMultiSelection`; add collapsed via Ctrl+click; insert sync descending (collapsed only); L1 `multi_cursor_model`; STEPs 1–3+Critic; PLAN/UX_BACKLOG #23 → active |
+| verify  | track file + PLAN §46 + backlog #23 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MULTI_CURSOR |
+
 ### Turn 2026-07-19 06:45 (Critic TRACK_EDITOR_DIRTY_CLOSE_L1 critique-audit)
 
 | field   | value |
