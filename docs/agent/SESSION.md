@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 05:00 (Planner TRACK_EDITOR_SESSION_CARET_RESTORE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_SESSION_CARET_RESTORE |
+| started | 2026-07-19 04:50 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_SESSION_CARET_RESTORE.md`; Decision: parallel carets/scroll_ys/scroll_xs; `view=` encode; collapsed caret only; active apply on load; L1 `session_restore_caret`; PLAN/UX_BACKLOG #20 → active |
+| verify  | track file + PLAN §46 + backlog #20 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SESSION_CARET_RESTORE |
+
 ### Turn 2026-07-19 04:45 (Critic TRACK_EDITOR_COMMENT_TOGGLE critique-audit)
 
 | field   | value |
