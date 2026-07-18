@@ -4,7 +4,8 @@ import {
   TextDocument,
   document_insert,
   document_byte_length,
-  document_to_string
+  document_to_string,
+  document_from_string
 } from './piece_table'
 import { document_delete } from './document_delete'
 import {
@@ -20,8 +21,10 @@ import {
   word_boundary_prev
 } from './word_boundary'
 import {
+  LineIndex,
   line_index_from_string,
   line_index_line_start,
+  line_index_line_count,
   line_index_offset_to_position
 } from './line_index'
 
@@ -173,6 +176,145 @@ export fn edit_insert_newline(
   const line_start = line_index_line_start(line_index, position.line)
   const indent = leading_indent_of_line(text, line_start)
   edit_insert_text(working, selection_collapsed(caret), "\n" + indent)
+end
+
+export fn comment_prefix_for_language(language: string) -> string = do
+  if language == "ruby" then
+    return "#"
+  end
+  "//"
+end
+
+fn text_has_prefix_at(text: string, offset: i32, prefix: string) -> i32 = do
+  const prefix_length = prefix.byte_size()
+  if offset < 0 || offset + prefix_length > text.byte_size() then
+    return 0
+  end
+  let mut index = 0
+  while index < prefix_length do
+    if text.byte_at(offset + index) != prefix.byte_at(index) then
+      return 0
+    end
+    index = index + 1
+  end
+  1
+end
+
+fn line_content_exclusive_end(line_index: LineIndex, line: i32) -> i32 = do
+  const count = line_index_line_count(line_index)
+  if line + 1 < count then
+    return line_index_line_start(line_index, line + 1) - 1
+  end
+  line_index.text_length
+end
+
+fn line_content_is_commented(
+  text: string,
+  line_start: i32,
+  content_end: i32,
+  prefix: string
+) -> i32 = do
+  const indent = leading_indent_of_line(text, line_start)
+  const content_start = line_start + indent.byte_size()
+  if content_start > content_end then
+    return 0
+  end
+  text_has_prefix_at(text, content_start, prefix)
+end
+
+fn comment_line_body(body: string, prefix: string) -> string = do
+  const indent = leading_indent_of_line(body, 0)
+  const content_start = indent.byte_size()
+  if text_has_prefix_at(body, content_start, prefix) != 0 then
+    return body
+  end
+  indent + prefix + body.byte_substring(content_start, body.byte_size() - content_start)
+end
+
+fn uncomment_line_body(body: string, prefix: string) -> string = do
+  const indent = leading_indent_of_line(body, 0)
+  const content_start = indent.byte_size()
+  if text_has_prefix_at(body, content_start, prefix) == 0 then
+    return body
+  end
+  const after = content_start + prefix.byte_size()
+  indent + body.byte_substring(after, body.byte_size() - after)
+end
+
+// TRACK_EDITOR_COMMENT_TOGGLE STEP=2 — Sublime-style line comment toggle.
+export fn edit_toggle_line_comment(
+  document: TextDocument,
+  selection: EditorSelection,
+  language: string
+) -> EditResult = do
+  const prefix = comment_prefix_for_language(language)
+  const text = document_to_string(document)
+  const line_index = line_index_from_string(text)
+  const line_count = line_index_line_count(line_index)
+  if line_count <= 0 then
+    return EditResult { document: document, selection: selection }
+  end
+  const range_start = selection_start(selection)
+  const range_end = selection_end(selection)
+  const start_position = line_index_offset_to_position(line_index, text, range_start)
+  let mut end_position = line_index_offset_to_position(line_index, text, range_end)
+  let mut first_line = start_position.line
+  let mut last_line = end_position.line
+  if !selection_is_empty(selection) &&
+     end_position.column == 0 &&
+     last_line > first_line then
+    last_line = last_line - 1
+  end
+  if first_line < 0 then
+    first_line = 0
+  end
+  if last_line >= line_count then
+    last_line = line_count - 1
+  end
+  if last_line < first_line then
+    last_line = first_line
+  end
+
+  let mut all_commented = 1
+  let mut line = first_line
+  while line <= last_line do
+    const line_start = line_index_line_start(line_index, line)
+    const content_end = line_content_exclusive_end(line_index, line)
+    if line_content_is_commented(text, line_start, content_end, prefix) == 0 then
+      all_commented = 0
+    end
+    line = line + 1
+  end
+
+  let mut result = ""
+  line = 0
+  while line < line_count do
+    const line_start = line_index_line_start(line_index, line)
+    const content_end = line_content_exclusive_end(line_index, line)
+    let mut length = content_end - line_start
+    if length < 0 then
+      length = 0
+    end
+    let mut body = text.byte_substring(line_start, length)
+    if line >= first_line && line <= last_line then
+      if all_commented != 0 then
+        body = uncomment_line_body(body, prefix)
+      else
+        body = comment_line_body(body, prefix)
+      end
+    end
+    result = result + body
+    if line + 1 < line_count then
+      result = result + "\n"
+    end
+    line = line + 1
+  end
+
+  const next_document = document_from_string(result)
+  EditResult {
+    document: next_document,
+    selection: selection_clamp(selection_collapsed(range_start), document_byte_length(next_document))
+  }
 end
 
 // Backspace: delete selection, else delete one byte before caret.

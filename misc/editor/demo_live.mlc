@@ -47,7 +47,8 @@ import {
 } from './ui/gl_scissor'
 import {
   status_bar_from_buffer,
-  status_bar_format
+  status_bar_format,
+  status_bar_language_from_path
 } from './ui/status_bar'
 import {
   ShellPanels,
@@ -137,6 +138,7 @@ import {
   CmdGotoLine,
   CmdReplaceOne,
   CmdReplaceAll,
+  CmdToggleLineComment,
   CmdNone,
   CmdSave,
   command_id_tag,
@@ -277,6 +279,7 @@ import {
   editor_app_clamp_scroll_to_content,
   editor_app_set_scroll_y,
   editor_app_insert_text,
+  editor_app_toggle_line_comment,
   editor_app_insert_newline,
   editor_app_backspace,
   editor_app_delete_word_backward,
@@ -1165,6 +1168,19 @@ fn main() -> i32 = do
             end
             find_session = replace_all_result.session
             selection = replace_all_result.selection
+          end
+        | CmdToggleLineComment => do
+            app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+            const comment_language = status_bar_language_from_path(active.path)
+            app = editor_app_toggle_line_comment(app, comment_language)
+            tabs = app.ux.tabs
+            selection = app.ux.selection
+            history = app.history
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
           end
         | CmdCopy => do
             clipboard = edit_copy(document, selection, clipboard)

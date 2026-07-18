@@ -114,6 +114,7 @@ struct BindingKeyEdges {
   int32_t key_f = 0;
   int32_t key_f3 = 0;
   int32_t key_g = 0;
+  int32_t key_slash = 0;
 };
 
 BindingKeyEdges& binding_key_edges() {
@@ -655,6 +656,9 @@ String glfw_gl_take_binding_key() {
   }
   if (edge_key_down(GLFW_KEY_G, edges.key_g) != 0) {
     return String("g");
+  }
+  if (edge_key_down(GLFW_KEY_SLASH, edges.key_slash) != 0) {
+    return String("/");
   }
   return String();
 }

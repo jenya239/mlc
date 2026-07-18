@@ -19,6 +19,7 @@ import {
   editor_ux_delete_word_forward_state
 } from '../ux/edit_apply'
 import { editor_ux_insert_text_autoclose } from '../ux/bracket_autoclose'
+import { editor_ux_toggle_line_comment } from '../ux/comment_toggle'
 import { EditorTextMetrics } from '../ux/overflow'
 import { ShellPanels } from '../ui/shell_panels'
 import {
@@ -371,6 +372,28 @@ export fn editor_app_insert_text(
     editor_app_clock_ms(app)
   )
   editor_app_with_ux_and_history(app, editor_ux_insert_text_autoclose(app.ux, text), history)
+end
+
+export fn editor_app_toggle_line_comment(
+  app: EditorAppState,
+  language: string
+) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return app
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_insert_text(),
+    editor_app_clock_ms(app)
+  )
+  editor_app_with_ux_and_history(
+    app,
+    editor_ux_toggle_line_comment(app.ux, language),
+    history
+  )
 end
 
 export fn editor_app_insert_newline(app: EditorAppState) -> EditorAppState = do

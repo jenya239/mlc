@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 04:30 (Driver TRACK_EDITOR_COMMENT_TOGGLE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE |
+| started | 2026-07-19 04:20 |
+| elapsed | ~10 min |
+| done    | Real `edit_toggle_line_comment` + `comment_prefix_for_language`; `editor_ux_toggle_line_comment`; `editor_app_toggle_line_comment`; `CmdToggleLineComment` Ctrl+/; demo_live + GLFW `key_slash`; bus unit expects `/` |
+| verify  | `ux_ok toggle_line_comment`; `ux_ok typing_paren_autocloses`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_COMMENT_TOGGLE |
+
 ### Turn 2026-07-19 02:45 (Driver TRACK_EDITOR_COMMENT_TOGGLE STEP=1)
 
 | field   | value |

@@ -1,11 +1,41 @@
-// TRACK_EDITOR_COMMENT_TOGGLE STEP=1 — stub (no-op until STEP=2).
+// TRACK_EDITOR_COMMENT_TOGGLE STEP=2 — line comment toggle by language.
+import {
+  edit_toggle_line_comment
+} from '../document/edit'
+import {
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  open_buffer_set_document
+} from '../document/save'
 import { EditorUxState } from './probe'
 
-// Stub: ignore language; leave document unchanged.
 export fn editor_ux_toggle_line_comment(
   state: EditorUxState,
   language: string
 ) -> EditorUxState = do
-  let _unused_language = language
-  state
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_toggle_line_comment(
+    active.buffer.document, state.selection, language
+  )
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: edited.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
 end
