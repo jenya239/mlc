@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 13:05 (Driver TRACK_EDITOR_GOTO_LINE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_GOTO_LINE |
+| started | 2026-07-18 12:55 |
+| elapsed | ~10 min |
+| done    | Stub `ux/goto_line.mlc` (no-op); L1 red harness `goto_line_scrolls_caret` (+ `run_ux_goto_line_scrolls_caret.sh`); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_goto_line_scrolls_caret.sh` exit 1 (`ux_fail goto caret line`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_GOTO_LINE |
+
 ### Turn 2026-07-18 12:55 (Planner TRACK_EDITOR_GOTO_LINE STEP=0)
 
 | field   | value |

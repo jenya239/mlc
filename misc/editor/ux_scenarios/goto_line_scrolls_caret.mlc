@@ -1,0 +1,80 @@
+// TRACK_EDITOR_GOTO_LINE STEP=1 — L1: goto line scrolls caret into view.
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  CaretAt,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import { editor_ux_caret_in_viewport } from '../ux/scroll'
+import { editor_ux_goto_line } from '../ux/goto_line'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 320, 200)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    320,
+    200,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  let mut body = "L1"
+  let mut line = 2
+  while line <= 40 do
+    body = body + "\nL" + line.to_string()
+    line = line + 1
+  end
+  state = editor_ux_insert_text(state, body)
+
+  // 1-based line 30 → 0-based line 29, column 0.
+  state = editor_ux_goto_line(state, metrics, 30)
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
+    println("ux_fail goto caret line")
+    return 1
+  end
+  if snapshot.scroll_offset_y <= 0 then
+    println("ux_fail goto scroll_offset_y")
+    return 2
+  end
+  if editor_ux_caret_in_viewport(state, metrics) == 0 then
+    println("ux_fail goto caret not in viewport")
+    return 3
+  end
+
+  println("ux_ok goto_line_scrolls_caret")
+  0
+end

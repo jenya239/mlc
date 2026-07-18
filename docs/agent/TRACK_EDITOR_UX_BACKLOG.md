@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7 done; **#8 `EDITOR_GOTO_LINE` opened** (STEP=0 done)
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7 done; **#8 `EDITOR_GOTO_LINE` opened** (STEP=1 done)
 
 ## How to use this backlog
 
@@ -43,7 +43,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 5 | `EDITOR_SHIFT_CLICK_EXTEND` | Shift-click extends selection from anchor | `shift_click_extends_selection` | S | **done** — [archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND](../archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND.md) |
 | 6 | `EDITOR_UNDO_COALESCE` | Group consecutive typing into one undo step (currently every keystroke = separate undo) | `typing_coalesces_into_one_undo` (L1.5) | M | **done** — [archive/tracks/TRACK_EDITOR_UNDO_COALESCE](../archive/tracks/TRACK_EDITOR_UNDO_COALESCE.md) |
 | 7 | `EDITOR_FIND` | Find + next/prev, highlight matches in visible range | `find_highlights_matches` | M | **done** — [archive/tracks/TRACK_EDITOR_FIND](../archive/tracks/TRACK_EDITOR_FIND.md) |
-| 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | **active** — [TRACK_EDITOR_GOTO_LINE](TRACK_EDITOR_GOTO_LINE.md) STEP=1 next (STEP=0 done) |
+| 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | **active** — [TRACK_EDITOR_GOTO_LINE](TRACK_EDITOR_GOTO_LINE.md) STEP=2 next (STEP=1 red harness done) |
 | 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | pending |
 | 10 | `EDITOR_AUTO_INDENT` | Enter preserves leading indent of current line | `enter_keeps_indent` | S | pending |
 | 11 | `EDITOR_CURRENT_LINE_HL` | Highlight current line in draw report | `current_line_highlight_draws` (L2) | S | pending |

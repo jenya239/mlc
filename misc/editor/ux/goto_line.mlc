@@ -1,0 +1,15 @@
+// TRACK_EDITOR_GOTO_LINE STEP=1 — stub goto (red until STEP=2).
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+
+// Stub: ignore target line — leave state unchanged until STEP=2.
+export fn editor_ux_goto_line(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  line_number_1based: i32
+) -> EditorUxState = do
+  let _unused_metrics = metrics.line_height
+  let _unused_line = line_number_1based
+  let _unused_width = state.window_width
+  state
+end
