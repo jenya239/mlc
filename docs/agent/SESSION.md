@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 13:50 (Driver TRACK_EDITOR_DRAG_AUTOSCROLL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DRAG_AUTOSCROLL |
+| started | 2026-07-18 13:40 |
+| elapsed | ~10 min |
+| done    | Stub `ux/drag_autoscroll.mlc` (plain drag); L1.5 red harness `drag_past_edge_autoscrolls` (+ `run_ux_drag_past_edge_autoscrolls.sh`); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_drag_past_edge_autoscrolls.sh` exit 1 (`ux_fail drag autoscroll scroll_offset_y`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DRAG_AUTOSCROLL |
+
 ### Turn 2026-07-18 13:40 (Planner TRACK_EDITOR_DRAG_AUTOSCROLL STEP=0)
 
 | field   | value |

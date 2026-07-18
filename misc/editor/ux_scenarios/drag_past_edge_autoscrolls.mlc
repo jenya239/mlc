@@ -1,0 +1,114 @@
+// TRACK_EDITOR_DRAG_AUTOSCROLL STEP=1 — L1.5: drag past edge autoscrolls.
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import {
+  line_index_from_document,
+  line_index_offset_to_position
+} from '../document/line_index'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import { editor_ux_click_text } from '../ux/selection_apply'
+import { editor_ux_drag_text_autoscroll } from '../ux/drag_autoscroll'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 320, 200)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    320,
+    200,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  const metrics = editor_text_metrics_default()
+  let mut body = "L1"
+  let mut line = 2
+  while line <= 40 do
+    body = body + "\nL" + line.to_string()
+    line = line + 1
+  end
+  state = editor_ux_insert_text(state, body)
+
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  const text_origin_x = editor_rect.x + 4
+  const text_origin_y = editor_rect.y + strip_height
+  const text_bottom = editor_rect.y + editor_rect.height
+
+  // Anchor at first visible line.
+  state = editor_ux_click_text(state, metrics, text_origin_x, text_origin_y + 2)
+  const scroll_before = state.scroll_offset_y
+  const active_before = tab_set_active(state.tabs)
+  const line_index_before = line_index_from_document(active_before.buffer.document)
+  const position_before = line_index_offset_to_position(
+    line_index_before,
+    line_index_before.text,
+    selection_caret(state.selection)
+  )
+  const focus_line_before = position_before.line
+
+  // Hold pointer past bottom ≥2 frames (Decision multi-frame).
+  const past_bottom_y = text_bottom + 20
+  state = editor_ux_drag_text_autoscroll(
+    state, metrics, text_origin_x, past_bottom_y
+  )
+  state = editor_ux_drag_text_autoscroll(
+    state, metrics, text_origin_x, past_bottom_y
+  )
+
+  let mut snapshot = editor_ux_snapshot(state)
+  if snapshot.scroll_offset_y <= scroll_before then
+    println("ux_fail drag autoscroll scroll_offset_y")
+    return 1
+  end
+  const active_after = tab_set_active(state.tabs)
+  const line_index_after = line_index_from_document(active_after.buffer.document)
+  const position_after = line_index_offset_to_position(
+    line_index_after,
+    line_index_after.text,
+    selection_caret(state.selection)
+  )
+  if position_after.line <= focus_line_before then
+    println("ux_fail drag autoscroll focus line")
+    return 2
+  end
+
+  println("ux_ok drag_past_edge_autoscrolls")
+  0
+end

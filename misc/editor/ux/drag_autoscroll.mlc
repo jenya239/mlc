@@ -1,0 +1,13 @@
+// TRACK_EDITOR_DRAG_AUTOSCROLL STEP=1 — stub (red until STEP=2).
+import { EditorTextMetrics } from './overflow'
+import { EditorUxState } from './probe'
+import { editor_ux_drag_text } from './selection_apply'
+
+// Stub: plain drag only — no past-edge scroll until STEP=2.
+export fn editor_ux_drag_text_autoscroll(
+  state: EditorUxState,
+  metrics: EditorTextMetrics,
+  pixel_x: i32,
+  pixel_y: i32
+) -> EditorUxState =
+  editor_ux_drag_text(state, metrics, pixel_x, pixel_y)
