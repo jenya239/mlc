@@ -1,4 +1,5 @@
 // TRACK_EDITOR_MVP STEP=15 — insert/delete/Enter/Backspace/Delete with selection.
+// TRACK_EDITOR_AUTO_INDENT STEP=2 — Enter copies leading indent.
 import {
   TextDocument,
   document_insert,
@@ -18,6 +19,11 @@ import {
   word_boundary_next,
   word_boundary_prev
 } from './word_boundary'
+import {
+  line_index_from_string,
+  line_index_line_start,
+  line_index_offset_to_position
+} from './line_index'
 
 export type EditResult = {
   document: TextDocument,
@@ -35,6 +41,25 @@ fn delete_selection(
     document: next_document,
     selection: selection_collapsed(range_start)
   }
+end
+
+// Leading ASCII spaces/tabs from line_start.
+fn leading_indent_of_line(text: string, line_start: i32) -> string = do
+  let mut index = line_start
+  const length = text.byte_size()
+  let mut scanning = 1
+  while scanning != 0 && index < length do
+    const character = text.byte_at(index)
+    if character == " " || character == "\t" then
+      index = index + 1
+    else
+      scanning = 0
+    end
+  end
+  if index <= line_start then
+    return ""
+  end
+  text.byte_substring(line_start, index - line_start)
 end
 
 // Insert text at caret; replaces non-empty selection first.
@@ -66,8 +91,21 @@ end
 export fn edit_insert_newline(
   document: TextDocument,
   selection: EditorSelection
-) -> EditResult =
-  edit_insert_text(document, selection, "\n")
+) -> EditResult = do
+  let mut working = document
+  let mut caret = selection_start(selection)
+  if !selection_is_empty(selection) then
+    const cleared = delete_selection(document, selection)
+    working = cleared.document
+    caret = selection_start(cleared.selection)
+  end
+  const text = document_to_string(working)
+  const line_index = line_index_from_string(text)
+  const position = line_index_offset_to_position(line_index, text, caret)
+  const line_start = line_index_line_start(line_index, position.line)
+  const indent = leading_indent_of_line(text, line_start)
+  edit_insert_text(working, selection_collapsed(caret), "\n" + indent)
+end
 
 // Backspace: delete selection, else delete one byte before caret.
 export fn edit_backspace(

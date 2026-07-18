@@ -4,11 +4,17 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#10**.
 Enter inserts bare `\n`; caret lands at column 0 — leading indent of the
 current line is not preserved. Review gate: `enter_keeps_indent` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; Critic next
 
 ## Next step
 
-**STEP=2** — implement indent copy in `edit_insert_newline`; gates green.
+**STEP=3** — Critic: re-run gates; archive.
+
+### STEP=2 done (2026-07-18)
+
+- `edit_insert_newline` copies leading space/tab; `editor_ux_insert_newline`
+  calls it; `ux_ok enter_keeps_indent`; `newline_caret_and_spaces` ok;
+  `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-18)
 
@@ -46,7 +52,7 @@ current line is not preserved. Review gate: `enter_keeps_indent` (L1). Size **S*
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`enter_keeps_indent`) | **done** (red: `ux_fail enter indent text`) |
-| 2 | newline+indent in `edit_insert_newline` (+ inherit wire) | scenario + compile |
+| 2 | newline+indent in `edit_insert_newline` (+ inherit wire) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)

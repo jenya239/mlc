@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 14:40 (Driver TRACK_EDITOR_AUTO_INDENT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_AUTO_INDENT |
+| started | 2026-07-18 14:30 |
+| elapsed | ~15 min |
+| done    | `edit_insert_newline` + leading indent; `editor_ux_insert_newline` → edit path; `ux_ok enter_keeps_indent`; `newline_caret_and_spaces` ok; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_enter_keeps_indent.sh` → `ux_ok`; `run_ux_newline_caret.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_AUTO_INDENT |
+
 ### Turn 2026-07-18 14:30 (Driver TRACK_EDITOR_AUTO_INDENT STEP=1)
 
 | field   | value |

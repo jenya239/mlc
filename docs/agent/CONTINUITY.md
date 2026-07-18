@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_AUTO_INDENT` STEP=2** (§46 #10).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **`TRACK_EDITOR_AUTO_INDENT` Critic** (§46 #10).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -92,7 +92,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_FIND` (§46 #7)** | **closed** 2026-07-18 (Critic OK). Archived. Literal find + next/prev + highlights. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_GOTO_LINE` (§46 #8)** | **closed** 2026-07-18 (Critic OK). Archived. Goto + Ctrl+G + demo_live. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_DRAG_AUTOSCROLL` (§46 #9)** | **closed** 2026-07-18 (Critic OK). Archived. Past-edge drag autoscroll + demo_live. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_AUTO_INDENT` (§46 #10)** | **queue head** — STEP=0 done 2026-07-18 (Decision); STEP=1 L1 scenario |
+| **`TRACK_EDITOR_AUTO_INDENT` (§46 #10)** | **queue head** — STEP=1 done 2026-07-18 (red harness); STEP=2 implement |
 | **`TRACK_MLC_SCRIPT_VM`** | **design-only, NOT authorized** — do not open STEP=1 without explicit user command |
 | **`TRACK_LANG_AUTO_CYCLE` (PLAN §19)** | Gated — не открывать без явной команды пользователя |
 | **`TRACK_GUI_SCENE_PHASE_C` drift** | Historical; Phase C archived. Ignore if SESSION stale |
