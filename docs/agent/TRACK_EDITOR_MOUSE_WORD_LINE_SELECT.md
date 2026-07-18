@@ -5,18 +5,21 @@ Single-click caret via `nav_click` / `editor_ux_click_text` exists; no
 click-count / timing; double/triple do not select word/line. Word edges
 already in `document/word_boundary.mlc` (#3).
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — multi-click detector + word/line select + `demo_live` wire;
-both L2 scenarios green + compile.
+**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #5).
+
+### STEP=2 done (2026-07-18)
+
+- `ux/multi_click.mlc`: 500ms same-offset detector; count 1/2/3 → caret/word/line
+- `demo_live` text mouse-down via `editor_ux_apply_multi_click` (`frame_index*16` clock)
+- Gates: both scenarios ok + `demo_live_fs_compile_ok`
 
 ### STEP=1 done (2026-07-18)
 
-- Stub `ux/multi_click.mlc` (`editor_ux_apply_multi_click` → always caret)
-- L2 red: `double_click_selects_word`, `triple_click_selects_line` (+ run scripts)
-- `demo_live_fs_compile_ok`
+- Stub `ux/multi_click.mlc`; L2 red harness
 
 ### STEP=0 done (2026-07-18)
 
@@ -50,17 +53,14 @@ both L2 scenarios green + compile.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`double_click_selects_word`, `triple_click_selects_line`) | **done** (red harness) |
-| 2 | multi-click detector + word/line select + `demo_live` wire | scenarios + compile |
+| 2 | multi-click detector + word/line select + `demo_live` wire | **done** |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. Multi-click state + word/line selection helpers; unit if cheap.
-2. Wire `demo_live` text mouse-down through counted path (`clock_ms`).
-3. Gates: both scenarios ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #5).
 

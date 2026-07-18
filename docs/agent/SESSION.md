@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:25 (Driver TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+| started | 2026-07-18 16:15 |
+| elapsed | ~10 min |
+| done    | `editor_ux_apply_multi_click` (500ms same-offset; 1/2/3→caret/word/line); `demo_live` text click via multi_click + `frame_index*16`; `ux_ok double_click_selects_word`; `ux_ok triple_click_selects_line`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_double_click_selects_word.sh` → `ux_ok`; `run_ux_triple_click_selects_line.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+
 ### Turn 2026-07-18 16:15 (Driver TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=1)
 
 | field   | value |

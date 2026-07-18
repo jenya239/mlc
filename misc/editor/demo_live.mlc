@@ -205,6 +205,10 @@ import {
   visual_row_index_for_caret,
   wrap_offset_at_point
 } from './layout/word_wrap'
+import {
+  editor_ux_multi_click_new,
+  editor_ux_apply_multi_click
+} from './ux/multi_click'
 import { ux_rect_new } from '../gui/ux/snapshot'
 import {
   tab_strip_close_rect,
@@ -606,6 +610,7 @@ fn main() -> i32 = do
   let mut tree_scroll_y = 0
   let mut last_tree_click_frame = 0 - 1000
   let mut last_tree_click_path = ""
+  let mut multi_click = editor_ux_multi_click_new()
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -835,8 +840,13 @@ fn main() -> i32 = do
           line_height(), char_width(),
           input.mouse_x, input.mouse_y
         )
+        const click_clock_ms = frame_index * 16
+        const multi_result = editor_ux_apply_multi_click(
+          line_index, multi_click, click_offset, click_clock_ms
+        )
+        multi_click = multi_result.state
         selection = selection_clamp(
-          selection_collapsed(click_offset), line_index.text_length
+          multi_result.selection, line_index.text_length
         )
         selecting_text = 1
         handled = 1

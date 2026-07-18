@@ -1,9 +1,20 @@
-// TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=1 — stub multi-click (red until STEP=2).
-import { LineIndex } from '../document/line_index'
+// TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=2 — multi-click word/line select.
+import {
+  LineIndex,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_offset_to_position
+} from '../document/line_index'
 import {
   EditorSelection,
-  selection_collapsed
+  selection_collapsed,
+  selection_new
 } from '../document/selection'
+import {
+  is_word_char,
+  word_boundary_next,
+  word_boundary_prev
+} from '../document/word_boundary'
 
 export type MultiClickState = {
   last_click_ms: i32,
@@ -16,6 +27,8 @@ export type MultiClickResult = {
   selection: EditorSelection
 }
 
+export fn editor_ux_multi_click_threshold_ms() -> i32 = 500
+
 export fn editor_ux_multi_click_new() -> MultiClickState =
   MultiClickState {
     last_click_ms: 0 - 1,
@@ -23,21 +36,91 @@ export fn editor_ux_multi_click_new() -> MultiClickState =
     click_count: 0
   }
 
-// Stub: always single-click caret (ignore count/timing until STEP=2).
+fn line_content_end(line_index: LineIndex, line: i32) -> i32 = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1) - 1
+  end
+  if end_exclusive < start then
+    return start
+  end
+  end_exclusive
+end
+
+fn select_word_at(line_index: LineIndex, offset: i32) -> EditorSelection = do
+  const text = line_index.text
+  const length = text.byte_size()
+  if length <= 0 then
+    return selection_collapsed(0)
+  end
+  let mut probe = offset
+  if probe >= length then
+    probe = length - 1
+  end
+  if probe < 0 then
+    return selection_collapsed(0)
+  end
+  if !is_word_char(text.byte_at(probe)) then
+    if probe > 0 && is_word_char(text.byte_at(probe - 1)) then
+      probe = probe - 1
+    else
+      return selection_collapsed(offset)
+    end
+  end
+  const range_start = word_boundary_prev(text, probe)
+  const range_end = word_boundary_next(text, probe)
+  selection_new(range_start, range_end)
+end
+
+fn select_line_at(line_index: LineIndex, offset: i32) -> EditorSelection = do
+  const position = line_index_offset_to_position(line_index, line_index.text, offset)
+  let mut line = position.line
+  if line < 0 then
+    line = 0
+  end
+  const max_line = line_index_line_count(line_index) - 1
+  if line > max_line then
+    line = max_line
+  end
+  if line < 0 then
+    return selection_collapsed(0)
+  end
+  const range_start = line_index_line_start(line_index, line)
+  const range_end = line_content_end(line_index, line)
+  selection_new(range_start, range_end)
+end
+
 export fn editor_ux_apply_multi_click(
   line_index: LineIndex,
   multi: MultiClickState,
   click_offset: i32,
   clock_ms: i32
 ) -> MultiClickResult = do
-  let _unused_index = line_index.text_length
-  let _unused_multi = multi.click_count
+  let mut count = 1
+  const threshold = editor_ux_multi_click_threshold_ms()
+  if multi.click_count > 0 &&
+      multi.last_click_offset == click_offset &&
+      clock_ms >= multi.last_click_ms &&
+      clock_ms - multi.last_click_ms <= threshold then
+    count = multi.click_count + 1
+  end
+  if count > 3 then
+    count = 1
+  end
+  let mut selection = selection_collapsed(click_offset)
+  if count == 2 then
+    selection = select_word_at(line_index, click_offset)
+  end
+  if count == 3 then
+    selection = select_line_at(line_index, click_offset)
+  end
   MultiClickResult {
     state: MultiClickState {
       last_click_ms: clock_ms,
       last_click_offset: click_offset,
-      click_count: 1
+      click_count: count
     },
-    selection: selection_collapsed(click_offset)
+    selection: selection
   }
 end
