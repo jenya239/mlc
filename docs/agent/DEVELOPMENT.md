@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner pick-next (§46 `#12 EDITOR_CRLF_PRESERVE`).
+**Queue head:** Driver STEP=1 `TRACK_EDITOR_CRLF_PRESERVE` (§46 `#12`).
+**`TRACK_EDITOR_CRLF_PRESERVE` (§46 #12)** active 2026-07-18; Decision frozen.
 **`TRACK_EDITOR_CURRENT_LINE_HL` (§46 #11)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_AUTO_INDENT` (§46 #10)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_DRAG_AUTOSCROLL` (§46 #9)** closed 2026-07-18; archived.

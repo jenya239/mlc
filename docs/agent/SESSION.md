@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:40 (Planner TRACK_EDITOR_CRLF_PRESERVE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_CRLF_PRESERVE |
+| started | 2026-07-18 15:35 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_CRLF_PRESERVE.md`; Decision: detect CRLF/LF on open; normalize buffer to LF; `OpenBuffer.line_ending`; convert on save; L0 `crlf_preserved_on_save`; PLAN/UX_BACKLOG #12 → active |
+| verify  | track file + PLAN §46 + backlog #12 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CRLF_PRESERVE |
+
 ### Turn 2026-07-18 15:30 (Critic TRACK_EDITOR_CURRENT_LINE_HL critique-audit)
 
 | field   | value |

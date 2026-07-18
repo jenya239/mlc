@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11 done; next `#12 EDITOR_CRLF_PRESERVE`
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11 done; `#12 EDITOR_CRLF_PRESERVE` active
 
 ## How to use this backlog
 
