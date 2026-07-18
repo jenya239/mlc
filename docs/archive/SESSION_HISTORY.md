@@ -19703,3 +19703,63 @@ Turns from KEYBOARD_NAV_WIRE open (#2) and older moved from live SESSION.md.
 | result  | STEP=1 done; scenarios red until STEP=2 |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_KEYBOARD_NAV_WIRE |
+
+### Turn 2026-07-18 12:50 (Critic TRACK_EDITOR_FIND critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:45 |
+| elapsed | ~5 min |
+| done    | Re-ran gates; anti-false-done `febabd0f`…`9e102bdb`; wire: find scan+next/prev+highlights + CmdFind/F3 + demo_live; archive → `docs/archive/tracks/TRACK_EDITOR_FIND.md`; PLAN/UX_BACKLOG #7 → done; SESSION trim (#2 open and older → SESSION_HISTORY) |
+| verify  | `ux_ok find_highlights_matches`; `demo_live_fs_compile_ok`; reopen: none; residual: no find-panel; selection-seeded query only; L1 on find API |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
+### Turn 2026-07-18 12:45 (Driver TRACK_EDITOR_FIND STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:40 |
+| elapsed | ~5 min |
+| done    | Find scan+next/prev+visible highlights; CmdFind/Next/Prev; demo_live seed+draw; GLFW `f`/`f3`; `ux_ok find_highlights_matches`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_find_highlights_matches.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; `command_bus_unit` ok |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_FIND |
+
+### Turn 2026-07-18 12:40 (Driver TRACK_EDITOR_FIND STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:35 |
+| elapsed | ~5 min |
+| done    | Stub `ux/find.mlc` (empty matches; field `finish` not `end`); L1 red harness `find_highlights_matches` (+ run script); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_find_highlights_matches.sh` exit 1 (`ux_fail find match count`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FIND |
+
+### Turn 2026-07-18 12:35 (Planner TRACK_EDITOR_FIND STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:30 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_FIND.md`; Decision: literal case-sensitive match; query seed from selection; FindSession+next/prev+visible highlights; CmdFind/Next/Prev; no find-panel chrome; L1 `find_highlights_matches`; PLAN/UX_BACKLOG #7 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FIND |

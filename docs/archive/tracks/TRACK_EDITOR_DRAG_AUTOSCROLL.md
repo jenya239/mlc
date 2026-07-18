@@ -1,29 +1,38 @@
 # Track: Editor drag-past-edge autoscroll
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#9**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#9**.
 Text-selection drag past the viewport top/bottom does not scroll — cannot
 extend selection beyond visible lines. Review gate: `drag_past_edge_autoscrolls`
 (L1.5). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1.5 + compile. Anti-false-done:
+`a375f640`…`6d4840e3` (STEP=0–2). Wire present: `editor_ux_drag_text_autoscroll`
+(past-edge ±1 line_height + clamp hit Y + `editor_ux_drag_text`);
+`editor_app_drag_text_autoscroll`; demo_live selecting_text path. **reopen: none**.
+
+Honest residual: live drag uses non-wrap `nav_drag` (replaced wrap_offset path);
+horizontal autoscroll out of scope (#17); soft margin out of scope; L1.5 exercises
+ux API not GLFW inject; viewport = editor panel (not gutter/text_rect inset).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_drag_past_edge_autoscrolls.sh` | `ux_ok drag_past_edge_autoscrolls` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#10 EDITOR_AUTO_INDENT`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `editor_ux_drag_text_autoscroll` (past-edge 1 line/frame + clamp hit);
-  demo_live wire; `ux_ok drag_past_edge_autoscrolls`; `demo_live_fs_compile_ok`.
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/drag_autoscroll.mlc` (plain drag); L1.5 red harness
-  `drag_past_edge_autoscrolls` (+ run script); `demo_live_fs_compile_ok`.
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #9 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `a375f640` | Decision freeze + open |
+| 1 | `4ea9c197` | L1.5 red harness |
+| 2 | `6d4840e3` | autoscroll + demo_live wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -56,19 +65,7 @@ extend selection beyond visible lines. Review gate: `drag_past_edge_autoscrolls`
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1.5 scenario first (`drag_past_edge_autoscrolls`) | **done** (red: `ux_fail drag autoscroll scroll_offset_y`) |
 | 2 | autoscroll helper + demo_live wire | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1**
-1. Add `ux_scenarios/drag_past_edge_autoscrolls.mlc` (+ run script).
-2. Prefer red before STEP=2 (stub no-ops / no scroll).
-
-**STEP=2**
-1. Implement `editor_ux_drag_text_autoscroll`; wire `demo_live` drag path.
-2. Gates: scenario ok + `demo_live_fs_compile_ok`.
-
-**STEP=3** — Critic; `next` = Planner (§46 #10).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
