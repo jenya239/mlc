@@ -441,7 +441,7 @@ compiler/
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
-| **46** | Editor UX backlog — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9 done; **#10 `EDITOR_AUTO_INDENT` active** (STEP=2 done 2026-07-18; Critic next) | **active** (2026-07-18) #10 Critic | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_AUTO_INDENT](agent/TRACK_EDITOR_AUTO_INDENT.md) |
+| **46** | Editor UX backlog — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10 done; next `#11 EDITOR_CURRENT_LINE_HL` | **active** (2026-07-18) #10 closed; #11 next | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/tracks/TRACK_EDITOR_AUTO_INDENT](archive/tracks/TRACK_EDITOR_AUTO_INDENT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -675,10 +675,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **closed** 2026-07-18: Critic OK; STEP=0+3+4;
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
-  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9 closed; #10 `EDITOR_AUTO_INDENT`
-      opened 2026-07-18 — STEP=2 done, Critic next;
+  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10 closed; next `#11 EDITOR_CURRENT_LINE_HL`;
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
-        [agent/TRACK_EDITOR_AUTO_INDENT.md](agent/TRACK_EDITOR_AUTO_INDENT.md) ·
+        [archive/tracks/TRACK_EDITOR_AUTO_INDENT.md](archive/tracks/TRACK_EDITOR_AUTO_INDENT.md) ·
         [archive/tracks/TRACK_EDITOR_DRAG_AUTOSCROLL.md](archive/tracks/TRACK_EDITOR_DRAG_AUTOSCROLL.md) ·
         [archive/tracks/TRACK_EDITOR_GOTO_LINE.md](archive/tracks/TRACK_EDITOR_GOTO_LINE.md) ·
         [archive/tracks/TRACK_EDITOR_FIND.md](archive/tracks/TRACK_EDITOR_FIND.md) ·

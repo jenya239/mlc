@@ -1,28 +1,38 @@
 # Track: Editor auto-indent on Enter
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#10**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#10**.
 Enter inserts bare `\n`; caret lands at column 0 — leading indent of the
 current line is not preserved. Review gate: `enter_keeps_indent` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1 + newline regression + compile.
+Anti-false-done: `b711fff7`…`20cb92d5` (STEP=0–2). Wire present:
+`leading_indent_of_line` + `edit_insert_newline` (`"\n"+indent`);
+`editor_ux_insert_newline` → edit path (not bare `"\n"` insert);
+app/demo_live inherit. **reopen: none**.
+
+Honest residual: no smart/language indent; no Tab/Shift-Tab (#26); spaces/tabs
+preserved as bytes only; L1 exercises ux API not GLFW Enter inject.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_enter_keeps_indent.sh` | `ux_ok enter_keeps_indent` EXIT=0 |
+| `run_ux_newline_caret.sh` | `ux_ok newline_caret_and_spaces` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#11 EDITOR_CURRENT_LINE_HL`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `edit_insert_newline` copies leading space/tab; `editor_ux_insert_newline`
-  calls it; `ux_ok enter_keeps_indent`; `newline_caret_and_spaces` ok;
-  `demo_live_fs_compile_ok`.
-
-### STEP=1 done (2026-07-18)
-
-- L1 red harness `enter_keeps_indent` (+ run script); `demo_live_fs_compile_ok`.
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #10 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `b711fff7` | Decision freeze + open |
+| 1 | `5c9f95ff` | L1 red harness |
+| 2 | `20cb92d5` | edit_insert_newline + edit_apply wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -53,19 +63,7 @@ current line is not preserved. Review gate: `enter_keeps_indent` (L1). Size **S*
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`enter_keeps_indent`) | **done** (red: `ux_fail enter indent text`) |
 | 2 | newline+indent in `edit_insert_newline` (+ inherit wire) | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1**
-1. Add `ux_scenarios/enter_keeps_indent.mlc` (+ run script).
-2. Prefer red before STEP=2 (current bare `\n` fails caret/indent assert).
-
-**STEP=2**
-1. Implement indent copy in `edit_insert_newline`.
-2. Gates: scenario ok + `demo_live_fs_compile_ok` (+ existing `newline_caret_and_spaces` still ok if still valid).
-
-**STEP=3** — Critic; `next` = Planner (§46 #11).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
