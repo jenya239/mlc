@@ -1,6 +1,17 @@
-// TRACK_EDITOR_FIND STEP=1 — stub Find (red until STEP=2).
-import { LineIndex } from '../document/line_index'
-import { EditorSelection } from '../document/selection'
+// TRACK_EDITOR_FIND STEP=2 — literal find + next/prev + visible highlights.
+import {
+  LineIndex,
+  line_index_offset_to_position,
+  line_index_line_start,
+  line_index_line_count
+} from '../document/line_index'
+import {
+  EditorSelection,
+  selection_new,
+  selection_is_empty,
+  selection_start,
+  selection_end
+} from '../document/selection'
 
 export type FindMatch = {
   start: i32,
@@ -34,31 +45,131 @@ export type FindApplyResult = {
 export fn find_session_new() -> FindSession =
   FindSession { query: "", matches: [], active_index: -1 }
 
-// Stub: ignore text — empty matches until STEP=2.
+fn find_collect_matches(text: string, query: string) -> [FindMatch] = do
+  let mut matches: [FindMatch] = []
+  const query_length = query.byte_size()
+  if query_length == 0 then
+    return matches
+  end
+  const text_length = text.byte_size()
+  let mut index = 0
+  while index + query_length <= text_length do
+    if text.byte_substring(index, query_length) == query then
+      matches.push(FindMatch { start: index, finish: index + query_length })
+      index = index + query_length
+    else
+      index = index + 1
+    end
+  end
+  matches
+end
+
+fn find_selection_for_index(
+  session: FindSession,
+  match_index: i32,
+  selection: EditorSelection
+) -> EditorSelection = do
+  if match_index < 0 || match_index >= session.matches.length() then
+    return selection
+  end
+  const match_entry = session.matches[match_index]
+  selection_new(match_entry.start, match_entry.finish)
+end
+
 export fn find_session_set_query(
   session: FindSession,
   text: string,
   query: string
 ) -> FindSession = do
   let _unused_session = session.query
-  let _unused_text = text
-  FindSession { query: query, matches: [], active_index: -1 }
+  const matches = find_collect_matches(text, query)
+  let mut active_index = -1
+  if matches.length() > 0 then
+    active_index = 0
+  end
+  FindSession { query: query, matches: matches, active_index: active_index }
 end
 
-// Stub: no navigation until STEP=2.
+// Seed query from non-empty selection; rebuild; select first match.
+export fn find_session_seed_from_selection(
+  session: FindSession,
+  text: string,
+  selection: EditorSelection
+) -> FindApplyResult = do
+  let mut query = session.query
+  if !selection_is_empty(selection) then
+    const range_start = selection_start(selection)
+    const range_finish = selection_end(selection)
+    query = text.byte_substring(range_start, range_finish - range_start)
+  end
+  const next_session = find_session_set_query(session, text, query)
+  FindApplyResult {
+    session: next_session,
+    selection: find_selection_for_index(next_session, next_session.active_index, selection)
+  }
+end
+
 export fn find_session_next(
   session: FindSession,
   selection: EditorSelection
-) -> FindApplyResult =
-  FindApplyResult { session: session, selection: selection }
+) -> FindApplyResult = do
+  const count = session.matches.length()
+  if count == 0 then
+    return FindApplyResult { session: session, selection: selection }
+  end
+  let mut active_index = session.active_index + 1
+  if active_index >= count then
+    active_index = 0
+  end
+  if active_index < 0 then
+    active_index = 0
+  end
+  const next_session = FindSession {
+    query: session.query,
+    matches: session.matches,
+    active_index: active_index
+  }
+  FindApplyResult {
+    session: next_session,
+    selection: find_selection_for_index(next_session, active_index, selection)
+  }
+end
 
 export fn find_session_prev(
   session: FindSession,
   selection: EditorSelection
-) -> FindApplyResult =
-  FindApplyResult { session: session, selection: selection }
+) -> FindApplyResult = do
+  const count = session.matches.length()
+  if count == 0 then
+    return FindApplyResult { session: session, selection: selection }
+  end
+  let mut active_index = session.active_index - 1
+  if active_index < 0 then
+    active_index = count - 1
+  end
+  const next_session = FindSession {
+    query: session.query,
+    matches: session.matches,
+    active_index: active_index
+  }
+  FindApplyResult {
+    session: next_session,
+    selection: find_selection_for_index(next_session, active_index, selection)
+  }
+end
 
-// Stub: no visible highlights until STEP=2.
+fn find_line_content_end(line_index: LineIndex, line: i32) -> i32 = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1) - 1
+  end
+  if end_exclusive < start then
+    return start
+  end
+  end_exclusive
+end
+
 export fn find_visible_highlights(
   session: FindSession,
   line_index: LineIndex,
@@ -70,14 +181,57 @@ export fn find_visible_highlights(
   line_height: i32,
   char_width: i32
 ) -> FindDrawReport = do
-  let _unused_session = session.query
-  let _unused_index = line_index.text_length
-  let _unused_first = visible_first_line
-  let _unused_last = visible_last_line
-  let _unused_x = text_x
-  let _unused_y = text_y
-  let _unused_scroll = scroll_offset_y
-  let _unused_line = line_height
-  let _unused_char = char_width
-  FindDrawReport { highlights: [] }
+  let mut highlights: [FindHighlight] = []
+  let mut metrics_line_height = line_height
+  if metrics_line_height <= 0 then
+    metrics_line_height = 1
+  end
+  let mut metrics_char_width = char_width
+  if metrics_char_width <= 0 then
+    metrics_char_width = 1
+  end
+  let mut match_index = 0
+  while match_index < session.matches.length() do
+    const match_entry = session.matches[match_index]
+    const start_pos = line_index_offset_to_position(
+      line_index, line_index.text, match_entry.start
+    )
+    const end_pos = line_index_offset_to_position(
+      line_index, line_index.text, match_entry.finish
+    )
+    let mut line = start_pos.line
+    while line <= end_pos.line do
+      if line >= visible_first_line && line <= visible_last_line then
+        let mut col_start = 0
+        let mut col_end = find_line_content_end(line_index, line) -
+          line_index_line_start(line_index, line)
+        if line == start_pos.line then
+          col_start = start_pos.column
+        end
+        if line == end_pos.line then
+          col_end = end_pos.column
+        end
+        let mut width = (col_end - col_start) * metrics_char_width
+        if width < 0 then
+          width = 0
+        end
+        let mut is_active = 0
+        if match_index == session.active_index then
+          is_active = 1
+        end
+        highlights.push(FindHighlight {
+          line: line,
+          x: text_x + col_start * metrics_char_width,
+          y: text_y + (line - visible_first_line) * metrics_line_height -
+            scroll_offset_y,
+          width: width,
+          height: metrics_line_height,
+          is_active: is_active
+        })
+      end
+      line = line + 1
+    end
+    match_index = match_index + 1
+  end
+  FindDrawReport { highlights: highlights }
 end

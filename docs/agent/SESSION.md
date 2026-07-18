@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:45 (Driver TRACK_EDITOR_FIND STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:40 |
+| elapsed | ~5 min |
+| done    | Find scan+next/prev+visible highlights; CmdFind/Next/Prev; demo_live seed+draw; GLFW `f`/`f3`; `ux_ok find_highlights_matches`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_find_highlights_matches.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; `command_bus_unit` ok |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_FIND |
+
 ### Turn 2026-07-18 12:40 (Driver TRACK_EDITOR_FIND STEP=1)
 
 | field   | value |

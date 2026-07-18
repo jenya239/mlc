@@ -4,11 +4,17 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#7**.
 No find session, next/prev, or match highlights — only selection highlight and
 syntax spans. Review gate: `find_highlights_matches` (L1).
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — Implement find scan + next/prev + highlights; wire commands/demo.
+**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #8).
+
+### STEP=2 done (2026-07-18)
+
+- Find scan + next/prev + visible highlights; CmdFind/Next/Prev; demo_live wire;
+  GLFW `f`/`f3` binding keys
+- Gates: `ux_ok find_highlights_matches` + `demo_live_fs_compile_ok`
 
 ### STEP=1 done (2026-07-18)
 
@@ -48,16 +54,14 @@ syntax spans. Review gate: `find_highlights_matches` (L1).
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`find_highlights_matches`) | **done** (red harness) |
-| 2 | Find session + next/prev + visible highlights + demo/commands wire | scenario + compile |
+| 2 | Find session + next/prev + visible highlights + demo/commands wire | **done** |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. Implement find match scan + session + highlight report; wire CmdFind/Next/Prev + `demo_live`.
-2. Gates: scenario ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #8).
 

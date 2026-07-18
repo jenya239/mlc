@@ -13,6 +13,9 @@ export type CommandId =
   | CmdCloseTab
   | CmdNextTab
   | CmdPrevTab
+  | CmdFind
+  | CmdFindNext
+  | CmdFindPrev
   | CmdNone
 
 export type KeyChord = {
@@ -56,6 +59,9 @@ export fn command_id_tag(command: CommandId) -> string =
   | CmdCloseTab => "close_tab"
   | CmdNextTab => "next_tab"
   | CmdPrevTab => "prev_tab"
+  | CmdFind => "find"
+  | CmdFindNext => "find_next"
+  | CmdFindPrev => "find_prev"
   | CmdNone => "none"
   end
 
@@ -100,6 +106,9 @@ export fn command_bus_default_bindings() -> [KeyBinding] = do
   bindings.push(binding(1, 0, 0, "v", CmdPaste, 0, 1))
   bindings.push(binding(1, 0, 0, "a", CmdSelectAll, 0, 1))
   bindings.push(binding(1, 0, 0, "w", CmdCloseTab, 0, 1))
+  bindings.push(binding(1, 0, 0, "f", CmdFind, 0, 1))
+  bindings.push(binding(0, 0, 0, "f3", CmdFindNext, 0, 1))
+  bindings.push(binding(0, 1, 0, "f3", CmdFindPrev, 0, 1))
   // both foci
   bindings.push(binding(1, 0, 0, "tab", CmdNextTab, 1, 1))
   bindings.push(binding(1, 1, 0, "tab", CmdPrevTab, 1, 1))
