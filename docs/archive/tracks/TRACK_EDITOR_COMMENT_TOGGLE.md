@@ -1,15 +1,41 @@
 # Track: Editor Comment Toggle (Ctrl+/)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#19**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#19**.
 No line-comment toggle; Ctrl+/ does nothing. Status bar already exposes
 language from path (`status_bar_language_from_path`). Review gate:
 `toggle_line_comment` (L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=3):** Re-ran L1 + paren regression + demo compile.
+Anti-false-done: `e5458f46`…`5e5fe523` (STEP=0–2). Wire present:
+`edit_toggle_line_comment` + `comment_prefix_for_language`;
+`editor_ux_toggle_line_comment`; `editor_app_toggle_line_comment`;
+`CmdToggleLineComment` Ctrl+/; demo_live uses `status_bar_language_from_path`;
+GLFW `GLFW_KEY_SLASH` → `"/"`. **reopen: none**.
+
+Honest residual: L1 covers `mlc` `foo`↔`//foo` only (not `ruby` `#`, not
+multi-line Sublime all-lines rule, not selection edge cases); block/`/* */`
+and markdown HTML comments out of scope.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_toggle_line_comment.sh` | `ux_ok toggle_line_comment` EXIT=0 |
+| `run_ux_typing_paren_autocloses.sh` | `ux_ok typing_paren_autocloses` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#20 EDITOR_SESSION_CARET_RESTORE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `e5458f46` | Decision freeze + open |
+| 1 | `7c609c77` | L1 red harness + stub |
+| 2 | `5e5fe523` | toggle API + Cmd/GLFW wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -45,7 +71,7 @@ language from path (`status_bar_language_from_path`). Review gate:
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`toggle_line_comment`) | **done** (2026-07-19) — stub red: `ux_fail toggle_line_comment comment` |
 | 2 | toggle API + CmdToggleLineComment + live/GLFW wire | **done** (2026-07-19) — L1 green `ux_ok toggle_line_comment` |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

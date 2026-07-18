@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Critic** `STEP=critique-audit` `TRACK_EDITOR_COMMENT_TOGGLE` (§46 `#19`).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** `STEP=pick-next` `TRACK=PLAN_QUEUE` (§46 `#20` next).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,8 +79,8 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18 done. `#19` active. Product ceiling: **Sublime Text** |
-| **`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** | **active** 2026-07-19. STEP=2 done (L1 green). Next Critic. Do not skip Decision |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19 done. Next `#20`. Product ceiling: **Sublime Text** |
+| **`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** | **closed** 2026-07-19 (Critic OK). Archived. Ctrl+/ line-comment toggle. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_BRACKET_AUTOCLOSE` (§46 #18)** | **closed** 2026-07-19 (Critic OK). Archived. Pair autoclose + skip-over. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_HORIZONTAL_SCROLL` (§46 #17)** | **closed** 2026-07-19 (Critic OK). Archived. Shift+wheel → `scroll_offset_x`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_FONT_ZOOM` (§46 #16)** | **closed** 2026-07-18 (Critic OK). Archived. Ctrl+wheel font zoom. Do not reopen numbered STEPs |
