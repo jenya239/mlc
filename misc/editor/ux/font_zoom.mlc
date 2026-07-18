@@ -1,4 +1,4 @@
-// TRACK_EDITOR_FONT_ZOOM STEP=1 — font zoom stub (red until STEP=2).
+// TRACK_EDITOR_FONT_ZOOM STEP=2 — Ctrl+wheel font zoom.
 import { EditorTextMetrics } from './overflow'
 import { editor_app_font_size } from '../app/chrome'
 
@@ -34,13 +34,17 @@ export fn editor_font_metrics_from_size(font_size: i32) -> EditorTextMetrics = d
   }
 end
 
-// Stub: ignore wheel_ticks until STEP=2.
+// Apply one zoom step from wheel tick sign; clamp font_size.
 export fn editor_ux_font_zoom(
   font_size: i32,
   wheel_ticks: i32
 ) -> FontZoomResult = do
-  let _unused_ticks = wheel_ticks
-  const size = editor_font_size_clamp(font_size)
+  let mut size = editor_font_size_clamp(font_size)
+  if wheel_ticks > 0 then
+    size = editor_font_size_clamp(size + 1)
+  else if wheel_ticks < 0 then
+    size = editor_font_size_clamp(size - 1)
+  end
   FontZoomResult {
     font_size: size,
     metrics: editor_font_metrics_from_size(size)

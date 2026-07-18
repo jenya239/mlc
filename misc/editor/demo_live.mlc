@@ -239,7 +239,12 @@ import {
   tab_strip_hit_index,
   tab_strip_hit_close_index
 } from './ux/tab_strip'
-import { editor_text_metrics_default, EditorTextMetrics } from './ux/overflow'
+import { EditorTextMetrics } from './ux/overflow'
+import {
+  editor_font_size_default,
+  editor_font_metrics_from_size,
+  editor_ux_font_zoom
+} from './ux/font_zoom'
 import { editor_ux_cursor_shape_at } from './ux/cursor'
 import {
   editor_ux_apply_nav_key,
@@ -252,9 +257,6 @@ import {
   caret_blink_visible
 } from './ux/caret_blink'
 import {
-  editor_app_line_height,
-  editor_app_char_width,
-  editor_app_font_size,
   editor_app_header_height,
   editor_app_tab_bar_height,
   editor_app_toolbar_height,
@@ -334,11 +336,6 @@ fn browse_panels_to(panels: ShellPanels, path: string) -> ShellPanels = do
   panels_with_tree(panels, folder_browser_at(path, name, entries))
 end
 
-fn line_height() -> i32 = editor_app_line_height()
-fn char_width() -> i32 = editor_app_char_width()
-// TRACK_GLFW_CONTENT_SCALE STEP=3 — one chrome metric × content scale.
-fn font_size() -> i32 =
-  f64_to_i32(i32_to_f64(editor_app_font_size()) * glfw_gl_window_content_scale_y())
 fn header_height() -> i32 = editor_app_header_height()
 fn tab_bar_height() -> i32 = editor_app_tab_bar_height()
 fn toolbar_height() -> i32 = editor_app_toolbar_height()
@@ -634,7 +631,8 @@ fn main() -> i32 = do
   let mut app = editor_app_state_new(
     1100, 760, panels, tabs, selection_collapsed(0)
   )
-  const metrics = editor_text_metrics_default()
+  let mut zoom_font_size = editor_font_size_default()
+  let mut metrics = editor_font_metrics_from_size(zoom_font_size)
   const command_bindings = command_bus_default_bindings()
   let mut tree_scroll_y = 0
   let mut last_tree_click_frame = 0 - 1000
@@ -657,6 +655,9 @@ fn main() -> i32 = do
     let mut selecting_text = app.selecting_text
     let mut scroll_offset_y = app.ux.scroll_offset_y
     let mut frame_index = app.frame_index
+    const scaled_font_size = f64_to_i32(
+      i32_to_f64(zoom_font_size) * glfw_gl_window_content_scale_y()
+    )
 
     const input = gui_input_poll()
     if input.escape != 0 && !dirty_close_overlay_is_visible(overlay) then
@@ -687,16 +688,16 @@ fn main() -> i32 = do
     const editor_rect = shell_panels_editor_rect(panels)
     const divider = panels.panes.divider
     const line_count = line_index_line_count(line_index)
-    const gutter_metrics = gutter_metrics_new(char_width(), 8, 8, 36)
+    const gutter_metrics = gutter_metrics_new(metrics.char_width, 8, 8, 36)
     const gutter_width = gutter_width_for_line_count(line_count, gutter_metrics)
     const panes = gutter_layout(editor_rect, gutter_width)
     const text_rect = panes.text
     const gutter_rect = panes.gutter
-    const wrap_columns = wrap_max_columns(text_rect.width - 8, char_width())
+    const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const visual_row_count = document_visual_row_count(
       draw_text, line_index, wrap_columns
     )
-    let mut wrapped_content_height = visual_row_count * line_height()
+    let mut wrapped_content_height = visual_row_count * metrics.line_height
     if wrapped_content_height < 0 then
       wrapped_content_height = 0
     end
@@ -705,8 +706,8 @@ fn main() -> i32 = do
       app, wrapped_content_height, text_rect.height
     )
     scroll_offset_y = app.ux.scroll_offset_y
-    const first_visual_row = scroll_offset_y / line_height()
-    let mut visible_row_budget = text_rect.height / line_height() + 3
+    const first_visual_row = scroll_offset_y / metrics.line_height
+    let mut visible_row_budget = text_rect.height / metrics.line_height + 3
     if visible_row_budget < 1 then
       visible_row_budget = 1
     end
@@ -736,14 +737,14 @@ fn main() -> i32 = do
     )
 
     const viewport = viewport_metrics_new(
-      line_height(), text_rect.height, text_rect.width, 1
+      metrics.line_height, text_rect.height, text_rect.width, 1
     )
     let mut visible = visible_line_range(line_count, scroll_offset_y, viewport)
     let mut view_metrics = editor_view_metrics_new(
-      line_height(), char_width(),
+      metrics.line_height, metrics.char_width,
       text_rect.x + 4, text_rect.y + 2,
       0, scroll_offset_y,
-      text_rect.height / line_height()
+      text_rect.height / metrics.line_height
     )
 
     const scroll_ticks = f64_to_i32(glfw_gl_take_scroll_y() * 3.0)
@@ -754,22 +755,29 @@ fn main() -> i32 = do
         tree_list_rect.height
       )
     else if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
-      app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
-      app = editor_app_clamp_scroll_to_content(
-        app, wrapped_content_height, text_rect.height
-      )
-      scroll_offset_y = app.ux.scroll_offset_y
-      visible = visible_line_range(line_count, scroll_offset_y, viewport)
-      view_metrics = editor_view_metrics_new(
-        line_height(), char_width(),
-        text_rect.x + 4, text_rect.y + 2,
-        0, scroll_offset_y,
-        text_rect.height / line_height()
-      )
-      visual_rows = collect_visible_visual_rows(
-        draw_text, line_index, wrap_columns,
-        scroll_offset_y / line_height(), visible_row_budget
-      )
+      if glfw_gl_mod_ctrl_down() != 0 then
+        const zoomed = editor_ux_font_zoom(zoom_font_size, scroll_ticks)
+        zoom_font_size = zoomed.font_size
+        metrics = zoomed.metrics
+        last_command = "font_zoom"
+      else
+        app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
+        app = editor_app_clamp_scroll_to_content(
+          app, wrapped_content_height, text_rect.height
+        )
+        scroll_offset_y = app.ux.scroll_offset_y
+        visible = visible_line_range(line_count, scroll_offset_y, viewport)
+        view_metrics = editor_view_metrics_new(
+          metrics.line_height, metrics.char_width,
+          text_rect.x + 4, text_rect.y + 2,
+          0, scroll_offset_y,
+          text_rect.height / metrics.line_height
+        )
+        visual_rows = collect_visible_visual_rows(
+          draw_text, line_index, wrap_columns,
+          scroll_offset_y / metrics.line_height, visible_row_budget
+        )
+      end
     end
 
     if dirty_close_overlay_is_visible(overlay) then
@@ -882,7 +890,7 @@ fn main() -> i32 = do
           const click_offset = wrap_offset_at_point(
             draw_text, line_index, wrap_columns,
             text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
-            line_height(), char_width(),
+            metrics.line_height, metrics.char_width,
             input.mouse_x, input.mouse_y
           )
           if glfw_gl_mod_shift_down() != 0 then
@@ -1278,11 +1286,11 @@ fn main() -> i32 = do
     draw_text = frame.text
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_ensure_caret_visible(app, metrics)
-    const wrap_columns_now = wrap_max_columns(text_rect.width - 8, char_width())
+    const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const visual_row_count_now = document_visual_row_count(
       draw_text, line_index, wrap_columns_now
     )
-    let mut wrapped_content_height_now = visual_row_count_now * line_height()
+    let mut wrapped_content_height_now = visual_row_count_now * metrics.line_height
     if wrapped_content_height_now < 0 then
       wrapped_content_height_now = 0
     end
@@ -1293,7 +1301,7 @@ fn main() -> i32 = do
     visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
     visual_rows = collect_visible_visual_rows(
       draw_text, line_index, wrap_columns_now,
-      scroll_offset_y / line_height(), visible_row_budget
+      scroll_offset_y / metrics.line_height, visible_row_budget
     )
 
     solid = solid_renderer_begin(solid)
@@ -1402,8 +1410,8 @@ fn main() -> i32 = do
 
     // Current-line band under find/selection (Decision: panel tint ~0.55).
     const current_line_metrics = EditorTextMetrics {
-      line_height: line_height(),
-      char_width: char_width()
+      line_height: metrics.line_height,
+      char_width: metrics.char_width
     }
     const current_line_report = editor_ux_current_line_draw_report(
       app.ux, current_line_metrics
@@ -1431,8 +1439,8 @@ fn main() -> i32 = do
         text_rect.x + 4,
         text_rect.y + 2,
         0,
-        line_height(),
-        char_width()
+        metrics.line_height,
+        metrics.char_width
       )
       let mut find_index = 0
       while find_index < find_report.highlights.length() do
@@ -1475,13 +1483,13 @@ fn main() -> i32 = do
           if highlight_line == end_position.line then
             col_end = end_position.column
           end
-          const highlight_width = (col_end - col_start) * char_width()
+          const highlight_width = (col_end - col_start) * metrics.char_width
           if highlight_width > 0 then
             solid = solid_renderer_rect(
               solid, width, height,
-              text_rect.x + 4 + col_start * char_width(),
-              text_rect.y + 2 + row * line_height(),
-              highlight_width, line_height(),
+              text_rect.x + 4 + col_start * metrics.char_width,
+              text_rect.y + 2 + row * metrics.line_height,
+              highlight_width, metrics.line_height,
               theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
             )
           end
@@ -1499,7 +1507,7 @@ fn main() -> i32 = do
       draw_text, line_index, wrap_columns_now,
       caret_position.line, caret_position.column
     )
-    const caret_row = caret_visual - (scroll_offset_y / line_height())
+    const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
     const blink_on = caret_blink_visible(
       frame_index * 16,
       caret_blink_period_ms()
@@ -1509,9 +1517,9 @@ fn main() -> i32 = do
       const caret_col = caret_position.column - caret_row_info.column_start
       solid = solid_renderer_rect(
         solid, width, height,
-        text_rect.x + 4 + caret_col * char_width(),
-        text_rect.y + 2 + caret_row * line_height(),
-        1, line_height() - 2,
+        text_rect.x + 4 + caret_col * metrics.char_width,
+        text_rect.y + 2 + caret_row * metrics.line_height,
+        1, metrics.line_height - 2,
         theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
       )
     end
@@ -1672,7 +1680,7 @@ fn main() -> i32 = do
     let mut draw_row = 0
     while draw_row < visual_rows.length() do
       const row = visual_rows[draw_row]
-      const baseline = gutter_baseline_y(text_rect.y + 2, line_height(), draw_row, 14)
+      const baseline = gutter_baseline_y(text_rect.y + 2, metrics.line_height, draw_row, 14)
       let mut gutter_label = ""
       if row.is_wrap_continue == 0 then
         gutter_label = gutter_line_label(row.doc_line)
@@ -1688,10 +1696,10 @@ fn main() -> i32 = do
         syntax_spans,
         row.byte_start,
         row.byte_end,
-        font_size(),
+        scaled_font_size,
         text_rect.x + 4,
         baseline,
-        char_width()
+        metrics.char_width
       )
       draw_row = draw_row + 1
     end

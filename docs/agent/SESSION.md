@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:25 (Driver TRACK_EDITOR_FONT_ZOOM STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FONT_ZOOM |
+| started | 2026-07-19 00:15 |
+| elapsed | ~15 min |
+| done    | Real `editor_ux_font_zoom` (±1 clamp 8..48); demo_live mutable metrics + Ctrl+wheel zoom (no scroll); L1 loops zoom until char_width rises; `ux_ok ctrl_wheel_font_zoom` |
+| verify  | `ux_ok ctrl_wheel_font_zoom`; `ux_ok wheel_scroll_keeps_caret_visible`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_FONT_ZOOM |
+
 ### Turn 2026-07-19 00:15 (Driver TRACK_EDITOR_FONT_ZOOM STEP=1)
 
 | field   | value |

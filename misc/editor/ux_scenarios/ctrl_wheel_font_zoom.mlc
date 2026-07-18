@@ -20,7 +20,13 @@ fn main() -> i32 = do
   const viewport_width = 700
   const before_columns = wrap_max_columns(viewport_width, before_metrics.char_width)
 
-  const zoomed = editor_ux_font_zoom(font_size, 3)
+  let mut zoomed = editor_ux_font_zoom(font_size, 1)
+  // Integer chrome ratio: char_width may stay flat for a few size steps.
+  let mut step = 0
+  while step < 8 && zoomed.metrics.char_width <= before_metrics.char_width do
+    zoomed = editor_ux_font_zoom(zoomed.font_size, 1)
+    step = step + 1
+  end
   if zoomed.font_size <= font_size then
     println("ux_fail font_zoom size not increased")
     return 3
