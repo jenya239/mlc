@@ -1,15 +1,42 @@
 # Track: Editor Multi Cursor
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#23**
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#23**
 (`#22` superseded by `#1d`). Single `EditorSelection` only; no Ctrl+click
 extra carets; typing cannot fan out. Review gates: `multi_cursor_model`
 (+ L1 insert). Size **L**.
 
-## Status: **active** (2026-07-19) — STEP=3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L1 + dirty_close regression + demo compile.
+Anti-false-done: `70e371de`…`8c2d73ab` (STEP=0–3). Wire present:
+`multi_selection_add_collapsed` / `edit_insert_text_multi`;
+`editor_ux_add_cursor` / `editor_app_insert_text_with_multi`; demo_live
+Ctrl+click add + multi typing; plain/shift click clears to single.
+**reopen: none**.
+
+Honest residual: draw shows primary caret only (multi-caret GL out of scope);
+Esc still quits app (does not clear multi — Decision Esc path not wired);
+non-insert edits (newline/backspace/nav) collapse multi to primary.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_multi_cursor_model.sh` | `ux_ok multi_cursor_model` EXIT=0 |
+| `run_ux_dirty_close_overlay_click.sh` | `ux_ok dirty_close_overlay_click` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive
+**closed** — Critic OK. Queue → Planner (§46 `#24 EDITOR_TRAILING_WS_VIZ`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `70e371de` | Decision freeze + open |
+| 1 | `53607829` | L1 red harness + stub |
+| 2 | `21c12ffe` | add + collapsed insert fan-out |
+| 3 | `8c2d73ab` | Ctrl+click + typing wire |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -46,8 +73,7 @@ extra carets; typing cannot fan out. Review gates: `multi_cursor_model`
 | 1 | L1 scenario first (`multi_cursor_model`) | **done** (2026-07-19) — stub red: `ux_fail multi_cursor_model count` |
 | 2 | `EditorMultiSelection` + add/clear/primary + insert-multi (collapsed) | **done** (2026-07-19) — L1 green `ux_ok multi_cursor_model` |
 | 3 | ux/demo_live Ctrl+click add + typing path when multi | **done** (2026-07-19) — `editor_ux_add_cursor` + `editor_app_insert_text_with_multi`; demo_live Ctrl+click / typing wire |
-| <!-- sub-steps: 1) editor_ux_add_cursor / insert wire; 2) demo_live Ctrl+click; 3) gates green --> |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
