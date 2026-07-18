@@ -1,0 +1,10 @@
+// TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1 — stub (plain insert until STEP=2).
+import { editor_ux_insert_text } from './edit_apply'
+import { EditorUxState } from './probe'
+
+// Stub: no pair / skip-over — delegates to plain insert.
+export fn editor_ux_insert_text_autoclose(
+  state: EditorUxState,
+  text: string
+) -> EditorUxState =
+  editor_ux_insert_text(state, text)

@@ -1,0 +1,74 @@
+// TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1 — L1: typing_paren_autocloses (red until STEP=2).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  CaretAt,
+  TextEquals,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text_autoclose } from '../ux/bracket_autoclose'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  state = editor_ux_insert_text_autoclose(state, "(")
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("()")).ok == 0 then
+    println("ux_fail paren autoclose text")
+    return 1
+  end
+  if ux_check_expect(snapshot, CaretAt(0, 1)).ok == 0 then
+    println("ux_fail paren autoclose caret between")
+    return 2
+  end
+
+  state = editor_ux_insert_text_autoclose(state, ")")
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("()")).ok == 0 then
+    println("ux_fail paren skip-over text")
+    return 3
+  end
+  if ux_check_expect(snapshot, CaretAt(0, 2)).ok == 0 then
+    println("ux_fail paren skip-over caret")
+    return 4
+  end
+
+  println("ux_ok typing_paren_autocloses")
+  0
+end

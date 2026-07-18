@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 01:50 (Driver TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_BRACKET_AUTOCLOSE |
+| started | 2026-07-19 01:40 |
+| elapsed | ~10 min |
+| done    | Stub `editor_ux_insert_text_autoclose` (plain insert); L1 `typing_paren_autocloses` + `run_ux_typing_paren_autocloses.sh` → red `ux_fail paren autoclose text` |
+| verify  | paren script exit 1 red; `ux_ok enter_keeps_indent`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_BRACKET_AUTOCLOSE |
+
 ### Turn 2026-07-19 01:35 (Planner TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=0)
 
 | field   | value |

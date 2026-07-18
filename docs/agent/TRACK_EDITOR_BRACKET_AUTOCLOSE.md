@@ -6,11 +6,11 @@ paired; typing a closer always inserts a second copy even when the next
 character is already that closer. Review gate: `typing_paren_autocloses` (L1).
 Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`typing_paren_autocloses`) red harness.
+**STEP=2** — autoclose API + demo_live / app insert wire.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -42,7 +42,7 @@ Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L1 scenario first (`typing_paren_autocloses`) | pending |
+| 1 | L1 scenario first (`typing_paren_autocloses`) | **done** (2026-07-19) — stub red: `ux_fail paren autoclose text` |
 | 2 | autoclose API + demo_live / app insert wire | pending |
 | 3 | Critic: gates; archive | pending |
 
