@@ -1,0 +1,48 @@
+// TRACK_EDITOR_FONT_ZOOM STEP=1 — font zoom stub (red until STEP=2).
+import { EditorTextMetrics } from './overflow'
+import { editor_app_font_size } from '../app/chrome'
+
+export type FontZoomResult = {
+  font_size: i32,
+  metrics: EditorTextMetrics
+}
+
+export fn editor_font_size_default() -> i32 =
+  editor_app_font_size()
+
+export fn editor_font_size_clamp(font_size: i32) -> i32 = do
+  let mut size = font_size
+  if size < 8 then
+    size = 8
+  end
+  if size > 48 then
+    size = 48
+  end
+  size
+end
+
+// Chrome ratios: line_height = font_size + 3; char_width = max(1, font_size * 7 / 11).
+export fn editor_font_metrics_from_size(font_size: i32) -> EditorTextMetrics = do
+  const size = editor_font_size_clamp(font_size)
+  let mut char_width = (size * 7) / 11
+  if char_width < 1 then
+    char_width = 1
+  end
+  EditorTextMetrics {
+    line_height: size + 3,
+    char_width: char_width
+  }
+end
+
+// Stub: ignore wheel_ticks until STEP=2.
+export fn editor_ux_font_zoom(
+  font_size: i32,
+  wheel_ticks: i32
+) -> FontZoomResult = do
+  let _unused_ticks = wheel_ticks
+  const size = editor_font_size_clamp(font_size)
+  FontZoomResult {
+    font_size: size,
+    metrics: editor_font_metrics_from_size(size)
+  }
+end

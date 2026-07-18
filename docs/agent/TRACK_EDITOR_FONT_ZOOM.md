@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#16**.
 Wheel always scrolls; Ctrl+wheel does not change font size / wrap metrics.
 Review gate: `ctrl_wheel_font_zoom` (L1). Size **S**.
 
-## Status: **active** (2026-07-18) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-18) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`ctrl_wheel_font_zoom`) red harness.
+**STEP=2** — font-zoom API + demo_live Ctrl+wheel wire.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -41,7 +41,7 @@ Review gate: `ctrl_wheel_font_zoom` (L1). Size **S**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L1 scenario first (`ctrl_wheel_font_zoom`) | pending |
+| 1 | L1 scenario first (`ctrl_wheel_font_zoom`) | **done** (2026-07-18) — stub red: `ux_fail font_zoom size not increased` |
 | 2 | font-zoom API + demo_live Ctrl+wheel wire | pending |
 | 3 | Critic: gates; archive | pending |
 

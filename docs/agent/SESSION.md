@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:15 (Driver TRACK_EDITOR_FONT_ZOOM STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FONT_ZOOM |
+| started | 2026-07-19 00:10 |
+| elapsed | ~10 min |
+| done    | Stub `editor_ux_font_zoom` + metrics helpers; L1 `ctrl_wheel_font_zoom` + `run_ux_ctrl_wheel_font_zoom.sh` → red `ux_fail font_zoom size not increased` |
+| verify  | font_zoom script exit 1 red; `ux_ok wheel_scroll_keeps_caret_visible`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FONT_ZOOM |
+
 ### Turn 2026-07-19 00:10 (Planner TRACK_EDITOR_FONT_ZOOM STEP=0)
 
 | field   | value |
