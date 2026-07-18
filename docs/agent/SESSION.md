@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:35 (Planner TRACK_EDITOR_FIND STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_FIND |
+| started | 2026-07-18 12:30 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_FIND.md`; Decision: literal case-sensitive match; query seed from selection; FindSession+next/prev+visible highlights; CmdFind/Next/Prev; no find-panel chrome; L1 `find_highlights_matches`; PLAN/UX_BACKLOG #7 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FIND |
+
 ### Turn 2026-07-18 12:30 (Critic TRACK_EDITOR_UNDO_COALESCE critique-audit)
 
 | field   | value |
