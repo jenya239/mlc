@@ -256,7 +256,9 @@ import {
   editor_app_wheel_scroll,
   editor_app_ensure_caret_visible,
   editor_app_goto_line_from_selection,
+  editor_app_drag_text_autoscroll,
   editor_app_clamp_scroll_to_content,
+  editor_app_set_scroll_y,
   editor_app_insert_text,
   editor_app_insert_newline,
   editor_app_backspace,
@@ -1108,15 +1110,13 @@ fn main() -> i32 = do
         panels = shell_panels_drag_to(panels, input.mouse_x)
       end
       if input.mouse_down != 0 && selecting_text != 0 && panels.dragging == 0 then
-        const drag_offset = wrap_offset_at_point(
-          draw_text, line_index, wrap_columns,
-          text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
-          line_height(), char_width(),
-          input.mouse_x, input.mouse_y
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_set_scroll_y(app, scroll_offset_y)
+        app = editor_app_drag_text_autoscroll(
+          app, metrics, input.mouse_x, input.mouse_y
         )
-        selection = selection_clamp(
-          selection_set_focus(selection, drag_offset), line_index.text_length
-        )
+        selection = app.ux.selection
+        scroll_offset_y = app.ux.scroll_offset_y
       end
       if input.mouse_down == 0 && mouse_was_down != 0 then
         panels = shell_panels_end_drag(panels)

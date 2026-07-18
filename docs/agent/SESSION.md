@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 14:00 (Driver TRACK_EDITOR_DRAG_AUTOSCROLL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DRAG_AUTOSCROLL |
+| started | 2026-07-18 13:50 |
+| elapsed | ~10 min |
+| done    | `editor_ux_drag_text_autoscroll` past-edge 1 line/frame + clamp hit; demo_live drag wire; `ux_ok drag_past_edge_autoscrolls`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_drag_past_edge_autoscrolls.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_DRAG_AUTOSCROLL |
+
 ### Turn 2026-07-18 13:50 (Driver TRACK_EDITOR_DRAG_AUTOSCROLL STEP=1)
 
 | field   | value |

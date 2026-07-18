@@ -1,13 +1,72 @@
-// TRACK_EDITOR_DRAG_AUTOSCROLL STEP=1 — stub (red until STEP=2).
+// TRACK_EDITOR_DRAG_AUTOSCROLL STEP=2 — past-edge drag scroll + selection.
+import { Rect, rect_new } from '../../gui/layout'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 import { editor_ux_drag_text } from './selection_apply'
+import { editor_ux_clamp_scroll_y } from './scroll'
 
-// Stub: plain drag only — no past-edge scroll until STEP=2.
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn state_with_scroll_y(
+  state: EditorUxState,
+  scroll_offset_y: i32
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
 export fn editor_ux_drag_text_autoscroll(
   state: EditorUxState,
   metrics: EditorTextMetrics,
   pixel_x: i32,
   pixel_y: i32
-) -> EditorUxState =
-  editor_ux_drag_text(state, metrics, pixel_x, pixel_y)
+) -> EditorUxState = do
+  const viewport = text_viewport_rect(state)
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut next_state = state
+  let mut hit_y = pixel_y
+  if pixel_y < viewport.y then
+    const scroll_y = editor_ux_clamp_scroll_y(
+      state, metrics, state.scroll_offset_y - line_height
+    )
+    next_state = state_with_scroll_y(state, scroll_y)
+    hit_y = viewport.y
+  else if pixel_y >= viewport.y + viewport.height then
+    const scroll_y = editor_ux_clamp_scroll_y(
+      state, metrics, state.scroll_offset_y + line_height
+    )
+    next_state = state_with_scroll_y(state, scroll_y)
+    hit_y = viewport.y + viewport.height - 1
+  end
+  editor_ux_drag_text(next_state, metrics, pixel_x, hit_y)
+end

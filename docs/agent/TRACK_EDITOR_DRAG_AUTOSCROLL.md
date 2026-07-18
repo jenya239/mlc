@@ -5,12 +5,16 @@ Text-selection drag past the viewport top/bottom does not scroll — cannot
 extend selection beyond visible lines. Review gate: `drag_past_edge_autoscrolls`
 (L1.5). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; Critic next
 
 ## Next step
 
-**STEP=2** — implement `editor_ux_drag_text_autoscroll` + demo_live wire;
-gates green.
+**STEP=3** — Critic: re-run gates; archive.
+
+### STEP=2 done (2026-07-18)
+
+- `editor_ux_drag_text_autoscroll` (past-edge 1 line/frame + clamp hit);
+  demo_live wire; `ux_ok drag_past_edge_autoscrolls`; `demo_live_fs_compile_ok`.
 
 ### STEP=1 done (2026-07-18)
 
@@ -51,7 +55,7 @@ gates green.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1.5 scenario first (`drag_past_edge_autoscrolls`) | **done** (red: `ux_fail drag autoscroll scroll_offset_y`) |
-| 2 | autoscroll helper + demo_live wire | scenario + compile |
+| 2 | autoscroll helper + demo_live wire | **done** (`ux_ok`; `demo_live_fs_compile_ok`) |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
