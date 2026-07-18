@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 06:30 (Driver TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_L1 |
+| started | 2026-07-19 06:20 |
+| elapsed | ~10 min |
+| done    | Real `dirty_close_overlay_click` + discard/cancel rect helpers; demo_live overlay mouse uses helper |
+| verify  | `ux_ok dirty_close_overlay_click`; `ux_ok session_restore_caret`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_DIRTY_CLOSE_L1 |
+
 ### Turn 2026-07-19 06:15 (Driver TRACK_EDITOR_DIRTY_CLOSE_L1 STEP=1)
 
 | field   | value |

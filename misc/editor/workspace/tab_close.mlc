@@ -5,6 +5,12 @@ import {
   tab_set_has_active,
   tab_is_dirty
 } from './tabs'
+import {
+  Rect,
+  rect_new,
+  point_new,
+  point_in_rect
+} from '../../gui/layout'
 
 export type DirtyCloseOverlay = {
   visible: i32,
@@ -32,6 +38,18 @@ export fn dirty_close_overlay_is_visible(overlay: DirtyCloseOverlay) -> bool =
 
 export fn close_outcome_needs_confirm(outcome: CloseOutcome) -> bool =
   outcome.needs_confirm != 0
+
+export fn dirty_close_overlay_discard_rect(
+  window_width: i32,
+  window_height: i32
+) -> Rect =
+  rect_new(window_width / 2 - 120, window_height / 2 + 20, 100, 28)
+
+export fn dirty_close_overlay_cancel_rect(
+  window_width: i32,
+  window_height: i32
+) -> Rect =
+  rect_new(window_width / 2 + 20, window_height / 2 + 20, 100, 28)
 
 // Ctrl+W / middle-click: close clean tabs immediately; dirty → overlay.
 export fn tab_set_request_close(
@@ -111,7 +129,6 @@ export fn dirty_close_cancel(
   }
 end
 
-// STEP=1 stub: always miss (ignore hit geometry). Real hit-test in STEP=2.
 export fn dirty_close_overlay_click(
   tabs: TabSet,
   overlay: DirtyCloseOverlay,
@@ -119,7 +136,27 @@ export fn dirty_close_overlay_click(
   mouse_y: i32,
   window_width: i32,
   window_height: i32
-) -> CloseOutcome =
+) -> CloseOutcome = do
+  if overlay.visible == 0 then
+    return CloseOutcome {
+      needs_confirm: 0,
+      tabs: tabs,
+      overlay: overlay
+    }
+  end
+  const point = point_new(mouse_x, mouse_y)
+  if point_in_rect(
+    point,
+    dirty_close_overlay_discard_rect(window_width, window_height)
+  ) != 0 then
+    return dirty_close_discard(tabs, overlay)
+  end
+  if point_in_rect(
+    point,
+    dirty_close_overlay_cancel_rect(window_width, window_height)
+  ) != 0 then
+    return dirty_close_cancel(tabs, overlay)
+  end
   CloseOutcome {
     needs_confirm: 0,
     tabs: tabs,

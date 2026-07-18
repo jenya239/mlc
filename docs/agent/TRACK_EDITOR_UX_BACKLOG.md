@@ -56,7 +56,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 18 | `EDITOR_BRACKET_AUTOCLOSE` | Auto-close `()[]{}""`, skip-over closing char | `typing_paren_autocloses` | M | **done** — [archive/tracks/TRACK_EDITOR_BRACKET_AUTOCLOSE](../archive/tracks/TRACK_EDITOR_BRACKET_AUTOCLOSE.md) |
 | 19 | `EDITOR_COMMENT_TOGGLE` | Ctrl+/ line-comment toggle (by language from status bar) | `toggle_line_comment` | S | **done** — [archive/tracks/TRACK_EDITOR_COMMENT_TOGGLE](../archive/tracks/TRACK_EDITOR_COMMENT_TOGGLE.md) |
 | 20 | `EDITOR_SESSION_CARET_RESTORE` | Session stores caret+scroll per tab, restores on reopen | `session_restore_caret` (L0+L1) | S | **done** — [archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE](../archive/tracks/TRACK_EDITOR_SESSION_CARET_RESTORE.md) |
-| 21 | `EDITOR_DIRTY_CLOSE_L1` | L1 scenario for dirty-close overlay discard/cancel click (currently L0-only) | `dirty_close_overlay_click` | S | **active** — [TRACK_EDITOR_DIRTY_CLOSE_L1](TRACK_EDITOR_DIRTY_CLOSE_L1.md) |
+| 21 | `EDITOR_DIRTY_CLOSE_L1` | L1 scenario for dirty-close overlay discard/cancel click (currently L0-only) | `dirty_close_overlay_click` | S | **active** STEP=2 done → Critic — [TRACK_EDITOR_DIRTY_CLOSE_L1](TRACK_EDITOR_DIRTY_CLOSE_L1.md) |
 | 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | **superseded by `#1d` above (2026-07-17 pull-forward)** — do not do twice | — | — | superseded |
 | 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | pending |
 | 24 | `EDITOR_TRAILING_WS_VIZ` | Visualize trailing whitespace | `trailing_ws_visualized` (L2) | S | pending |

@@ -29,7 +29,7 @@ status=$?
 set -e
 printf '%s\n' "$output"
 if [ "$status" -ne 0 ]; then
-  echo "[ux dirty_close_overlay_click] FAIL binary exit=$status (expected red until STEP=2)" >&2
+  echo "[ux dirty_close_overlay_click] FAIL binary exit=$status" >&2
   exit 1
 fi
 if ! printf '%s\n' "$output" | grep -q 'ux_ok dirty_close_overlay_click'; then

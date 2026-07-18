@@ -108,8 +108,7 @@ import {
 import {
   dirty_close_overlay_is_visible,
   tab_set_request_close,
-  dirty_close_discard,
-  dirty_close_cancel
+  dirty_close_overlay_click
 } from './workspace/tab_close'
 import {
   tab_set_activate_next,
@@ -823,26 +822,28 @@ fn main() -> i32 = do
 
     if dirty_close_overlay_is_visible(overlay) then
       if input.mouse_down != 0 && mouse_was_down == 0 then
-        const discard_rect = rect_new(width / 2 - 120, height / 2 + 20, 100, 28)
-        const cancel_rect = rect_new(width / 2 + 20, height / 2 + 20, 100, 28)
-        if point_in_rect(point_new(input.mouse_x, input.mouse_y), discard_rect) != 0 then
-          const outcome = dirty_close_discard(tabs, overlay)
-          tabs = outcome.tabs
-          overlay = outcome.overlay
-          if tab_set_has_active(tabs) then
-            active = tab_set_active(tabs)
-            document = active.buffer.document
-            frame = document_frame_snapshot(document)
-            line_index = frame.line_index
-            draw_text = frame.text
-            selection = selection_collapsed(0)
-            history = history_new()
+        const before_visible = dirty_close_overlay_is_visible(overlay)
+        const before_count = tab_set_count(tabs)
+        const outcome = dirty_close_overlay_click(
+          tabs, overlay, input.mouse_x, input.mouse_y, width, height
+        )
+        tabs = outcome.tabs
+        overlay = outcome.overlay
+        if before_visible && !dirty_close_overlay_is_visible(overlay) then
+          if tab_set_count(tabs) < before_count then
+            if tab_set_has_active(tabs) then
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
+              selection = selection_collapsed(0)
+              history = history_new()
+            end
+            last_command = "close_discard"
+          else
+            last_command = "close_cancel"
           end
-          last_command = "close_discard"
-        else if point_in_rect(point_new(input.mouse_x, input.mouse_y), cancel_rect) != 0 then
-          const outcome = dirty_close_cancel(tabs, overlay)
-          overlay = outcome.overlay
-          last_command = "close_cancel"
         end
       end
       mouse_was_down = input.mouse_down

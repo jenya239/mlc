@@ -5,11 +5,11 @@ Dirty-close discard/cancel is covered by L0 `tab_close_unit` (API only);
 button hit-test + click→outcome lives inline in `demo_live` only. Review
 gate: `dirty_close_overlay_click` (L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=2 done; next Critic
 
 ## Next step
 
-**STEP=2** — click helper + demo_live wire.
+**STEP=3** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -40,8 +40,7 @@ gate: `dirty_close_overlay_click` (L1). Size **S**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`dirty_close_overlay_click`) | **done** (2026-07-19) — stub red: `ux_fail dirty_close_overlay_click discard_visible` |
-| 2 | click helper + demo_live wire | pending |
-| <!-- sub-steps: 1) implement hit+apply in tab_close; 2) demo_live uses helper; 3) L1 green --> |
+| 2 | click helper + demo_live wire | **done** (2026-07-19) — L1 green `ux_ok dirty_close_overlay_click` |
 | 3 | Critic: gates; archive | pending |
 
 ## Out of scope
