@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:30 (Critic TRACK_EDITOR_UNDO_COALESCE critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_UNDO_COALESCE |
+| started | 2026-07-18 12:25 |
+| elapsed | ~5 min |
+| done    | Re-ran gates; anti-false-done `27a18f9f`…`b0d5dabf`; wire: `history_push_before_edit_kind` + app insert/backspace/newline; archive → `docs/archive/tracks/TRACK_EDITOR_UNDO_COALESCE.md`; PLAN/UX_BACKLOG #6 → done |
+| verify  | `ux_ok typing_coalesces_into_one_undo`; `demo_live_fs_compile_ok`; reopen: none; residual: scenario on history API not full app path; optional idle/newline asserts absent |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 12:25 (Driver TRACK_EDITOR_UNDO_COALESCE STEP=2)
 
 | field   | value |

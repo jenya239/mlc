@@ -1,30 +1,38 @@
 # Track: Editor undo coalesce (typing groups)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
 `history_push_before_edit` runs on every `editor_app_insert_text` / demo
 `text_buffer` path → each keystroke is its own undo entry. Review:
 `typing_coalesces_into_one_undo` (L1.5).
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1.5 + compile. Anti-false-done:
+`27a18f9f`…`b0d5dabf` (STEP=0–2). Wire present: `history_push_before_edit_kind`
+same-kind + 1000ms idle; `editor_app_insert_text`/`backspace`/`newline` via
+`frame_index*16`; word-delete clears coalesce. **reopen: none**.
+
+Honest residual: scenario exercises history API directly (not full
+`editor_app_insert_text`); optional idle/newline break asserts not in L1.5;
+demo cut/paste keep bare `history_push_before_edit` (Decision break path).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_typing_coalesces_into_one_undo.sh` | `ux_ok typing_coalesces_into_one_undo` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #7).
+**closed** — Critic OK. Queue → Planner (§46 `#7 EDITOR_FIND`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `history_push_before_edit_kind`: same-kind + 1000ms idle coalesce
-- `editor_app_insert_text` / `backspace` / `newline` wired; word-delete clears
-- Gates: `ux_ok typing_coalesces_into_one_undo` + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `history_push_before_edit_kind` (always push); L1.5 red harness
-  `typing_coalesces_into_one_undo` (+ run script)
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #6 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `27a18f9f` | Decision freeze + open |
+| 1 | `3f11d0f4` | L1.5 red harness |
+| 2 | `b0d5dabf` | coalesce + app wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -55,15 +63,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1.5 scenario first (`typing_coalesces_into_one_undo`) | **done** (red harness) |
 | 2 | Coalesce in history + app/demo wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #7).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
