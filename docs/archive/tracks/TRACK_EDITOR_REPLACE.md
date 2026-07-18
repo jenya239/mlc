@@ -1,14 +1,41 @@
 # Track: Editor Replace (one + all on Find)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#14**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#14**.
 Find (#7) has query/next/prev/highlights; no replace-one / replace-all.
 Review gate: `replace_one_and_all` (L1). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=0–2 done; next Critic
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1 + find + demo + command_bus.
+Anti-false-done: `0c942e9e`…`3fff0c69` (STEP=0–2). Wire present:
+`FindSession.replacement`; `find_replace_one` / `find_replace_all` (splice;
+replace-all last→first); `CmdReplaceOne`/`CmdReplaceAll` (Ctrl+H /
+Ctrl+Shift+H); clipboard seed replacement; demo_live history push per
+command. **reopen: none**.
+
+Honest residual: live apply rebuilds via `document_from_string` (not
+piece-table edit path); no L1 undo scenario for replace history; empty
+`replacement` allowed (delete-match); no replace-panel chrome (out of scope).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_replace_one_and_all.sh` | `ux_ok replace_one_and_all` EXIT=0 |
+| `run_ux_find_highlights_matches.sh` | `ux_ok find_highlights_matches` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| `run_editor_command_bus_unit.sh` | `[mlc-editor] command_bus_unit ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#15 EDITOR_TAB_REORDER`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `0c942e9e` | Decision freeze + open |
+| 1 | `35eb4862` | L1 red harness + stubs |
+| 2 | `3fff0c69` | replace API + commands + demo_live |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -42,7 +69,7 @@ Review gate: `replace_one_and_all` (L1). Size **M**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`replace_one_and_all`) | **done** (2026-07-18) — stubs red: `ux_fail replace_one text` |
 | 2 | replace-one/all API + commands + demo_live wire | **done** (2026-07-18) — `ux_ok replace_one_and_all` |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

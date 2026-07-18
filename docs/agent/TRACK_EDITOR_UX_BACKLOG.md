@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13 done; `#14 EDITOR_REPLACE` active
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14 done; next `#15`
 
 ## How to use this backlog
 
@@ -49,7 +49,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 11 | `EDITOR_CURRENT_LINE_HL` | Highlight current line in draw report | `current_line_highlight_draws` (L2) | S | **done** — [archive/tracks/TRACK_EDITOR_CURRENT_LINE_HL](../archive/tracks/TRACK_EDITOR_CURRENT_LINE_HL.md) |
 | 12 | `EDITOR_CRLF_PRESERVE` | Detect CRLF/LF on open, preserve style on save | `crlf_preserved_on_save` (L0) | M | **done** — [archive/tracks/TRACK_EDITOR_CRLF_PRESERVE](../archive/tracks/TRACK_EDITOR_CRLF_PRESERVE.md) |
 | 13 | `EDITOR_ENCODING_GUARD` | BOM detect + UTF-8 validity + refuse binary files | `binary_file_refused`, `utf8_bom_detected` | M | **done** — [archive/tracks/TRACK_EDITOR_ENCODING_GUARD](../archive/tracks/TRACK_EDITOR_ENCODING_GUARD.md) |
-| 14 | `EDITOR_REPLACE` | Replace-one / replace-all on top of Find | `replace_one_and_all` | M | **active** — [TRACK_EDITOR_REPLACE](TRACK_EDITOR_REPLACE.md) |
+| 14 | `EDITOR_REPLACE` | Replace-one / replace-all on top of Find | `replace_one_and_all` | M | **done** — [archive/tracks/TRACK_EDITOR_REPLACE](../archive/tracks/TRACK_EDITOR_REPLACE.md) |
 | 15 | `EDITOR_TAB_REORDER` | Drag-to-reorder tabs in strip | `drag_reorder_tabs` | M | pending |
 | 16 | `EDITOR_FONT_ZOOM` | Ctrl+wheel changes font size (+state), reflows wrap | `ctrl_wheel_font_zoom` | S | pending |
 | 17 | `EDITOR_HORIZONTAL_SCROLL` | Shift+wheel scrolls `scroll_offset_x`, hit-test accounts for it | `shift_wheel_scrolls_horizontal` | S | pending |
