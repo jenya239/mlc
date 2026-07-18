@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:30 (Driver TRACK_EDITOR_ENCODING_GUARD STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_ENCODING_GUARD |
+| started | 2026-07-18 16:25 |
+| elapsed | ~10 min |
+| done    | Stub `OpenBuffer.had_bom`; L0 red `binary_file_refused` + `utf8_bom_detected` (+ run scripts) → `encoding_fail binary not refused` / `bom not stripped`; `save_unit ok`; `crlf_preserved_on_save ok`; `demo_live_fs_compile_ok` |
+| verify  | binary/bom scripts exit 1 red; save+crlf+demo EXIT=0 |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_ENCODING_GUARD |
+
 ### Turn 2026-07-18 16:20 (Planner TRACK_EDITOR_ENCODING_GUARD STEP=0)
 
 | field   | value |

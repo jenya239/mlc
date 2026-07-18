@@ -1,3 +1,4 @@
+// TRACK_EDITOR_ENCODING_GUARD STEP=1 — OpenBuffer.had_bom stub (logic in STEP=2).
 // TRACK_EDITOR_CRLF_PRESERVE STEP=2 — detect/normalize line endings + preserve on save.
 import {
   TextDocument,
@@ -23,7 +24,8 @@ export type OpenBuffer = {
   document: TextDocument,
   dirty: i32,
   last_error: string,
-  line_ending: i32
+  line_ending: i32,
+  had_bom: i32
 }
 
 export fn detect_line_ending(text: string) -> i32 = do
@@ -52,7 +54,8 @@ export fn open_buffer_new(path: string, document: TextDocument) -> OpenBuffer =
     document: document,
     dirty: 0,
     last_error: "",
-    line_ending: line_ending_lf()
+    line_ending: line_ending_lf(),
+    had_bom: 0
   }
 
 export fn open_buffer_from_text(path: string, text: string) -> OpenBuffer =
@@ -65,7 +68,8 @@ export fn open_buffer_from_path(path: string) -> OpenBuffer = do
       document: document_from_string(""),
       dirty: 0,
       last_error: "File not found: " + path,
-      line_ending: line_ending_lf()
+      line_ending: line_ending_lf(),
+      had_bom: 0
     }
   end
   const raw = file_read_to_string(path)
@@ -76,7 +80,8 @@ export fn open_buffer_from_path(path: string) -> OpenBuffer = do
     document: document_from_string(normalized),
     dirty: 0,
     last_error: "",
-    line_ending: ending
+    line_ending: ending,
+    had_bom: 0
   }
 end
 
@@ -89,7 +94,8 @@ export fn open_buffer_set_document(
     document: document,
     dirty: 1,
     last_error: "",
-    line_ending: buffer.line_ending
+    line_ending: buffer.line_ending,
+    had_bom: buffer.had_bom
   }
 end
 
@@ -99,7 +105,8 @@ export fn open_buffer_mark_dirty(buffer: OpenBuffer) -> OpenBuffer =
     document: buffer.document,
     dirty: 1,
     last_error: buffer.last_error,
-    line_ending: buffer.line_ending
+    line_ending: buffer.line_ending,
+    had_bom: buffer.had_bom
   }
 end
 
@@ -122,7 +129,8 @@ export fn open_buffer_save(buffer: OpenBuffer) -> OpenBuffer = do
       document: buffer.document,
       dirty: buffer.dirty,
       last_error: "Failed to write: " + buffer.path,
-      line_ending: buffer.line_ending
+      line_ending: buffer.line_ending,
+      had_bom: buffer.had_bom
     }
   end
   OpenBuffer {
@@ -130,7 +138,8 @@ export fn open_buffer_save(buffer: OpenBuffer) -> OpenBuffer = do
     document: buffer.document,
     dirty: 0,
     last_error: "",
-    line_ending: buffer.line_ending
+    line_ending: buffer.line_ending,
+    had_bom: buffer.had_bom
   }
 end
 

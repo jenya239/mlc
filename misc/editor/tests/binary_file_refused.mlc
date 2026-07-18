@@ -1,0 +1,39 @@
+// TRACK_EDITOR_ENCODING_GUARD STEP=1 — L0: binary NUL refused (red until STEP=2).
+import { document_to_string } from '../document/piece_table'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_has_error,
+  open_buffer_save
+} from '../document/save'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+
+fn main() -> i32 = do
+  const path = ".tmp/editor_fixture/binary_nul.bin"
+  const payload = "a" + string_from_byte_u8(0) + "b"
+  let mut seed = open_buffer_from_text(path, payload)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("encoding_fail binary seed write")
+    return 1
+  end
+
+  const buffer = open_buffer_from_path(path)
+  if !open_buffer_has_error(buffer) then
+    println("encoding_fail binary not refused")
+    return 2
+  end
+  if document_to_string(buffer.document) != "" then
+    println("encoding_fail binary document not empty")
+    return 3
+  end
+  if !buffer.last_error.contains("Binary") then
+    println("encoding_fail binary error text")
+    return 4
+  end
+
+  println("[mlc-editor] binary_file_refused ok")
+  0
+end

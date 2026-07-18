@@ -1,0 +1,61 @@
+// TRACK_EDITOR_ENCODING_GUARD STEP=1 — L0: UTF-8 BOM detect/strip (red until STEP=2).
+import { document_to_string } from '../document/piece_table'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_set_document,
+  open_buffer_has_error,
+  open_buffer_save
+} from '../document/save'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn utf8_bom() -> string =
+  string_from_byte_u8(239) + string_from_byte_u8(187) + string_from_byte_u8(191)
+
+fn main() -> i32 = do
+  const path = ".tmp/editor_fixture/bom_sample.txt"
+  const bom = utf8_bom()
+  let mut seed = open_buffer_from_text(path, bom + "hello\n")
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("encoding_fail bom seed write")
+    return 1
+  end
+
+  let mut buffer = open_buffer_from_path(path)
+  if open_buffer_has_error(buffer) then
+    println("encoding_fail bom open error")
+    return 2
+  end
+  if document_to_string(buffer.document) != "hello\n" then
+    println("encoding_fail bom not stripped")
+    return 3
+  end
+  if buffer.had_bom != 1 then
+    println("encoding_fail bom flag")
+    return 4
+  end
+
+  buffer = open_buffer_set_document(buffer, buffer.document)
+  buffer = open_buffer_save(buffer)
+  if open_buffer_has_error(buffer) then
+    println("encoding_fail bom save")
+    return 5
+  end
+  const on_disk = file_read_to_string(path)
+  if !on_disk.starts_with(bom) then
+    println("encoding_fail bom not re-prefixed")
+    return 6
+  end
+  if on_disk != bom + "hello\n" then
+    println("encoding_fail bom disk mismatch")
+    return 7
+  end
+
+  println("[mlc-editor] utf8_bom_detected ok")
+  0
+end

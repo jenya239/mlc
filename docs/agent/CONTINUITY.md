@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver STEP=1** `TRACK_EDITOR_ENCODING_GUARD` (§46 `#13`).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver STEP=2** `TRACK_EDITOR_ENCODING_GUARD` (§46 `#13`).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -80,7 +80,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12 done. `#13 EDITOR_ENCODING_GUARD` active. Product ceiling: **Sublime Text** |
-| **`TRACK_EDITOR_ENCODING_GUARD` (§46 #13)** | **active** 2026-07-18. Decision frozen. Next STEP=1 L0 red harness. Do not skip Decision |
+| **`TRACK_EDITOR_ENCODING_GUARD` (§46 #13)** | **active** 2026-07-18. STEP=1 red harness done. Next STEP=2 BOM/NUL/UTF-8 guard |
 | **`TRACK_EDITOR_CRLF_PRESERVE` (§46 #12)** | **closed** 2026-07-18 (Critic OK). Archived. CRLF/LF detect + preserve on save. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CURRENT_LINE_HL` (§46 #11)** | **closed** 2026-07-18 (Critic OK). Archived. Current-line draw report + panel tint. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** | **closed** 2026-07-18 (Critic OK). Archived. Mutation clusters → `ux/*`/`app/*`; draw residual honest. Do not reopen numbered STEPs |
