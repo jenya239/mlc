@@ -1,0 +1,65 @@
+// TRACK_EDITOR_MULTI_CURSOR STEP=1 — multi-selection model (stub until STEP=2).
+import {
+  EditorSelection,
+  selection_collapsed
+} from './selection'
+import {
+  TextDocument
+} from './piece_table'
+import { edit_insert_text } from './edit'
+
+export type EditorMultiSelection = {
+  selections: [EditorSelection],
+  primary_index: i32
+}
+
+export type MultiEditResult = {
+  document: TextDocument,
+  multi: EditorMultiSelection
+}
+
+export fn multi_selection_from_single(
+  selection: EditorSelection
+) -> EditorMultiSelection = do
+  let mut selections: [EditorSelection] = []
+  selections.push(selection)
+  EditorMultiSelection {
+    selections: selections,
+    primary_index: 0
+  }
+end
+
+export fn multi_selection_primary(
+  multi: EditorMultiSelection
+) -> EditorSelection =
+  multi.selections[multi.primary_index]
+
+export fn multi_selection_count(multi: EditorMultiSelection) -> i32 =
+  multi.selections.length()
+
+// STEP=1 stub: ignore add (always return unchanged). Real add in STEP=2.
+export fn multi_selection_add_collapsed(
+  multi: EditorMultiSelection,
+  byte_offset: i32
+) -> EditorMultiSelection =
+  multi
+
+export fn multi_selection_clear_to(
+  multi: EditorMultiSelection,
+  byte_offset: i32
+) -> EditorMultiSelection =
+  multi_selection_from_single(selection_collapsed(byte_offset))
+
+// STEP=1 stub: insert at primary only (no fan-out).
+export fn edit_insert_text_multi(
+  document: TextDocument,
+  multi: EditorMultiSelection,
+  text: string
+) -> MultiEditResult = do
+  const primary = multi_selection_primary(multi)
+  const edited = edit_insert_text(document, primary, text)
+  MultiEditResult {
+    document: edited.document,
+    multi: multi_selection_from_single(edited.selection)
+  }
+end

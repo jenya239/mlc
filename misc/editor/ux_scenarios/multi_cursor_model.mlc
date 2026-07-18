@@ -1,0 +1,44 @@
+// TRACK_EDITOR_MULTI_CURSOR STEP=1 — L1: multi_cursor_model (red until STEP=2).
+import { document_from_string, document_to_string } from '../document/piece_table'
+import { selection_collapsed, selection_caret } from '../document/selection'
+import {
+  multi_selection_from_single,
+  multi_selection_add_collapsed,
+  multi_selection_count,
+  multi_selection_primary,
+  edit_insert_text_multi
+} from '../document/multi_selection'
+
+fn main() -> i32 = do
+  let mut document = document_from_string("hello")
+  let mut multi = multi_selection_from_single(selection_collapsed(0))
+  multi = multi_selection_add_collapsed(multi, 5)
+  if multi_selection_count(multi) != 2 then
+    println("ux_fail multi_cursor_model count")
+    return 1
+  end
+  if selection_caret(multi_selection_primary(multi)) != 0 then
+    println("ux_fail multi_cursor_model primary")
+    return 2
+  end
+  if selection_caret(multi.selections[1]) != 5 then
+    println("ux_fail multi_cursor_model second")
+    return 3
+  end
+
+  const edited = edit_insert_text_multi(document, multi, "x")
+  document = edited.document
+  multi = edited.multi
+  const text = document_to_string(document)
+  if text != "xhellox" then
+    println("ux_fail multi_cursor_model insert text=" + text)
+    return 4
+  end
+  if multi_selection_count(multi) != 2 then
+    println("ux_fail multi_cursor_model insert count")
+    return 5
+  end
+
+  println("ux_ok multi_cursor_model")
+  0
+end
