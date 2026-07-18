@@ -110,6 +110,7 @@ struct BindingKeyEdges {
   int32_t key_end = 0;
   int32_t key_page_up = 0;
   int32_t key_page_down = 0;
+  int32_t key_delete = 0;
 };
 
 BindingKeyEdges& binding_key_edges() {
@@ -639,6 +640,9 @@ String glfw_gl_take_binding_key() {
   }
   if (edge_key_down(GLFW_KEY_PAGE_DOWN, edges.key_page_down) != 0) {
     return String("page_down");
+  }
+  if (edge_key_down(GLFW_KEY_DELETE, edges.key_delete) != 0) {
+    return String("delete");
   }
   return String();
 }

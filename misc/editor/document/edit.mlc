@@ -2,7 +2,8 @@
 import {
   TextDocument,
   document_insert,
-  document_byte_length
+  document_byte_length,
+  document_to_string
 } from './piece_table'
 import { document_delete } from './document_delete'
 import {
@@ -13,6 +14,10 @@ import {
   selection_end,
   selection_clamp
 } from './selection'
+import {
+  word_boundary_next,
+  word_boundary_prev
+} from './word_boundary'
 
 export type EditResult = {
   document: TextDocument,
@@ -100,6 +105,52 @@ export fn edit_delete_forward(
     }
   end
   const next_document = document_delete(document, caret, caret + 1)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(caret)
+  }
+end
+
+// Ctrl+Backspace: delete selection, else delete back to previous word start.
+export fn edit_delete_word_backward(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult = do
+  if !selection_is_empty(selection) then
+    return delete_selection(document, selection)
+  end
+  const caret = selection_start(selection)
+  if caret <= 0 then
+    return EditResult { document: document, selection: selection_collapsed(0) }
+  end
+  const text = document_to_string(document)
+  const range_start = word_boundary_prev(text, caret)
+  const next_document = document_delete(document, range_start, caret)
+  EditResult {
+    document: next_document,
+    selection: selection_collapsed(range_start)
+  }
+end
+
+// Ctrl+Delete: delete selection, else delete forward to next word end.
+export fn edit_delete_word_forward(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditResult = do
+  if !selection_is_empty(selection) then
+    return delete_selection(document, selection)
+  end
+  const caret = selection_start(selection)
+  const length = document_byte_length(document)
+  if caret >= length then
+    return EditResult {
+      document: document,
+      selection: selection_collapsed(length)
+    }
+  end
+  const text = document_to_string(document)
+  const range_end = word_boundary_next(text, caret)
+  const next_document = document_delete(document, caret, range_end)
   EditResult {
     document: next_document,
     selection: selection_collapsed(caret)

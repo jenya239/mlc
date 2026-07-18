@@ -216,6 +216,7 @@ import {
   editor_ux_apply_nav_key,
   editor_ux_is_nav_key
 } from './ux/nav_key'
+import { editor_ux_apply_word_nav_key } from './ux/word_nav'
 import {
   caret_blink_period_ms,
   caret_blink_visible
@@ -242,6 +243,8 @@ import {
   editor_app_insert_text,
   editor_app_insert_newline,
   editor_app_backspace,
+  editor_app_delete_word_backward,
+  editor_app_delete_word_forward,
   editor_app_click_tab_strip,
   editor_app_bump_frame
 } from './app/state'
@@ -893,14 +896,40 @@ fn main() -> i32 = do
         binding_key = glfw_gl_take_binding_key()
       end
       if editor_focused != 0 && editor_ux_is_nav_key(binding_key) then
-        selection = editor_ux_apply_nav_key(
-          line_index,
-          selection,
-          view_metrics,
-          binding_key,
-          glfw_gl_mod_shift_down()
-        )
-        last_command = "nav_" + binding_key
+        if glfw_gl_mod_ctrl_down() != 0 &&
+            (binding_key == "left" || binding_key == "right") then
+          selection = editor_ux_apply_word_nav_key(
+            line_index,
+            selection,
+            binding_key,
+            glfw_gl_mod_shift_down()
+          )
+          last_command = "nav_word_" + binding_key
+        else
+          selection = editor_ux_apply_nav_key(
+            line_index,
+            selection,
+            view_metrics,
+            binding_key,
+            glfw_gl_mod_shift_down()
+          )
+          last_command = "nav_" + binding_key
+        end
+        binding_key = ""
+      end
+      if editor_focused != 0 && binding_key == "delete" &&
+          glfw_gl_mod_ctrl_down() != 0 then
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_delete_word_forward(app)
+        tabs = app.ux.tabs
+        selection = app.ux.selection
+        history = app.history
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
+        last_command = "delete_word_forward"
         binding_key = ""
       end
       const dispatch_command = editor_app_frame_command_from_inputs(
@@ -1068,7 +1097,12 @@ fn main() -> i32 = do
       end
       if input.backspace != 0 && backspace_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
-        app = editor_app_backspace(app)
+        if glfw_gl_mod_ctrl_down() != 0 then
+          app = editor_app_delete_word_backward(app)
+          last_command = "delete_word_backward"
+        else
+          app = editor_app_backspace(app)
+        end
         tabs = app.ux.tabs
         selection = app.ux.selection
         history = app.history

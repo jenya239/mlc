@@ -12,7 +12,9 @@ import {
 import {
   editor_ux_insert_text,
   editor_ux_insert_newline,
-  editor_ux_backspace
+  editor_ux_backspace,
+  editor_ux_delete_word_backward_state,
+  editor_ux_delete_word_forward_state
 } from '../ux/edit_apply'
 import { EditorTextMetrics } from '../ux/overflow'
 import { ShellPanels } from '../ui/shell_panels'
@@ -316,6 +318,36 @@ export fn editor_app_backspace(app: EditorAppState) -> EditorAppState = do
     app.history, active.buffer.document, app.ux.selection
   )
   editor_app_with_ux_and_history(app, editor_ux_backspace(app.ux), history)
+end
+
+export fn editor_app_delete_word_backward(app: EditorAppState) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return app
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const history = history_push_before_edit(
+    app.history, active.buffer.document, app.ux.selection
+  )
+  editor_app_with_ux_and_history(
+    app,
+    editor_ux_delete_word_backward_state(app.ux),
+    history
+  )
+end
+
+export fn editor_app_delete_word_forward(app: EditorAppState) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return app
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const history = history_push_before_edit(
+    app.history, active.buffer.document, app.ux.selection
+  )
+  editor_app_with_ux_and_history(
+    app,
+    editor_ux_delete_word_forward_state(app.ux),
+    history
+  )
 end
 
 fn editor_app_replace_session(

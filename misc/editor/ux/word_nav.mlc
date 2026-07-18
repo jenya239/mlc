@@ -1,27 +1,46 @@
-// TRACK_EDITOR_WORD_BOUNDARIES STEP=1 — stub word nav/edit (red until STEP=2).
+// TRACK_EDITOR_WORD_BOUNDARIES STEP=2 — word nav/edit apply helpers.
 import { LineIndex } from '../document/line_index'
 import { EditorSelection } from '../document/selection'
 import {
+  Collapse,
+  Extend,
+  nav_word_left,
+  nav_word_right
+} from '../document/navigation'
+import {
   TextDocument
 } from '../document/piece_table'
-import { EditResult } from '../document/edit'
+import {
+  EditResult,
+  edit_delete_word_backward
+} from '../document/edit'
 
-// Returns selection unchanged until STEP=2 wires nav_word_*.
 export fn editor_ux_apply_word_nav_key(
   line_index: LineIndex,
   selection: EditorSelection,
   key: string,
   shift_down: i32
 ) -> EditorSelection = do
-  let _unused_index = line_index.text_length
-  let _unused_key = key.byte_size()
-  let _unused_shift = shift_down
+  if shift_down != 0 then
+    if key == "left" then
+      return nav_word_left(line_index, selection, Extend)
+    end
+    if key == "right" then
+      return nav_word_right(line_index, selection, Extend)
+    end
+    return selection
+  end
+  if key == "left" then
+    return nav_word_left(line_index, selection, Collapse)
+  end
+  if key == "right" then
+    return nav_word_right(line_index, selection, Collapse)
+  end
   selection
 end
 
-// No-op until STEP=2 wires edit_delete_word_backward.
 export fn editor_ux_delete_word_backward(
   document: TextDocument,
   selection: EditorSelection
 ) -> EditResult =
-  EditResult { document: document, selection: selection }
+  edit_delete_word_backward(document, selection)

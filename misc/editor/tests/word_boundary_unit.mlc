@@ -1,0 +1,27 @@
+// TRACK_EDITOR_WORD_BOUNDARIES STEP=2 — word_boundary unit (no GLFW).
+import {
+  word_boundary_next,
+  word_boundary_prev
+} from '../document/word_boundary'
+
+fn main() -> i32 = do
+  const text = "hello world"
+  if word_boundary_next(text, 0) != 5 then
+    println("[mlc-editor] word_boundary_unit fail next start")
+    return 1
+  end
+  if word_boundary_next(text, 5) != 11 then
+    println("[mlc-editor] word_boundary_unit fail next after space")
+    return 2
+  end
+  if word_boundary_prev(text, 11) != 6 then
+    println("[mlc-editor] word_boundary_unit fail prev end")
+    return 3
+  end
+  if word_boundary_prev(text, 6) != 0 then
+    println("[mlc-editor] word_boundary_unit fail prev mid")
+    return 4
+  end
+  println("[mlc-editor] word_boundary_unit ok")
+  0
+end

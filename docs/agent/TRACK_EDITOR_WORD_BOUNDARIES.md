@@ -4,18 +4,22 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#3**.
 Char-level nav wired (#2); no word-boundary helper; Ctrl+Left/Right still
 move one byte; Ctrl+Backspace/Delete not word-scoped.
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — `word_boundary` + `nav_word_*` / `edit_delete_word_*` + ux/`demo_live`
-wire; both L2 scenarios green + compile.
+**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #4).
+
+### STEP=2 done (2026-07-18)
+
+- `document/word_boundary.mlc` + unit
+- `nav_word_*` / `edit_delete_word_*`; `ux/word_nav` wired
+- `demo_live`: Ctrl+left/right word nav; Ctrl+Backspace; Ctrl+Delete edge
+- Gates: both scenarios ok + `demo_live_fs_compile_ok`
 
 ### STEP=1 done (2026-07-18)
 
-- Stub `ux/word_nav.mlc` (`editor_ux_apply_word_nav_key` / `editor_ux_delete_word_backward` no-op)
-- L2 red: `ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word` (+ run scripts)
-- `demo_live_fs_compile_ok`
+- Stub `ux/word_nav.mlc`; L2 red harness
 
 ### STEP=0 done (2026-07-18)
 
@@ -49,17 +53,14 @@ wire; both L2 scenarios green + compile.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word`) | **done** (red harness) |
-| 2 | word_boundary + nav/edit + ux/`demo_live` wire | scenarios + compile |
+| 2 | word_boundary + nav/edit + ux/`demo_live` wire | **done** |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. `document/word_boundary.mlc` + unit; `nav_word_*` / `edit_delete_word_*`.
-2. Wire Ctrl+arrows via apply path; Ctrl+Backspace; Ctrl+Delete edge if needed.
-3. Gates: both scenarios ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #4).
 

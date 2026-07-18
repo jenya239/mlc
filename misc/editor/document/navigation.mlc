@@ -15,6 +15,10 @@ import {
   selection_clamp,
   selection_caret
 } from './selection'
+import {
+  word_boundary_next,
+  word_boundary_prev
+} from './word_boundary'
 
 export type NavMode = Collapse | Extend
 
@@ -160,6 +164,24 @@ export fn nav_line_end(
       offset = offset - 1
     end
   end
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_word_left(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const offset = word_boundary_prev(line_index.text, selection_caret(selection))
+  apply_caret(selection, offset, mode, line_index.text_length)
+end
+
+export fn nav_word_right(
+  line_index: LineIndex,
+  selection: EditorSelection,
+  mode: NavMode
+) -> EditorSelection = do
+  const offset = word_boundary_next(line_index.text, selection_caret(selection))
   apply_caret(selection, offset, mode, line_index.text_length)
 end
 

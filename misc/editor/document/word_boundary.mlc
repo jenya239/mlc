@@ -1,0 +1,62 @@
+// TRACK_EDITOR_WORD_BOUNDARIES STEP=2 — ASCII word edges (letter/digit/_).
+// Non-ASCII bytes treated as separators (honest residual → #28).
+
+export fn is_word_char(ch: string) -> bool = do
+  if ch >= "a" && ch <= "z" then
+    return true
+  end
+  if ch >= "A" && ch <= "Z" then
+    return true
+  end
+  if ch >= "0" && ch <= "9" then
+    return true
+  end
+  ch == "_"
+end
+
+// Next word-end edge at or after `offset` (Ctrl+Right).
+export fn word_boundary_next(text: string, offset: i32) -> i32 = do
+  const length = text.byte_size()
+  let mut index = offset
+  if index < 0 then
+    index = 0
+  end
+  if index >= length then
+    return length
+  end
+  if is_word_char(text.byte_at(index)) then
+    while index < length && is_word_char(text.byte_at(index)) do
+      index = index + 1
+    end
+    return index
+  end
+  while index < length && !is_word_char(text.byte_at(index)) do
+    index = index + 1
+  end
+  while index < length && is_word_char(text.byte_at(index)) do
+    index = index + 1
+  end
+  index
+end
+
+// Previous word-start edge at or before `offset` (Ctrl+Left).
+export fn word_boundary_prev(text: string, offset: i32) -> i32 = do
+  const length = text.byte_size()
+  let mut index = offset
+  if index < 0 then
+    return 0
+  end
+  if index > length then
+    index = length
+  end
+  if index <= 0 then
+    return 0
+  end
+  while index > 0 && !is_word_char(text.byte_at(index - 1)) do
+    index = index - 1
+  end
+  while index > 0 && is_word_char(text.byte_at(index - 1)) do
+    index = index - 1
+  end
+  index
+end

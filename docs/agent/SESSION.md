@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:45 (Driver TRACK_EDITOR_WORD_BOUNDARIES STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WORD_BOUNDARIES |
+| started | 2026-07-18 15:30 |
+| elapsed | ~15 min |
+| done    | `word_boundary_*` + unit; `nav_word_*`/`edit_delete_word_*`; `ux/word_nav` + app wrappers; `demo_live` Ctrl+arrows/Backspace/Delete; GLFW `delete` edge; `ux_ok ctrl_arrow_word_jump`; `ux_ok ctrl_backspace_deletes_word`; `demo_live_fs_compile_ok` |
+| verify  | `run_editor_word_boundary_unit.sh` → ok; `run_ux_ctrl_arrow_word_jump.sh` → `ux_ok`; `run_ux_ctrl_backspace_deletes_word.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_WORD_BOUNDARIES |
+
 ### Turn 2026-07-18 05:15 (Driver TRACK_EDITOR_WORD_BOUNDARIES STEP=1)
 
 | field   | value |

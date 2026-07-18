@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_WORD_BOUNDARIES` (§46 #3) STEP=2.
+**Queue head:** Critic `TRACK_EDITOR_WORD_BOUNDARIES` (§46 #3) STEP=3.
 **`TRACK_EDITOR_KEYBOARD_NAV_WIRE` (§46 #2)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_DEMO_ORCHESTRATOR` (§46 #1)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (§45)** / §43 / §44 archived.
