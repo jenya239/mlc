@@ -1,0 +1,11 @@
+// TRACK_EDITOR_COMMENT_TOGGLE STEP=1 — stub (no-op until STEP=2).
+import { EditorUxState } from './probe'
+
+// Stub: ignore language; leave document unchanged.
+export fn editor_ux_toggle_line_comment(
+  state: EditorUxState,
+  language: string
+) -> EditorUxState = do
+  let _unused_language = language
+  state
+end

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=1` `TRACK_EDITOR_COMMENT_TOGGLE` (§46 `#19`).
-**`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** active; Decision frozen 2026-07-19.
+**Queue head:** Driver `STEP=2` `TRACK_EDITOR_COMMENT_TOGGLE` (§46 `#19`).
+**`TRACK_EDITOR_COMMENT_TOGGLE` (§46 #19)** active; STEP=1 done; Decision frozen.
 **`TRACK_EDITOR_BRACKET_AUTOCLOSE` (§46 #18)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TAB_REORDER` (§46 #15)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_REPLACE` (§46 #14)** closed 2026-07-18; archived.

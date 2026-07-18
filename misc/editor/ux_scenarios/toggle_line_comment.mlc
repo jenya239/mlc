@@ -1,0 +1,67 @@
+// TRACK_EDITOR_COMMENT_TOGGLE STEP=1 — L1: toggle_line_comment (red until STEP=2).
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  TextEquals,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_ux_toggle_line_comment } from '../ux/comment_toggle'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  state = editor_ux_insert_text(state, "foo")
+  state = editor_ux_toggle_line_comment(state, "mlc")
+  let mut snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("//foo")).ok == 0 then
+    println("ux_fail toggle_line_comment comment")
+    return 1
+  end
+
+  state = editor_ux_toggle_line_comment(state, "mlc")
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals("foo")).ok == 0 then
+    println("ux_fail toggle_line_comment uncomment")
+    return 2
+  end
+
+  println("ux_ok toggle_line_comment")
+  0
+end

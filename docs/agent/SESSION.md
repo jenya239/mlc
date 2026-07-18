@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 02:45 (Driver TRACK_EDITOR_COMMENT_TOGGLE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE |
+| started | 2026-07-19 02:35 |
+| elapsed | ~10 min |
+| done    | Stub `editor_ux_toggle_line_comment` (no-op); L1 `toggle_line_comment` + `run_ux_toggle_line_comment.sh` → red `ux_fail toggle_line_comment comment` |
+| verify  | comment script exit 1 red; `ux_ok typing_paren_autocloses`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_COMMENT_TOGGLE |
+
 ### Turn 2026-07-19 02:30 (Planner TRACK_EDITOR_COMMENT_TOGGLE STEP=0)
 
 | field   | value |

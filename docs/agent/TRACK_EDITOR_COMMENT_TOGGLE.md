@@ -5,11 +5,11 @@ No line-comment toggle; Ctrl+/ does nothing. Status bar already exposes
 language from path (`status_bar_language_from_path`). Review gate:
 `toggle_line_comment` (L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`toggle_line_comment`) red harness.
+**STEP=2** — toggle API + CmdToggleLineComment + live/GLFW wire.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -43,7 +43,7 @@ language from path (`status_bar_language_from_path`). Review gate:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L1 scenario first (`toggle_line_comment`) | pending |
+| 1 | L1 scenario first (`toggle_line_comment`) | **done** (2026-07-19) — stub red: `ux_fail toggle_line_comment comment` |
 | 2 | toggle API + CmdToggleLineComment + live/GLFW wire | pending |
 | 3 | Critic: gates; archive | pending |
 
