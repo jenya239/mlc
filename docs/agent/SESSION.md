@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:15 (Planner TRACK_EDITOR_UNDO_COALESCE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_UNDO_COALESCE |
+| started | 2026-07-18 12:10 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_UNDO_COALESCE.md`; Decision: same-kind+1000ms idle coalesce; kinds insert_text/backspace; break on newline/cut/paste/word-delete; L1.5 `typing_coalesces_into_one_undo`; PLAN/UX_BACKLOG #6 → active |
+| verify  | Decision table frozen; no code; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| result  | STEP=0 done; STEP=1 next |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_UNDO_COALESCE |
+
 ### Turn 2026-07-18 12:10 (Critic TRACK_EDITOR_SHIFT_CLICK_EXTEND critique-audit)
 
 | field   | value |

@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5 done; next **#6 `EDITOR_UNDO_COALESCE`**
+## Status: **active** (2026-07-18) — #1…#1d+#2+#3+#4+#5 done; **#6 `EDITOR_UNDO_COALESCE` opened** (STEP=0 done)
 
 ## How to use this backlog
 
@@ -41,7 +41,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 3 | `EDITOR_WORD_BOUNDARIES` | Word-boundary helper in `document/`; Ctrl+Left/Right, Ctrl+Backspace/Delete | `ctrl_arrow_word_jump`, `ctrl_backspace_deletes_word` | M | **done** — [archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES](../archive/tracks/TRACK_EDITOR_WORD_BOUNDARIES.md) |
 | 4 | `EDITOR_MOUSE_WORD_LINE_SELECT` | Double-click selects word, triple-click selects line, click timing via `UxDriver` | `double_click_selects_word`, `triple_click_selects_line` | M | **done** — [archive/tracks/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT](../archive/tracks/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md) |
 | 5 | `EDITOR_SHIFT_CLICK_EXTEND` | Shift-click extends selection from anchor | `shift_click_extends_selection` | S | **done** — [archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND](../archive/tracks/TRACK_EDITOR_SHIFT_CLICK_EXTEND.md) |
-| 6 | `EDITOR_UNDO_COALESCE` | Group consecutive typing into one undo step (currently every keystroke = separate undo) | `typing_coalesces_into_one_undo` (L1.5) | M | pending |
+| 6 | `EDITOR_UNDO_COALESCE` | Group consecutive typing into one undo step (currently every keystroke = separate undo) | `typing_coalesces_into_one_undo` (L1.5) | M | **active** — [TRACK_EDITOR_UNDO_COALESCE](TRACK_EDITOR_UNDO_COALESCE.md) STEP=1 next (STEP=0 done) |
 | 7 | `EDITOR_FIND` | Find + next/prev, highlight matches in visible range | `find_highlights_matches` | M | pending |
 | 8 | `EDITOR_GOTO_LINE` | Ctrl+G → line number → scroll+caret | `goto_line_scrolls_caret` | S | pending |
 | 9 | `EDITOR_DRAG_AUTOSCROLL` | Drag past viewport edge auto-scrolls (multi-frame stateful) | `drag_past_edge_autoscrolls` (L1.5) | M | pending |
