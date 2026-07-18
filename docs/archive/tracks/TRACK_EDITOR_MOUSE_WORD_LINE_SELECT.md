@@ -1,29 +1,39 @@
 # Track: Editor mouse word/line select (double / triple click)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#4**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#4**.
 Single-click caret via `nav_click` / `editor_ux_click_text` exists; no
 click-count / timing; double/triple do not select word/line. Word edges
 already in `document/word_boundary.mlc` (#3).
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L2 + compile. Anti-false-done:
+`a518dff3`…`d71e3c9d` (STEP=0–2). Wire present: `editor_ux_apply_multi_click`
+(500ms same-offset; 1/2/3→caret/word/line); `demo_live` text mouse-down uses
+it with `frame_index*16` clock. **reopen: none**.
+
+Honest residual: L2 passes explicit `clock_ms` (not full `UxDriver` SetClock
+path — Decision allows); unused `nav_click` import in `demo_live`; ASCII word
+class from #3.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_double_click_selects_word.sh` | `ux_ok double_click_selects_word` EXIT=0 |
+| `run_ux_triple_click_selects_line.sh` | `ux_ok triple_click_selects_line` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #5).
+**closed** — Critic OK. Queue → Planner (§46 `#5 EDITOR_SHIFT_CLICK_EXTEND`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- `ux/multi_click.mlc`: 500ms same-offset detector; count 1/2/3 → caret/word/line
-- `demo_live` text mouse-down via `editor_ux_apply_multi_click` (`frame_index*16` clock)
-- Gates: both scenarios ok + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/multi_click.mlc`; L2 red harness
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #4 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `a518dff3` | Decision freeze + open |
+| 1 | `46577e73` | L2 red harness |
+| 2 | `d71e3c9d` | multi-click + demo_live wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -54,15 +64,7 @@ already in `document/word_boundary.mlc` (#3).
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L2 scenarios first (`double_click_selects_word`, `triple_click_selects_line`) | **done** (red harness) |
 | 2 | multi-click detector + word/line select + `demo_live` wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #5).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

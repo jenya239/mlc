@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:35 (Critic TRACK_EDITOR_MOUSE_WORD_LINE_SELECT critique-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_MOUSE_WORD_LINE_SELECT |
+| started | 2026-07-18 16:30 |
+| elapsed | ~5 min |
+| done    | Re-ran gates; anti-false-done `a518dff3`…`d71e3c9d`; wire: multi_click + demo_live text path; archive → `docs/archive/tracks/TRACK_EDITOR_MOUSE_WORD_LINE_SELECT.md`; PLAN/UX_BACKLOG #4 → done |
+| verify  | `ux_ok double_click_selects_word`; `ux_ok triple_click_selects_line`; `demo_live_fs_compile_ok`; reopen: none; residual: unused `nav_click` import; L2 uses explicit clock_ms |
+| result  | closed Critic OK |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Planner STEP=pick-next TRACK=PLAN_QUEUE |
+
 ### Turn 2026-07-18 16:25 (Driver TRACK_EDITOR_MOUSE_WORD_LINE_SELECT STEP=2)
 
 | field   | value |
