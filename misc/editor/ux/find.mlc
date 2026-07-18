@@ -1,3 +1,4 @@
+// TRACK_EDITOR_REPLACE STEP=1 — FindSession.replacement + replace stubs (red until STEP=2).
 // TRACK_EDITOR_FIND STEP=2 — literal find + next/prev + visible highlights.
 import {
   LineIndex,
@@ -21,7 +22,8 @@ export type FindMatch = {
 export type FindSession = {
   query: string,
   matches: [FindMatch],
-  active_index: i32
+  active_index: i32,
+  replacement: string
 }
 
 export type FindHighlight = {
@@ -42,8 +44,14 @@ export type FindApplyResult = {
   selection: EditorSelection
 }
 
+export type FindReplaceResult = {
+  session: FindSession,
+  text: string,
+  selection: EditorSelection
+}
+
 export fn find_session_new() -> FindSession =
-  FindSession { query: "", matches: [], active_index: -1 }
+  FindSession { query: "", matches: [], active_index: -1, replacement: "" }
 
 fn find_collect_matches(text: string, query: string) -> [FindMatch] = do
   let mut matches: [FindMatch] = []
@@ -81,13 +89,56 @@ export fn find_session_set_query(
   text: string,
   query: string
 ) -> FindSession = do
-  let _unused_session = session.query
   const matches = find_collect_matches(text, query)
   let mut active_index = -1
   if matches.length() > 0 then
     active_index = 0
   end
-  FindSession { query: query, matches: matches, active_index: active_index }
+  FindSession {
+    query: query,
+    matches: matches,
+    active_index: active_index,
+    replacement: session.replacement
+  }
+end
+
+export fn find_session_set_replacement(
+  session: FindSession,
+  replacement: string
+) -> FindSession =
+  FindSession {
+    query: session.query,
+    matches: session.matches,
+    active_index: session.active_index,
+    replacement: replacement
+  }
+
+// Stub: no document mutation until STEP=2.
+export fn find_replace_one(
+  session: FindSession,
+  text: string,
+  selection: EditorSelection
+) -> FindReplaceResult = do
+  let _unused_replacement = session.replacement
+  FindReplaceResult {
+    session: session,
+    text: text,
+    selection: selection
+  }
+end
+
+// Stub: no document mutation until STEP=2.
+export fn find_replace_all(
+  session: FindSession,
+  text: string,
+  selection: EditorSelection
+) -> FindReplaceResult = do
+  let _unused_replacement = session.replacement
+  FindReplaceResult {
+    session: session,
+    text: text,
+    selection: selection
+  }
 end
 
 // Seed query from non-empty selection; rebuild; select first match.
@@ -127,7 +178,8 @@ export fn find_session_next(
   const next_session = FindSession {
     query: session.query,
     matches: session.matches,
-    active_index: active_index
+    active_index: active_index,
+    replacement: session.replacement
   }
   FindApplyResult {
     session: next_session,
@@ -150,7 +202,8 @@ export fn find_session_prev(
   const next_session = FindSession {
     query: session.query,
     matches: session.matches,
-    active_index: active_index
+    active_index: active_index,
+    replacement: session.replacement
   }
   FindApplyResult {
     session: next_session,

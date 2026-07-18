@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#14**.
 Find (#7) has query/next/prev/highlights; no replace-one / replace-all.
 Review gate: `replace_one_and_all` (L1). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-18) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`replace_one_and_all`) red harness.
+**STEP=2** — replace-one/all API + `CmdReplaceOne`/`CmdReplaceAll` + demo_live wire.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -40,7 +40,7 @@ Review gate: `replace_one_and_all` (L1). Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L1 scenario first (`replace_one_and_all`) | pending |
+| 1 | L1 scenario first (`replace_one_and_all`) | **done** (2026-07-18) — stubs red: `ux_fail replace_one text` |
 | 2 | replace-one/all API + commands + demo_live wire | pending |
 | 3 | Critic: gates; archive | pending |
 

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 23:30 (Driver TRACK_EDITOR_REPLACE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_REPLACE |
+| started | 2026-07-18 23:20 |
+| elapsed | ~10 min |
+| done    | `FindSession.replacement`; stubs `find_session_set_replacement` / `find_replace_one` / `find_replace_all`; L1 `replace_one_and_all` + `run_ux_replace_one_and_all.sh` → red `ux_fail replace_one text` |
+| verify  | replace script exit 1 red; `ux_ok find_highlights_matches`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_REPLACE |
+
 ### Turn 2026-07-18 23:20 (Planner TRACK_EDITOR_REPLACE STEP=0)
 
 | field   | value |
