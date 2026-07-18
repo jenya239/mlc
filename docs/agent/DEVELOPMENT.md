@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=1` `TRACK_EDITOR_HORIZONTAL_SCROLL` (§46 `#17`).
-**`TRACK_EDITOR_HORIZONTAL_SCROLL` (§46 #17)** active; Decision frozen 2026-07-19.
+**Queue head:** Driver `STEP=2` `TRACK_EDITOR_HORIZONTAL_SCROLL` (§46 `#17`).
+**`TRACK_EDITOR_HORIZONTAL_SCROLL` (§46 #17)** active; STEP=1 done; Decision frozen.
 **`TRACK_EDITOR_FONT_ZOOM` (§46 #16)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_TAB_REORDER` (§46 #15)** closed 2026-07-18; archived.
 **`TRACK_EDITOR_REPLACE` (§46 #14)** closed 2026-07-18; archived.

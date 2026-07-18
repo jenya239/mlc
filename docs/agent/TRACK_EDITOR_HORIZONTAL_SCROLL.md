@@ -5,11 +5,11 @@ Shift+wheel scrolls vertically like plain wheel; `scroll_offset_x` stays 0 on
 the wheel path; live `view_metrics` hardcodes horizontal offset 0.
 Review gate: `shift_wheel_scrolls_horizontal` (L1). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`shift_wheel_scrolls_horizontal`) red harness.
+**STEP=2** — `editor_ux_wheel_scroll_horizontal` real + demo_live Shift+wheel wire.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -42,7 +42,7 @@ Review gate: `shift_wheel_scrolls_horizontal` (L1). Size **S**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L1 scenario first (`shift_wheel_scrolls_horizontal`) | pending |
+| 1 | L1 scenario first (`shift_wheel_scrolls_horizontal`) | **done** (2026-07-19) — stub red: `ux_fail shift_wheel scroll_offset_x not increased` |
 | 2 | horizontal wheel API + demo_live Shift+wheel wire | pending |
 | 3 | Critic: gates; archive | pending |
 

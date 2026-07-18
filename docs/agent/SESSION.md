@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:55 (Driver TRACK_EDITOR_HORIZONTAL_SCROLL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLL |
+| started | 2026-07-19 00:45 |
+| elapsed | ~10 min |
+| done    | Stub `editor_ux_wheel_scroll_horizontal` + clamp helper; L1 `shift_wheel_scrolls_horizontal` + `run_ux_shift_wheel_scrolls_horizontal.sh` → red `ux_fail shift_wheel scroll_offset_x not increased` |
+| verify  | shift_wheel script exit 1 red; `ux_ok wheel_scroll_keeps_caret_visible`; `ux_ok ctrl_wheel_font_zoom`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone; L1 uses negative ticks (formula −ticks×char_width) |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HORIZONTAL_SCROLL |
+
 ### Turn 2026-07-19 00:40 (Planner TRACK_EDITOR_HORIZONTAL_SCROLL STEP=0)
 
 | field   | value |

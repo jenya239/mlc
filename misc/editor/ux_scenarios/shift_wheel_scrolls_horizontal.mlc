@@ -1,0 +1,108 @@
+// TRACK_EDITOR_HORIZONTAL_SCROLL STEP=1 — L1: shift_wheel_scrolls_horizontal (red until STEP=2).
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_active
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  line_index_from_document,
+  line_index_offset_to_position
+} from '../document/line_index'
+import {
+  editor_view_metrics_new,
+  nav_offset_at_point
+} from '../document/navigation'
+import {
+  editor_ux_state_new,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_text_metrics_default } from '../ux/overflow'
+import { editor_ux_wheel_scroll_horizontal } from '../ux/scroll'
+
+fn main() -> i32 = do
+  const bounds = rect_new(0, 0, 320, 200)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    320,
+    200,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: 0,
+    scroll_offset_y: 0,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  // Wide single line so horizontal scroll has room.
+  state = editor_ux_insert_text(
+    state,
+    "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  )
+
+  const metrics = editor_text_metrics_default()
+  const content_width = 600
+  const viewport_width = 200
+  const scroll_y_before = state.scroll_offset_y
+
+  // Same sign as vertical: offset_x -= ticks * char_width.
+  // Negative ticks → scroll_offset_x increases from 0.
+  state = editor_ux_wheel_scroll_horizontal(
+    state, metrics, 0 - 3, content_width, viewport_width
+  )
+
+  if state.scroll_offset_x <= 0 then
+    println("ux_fail shift_wheel scroll_offset_x not increased")
+    return 1
+  end
+  if state.scroll_offset_y != scroll_y_before then
+    println("ux_fail shift_wheel scroll_offset_y changed")
+    return 2
+  end
+
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const view_before = editor_view_metrics_new(
+    metrics.line_height, metrics.char_width, 0, 0, 0, 0, 10
+  )
+  const view_after = editor_view_metrics_new(
+    metrics.line_height, metrics.char_width, 0, 0, state.scroll_offset_x, 0, 10
+  )
+  const pixel_x = metrics.char_width * 2
+  const offset_before = nav_offset_at_point(line_index, view_before, pixel_x, 0)
+  const offset_after = nav_offset_at_point(line_index, view_after, pixel_x, 0)
+  if offset_after <= offset_before then
+    println("ux_fail shift_wheel hit-test column not shifted")
+    return 3
+  end
+  const position_after = line_index_offset_to_position(
+    line_index, line_index.text, offset_after
+  )
+  const position_before = line_index_offset_to_position(
+    line_index, line_index.text, offset_before
+  )
+  if position_after.column <= position_before.column then
+    println("ux_fail shift_wheel hit-test column not higher")
+    return 4
+  end
+
+  println("ux_ok shift_wheel_scrolls_horizontal")
+  0
+end
