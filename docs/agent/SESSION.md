@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 01:10 (Driver TRACK_EDITOR_HORIZONTAL_SCROLL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLL |
+| started | 2026-07-19 01:00 |
+| elapsed | ~10 min |
+| done    | Real `editor_ux_wheel_scroll_horizontal` (−ticks×char_width + clamp); `editor_app_wheel_scroll_horizontal`; demo_live Shift+wheel (Ctrl first) + `view_metrics` uses `scroll_offset_x`; L1 green |
+| verify  | `ux_ok shift_wheel_scrolls_horizontal`; `ux_ok wheel_scroll_keeps_caret_visible`; `ux_ok ctrl_wheel_font_zoom`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone; wrap click path still ignores scroll_x |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_HORIZONTAL_SCROLL |
+
 ### Turn 2026-07-19 00:55 (Driver TRACK_EDITOR_HORIZONTAL_SCROLL STEP=1)
 
 | field   | value |

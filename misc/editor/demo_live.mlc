@@ -239,7 +239,7 @@ import {
   tab_strip_hit_index,
   tab_strip_hit_close_index
 } from './ux/tab_strip'
-import { EditorTextMetrics } from './ux/overflow'
+import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
 import {
   editor_font_size_default,
   editor_font_metrics_from_size,
@@ -270,6 +270,7 @@ import {
   editor_app_sync_shell,
   editor_app_commit_session,
   editor_app_wheel_scroll,
+  editor_app_wheel_scroll_horizontal,
   editor_app_ensure_caret_visible,
   editor_app_goto_line_from_selection,
   editor_app_drag_text_autoscroll,
@@ -743,7 +744,7 @@ fn main() -> i32 = do
     let mut view_metrics = editor_view_metrics_new(
       metrics.line_height, metrics.char_width,
       text_rect.x + 4, text_rect.y + 2,
-      0, scroll_offset_y,
+      app.ux.scroll_offset_x, scroll_offset_y,
       text_rect.height / metrics.line_height
     )
 
@@ -760,6 +761,23 @@ fn main() -> i32 = do
         zoom_font_size = zoomed.font_size
         metrics = zoomed.metrics
         last_command = "font_zoom"
+      else if glfw_gl_mod_shift_down() != 0 then
+        let mut char_width = metrics.char_width
+        if char_width <= 0 then
+          char_width = 1
+        end
+        const content_width =
+          editor_ux_max_line_columns_from_index(line_index) * char_width
+        app = editor_app_wheel_scroll_horizontal(
+          app, metrics, scroll_ticks, content_width, text_rect.width
+        )
+        last_command = "scroll_x"
+        view_metrics = editor_view_metrics_new(
+          metrics.line_height, metrics.char_width,
+          text_rect.x + 4, text_rect.y + 2,
+          app.ux.scroll_offset_x, scroll_offset_y,
+          text_rect.height / metrics.line_height
+        )
       else
         app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
         app = editor_app_clamp_scroll_to_content(
@@ -770,7 +788,7 @@ fn main() -> i32 = do
         view_metrics = editor_view_metrics_new(
           metrics.line_height, metrics.char_width,
           text_rect.x + 4, text_rect.y + 2,
-          0, scroll_offset_y,
+          app.ux.scroll_offset_x, scroll_offset_y,
           text_rect.height / metrics.line_height
         )
         visual_rows = collect_visible_visual_rows(

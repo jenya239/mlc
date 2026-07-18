@@ -218,7 +218,8 @@ export fn editor_ux_clamp_scroll_offset_x(
   scroll_x
 end
 
-// TRACK_EDITOR_HORIZONTAL_SCROLL STEP=1 — stub (ignore ticks until STEP=2).
+// TRACK_EDITOR_HORIZONTAL_SCROLL STEP=2 — Shift+wheel horizontal scroll.
+// Same sign as vertical: positive ticks decrease offset_x.
 export fn editor_ux_wheel_scroll_horizontal(
   state: EditorUxState,
   metrics: EditorTextMetrics,
@@ -226,9 +227,11 @@ export fn editor_ux_wheel_scroll_horizontal(
   content_width: i32,
   viewport_width: i32
 ) -> EditorUxState = do
-  let _unused_metrics = metrics
-  let _unused_ticks = wheel_ticks
-  let _unused_content = content_width
-  let _unused_viewport = viewport_width
-  state_with_scroll_x(state, state.scroll_offset_x)
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  let mut scroll_x = state.scroll_offset_x - wheel_ticks * char_width
+  scroll_x = editor_ux_clamp_scroll_offset_x(scroll_x, content_width, viewport_width)
+  state_with_scroll_x(state, scroll_x)
 end
