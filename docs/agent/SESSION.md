@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:20 (Planner TRACK_EDITOR_ENCODING_GUARD STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_ENCODING_GUARD |
+| started | 2026-07-18 16:15 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_ENCODING_GUARD.md`; Decision: BOM strip+`had_bom`+re-prefix on save; NUL/invalid UTF-8 refuse in `open_buffer_from_path` before CRLF; L0 `binary_file_refused` + `utf8_bom_detected`; PLAN/UX_BACKLOG #13 → active |
+| verify  | track file + PLAN §46 + backlog #13 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_ENCODING_GUARD |
+
 ### Turn 2026-07-18 16:10 (Critic TRACK_EDITOR_CRLF_PRESERVE critique-audit)
 
 | field   | value |
