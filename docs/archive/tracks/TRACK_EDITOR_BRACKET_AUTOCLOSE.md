@@ -1,16 +1,41 @@
 # Track: Editor Bracket Autoclose
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#18**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#18**.
 Typing `(` / `[` / `{` / `"` inserts only the opener; closing char is not
 paired; typing a closer always inserts a second copy even when the next
 character is already that closer. Review gate: `typing_paren_autocloses` (L1).
 Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=3):** Re-ran L1 + enter-indent regression + demo compile.
+Anti-false-done: `00fc6ebd`…`4988dba0` (STEP=0–2). Wire present:
+`edit_insert_text_autoclose` (pair `()[]{}""`, skip-over, selection wrap);
+`editor_ux_insert_text_autoclose`; `editor_app_insert_text` uses autoclose
+(demo_live inherits). **reopen: none**.
+
+Honest residual: L1 covers paren pair+skip only (not `[]{}""`/wrap);
+no smart delete of empty pair; single-quote/backtick out of scope;
+multi-char paste bypasses autoclose (by Decision).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_typing_paren_autocloses.sh` | `ux_ok typing_paren_autocloses` EXIT=0 |
+| `run_ux_enter_keeps_indent.sh` | `ux_ok enter_keeps_indent` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#19 EDITOR_COMMENT_TOGGLE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `00fc6ebd` | Decision freeze + open |
+| 1 | `a1652dad` | L1 red harness + stub |
+| 2 | `4988dba0` | autoclose API + app insert wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -44,7 +69,7 @@ Size **M**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`typing_paren_autocloses`) | **done** (2026-07-19) — stub red: `ux_fail paren autoclose text` |
 | 2 | autoclose API + demo_live / app insert wire | **done** (2026-07-19) — `ux_ok typing_paren_autocloses` |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
