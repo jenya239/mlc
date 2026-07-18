@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 14:30 (Driver TRACK_EDITOR_AUTO_INDENT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_AUTO_INDENT |
+| started | 2026-07-18 14:20 |
+| elapsed | ~10 min |
+| done    | L1 red harness `enter_keeps_indent` (+ `run_ux_enter_keeps_indent.sh`); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_enter_keeps_indent.sh` exit 1 (`ux_fail enter indent text`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_AUTO_INDENT |
+
 ### Turn 2026-07-18 14:20 (Planner TRACK_EDITOR_AUTO_INDENT STEP=0)
 
 | field   | value |
