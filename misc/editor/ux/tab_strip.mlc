@@ -8,7 +8,8 @@ import {
 } from '../../gui/ux/expect'
 import {
   tab_set_set_active,
-  tab_set_count
+  tab_set_count,
+  tab_set_move
 } from '../workspace/tabs'
 import {
   EditorUxState
@@ -153,3 +154,24 @@ export fn editor_ux_click_tab_strip(
   editor_ux_click_tab_strip_at(
     state, tab_strip_rect_from_state(state), point_x, point_y
   )
+
+// TRACK_EDITOR_TAB_REORDER STEP=1 — stub path via tab_set_move (red until STEP=2).
+export fn editor_ux_tab_strip_drag_to(
+  state: EditorUxState,
+  from_index: i32,
+  to_index: i32
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_move(state.tabs, from_index, to_index),
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }

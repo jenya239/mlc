@@ -1,0 +1,70 @@
+// TRACK_EDITOR_TAB_REORDER STEP=1 — L1: drag reorder tabs (red until STEP=2).
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_count,
+  tab_set_set_active,
+  tab_set_active,
+  tab_set_move
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new
+} from '../ux/probe'
+import { editor_ux_tab_strip_drag_to } from '../ux/tab_strip'
+
+fn main() -> i32 = do
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "aaa")
+  tabs = tab_set_open(tabs, "/proj/b.mlc", "bbb")
+  tabs = tab_set_open(tabs, "/proj/c.mlc", "ccc")
+  if tab_set_count(tabs) != 3 then
+    println("ux_fail drag_reorder setup count")
+    return 1
+  end
+  tabs = tab_set_set_active(tabs, 0)
+  if tab_set_active(tabs).path != "/proj/a.mlc" then
+    println("ux_fail drag_reorder setup active")
+    return 2
+  end
+
+  tabs = tab_set_move(tabs, 0, 2)
+  if tabs.tabs[0].path != "/proj/b.mlc" then
+    println("ux_fail drag_reorder order first")
+    return 3
+  end
+  if tabs.tabs[1].path != "/proj/c.mlc" then
+    println("ux_fail drag_reorder order second")
+    return 4
+  end
+  if tabs.tabs[2].path != "/proj/a.mlc" then
+    println("ux_fail drag_reorder order third")
+    return 5
+  end
+  if tabs.active_index != 2 || tab_set_active(tabs).path != "/proj/a.mlc" then
+    println("ux_fail drag_reorder active follow")
+    return 6
+  end
+
+  // Also exercise ux helper (same move 0→2 on fresh A,B,C).
+  let mut again = tab_set_new()
+  again = tab_set_open(again, "/proj/a.mlc", "aaa")
+  again = tab_set_open(again, "/proj/b.mlc", "bbb")
+  again = tab_set_open(again, "/proj/c.mlc", "ccc")
+  again = tab_set_set_active(again, 0)
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut state = editor_ux_state_new(
+    800, 600, panels, again, selection_collapsed(0)
+  )
+  state = editor_ux_tab_strip_drag_to(state, 0, 2)
+  if state.tabs.tabs[2].path != "/proj/a.mlc" then
+    println("ux_fail drag_reorder ux helper")
+    return 7
+  end
+
+  println("ux_ok drag_reorder_tabs")
+  0
+end

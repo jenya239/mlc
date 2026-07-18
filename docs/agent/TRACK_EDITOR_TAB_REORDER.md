@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#15**.
 Tab strip click activates / closes; no drag-to-reorder. Review gate:
 `drag_reorder_tabs` (L1). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-18) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`drag_reorder_tabs`) red harness.
+**STEP=2** — `tab_set_move` + strip drag wire + demo_live.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 

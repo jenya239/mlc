@@ -90,6 +90,17 @@ export fn tab_set_set_active(tabs: TabSet, index: i32) -> TabSet = do
   TabSet { tabs: tabs.tabs, active_index: index }
 end
 
+// TRACK_EDITOR_TAB_REORDER STEP=1 — stub (no reorder until STEP=2).
+export fn tab_set_move(
+  tabs: TabSet,
+  from_index: i32,
+  to_index: i32
+) -> TabSet = do
+  let _unused_from = from_index
+  let _unused_to = to_index
+  tabs
+end
+
 export fn tab_set_update_active_buffer(
   tabs: TabSet,
   buffer: OpenBuffer

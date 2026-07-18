@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 23:55 (Driver TRACK_EDITOR_TAB_REORDER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TAB_REORDER |
+| started | 2026-07-18 23:50 |
+| elapsed | ~10 min |
+| done    | Stub `tab_set_move` + `editor_ux_tab_strip_drag_to`; L1 `drag_reorder_tabs` + `run_ux_drag_reorder_tabs.sh` → red `ux_fail drag_reorder order first` |
+| verify  | reorder script exit 1 red; `ux_ok tab_strip_click_activates`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TAB_REORDER |
+
 ### Turn 2026-07-18 23:50 (Planner TRACK_EDITOR_TAB_REORDER STEP=0)
 
 | field   | value |
