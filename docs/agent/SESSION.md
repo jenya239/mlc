@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:40 (Planner TRACK_EDITOR_HORIZONTAL_SCROLL STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLL |
+| started | 2026-07-19 00:35 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_HORIZONTAL_SCROLL.md`; Decision: Shift+wheel → `scroll_offset_x` (−ticks×char_width, clamp); Ctrl before Shift; hit-test via existing nav; L1 `shift_wheel_scrolls_horizontal`; PLAN/UX_BACKLOG #17 → active |
+| verify  | track file + PLAN §46 + backlog #17 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_HORIZONTAL_SCROLL |
+
 ### Turn 2026-07-19 00:30 (Critic TRACK_EDITOR_FONT_ZOOM critique-audit)
 
 | field   | value |
