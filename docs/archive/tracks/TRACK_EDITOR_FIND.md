@@ -1,29 +1,37 @@
 # Track: Editor Find (next/prev + match highlights)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#7**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#7**.
 No find session, next/prev, or match highlights — only selection highlight and
 syntax spans. Review gate: `find_highlights_matches` (L1).
 
-## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran L1 + compile. Anti-false-done:
+`febabd0f`…`9e102bdb` (STEP=0–2). Wire present: literal `find_session_set_query`
++ next/prev; `find_session_seed_from_selection`; `find_visible_highlights`;
+CmdFind/Next/Prev; demo_live seed+draw; GLFW `f`/`f3`. **reopen: none**.
+
+Honest residual: no find-panel chrome (Decision); query seed from selection only;
+matches not auto-rebuilt on every edit (rebuild on Find commands); L1 exercises
+find API not full Ctrl+F inject path.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_find_highlights_matches.sh` | `ux_ok find_highlights_matches` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #8).
+**closed** — Critic OK. Queue → Planner (§46 `#8 EDITOR_GOTO_LINE`).
 
-### STEP=2 done (2026-07-18)
+### STEPs done in git
 
-- Find scan + next/prev + visible highlights; CmdFind/Next/Prev; demo_live wire;
-  GLFW `f`/`f3` binding keys
-- Gates: `ux_ok find_highlights_matches` + `demo_live_fs_compile_ok`
-
-### STEP=1 done (2026-07-18)
-
-- Stub `ux/find.mlc` (empty matches); L1 red harness `find_highlights_matches`
-  (+ run script). Note: match field `finish` (not `end` — codegen)
-
-### STEP=0 done (2026-07-18)
-
-- Decision frozen below; PLAN §46 + UX_BACKLOG #7 → active.
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `febabd0f` | Decision freeze + open |
+| 1 | `7c5c8f7b` | L1 red harness |
+| 2 | `9e102bdb` | find + commands + demo_live + GLFW f/f3 |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -55,15 +63,7 @@ syntax spans. Review gate: `find_highlights_matches` (L1).
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1 scenario first (`find_highlights_matches`) | **done** (red harness) |
 | 2 | Find session + next/prev + visible highlights + demo/commands wire | **done** |
-| 3 | Critic: gates; archive | close |
-
-### Sub-steps (Driver)
-
-**STEP=1** — **done**
-
-**STEP=2** — **done**
-
-**STEP=3** — Critic; `next` = Planner (§46 #8).
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
