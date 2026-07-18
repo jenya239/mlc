@@ -31,7 +31,11 @@ import {
 import {
   EditorHistory,
   history_new,
-  history_push_before_edit
+  history_push_before_edit,
+  history_push_before_edit_kind,
+  history_edit_insert_text,
+  history_edit_backspace,
+  history_edit_newline
 } from '../document/history'
 import { Clipboard, clipboard_new } from '../clipboard'
 import {
@@ -284,6 +288,9 @@ fn editor_app_with_ux_and_history(
     frame_index: app.frame_index
   }
 
+fn editor_app_clock_ms(app: EditorAppState) -> i32 =
+  app.frame_index * 16
+
 export fn editor_app_insert_text(
   app: EditorAppState,
   text: string
@@ -292,8 +299,12 @@ export fn editor_app_insert_text(
     return app
   end
   const active = tab_set_active(app.ux.tabs)
-  const history = history_push_before_edit(
-    app.history, active.buffer.document, app.ux.selection
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_insert_text(),
+    editor_app_clock_ms(app)
   )
   editor_app_with_ux_and_history(app, editor_ux_insert_text(app.ux, text), history)
 end
@@ -303,8 +314,12 @@ export fn editor_app_insert_newline(app: EditorAppState) -> EditorAppState = do
     return app
   end
   const active = tab_set_active(app.ux.tabs)
-  const history = history_push_before_edit(
-    app.history, active.buffer.document, app.ux.selection
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_newline(),
+    editor_app_clock_ms(app)
   )
   editor_app_with_ux_and_history(app, editor_ux_insert_newline(app.ux), history)
 end
@@ -314,8 +329,12 @@ export fn editor_app_backspace(app: EditorAppState) -> EditorAppState = do
     return app
   end
   const active = tab_set_active(app.ux.tabs)
-  const history = history_push_before_edit(
-    app.history, active.buffer.document, app.ux.selection
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_backspace(),
+    editor_app_clock_ms(app)
   )
   editor_app_with_ux_and_history(app, editor_ux_backspace(app.ux), history)
 end

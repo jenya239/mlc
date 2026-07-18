@@ -1,4 +1,5 @@
 // TRACK_EDITOR_MVP STEP=18 — undo/redo history (document + selection snapshots).
+// TRACK_EDITOR_UNDO_COALESCE STEP=2 — same-kind + idle coalesce.
 import { TextDocument } from './piece_table'
 import { EditorSelection } from './selection'
 
@@ -9,32 +10,11 @@ export type HistoryEntry = {
 
 export type EditorHistory = {
   undo: [HistoryEntry],
-  redo: [HistoryEntry]
+  redo: [HistoryEntry],
+  last_edit_kind: i32,
+  last_edit_ms: i32
 }
 
-export fn history_entry_new(
-  document: TextDocument,
-  selection: EditorSelection
-) -> HistoryEntry =
-  HistoryEntry { document: document, selection: selection }
-
-export fn history_new() -> EditorHistory =
-  EditorHistory { undo: [], redo: [] }
-
-export fn history_can_undo(history: EditorHistory) -> bool =
-  history.undo.length() > 0
-
-export fn history_can_redo(history: EditorHistory) -> bool =
-  history.redo.length() > 0
-
-export type HistoryApplyResult = {
-  history: EditorHistory,
-  document: TextDocument,
-  selection: EditorSelection,
-  applied: i32
-}
-
-// Edit kinds for coalesce (STEP=1 stub ignores them until STEP=2).
 export fn history_edit_none() -> i32 = 0
 export fn history_edit_insert_text() -> i32 = 1
 export fn history_edit_backspace() -> i32 = 2
@@ -43,10 +23,81 @@ export fn history_edit_other() -> i32 = 4
 
 export fn history_coalesce_idle_ms() -> i32 = 1000
 
+export fn history_entry_new(
+  document: TextDocument,
+  selection: EditorSelection
+) -> HistoryEntry =
+  HistoryEntry { document: document, selection: selection }
+
+export fn history_new() -> EditorHistory =
+  EditorHistory {
+    undo: [],
+    redo: [],
+    last_edit_kind: history_edit_none(),
+    last_edit_ms: 0
+  }
+
+export fn history_can_undo(history: EditorHistory) -> bool =
+  history.undo.length() > 0
+
+export fn history_can_redo(history: EditorHistory) -> bool =
+  history.redo.length() > 0
+
 export fn history_undo_depth(history: EditorHistory) -> i32 =
   history.undo.length()
 
-// Before mutating: push current state, clear redo.
+export type HistoryApplyResult = {
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection,
+  applied: i32
+}
+
+fn history_cleared_coalesce(
+  undo: [HistoryEntry],
+  redo: [HistoryEntry]
+) -> EditorHistory =
+  EditorHistory {
+    undo: undo,
+    redo: redo,
+    last_edit_kind: history_edit_none(),
+    last_edit_ms: 0
+  }
+
+fn history_with_coalesce(
+  undo: [HistoryEntry],
+  redo: [HistoryEntry],
+  kind: i32,
+  clock_ms: i32
+) -> EditorHistory =
+  EditorHistory {
+    undo: undo,
+    redo: redo,
+    last_edit_kind: kind,
+    last_edit_ms: clock_ms
+  }
+
+fn history_kind_may_coalesce(kind: i32) -> bool =
+  kind == history_edit_insert_text() || kind == history_edit_backspace()
+
+fn history_should_coalesce(
+  history: EditorHistory,
+  kind: i32,
+  clock_ms: i32
+) -> bool = do
+  if !history_kind_may_coalesce(kind) then
+    return false
+  end
+  if history.last_edit_kind != kind then
+    return false
+  end
+  if clock_ms < history.last_edit_ms then
+    return false
+  end
+  clock_ms - history.last_edit_ms <= history_coalesce_idle_ms()
+end
+
+// Before mutating: always push; clear redo and coalesce.
 export fn history_push_before_edit(
   history: EditorHistory,
   document: TextDocument,
@@ -54,10 +105,10 @@ export fn history_push_before_edit(
 ) -> EditorHistory = do
   let mut undo = history.undo
   undo.push(history_entry_new(document, selection))
-  EditorHistory { undo: undo, redo: [] }
+  history_cleared_coalesce(undo, [])
 end
 
-// STEP=1 stub: always push (ignore kind/clock) — red until STEP=2 coalesce.
+// Same-kind within idle window → skip push (continue undo group).
 export fn history_push_before_edit_kind(
   history: EditorHistory,
   document: TextDocument,
@@ -65,9 +116,12 @@ export fn history_push_before_edit_kind(
   kind: i32,
   clock_ms: i32
 ) -> EditorHistory = do
-  let _unused_kind = kind
-  let _unused_clock = clock_ms
-  history_push_before_edit(history, document, selection)
+  if history_should_coalesce(history, kind, clock_ms) then
+    return history_with_coalesce(history.undo, [], kind, clock_ms)
+  end
+  let mut undo = history.undo
+  undo.push(history_entry_new(document, selection))
+  history_with_coalesce(undo, [], kind, clock_ms)
 end
 
 fn array_without_last(entries: [HistoryEntry]) -> [HistoryEntry] = do
@@ -98,10 +152,7 @@ export fn history_undo(
   let mut redo = history.redo
   redo.push(history_entry_new(document, selection))
   HistoryApplyResult {
-    history: EditorHistory {
-      undo: array_without_last(history.undo),
-      redo: redo
-    },
+    history: history_cleared_coalesce(array_without_last(history.undo), redo),
     document: entry.document,
     selection: entry.selection,
     applied: 1
@@ -125,10 +176,7 @@ export fn history_redo(
   let mut undo = history.undo
   undo.push(history_entry_new(document, selection))
   HistoryApplyResult {
-    history: EditorHistory {
-      undo: undo,
-      redo: array_without_last(history.redo)
-    },
+    history: history_cleared_coalesce(undo, array_without_last(history.redo)),
     document: entry.document,
     selection: entry.selection,
     applied: 1

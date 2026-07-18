@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:25 (Driver TRACK_EDITOR_UNDO_COALESCE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_UNDO_COALESCE |
+| started | 2026-07-18 12:20 |
+| elapsed | ~5 min |
+| done    | `history_push_before_edit_kind` same-kind+1000ms coalesce; `editor_app_insert_text`/`backspace`/`newline` wired (`frame_index*16`); word-delete clears; `ux_ok typing_coalesces_into_one_undo`; `demo_live_fs_compile_ok` |
+| verify  | `run_ux_typing_coalesces_into_one_undo.sh` → `ux_ok`; `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok`; `history_unit` ok |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_UNDO_COALESCE |
+
 ### Turn 2026-07-18 12:20 (Driver TRACK_EDITOR_UNDO_COALESCE STEP=1)
 
 | field   | value |

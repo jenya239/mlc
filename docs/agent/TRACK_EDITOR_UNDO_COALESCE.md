@@ -5,11 +5,17 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
 `text_buffer` path → each keystroke is its own undo entry. Review:
 `typing_coalesces_into_one_undo` (L1.5).
 
-## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
+## Status: **active** (2026-07-18) — STEP=2 done; STEP=3 Critic next
 
 ## Next step
 
-**STEP=2** — Implement kind+idle coalesce; wire app/demo; green scenario.
+**STEP=3** — Critic: gates; archive; `next` = Planner (§46 #7).
+
+### STEP=2 done (2026-07-18)
+
+- `history_push_before_edit_kind`: same-kind + 1000ms idle coalesce
+- `editor_app_insert_text` / `backspace` / `newline` wired; word-delete clears
+- Gates: `ux_ok typing_coalesces_into_one_undo` + `demo_live_fs_compile_ok`
 
 ### STEP=1 done (2026-07-18)
 
@@ -48,16 +54,14 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L1.5 scenario first (`typing_coalesces_into_one_undo`) | **done** (red harness) |
-| 2 | Coalesce in history + app/demo wire | scenario + compile |
+| 2 | Coalesce in history + app/demo wire | **done** |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
 **STEP=1** — **done**
 
-**STEP=2**
-1. Implement kind+idle coalesce; wire insert/backspace; break on other edits.
-2. Gates: scenario ok + `demo_live_fs_compile_ok`.
+**STEP=2** — **done**
 
 **STEP=3** — Critic; `next` = Planner (§46 #7).
 
