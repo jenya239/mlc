@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:10 (Planner TRACK_EDITOR_FONT_ZOOM STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_FONT_ZOOM |
+| started | 2026-07-19 00:05 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_FONT_ZOOM.md`; Decision: mutable `font_size` 8..48; derive metrics; Ctrl+wheel zoom (no scroll); L1 `ctrl_wheel_font_zoom`; PLAN/UX_BACKLOG #16 → active |
+| verify  | track file + PLAN §46 + backlog #16 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FONT_ZOOM |
+
 ### Turn 2026-07-19 00:05 (Critic TRACK_EDITOR_TAB_REORDER critique-audit)
 
 | field   | value |
