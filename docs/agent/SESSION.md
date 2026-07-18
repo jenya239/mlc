@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 23:50 (Planner TRACK_EDITOR_TAB_REORDER STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_TAB_REORDER |
+| started | 2026-07-18 23:45 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_TAB_REORDER.md`; Decision: `tab_set_move` + title-slot drag (not close); active follows moved tab; L1 `drag_reorder_tabs`; demo_live drag state; PLAN/UX_BACKLOG #15 → active |
+| verify  | track file + PLAN §46 + backlog #15 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TAB_REORDER |
+
 ### Turn 2026-07-18 23:45 (Critic TRACK_EDITOR_REPLACE critique-audit)
 
 | field   | value |
