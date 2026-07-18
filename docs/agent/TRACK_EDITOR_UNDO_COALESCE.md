@@ -5,12 +5,16 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#6**.
 `text_buffer` path → each keystroke is its own undo entry. Review:
 `typing_coalesces_into_one_undo` (L1.5).
 
-## Status: **active** (2026-07-18) — STEP=0 done; STEP=1 next
+## Status: **active** (2026-07-18) — STEP=1 done; STEP=2 next
 
 ## Next step
 
-**STEP=1** — L1.5 scenario first: `typing_coalesces_into_one_undo` (Standing
-discipline); red harness if needed.
+**STEP=2** — Implement kind+idle coalesce; wire app/demo; green scenario.
+
+### STEP=1 done (2026-07-18)
+
+- Stub `history_push_before_edit_kind` (always push); L1.5 red harness
+  `typing_coalesces_into_one_undo` (+ run script)
 
 ### STEP=0 done (2026-07-18)
 
@@ -43,15 +47,13 @@ discipline); red harness if needed.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L1.5 scenario first (`typing_coalesces_into_one_undo`) | scenario fails or harness ready |
+| 1 | L1.5 scenario first (`typing_coalesces_into_one_undo`) | **done** (red harness) |
 | 2 | Coalesce in history + app/demo wire | scenario + compile |
 | 3 | Critic: gates; archive | close |
 
 ### Sub-steps (Driver)
 
-**STEP=1**
-1. Add `ux_scenarios/typing_coalesces_into_one_undo.mlc` (+ run script).
-2. Prefer red before STEP=2 (current always-push → one undo leaves residual text / depth > 1).
+**STEP=1** — **done**
 
 **STEP=2**
 1. Implement kind+idle coalesce; wire insert/backspace; break on other edits.

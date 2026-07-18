@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 12:20 (Driver TRACK_EDITOR_UNDO_COALESCE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_UNDO_COALESCE |
+| started | 2026-07-18 12:15 |
+| elapsed | ~5 min |
+| done    | Stub `history_push_before_edit_kind` (always push); L1.5 red harness `typing_coalesces_into_one_undo` (+ run script); `demo_live_fs_compile_ok` |
+| verify  | `run_ux_typing_coalesces_into_one_undo.sh` exit 1 (`ux_fail typing_coalesce undo depth`); `run_editor_demo_live_fs_compile.sh` → `demo_live_fs_compile_ok` |
+| result  | STEP=1 done; scenario red until STEP=2 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_UNDO_COALESCE |
+
 ### Turn 2026-07-18 12:15 (Planner TRACK_EDITOR_UNDO_COALESCE STEP=0)
 
 | field   | value |

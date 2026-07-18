@@ -34,6 +34,18 @@ export type HistoryApplyResult = {
   applied: i32
 }
 
+// Edit kinds for coalesce (STEP=1 stub ignores them until STEP=2).
+export fn history_edit_none() -> i32 = 0
+export fn history_edit_insert_text() -> i32 = 1
+export fn history_edit_backspace() -> i32 = 2
+export fn history_edit_newline() -> i32 = 3
+export fn history_edit_other() -> i32 = 4
+
+export fn history_coalesce_idle_ms() -> i32 = 1000
+
+export fn history_undo_depth(history: EditorHistory) -> i32 =
+  history.undo.length()
+
 // Before mutating: push current state, clear redo.
 export fn history_push_before_edit(
   history: EditorHistory,
@@ -43,6 +55,19 @@ export fn history_push_before_edit(
   let mut undo = history.undo
   undo.push(history_entry_new(document, selection))
   EditorHistory { undo: undo, redo: [] }
+end
+
+// STEP=1 stub: always push (ignore kind/clock) — red until STEP=2 coalesce.
+export fn history_push_before_edit_kind(
+  history: EditorHistory,
+  document: TextDocument,
+  selection: EditorSelection,
+  kind: i32,
+  clock_ms: i32
+) -> EditorHistory = do
+  let _unused_kind = kind
+  let _unused_clock = clock_ms
+  history_push_before_edit(history, document, selection)
 end
 
 fn array_without_last(entries: [HistoryEntry]) -> [HistoryEntry] = do

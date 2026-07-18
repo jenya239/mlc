@@ -1,0 +1,65 @@
+// TRACK_EDITOR_UNDO_COALESCE STEP=1 — L1.5: consecutive typing = one undo.
+import {
+  document_from_string,
+  document_to_string
+} from '../document/piece_table'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import { edit_insert_text } from '../document/edit'
+import {
+  history_new,
+  history_push_before_edit_kind,
+  history_undo,
+  history_undo_depth,
+  history_edit_insert_text
+} from '../document/history'
+
+fn main() -> i32 = do
+  let mut document = document_from_string("")
+  let mut selection = selection_collapsed(0)
+  let mut history = history_new()
+  const kind = history_edit_insert_text()
+
+  history = history_push_before_edit_kind(history, document, selection, kind, 0)
+  let mut edited = edit_insert_text(document, selection, "h")
+  document = edited.document
+  selection = edited.selection
+
+  history = history_push_before_edit_kind(history, document, selection, kind, 16)
+  edited = edit_insert_text(document, selection, "i")
+  document = edited.document
+  selection = edited.selection
+
+  history = history_push_before_edit_kind(history, document, selection, kind, 32)
+  edited = edit_insert_text(document, selection, "!")
+  document = edited.document
+  selection = edited.selection
+
+  if document_to_string(document) != "hi!" then
+    println("ux_fail typing_coalesce text after insert")
+    return 1
+  end
+  if history_undo_depth(history) != 1 then
+    println("ux_fail typing_coalesce undo depth")
+    return 2
+  end
+
+  const applied = history_undo(history, document, selection)
+  if applied.applied != 1 then
+    println("ux_fail typing_coalesce undo applied")
+    return 3
+  end
+  if document_to_string(applied.document) != "" then
+    println("ux_fail typing_coalesce undo text")
+    return 4
+  end
+  if selection_caret(applied.selection) != 0 then
+    println("ux_fail typing_coalesce undo caret")
+    return 5
+  end
+
+  println("ux_ok typing_coalesces_into_one_undo")
+  0
+end
