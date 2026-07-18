@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#15**.
 Tab strip click activates / closes; no drag-to-reorder. Review gate:
 `drag_reorder_tabs` (L1). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-18) — STEP=0–2 done; next Critic
 
 ## Next step
 
-**STEP=2** — `tab_set_move` + strip drag wire + demo_live.
+**STEP=3** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -39,8 +39,8 @@ Tab strip click activates / closes; no drag-to-reorder. Review gate:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L1 scenario first (`drag_reorder_tabs`) | pending |
-| 2 | `tab_set_move` + strip drag wire + demo_live | pending |
+| 1 | L1 scenario first (`drag_reorder_tabs`) | **done** (2026-07-18) — stubs red: `ux_fail drag_reorder order first` |
+| 2 | `tab_set_move` + strip drag wire + demo_live | **done** (2026-07-18) — `ux_ok drag_reorder_tabs` |
 | 3 | Critic: gates; archive | pending |
 
 ## Out of scope

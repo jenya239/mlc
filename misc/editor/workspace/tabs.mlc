@@ -90,15 +90,48 @@ export fn tab_set_set_active(tabs: TabSet, index: i32) -> TabSet = do
   TabSet { tabs: tabs.tabs, active_index: index }
 end
 
-// TRACK_EDITOR_TAB_REORDER STEP=1 — stub (no reorder until STEP=2).
+// TRACK_EDITOR_TAB_REORDER STEP=2 — move tab; active follows moved tab.
 export fn tab_set_move(
   tabs: TabSet,
   from_index: i32,
   to_index: i32
 ) -> TabSet = do
-  let _unused_from = from_index
-  let _unused_to = to_index
-  tabs
+  const count = tabs.tabs.length()
+  if from_index < 0 || from_index >= count then
+    return tabs
+  end
+  if to_index < 0 || to_index >= count then
+    return tabs
+  end
+  if from_index == to_index then
+    return tabs
+  end
+  const moved = tabs.tabs[from_index]
+  let mut without: [EditorTab] = []
+  let mut index = 0
+  while index < count do
+    if index != from_index then
+      without.push(tabs.tabs[index])
+    end
+    index = index + 1
+  end
+  let mut insert_at = to_index
+  if insert_at > without.length() then
+    insert_at = without.length()
+  end
+  let mut next_tabs: [EditorTab] = []
+  index = 0
+  while index < without.length() do
+    if index == insert_at then
+      next_tabs.push(moved)
+    end
+    next_tabs.push(without[index])
+    index = index + 1
+  end
+  if insert_at >= without.length() then
+    next_tabs.push(moved)
+  end
+  TabSet { tabs: next_tabs, active_index: insert_at }
 end
 
 export fn tab_set_update_active_buffer(

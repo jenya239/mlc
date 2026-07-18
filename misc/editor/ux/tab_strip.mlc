@@ -155,7 +155,7 @@ export fn editor_ux_click_tab_strip(
     state, tab_strip_rect_from_state(state), point_x, point_y
   )
 
-// TRACK_EDITOR_TAB_REORDER STEP=1 — stub path via tab_set_move (red until STEP=2).
+// TRACK_EDITOR_TAB_REORDER STEP=2 — reorder via tab_set_move.
 export fn editor_ux_tab_strip_drag_to(
   state: EditorUxState,
   from_index: i32,

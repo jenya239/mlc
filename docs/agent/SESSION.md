@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 00:00 (Driver TRACK_EDITOR_TAB_REORDER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TAB_REORDER |
+| started | 2026-07-18 23:55 |
+| elapsed | ~15 min |
+| done    | Real `tab_set_move`; `editor_ux_tab_strip_drag_to`; demo_live `dragging_tab_index` press/release + suppress text/divider drag; `ux_ok drag_reorder_tabs` |
+| verify  | `ux_ok drag_reorder_tabs`; `ux_ok tab_strip_click_activates`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | prior turn backend drop left partial diff — completed wire this turn; instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_TAB_REORDER |
+
 ### Turn 2026-07-18 23:55 (Driver TRACK_EDITOR_TAB_REORDER STEP=1)
 
 | field   | value |
