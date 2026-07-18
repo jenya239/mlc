@@ -17,6 +17,8 @@ export type CommandId =
   | CmdFindNext
   | CmdFindPrev
   | CmdGotoLine
+  | CmdReplaceOne
+  | CmdReplaceAll
   | CmdNone
 
 export type KeyChord = {
@@ -64,6 +66,8 @@ export fn command_id_tag(command: CommandId) -> string =
   | CmdFindNext => "find_next"
   | CmdFindPrev => "find_prev"
   | CmdGotoLine => "goto_line"
+  | CmdReplaceOne => "replace_one"
+  | CmdReplaceAll => "replace_all"
   | CmdNone => "none"
   end
 
@@ -112,6 +116,8 @@ export fn command_bus_default_bindings() -> [KeyBinding] = do
   bindings.push(binding(0, 0, 0, "f3", CmdFindNext, 0, 1))
   bindings.push(binding(0, 1, 0, "f3", CmdFindPrev, 0, 1))
   bindings.push(binding(1, 0, 0, "g", CmdGotoLine, 0, 1))
+  bindings.push(binding(1, 0, 0, "h", CmdReplaceOne, 0, 1))
+  bindings.push(binding(1, 1, 0, "h", CmdReplaceAll, 0, 1))
   // both foci
   bindings.push(binding(1, 0, 0, "tab", CmdNextTab, 1, 1))
   bindings.push(binding(1, 1, 0, "tab", CmdPrevTab, 1, 1))

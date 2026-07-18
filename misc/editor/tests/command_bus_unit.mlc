@@ -76,29 +76,35 @@ fn main() -> i32 = do
   if !expect_tag(bindings, FocusEditor, 1, 0, "g", "goto_line") then
     return 16
   end
-  if !expect_tag(bindings, FocusEditor, 1, 0, "tab", "next_tab") then
+  if !expect_tag(bindings, FocusEditor, 1, 0, "h", "replace_one") then
     return 17
   end
-  if !expect_tag(bindings, FocusEditor, 1, 1, "tab", "prev_tab") then
+  if !expect_tag(bindings, FocusEditor, 1, 1, "h", "replace_all") then
     return 18
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 0, "tab", "next_tab") then
+    return 19
+  end
+  if !expect_tag(bindings, FocusEditor, 1, 1, "tab", "prev_tab") then
+    return 20
   end
 
   // Tree focus: edit chords blocked; tab cycle allowed.
   if command_id_tag(command_bus_resolve(bindings, FocusTree, 1, 0, 0, "s")) != "none" then
-    return 19
-  end
-  if command_id_tag(command_bus_resolve(bindings, FocusTree, 1, 0, 0, "z")) != "none" then
-    return 20
-  end
-  if !expect_tag(bindings, FocusTree, 1, 0, "tab", "next_tab") then
     return 21
   end
-  if !expect_tag(bindings, FocusTree, 1, 1, "tab", "prev_tab") then
+  if command_id_tag(command_bus_resolve(bindings, FocusTree, 1, 0, 0, "z")) != "none" then
     return 22
+  end
+  if !expect_tag(bindings, FocusTree, 1, 0, "tab", "next_tab") then
+    return 23
+  end
+  if !expect_tag(bindings, FocusTree, 1, 1, "tab", "prev_tab") then
+    return 24
   end
 
   if command_id_tag(CmdNone) != "none" then
-    return 23
+    return 25
   end
 
   println("[mlc-editor] command_bus_unit ok")

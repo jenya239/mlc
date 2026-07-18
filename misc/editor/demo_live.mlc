@@ -134,6 +134,8 @@ import {
   CmdFindNext,
   CmdFindPrev,
   CmdGotoLine,
+  CmdReplaceOne,
+  CmdReplaceAll,
   CmdNone,
   CmdSave,
   command_id_tag,
@@ -146,7 +148,8 @@ import {
 } from './document/save'
 import {
   TextDocument,
-  document_to_string
+  document_to_string,
+  document_from_string
 } from './document/piece_table'
 import {
   DocumentFrameSnapshot,
@@ -219,8 +222,15 @@ import {
   find_session_seed_from_selection,
   find_session_next,
   find_session_prev,
+  find_session_set_replacement,
+  find_replace_one,
+  find_replace_all,
   find_visible_highlights
 } from './ux/find'
+import {
+  clipboard_get,
+  clipboard_is_empty
+} from './clipboard'
 import { ux_rect_new } from '../gui/ux/snapshot'
 import {
   tab_strip_close_rect,
@@ -1062,6 +1072,54 @@ fn main() -> i32 = do
             app = editor_app_goto_line_from_selection(app, metrics)
             selection = app.ux.selection
             scroll_offset_y = app.ux.scroll_offset_y
+          end
+        | CmdReplaceOne => do
+            clipboard = clipboard_pull_from_os(clipboard)
+            if !clipboard_is_empty(clipboard) then
+              find_session = find_session_set_replacement(
+                find_session, clipboard_get(clipboard)
+              )
+            end
+            const replace_one_result = find_replace_one(
+              find_session, draw_text, selection
+            )
+            if replace_one_result.text != draw_text then
+              history = history_push_before_edit(history, document, selection)
+              tabs = apply_edit(
+                tabs, document_from_string(replace_one_result.text)
+              )
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
+            end
+            find_session = replace_one_result.session
+            selection = replace_one_result.selection
+          end
+        | CmdReplaceAll => do
+            clipboard = clipboard_pull_from_os(clipboard)
+            if !clipboard_is_empty(clipboard) then
+              find_session = find_session_set_replacement(
+                find_session, clipboard_get(clipboard)
+              )
+            end
+            const replace_all_result = find_replace_all(
+              find_session, draw_text, selection
+            )
+            if replace_all_result.text != draw_text then
+              history = history_push_before_edit(history, document, selection)
+              tabs = apply_edit(
+                tabs, document_from_string(replace_all_result.text)
+              )
+              active = tab_set_active(tabs)
+              document = active.buffer.document
+              frame = document_frame_snapshot(document)
+              line_index = frame.line_index
+              draw_text = frame.text
+            end
+            find_session = replace_all_result.session
+            selection = replace_all_result.selection
           end
         | CmdCopy => do
             clipboard = edit_copy(document, selection, clipboard)

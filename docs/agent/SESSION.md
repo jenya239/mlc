@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 23:40 (Driver TRACK_EDITOR_REPLACE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_REPLACE |
+| started | 2026-07-18 23:30 |
+| elapsed | ~15 min |
+| done    | Real `find_replace_one`/`find_replace_all`; `CmdReplaceOne`/`CmdReplaceAll` (Ctrl+H / Ctrl+Shift+H); clipboard seed replacement; demo_live wire + history push; `ux_ok replace_one_and_all` |
+| verify  | `ux_ok replace_one_and_all`; `ux_ok find_highlights_matches`; `demo_live_fs_compile_ok`; `command_bus_unit ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_REPLACE |
+
 ### Turn 2026-07-18 23:30 (Driver TRACK_EDITOR_REPLACE STEP=1)
 
 | field   | value |
