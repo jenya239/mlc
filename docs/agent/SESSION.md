@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 23:20 (Planner TRACK_EDITOR_REPLACE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_REPLACE |
+| started | 2026-07-18 23:15 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_REPLACE.md`; Decision: `FindSession.replacement`; replace-one/all (edit+rebuild); CmdReplaceOne/All; clipboard seed replacement; L1 `replace_one_and_all`; PLAN/UX_BACKLOG #14 → active |
+| verify  | track file + PLAN §46 + backlog #14 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_REPLACE |
+
 ### Turn 2026-07-18 23:15 (Critic TRACK_EDITOR_ENCODING_GUARD critique-audit)
 
 | field   | value |
