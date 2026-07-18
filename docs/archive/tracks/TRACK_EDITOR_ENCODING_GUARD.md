@@ -1,15 +1,41 @@
 # Track: Editor encoding guard (BOM + UTF-8 + binary refuse)
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#13**.
+Parent: [../agent/TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#13**.
 `open_buffer_from_path` loads raw bytes with no BOM strip, no UTF-8 check,
 no binary refuse — NUL/garbage and UTF-8 BOM pollute the buffer. Review gates:
 `binary_file_refused`, `utf8_bom_detected` (L0). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-18) — Critic OK
+
+**Critic 2026-07-18 (STEP=3):** Re-ran both L0 + save + crlf + compile.
+Anti-false-done: `ba28446d`…`e141ac97` (STEP=0–2). Wire present:
+NUL refuse; BOM strip + `had_bom` + re-prefix on save; `utf8_text_is_valid`
+before CRLF normalize. **reopen: none**.
+
+Honest residual: no status-bar encoding label; no Latin-1/UTF-16 open;
+`open_buffer_from_text` trusted (no guard); invalid-UTF-8 covered by validator
+but no dedicated L0 scenario token.
+
+| Gate | Result |
+|------|--------|
+| `run_editor_binary_file_refused.sh` | `[mlc-editor] binary_file_refused ok` EXIT=0 |
+| `run_editor_utf8_bom_detected.sh` | `[mlc-editor] utf8_bom_detected ok` EXIT=0 |
+| `run_editor_save_unit.sh` | `[mlc-editor] save_unit ok` EXIT=0 |
+| `run_editor_crlf_preserved_on_save.sh` | `[mlc-editor] crlf_preserved_on_save ok` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: re-run gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#14 EDITOR_REPLACE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `ba28446d` | Decision freeze + open |
+| 1 | `3359c05e` | L0 red harnesses + `had_bom` stub |
+| 2 | `e141ac97` | BOM/NUL/UTF-8 guard + save BOM |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -43,7 +69,7 @@ no binary refuse — NUL/garbage and UTF-8 BOM pollute the buffer. Review gates:
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
 | 1 | L0 red harnesses (`binary_file_refused`, `utf8_bom_detected`) | **done** (red: `binary not refused`; `bom not stripped`) |
 | 2 | BOM strip/preserve + NUL/UTF-8 refuse in `open_buffer_from_path` | **done** (both L0 ok; save+crlf+demo) |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
