@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 08:15 (Planner TRACK_EDITOR_TRAILING_WS_VIZ STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_TRAILING_WS_VIZ |
+| started | 2026-07-19 08:05 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_TRAILING_WS_VIZ.md`; Decision: trailing-run draw report (space/tab EOL, visible-only); L2 `trailing_ws_visualized`; STEPs 1–2+Critic; PLAN/UX_BACKLOG #24 → active |
+| verify  | track file + PLAN §46 + backlog #24 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TRAILING_WS_VIZ |
+
 ### Turn 2026-07-19 08:00 (Critic TRACK_EDITOR_MULTI_CURSOR critique-audit)
 
 | field   | value |
