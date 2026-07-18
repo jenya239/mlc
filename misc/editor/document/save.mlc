@@ -1,4 +1,4 @@
-// TRACK_EDITOR_MVP STEP=19 — dirty flag + save/reload (by-value file ABI).
+// TRACK_EDITOR_CRLF_PRESERVE STEP=2 — detect/normalize line endings + preserve on save.
 import {
   TextDocument,
   document_from_string,
@@ -14,19 +14,45 @@ extern fn file_exists(path: string) -> bool
 extern fn file_remove(path: string) -> bool
   = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
 
+// 0 = LF, 1 = CRLF
+export fn line_ending_lf() -> i32 = 0
+export fn line_ending_crlf() -> i32 = 1
+
 export type OpenBuffer = {
   path: string,
   document: TextDocument,
   dirty: i32,
-  last_error: string
+  last_error: string,
+  line_ending: i32
 }
+
+export fn detect_line_ending(text: string) -> i32 = do
+  if text.contains("\r\n") then
+    return line_ending_crlf()
+  end
+  line_ending_lf()
+end
+
+export fn normalize_newlines_to_lf(text: string) -> string = do
+  let mut result = text.replace("\r\n", "\n")
+  result = result.replace("\r", "\n")
+  result
+end
+
+fn encode_for_save(text: string, line_ending: i32) -> string = do
+  if line_ending == line_ending_crlf() then
+    return text.replace("\n", "\r\n")
+  end
+  text
+end
 
 export fn open_buffer_new(path: string, document: TextDocument) -> OpenBuffer =
   OpenBuffer {
     path: path,
     document: document,
     dirty: 0,
-    last_error: ""
+    last_error: "",
+    line_ending: line_ending_lf()
   }
 
 export fn open_buffer_from_text(path: string, text: string) -> OpenBuffer =
@@ -38,15 +64,19 @@ export fn open_buffer_from_path(path: string) -> OpenBuffer = do
       path: path,
       document: document_from_string(""),
       dirty: 0,
-      last_error: "File not found: " + path
+      last_error: "File not found: " + path,
+      line_ending: line_ending_lf()
     }
   end
-  const text = file_read_to_string(path)
+  const raw = file_read_to_string(path)
+  const ending = detect_line_ending(raw)
+  const normalized = normalize_newlines_to_lf(raw)
   OpenBuffer {
     path: path,
-    document: document_from_string(text),
+    document: document_from_string(normalized),
     dirty: 0,
-    last_error: ""
+    last_error: "",
+    line_ending: ending
   }
 end
 
@@ -58,7 +88,8 @@ export fn open_buffer_set_document(
     path: buffer.path,
     document: document,
     dirty: 1,
-    last_error: ""
+    last_error: "",
+    line_ending: buffer.line_ending
   }
 end
 
@@ -67,7 +98,8 @@ export fn open_buffer_mark_dirty(buffer: OpenBuffer) -> OpenBuffer =
     path: buffer.path,
     document: buffer.document,
     dirty: 1,
-    last_error: buffer.last_error
+    last_error: buffer.last_error,
+    line_ending: buffer.line_ending
   }
 end
 
@@ -79,21 +111,26 @@ export fn open_buffer_has_error(buffer: OpenBuffer) -> bool =
 
 // Ctrl+S — write document to path; clear dirty on success.
 export fn open_buffer_save(buffer: OpenBuffer) -> OpenBuffer = do
-  const content = document_to_string(buffer.document)
+  const content = encode_for_save(
+    document_to_string(buffer.document),
+    buffer.line_ending
+  )
   const ok = file_write_string(buffer.path, content)
   if !ok then
     return OpenBuffer {
       path: buffer.path,
       document: buffer.document,
       dirty: buffer.dirty,
-      last_error: "Failed to write: " + buffer.path
+      last_error: "Failed to write: " + buffer.path,
+      line_ending: buffer.line_ending
     }
   end
   OpenBuffer {
     path: buffer.path,
     document: buffer.document,
     dirty: 0,
-    last_error: ""
+    last_error: "",
+    line_ending: buffer.line_ending
   }
 end
 

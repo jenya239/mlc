@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 16:00 (Driver TRACK_EDITOR_CRLF_PRESERVE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CRLF_PRESERVE |
+| started | 2026-07-18 15:50 |
+| elapsed | ~10 min |
+| done    | `OpenBuffer.line_ending`; `detect_line_ending` + `normalize_newlines_to_lf` on open; CRLF encode on save; `crlf_preserved_on_save ok`; `save_unit ok`; `demo_live_fs_compile_ok` |
+| verify  | `run_editor_crlf_preserved_on_save.sh` → ok; `run_editor_save_unit.sh` → ok; `run_editor_demo_live_fs_compile.sh` → ok |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CRLF_PRESERVE |
+
 ### Turn 2026-07-18 15:50 (Driver TRACK_EDITOR_CRLF_PRESERVE STEP=1)
 
 | field   | value |
