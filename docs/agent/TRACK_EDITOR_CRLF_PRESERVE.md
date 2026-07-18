@@ -5,11 +5,11 @@ Open loads raw bytes; edits insert `"\n"`; save writes `document_to_string`
 as-is — CRLF files can become LF/mixed. Review gate: `crlf_preserved_on_save`
 (L0). Size **M**.
 
-## Status: **active** (2026-07-18) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-18) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L0 scenario first (`crlf_preserved_on_save`) red harness.
+**STEP=2** — detect + normalize + `OpenBuffer.line_ending` + save convert.
 
 ## Decision (STEP=0) — **frozen** 2026-07-18
 
@@ -39,7 +39,7 @@ as-is — CRLF files can become LF/mixed. Review gate: `crlf_preserved_on_save`
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-18) |
-| 1 | L0 scenario first (`crlf_preserved_on_save`) | pending |
+| 1 | L0 scenario first (`crlf_preserved_on_save`) | **done** (red: `crlf_fail not normalized to LF`) |
 | 2 | detect + normalize + OpenBuffer.line_ending + save convert | pending |
 | 3 | Critic: gates; archive | pending |
 

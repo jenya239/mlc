@@ -1,0 +1,81 @@
+// TRACK_EDITOR_CRLF_PRESERVE STEP=1 — L0: CRLF preserved on save (red until STEP=2).
+import { document_to_string } from '../document/piece_table'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_set_document,
+  open_buffer_has_error,
+  open_buffer_save
+} from '../document/save'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn main() -> i32 = do
+  const crlf_path = ".tmp/editor_fixture/crlf_sample.txt"
+  const lf_path = ".tmp/editor_fixture/lf_sample.txt"
+
+  // Seed CRLF on disk (raw write via save of from_text).
+  let mut seed = open_buffer_from_text(crlf_path, "a\r\nb\r\n")
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("crlf_fail seed write")
+    return 1
+  end
+
+  let mut buffer = open_buffer_from_path(crlf_path)
+  if open_buffer_has_error(buffer) then
+    println("crlf_fail open")
+    return 2
+  end
+
+  // Decision: internal buffer normalized to LF.
+  if document_to_string(buffer.document) != "a\nb\n" then
+    println("crlf_fail not normalized to LF")
+    return 3
+  end
+
+  // Touch dirty + save — disk must stay CRLF.
+  buffer = open_buffer_set_document(buffer, buffer.document)
+  buffer = open_buffer_save(buffer)
+  if open_buffer_has_error(buffer) then
+    println("crlf_fail save")
+    return 4
+  end
+  const on_disk = file_read_to_string(crlf_path)
+  if !on_disk.contains("\r\n") then
+    println("crlf_fail disk lost CRLF")
+    return 5
+  end
+  if on_disk != "a\r\nb\r\n" then
+    println("crlf_fail disk bytes mismatch")
+    return 6
+  end
+
+  // Companion: LF fixture stays LF.
+  let mut lf_seed = open_buffer_from_text(lf_path, "x\ny\n")
+  lf_seed = open_buffer_save(lf_seed)
+  if open_buffer_has_error(lf_seed) then
+    println("crlf_fail lf seed")
+    return 7
+  end
+  let mut lf_buffer = open_buffer_from_path(lf_path)
+  if document_to_string(lf_buffer.document) != "x\ny\n" then
+    println("crlf_fail lf normalize")
+    return 8
+  end
+  lf_buffer = open_buffer_set_document(lf_buffer, lf_buffer.document)
+  lf_buffer = open_buffer_save(lf_buffer)
+  const lf_disk = file_read_to_string(lf_path)
+  if lf_disk.contains("\r") then
+    println("crlf_fail lf gained CR")
+    return 9
+  end
+  if lf_disk != "x\ny\n" then
+    println("crlf_fail lf disk mismatch")
+    return 10
+  end
+
+  println("[mlc-editor] crlf_preserved_on_save ok")
+  0
+end

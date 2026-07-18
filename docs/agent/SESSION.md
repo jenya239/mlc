@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-18 15:50 (Driver TRACK_EDITOR_CRLF_PRESERVE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CRLF_PRESERVE |
+| started | 2026-07-18 15:45 |
+| elapsed | ~10 min |
+| done    | L0 red harness `tests/crlf_preserved_on_save.mlc` + `run_editor_crlf_preserved_on_save.sh` → `crlf_fail not normalized to LF` (exit 3); `save_unit ok`; `demo_live_fs_compile_ok` |
+| verify  | crlf script exit 1 red; save_unit EXIT=0; demo_live_fs_compile_ok EXIT=0 |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CRLF_PRESERVE |
+
 ### Turn 2026-07-18 15:40 (Planner TRACK_EDITOR_CRLF_PRESERVE STEP=0)
 
 | field   | value |
