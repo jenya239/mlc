@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner open `#35 EDITOR_MINIMAP` (§46).
+**Queue head:** Driver `TRACK_EDITOR_MINIMAP` STEP=1 (§46 #35).
+**`TRACK_EDITOR_MINIMAP` (§46 #35)** active — STEP=0 Decision frozen; next red L2.
 **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.

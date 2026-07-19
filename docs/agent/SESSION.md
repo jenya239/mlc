@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 30:25 (Planner TRACK_EDITOR_MINIMAP STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_MINIMAP (§46 #35) |
+| started | 2026-07-19 23:16 |
+| elapsed | ~8 min |
+| done    | Open `docs/agent/TRACK_EDITOR_MINIMAP.md`; freeze Decision: width 64 right strip, pixel_size=2/line_height=3 glyphs, cache-on-edit via snapshot text, viewport indicator, click/drag→scroll; token `editor_minimap_cache_stable`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed `document_frame_snapshot` + `editor_ux_content_scrollbar_thumb` + no existing minimap module |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-19-concurrency-refinement-backlog` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP |
+
 ### Turn 2026-07-19 30:10 (Critic TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER)
 
 | field   | value |
