@@ -15,7 +15,7 @@ UX. Size **M**.
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | *(this turn)* | Decision freeze + open |
+| 0 | `d1e0c679` | Decision freeze + open |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
