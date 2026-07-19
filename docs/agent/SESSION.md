@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 22:40 (Driver TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+| started | 2026-07-19 15:45 |
+| elapsed | ~20 min |
+| done    | `demo_live`: `folder_tree_browser_rows` hit+draw; apply `folder_click_toggle_expand` via `folder_tree_toggle_node`; indent + ▸/▾ |
+| verify  | `ux_ok tree_row_click_toggles_expand`; `ux_ok tree_click_opens_tab`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+
 ### Turn 2026-07-19 22:25 (Driver TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=2)
 
 | field   | value |

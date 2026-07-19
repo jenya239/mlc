@@ -675,7 +675,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **closed** 2026-07-18: Critic OK; STEP=0+3+4;
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
-  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32 closed; `#33 EDITOR_TREE_EXPAND_COLLAPSE` active STEP=2 (#22 superseded); #34–#35 queued;
+  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32 closed; `#33 EDITOR_TREE_EXPAND_COLLAPSE` active STEP=3 done → Critic (#22 superseded); #34–#35 queued;
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
         [agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md](agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) ·
         [archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md](archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md) ·

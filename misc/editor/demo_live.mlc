@@ -67,12 +67,13 @@ import {
   DirEntry,
   FileTree,
   dir_entry_new,
-  dir_entries_from_disk
+  dir_entries_from_disk,
+  file_tree_is_expanded
 } from './workspace/file_tree'
 import {
   folder_browser_at,
   folder_current_path,
-  folder_listing_rows,
+  folder_tree_browser_rows,
   folder_breadcrumb_segments,
   folder_list_rect,
   folder_row_rect,
@@ -81,6 +82,7 @@ import {
   folder_breadcrumb_height,
   folder_row_height,
   folder_row_parent,
+  folder_row_directory,
   folder_nav_new,
   folder_nav_can_back,
   folder_nav_can_forward,
@@ -94,6 +96,8 @@ import {
   folder_click_parent,
   folder_click_enter_dir,
   folder_click_open_file,
+  folder_click_toggle_expand,
+  folder_tree_toggle_node,
   path_leaf_name
 } from './ux/folder_panel'
 import {
@@ -845,7 +849,7 @@ fn main() -> i32 = do
       draw_text, line_index, wrap_columns, first_visual_row, visible_row_budget
     )
     const tree_list_rect = folder_list_rect(tree_rect)
-    const folder_rows = folder_listing_rows(panels.tree)
+    const folder_rows = folder_tree_browser_rows(panels.tree)
     const crumbs_origin_x = folder_nav_crumbs_origin_x(tree_rect)
     const breadcrumb_segments = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8
@@ -1156,6 +1160,26 @@ fn main() -> i32 = do
             action == folder_click_parent() ||
             action == folder_click_enter_dir() then
             panels = browse_panels_to(panels, folder_click.path)
+          else if action == folder_click_toggle_expand() then
+            let mut toggle_node_id = 0 - 1
+            let mut toggle_row = 0
+            while toggle_row < folder_rows.length() do
+              if folder_rows[toggle_row].path == folder_click.path then
+                toggle_node_id = folder_rows[toggle_row].node_id
+              end
+              toggle_row = toggle_row + 1
+            end
+            if toggle_node_id >= 0 then
+              const use_disk = tree_uses_disk(panels.tree)
+              const toggle_entries =
+                listing_entries_for(folder_click.path, use_disk)
+              panels = panels_with_tree(
+                panels,
+                folder_tree_toggle_node(
+                  panels.tree, toggle_node_id, toggle_entries
+                )
+              )
+            end
           else if action == folder_click_open_file() then
             const open_path = folder_click.path
             tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
@@ -1656,7 +1680,7 @@ fn main() -> i32 = do
         0.22, 0.24, 0.30, 1.0
       )
     end
-    const draw_folder_rows = folder_listing_rows(panels.tree)
+    const draw_folder_rows = folder_tree_browser_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8
     )
@@ -2020,17 +2044,22 @@ fn main() -> i32 = do
       const folder_row = draw_tree_rows[row_index]
       let mut label = folder_row.name
       if folder_row.kind == folder_row_directory() then
-        label = label + "/"
+        if file_tree_is_expanded(panels.tree, folder_row.node_id) != 0 then
+          label = "▾ " + label
+        else
+          label = "▸ " + label
+        end
       end
       if folder_row.kind == folder_row_parent() then
         label = ".."
       end
       const pen_y =
         tree_list_rect.y + 14 + row_index * folder_row_height() - tree_scroll_y
+      const pen_x = tree_list_rect.x + 8 + folder_row.depth * 10
       if pen_y >= tree_list_rect.y - folder_row_height() &&
           pen_y <= tree_list_rect.y + tree_list_rect.height + folder_row_height() then
         tree_lines = push_line(
-          tree_lines, label, 13, tree_list_rect.x + 8, pen_y
+          tree_lines, label, 13, pen_x, pen_y
         )
       end
       row_index = row_index + 1
