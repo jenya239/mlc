@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 27:40 (Critic TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK |
+| started | 2026-07-19 20:21 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`eb992e83`…`11bdb96a`); L1+expand/open+demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #33d closed |
+| verify  | `ux_ok tree_parent_double_click_navigates`; `ux_ok tree_row_click_toggles_expand`; `ux_ok tree_click_opens_tab`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; residual: parent arm has no dedicated visual |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #33e EDITOR_CONTENT_SCROLLBAR) |
+
 ### Turn 2026-07-19 27:25 (Driver TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=3)
 
 | field   | value |

@@ -1,14 +1,30 @@
 # Track: Editor Tree Parent Double-Click
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33d**
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#33d**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 Revises `#33` Decision residual: parent `..` still single-click navigate.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L1 + expand/open + demo. Anti-false-done:
+`eb992e83`…`11bdb96a` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: parent branch uses same `is_double` ≤25 gate; single = `folder_click_arm_dir`,
+double = `folder_click_parent` + nav push; `demo_live` browse `if` unchanged.
+**reopen: none**.
+
+Honest residual: first click of a parent double still arms only (no visual feedback
+beyond arm state — acceptable per Decision); breadcrumb/nav buttons still single-click.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_tree_parent_double_click.sh` | `ux_ok tree_parent_double_click_navigates` EXIT=0 |
+| `run_ux_tree_row_click_toggles_expand.sh` | `ux_ok tree_row_click_toggles_expand` EXIT=0 |
+| `run_ux_tree_click.sh` | `ux_ok tree_click_opens_tab` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#33e EDITOR_CONTENT_SCROLLBAR`).
 
 ### STEPs done in git
 
@@ -18,6 +34,7 @@ Revises `#33` Decision residual: parent `..` still single-click navigate.
 | 1 | `e056c76f` | Red L1 stub + run scripts |
 | 2 | `fcef874e` | parent `is_double` + arm; green L1 |
 | 3 | `11bdb96a` | `demo_live_fs_compile_ok` (no demo wire) |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,7 +58,7 @@ Revises `#33` Decision residual: parent `..` still single-click navigate.
 | 1 | L1 red harness + run scripts | **done** — `ux_ok tree_parent_double_click_red` |
 | 2 | Gate parent on `is_double`; green token | **done** — `ux_ok tree_parent_double_click_navigates` |
 | 3 | `demo_live` verify/wire if needed; `demo_live_fs_compile_ok` | **done** — `demo_live_fs_compile_ok` (no demo change) |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 <!-- STEP=1: stub fail token; red script -->
 <!-- STEP=2: parent branch mirrors dir is_double; green L1 -->
