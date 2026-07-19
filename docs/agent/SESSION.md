@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 14:25 (Planner TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_WIDE_CHAR_COLUMNS |
+| started | 2026-07-19 12:12 |
+| elapsed | ~10 min |
+| done    | Opened `TRACK_EDITOR_WIDE_CHAR_COLUMNS.md`; Decision: display columns (wcwidth-lite) in `line_index`; CJK/emoji width 2; no grapheme/ZWJ; L0 `wide_char_column_width`; STEPs 1–3+Critic; REG only if lib/mlc; PLAN/UX_BACKLOG #28 → active |
+| verify  | track file + PLAN §46 + backlog #28 active; no code |
+| result  | STEP=0 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WIDE_CHAR_COLUMNS |
+
 ### Turn 2026-07-19 14:20 (Critic TRACK_EDITOR_DROP_FILE)
 
 | field   | value |
@@ -46,33 +61,3 @@
 | result  | STEP=2 done |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone; REG deferred to STEP=3/Critic |
 | next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_DROP_FILE |
-
-### Turn 2026-07-19 13:05 (Driver TRACK_EDITOR_DROP_FILE STEP=1)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 1 |
-| track   | TRACK_EDITOR_DROP_FILE |
-| started | 2026-07-19 11:25 |
-| elapsed | ~10 min |
-| done    | Stub `ux/drop_file.mlc` (`editor_ux_open_dropped_path` no-op); L1 `drop_file_opens_tab` + `run_ux_drop_file_opens_tab.sh` → red `ux_fail drop_file_opens_tab no_tab` |
-| verify  | drop script exit 1 red; `ux_ok indent_width_config`; `demo_live_fs_compile_ok` |
-| result  | STEP=1 done |
-| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
-| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DROP_FILE |
-
-### Turn 2026-07-19 12:55 (Planner TRACK_EDITOR_DROP_FILE STEP=0)
-
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | 0 |
-| track   | TRACK_EDITOR_DROP_FILE |
-| started | 2026-07-19 11:22 |
-| elapsed | ~10 min |
-| done    | Opened `TRACK_EDITOR_DROP_FILE.md`; Decision: GLFW drop queue + `take_drop_path`/`test_push`; open via `open_buffer_from_path`+`tab_set_open`; L1 `drop_file_opens_tab`; STEPs 1–3+Critic; REG (lib/mlc); PLAN/UX_BACKLOG #27 → active |
-| verify  | track file + PLAN §46 + backlog #27 active; no code |
-| result  | STEP=0 done |
-| issues  | none |
-| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DROP_FILE |
