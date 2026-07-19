@@ -1625,7 +1625,7 @@ fn main() -> i32 = do
     )
     solid = solid_renderer_rect(
       solid, width, height, 0, tab_bar_y, width, tab_bar_height(),
-      0.12, 0.14, 0.18, 1.0
+      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
     )
     let mut hover_tab_index = 0
     while hover_tab_index < tab_widths.length() do
@@ -1633,7 +1633,9 @@ fn main() -> i32 = do
         tab_strip, tab_widths, hover_tab_index
       )
       const tab_slot = rect_new(tab_ux.x, tab_ux.y, tab_ux.width, tab_ux.height)
-      const tab_fill = editor_ux_chrome_hover_draw_entry(input, tab_slot)
+      const tab_fill = editor_ux_chrome_hover_draw_entry(
+        input, tab_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
         tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height,
@@ -1643,12 +1645,14 @@ fn main() -> i32 = do
     end
     solid = solid_renderer_rect(
       solid, width, height, 0, toolbar_y, width, toolbar_height(),
-      0.13, 0.15, 0.19, 1.0
+      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
     )
     let mut hover_tool_index = 0
     while hover_tool_index < 11 do
       const tool_slot = toolbar_button_rect(hover_tool_index, toolbar_y)
-      const tool_fill = editor_ux_chrome_hover_draw_entry(input, tool_slot)
+      const tool_fill = editor_ux_chrome_hover_draw_entry(
+        input, tool_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
         tool_fill.x, tool_fill.y, tool_fill.width, tool_fill.height,
@@ -1664,7 +1668,7 @@ fn main() -> i32 = do
     solid = solid_renderer_rect(
       solid, width, height,
       breadcrumb_rect.x, breadcrumb_rect.y, breadcrumb_rect.width, breadcrumb_rect.height,
-      0.10, 0.12, 0.16, 1.0
+      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
     )
     if folder_nav_can_back(folder_nav) != 0 then
       solid = solid_renderer_rect(
@@ -1694,7 +1698,9 @@ fn main() -> i32 = do
       )
       if row_slot.y + row_slot.height > tree_list_rect.y &&
           row_slot.y < tree_list_rect.y + tree_list_rect.height then
-        const row_fill = editor_ux_chrome_hover_draw_entry(input, row_slot)
+        const row_fill = editor_ux_chrome_hover_draw_entry(
+          input, row_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+        )
         solid = solid_renderer_rect(
           solid, width, height,
           row_fill.x, row_fill.y, row_fill.width, row_fill.height,

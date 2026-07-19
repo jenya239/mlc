@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 25:55 (Driver TRACK_EDITOR_CHROME_THEME_DRIFT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CHROME_THEME_DRIFT |
+| started | 2026-07-19 20:04 |
+| elapsed | ~12 min |
+| done    | `chrome_hover`: `panel_bar_rgb` + `from_panel`; `demo_live` tab/toolbar/breadcrumb → `theme.panel_*`; hover draw_entry takes panel |
+| verify  | `ux_ok chrome_panel_rgb_matches_theme`; `ux_ok chrome_hover_tint_differs` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_CHROME_THEME_DRIFT |
+
 ### Turn 2026-07-19 25:40 (Driver TRACK_EDITOR_CHROME_THEME_DRIFT STEP=1)
 
 | field   | value |

@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Wire panel RGB + Light hover; green `ux_ok chrome_panel_rgb_matches_theme`.
+**STEP=3** — `demo_live_fs_compile_ok`.
 
 ### STEPs done in git
 
@@ -15,6 +15,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 |------|-----------------|-------|
 | 0 | `9554b13d` | Decision freeze + open |
 | 1 | `1c5c94fd` | Red L2 stub + run scripts |
+| 2 | *(pending hash)* | panel fills + `from_panel` hover; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -37,7 +38,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + run scripts | **done** — `ux_ok chrome_theme_drift_red` |
-| 2 | Wire panel RGB + Light hover; green token | pending — `ux_ok chrome_panel_rgb_matches_theme` |
+| 2 | Wire panel RGB + Light hover; green token | **done** — `ux_ok chrome_panel_rgb_matches_theme` |
 | 3 | `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |
 

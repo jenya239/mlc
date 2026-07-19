@@ -1,6 +1,6 @@
-// TRACK_EDITOR_CHROME_HOVER_STATE STEP=2 — idle ≠ hover chrome fills + GuiInput pick.
+// TRACK_EDITOR_CHROME_THEME_DRIFT STEP=2 — panel-based idle/hover chrome fills.
 import { Rect, rect_new } from '../../gui/layout'
-import { GuiInput, gui_is_hovered } from '../../gui/input'
+import { GuiInput, gui_is_hovered, gui_input_new } from '../../gui/input'
 
 export type ChromeHoverRgb = {
   red: f64,
@@ -33,30 +33,46 @@ fn clamp_unit(value: f64) -> f64 = do
   value
 end
 
-// Idle ≈ dark chrome bar; hover lifts ~0.10 per channel.
-export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb = do
+// Base chrome bar / strip fill — same RGB as Theme.panel_* (caller passes panel).
+export fn editor_ux_chrome_panel_bar_rgb(
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64
+) -> ChromeHoverRgb =
+  ChromeHoverRgb { red: panel_red, green: panel_green, blue: panel_blue }
+
+// Idle = panel; hover = panel + lift (clamp ≤1.0).
+export fn editor_ux_chrome_hover_rgb_from_panel(
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64,
+  hovered: i32
+) -> ChromeHoverRgb = do
   if hovered != 0 then
     return ChromeHoverRgb {
-      red: clamp_unit(0.23),
-      green: clamp_unit(0.25),
-      blue: clamp_unit(0.29)
+      red: clamp_unit(panel_red + 0.06),
+      green: clamp_unit(panel_green + 0.06),
+      blue: clamp_unit(panel_blue + 0.06)
     }
   end
-  ChromeHoverRgb { red: 0.13, green: 0.15, blue: 0.19 }
+  editor_ux_chrome_panel_bar_rgb(panel_red, panel_green, panel_blue)
 end
 
-export fn editor_ux_chrome_hover_rgb_for_rect(
-  input: GuiInput,
-  rect: Rect
-) -> ChromeHoverRgb =
-  editor_ux_chrome_hover_rgb(gui_is_hovered(input, rect))
+// Default Solarized Light base2 — same numbers as theme_solarized_light().panel_*.
+export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb =
+  editor_ux_chrome_hover_rgb_from_panel(0.933, 0.910, 0.835, hovered)
 
 export fn editor_ux_chrome_hover_draw_entry(
   input: GuiInput,
-  rect: Rect
+  rect: Rect,
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64
 ) -> ChromeHoverDrawEntry = do
   const hovered = gui_is_hovered(input, rect)
-  const fill = editor_ux_chrome_hover_rgb(hovered)
+  const fill = editor_ux_chrome_hover_rgb_from_panel(
+    panel_red, panel_green, panel_blue, hovered
+  )
   ChromeHoverDrawEntry {
     x: rect.x,
     y: rect.y,
@@ -69,15 +85,21 @@ export fn editor_ux_chrome_hover_draw_entry(
   }
 end
 
-// One entry per rect; uses gui_is_hovered for fill pick.
 export fn editor_ux_chrome_hover_draw_report(
   input: GuiInput,
-  rects: [Rect]
+  rects: [Rect],
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64
 ) -> ChromeHoverDrawReport = do
   let mut entries: [ChromeHoverDrawEntry] = []
   let mut index = 0
   while index < rects.length() do
-    entries.push(editor_ux_chrome_hover_draw_entry(input, rects[index]))
+    entries.push(
+      editor_ux_chrome_hover_draw_entry(
+        input, rects[index], panel_red, panel_green, panel_blue
+      )
+    )
     index = index + 1
   end
   ChromeHoverDrawReport { entries: entries }
@@ -91,5 +113,5 @@ export fn editor_ux_chrome_hover_draw_report_stub() -> ChromeHoverDrawReport = d
   let mut rects: [Rect] = []
   rects.push(idle_rect)
   rects.push(hover_rect)
-  editor_ux_chrome_hover_draw_report(input, rects)
+  editor_ux_chrome_hover_draw_report(input, rects, 0.933, 0.910, 0.835)
 end

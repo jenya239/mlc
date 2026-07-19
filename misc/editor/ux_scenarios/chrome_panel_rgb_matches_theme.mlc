@@ -1,5 +1,66 @@
-// TRACK_EDITOR_CHROME_THEME_DRIFT STEP=1 — L2: chrome panel RGB matches theme (red until STEP=2).
+// TRACK_EDITOR_CHROME_THEME_DRIFT STEP=2 — L2: chrome bar fills match theme.panel_*.
+import { theme_solarized_light } from '../ui/theme'
+import {
+  editor_ux_chrome_panel_bar_rgb,
+  editor_ux_chrome_hover_rgb_from_panel
+} from '../ux/chrome_hover'
+
+fn near(actual: f64, expected: f64) -> bool = do
+  const delta = actual - expected
+  if delta < 0.0 then
+    return 0.0 - delta < 0.002
+  end
+  delta < 0.002
+end
+
 fn main() -> i32 = do
-  println("ux_fail chrome_panel_rgb_matches_theme stub")
-  1
+  const theme = theme_solarized_light()
+  // Same picker demo_live uses for tab-bar / toolbar / breadcrumb base fills.
+  const tab_bar = editor_ux_chrome_panel_bar_rgb(
+    theme.panel_red, theme.panel_green, theme.panel_blue
+  )
+  const toolbar = editor_ux_chrome_panel_bar_rgb(
+    theme.panel_red, theme.panel_green, theme.panel_blue
+  )
+  const breadcrumb = editor_ux_chrome_panel_bar_rgb(
+    theme.panel_red, theme.panel_green, theme.panel_blue
+  )
+  if !near(tab_bar.red, theme.panel_red) ||
+      !near(tab_bar.green, theme.panel_green) ||
+      !near(tab_bar.blue, theme.panel_blue) then
+    println("ux_fail chrome_panel_rgb_matches_theme tab_bar")
+    return 1
+  end
+  if !near(toolbar.red, theme.panel_red) ||
+      !near(toolbar.green, theme.panel_green) ||
+      !near(toolbar.blue, theme.panel_blue) then
+    println("ux_fail chrome_panel_rgb_matches_theme toolbar")
+    return 2
+  end
+  if !near(breadcrumb.red, theme.panel_red) ||
+      !near(breadcrumb.green, theme.panel_green) ||
+      !near(breadcrumb.blue, theme.panel_blue) then
+    println("ux_fail chrome_panel_rgb_matches_theme breadcrumb")
+    return 3
+  end
+
+  const idle = editor_ux_chrome_hover_rgb_from_panel(
+    theme.panel_red, theme.panel_green, theme.panel_blue, 0
+  )
+  const hover = editor_ux_chrome_hover_rgb_from_panel(
+    theme.panel_red, theme.panel_green, theme.panel_blue, 1
+  )
+  if !near(idle.red, theme.panel_red) ||
+      !near(idle.green, theme.panel_green) ||
+      !near(idle.blue, theme.panel_blue) then
+    println("ux_fail chrome_panel_rgb_matches_theme hover_idle")
+    return 4
+  end
+  if idle.red == hover.red && idle.green == hover.green && idle.blue == hover.blue then
+    println("ux_fail chrome_panel_rgb_matches_theme idle_eq_hover")
+    return 5
+  end
+
+  println("ux_ok chrome_panel_rgb_matches_theme")
+  0
 end
