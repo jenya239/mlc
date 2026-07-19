@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 20:40 (Planner TRACK_EDITOR_CHROME_HOVER_STATE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_CHROME_HOVER_STATE (§46 #32) |
+| started | 2026-07-19 15:06 |
+| elapsed | ~8 min |
+| done    | Open `docs/agent/TRACK_EDITOR_CHROME_HOVER_STATE.md`; freeze Decision: three surfaces (toolbar/tab/tree) + `gui_is_hovered` + idle≠hover RGB draw report; token `chrome_hover_tint_differs`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed flat chrome bars (no per-item fill) + unused `gui_is_hovered` in demo paths |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CHROME_HOVER_STATE |
+
 ### Turn 2026-07-19 20:25 (Critic TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT)
 
 | field   | value |
