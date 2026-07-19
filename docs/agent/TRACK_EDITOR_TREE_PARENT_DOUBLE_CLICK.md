@@ -14,7 +14,7 @@ Revises `#33` Decision residual: parent `..` still single-click navigate.
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | *(pending hash)* | Decision freeze + open |
+| 0 | `eb992e83` | Decision freeze + open |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
