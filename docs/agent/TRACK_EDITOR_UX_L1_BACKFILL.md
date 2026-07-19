@@ -18,7 +18,7 @@ UX. Size **M**.
 | 0 | `d1e0c679` | Decision freeze + open |
 | 1 | `d46eae16` | Four red L1 stubs + run scripts + `run_ux_l1_backfill_red.sh` |
 | 2 | `bda37d1f` | Green breadcrumb + nav back/forward via `folder_browser_resolve_click` |
-| 3 | *(this turn)* | Green utf8 display-column caret + wrap caret/hit |
+| 3 | `505ec20a` | Green utf8 display-column caret + wrap caret/hit |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
