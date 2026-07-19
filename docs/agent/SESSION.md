@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 10:15 (Planner TRACK_EDITOR_CONTEXT_MENU STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_CONTEXT_MENU |
+| started | 2026-07-19 10:05 |
+| elapsed | ~5 min |
+| done    | Opened `TRACK_EDITOR_CONTEXT_MENU.md`; Decision: `EditorContextMenu` Cut/Copy/Paste; open/click/dismiss; right-button ABI + GuiInput; L1 `context_menu_opens`; STEPs 1–3+Critic; PLAN/UX_BACKLOG #25 → active |
+| verify  | track file + PLAN §46 + backlog #25 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CONTEXT_MENU |
+
 ### Turn 2026-07-19 10:00 (Critic TRACK_EDITOR_TRAILING_WS_VIZ critique-audit)
 
 | field   | value |
