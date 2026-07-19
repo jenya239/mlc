@@ -1,5 +1,5 @@
-// TRACK_EDITOR_CONTEXT_MENU STEP=1 — stub context menu (red until STEP=2).
-import { Rect, rect_new } from '../../gui/layout'
+// TRACK_EDITOR_CONTEXT_MENU STEP=2 — menu open/click/dismiss + item rects.
+import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
 
 export type ContextMenuAction = ContextMenuNone | ContextMenuCut | ContextMenuCopy | ContextMenuPaste
 
@@ -30,42 +30,94 @@ export fn editor_ux_context_menu_item_width() -> i32 = 120
 
 export fn editor_ux_context_menu_item_count() -> i32 = 3
 
-// Stub: open is a no-op (stays hidden) until STEP=2.
 export fn editor_ux_context_menu_open_at(
   menu: EditorContextMenu,
   origin_x: i32,
   origin_y: i32
 ) -> EditorContextMenu = do
-  let _unused_x = origin_x
-  let _unused_y = origin_y
-  menu
+  let _unused_menu = menu
+  EditorContextMenu {
+    visible: 1,
+    origin_x: origin_x,
+    origin_y: origin_y
+  }
 end
 
 export fn editor_ux_context_menu_dismiss(
   menu: EditorContextMenu
-) -> EditorContextMenu =
+) -> EditorContextMenu = do
+  let _unused_menu = menu
   editor_ux_context_menu_hidden()
+end
 
-// Stub: empty rect until STEP=2.
+export fn editor_ux_context_menu_panel_rect(menu: EditorContextMenu) -> Rect =
+  rect_new(
+    menu.origin_x,
+    menu.origin_y,
+    editor_ux_context_menu_item_width(),
+    editor_ux_context_menu_item_height() * editor_ux_context_menu_item_count()
+  )
+
 export fn editor_ux_context_menu_item_rect(
   menu: EditorContextMenu,
   item_index: i32
 ) -> Rect = do
-  let _unused_visible = menu.visible
-  let _unused_index = item_index
-  rect_new(0, 0, 0, 0)
+  if menu.visible == 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  let mut index = item_index
+  if index < 0 then
+    index = 0
+  end
+  if index >= editor_ux_context_menu_item_count() then
+    index = editor_ux_context_menu_item_count() - 1
+  end
+  rect_new(
+    menu.origin_x,
+    menu.origin_y + index * editor_ux_context_menu_item_height(),
+    editor_ux_context_menu_item_width(),
+    editor_ux_context_menu_item_height()
+  )
 end
 
-// Stub: always miss / no action until STEP=2.
+fn action_for_item_index(item_index: i32) -> ContextMenuAction = do
+  if item_index == 0 then
+    return ContextMenuCut
+  end
+  if item_index == 1 then
+    return ContextMenuCopy
+  end
+  if item_index == 2 then
+    return ContextMenuPaste
+  end
+  ContextMenuNone
+end
+
 export fn editor_ux_context_menu_click(
   menu: EditorContextMenu,
   mouse_x: i32,
   mouse_y: i32
 ) -> ContextMenuClickResult = do
-  let _unused_x = mouse_x
-  let _unused_y = mouse_y
+  if menu.visible == 0 then
+    return ContextMenuClickResult {
+      menu: menu,
+      action: ContextMenuNone
+    }
+  end
+  let mut item_index = 0
+  while item_index < editor_ux_context_menu_item_count() do
+    const item_rect = editor_ux_context_menu_item_rect(menu, item_index)
+    if point_in_rect(point_new(mouse_x, mouse_y), item_rect) != 0 then
+      return ContextMenuClickResult {
+        menu: editor_ux_context_menu_dismiss(menu),
+        action: action_for_item_index(item_index)
+      }
+    end
+    item_index = item_index + 1
+  end
+  // Outside menu (or in panel gaps): dismiss, no action.
   ContextMenuClickResult {
-    menu: menu,
+    menu: editor_ux_context_menu_dismiss(menu),
     action: ContextMenuNone
   }
 end

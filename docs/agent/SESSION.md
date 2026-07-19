@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 10:45 (Driver TRACK_EDITOR_CONTEXT_MENU STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CONTEXT_MENU |
+| started | 2026-07-19 10:35 |
+| elapsed | ~10 min |
+| done    | Real `editor_ux_context_menu_open_at` / `item_rect` / `click` (Cut/Copy/Paste hit + dismiss); L1 green |
+| verify  | `ux_ok context_menu_opens`; `ux_ok trailing_ws_visualized`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_CONTEXT_MENU |
+
 ### Turn 2026-07-19 10:30 (Driver TRACK_EDITOR_CONTEXT_MENU STEP=1)
 
 | field   | value |

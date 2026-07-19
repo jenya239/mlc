@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#25**.
 No right-click menu; Cut/Copy/Paste only via shortcuts/toolbar. Review
 gate: `context_menu_opens` (L1). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — menu model + open/click/dismiss + item rects
+**STEP=3** — right-button ABI + GuiInput + demo_live wire
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -46,7 +46,7 @@ gate: `context_menu_opens` (L1). Size **M**.
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`context_menu_opens`) | **done** (2026-07-19) — stub red: `ux_fail context_menu_opens not_visible` |
 | <!-- sub-steps: 1) scenario + run script; 2) stub menu API → red; 3) demo_live_fs_compile + trailing_ws green --> |
-| 2 | menu model + open/click/dismiss + item rects | pending |
+| 2 | menu model + open/click/dismiss + item rects | **done** (2026-07-19) — open_at/item_rect/click; L1 green `ux_ok context_menu_opens` |
 | <!-- sub-steps: 1) EditorContextMenu + click helper; 2) L1 green for open+Copy; 3) trailing_ws regression --> |
 | 3 | right-button ABI + GuiInput + demo_live wire | pending |
 | <!-- sub-steps: 1) glfw_gl_mouse_right_down; 2) demo_live open/draw/dispatch; 3) gates + REG if lib/mlc --> |
