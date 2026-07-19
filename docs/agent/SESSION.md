@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 19:30 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+| started | 2026-07-19 14:35 |
+| elapsed | ~6 min |
+| done    | Red stubs `tab_strip_rects_no_overlap` / `tab_strip_long_title_ellipsis`; three `run_ux_*.sh` incl. `run_ux_tab_strip_classic_red.sh` |
+| verify  | `ux_ok tab_strip_classic_red`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+
 ### Turn 2026-07-19 19:20 (Planner TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=0)
 
 | field   | value |

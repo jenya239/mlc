@@ -4,17 +4,18 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31**.
 Live-demo audit 2026-07-19: equal-width slots + unclamped title draw →
 overlap with many tabs. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — Red L1 harnesses (`tab_strip_rects_no_overlap`, `tab_strip_long_title_ellipsis`).
+**STEP=2** — Layout + ellipsis helpers; green both tokens.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `91c3f9eb` | Decision freeze + open |
+| 1 | *(this turn)* | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -37,7 +38,7 @@ overlap with many tabs. Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Two red L1 harnesses + `run_ux_*.sh` | pending — red gate / stub fails |
+| 1 | Two red L1 harnesses + `run_ux_*.sh` | **done** — `ux_ok tab_strip_classic_red` |
 | 2 | Layout + ellipsis helpers in `tab_strip`; green both tokens | pending — two `ux_ok` |
 | 3 | `demo_live` draw uses laid-out rects + truncate; demo compile | pending — `demo_live_fs_compile_ok` + regression tab click/reorder |
 | 4 | Critic: gates; archive | pending |

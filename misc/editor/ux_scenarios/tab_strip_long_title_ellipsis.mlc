@@ -1,0 +1,5 @@
+// TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=1 — L1: tab_strip_long_title_ellipsis (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail tab_strip_long_title_ellipsis stub")
+  1
+end
