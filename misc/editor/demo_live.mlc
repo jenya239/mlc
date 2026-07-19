@@ -263,6 +263,7 @@ import {
   tab_strip_hit_close_index_from_widths
 } from './ux/tab_strip'
 import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
+import { editor_ux_content_scrollbar_thumb } from './ux/scroll'
 import {
   editor_font_size_default,
   editor_font_metrics_from_size,
@@ -1896,6 +1897,19 @@ fn main() -> i32 = do
         text_rect.y + 2 + caret_row * metrics.line_height,
         1, metrics.line_height - 2,
         theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
+      )
+    end
+
+    const editor_hovered =
+      point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0
+    const content_thumb = editor_ux_content_scrollbar_thumb(
+      editor_hovered, text_rect, wrapped_content_height_now, scroll_offset_y
+    )
+    if content_thumb.width > 0 then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height,
+        0.45, 0.48, 0.55, 1.0
       )
     end
 

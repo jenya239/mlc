@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 28:25 (Driver TRACK_EDITOR_CONTENT_SCROLLBAR STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CONTENT_SCROLLBAR |
+| started | 2026-07-19 20:26 |
+| elapsed | ~12 min |
+| done    | `editor_ux_content_scrollbar_thumb` + `demo_live` hover draw; deleted `*_wheel_scroll_hover`; L2 green |
+| verify  | `ux_ok content_scrollbar_thumb_on_hover` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_CONTENT_SCROLLBAR |
+
 ### Turn 2026-07-19 28:10 (Driver TRACK_EDITOR_CONTENT_SCROLLBAR STEP=1)
 
 | field   | value |

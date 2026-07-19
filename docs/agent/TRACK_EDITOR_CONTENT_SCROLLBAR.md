@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Wire draw + delete dead hover; green token.
+**STEP=3** — `demo_live_fs_compile_ok`.
 
 ### STEPs done in git
 
@@ -15,6 +15,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 |------|-----------------|-------|
 | 0 | `a040b223` | Decision freeze + open |
 | 1 | `f6234070` | Red L2 stub + run scripts |
+| 2 | *(pending hash)* | hover draw + delete dead hover; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -37,7 +38,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + run scripts | **done** — `ux_ok content_scrollbar_red` |
-| 2 | Wire draw + delete dead hover; green token | pending — `ux_ok content_scrollbar_thumb_on_hover` |
+| 2 | Wire draw + delete dead hover; green token | **done** — `ux_ok content_scrollbar_thumb_on_hover` |
 | 3 | `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |
 

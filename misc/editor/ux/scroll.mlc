@@ -12,6 +12,7 @@ import {
   line_index_line_count
 } from '../document/line_index'
 import { document_content_height } from '../layout/visible_range'
+import { editor_scrollbar_thumb } from '../layout/word_wrap'
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 
@@ -160,18 +161,6 @@ export fn editor_ux_wheel_scroll(
   editor_ux_ensure_caret_visible(next_state, metrics)
 end
 
-// Hover wheel: clamp only — do not snap caret (works without focus).
-export fn editor_ux_wheel_scroll_hover(
-  state: EditorUxState,
-  metrics: EditorTextMetrics,
-  wheel_ticks: i32
-) -> EditorUxState = do
-  const line_height = line_height_or_one(metrics)
-  let mut scroll_y = state.scroll_offset_y - wheel_ticks * line_height
-  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
-  state_with_scroll_y(state, scroll_y)
-end
-
 // Clamp horizontal scroll to [0, max(0, content_width - viewport_width)].
 export fn editor_ux_clamp_scroll_offset_x(
   scroll_offset_x: i32,
@@ -208,4 +197,26 @@ export fn editor_ux_wheel_scroll_horizontal(
   let mut scroll_x = state.scroll_offset_x - wheel_ticks * char_width
   scroll_x = editor_ux_clamp_scroll_offset_x(scroll_x, content_width, viewport_width)
   state_with_scroll_x(state, scroll_x)
+end
+
+// TRACK_EDITOR_CONTENT_SCROLLBAR — thumb on text_rect right edge when hovered.
+export fn editor_ux_content_scrollbar_thumb(
+  hovered: i32,
+  text_rect: Rect,
+  content_height: i32,
+  scroll_y: i32
+) -> Rect = do
+  if hovered == 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  const thumb_width = 5
+  const inset = 2
+  editor_scrollbar_thumb(
+    text_rect.x + text_rect.width - thumb_width - inset,
+    text_rect.y,
+    text_rect.height,
+    thumb_width,
+    content_height,
+    scroll_y
+  )
 end

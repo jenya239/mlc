@@ -1,5 +1,64 @@
-// TRACK_EDITOR_CONTENT_SCROLLBAR STEP=1 — L2: content scrollbar thumb on hover (red until STEP=2).
+// TRACK_EDITOR_CONTENT_SCROLLBAR STEP=2 — L2: content scrollbar thumb on hover.
+import { rect_new } from '../../gui/layout'
+import { editor_scrollbar_thumb } from '../layout/word_wrap'
+import { editor_ux_content_scrollbar_thumb } from '../ux/scroll'
+
 fn main() -> i32 = do
-  println("ux_fail content_scrollbar_thumb_on_hover stub")
-  1
+  const text_rect = rect_new(100, 50, 400, 200)
+  const content_tall = 800
+  const scroll_y = 100
+
+  const overflow = editor_scrollbar_thumb(
+    text_rect.x + text_rect.width - 7,
+    text_rect.y,
+    text_rect.height,
+    5,
+    content_tall,
+    scroll_y
+  )
+  if overflow.width <= 0 then
+    println("ux_fail content_scrollbar_thumb_on_hover overflow empty")
+    return 1
+  end
+  if overflow.height < 12 then
+    println("ux_fail content_scrollbar_thumb_on_hover overflow short")
+    return 2
+  end
+  if overflow.y < text_rect.y ||
+      overflow.y + overflow.height > text_rect.y + text_rect.height then
+    println("ux_fail content_scrollbar_thumb_on_hover overflow y")
+    return 3
+  end
+
+  const fits = editor_scrollbar_thumb(
+    text_rect.x + text_rect.width - 7,
+    text_rect.y,
+    text_rect.height,
+    5,
+    100,
+    0
+  )
+  if fits.width != 0 || fits.height != 0 then
+    println("ux_fail content_scrollbar_thumb_on_hover fits not empty")
+    return 4
+  end
+
+  const hovered = editor_ux_content_scrollbar_thumb(
+    1, text_rect, content_tall, scroll_y
+  )
+  if hovered.width <= 0 then
+    println("ux_fail content_scrollbar_thumb_on_hover hovered empty")
+    return 5
+  end
+
+  const idle = editor_ux_content_scrollbar_thumb(
+    0, text_rect, content_tall, scroll_y
+  )
+  if idle.width != 0 || idle.height != 0 then
+    println("ux_fail content_scrollbar_thumb_on_hover idle not empty")
+    return 6
+  end
+
+  println("ux_ok content_scrollbar_thumb_on_hover")
+  0
 end
