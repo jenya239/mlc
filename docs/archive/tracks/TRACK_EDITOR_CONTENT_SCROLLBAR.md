@@ -1,13 +1,27 @@
 # Track: Editor Content Scrollbar
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L2 + demo. Anti-false-done:
+`a040b223`…`bb72e1ae` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `editor_ux_content_scrollbar_thumb` (hover gate + `editor_scrollbar_thumb`);
+`demo_live` draw on editor hover; `*_wheel_scroll_hover` deleted; STEP=3 i32 hover fix.
+**reopen: none**.
+
+Honest residual: no thumb drag; tint still hardcoded `0.45/0.48/0.55` (not theme);
+horizontal scrollbar out of scope.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_content_scrollbar_thumb.sh` | `ux_ok content_scrollbar_thumb_on_hover` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#34 EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER`).
 
 ### STEPs done in git
 
@@ -17,6 +31,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 | 1 | `f6234070` | Red L2 stub + run scripts |
 | 2 | `8a6399d0` | hover draw + delete dead hover; green L2 |
 | 3 | `bb72e1ae` | `demo_live_fs_compile_ok` (hovered i32 fix) |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,7 +56,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 | 1 | L2 red harness + run scripts | **done** — `ux_ok content_scrollbar_red` |
 | 2 | Wire draw + delete dead hover; green token | **done** — `ux_ok content_scrollbar_thumb_on_hover` |
 | 3 | `demo_live_fs_compile_ok` | **done** |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 <!-- STEP=1: stub fail token; red script -->
 <!-- STEP=2: demo_live hover draw + delete wheel_scroll_hover; green L2 -->
