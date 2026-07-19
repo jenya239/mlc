@@ -16,7 +16,7 @@ overlap with many tabs. Size **M**.
 |------|-----------------|-------|
 | 0 | `91c3f9eb` | Decision freeze + open |
 | 1 | `6c1a71bb` | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
-| 2 | *(this turn)* | preferred/scale layout + truncate; both L1 green |
+| 2 | `8f2ccfb3` | preferred/scale layout + truncate; both L1 green |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
