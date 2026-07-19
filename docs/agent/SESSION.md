@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 18:15 (Planner TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX (§46 #31a) |
+| started | 2026-07-19 14:02 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX.md`; freeze Decision: measure `char_width` from shaped `"M"` advance; fix full-line selection `col_end` to display columns; tokens `selection_highlight_matches_glyph_x` / `selection_full_line_uses_display_columns`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed `font_zoom` ratio + `demo_live`/`selection_apply` byte `col_end` |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+
 ### Turn 2026-07-19 18:05 (Critic TRACK_EDITOR_UX_L1_BACKFILL)
 
 | field   | value |
