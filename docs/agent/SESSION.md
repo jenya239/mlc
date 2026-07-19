@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 30:40 (Driver TRACK_EDITOR_MINIMAP STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MINIMAP |
+| started | 2026-07-19 23:21 |
+| elapsed | ~5 min |
+| done    | Stub `ux_scenarios/editor_minimap_cache_stable.mlc`; `run_ux_editor_minimap_red.sh` + green-path `run_ux_editor_minimap_cache_stable.sh` |
+| verify  | `ux_ok editor_minimap_red` |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MINIMAP |
+
 ### Turn 2026-07-19 30:25 (Planner TRACK_EDITOR_MINIMAP STEP=0)
 
 | field   | value |

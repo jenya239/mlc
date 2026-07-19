@@ -1,0 +1,5 @@
+// TRACK_EDITOR_MINIMAP STEP=1 — L2: minimap cache/geometry (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail editor_minimap_cache_stable stub")
+  1
+end
