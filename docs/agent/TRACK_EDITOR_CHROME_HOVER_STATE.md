@@ -17,7 +17,7 @@ calls hover). Size **M**.
 |------|-----------------|-------|
 | 0 | `f371158a` | Decision freeze + open |
 | 1 | `1c047859` | Stub equal RGB + red L2 harness + run scripts |
-| 2 | *(pending hash)* | idle≠hover RGB + `gui_is_hovered` draw report; green L2 |
+| 2 | `d5cab6ab` | idle≠hover RGB + `gui_is_hovered` draw report; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
