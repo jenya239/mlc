@@ -14,7 +14,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `8ada9c87` | Decision freeze + open |
-| 1 | *(pending hash)* | Red L2 stub + run scripts |
+| 1 | `722ae431` | Red L2 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
