@@ -14,7 +14,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `a040b223` | Decision freeze + open |
-| 1 | *(pending hash)* | Red L2 stub + run scripts |
+| 1 | `f6234070` | Red L2 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
