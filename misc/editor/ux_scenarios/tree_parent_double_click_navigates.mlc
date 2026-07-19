@@ -1,5 +1,96 @@
-// TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=1 — L1: parent double-click navigates (red until STEP=2).
+// TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=2 — L1: parent arm then double navigates.
+import { DirEntry, dir_entry_new } from '../workspace/file_tree'
+import { rect_new } from '../../gui/layout'
+import {
+  folder_browser_at,
+  folder_listing_rows,
+  folder_list_rect,
+  folder_row_rect,
+  folder_nav_new,
+  folder_nav_current,
+  folder_browser_resolve_click,
+  folder_click_parent,
+  folder_click_arm_dir
+} from '../ux/folder_panel'
+
 fn main() -> i32 = do
-  println("ux_fail tree_parent_double_click_navigates stub")
-  1
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("a.txt", 0))
+  const tree = folder_browser_at("/demo/src", "src", entries)
+  const folder_rows = folder_listing_rows(tree)
+  if folder_rows.length() < 1 then
+    println("ux_fail tree_parent_double_click_navigates no rows")
+    return 1
+  end
+
+  const tree_rect = rect_new(0, 0, 240, 400)
+  const list_rect = folder_list_rect(tree_rect)
+  const crumb_rect = rect_new(tree_rect.x, tree_rect.y, tree_rect.width, 16)
+  const parent_rect = folder_row_rect(list_rect, 0, 0)
+  const folder_nav = folder_nav_new("/demo/src")
+  if folder_nav_current(folder_nav) != "/demo/src" then
+    println("ux_fail tree_parent_double_click_navigates nav setup")
+    return 2
+  end
+
+  const click1 = folder_browser_resolve_click(
+    tree_rect,
+    [],
+    crumb_rect,
+    folder_rows,
+    list_rect,
+    0,
+    folder_nav,
+    "",
+    0 - 1000,
+    0,
+    parent_rect.x + 4,
+    parent_rect.y + 2
+  )
+  if click1.handled == 0 then
+    println("ux_fail tree_parent_double_click_navigates click1 handled")
+    return 3
+  end
+  if click1.action == folder_click_parent() then
+    println("ux_fail tree_parent_double_click_navigates click1 parent")
+    return 4
+  end
+  if click1.action != folder_click_arm_dir() then
+    println("ux_fail tree_parent_double_click_navigates click1 arm")
+    return 5
+  end
+  if folder_nav_current(click1.folder_nav) != "/demo/src" then
+    println("ux_fail tree_parent_double_click_navigates click1 nav")
+    return 6
+  end
+
+  const click2 = folder_browser_resolve_click(
+    tree_rect,
+    [],
+    crumb_rect,
+    folder_rows,
+    list_rect,
+    0,
+    click1.folder_nav,
+    click1.last_tree_click_path,
+    click1.last_tree_click_frame,
+    5,
+    parent_rect.x + 4,
+    parent_rect.y + 2
+  )
+  if click2.action != folder_click_parent() then
+    println("ux_fail tree_parent_double_click_navigates click2 action")
+    return 7
+  end
+  if click2.path != "/demo" then
+    println("ux_fail tree_parent_double_click_navigates click2 path")
+    return 8
+  end
+  if folder_nav_current(click2.folder_nav) != "/demo" then
+    println("ux_fail tree_parent_double_click_navigates click2 nav")
+    return 9
+  end
+
+  println("ux_ok tree_parent_double_click_navigates")
+  0
 end

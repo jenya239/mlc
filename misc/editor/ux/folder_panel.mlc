@@ -615,10 +615,20 @@ export fn folder_browser_resolve_click(
 
   const folder_row = folder_rows[row]
   if folder_row.kind == folder_row_parent() then
-    const next_nav = folder_nav_push(folder_nav, folder_row.path)
+    const is_double =
+      folder_row.path == last_tree_click_path &&
+      frame_index - last_tree_click_frame >= 0 &&
+      frame_index - last_tree_click_frame <= 25
+    if is_double then
+      const next_nav = folder_nav_push(folder_nav, folder_row.path)
+      return folder_browser_click_result(
+        1, folder_click_parent(), folder_row.path, next_nav, 0, "",
+        0 - 1000, "tree_parent"
+      )
+    end
     return folder_browser_click_result(
-      1, folder_click_parent(), folder_row.path, next_nav, 0, "",
-      last_tree_click_frame, "tree_parent"
+      1, folder_click_arm_dir(), folder_row.path, folder_nav, tree_scroll_y,
+      folder_row.path, frame_index, ""
     )
   end
   if folder_row.kind == folder_row_directory() then

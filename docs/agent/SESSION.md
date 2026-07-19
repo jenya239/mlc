@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 27:10 (Driver TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK |
+| started | 2026-07-19 20:17 |
+| elapsed | ~8 min |
+| done    | `folder_browser_resolve_click` parent: arm=`folder_click_arm_dir`, double=`folder_click_parent`; L1 scenario green |
+| verify  | `ux_ok tree_parent_double_click_navigates`; `ux_ok tree_row_click_toggles_expand`; `ux_ok tree_click_opens_tab` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK |
+
 ### Turn 2026-07-19 26:55 (Driver TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=1)
 
 | field   | value |
