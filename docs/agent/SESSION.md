@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 15:20 (Planner TRACK_LANG_RECORD_UPDATE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_LANG_RECORD_UPDATE (§46 #29) |
+| started | 2026-07-19 12:29 |
+| elapsed | ~15 min |
+| done    | Open `docs/agent/TRACK_LANG_RECORD_UPDATE.md`; freeze Decision: named `TypeName { ...base, field }` already green; gap = anonymous `{ ...base, field }` (mlcc probe red); STEPs 1–5 (red e2e → parser/checker → green+TierB → editor migrate → Critic); PLAN §46 / backlog #29 / CONTINUITY / DEVELOPMENT synced |
+| verify  | docs-only; probe: `Point { ...p, x: 3 }` check-only EXIT=0; `{ ...p, x: 3 }` fails |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_LANG_RECORD_UPDATE |
+
 ### Turn 2026-07-19 15:05 (Critic TRACK_EDITOR_WIDE_CHAR_COLUMNS)
 
 | field   | value |
