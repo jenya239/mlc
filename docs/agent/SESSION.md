@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 28:40 (Driver TRACK_EDITOR_CONTENT_SCROLLBAR STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_CONTENT_SCROLLBAR |
+| started | 2026-07-19 20:30 |
+| elapsed | ~5 min |
+| done    | Compile gate; fix `editor_hovered` `bool`→`i32` (`point_in_rect` raw) |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok content_scrollbar_thumb_on_hover` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CONTENT_SCROLLBAR |
+
 ### Turn 2026-07-19 28:25 (Driver TRACK_EDITOR_CONTENT_SCROLLBAR STEP=2)
 
 | field   | value |

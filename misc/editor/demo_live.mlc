@@ -1901,7 +1901,7 @@ fn main() -> i32 = do
     end
 
     const editor_hovered =
-      point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0
+      point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)
     const content_thumb = editor_ux_content_scrollbar_thumb(
       editor_hovered, text_rect, wrapped_content_height_now, scroll_offset_y
     )
