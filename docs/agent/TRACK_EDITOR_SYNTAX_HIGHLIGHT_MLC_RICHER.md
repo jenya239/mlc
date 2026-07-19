@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#34**.
 Found 2026-07-19 live-demo audit. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Tags + theme RGB + green token.
+**STEP=3** — Keep glyph L2; `demo_live_fs_compile_ok`.
 
 ### STEPs done in git
 
@@ -15,6 +15,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 |------|-----------------|-------|
 | 0 | `8ada9c87` | Decision freeze + open |
 | 1 | `722ae431` | Red L2 stub + run scripts |
+| 2 | *(pending hash)* | number/type/operator + Theme RGB; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -37,7 +38,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + run scripts | **done** — `ux_ok syntax_mlc_richer_red` |
-| 2 | Tags + theme RGB + green token | pending — `ux_ok syntax_mlc_richer_tags` |
+| 2 | Tags + theme RGB + green token | **done** — `ux_ok syntax_mlc_richer_tags` |
 | 3 | Keep glyph L2; `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |
 

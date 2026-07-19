@@ -38,7 +38,16 @@ export type Theme = {
   string_blue: f64,
   comment_red: f64,
   comment_green: f64,
-  comment_blue: f64
+  comment_blue: f64,
+  number_red: f64,
+  number_green: f64,
+  number_blue: f64,
+  type_red: f64,
+  type_green: f64,
+  type_blue: f64,
+  operator_red: f64,
+  operator_green: f64,
+  operator_blue: f64
 }
 
 export type ThemeRgb = {
@@ -99,7 +108,19 @@ export fn theme_solarized_light() -> Theme =
     string_blue: 0.596,
     comment_red: 0.576,
     comment_green: 0.631,
-    comment_blue: 0.631
+    comment_blue: 0.631,
+    // magenta #d33682
+    number_red: 0.827,
+    number_green: 0.212,
+    number_blue: 0.510,
+    // yellow #b58900
+    type_red: 0.710,
+    type_green: 0.537,
+    type_blue: 0.000,
+    // base00 #657b83
+    operator_red: 0.396,
+    operator_green: 0.482,
+    operator_blue: 0.514
   }
 
 export fn theme_default() -> Theme =
@@ -115,6 +136,15 @@ export fn theme_rgb_for_tag(theme: Theme, tag: string) -> ThemeRgb = do
   end
   if tag == "comment" then
     return theme_rgb(theme.comment_red, theme.comment_green, theme.comment_blue)
+  end
+  if tag == "number" then
+    return theme_rgb(theme.number_red, theme.number_green, theme.number_blue)
+  end
+  if tag == "type" then
+    return theme_rgb(theme.type_red, theme.type_green, theme.type_blue)
+  end
+  if tag == "operator" then
+    return theme_rgb(theme.operator_red, theme.operator_green, theme.operator_blue)
   end
   theme_rgb(theme.text_red, theme.text_green, theme.text_blue)
 end
@@ -160,5 +190,14 @@ export fn theme_editor_dark() -> Theme =
     string_blue: 0.70,
     comment_red: 0.50,
     comment_green: 0.55,
-    comment_blue: 0.58
+    comment_blue: 0.58,
+    number_red: 0.85,
+    number_green: 0.45,
+    number_blue: 0.70,
+    type_red: 0.85,
+    type_green: 0.75,
+    type_blue: 0.35,
+    operator_red: 0.70,
+    operator_green: 0.72,
+    operator_blue: 0.75
   }

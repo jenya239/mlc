@@ -1,4 +1,5 @@
 // TRACK_EDITOR_MVP STEP=25 — SyntaxHighlighter + MLC lexer stub (range spans).
+// TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER — number/type/operator tags.
 // Replaceable later by tree-sitter behind the same highlight_range signature.
 
 export type HighlightSpan = {
@@ -35,15 +36,39 @@ fn is_ident_continue(ch: string) -> bool = do
   ch >= "0" && ch <= "9"
 end
 
+fn is_digit(ch: string) -> bool =
+  ch >= "0" && ch <= "9"
+
 fn keyword_tag(word: string) -> string = do
   if word == "fn" || word == "let" || word == "mut" || word == "const" ||
       word == "type" || word == "import" || word == "export" ||
       word == "if" || word == "then" || word == "else" || word == "end" ||
       word == "while" || word == "do" || word == "return" || word == "match" ||
-      word == "true" || word == "false" then
+      word == "true" || word == "false" ||
+      word == "extend" || word == "trait" || word == "impl" ||
+      word == "for" || word == "in" || word == "break" || word == "continue" then
     return "keyword"
   end
   ""
+end
+
+fn type_tag(word: string) -> string = do
+  if word == "i32" || word == "i64" || word == "u32" || word == "u64" ||
+      word == "f32" || word == "f64" || word == "bool" || word == "string" ||
+      word == "unit" || word == "Shared" || word == "Owned" || word == "Weak" ||
+      word == "Array" || word == "Map" || word == "Result" || word == "Option" ||
+      word == "Channel" || word == "Mutex" then
+    return "type"
+  end
+  ""
+end
+
+fn ident_tag(word: string) -> string = do
+  const keyword = keyword_tag(word)
+  if keyword.byte_size() > 0 then
+    return keyword
+  end
+  type_tag(word)
 end
 
 fn clamp_range(length: i32, byte_start: i32, byte_end: i32) -> HighlightSpan = do
@@ -62,6 +87,27 @@ fn clamp_range(length: i32, byte_start: i32, byte_end: i32) -> HighlightSpan = d
     finish = length
   end
   HighlightSpan { byte_start: start, byte_end: finish, tag: "" }
+end
+
+fn try_operator_span(
+  source: string,
+  index: i32,
+  window_end: i32
+) -> HighlightSpan = do
+  if index + 1 < window_end then
+    const two = source.byte_substring(index, 2)
+    if two == "->" || two == "=>" || two == "==" || two == "!=" ||
+        two == "<=" || two == ">=" || two == "&&" || two == "||" then
+      return highlight_span_new(index, index + 2, "operator")
+    end
+  end
+  const ch = source.byte_at(index)
+  if ch == "+" || ch == "-" || ch == "*" || ch == "/" || ch == "%" ||
+      ch == "=" || ch == "<" || ch == ">" || ch == ":" || ch == "?" ||
+      ch == "|" || ch == "." || ch == "!" then
+    return highlight_span_new(index, index + 1, "operator")
+  end
+  highlight_span_new(index, index, "")
 end
 
 // Highlight only [byte_start, byte_end) — visible-range / incremental entry.
@@ -106,13 +152,51 @@ export fn highlight_range(
         finish = finish + 1
       end
       const word = source.byte_substring(index, finish - index)
-      const tag = keyword_tag(word)
+      const tag = ident_tag(word)
       if tag.byte_size() > 0 then
         spans.push(highlight_span_new(index, finish, tag))
       end
       index = finish
+    else if is_digit(ch) then
+      let mut finish = index + 1
+      while finish < window.byte_end && is_digit(source.byte_at(finish)) do
+        finish = finish + 1
+      end
+      spans.push(highlight_span_new(index, finish, "number"))
+      index = finish
+    else if ch == "-" && index + 1 < window.byte_end &&
+        is_digit(source.byte_at(index + 1)) then
+      let mut allow_minus = 1
+      if index > window.byte_start then
+        const prev = source.byte_at(index - 1)
+        if is_ident_continue(prev) then
+          allow_minus = 0
+        end
+      end
+      if allow_minus != 0 then
+        let mut finish = index + 1
+        while finish < window.byte_end && is_digit(source.byte_at(finish)) do
+          finish = finish + 1
+        end
+        spans.push(highlight_span_new(index, finish, "number"))
+        index = finish
+      else
+        const operator_span = try_operator_span(source, index, window.byte_end)
+        if operator_span.byte_end > operator_span.byte_start then
+          spans.push(operator_span)
+          index = operator_span.byte_end
+        else
+          index = index + 1
+        end
+      end
     else
-      index = index + 1
+      const operator_span = try_operator_span(source, index, window.byte_end)
+      if operator_span.byte_end > operator_span.byte_start then
+        spans.push(operator_span)
+        index = operator_span.byte_end
+      else
+        index = index + 1
+      end
     end
   end
   spans

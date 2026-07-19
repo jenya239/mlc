@@ -1,5 +1,78 @@
-// TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=1 — L2: richer MLC tags (red until STEP=2).
+// TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=2 — L2: number/type/operator tags + theme RGB.
+import { theme_solarized_light, theme_rgb_for_tag } from '../ui/theme'
+import { highlight_mlc } from '../syntax/highlighter'
+import {
+  editor_ux_syntax_glyph_line,
+  editor_ux_syntax_glyph_expected_rgb
+} from '../ux/syntax_glyph_color'
+
+fn near(actual: f64, expected: f64) -> bool = do
+  const delta = actual - expected
+  if delta < 0.0 then
+    return 0.0 - delta < 0.002
+  end
+  delta < 0.002
+end
+
+fn has_tag(spans_tag: string, want: string) -> bool =
+  spans_tag == want
+
 fn main() -> i32 = do
-  println("ux_fail syntax_mlc_richer_tags stub")
-  1
+  const source = "let x: i32 = 42 + y"
+  const spans = highlight_mlc(source)
+  let mut saw_number = 0
+  let mut saw_type = 0
+  let mut saw_operator = 0
+  let mut span_index = 0
+  while span_index < spans.length() do
+    const tag = spans[span_index].tag
+    if has_tag(tag, "number") then
+      saw_number = 1
+    end
+    if has_tag(tag, "type") then
+      saw_type = 1
+    end
+    if has_tag(tag, "operator") then
+      saw_operator = 1
+    end
+    span_index = span_index + 1
+  end
+  if saw_number == 0 then
+    println("ux_fail syntax_mlc_richer_tags missing number")
+    return 1
+  end
+  if saw_type == 0 then
+    println("ux_fail syntax_mlc_richer_tags missing type")
+    return 2
+  end
+  if saw_operator == 0 then
+    println("ux_fail syntax_mlc_richer_tags missing operator")
+    return 3
+  end
+
+  const theme = theme_solarized_light()
+  const tags = ["number", "type", "operator"]
+  let mut tag_index = 0
+  while tag_index < tags.length() do
+    const tag = tags[tag_index]
+    const line = editor_ux_syntax_glyph_line(theme, tag, tag, 14, 0, 0)
+    const expected = editor_ux_syntax_glyph_expected_rgb(theme, tag)
+    const mapped = theme_rgb_for_tag(theme, tag)
+    if !near(mapped.red, expected.red) ||
+        !near(mapped.green, expected.green) ||
+        !near(mapped.blue, expected.blue) then
+      println("ux_fail syntax_mlc_richer_tags theme map " + tag)
+      return 10 + tag_index
+    end
+    if !near(line.red, expected.red) ||
+        !near(line.green, expected.green) ||
+        !near(line.blue, expected.blue) then
+      println("ux_fail syntax_mlc_richer_tags glyph " + tag)
+      return 20 + tag_index
+    end
+    tag_index = tag_index + 1
+  end
+
+  println("ux_ok syntax_mlc_richer_tags")
+  0
 end

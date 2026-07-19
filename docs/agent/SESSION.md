@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 29:40 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+| started | 2026-07-19 23:04 |
+| elapsed | ~15 min |
+| done    | `highlighter`: number/type/operator + extra keywords; `Theme` RGB fields + `theme_rgb_for_tag`; L2 green |
+| verify  | `ux_ok syntax_mlc_richer_tags`; `ux_ok syntax_glyph_color_matches_theme` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+
 ### Turn 2026-07-19 29:25 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=1)
 
 | field   | value |

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34) — tags + theme RGB.
-**`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** active — STEP=1 red harness green (`ux_ok syntax_mlc_richer_red`).
+**Queue head:** Driver `STEP=3` `TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34) — glyph L2 + compile.
+**`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** active — STEP=2 green (`ux_ok syntax_mlc_richer_tags`).
 **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.
