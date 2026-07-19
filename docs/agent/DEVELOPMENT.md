@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_LANG_RECORD_UPDATE` (§46 #29) — then Planner `#30 EDITOR_UX_L1_BACKFILL`.
-**`TRACK_LANG_RECORD_UPDATE` (§46 #29)** active — STEP=0–4 done; anonymous update + scroll helpers migrated.
+**Queue head:** Planner open `#30 EDITOR_UX_L1_BACKFILL` (§46).
+**`TRACK_LANG_RECORD_UPDATE` (§46 #29)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_WIDE_CHAR_COLUMNS` (§46 #28)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_DROP_FILE` (§46 #27)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_INDENT_MODEL` (§46 #26)** closed 2026-07-19; archived.

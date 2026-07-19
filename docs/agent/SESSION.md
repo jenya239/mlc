@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 16:40 (Critic TRACK_LANG_RECORD_UPDATE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_LANG_RECORD_UPDATE |
+| started | 2026-07-19 13:04 |
+| elapsed | ~12 min |
+| done    | Re-audit STEP=0–4 (`10f7fb89`…`9067d04e`); gates e2e+main-check+demo+wheel+shift-wheel green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_LANG_RECORD_UPDATE.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #29 closed |
+| verify  | `run_e2e` 10/0; `mlcc --check-only main` EXIT=0; `demo_live_fs_compile_ok`; `ux_ok wheel_scroll_keeps_caret_visible`; `ux_ok shift_wheel_scrolls_horizontal` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #30 EDITOR_UX_L1_BACKFILL) |
+
 ### Turn 2026-07-19 16:25 (Driver TRACK_LANG_RECORD_UPDATE STEP=4)
 
 | field   | value |
