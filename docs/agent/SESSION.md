@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 26:40 (Planner TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK (§46 #33d) |
+| started | 2026-07-19 20:14 |
+| elapsed | ~8 min |
+| done    | Open `docs/agent/TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK.md`; freeze Decision: `..` single=`folder_click_arm_dir`, double=`folder_click_parent` via same `is_double` ≤25; token `tree_parent_double_click_navigates`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed parent branch ~617–622 fires parent on first click |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK |
+
 ### Turn 2026-07-19 26:25 (Critic TRACK_EDITOR_CHROME_THEME_DRIFT)
 
 | field   | value |
