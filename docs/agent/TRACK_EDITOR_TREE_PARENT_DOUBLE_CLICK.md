@@ -4,17 +4,18 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33d**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 Revises `#33` Decision residual: parent `..` still single-click navigate.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 red harness + `run_ux_tree_parent_double_click.sh`.
+**STEP=2** — Gate parent on `is_double`; green token.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `eb992e83` | Decision freeze + open |
+| 1 | *(pending hash)* | Red L1 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -35,7 +36,7 @@ Revises `#33` Decision residual: parent `..` still single-click navigate.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | L1 red harness + run scripts | pending — `ux_ok tree_parent_double_click_red` |
+| 1 | L1 red harness + run scripts | **done** — `ux_ok tree_parent_double_click_red` |
 | 2 | Gate parent on `is_double`; green token | pending — `ux_ok tree_parent_double_click_navigates` |
 | 3 | `demo_live` verify/wire if needed; `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |
