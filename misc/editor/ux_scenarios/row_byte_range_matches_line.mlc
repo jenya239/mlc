@@ -1,5 +1,58 @@
-// TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=1 — L2: row byte range matches line (red until STEP=2).
+// TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=2 — L2: VisualRow byte slice rebuild
+// must equal byte_substring; no next-line bleed. Buffer starts with UTF-8 so
+// string is non-ASCII (exposes substring-vs-byte bug in syntax draw path).
+import {
+  line_index_from_string,
+  line_index_line_start,
+  line_index_line_count
+} from '../document/line_index'
+import { visual_rows_for_line } from '../layout/word_wrap'
+import { highlight_range } from '../syntax/highlighter'
+import { theme_solarized_light } from '../ui/theme'
+import { StaticTextLine } from '../ui/static_text'
+import { editor_ux_append_syntax_colored_row } from '../ux/syntax_glyph_color'
+
 fn main() -> i32 = do
-  println("ux_fail row_byte_range_matches_line stub")
-  1
+  // Leading wide chars force non-ASCII flag; later ASCII lines use byte offsets.
+  const text = "中文 header\nexport type Foo = {\n  load_items: i32\n}\n"
+  const line_index = line_index_from_string(text)
+  const theme = theme_solarized_light()
+  const spans = highlight_range(text, 0, text.byte_size())
+  let mut line = 0
+  while line < line_index_line_count(line_index) do
+    const rows = visual_rows_for_line(text, line_index, line, 80)
+    const line_start = line_index_line_start(line_index, line)
+    let mut next_start = text.byte_size()
+    if line + 1 < line_index_line_count(line_index) then
+      next_start = line_index_line_start(line_index, line + 1)
+    end
+    let mut row_index = 0
+    while row_index < rows.length() do
+      const row = rows[row_index]
+      if row.byte_start < line_start || row.byte_end > next_start then
+        println("ux_fail row_byte_range_matches_line range_bleed")
+        return 1
+      end
+      const expected =
+        text.byte_substring(row.byte_start, row.byte_end - row.byte_start)
+      let mut drawn: [StaticTextLine] = []
+      drawn = editor_ux_append_syntax_colored_row(
+        drawn, theme, text, spans, row.byte_start, row.byte_end, 13, 0, 0, 7
+      )
+      let mut rebuilt = ""
+      let mut piece_index = 0
+      while piece_index < drawn.length() do
+        rebuilt = rebuilt + drawn[piece_index].text
+        piece_index = piece_index + 1
+      end
+      if rebuilt != expected then
+        println("ux_fail row_byte_range_matches_line mismatch")
+        return 2
+      end
+      row_index = row_index + 1
+    end
+    line = line + 1
+  end
+  println("ux_ok row_byte_range_matches_line")
+  0
 end

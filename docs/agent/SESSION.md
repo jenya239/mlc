@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 24:40 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+| started | 2026-07-19 19:50 |
+| elapsed | ~15 min |
+| done    | Root: `editor_ux_append_syntax_colored_row` `substring`→`byte_substring`; L2 scenario with leading UTF-8 buffer |
+| verify  | `ux_ok row_byte_range_matches_line`; `ux_ok syntax_glyph_color_matches_theme` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+
 ### Turn 2026-07-19 24:25 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=1)
 
 | field   | value |

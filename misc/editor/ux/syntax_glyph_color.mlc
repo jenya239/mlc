@@ -82,7 +82,8 @@ export fn editor_ux_append_syntax_colored_row(
     end
     const length = segment_end - cursor
     if length > 0 then
-      const piece = draw_text.substring(cursor, length)
+      // cursor/length are byte offsets (VisualRow / HighlightSpan); not char indices.
+      const piece = draw_text.byte_substring(cursor, length)
       out.push(
         editor_ux_syntax_glyph_line(
           theme, segment_tag, piece, pixel_size, pen_x, pen_y

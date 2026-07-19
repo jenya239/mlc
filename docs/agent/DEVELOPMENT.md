@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b) — trace root + green L2.
-**`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** active — STEP=1 red harness green.
+**Queue head:** Driver `STEP=3` `TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b) — `demo_live_fs_compile_ok`.
+**`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** active — STEP=2 green (`byte_substring` fix).
 **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** closed 2026-07-19; archived.
