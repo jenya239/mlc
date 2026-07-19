@@ -12,7 +12,7 @@
 | started | 2026-07-19 20:19 |
 | elapsed | ~3 min |
 | done    | No `demo_live` wire (parent still in browse `if`; arm falls through); compile gate only |
-| verify  | `demo_live_fs_compile_ok`; `ux_ok tree_parent_double_click_navigates` |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok tree_parent_double_click_navigates`; commit `11bdb96a` |
 | result  | STEP=3 done; numbered STEPs complete → Critic |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK |

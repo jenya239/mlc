@@ -17,7 +17,7 @@ Revises `#33` Decision residual: parent `..` still single-click navigate.
 | 0 | `eb992e83` | Decision freeze + open |
 | 1 | `e056c76f` | Red L1 stub + run scripts |
 | 2 | `fcef874e` | parent `is_double` + arm; green L1 |
-| 3 | *(pending hash)* | `demo_live_fs_compile_ok` (no demo wire) |
+| 3 | `11bdb96a` | `demo_live_fs_compile_ok` (no demo wire) |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
