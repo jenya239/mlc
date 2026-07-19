@@ -3,17 +3,18 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#29**.
 Compiler track (not editor-only). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — red e2e/harness for anonymous `{ ...base, field: v }` (must fail today).
+**STEP=2** — Parser bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `10f7fb89` | Decision freeze + open |
+| 1 | `f1759e25` | Red e2e + `run_record_update_anonymous_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -43,7 +44,7 @@ Compiler track (not editor-only). Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog / CONTINUITY | **done** (2026-07-19) |
-| 1 | Scenario first: e2e (or harness) anonymous `{ ...p, x: N }` — **red** today | pending — fail visible; document expected green stdout |
+| 1 | Scenario first: e2e (or harness) anonymous `{ ...p, x: N }` — **red** today | **done** (2026-07-19) — `record_update_anonymous_red_ok` |
 | 2 | Parser: bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base | pending — `--check-only` / partial green; self-host + Tier B |
 | 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | pending — green tokens |
 | 4 | Migrate ≥1 `misc/editor` state helper off copy-all-fields; demo compile | pending — `demo_live_fs_compile_ok` |

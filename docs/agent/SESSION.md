@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 15:35 (Driver TRACK_LANG_RECORD_UPDATE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_LANG_RECORD_UPDATE |
+| started | 2026-07-19 12:33 |
+| elapsed | ~8 min |
+| done    | Add `compiler/tests/e2e/record_update_anonymous.mlc` (`{ ...p, x: … }` / `{ ...moved, y: 3 }`); `run_record_update_anonymous_red.sh` expects mlcc fail; expected green stdout documented in file header; not wired into `run_e2e.sh` yet |
+| verify  | `record_update_anonymous_red_ok`; named `record_update.mlc` still compiles |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone; Tier B/self-host N/A (tests-only, no compiler/*.mlc) |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_LANG_RECORD_UPDATE |
+
 ### Turn 2026-07-19 15:20 (Planner TRACK_LANG_RECORD_UPDATE STEP=0)
 
 | field   | value |
