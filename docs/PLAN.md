@@ -441,7 +441,7 @@ compiler/
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
-| **46** | Editor UX backlog — #1…#32+#31a done; `#33 EDITOR_TREE_EXPAND_COLLAPSE` active STEP=3; `#34`–`#35` queued (#22 superseded) | **active** (2026-07-19) #33 STEP=3 next | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_TREE_EXPAND_COLLAPSE](agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) · [archive/TRACK_EDITOR_CHROME_HOVER_STATE](archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md) |
+| **46** | Editor UX backlog — #1…#32+#31a+#33 done; `#33b/#33c/#33d` next (2026-07-19 live-demo audit: row byte-range bleed, chrome theme drift, tree `..` parent double-click); `#34`–`#35` queued (#22 superseded) | **active** (2026-07-19) Planner open `#33b` | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/TRACK_EDITOR_TREE_EXPAND_COLLAPSE](archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) · [archive/TRACK_EDITOR_CHROME_HOVER_STATE](archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -675,9 +675,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **closed** 2026-07-18: Critic OK; STEP=0+3+4;
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
-  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32 closed; `#33 EDITOR_TREE_EXPAND_COLLAPSE` active STEP=3 done → Critic (#22 superseded); #34–#35 queued;
+  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33 closed; `#33b`/`#33c`/`#33d` next then #34–#35 (#22 superseded);
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
-        [agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md](agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) ·
+        [archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md](archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) ·
         [archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md](archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md) ·
         [archive/tracks/TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT.md](archive/tracks/TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT.md) ·
         [archive/tracks/TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX.md](archive/tracks/TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX.md) ·

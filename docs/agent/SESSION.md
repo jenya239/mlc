@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 23:55 (Critic TRACK_EDITOR_TREE_EXPAND_COLLAPSE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+| started | 2026-07-19 19:40 |
+| elapsed | ~15 min |
+| done    | Re-audit STEP=0–3 (`144e20b9`…`a24edf9f`); L1+opens_tab+demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #33 closed |
+| verify  | `ux_ok tree_row_click_toggles_expand`; `ux_ok tree_click_opens_tab`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; residual: `..` → `#33d`; first-of-double toggles (Decision OK) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #33b EDITOR_ROW_BYTE_RANGE_BLEED) |
+
 ### Turn 2026-07-19 22:40 (Driver TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=3)
 
 | field   | value |

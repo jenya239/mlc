@@ -1,15 +1,33 @@
 # Track: Editor Tree Expand / Collapse
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#33**.
 User directive 2026-07-19 — **revises** §38 flat breadcrumb-only listing
-([archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md](../archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md)).
+([TRACK_EDITOR_FOLDER_BROWSER.md](TRACK_EDITOR_FOLDER_BROWSER.md)).
 Expandable tree model already exists unused. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L1 + opens_tab + demo. Anti-false-done:
+`144e20b9`…`a24edf9f` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `folder_click_toggle_expand` + `folder_tree_toggle_node`;
+`demo_live` hit/draw → `folder_tree_browser_rows`; indent + ▸/▾;
+dir single-click toggle, double-click enter_dir kept.
+**reopen: none**.
+
+Honest residual: `..` parent still single-click navigate (Decision: parent
+unchanged) → backlog `#33d`; first click of a double still toggles once
+(Decision: acceptable); flat `folder_listing_rows` remains for older L1
+nav/breadcrumb scenarios only.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_tree_row_click_toggles_expand.sh` | `ux_ok tree_row_click_toggles_expand` EXIT=0 |
+| `run_ux_tree_click.sh` | `ux_ok tree_click_opens_tab` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#33b EDITOR_ROW_BYTE_RANGE_BLEED`).
 
 ### STEPs done in git
 
@@ -19,6 +37,7 @@ Expandable tree model already exists unused. Size **M**.
 | 1 | `1ecfddb3` | Red L1 stub + run scripts |
 | 2 | `ea6596b9` | `folder_click_toggle_expand` + `folder_tree_toggle_node`; green L1 |
 | 3 | `a24edf9f` | `demo_live` tree rows + toggle apply; indent/▸▾ |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -44,11 +63,7 @@ Expandable tree model already exists unused. Size **M**.
 | 1 | L1 red harness + `run_ux_tree_row_click_toggles_expand.sh` | **done** — `ux_ok tree_expand_red` |
 | 2 | Click resolve toggle + tree rows helpers; green token | **done** — `ux_ok tree_row_click_toggles_expand` |
 | 3 | `demo_live` wire listing+toggle; keep `tree_click_opens_tab`; compile | **done** — `demo_live_fs_compile_ok` + `ux_ok tree_click_opens_tab` |
-| 4 | Critic: gates; archive | pending |
-
-<!-- STEP=1 sub-steps: 1) stub scenario fail token; 2) run script + optional red harness -->
-<!-- STEP=2 sub-steps: 1) folder_browser_resolve_click: arm→toggle_expand; 2) expand/collapse apply helper; 3) green L1 on folder_tree_browser_rows -->
-<!-- STEP=3 sub-steps: 1) demo_live use folder_tree_browser_rows; 2) apply toggle on panels.tree; 3) indent/▸▾ draw; 4) regression opens_tab + compile -->
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
