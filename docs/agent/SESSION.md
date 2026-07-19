@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 16:00 (Driver TRACK_LANG_RECORD_UPDATE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_LANG_RECORD_UPDATE |
+| started | 2026-07-19 12:35 |
+| elapsed | ~25 min (+Tier B ~11 min) |
+| done    | `parse_primary` bare `{` → `parse_record_expr('',…)`; `named_type_name_from_type`; infer+transform resolve empty update type from base; e2e comments `#`→`//`; harness → `record_update_anonymous_check_ok` |
+| verify  | `record_update_anonymous_check_ok`; anon stdout `(0,0)/(5,0)/(5,3)`; named `run_e2e` 9/0; self-host `diff -rq` empty DIFF_EXIT=0; `build_tests.sh` exit 0 (phase 10 arch lint) |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_LANG_RECORD_UPDATE |
+
 ### Turn 2026-07-19 15:35 (Driver TRACK_LANG_RECORD_UPDATE STEP=1)
 
 | field   | value |

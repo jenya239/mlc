@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_LANG_RECORD_UPDATE` (§46 #29) — parser/checker anonymous update.
-**`TRACK_LANG_RECORD_UPDATE` (§46 #29)** active — STEP=1 red harness done; named update already works.
+**Queue head:** Driver `STEP=3` `TRACK_LANG_RECORD_UPDATE` (§46 #29) — wire anonymous e2e into `run_e2e.sh`.
+**`TRACK_LANG_RECORD_UPDATE` (§46 #29)** active — STEP=2 parse+infer done; check_ok + self-host identical.
 **`TRACK_EDITOR_WIDE_CHAR_COLUMNS` (§46 #28)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_DROP_FILE` (§46 #27)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_INDENT_MODEL` (§46 #26)** closed 2026-07-19; archived.

@@ -38,7 +38,7 @@ import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } fr
 import { infer_question_from_inner_result } from './infer_question_expression'
 import * as infer_operand_combine from './infer_operand_combine'
 import { infer_expr_field_diagnostics } from '../check/diagnostics/type_diagnostics'
-import { types_structurally_equal, type_is_unknown, type_description, operator_method_for } from '../semantic_type_structure'
+import { types_structurally_equal, type_is_unknown, type_description, operator_method_for, named_type_name_from_type } from '../semantic_type_structure'
 import { infer_expr_call } from './infer_call'
 import { infer_expr_identifier } from './infer_expr_ident'
 import { infer_expr_match } from './infer_match'
@@ -364,7 +364,15 @@ end
 
 fn infer_expr_record_update(type_name: string, base: Shared<Expr>, field_values: [Shared<FieldVal>], inference_context: CheckContext) -> InferResult = do
   const base_parsed = infer_expr(base, inference_context)
-  infer_field_values_errors(base_parsed.with_type(Shared.new(TNamed(type_name))), field_values, inference_context, type_name)
+  const resolved_type_name =
+    if type_name.length() > 0 then type_name
+    else named_type_name_from_type(base_parsed.inferred_type)
+    end
+  infer_field_values_errors(
+    base_parsed.with_type(Shared.new(TNamed(resolved_type_name))),
+    field_values,
+    inference_context,
+    resolved_type_name)
 end
 
 type Infer_tuple_literal_fold_state = Infer_tuple_literal_fold_state {

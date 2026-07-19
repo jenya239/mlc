@@ -3,18 +3,19 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#29**.
 Compiler track (not editor-only). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Parser bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base.
+**STEP=3** — Wire anonymous e2e into `run_e2e.sh`; retire red/check script; named regression; Tier B + self-host.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `10f7fb89` | Decision freeze + open |
-| 1 | `e3e6c72c` | Red e2e + `run_record_update_anonymous_red.sh` |
+| 1 | `e3e6c72c` | Red e2e + harness |
+| 2 | `bb263386` | bare `{` parse + infer/transform type from base |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -45,15 +46,10 @@ Compiler track (not editor-only). Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog / CONTINUITY | **done** (2026-07-19) |
 | 1 | Scenario first: e2e (or harness) anonymous `{ ...p, x: N }` — **red** today | **done** (2026-07-19) — `record_update_anonymous_red_ok` |
-| 2 | Parser: bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base | pending — `--check-only` / partial green; self-host + Tier B |
-| 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | pending — green tokens |
+| 2 | Parser: bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base | **done** (2026-07-19) — `record_update_anonymous_check_ok`; self-host identical; Tier B exit 0 |
+| 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | pending — wire `run_e2e.sh`; full stdout match |
 | 4 | Migrate ≥1 `misc/editor` state helper off copy-all-fields; demo compile | pending — `demo_live_fs_compile_ok` |
 | 5 | Critic: gates; archive; backlog #29 done → Planner #30 | pending |
-
-<!-- sub-steps STEP=1: 1) add `compiler/tests/e2e/record_update_anonymous.mlc` (or extend suite) using `{ ...p, x: 3 }`; 2) wire into e2e runner if required; 3) confirm red failure; commit without fixing parser -->
-<!-- sub-steps STEP=2: 1) bare-`{` path in `exprs.mlc` → update when spread+fields; 2) checker/transform fill type name from base; 3) build.sh + self-host + Tier B -->
-<!-- sub-steps STEP=3: 1) fix remaining codegen; 2) green e2e; 3) re-run named `record_update.mlc`; 4) Tier B + self-host -->
-<!-- sub-steps STEP=4: 1) pick one `state_with_*` / EditorUxState copy site; 2) rewrite to update syntax; 3) demo_live_fs_compile -->
 
 ## Out of scope
 

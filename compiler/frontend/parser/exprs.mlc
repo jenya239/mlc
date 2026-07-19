@@ -914,6 +914,10 @@ fn parse_primary(parser: Parser) -> ExprResult = do
     parse_region_expr(parser.advance(), header_span)
   end
   else if kind.is_ident() then parse_primary_identifier(parser, kind.ident())
+  else if kind.is_lbrace() then do
+    const brace_span = parser.span_at_cursor()
+    parse_record_expr(parser.advance(), '', brace_span)
+  end
   else parse_primary_unit_fallback(parser)
   end
 end

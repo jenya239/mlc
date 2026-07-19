@@ -14,7 +14,8 @@ import {
   type_is_array,
   operator_method_for,
   shared_pointer_inner_type,
-  substitute_type
+  substitute_type,
+  named_type_name_from_type
 } from '../semantic_type_structure'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver, hof_call_result_type } from '../hof_method_spec'
 import {
@@ -1547,7 +1548,16 @@ extend TransformPass {
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const typed_base   = dispatch_transform_pass(self, base, stmts_fn)
     const typed_fields = transform_field_values(field_values, self.transform_context, stmts_fn)
-    Shared.new(SemanticExpressionRecordUpdate(type_name, typed_base, typed_fields, Shared.new(TNamed(type_name)), source_span))
+    const resolved_type_name =
+      if type_name.length() > 0 then type_name
+      else named_type_name_from_type(sexpr_type(typed_base))
+      end
+    Shared.new(SemanticExpressionRecordUpdate(
+      resolved_type_name,
+      typed_base,
+      typed_fields,
+      Shared.new(TNamed(resolved_type_name)),
+      source_span))
   end
   fn visit_array(
     self: TransformPass,

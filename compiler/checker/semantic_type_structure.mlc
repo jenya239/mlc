@@ -2,6 +2,28 @@
 
 import { Type } from './registry'
 
+export fn named_type_name_from_type(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TArray(_) => '',
+    TPair(_, _) => '',
+    TTuple(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
 export fn generic_type_name_from_type(type_value: Shared<Type>) -> string =
   match type_value {
     TGeneric(name, _) => name,
