@@ -1,0 +1,58 @@
+// TRACK_EDITOR_INDENT_MODEL STEP=1 — L0: indent_width_config (red until STEP=2).
+import {
+  editor_indent_config_default,
+  editor_indent_config_set_width,
+  editor_indent_config_set_use_tabs,
+  editor_indent_unit
+} from '../document/indent'
+
+fn main() -> i32 = do
+  let mut config = editor_indent_config_default()
+  if config.indent_width != 2 then
+    println("ux_fail indent_width_config default_width")
+    return 1
+  end
+  if config.use_tabs != 0 then
+    println("ux_fail indent_width_config default_use_tabs")
+    return 2
+  end
+  if editor_indent_unit(config) != "  " then
+    println("ux_fail indent_width_config default_unit")
+    return 3
+  end
+
+  config = editor_indent_config_set_width(config, 4)
+  if config.indent_width != 4 then
+    println("ux_fail indent_width_config set_width_4")
+    return 4
+  end
+  if editor_indent_unit(config) != "    " then
+    println("ux_fail indent_width_config unit_width_4")
+    return 5
+  end
+
+  config = editor_indent_config_set_use_tabs(config, 1)
+  if config.use_tabs == 0 then
+    println("ux_fail indent_width_config set_use_tabs")
+    return 6
+  end
+  if editor_indent_unit(config) != "\t" then
+    println("ux_fail indent_width_config tab_unit")
+    return 7
+  end
+
+  config = editor_indent_config_default()
+  config = editor_indent_config_set_width(config, 0)
+  if config.indent_width != 1 then
+    println("ux_fail indent_width_config clamp_low")
+    return 8
+  end
+  config = editor_indent_config_set_width(config, 100)
+  if config.indent_width != 8 then
+    println("ux_fail indent_width_config clamp_high")
+    return 9
+  end
+
+  println("ux_ok indent_width_config")
+  0
+end

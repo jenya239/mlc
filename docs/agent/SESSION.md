@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 12:15 (Driver TRACK_EDITOR_INDENT_MODEL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_INDENT_MODEL |
+| started | 2026-07-19 11:05 |
+| elapsed | ~10 min |
+| done    | Stub `document/indent.mlc` (default width 0 / empty unit); L0 `indent_width_config` + `run_ux_indent_width_config.sh` → red `ux_fail indent_width_config default_width` |
+| verify  | indent script exit 1 red; `ux_ok enter_keeps_indent`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_INDENT_MODEL |
+
 ### Turn 2026-07-19 12:05 (Planner TRACK_EDITOR_INDENT_MODEL STEP=0)
 
 | field   | value |

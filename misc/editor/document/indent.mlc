@@ -1,0 +1,32 @@
+// TRACK_EDITOR_INDENT_MODEL STEP=1 — stub (red until STEP=2).
+export type EditorIndentConfig = {
+  use_tabs: i32,
+  indent_width: i32
+}
+
+export fn editor_indent_config_default() -> EditorIndentConfig =
+  EditorIndentConfig {
+    use_tabs: 0,
+    indent_width: 0
+  }
+
+export fn editor_indent_config_set_width(
+  config: EditorIndentConfig,
+  width: i32
+) -> EditorIndentConfig = do
+  let _unused_width = width
+  config
+end
+
+export fn editor_indent_config_set_use_tabs(
+  config: EditorIndentConfig,
+  use_tabs: i32
+) -> EditorIndentConfig = do
+  let _unused_use_tabs = use_tabs
+  config
+end
+
+export fn editor_indent_unit(config: EditorIndentConfig) -> string = do
+  let _unused_config = config
+  ""
+end

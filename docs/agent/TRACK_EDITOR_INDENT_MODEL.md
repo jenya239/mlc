@@ -5,11 +5,11 @@ No indent policy: Tab/Shift-Tab do not indent/outdent; no tabs-vs-spaces or
 width config. Auto-indent (#10) only copies leading bytes on Enter. Review
 gates: `indent_width_config` (L0) + L1 Tab/Shift-Tab. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L0 scenario first (`indent_width_config`) + stub
+**STEP=2** — indent config + indent/outdent edit API
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -46,7 +46,7 @@ gates: `indent_width_config` (L0) + L1 Tab/Shift-Tab. Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L0 scenario first (`indent_width_config`) + stub | pending |
+| 1 | L0 scenario first (`indent_width_config`) + stub | **done** (2026-07-19) — stub red: `ux_fail indent_width_config default_width` |
 | <!-- sub-steps: 1) L0 harness + run script; 2) stub config API → red; 3) enter_keeps_indent + demo_live_fs_compile green --> |
 | 2 | indent config + indent/outdent edit API | pending |
 | <!-- sub-steps: 1) EditorIndentConfig + unit/indent/outdent; 2) L0 green + L1 green; 3) enter_keeps_indent regression --> |
