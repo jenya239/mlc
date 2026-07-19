@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29 done; next `#30` (#22 superseded)
+## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29 done; `#30 EDITOR_UX_L1_BACKFILL` **active** (STEP=1 next) (#22 superseded)
 
 ## How to use this backlog
 
@@ -65,7 +65,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 27 | `EDITOR_DROP_FILE` | Runtime GLFW drop-callback → open file (needs ABI) | `drop_file_opens_tab` | M | **done** — [archive/tracks/TRACK_EDITOR_DROP_FILE](../archive/tracks/TRACK_EDITOR_DROP_FILE.md) |
 | 28 | `EDITOR_WIDE_CHAR_COLUMNS` | wcwidth-style column width for emoji/CJK (only if taken on) | `wide_char_column_width` (L0) | M | **done** — [archive/tracks/TRACK_EDITOR_WIDE_CHAR_COLUMNS](../archive/tracks/TRACK_EDITOR_WIDE_CHAR_COLUMNS.md) |
 | 29 | `LANG_RECORD_UPDATE` (compiler, not editor) | Functional record-update syntax (`{ ...state, field: v }`); removes copy-all-fields boilerplate across `misc/editor`/`misc/gui/scene` | Tier B + self-host | M | **done** — [archive/tracks/TRACK_LANG_RECORD_UPDATE](../archive/tracks/TRACK_LANG_RECORD_UPDATE.md) |
-| 30 | `EDITOR_UX_L1_BACKFILL` | Backfill L1 scenarios for §38/§40/§42/§43 (closed on unit+compile-gate only, per review §2.1) | 4 new `ux_scenarios/*` | M | pending |
+| 30 | `EDITOR_UX_L1_BACKFILL` | Backfill L1 scenarios for §38/§40/§42/§43 (closed on unit+compile-gate only, per review §2.1) | 4 new `ux_scenarios/*` | M | **active** — [TRACK_EDITOR_UX_L1_BACKFILL](TRACK_EDITOR_UX_L1_BACKFILL.md) STEP=1 next |
 
 Items 1-2 are the required foundation per the review: without #1, demo and
 model diverge (every new UX behavior has to be fixed twice, once in `ux/*`

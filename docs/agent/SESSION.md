@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 16:55 (Planner TRACK_EDITOR_UX_L1_BACKFILL STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_UX_L1_BACKFILL (§46 #30) |
+| started | 2026-07-19 13:08 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_UX_L1_BACKFILL.md`; freeze Decision: four L1 tokens `folder_breadcrumb_navigates` / `utf8_caret_display_column` / `caret_after_word_wrap` / `folder_nav_back_forward` for §38/§40/§42/§43; STEPs 1–4 (red → folder pair → text pair → Critic); PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; review §2.1 cited |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_UX_L1_BACKFILL |
+
 ### Turn 2026-07-19 16:40 (Critic TRACK_LANG_RECORD_UPDATE)
 
 | field   | value |
