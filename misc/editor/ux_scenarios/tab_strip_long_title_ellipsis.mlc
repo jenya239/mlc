@@ -1,5 +1,90 @@
-// TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=1 — L1: tab_strip_long_title_ellipsis (red until STEP=2).
+// TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=2 — L1: long title truncates
+// with "…" and fits the title area of its laid-out slot.
+import { ux_rect_new } from '../../gui/ux/snapshot'
+import {
+  tab_strip_preferred_tab_width,
+  tab_strip_layout_widths,
+  tab_strip_title_rect_from_widths,
+  tab_strip_title_area_display_columns,
+  tab_strip_truncate_title
+} from '../ux/tab_strip'
+import { utf8_count_display_columns } from '../document/line_index'
+
 fn main() -> i32 = do
-  println("ux_fail tab_strip_long_title_ellipsis stub")
-  1
+  const strip = ux_rect_new(0, 0, 300, 24)
+  const char_width = 6
+  const long_title =
+    "very_long_tab_name_that_must_be_truncated_for_the_slot"
+  const short_title = "ok"
+
+  let mut preferred: [i32] = []
+  preferred.push(
+    tab_strip_preferred_tab_width(
+      utf8_count_display_columns(long_title, 0, long_title.byte_size()),
+      char_width
+    )
+  )
+  preferred.push(
+    tab_strip_preferred_tab_width(
+      utf8_count_display_columns(short_title, 0, short_title.byte_size()),
+      char_width
+    )
+  )
+
+  const widths = tab_strip_layout_widths(strip.width, preferred)
+  const long_rect = tab_strip_title_rect_from_widths(strip, widths, 0)
+  const max_cols = tab_strip_title_area_display_columns(
+    long_rect.width, char_width
+  )
+  if max_cols < 2 then
+    println("ux_fail tab_strip_long_title_ellipsis max_cols")
+    return 1
+  end
+
+  const full_cols = utf8_count_display_columns(
+    long_title, 0, long_title.byte_size()
+  )
+  if full_cols <= max_cols then
+    println("ux_fail tab_strip_long_title_ellipsis setup not long")
+    return 2
+  end
+
+  const truncated = tab_strip_truncate_title(long_title, max_cols)
+  if truncated.byte_size() < 3 then
+    println("ux_fail tab_strip_long_title_ellipsis too short")
+    return 3
+  end
+  // Ellipsis U+2026 is three UTF-8 bytes.
+  const ellipsis = "…"
+  const trunc_len = truncated.byte_size()
+  const suffix = truncated.byte_substring(trunc_len - ellipsis.byte_size(), ellipsis.byte_size())
+  if suffix != ellipsis then
+    println("ux_fail tab_strip_long_title_ellipsis missing dots")
+    return 4
+  end
+
+  const out_cols = utf8_count_display_columns(
+    truncated, 0, truncated.byte_size()
+  )
+  if out_cols > max_cols then
+    println("ux_fail tab_strip_long_title_ellipsis still wide")
+    return 5
+  end
+  if out_cols != max_cols then
+    println("ux_fail tab_strip_long_title_ellipsis not filled")
+    return 6
+  end
+
+  // Short title must stay unchanged.
+  const short_max = tab_strip_title_area_display_columns(
+    tab_strip_title_rect_from_widths(strip, widths, 1).width, char_width
+  )
+  const short_out = tab_strip_truncate_title(short_title, short_max)
+  if short_out != short_title then
+    println("ux_fail tab_strip_long_title_ellipsis short changed")
+    return 7
+  end
+
+  println("ux_ok tab_strip_long_title_ellipsis")
+  0
 end

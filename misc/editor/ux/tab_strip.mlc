@@ -1,4 +1,5 @@
 // TRACK_UX_HEADLESS STEP=4 — tab strip hit-test + activate (L5 model).
+// TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=2 — preferred/max-width + ellipsis.
 import {
   UxRect,
   ux_rect_new
@@ -14,8 +15,17 @@ import {
 import {
   EditorUxState
 } from './probe'
+import {
+  utf8_count_display_columns,
+  utf8_byte_offset_for_display_column
+} from '../document/line_index'
 
-// Equal-width title slots inside the tab strip rect.
+export fn tab_strip_min_width() -> i32 = 72
+export fn tab_strip_max_width() -> i32 = 180
+export fn tab_strip_title_padding() -> i32 = 8
+export fn tab_strip_close_width() -> i32 = 20
+
+// Equal-width title slots (legacy hit/draw callers + unit tests).
 export fn tab_strip_title_rect(
   strip: UxRect,
   tab_count: i32,
@@ -32,9 +42,154 @@ export fn tab_strip_title_rect(
   ux_rect_new(strip.x + slot_width * index, strip.y, width, strip.height)
 end
 
-export fn tab_strip_close_width() -> i32 = 20
+// Preferred slot width from title display columns (mono char_width).
+export fn tab_strip_preferred_tab_width(
+  title_display_columns: i32,
+  char_width: i32
+) -> i32 = do
+  let mut cell = char_width
+  if cell < 1 then
+    cell = 1
+  end
+  let mut columns = title_display_columns
+  if columns < 0 then
+    columns = 0
+  end
+  let mut width =
+    tab_strip_close_width() + tab_strip_title_padding() + columns * cell
+  if width < tab_strip_min_width() then
+    width = tab_strip_min_width()
+  end
+  if width > tab_strip_max_width() then
+    width = tab_strip_max_width()
+  end
+  width
+end
 
-// Close affordance: right edge of the tab slot.
+// Pack left; if sum(preferred) > strip_width, scale so sum == strip_width.
+export fn tab_strip_layout_widths(
+  strip_width: i32,
+  preferred: [i32]
+) -> [i32] = do
+  let mut widths: [i32] = []
+  const count = preferred.length()
+  if count <= 0 || strip_width <= 0 then
+    return widths
+  end
+  let mut sum = 0
+  let mut index = 0
+  while index < count do
+    let mut width = preferred[index]
+    if width < 1 then
+      width = 1
+    end
+    widths.push(width)
+    sum = sum + width
+    index = index + 1
+  end
+  if sum <= strip_width then
+    return widths
+  end
+  let mut laid: [i32] = []
+  let mut used = 0
+  index = 0
+  while index < count do
+    let mut width = (preferred[index] * strip_width) / sum
+    if width < 1 then
+      width = 1
+    end
+    if index == count - 1 then
+      width = strip_width - used
+      if width < 1 then
+        width = 1
+      end
+    end
+    laid.push(width)
+    used = used + width
+    index = index + 1
+  end
+  laid
+end
+
+export fn tab_strip_title_rect_from_widths(
+  strip: UxRect,
+  widths: [i32],
+  index: i32
+) -> UxRect = do
+  const count = widths.length()
+  if count <= 0 || index < 0 || index >= count then
+    return ux_rect_new(0, 0, 0, 0)
+  end
+  let mut x = strip.x
+  let mut i = 0
+  while i < index do
+    x = x + widths[i]
+    i = i + 1
+  end
+  ux_rect_new(x, strip.y, widths[index], strip.height)
+end
+
+export fn tab_strip_close_rect_from_widths(
+  strip: UxRect,
+  widths: [i32],
+  index: i32
+) -> UxRect = do
+  const title = tab_strip_title_rect_from_widths(strip, widths, index)
+  if title.width <= 0 then
+    return ux_rect_new(0, 0, 0, 0)
+  end
+  let mut close_width = tab_strip_close_width()
+  if close_width > title.width then
+    close_width = title.width
+  end
+  ux_rect_new(
+    title.x + title.width - close_width,
+    title.y,
+    close_width,
+    title.height
+  )
+end
+
+// Max display columns that fit in the title area of a laid-out slot.
+export fn tab_strip_title_area_display_columns(
+  slot_width: i32,
+  char_width: i32
+) -> i32 = do
+  let mut cell = char_width
+  if cell < 1 then
+    cell = 1
+  end
+  let mut avail =
+    slot_width - tab_strip_close_width() - tab_strip_title_padding()
+  if avail < 0 then
+    avail = 0
+  end
+  avail / cell
+end
+
+// Truncate to max_display_cols with a single "…" when overflowing.
+export fn tab_strip_truncate_title(
+  title: string,
+  max_display_cols: i32
+) -> string = do
+  if max_display_cols <= 0 then
+    return ""
+  end
+  const total = utf8_count_display_columns(title, 0, title.byte_size())
+  if total <= max_display_cols then
+    return title
+  end
+  if max_display_cols == 1 then
+    return "…"
+  end
+  const keep_cols = max_display_cols - 1
+  const end_byte = utf8_byte_offset_for_display_column(
+    title, 0, title.byte_size(), keep_cols
+  )
+  title.byte_substring(0, end_byte) + "…"
+end
+
+// Close affordance: right edge of the tab slot (equal-width layout).
 export fn tab_strip_close_rect(
   strip: UxRect,
   tab_count: i32,

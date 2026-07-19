@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 19:50 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+| started | 2026-07-19 14:39 |
+| elapsed | ~15 min |
+| done    | `tab_strip_preferred_tab_width` / `layout_widths` / `title_rect_from_widths` / `truncate_title`; green both L1; legacy equal-width API kept |
+| verify  | `ux_ok tab_strip_rects_no_overlap`; `ux_ok tab_strip_long_title_ellipsis`; `tab_strip_close_unit ok`; `ux_ok tab_strip_click_activates`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+
 ### Turn 2026-07-19 19:30 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=1)
 
 | field   | value |
