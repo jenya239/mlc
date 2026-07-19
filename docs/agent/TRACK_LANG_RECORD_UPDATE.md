@@ -17,7 +17,7 @@ Compiler track (not editor-only). Size **M**.
 | 1 | `e3e6c72c` | Red e2e + harness |
 | 2 | `efd8d9c6` | bare `{` parse + infer/transform type from base |
 | 3 | `be970c68` | wire `run_e2e.sh`; retire check script |
-| 4 | *(this turn)* | `scroll.mlc` state_with_scroll_* → anonymous update |
+| 4 | `9067d04e` | `scroll.mlc` state_with_scroll_* → anonymous update |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
