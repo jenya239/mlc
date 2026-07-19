@@ -1,0 +1,50 @@
+// TRACK_EDITOR_CONTEXT_MENU STEP=1 — L1: context_menu_opens (red until STEP=2).
+import {
+  editor_ux_context_menu_hidden,
+  editor_ux_context_menu_is_visible,
+  editor_ux_context_menu_open_at,
+  editor_ux_context_menu_item_rect,
+  editor_ux_context_menu_click,
+  editor_ux_context_menu_item_height,
+  editor_ux_context_menu_item_width,
+  context_menu_action_is_copy
+} from '../ux/context_menu'
+
+fn main() -> i32 = do
+  const origin_x = 100
+  const origin_y = 200
+  // Copy is item index 1 (Cut=0, Copy=1, Paste=2).
+  const copy_index = 1
+
+  let mut menu = editor_ux_context_menu_hidden()
+  menu = editor_ux_context_menu_open_at(menu, origin_x, origin_y)
+  if !editor_ux_context_menu_is_visible(menu) then
+    println("ux_fail context_menu_opens not_visible")
+    return 1
+  end
+
+  const copy_rect = editor_ux_context_menu_item_rect(menu, copy_index)
+  if copy_rect.width != editor_ux_context_menu_item_width() then
+    println("ux_fail context_menu_opens copy_width")
+    return 2
+  end
+  if copy_rect.height != editor_ux_context_menu_item_height() then
+    println("ux_fail context_menu_opens copy_height")
+    return 3
+  end
+
+  const click_x = copy_rect.x + copy_rect.width / 2
+  const click_y = copy_rect.y + copy_rect.height / 2
+  const clicked = editor_ux_context_menu_click(menu, click_x, click_y)
+  if !context_menu_action_is_copy(clicked.action) then
+    println("ux_fail context_menu_opens copy_action")
+    return 4
+  end
+  if editor_ux_context_menu_is_visible(clicked.menu) then
+    println("ux_fail context_menu_opens still_visible")
+    return 5
+  end
+
+  println("ux_ok context_menu_opens")
+  0
+end

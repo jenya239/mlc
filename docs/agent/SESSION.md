@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 10:30 (Driver TRACK_EDITOR_CONTEXT_MENU STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CONTEXT_MENU |
+| started | 2026-07-19 10:20 |
+| elapsed | ~10 min |
+| done    | Stub `ux/context_menu.mlc` (open no-op); L1 `context_menu_opens` + `run_ux_context_menu_opens.sh` → red `ux_fail context_menu_opens not_visible` |
+| verify  | context script exit 1 red; `ux_ok trailing_ws_visualized`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CONTEXT_MENU |
+
 ### Turn 2026-07-19 10:15 (Planner TRACK_EDITOR_CONTEXT_MENU STEP=0)
 
 | field   | value |

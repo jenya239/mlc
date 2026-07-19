@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#25**.
 No right-click menu; Cut/Copy/Paste only via shortcuts/toolbar. Review
 gate: `context_menu_opens` (L1). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`context_menu_opens`) red against stub.
+**STEP=2** — menu model + open/click/dismiss + item rects
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -44,7 +44,7 @@ gate: `context_menu_opens` (L1). Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L1 scenario first (`context_menu_opens`) | pending |
+| 1 | L1 scenario first (`context_menu_opens`) | **done** (2026-07-19) — stub red: `ux_fail context_menu_opens not_visible` |
 | <!-- sub-steps: 1) scenario + run script; 2) stub menu API → red; 3) demo_live_fs_compile + trailing_ws green --> |
 | 2 | menu model + open/click/dismiss + item rects | pending |
 | <!-- sub-steps: 1) EditorContextMenu + click helper; 2) L1 green for open+Copy; 3) trailing_ws regression --> |

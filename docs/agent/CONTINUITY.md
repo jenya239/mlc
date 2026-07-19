@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`) — не трогать; коммитить только свои файлы explicit `git add` списком.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `STEP=1` `TRACK_EDITOR_CONTEXT_MENU` (§46 `#25`).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `STEP=2` `TRACK_EDITOR_CONTEXT_MENU` (§46 `#25`).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,7 +79,8 @@ INSTRUCTIONS_REV=2026-07-18-folder-nav-critic
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24 done. Next pending `#25`. Product ceiling: **Sublime Text** |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24 done. `#25` active (#22 superseded). Product ceiling: **Sublime Text** |
+| **`TRACK_EDITOR_CONTEXT_MENU` (§46 #25)** | **active** 2026-07-19. STEP=0 Decision frozen. Next STEP=1 L1 red harness. Do not skip Decision |
 | **`TRACK_EDITOR_TRAILING_WS_VIZ` (§46 #24)** | **closed** 2026-07-19 (Critic OK). Archived. Trailing space/tab EOL draw report. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_MULTI_CURSOR` (§46 #23)** | **closed** 2026-07-19 (Critic OK). Archived. Ctrl+click multi + collapsed insert. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_DIRTY_CLOSE_L1` (§46 #21)** | **closed** 2026-07-19 (Critic OK). Archived. Overlay discard/cancel L1 click. Do not reopen numbered STEPs |
