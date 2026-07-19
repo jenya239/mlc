@@ -4,17 +4,18 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 (pulled forward — correctness bug after live-demo audit 2026-07-19).
 **Not** PLAN §33b `EDITOR_LIVE_POLISH` (closed). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — Red L2 harness + run script for `row_byte_range_matches_line`.
+**STEP=2** — Trace root + fix; green `ux_ok row_byte_range_matches_line`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `cc4cb1e9` | Decision freeze + open |
+| 1 | *(pending hash)* | Red L2 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -35,7 +36,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | L2 red harness + `run_ux_row_byte_range_matches_line.sh` | pending — `ux_ok row_byte_range_red` |
+| 1 | L2 red harness + `run_ux_row_byte_range_matches_line.sh` | **done** — `ux_ok row_byte_range_red` |
 | 2 | Trace root + fix; green L2 token | pending — `ux_ok row_byte_range_matches_line` |
 | 3 | `demo_live` wire if needed; `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |

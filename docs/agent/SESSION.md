@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 24:25 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+| started | 2026-07-19 19:47 |
+| elapsed | ~5 min |
+| done    | Red stub `ux_scenarios/row_byte_range_matches_line.mlc`; `run_ux_row_byte_range_red.sh` + green-path script |
+| verify  | `ux_ok row_byte_range_red` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+
 ### Turn 2026-07-19 24:10 (Planner TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=0)
 
 | field   | value |

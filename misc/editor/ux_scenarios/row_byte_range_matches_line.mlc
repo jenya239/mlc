@@ -1,0 +1,5 @@
+// TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=1 — L2: row byte range matches line (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail row_byte_range_matches_line stub")
+  1
+end
