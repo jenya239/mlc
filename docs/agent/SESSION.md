@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 14:05 (Driver TRACK_EDITOR_DROP_FILE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_DROP_FILE |
+| started | 2026-07-19 11:41 |
+| elapsed | ~25 min |
+| done    | `demo_live` drain `glfw_gl_take_drop_path` → `editor_ux_open_dropped_path`; sync tabs/selection/history; `last_command=drop_open` |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok drop_file_opens_tab`; `ux_ok indent_width_config`; `regression_gate.sh` exit 0 (examples ok=146 fail=0) |
+| result  | STEP=3 done; track numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_DROP_FILE |
+
 ### Turn 2026-07-19 13:45 (Driver TRACK_EDITOR_DROP_FILE STEP=2)
 
 | field   | value |

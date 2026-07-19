@@ -15,7 +15,8 @@ import {
   glfw_gl_mod_ctrl_down,
   glfw_gl_mod_shift_down,
   glfw_gl_mod_alt_down,
-  glfw_gl_take_binding_key
+  glfw_gl_take_binding_key,
+  glfw_gl_take_drop_path
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { gui_input_poll } from '../gui/input'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
@@ -279,6 +280,8 @@ import {
   context_menu_action_is_copy,
   context_menu_action_is_paste
 } from './ux/context_menu'
+import { editor_ux_open_dropped_path } from './ux/drop_file'
+import { editor_ux_state_new } from './ux/probe'
 import {
   editor_indent_config_default
 } from './document/indent'
@@ -743,6 +746,30 @@ fn main() -> i32 = do
     let mut frame = document_frame_snapshot(document)
     let mut line_index = frame.line_index
     let mut draw_text = frame.text
+
+    // TRACK_EDITOR_DROP_FILE STEP=3 — drain OS drop queue → open/activate tabs
+    let mut drop_path = glfw_gl_take_drop_path()
+    while drop_path.byte_size() > 0 do
+      const before_count = tab_set_count(tabs)
+      const before_active = tabs.active_index
+      const drop_state = editor_ux_open_dropped_path(
+        editor_ux_state_new(width, height, panels, tabs, selection),
+        drop_path
+      )
+      tabs = drop_state.tabs
+      selection = drop_state.selection
+      if tab_set_count(tabs) != before_count || tabs.active_index != before_active then
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
+        history = history_new()
+        multi = multi_selection_from_single(selection)
+        last_command = "drop_open"
+      end
+      drop_path = glfw_gl_take_drop_path()
+    end
 
     const tree_rect = shell_panels_tree_rect(panels)
     const editor_rect = shell_panels_editor_rect(panels)
