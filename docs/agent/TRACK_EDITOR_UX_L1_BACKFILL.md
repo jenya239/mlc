@@ -5,11 +5,11 @@ Source: Opus review §2.1 (`editor_tdd_ux_20260717_*`) — those tracks closed o
 L0 unit + compile-gate only; Standing discipline now requires L1 for visible
 UX. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Green §38 + §43 (`folder_breadcrumb_navigates`, `folder_nav_back_forward`).
+**STEP=3** — Green §40 + §42 (`utf8_caret_display_column`, `caret_after_word_wrap`).
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ UX. Size **M**.
 |------|-----------------|-------|
 | 0 | `d1e0c679` | Decision freeze + open |
 | 1 | `d46eae16` | Four red L1 stubs + run scripts + `run_ux_l1_backfill_red.sh` |
+| 2 | *(this turn)* | Green breadcrumb + nav back/forward via `folder_browser_resolve_click` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -49,7 +50,7 @@ UX. Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | Four L1 red harnesses + `run_ux_*.sh` stubs | **done** (2026-07-19) — `ux_ok l1_backfill_red` |
-| 2 | Green §38 + §43 (folder breadcrumb + nav back/forward) | pending — two `ux_ok` |
+| 2 | Green §38 + §43 (folder breadcrumb + nav back/forward) | **done** (2026-07-19) — `ux_ok folder_breadcrumb_navigates`; `ux_ok folder_nav_back_forward` |
 | 3 | Green §40 + §42 (display column caret + wrap caret/hit) | pending — two `ux_ok` + demo |
 | 4 | Critic: all four + units + demo; archive; backlog #30 done | pending |
 

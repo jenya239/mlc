@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 17:25 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_UX_L1_BACKFILL |
+| started | 2026-07-19 13:13 |
+| elapsed | ~10 min |
+| done    | Green L1 via `folder_browser_resolve_click`: breadcrumb → `/demo`; nav back/forward buttons |
+| verify  | `ux_ok folder_breadcrumb_navigates`; `ux_ok folder_nav_back_forward`; `folder_panel_unit ok`; `folder_nav_unit ok`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_UX_L1_BACKFILL |
+
 ### Turn 2026-07-19 17:10 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=1)
 
 | field   | value |

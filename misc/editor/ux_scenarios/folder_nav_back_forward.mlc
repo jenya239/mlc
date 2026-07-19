@@ -1,5 +1,109 @@
-// TRACK_EDITOR_UX_L1_BACKFILL STEP=1 — L1: folder_nav_back_forward (red until STEP=2).
+// TRACK_EDITOR_UX_L1_BACKFILL STEP=2 — L1: folder_nav_back_forward.
+import { DirEntry, dir_entry_new } from '../workspace/file_tree'
+import { rect_new } from '../../gui/layout'
+import {
+  folder_browser_at,
+  folder_listing_rows,
+  folder_breadcrumb_segments,
+  folder_breadcrumb_height,
+  folder_list_rect,
+  folder_nav_new,
+  folder_nav_push,
+  folder_nav_current,
+  folder_nav_can_back,
+  folder_nav_can_forward,
+  folder_nav_back_rect,
+  folder_nav_forward_rect,
+  folder_nav_crumbs_origin_x,
+  folder_browser_resolve_click,
+  folder_click_nav_back,
+  folder_click_nav_forward
+} from '../ux/folder_panel'
+
 fn main() -> i32 = do
-  println("ux_fail folder_nav_back_forward stub")
-  1
+  let mut entries: [DirEntry] = []
+  entries.push(dir_entry_new("a.txt", 0))
+  const tree = folder_browser_at("/demo/src/gui", "gui", entries)
+  const folder_rows = folder_listing_rows(tree)
+
+  const tree_rect = rect_new(10, 20, 240, 300)
+  const breadcrumb_rect = rect_new(
+    tree_rect.x,
+    tree_rect.y,
+    tree_rect.width,
+    folder_breadcrumb_height()
+  )
+  const tree_list_rect = folder_list_rect(tree_rect)
+  const segments = folder_breadcrumb_segments(
+    "/demo/src/gui",
+    folder_nav_crumbs_origin_x(tree_rect),
+    8
+  )
+
+  let mut folder_nav = folder_nav_new("/demo")
+  folder_nav = folder_nav_push(folder_nav, "/demo/src")
+  folder_nav = folder_nav_push(folder_nav, "/demo/src/gui")
+  if folder_nav_current(folder_nav) != "/demo/src/gui" then
+    println("ux_fail folder_nav_back_forward setup")
+    return 1
+  end
+  if folder_nav_can_back(folder_nav) == 0 || folder_nav_can_forward(folder_nav) != 0 then
+    println("ux_fail folder_nav_back_forward setup_can")
+    return 2
+  end
+
+  const back_rect = folder_nav_back_rect(tree_rect)
+  const back_click = folder_browser_resolve_click(
+    tree_rect,
+    segments,
+    breadcrumb_rect,
+    folder_rows,
+    tree_list_rect,
+    0,
+    folder_nav,
+    "",
+    0 - 1000,
+    0,
+    back_rect.x + 1,
+    back_rect.y + 1
+  )
+  if back_click.handled == 0 || back_click.action != folder_click_nav_back() then
+    println("ux_fail folder_nav_back_forward back_action")
+    return 3
+  end
+  if folder_nav_current(back_click.folder_nav) != "/demo/src" then
+    println("ux_fail folder_nav_back_forward back_path")
+    return 4
+  end
+  if folder_nav_can_forward(back_click.folder_nav) == 0 then
+    println("ux_fail folder_nav_back_forward can_forward")
+    return 5
+  end
+
+  const forward_rect = folder_nav_forward_rect(tree_rect)
+  const forward_click = folder_browser_resolve_click(
+    tree_rect,
+    segments,
+    breadcrumb_rect,
+    folder_rows,
+    tree_list_rect,
+    0,
+    back_click.folder_nav,
+    "",
+    0 - 1000,
+    0,
+    forward_rect.x + 1,
+    forward_rect.y + 1
+  )
+  if forward_click.handled == 0 || forward_click.action != folder_click_nav_forward() then
+    println("ux_fail folder_nav_back_forward forward_action")
+    return 6
+  end
+  if folder_nav_current(forward_click.folder_nav) != "/demo/src/gui" then
+    println("ux_fail folder_nav_back_forward forward_path")
+    return 7
+  end
+
+  println("ux_ok folder_nav_back_forward")
+  0
 end

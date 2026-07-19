@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30) — green folder breadcrumb + nav L1.
-**`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** active — STEP=1 red stubs done.
+**Queue head:** Driver `STEP=3` `TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30) — green utf8 caret + wrap L1.
+**`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** active — STEP=2 folder L1 green.
 **`TRACK_LANG_RECORD_UPDATE` (§46 #29)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_WIDE_CHAR_COLUMNS` (§46 #28)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_DROP_FILE` (§46 #27)** closed 2026-07-19; archived.
