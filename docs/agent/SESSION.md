@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 12:55 (Planner TRACK_EDITOR_DROP_FILE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_DROP_FILE |
+| started | 2026-07-19 11:22 |
+| elapsed | ~10 min |
+| done    | Opened `TRACK_EDITOR_DROP_FILE.md`; Decision: GLFW drop queue + `take_drop_path`/`test_push`; open via `open_buffer_from_path`+`tab_set_open`; L1 `drop_file_opens_tab`; STEPs 1–3+Critic; REG (lib/mlc); PLAN/UX_BACKLOG #27 → active |
+| verify  | track file + PLAN §46 + backlog #27 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DROP_FILE |
+
 ### Turn 2026-07-19 12:45 (Critic TRACK_EDITOR_INDENT_MODEL critique-audit)
 
 | field   | value |
