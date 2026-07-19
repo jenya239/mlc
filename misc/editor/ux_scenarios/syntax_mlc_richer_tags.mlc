@@ -1,0 +1,5 @@
+// TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=1 — L2: richer MLC tags (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail syntax_mlc_richer_tags stub")
+  1
+end

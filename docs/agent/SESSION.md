@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 29:25 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+| started | 2026-07-19 23:00 |
+| elapsed | ~5 min |
+| done    | Red stub `ux_scenarios/syntax_mlc_richer_tags.mlc`; `run_ux_syntax_mlc_richer_red.sh` + green-path script |
+| verify  | `ux_ok syntax_mlc_richer_red` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+
 ### Turn 2026-07-19 29:10 (Planner TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=0)
 
 | field   | value |
