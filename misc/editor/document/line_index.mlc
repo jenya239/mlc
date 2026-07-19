@@ -1,7 +1,8 @@
-// TRACK_EDITOR_MVP STEP=10 + TRACK_EDITOR_UTF8_COLUMNS —
-// LineIndex (byte offset ↔ line/codepoint-column).
+// TRACK_EDITOR_MVP STEP=10 + TRACK_EDITOR_UTF8_COLUMNS +
+// TRACK_EDITOR_WIDE_CHAR_COLUMNS —
+// LineIndex (byte offset ↔ line/display-column).
 // Rebuild from document after edits (dirty-rebuild).
-// Columns are UTF-8 codepoint offsets within the line (grapheme deferred).
+// Columns are wcwidth-lite display widths (CJK/emoji = 2; grapheme/ZWJ OOS).
 
 import {
   TextDocument,
@@ -48,6 +49,27 @@ export fn utf8_codepoint_byte_length(lead_byte: i32) -> i32 = do
     return 4
   end
   1
+end
+
+fn utf8_decode_codepoint_at(text: string, index: i32) -> i32 = do
+  const lead = string_byte_u8(text, index)
+  const step = utf8_codepoint_byte_length(lead)
+  if step <= 1 then
+    return lead
+  end
+  if step == 2 then
+    const byte1 = string_byte_u8(text, index + 1)
+    return ((lead & 31) << 6) | (byte1 & 63)
+  end
+  if step == 3 then
+    const byte1 = string_byte_u8(text, index + 1)
+    const byte2 = string_byte_u8(text, index + 2)
+    return ((lead & 15) << 12) | ((byte1 & 63) << 6) | (byte2 & 63)
+  end
+  const byte1 = string_byte_u8(text, index + 1)
+  const byte2 = string_byte_u8(text, index + 2)
+  const byte3 = string_byte_u8(text, index + 3)
+  ((lead & 7) << 18) | ((byte1 & 63) << 12) | ((byte2 & 63) << 6) | (byte3 & 63)
 end
 
 export fn utf8_count_codepoints(
@@ -116,9 +138,41 @@ export fn utf8_byte_offset_for_codepoint_column(
   index
 end
 
-// TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=1 — stub (codepoint count; red until STEP=2).
+// TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=2 — wcwidth-lite display width.
 export fn utf8_codepoint_display_width(codepoint: i32) -> i32 = do
-  let _unused_codepoint = codepoint
+  let mut value = codepoint
+  if value < 0 then
+    value = 0
+  end
+  // Soft tab stays 1 column (Decision residual vs indent width).
+  if value == 9 then
+    return 1
+  end
+  if value < 32 || value == 127 then
+    return 0
+  end
+  // Combining diacritics (common BMP).
+  if value >= 768 && value <= 879 then
+    return 0
+  end
+  // East-Asian Wide / Fullwidth (compact ranges; no ICU dump).
+  if (value >= 4352 && value <= 4447) ||
+    (value >= 11904 && value <= 42191) ||
+    (value >= 44032 && value <= 55203) ||
+    (value >= 63744 && value <= 64255) ||
+    (value >= 65072 && value <= 65131) ||
+    (value >= 65281 && value <= 65376) ||
+    (value >= 65504 && value <= 65510) ||
+    (value >= 131072 && value <= 196605) ||
+    (value >= 196608 && value <= 262141) then
+    return 2
+  end
+  // Common emoji / pictograph blocks.
+  if (value >= 9728 && value <= 10175) ||
+    (value >= 127462 && value <= 127487) ||
+    (value >= 127744 && value <= 129535) then
+    return 2
+  end
   1
 end
 
@@ -126,16 +180,74 @@ export fn utf8_count_display_columns(
   text: string,
   start: i32,
   end_exclusive: i32
-) -> i32 =
-  utf8_count_codepoints(text, start, end_exclusive)
+) -> i32 = do
+  let mut index = start
+  let mut columns = 0
+  const text_length = text.byte_size()
+  let mut finish = end_exclusive
+  if finish > text_length then
+    finish = text_length
+  end
+  if index < 0 then
+    index = 0
+  end
+  while index < finish do
+    const lead = string_byte_u8(text, index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if index + step > finish then
+      const codepoint = utf8_decode_codepoint_at(text, index)
+      columns = columns + utf8_codepoint_display_width(codepoint)
+      return columns
+    end
+    const codepoint = utf8_decode_codepoint_at(text, index)
+    columns = columns + utf8_codepoint_display_width(codepoint)
+    index = index + step
+  end
+  columns
+end
 
 export fn utf8_byte_offset_for_display_column(
   text: string,
   start: i32,
   end_exclusive: i32,
   column: i32
-) -> i32 =
-  utf8_byte_offset_for_codepoint_column(text, start, end_exclusive, column)
+) -> i32 = do
+  let mut index = start
+  let mut seen = 0
+  const text_length = text.byte_size()
+  let mut finish = end_exclusive
+  if finish > text_length then
+    finish = text_length
+  end
+  if index < 0 then
+    index = 0
+  end
+  let mut target = column
+  if target < 0 then
+    target = 0
+  end
+  while index < finish && seen < target do
+    const lead = string_byte_u8(text, index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if index + step > finish then
+      return finish
+    end
+    const codepoint = utf8_decode_codepoint_at(text, index)
+    const width = utf8_codepoint_display_width(codepoint)
+    if seen + width > target then
+      return index
+    end
+    index = index + step
+    seen = seen + width
+  end
+  index
+end
 
 export fn line_index_from_string(text: string) -> LineIndex = do
   let mut starts: [i32] = []
@@ -198,7 +310,7 @@ export fn line_index_offset_to_position(
     line = line + 1
   end
   const start = line_index.starts[line]
-  const column = utf8_count_codepoints(text, start, offset)
+  const column = utf8_count_display_columns(text, start, offset)
   TextPosition { line: line, column: column }
 end
 
@@ -224,7 +336,7 @@ export fn line_index_position_to_offset(
   end
   const start = line_index.starts[line]
   const end_exclusive = line_end_exclusive(line_index, line)
-  utf8_byte_offset_for_codepoint_column(text, start, end_exclusive, column)
+  utf8_byte_offset_for_display_column(text, start, end_exclusive, column)
 end
 
 export fn line_index_matches_document(
