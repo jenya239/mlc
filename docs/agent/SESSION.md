@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 21:55 (Planner TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_TREE_EXPAND_COLLAPSE (§46 #33) |
+| started | 2026-07-19 15:31 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md`; freeze Decision: `folder_tree_browser_rows` + single-click toggle expand/collapse; keep double-click enter_dir; token `tree_row_click_toggles_expand`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed flat `folder_listing_rows` + silent `folder_click_arm_dir` in `folder_browser_resolve_click` |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+
 ### Turn 2026-07-19 21:40 (Critic TRACK_EDITOR_CHROME_HOVER_STATE)
 
 | field   | value |
