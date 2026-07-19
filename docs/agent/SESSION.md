@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 19:10 (Critic TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+| started | 2026-07-19 14:29 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`7d52550b`…`f1ac7186`); both L1 + zoom + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #31a closed |
+| verify  | `ux_ok selection_highlight_matches_glyph_x`; `ux_ok selection_full_line_uses_display_columns`; `ux_ok ctrl_wheel_font_zoom`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; residual: mono cell model only |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #31 EDITOR_TAB_STRIP_CLASSIC_LAYOUT) |
+
 ### Turn 2026-07-19 18:55 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=3)
 
 | field   | value |
