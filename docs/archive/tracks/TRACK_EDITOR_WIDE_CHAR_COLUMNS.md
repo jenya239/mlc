@@ -1,15 +1,44 @@
 # Track: Editor Wide Char Columns
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#28**.
-After §40, `TextPosition.column` is a UTF-8 **codepoint** index (1 per
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#28**.
+After §40, `TextPosition.column` was a UTF-8 **codepoint** index (1 per
 codepoint). Fullwidth CJK and emoji need **wcwidth-style** display width
 (typically 2). Review gate: `wide_char_column_width` (L0). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L0 + line_index + word_wrap + nav +
+drop + demo compile. Anti-false-done: `a54fe1f7`…`59ccd4c9` (STEP=0–3).
+Wire present: `utf8_codepoint_display_width` (CJK/emoji=2); display count/
+offset helpers; `line_index` converters on display columns; `word_wrap` +
+`overflow` switched off codepoint bypass. No `lib/mlc/` → REG skipped.
+**reopen: none**.
+
+Honest residual: soft-tab still 1 col; grapheme/ZWJ overcount; no ICU
+EastAsianWidth dump; ambiguous-width chars treated as 1.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_wide_char_column_width.sh` | `ux_ok wide_char_column_width` EXIT=0 |
+| `run_editor_line_index_unit.sh` | `line_index_unit ok` EXIT=0 |
+| `run_editor_word_wrap_unit.sh` | `word_wrap_unit ok` EXIT=0 |
+| `run_editor_navigation_unit.sh` | `navigation_unit ok` EXIT=0 |
+| `run_ux_drop_file_opens_tab.sh` | `ux_ok drop_file_opens_tab` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive
+**closed** — Critic OK. Queue → Planner (§46 `#29 LANG_RECORD_UPDATE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `a54fe1f7` | Decision freeze + open |
+| 1 | `6bdf0ac7` | L0 red harness + stub |
+| 2 | `1d5088a5` | wcwidth-lite + converters green |
+| 3 | `59ccd4c9` | word_wrap + overflow display cols |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -43,12 +72,9 @@ codepoint). Fullwidth CJK and emoji need **wcwidth-style** display width
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L0 scenario first (`wide_char_column_width`) + stub | **done** (2026-07-19) — stub red: `ux_fail wide_char_column_width cjk` |
-| <!-- sub-steps: 1) scenario + run script; 2) stub width helpers → red; 3) drop_file + demo_live_fs_compile green --> |
 | 2 | display-width helpers + line_index converters | **done** (2026-07-19) — `ux_ok wide_char_column_width` |
-| <!-- sub-steps: 1) width table + count/offset helpers; 2) switch offset↔position; 3) L0 green --> |
 | 3 | audit call sites / units; demo_live if needed | **done** (2026-07-19) — word_wrap + overflow display cols |
-| <!-- sub-steps: 1) fix bypasses of codepoint-count; 2) line_index/nav unit green; 3) demo_live_fs_compile --> |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

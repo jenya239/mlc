@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_DROP_FILE` (§46 `#27`).
-**`TRACK_EDITOR_DROP_FILE` (§46 #27)** active; STEP=1 done (L1 red); Decision frozen.
+**Queue head:** Planner open `#29 LANG_RECORD_UPDATE` (§46).
+**`TRACK_EDITOR_WIDE_CHAR_COLUMNS` (§46 #28)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_DROP_FILE` (§46 #27)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_INDENT_MODEL` (§46 #26)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CONTEXT_MENU` (§46 #25)** closed 2026-07-19; archived.
