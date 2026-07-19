@@ -15,7 +15,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 |------|-----------------|-------|
 | 0 | `8ada9c87` | Decision freeze + open |
 | 1 | `722ae431` | Red L2 stub + run scripts |
-| 2 | *(pending hash)* | number/type/operator + Theme RGB; green L2 |
+| 2 | `e2a9733f` | number/type/operator + Theme RGB; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
