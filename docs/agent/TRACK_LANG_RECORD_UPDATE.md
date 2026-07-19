@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#29**.
 Compiler track (not editor-only). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=0–3 done; next STEP=4
 
 ## Next step
 
-**STEP=3** — Wire anonymous e2e into `run_e2e.sh`; retire red/check script; named regression; Tier B + self-host.
+**STEP=4** — Migrate ≥1 `misc/editor` state helper to `{ ...state, field: v }`; `demo_live_fs_compile_ok`.
 
 ### STEPs done in git
 
@@ -16,6 +16,7 @@ Compiler track (not editor-only). Size **M**.
 | 0 | `10f7fb89` | Decision freeze + open |
 | 1 | `e3e6c72c` | Red e2e + harness |
 | 2 | `efd8d9c6` | bare `{` parse + infer/transform type from base |
+| 3 | `b71af754` | wire `run_e2e.sh`; retire check script |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -47,7 +48,7 @@ Compiler track (not editor-only). Size **M**.
 | 0 | Decision freeze + open track / PLAN / backlog / CONTINUITY | **done** (2026-07-19) |
 | 1 | Scenario first: e2e (or harness) anonymous `{ ...p, x: N }` — **red** today | **done** (2026-07-19) — `record_update_anonymous_red_ok` |
 | 2 | Parser: bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base | **done** (2026-07-19) — `record_update_anonymous_check_ok`; self-host identical; Tier B exit 0 |
-| 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | pending — wire `run_e2e.sh`; full stdout match |
+| 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | **done** (2026-07-19) — `run_e2e` 10/0; no codegen polish; no `compiler/*.mlc` → reuse STEP=2 Tier B/self-host |
 | 4 | Migrate ≥1 `misc/editor` state helper off copy-all-fields; demo compile | pending — `demo_live_fs_compile_ok` |
 | 5 | Critic: gates; archive; backlog #29 done → Planner #30 | pending |
 
@@ -58,6 +59,6 @@ Multi-spread / mid-literal spreads (B4 full parity); map/array spreads; changing
 ## Verify discipline
 
 - One STEP per turn; `compiler/` XOR `misc/editor` (STEP=4).
-- Self-host diff + Tier B on every STEP that touches `compiler/`.
+- Self-host diff + Tier B on every STEP that touches `compiler/` sources (`*.mlc` under frontend/checker/codegen).
 - Leave foreign `compiler/out/**`, `CLAUDE.md`, `capture_analyzer.rb` alone.
 - Anti-false-done: git log must show claimed files before marking done.

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 16:15 (Driver TRACK_LANG_RECORD_UPDATE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_LANG_RECORD_UPDATE |
+| started | 2026-07-19 12:58 |
+| elapsed | ~5 min |
+| done    | Wire `record_update_anonymous` into `run_e2e.sh` (10 programs); delete `run_record_update_anonymous_red.sh`; no codegen polish needed |
+| verify  | `run_e2e.sh` 10 passed 0 failed (`PASS record_update` + `PASS record_update_anonymous`); no `compiler/**/*.mlc` this STEP → Tier B/self-host reuse STEP=2 |
+| result  | STEP=3 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=4 TRACK=TRACK_LANG_RECORD_UPDATE |
+
 ### Turn 2026-07-19 16:00 (Driver TRACK_LANG_RECORD_UPDATE STEP=2)
 
 | field   | value |
