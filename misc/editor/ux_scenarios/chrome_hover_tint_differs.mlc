@@ -1,13 +1,32 @@
-// TRACK_EDITOR_CHROME_HOVER_STATE STEP=1 — L2: hovered tint ≠ idle (red until STEP=2).
+// TRACK_EDITOR_CHROME_HOVER_STATE STEP=2 — L2: hovered tint ≠ idle same frame.
+import { rect_new, Rect } from '../../gui/layout'
+import { gui_input_new } from '../../gui/input'
 import {
-  editor_ux_chrome_hover_draw_report_stub
+  editor_ux_chrome_hover_rgb,
+  editor_ux_chrome_hover_draw_report
 } from '../ux/chrome_hover'
 
 fn main() -> i32 = do
-  const report = editor_ux_chrome_hover_draw_report_stub()
+  const idle_rgb = editor_ux_chrome_hover_rgb(0)
+  const hover_rgb = editor_ux_chrome_hover_rgb(1)
+  if idle_rgb.red == hover_rgb.red &&
+      idle_rgb.green == hover_rgb.green &&
+      idle_rgb.blue == hover_rgb.blue then
+    println("ux_fail chrome_hover_tint_differs rgb equal")
+    return 1
+  end
+
+  const idle_rect = rect_new(0, 0, 64, 24)
+  const hover_rect = rect_new(64, 0, 64, 24)
+  // Mouse inside second rect → hovered entry uses hover RGB.
+  const input = gui_input_new(80, 12, 0, 0)
+  let mut rects: [Rect] = []
+  rects.push(idle_rect)
+  rects.push(hover_rect)
+  const report = editor_ux_chrome_hover_draw_report(input, rects)
   if report.entries.length() < 2 then
     println("ux_fail chrome_hover_tint_differs setup count")
-    return 1
+    return 2
   end
 
   let mut idle_index = 0 - 1
@@ -17,7 +36,7 @@ fn main() -> i32 = do
     const entry = report.entries[index]
     if entry.width <= 0 || entry.height <= 0 then
       println("ux_fail chrome_hover_tint_differs empty rect")
-      return 2
+      return 3
     end
     if entry.hovered == 0 && idle_index < 0 then
       idle_index = index
@@ -29,14 +48,14 @@ fn main() -> i32 = do
   end
   if idle_index < 0 || hover_index < 0 then
     println("ux_fail chrome_hover_tint_differs missing pair")
-    return 3
+    return 4
   end
 
   const idle = report.entries[idle_index]
   const hover = report.entries[hover_index]
   if idle.red == hover.red && idle.green == hover.green && idle.blue == hover.blue then
-    println("ux_fail chrome_hover_tint_differs stub")
-    return 4
+    println("ux_fail chrome_hover_tint_differs same rgb")
+    return 5
   end
 
   println("ux_ok chrome_hover_tint_differs")

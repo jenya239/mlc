@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32) — green `chrome_hover_tint_differs`.
-**`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** active — STEP=1 red harness done.
+**Queue head:** Driver `STEP=3` `TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32) — demo_live toolbar/tab/tree hover fills.
+**`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** active — STEP=2 helpers green.
 **`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** closed 2026-07-19; archived.

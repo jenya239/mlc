@@ -5,11 +5,11 @@ Found 2026-07-19: `gui_is_hovered` / `GuiButton` exist, but `demo_live`
 toolbar / tab-strip / tree-row chrome draws flat (no per-item fill, never
 calls hover). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — `chrome_hover` helpers + green `chrome_hover_tint_differs`.
+**STEP=3** — `demo_live` wire toolbar + tabs + tree rows; compile.
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ calls hover). Size **M**.
 |------|-----------------|-------|
 | 0 | `f371158a` | Decision freeze + open |
 | 1 | `1c047859` | Stub equal RGB + red L2 harness + run scripts |
+| 2 | *(pending hash)* | idle≠hover RGB + `gui_is_hovered` draw report; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -40,7 +41,7 @@ calls hover). Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + `run_ux_chrome_hover_tint_differs.sh` | **done** — `ux_ok chrome_hover_red` |
-| 2 | `chrome_hover` helpers + green token | pending — `ux_ok chrome_hover_tint_differs` |
+| 2 | `chrome_hover` helpers + green token | **done** — `ux_ok chrome_hover_tint_differs` |
 | 3 | `demo_live` wire toolbar + tabs + tree rows; compile | pending — `demo_live_fs_compile_ok` |
 | 4 | Critic: gates; archive | pending |
 

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 21:10 (Driver TRACK_EDITOR_CHROME_HOVER_STATE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CHROME_HOVER_STATE |
+| started | 2026-07-19 15:16 |
+| elapsed | ~8 min |
+| done    | `editor_ux_chrome_hover_rgb` idle≠hover; `draw_entry`/`draw_report` via `gui_is_hovered`; green L2 |
+| verify  | `ux_ok chrome_hover_tint_differs`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_CHROME_HOVER_STATE |
+
 ### Turn 2026-07-19 20:55 (Driver TRACK_EDITOR_CHROME_HOVER_STATE STEP=1)
 
 | field   | value |

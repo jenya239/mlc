@@ -1,5 +1,7 @@
-// TRACK_EDITOR_CHROME_HOVER_STATE STEP=1 — stub: idle and hover RGB identical
-// until STEP=2. Draw report still emits ≥1 hovered + ≥1 idle entry.
+// TRACK_EDITOR_CHROME_HOVER_STATE STEP=2 — idle ≠ hover chrome fills + GuiInput pick.
+import { Rect, rect_new } from '../../gui/layout'
+import { GuiInput, gui_is_hovered } from '../../gui/input'
+
 export type ChromeHoverRgb = {
   red: f64,
   green: f64,
@@ -21,37 +23,73 @@ export type ChromeHoverDrawReport = {
   entries: [ChromeHoverDrawEntry]
 }
 
-// Stub: same fill for idle and hover (scenario must stay red until STEP=2).
+fn clamp_unit(value: f64) -> f64 = do
+  if value < 0.0 then
+    return 0.0
+  end
+  if value > 1.0 then
+    return 1.0
+  end
+  value
+end
+
+// Idle ≈ dark chrome bar; hover lifts ~0.10 per channel.
 export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb = do
-  let mut channel = hovered
-  channel = channel + 0
+  if hovered != 0 then
+    return ChromeHoverRgb {
+      red: clamp_unit(0.23),
+      green: clamp_unit(0.25),
+      blue: clamp_unit(0.29)
+    }
+  end
   ChromeHoverRgb { red: 0.13, green: 0.15, blue: 0.19 }
 end
 
-// Minimal two-item report for L2 (toolbar-like rects); RGB still equal in stub.
-export fn editor_ux_chrome_hover_draw_report_stub() -> ChromeHoverDrawReport = do
+export fn editor_ux_chrome_hover_rgb_for_rect(
+  input: GuiInput,
+  rect: Rect
+) -> ChromeHoverRgb =
+  editor_ux_chrome_hover_rgb(gui_is_hovered(input, rect))
+
+export fn editor_ux_chrome_hover_draw_entry(
+  input: GuiInput,
+  rect: Rect
+) -> ChromeHoverDrawEntry = do
+  const hovered = gui_is_hovered(input, rect)
+  const fill = editor_ux_chrome_hover_rgb(hovered)
+  ChromeHoverDrawEntry {
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    red: fill.red,
+    green: fill.green,
+    blue: fill.blue,
+    hovered: hovered
+  }
+end
+
+// One entry per rect; uses gui_is_hovered for fill pick.
+export fn editor_ux_chrome_hover_draw_report(
+  input: GuiInput,
+  rects: [Rect]
+) -> ChromeHoverDrawReport = do
   let mut entries: [ChromeHoverDrawEntry] = []
-  const idle = editor_ux_chrome_hover_rgb(0)
-  const hover = editor_ux_chrome_hover_rgb(1)
-  entries.push(ChromeHoverDrawEntry {
-    x: 0,
-    y: 0,
-    width: 64,
-    height: 24,
-    red: idle.red,
-    green: idle.green,
-    blue: idle.blue,
-    hovered: 0
-  })
-  entries.push(ChromeHoverDrawEntry {
-    x: 64,
-    y: 0,
-    width: 64,
-    height: 24,
-    red: hover.red,
-    green: hover.green,
-    blue: hover.blue,
-    hovered: 1
-  })
+  let mut index = 0
+  while index < rects.length() do
+    entries.push(editor_ux_chrome_hover_draw_entry(input, rects[index]))
+    index = index + 1
+  end
   ChromeHoverDrawReport { entries: entries }
+end
+
+// L2 fixture: two toolbar-like rects; mouse over the second.
+export fn editor_ux_chrome_hover_draw_report_stub() -> ChromeHoverDrawReport = do
+  const idle_rect = rect_new(0, 0, 64, 24)
+  const hover_rect = rect_new(64, 0, 64, 24)
+  const input = gui_input_new(80, 12, 0, 0)
+  let mut rects: [Rect] = []
+  rects.push(idle_rect)
+  rects.push(hover_rect)
+  editor_ux_chrome_hover_draw_report(input, rects)
 end
