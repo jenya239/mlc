@@ -17,7 +17,7 @@ Expandable tree model already exists unused. Size **M**.
 |------|-----------------|-------|
 | 0 | `144e20b9` | Decision freeze + open |
 | 1 | `1ecfddb3` | Red L1 stub + run scripts |
-| 2 | *(pending hash)* | `folder_click_toggle_expand` + `folder_tree_toggle_node`; green L1 |
+| 2 | `ea6596b9` | `folder_click_toggle_expand` + `folder_tree_toggle_node`; green L1 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
