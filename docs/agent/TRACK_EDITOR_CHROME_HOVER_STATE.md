@@ -16,7 +16,7 @@ calls hover). Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `f371158a` | Decision freeze + open |
-| 1 | *(pending hash)* | Stub equal RGB + red L2 harness + run scripts |
+| 1 | `1c047859` | Stub equal RGB + red L2 harness + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
