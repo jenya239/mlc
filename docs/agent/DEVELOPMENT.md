@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=3` `TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d) — `demo_live_fs_compile_ok`.
-**`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** active — STEP=2 green (`ux_ok tree_parent_double_click_navigates`).
+**Queue head:** Critic `TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d).
+**`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** active — STEP=0–3 done; compile gate green.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** closed 2026-07-19; archived.
