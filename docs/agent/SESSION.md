@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 21:40 (Critic TRACK_EDITOR_CHROME_HOVER_STATE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_CHROME_HOVER_STATE |
+| started | 2026-07-19 15:27 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`f371158a`…`e145d115`); L2 + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #32 closed |
+| verify  | `ux_ok chrome_hover_tint_differs`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; residual: no active-tab idle tint beyond `[title]`; nav/crumb hover out of scope |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #33 EDITOR_TREE_EXPAND_COLLAPSE) |
+
 ### Turn 2026-07-19 21:25 (Driver TRACK_EDITOR_CHROME_HOVER_STATE STEP=3)
 
 | field   | value |

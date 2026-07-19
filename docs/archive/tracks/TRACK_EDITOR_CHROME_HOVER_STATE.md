@@ -1,15 +1,30 @@
 # Track: Editor Chrome Hover State
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#32**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#32**.
 Found 2026-07-19: `gui_is_hovered` / `GuiButton` exist, but `demo_live`
 toolbar / tab-strip / tree-row chrome draws flat (no per-item fill, never
 calls hover). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic (STEP=4)
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L2 + demo. Anti-false-done:
+`f371158a`…`e145d115` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `editor_ux_chrome_hover_rgb` idle≠hover; `draw_entry`/`draw_report` via
+`gui_is_hovered`; `demo_live` per-tab / toolbar-button / tree-row fills.
+**reopen: none**.
+
+Honest residual: no distinct active-tab idle tint beyond text `[title]`;
+nav/crumb/scrollbar hover out of scope; idle fill on every item every frame
+(not hover-only overlay).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_chrome_hover_tint_differs.sh` | `ux_ok chrome_hover_tint_differs` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#33 EDITOR_TREE_EXPAND_COLLAPSE`).
 
 ### STEPs done in git
 
@@ -19,6 +34,7 @@ calls hover). Size **M**.
 | 1 | `1c047859` | Stub equal RGB + red L2 harness + run scripts |
 | 2 | `d5cab6ab` | idle≠hover RGB + `gui_is_hovered` draw report; green L2 |
 | 3 | `e145d115` | `demo_live` toolbar/tab/tree hover fills |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -44,11 +60,7 @@ calls hover). Size **M**.
 | 1 | L2 red harness + `run_ux_chrome_hover_tint_differs.sh` | **done** — `ux_ok chrome_hover_red` |
 | 2 | `chrome_hover` helpers + green token | **done** — `ux_ok chrome_hover_tint_differs` |
 | 3 | `demo_live` wire toolbar + tabs + tree rows; compile | **done** — `demo_live_fs_compile_ok` |
-| 4 | Critic: gates; archive | pending |
-
-<!-- STEP=1 sub-steps: 1) stub module returning equal idle/hover RGB; 2) scenario asserts unequal; 3) run script -->
-<!-- STEP=2 sub-steps: 1) idle≠hover RGB + GuiInput hover pick; 2) draw report with ≥2 entries; 3) green scenario -->
-<!-- STEP=3 sub-steps: 1) toolbar per-button fill; 2) tab slot fills from classic widths; 3) tree row fills via folder_row_rect; 4) demo compile -->
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
