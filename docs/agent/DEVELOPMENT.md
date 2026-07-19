@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner open `#34 EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46).
+**Queue head:** Driver `STEP=1` `TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34) — L2 red harness.
+**`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** active — STEP=0 Decision frozen (number/type/operator; non-MLC flat).
 **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.

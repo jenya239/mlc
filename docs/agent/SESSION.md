@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 29:10 (Planner TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER (§46 #34) |
+| started | 2026-07-19 22:57 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER.md`; freeze Decision: tags `number`/`type`/`operator` + Theme RGB; non-MLC stays flat; token `syntax_mlc_richer_tags`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed highlighter 3-tag stub + `theme_rgb_for_tag` keyword/string/comment only |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+
 ### Turn 2026-07-19 28:55 (Critic TRACK_EDITOR_CONTENT_SCROLLBAR)
 
 | field   | value |
