@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 17:10 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_UX_L1_BACKFILL |
+| started | 2026-07-19 13:10 |
+| elapsed | ~8 min |
+| done    | Four red stubs: `folder_breadcrumb_navigates` / `folder_nav_back_forward` / `utf8_caret_display_column` / `caret_after_word_wrap`; four `run_ux_*.sh`; `run_ux_l1_backfill_red.sh` |
+| verify  | `ux_ok l1_backfill_red`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_UX_L1_BACKFILL |
+
 ### Turn 2026-07-19 16:55 (Planner TRACK_EDITOR_UX_L1_BACKFILL STEP=0)
 
 | field   | value |

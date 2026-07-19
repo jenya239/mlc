@@ -1,0 +1,5 @@
+// TRACK_EDITOR_UX_L1_BACKFILL STEP=1 — L1: utf8_caret_display_column (red until STEP=3).
+fn main() -> i32 = do
+  println("ux_fail utf8_caret_display_column stub")
+  1
+end

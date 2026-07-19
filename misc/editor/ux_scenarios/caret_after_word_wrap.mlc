@@ -1,0 +1,5 @@
+// TRACK_EDITOR_UX_L1_BACKFILL STEP=1 — L1: caret_after_word_wrap (red until STEP=3).
+fn main() -> i32 = do
+  println("ux_fail caret_after_word_wrap stub")
+  1
+end
