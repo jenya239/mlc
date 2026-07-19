@@ -15,7 +15,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 |------|-----------------|-------|
 | 0 | `7d52550b` | Decision freeze + open |
 | 1 | `3b211fe8` | Two red stubs + run scripts + `run_ux_column_pixel_model_red.sh` |
-| 2 | *(this turn)* | `editor_measure_mono_char_width` + metrics from advance; green glyph-x |
+| 2 | `4c75c268` | `editor_measure_mono_char_width` + metrics from advance; green glyph-x |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
