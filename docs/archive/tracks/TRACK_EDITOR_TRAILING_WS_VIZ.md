@@ -1,14 +1,39 @@
 # Track: Editor Trailing Whitespace Visualization
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#24**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#24**.
 Trailing spaces/tabs at EOL are invisible in the live draw path. Review
 gate: `trailing_ws_visualized` (L2). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=3):** Re-ran L2 + current_line regression + demo compile.
+Anti-false-done: `df875433`…`08498826` (STEP=0–2). Wire present:
+`editor_ux_trailing_ws_draw_report` (space/tab EOL runs, visible-only);
+demo_live solid rects after current-line band (selection tint 0.35).
+**reopen: none**.
+
+Honest residual: tab display width =1 col (not soft-tab width); no settings
+toggle; L2 geometry only (not RGB); wrap visual-row split out of scope;
+x uses viewport origin (not text_rect +4 padding — same class as current-line).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_trailing_ws_visualized.sh` | `ux_ok trailing_ws_visualized` EXIT=0 |
+| `run_ux_current_line_highlight_draws.sh` | `ux_ok current_line_highlight_draws` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=3** — Critic: gates; archive
+**closed** — Critic OK. Queue → Planner (§46 `#25 EDITOR_CONTEXT_MENU`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `df875433` | Decision freeze + open |
+| 1 | `7afe878d` | L2 red harness + stub |
+| 2 | `08498826` | draw report + demo_live wire |
+| 3 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -40,10 +65,8 @@ gate: `trailing_ws_visualized` (L2). Size **S**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L2 scenario first (`trailing_ws_visualized`) | **done** (2026-07-19) — stub red: `ux_fail trailing_ws_visualized count got 0` |
-| <!-- sub-steps: 1) scenario + run script; 2) stub draw report → red; 3) demo_live_fs_compile + current_line regression green --> |
 | 2 | draw report + demo_live wire | **done** (2026-07-19) — `editor_ux_trailing_ws_draw_report` + demo_live solid rects; L2 green |
-| <!-- sub-steps: 1) trailing run detect + visible geometry; 2) demo_live solid rects; 3) L2 green --> |
-| 3 | Critic: gates; archive | pending |
+| 3 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
