@@ -13,7 +13,7 @@ Compiler track (not editor-only). Size **M**.
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | *(this turn)* | Decision freeze + open |
+| 0 | `10f7fb89` | Decision freeze + open |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
