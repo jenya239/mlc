@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 20:25 (Critic TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+| started | 2026-07-19 15:00 |
+| elapsed | ~10 min |
+| done    | Re-audit STEP=0–3 (`91c3f9eb`…`6471df95`); both L1 + click/reorder/close + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #31 closed |
+| verify  | `ux_ok tab_strip_rects_no_overlap`; `ux_ok tab_strip_long_title_ellipsis`; `ux_ok tab_strip_click_activates`; `ux_ok drag_reorder_tabs`; `tab_strip_close_unit ok`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; residual: legacy equal-width helpers remain for old units |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #32 EDITOR_CHROME_HOVER_STATE) |
+
 ### Turn 2026-07-19 20:10 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=3)
 
 | field   | value |

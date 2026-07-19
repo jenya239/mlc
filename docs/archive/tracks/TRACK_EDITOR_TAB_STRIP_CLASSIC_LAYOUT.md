@@ -1,14 +1,32 @@
 # Track: Editor Tab Strip Classic Layout
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#31**.
 Live-demo audit 2026-07-19: equal-width slots + unclamped title draw →
 overlap with many tabs. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic (STEP=4)
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran both L1 + click + reorder + close unit + demo.
+Anti-false-done: `91c3f9eb`…`6471df95` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `tab_strip_preferred_tab_width` / `layout_widths` / `layout_from_titles`;
+`*_from_widths` title/close/hit; `truncate_title`; `demo_live` +
+`editor_app_click_tab_strip(..., widths)` share one layout. **reopen: none**.
+
+Honest residual: legacy equal-width `tab_strip_title_rect` / hit kept for old
+units/scenarios; live chrome uses classic path only. No strip horizontal scroll.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_tab_strip_rects_no_overlap.sh` | `ux_ok tab_strip_rects_no_overlap` EXIT=0 |
+| `run_ux_tab_strip_long_title_ellipsis.sh` | `ux_ok tab_strip_long_title_ellipsis` EXIT=0 |
+| `run_ux_tab_strip_click.sh` | `ux_ok tab_strip_click_activates` EXIT=0 |
+| `run_ux_drag_reorder_tabs.sh` | `ux_ok drag_reorder_tabs` EXIT=0 |
+| `run_editor_tab_strip_close_unit.sh` | `tab_strip_close_unit ok` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#32 EDITOR_CHROME_HOVER_STATE`).
 
 ### STEPs done in git
 
@@ -18,6 +36,7 @@ overlap with many tabs. Size **M**.
 | 1 | `6c1a71bb` | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
 | 2 | `8f2ccfb3` | preferred/scale layout + truncate; both L1 green |
 | 3 | `6471df95` | `demo_live` + `editor_app_click_tab_strip` use classic widths; truncate draw |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -43,11 +62,7 @@ overlap with many tabs. Size **M**.
 | 1 | Two red L1 harnesses + `run_ux_*.sh` | **done** — `ux_ok tab_strip_classic_red` |
 | 2 | Layout + ellipsis helpers in `tab_strip`; green both tokens | **done** — two `ux_ok` |
 | 3 | `demo_live` draw uses laid-out rects + truncate; demo compile | **done** — `demo_live_fs_compile_ok` + click/reorder green |
-| 4 | Critic: gates; archive | pending |
-
-<!-- STEP=1 sub-steps: 1) stubs + scripts for both tokens; 2) optional `run_ux_tab_strip_classic_red.sh` -->
-<!-- STEP=2 sub-steps: 1) preferred/scale width layout; 2) truncate helper; 3) hit/title/close use layout; 4) green scenarios -->
-<!-- STEP=3 sub-steps: 1) demo_live title draw from layout+truncate; 2) keep close/hit; 3) `tab_strip_click` / `drag_reorder` stay green -->
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
