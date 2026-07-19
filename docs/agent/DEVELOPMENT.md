@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `STEP=plan-refresh` `TRACK_EDITOR_UX_BACKLOG` (open `#33b EDITOR_ROW_BYTE_RANGE_BLEED`).
+**Queue head:** Driver `STEP=1` `TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b) — red L2 row byte-range harness.
+**`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** active — STEP=0 Decision frozen.
 **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** closed 2026-07-19; archived.

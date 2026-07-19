@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 24:10 (Planner TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_ROW_BYTE_RANGE_BLEED (§46 #33b) |
+| started | 2026-07-19 19:45 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md`; freeze Decision: L2 `row_byte_range_matches_line`; root cause not frozen (Driver trace); suspects word_wrap/utf8/syntax/demo; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed `demo_live` draw uses `row.byte_start`/`byte_end` from `collect_visible_visual_rows` |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; name ≠ PLAN §33b LIVE_POLISH |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+
 ### Turn 2026-07-19 23:55 (Critic TRACK_EDITOR_TREE_EXPAND_COLLAPSE)
 
 | field   | value |
