@@ -15,7 +15,7 @@ overlap with many tabs. Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `91c3f9eb` | Decision freeze + open |
-| 1 | *(this turn)* | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
+| 1 | `6c1a71bb` | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
