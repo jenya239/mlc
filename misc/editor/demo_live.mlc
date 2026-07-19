@@ -248,10 +248,13 @@ import {
 } from './clipboard'
 import { ux_rect_new } from '../gui/ux/snapshot'
 import {
-  tab_strip_close_rect,
-  tab_strip_title_rect,
-  tab_strip_hit_index,
-  tab_strip_hit_close_index
+  tab_strip_close_rect_from_widths,
+  tab_strip_title_rect_from_widths,
+  tab_strip_layout_from_titles,
+  tab_strip_title_area_display_columns,
+  tab_strip_truncate_title,
+  tab_strip_hit_index_from_widths,
+  tab_strip_hit_close_index_from_widths
 } from './ux/tab_strip'
 import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
 import {
@@ -790,6 +793,25 @@ fn main() -> i32 = do
       drop_path = glfw_gl_take_drop_path()
     end
 
+    // Classic tab-strip layout: shared by hit-test and draw this frame.
+    let mut tab_display_titles: [string] = []
+    let mut tab_title_index = 0
+    while tab_title_index < tab_set_count(tabs) do
+      const layout_tab = tabs.tabs[tab_title_index]
+      let mut layout_title = layout_tab.name
+      if tab_is_dirty(layout_tab) then
+        layout_title = layout_title + "*"
+      end
+      if tab_title_index == tabs.active_index then
+        layout_title = "[" + layout_title + "]"
+      end
+      tab_display_titles.push(layout_title)
+      tab_title_index = tab_title_index + 1
+    end
+    let mut tab_widths = tab_strip_layout_from_titles(
+      tab_strip.width, tab_display_titles, metrics.char_width
+    )
+
     const tree_rect = shell_panels_tree_rect(panels)
     const editor_rect = shell_panels_editor_rect(panels)
     const divider = panels.panes.divider
@@ -1035,11 +1057,11 @@ fn main() -> i32 = do
           app, history, clipboard, overlay, editor_focused, last_command,
           mouse_was_down, backspace_was_down, enter_was_down, selecting_text
         )
-        const close_hit = tab_strip_hit_close_index(
-          tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+        const close_hit = tab_strip_hit_close_index_from_widths(
+          tab_strip, tab_widths, input.mouse_x, input.mouse_y
         )
         const tab_click = editor_app_click_tab_strip(
-          app, tab_strip, input.mouse_x, input.mouse_y
+          app, tab_strip, tab_widths, input.mouse_x, input.mouse_y
         )
         if tab_click.handled != 0 then
           app = tab_click.app
@@ -1057,8 +1079,8 @@ fn main() -> i32 = do
             draw_text = frame.text
           end
           if close_hit < 0 then
-            const title_hit = tab_strip_hit_index(
-              tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+            const title_hit = tab_strip_hit_index_from_widths(
+              tab_strip, tab_widths, input.mouse_x, input.mouse_y
             )
             if title_hit >= 0 then
               dragging_tab_index = title_hit
@@ -1439,8 +1461,8 @@ fn main() -> i32 = do
       if input.mouse_down == 0 && mouse_was_down != 0 then
         panels = shell_panels_end_drag(panels)
         if dragging_tab_index >= 0 then
-          const drop_hit = tab_strip_hit_index(
-            tab_strip, tab_set_count(tabs), input.mouse_x, input.mouse_y
+          const drop_hit = tab_strip_hit_index_from_widths(
+            tab_strip, tab_widths, input.mouse_x, input.mouse_y
           )
           if drop_hit >= 0 && drop_hit != dragging_tab_index then
             tabs = tab_set_move(tabs, dragging_tab_index, drop_hit)
@@ -1839,20 +1861,39 @@ fn main() -> i32 = do
       13, 12, 20
     )
 
+    tab_display_titles = []
+    tab_title_index = 0
+    while tab_title_index < tab_set_count(tabs) do
+      const draw_tab = tabs.tabs[tab_title_index]
+      let mut draw_title = draw_tab.name
+      if tab_is_dirty(draw_tab) then
+        draw_title = draw_title + "*"
+      end
+      if tab_title_index == tabs.active_index then
+        draw_title = "[" + draw_title + "]"
+      end
+      tab_display_titles.push(draw_title)
+      tab_title_index = tab_title_index + 1
+    end
+    tab_widths = tab_strip_layout_from_titles(
+      tab_strip.width, tab_display_titles, metrics.char_width
+    )
+
     let mut tab_index = 0
     while tab_index < tab_set_count(tabs) do
-      const tab = tabs.tabs[tab_index]
-      let mut title = tab.name
-      if tab_is_dirty(tab) then
-        title = title + "*"
-      end
-      if tab_index == tabs.active_index then
-        title = "[" + title + "]"
-      end
-      const title_rect = tab_strip_title_rect(tab_strip, tab_set_count(tabs), tab_index)
-      const close_rect = tab_strip_close_rect(tab_strip, tab_set_count(tabs), tab_index)
+      const title = tab_display_titles[tab_index]
+      const title_rect = tab_strip_title_rect_from_widths(
+        tab_strip, tab_widths, tab_index
+      )
+      const close_rect = tab_strip_close_rect_from_widths(
+        tab_strip, tab_widths, tab_index
+      )
+      const max_cols = tab_strip_title_area_display_columns(
+        title_rect.width, metrics.char_width
+      )
+      const drawn_title = tab_strip_truncate_title(title, max_cols)
       chrome_lines = push_line(
-        chrome_lines, title, 13, title_rect.x + 8, tab_bar_y + 18
+        chrome_lines, drawn_title, 13, title_rect.x + 8, tab_bar_y + 18
       )
       chrome_lines = push_line(
         chrome_lines, "x", 13, close_rect.x + 5, tab_bar_y + 18

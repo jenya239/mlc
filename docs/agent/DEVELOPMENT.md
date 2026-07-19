@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=3` `TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31) — demo_live layout + truncate.
-**`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** active — STEP=2 layout helpers green.
+**Queue head:** Critic `STEP=critique-audit` `TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31).
+**`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** active — STEP=3 demo_live classic layout wired.
 **`TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** closed 2026-07-19; archived.
 **`TRACK_LANG_RECORD_UPDATE` (§46 #29)** closed 2026-07-19; archived.

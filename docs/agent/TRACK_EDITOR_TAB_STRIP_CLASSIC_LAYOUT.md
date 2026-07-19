@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31**.
 Live-demo audit 2026-07-19: equal-width slots + unclamped title draw →
 overlap with many tabs. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic (STEP=4)
 
 ## Next step
 
-**STEP=3** — `demo_live` draw uses laid-out rects + truncate; keep click/reorder green.
+**STEP=4** — Critic: gates; archive.
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ overlap with many tabs. Size **M**.
 | 0 | `91c3f9eb` | Decision freeze + open |
 | 1 | `6c1a71bb` | Two red stubs + run scripts + `run_ux_tab_strip_classic_red.sh` |
 | 2 | `8f2ccfb3` | preferred/scale layout + truncate; both L1 green |
+| 3 | *(pending hash)* | `demo_live` + `editor_app_click_tab_strip` use classic widths; truncate draw |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,7 +42,7 @@ overlap with many tabs. Size **M**.
 | 0 | Decision freeze + open | **done** |
 | 1 | Two red L1 harnesses + `run_ux_*.sh` | **done** — `ux_ok tab_strip_classic_red` |
 | 2 | Layout + ellipsis helpers in `tab_strip`; green both tokens | **done** — two `ux_ok` |
-| 3 | `demo_live` draw uses laid-out rects + truncate; demo compile | pending — `demo_live_fs_compile_ok` + regression tab click/reorder |
+| 3 | `demo_live` draw uses laid-out rects + truncate; demo compile | **done** — `demo_live_fs_compile_ok` + click/reorder green |
 | 4 | Critic: gates; archive | pending |
 
 <!-- STEP=1 sub-steps: 1) stubs + scripts for both tokens; 2) optional `run_ux_tab_strip_classic_red.sh` -->

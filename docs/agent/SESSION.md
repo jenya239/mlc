@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 20:10 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+| started | 2026-07-19 14:47 |
+| elapsed | ~20 min |
+| done    | `tab_strip_layout_from_titles` / hit_from_widths; `editor_app_click_tab_strip(..., widths)`; `demo_live` draw+hit+reorder use classic layout + truncate |
+| verify  | `ux_ok tab_strip_rects_no_overlap`; `ux_ok tab_strip_long_title_ellipsis`; `ux_ok tab_strip_click_activates`; `ux_ok drag_reorder_tabs`; `tab_strip_close_unit ok`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+
 ### Turn 2026-07-19 19:50 (Driver TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=2)
 
 | field   | value |

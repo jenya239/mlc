@@ -189,6 +189,71 @@ export fn tab_strip_truncate_title(
   title.byte_substring(0, end_byte) + "…"
 end
 
+export fn tab_strip_layout_from_titles(
+  strip_width: i32,
+  titles: [string],
+  char_width: i32
+) -> [i32] = do
+  let mut preferred: [i32] = []
+  let mut index = 0
+  while index < titles.length() do
+    const cols = utf8_count_display_columns(
+      titles[index], 0, titles[index].byte_size()
+    )
+    preferred.push(tab_strip_preferred_tab_width(cols, char_width))
+    index = index + 1
+  end
+  tab_strip_layout_widths(strip_width, preferred)
+end
+
+export fn tab_strip_hit_index_from_widths(
+  strip: UxRect,
+  widths: [i32],
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  const count = widths.length()
+  if count <= 0 then
+    return 0 - 1
+  end
+  if !ux_rect_contains_point(strip, point_x, point_y) then
+    return 0 - 1
+  end
+  let mut index = 0
+  while index < count do
+    const title = tab_strip_title_rect_from_widths(strip, widths, index)
+    if ux_rect_contains_point(title, point_x, point_y) then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn tab_strip_hit_close_index_from_widths(
+  strip: UxRect,
+  widths: [i32],
+  point_x: i32,
+  point_y: i32
+) -> i32 = do
+  const count = widths.length()
+  if count <= 0 then
+    return 0 - 1
+  end
+  if !ux_rect_contains_point(strip, point_x, point_y) then
+    return 0 - 1
+  end
+  let mut index = 0
+  while index < count do
+    const close_rect = tab_strip_close_rect_from_widths(strip, widths, index)
+    if ux_rect_contains_point(close_rect, point_x, point_y) then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
 // Close affordance: right edge of the tab slot (equal-width layout).
 export fn tab_strip_close_rect(
   strip: UxRect,

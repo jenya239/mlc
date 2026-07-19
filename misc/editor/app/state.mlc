@@ -35,7 +35,8 @@ import {
   TabSet,
   tab_set_has_active,
   tab_set_active,
-  tab_set_count
+  tab_set_count,
+  tab_set_set_active
 } from '../workspace/tabs'
 import {
   EditorSelection,
@@ -61,9 +62,8 @@ import {
   UxRect
 } from '../../gui/ux/snapshot'
 import {
-  tab_strip_hit_index,
-  tab_strip_hit_close_index,
-  editor_ux_click_tab_strip_at
+  tab_strip_hit_index_from_widths,
+  tab_strip_hit_close_index_from_widths
 } from '../ux/tab_strip'
 
 export type EditorAppState = {
@@ -609,15 +609,17 @@ fn editor_ux_with_tabs_and_selection(
     overflows: state.overflows
   }
 
-// Live chrome tab strip (explicit rect). Close hit first, then activate.
+// Live chrome tab strip (explicit rect + classic layout widths). Close hit first, then activate.
 export fn editor_app_click_tab_strip(
   app: EditorAppState,
   strip: UxRect,
+  widths: [i32],
   point_x: i32,
   point_y: i32
 ) -> EditorAppTabClickResult = do
-  const tab_count = tab_set_count(app.ux.tabs)
-  const close_hit = tab_strip_hit_close_index(strip, tab_count, point_x, point_y)
+  const close_hit = tab_strip_hit_close_index_from_widths(
+    strip, widths, point_x, point_y
+  )
   if close_hit >= 0 then
     const outcome = tab_set_request_close(app.ux.tabs, close_hit)
     let mut next_ux = editor_ux_with_tabs_and_selection(
@@ -637,11 +639,11 @@ export fn editor_app_click_tab_strip(
       handled: 1
     }
   end
-  const hit = tab_strip_hit_index(strip, tab_count, point_x, point_y)
+  const hit = tab_strip_hit_index_from_widths(strip, widths, point_x, point_y)
   if hit >= 0 then
-    const activated = editor_ux_click_tab_strip_at(app.ux, strip, point_x, point_y)
+    const next_tabs = tab_set_set_active(app.ux.tabs, hit)
     const next_ux = editor_ux_with_tabs_and_selection(
-      activated, activated.tabs, selection_collapsed(0)
+      app.ux, next_tabs, selection_collapsed(0)
     )
     return EditorAppTabClickResult {
       app: editor_app_replace_session(
