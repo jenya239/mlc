@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 18:05 (Critic TRACK_EDITOR_UX_L1_BACKFILL)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_UX_L1_BACKFILL |
+| started | 2026-07-19 13:57 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`d1e0c679`…`505ec20a`); four L1 + units + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_UX_L1_BACKFILL.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #30 closed |
+| verify  | `ux_ok folder_breadcrumb_navigates`; `ux_ok folder_nav_back_forward`; `ux_ok utf8_caret_display_column`; `ux_ok caret_after_word_wrap`; folder_panel/nav + line_index/wrap units ok; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; residual: horizontal arrows still byte-step |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #31a EDITOR_COLUMN_PIXEL_MODEL_FIX) |
+
 ### Turn 2026-07-19 17:55 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=3)
 
 | field   | value |
