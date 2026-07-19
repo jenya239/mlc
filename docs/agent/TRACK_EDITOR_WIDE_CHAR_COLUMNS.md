@@ -5,11 +5,11 @@ After §40, `TextPosition.column` is a UTF-8 **codepoint** index (1 per
 codepoint). Fullwidth CJK and emoji need **wcwidth-style** display width
 (typically 2). Review gate: `wide_char_column_width` (L0). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=3 done; next Critic
 
 ## Next step
 
-**STEP=3** — audit call sites / units; demo_live if needed
+**STEP=4** — Critic: gates; archive
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -46,7 +46,7 @@ codepoint). Fullwidth CJK and emoji need **wcwidth-style** display width
 | <!-- sub-steps: 1) scenario + run script; 2) stub width helpers → red; 3) drop_file + demo_live_fs_compile green --> |
 | 2 | display-width helpers + line_index converters | **done** (2026-07-19) — `ux_ok wide_char_column_width` |
 | <!-- sub-steps: 1) width table + count/offset helpers; 2) switch offset↔position; 3) L0 green --> |
-| 3 | audit call sites / units; demo_live if needed | pending |
+| 3 | audit call sites / units; demo_live if needed | **done** (2026-07-19) — word_wrap + overflow display cols |
 | <!-- sub-steps: 1) fix bypasses of codepoint-count; 2) line_index/nav unit green; 3) demo_live_fs_compile --> |
 | 4 | Critic: gates; archive | pending |
 

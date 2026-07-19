@@ -15,7 +15,8 @@ import {
   LineIndex,
   line_index_from_document,
   line_index_line_count,
-  line_index_line_start
+  line_index_line_start,
+  utf8_count_display_columns
 } from '../document/line_index'
 import { document_content_height } from '../layout/visible_range'
 import { EditorUxState } from './probe'
@@ -28,16 +29,19 @@ export type EditorTextMetrics = {
 export fn editor_text_metrics_default() -> EditorTextMetrics =
   EditorTextMetrics { line_height: 18, char_width: 9 }
 
-fn line_content_byte_length(line_index: LineIndex, line: i32) -> i32 = do
+fn line_display_columns(line_index: LineIndex, line: i32) -> i32 = do
   const start = line_index_line_start(line_index, line)
   let mut end_exclusive = line_index.text_length
   if line + 1 < line_index_line_count(line_index) then
-    end_exclusive = line_index_line_start(line_index, line + 1) - 1
+    end_exclusive = line_index_line_start(line_index, line + 1)
+    if end_exclusive > start && line_index.text.byte_at(end_exclusive - 1) == "\n" then
+      end_exclusive = end_exclusive - 1
+    end
   end
   if end_exclusive < start then
     return 0
   end
-  end_exclusive - start
+  utf8_count_display_columns(line_index.text, start, end_exclusive)
 end
 
 export fn editor_ux_max_line_columns_from_index(line_index: LineIndex) -> i32 = do
@@ -45,7 +49,7 @@ export fn editor_ux_max_line_columns_from_index(line_index: LineIndex) -> i32 = 
   let mut line = 0
   const count = line_index_line_count(line_index)
   while line < count do
-    const columns = line_content_byte_length(line_index, line)
+    const columns = line_display_columns(line_index, line)
     if columns > max_columns then
       max_columns = columns
     end

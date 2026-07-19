@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 14:55 (Driver TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_WIDE_CHAR_COLUMNS |
+| started | 2026-07-19 12:23 |
+| elapsed | ~12 min |
+| done    | Audit: `word_wrap` → display columns; `overflow` max-line → `utf8_count_display_columns`; nav uses line_index converters (no change); demo_live unchanged |
+| verify  | `ux_ok wide_char_column_width`; `line_index_unit ok`; `word_wrap_unit ok`; `navigation_unit ok`; `ux_ok drop_file_opens_tab`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; track numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_WIDE_CHAR_COLUMNS |
+
 ### Turn 2026-07-19 14:45 (Driver TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=2)
 
 | field   | value |
@@ -31,18 +46,3 @@
 | result  | STEP=1 done |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WIDE_CHAR_COLUMNS |
-
-### Turn 2026-07-19 14:25 (Planner TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=0)
-
-| field   | value |
-|---------|-------|
-| role    | Planner |
-| step    | 0 |
-| track   | TRACK_EDITOR_WIDE_CHAR_COLUMNS |
-| started | 2026-07-19 12:12 |
-| elapsed | ~10 min |
-| done    | Opened `TRACK_EDITOR_WIDE_CHAR_COLUMNS.md`; Decision: display columns (wcwidth-lite) in `line_index`; CJK/emoji width 2; no grapheme/ZWJ; L0 `wide_char_column_width`; STEPs 1–3+Critic; REG only if lib/mlc; PLAN/UX_BACKLOG #28 → active |
-| verify  | track file + PLAN §46 + backlog #28 active; no code |
-| result  | STEP=0 done |
-| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` left alone |
-| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WIDE_CHAR_COLUMNS |

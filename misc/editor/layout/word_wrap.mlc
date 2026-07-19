@@ -1,10 +1,10 @@
-// Soft word-wrap for monospaced editor rows (codepoint columns).
+// Soft word-wrap for monospaced editor rows (display columns).
 import {
   LineIndex,
   line_index_line_count,
   line_index_line_start,
-  utf8_count_codepoints,
-  utf8_byte_offset_for_codepoint_column
+  utf8_count_display_columns,
+  utf8_byte_offset_for_display_column
 } from '../document/line_index'
 import { Rect, rect_new } from '../../gui/layout'
 
@@ -73,7 +73,7 @@ export fn visual_rows_for_line(
   let mut byte_start = line_start
   let mut continue_flag = 0
   while byte_start < line_finish do
-    const remaining = utf8_count_codepoints(text, byte_start, line_finish)
+    const remaining = utf8_count_display_columns(text, byte_start, line_finish)
     if remaining <= max_cols then
       rows.push(VisualRow {
         doc_line: doc_line,
@@ -86,7 +86,7 @@ export fn visual_rows_for_line(
       return rows
     end
     let mut break_column = column_start + max_cols
-    let mut break_byte = utf8_byte_offset_for_codepoint_column(
+    let mut break_byte = utf8_byte_offset_for_display_column(
       text, line_start, line_finish, break_column
     )
     let mut search = break_byte
@@ -98,7 +98,7 @@ export fn visual_rows_for_line(
       if text.byte_at(search) == " " then
         found_space = 1
         space_byte = search + 1
-        space_column = column_start + utf8_count_codepoints(text, byte_start, space_byte)
+        space_column = column_start + utf8_count_display_columns(text, byte_start, space_byte)
         break
       end
     end
@@ -107,13 +107,13 @@ export fn visual_rows_for_line(
       break_column = space_column
     end
     if break_byte <= byte_start then
-      break_byte = utf8_byte_offset_for_codepoint_column(
+      break_byte = utf8_byte_offset_for_display_column(
         text, line_start, line_finish, column_start + 1
       )
       if break_byte <= byte_start then
         break_byte = line_finish
       end
-      break_column = column_start + utf8_count_codepoints(text, byte_start, break_byte)
+      break_column = column_start + utf8_count_display_columns(text, byte_start, break_byte)
     end
     rows.push(VisualRow {
       doc_line: doc_line,
@@ -257,7 +257,7 @@ export fn wrap_offset_at_point(
     while row_index < rows.length() do
       if visual == visual_target then
         const row = rows[row_index]
-        return utf8_byte_offset_for_codepoint_column(
+        return utf8_byte_offset_for_display_column(
           text, row.byte_start, row.byte_end, column_in_row
         )
       end
