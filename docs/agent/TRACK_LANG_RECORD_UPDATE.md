@@ -15,7 +15,7 @@ Compiler track (not editor-only). Size **M**.
 |------|-----------------|-------|
 | 0 | `10f7fb89` | Decision freeze + open |
 | 1 | `e3e6c72c` | Red e2e + harness |
-| 2 | `bb263386` | bare `{` parse + infer/transform type from base |
+| 2 | `efd8d9c6` | bare `{` parse + infer/transform type from base |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
