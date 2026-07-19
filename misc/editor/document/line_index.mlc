@@ -116,6 +116,27 @@ export fn utf8_byte_offset_for_codepoint_column(
   index
 end
 
+// TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=1 — stub (codepoint count; red until STEP=2).
+export fn utf8_codepoint_display_width(codepoint: i32) -> i32 = do
+  let _unused_codepoint = codepoint
+  1
+end
+
+export fn utf8_count_display_columns(
+  text: string,
+  start: i32,
+  end_exclusive: i32
+) -> i32 =
+  utf8_count_codepoints(text, start, end_exclusive)
+
+export fn utf8_byte_offset_for_display_column(
+  text: string,
+  start: i32,
+  end_exclusive: i32,
+  column: i32
+) -> i32 =
+  utf8_byte_offset_for_codepoint_column(text, start, end_exclusive, column)
+
 export fn line_index_from_string(text: string) -> LineIndex = do
   let mut starts: [i32] = []
   starts.push(0)

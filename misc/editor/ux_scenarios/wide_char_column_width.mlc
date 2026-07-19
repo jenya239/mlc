@@ -1,0 +1,33 @@
+// TRACK_EDITOR_WIDE_CHAR_COLUMNS STEP=1 — L0: wide_char_column_width (red until STEP=2).
+import {
+  utf8_count_display_columns
+} from '../document/line_index'
+
+fn main() -> i32 = do
+  const ascii = "ab"
+  if utf8_count_display_columns(ascii, 0, ascii.byte_size()) != 2 then
+    println("ux_fail wide_char_column_width ascii")
+    return 1
+  end
+
+  const cjk = "中"
+  if utf8_count_display_columns(cjk, 0, cjk.byte_size()) != 2 then
+    println("ux_fail wide_char_column_width cjk")
+    return 2
+  end
+
+  const emoji = "😀"
+  if utf8_count_display_columns(emoji, 0, emoji.byte_size()) != 2 then
+    println("ux_fail wide_char_column_width emoji")
+    return 3
+  end
+
+  const mixed = "a中b"
+  if utf8_count_display_columns(mixed, 0, mixed.byte_size()) != 4 then
+    println("ux_fail wide_char_column_width mixed")
+    return 4
+  end
+
+  println("ux_ok wide_char_column_width")
+  0
+end
