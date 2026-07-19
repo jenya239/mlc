@@ -12,7 +12,7 @@
 | started | 2026-07-19 20:08 |
 | elapsed | ~3 min |
 | done    | Compile gate only (panel/hover already in STEP=2) |
-| verify  | `demo_live_fs_compile_ok` |
+| verify  | `demo_live_fs_compile_ok`; commit `64f1f588` |
 | result  | STEP=3 done; numbered STEPs complete → Critic |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CHROME_THEME_DRIFT |

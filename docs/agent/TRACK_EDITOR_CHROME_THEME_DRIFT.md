@@ -16,7 +16,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 | 0 | `9554b13d` | Decision freeze + open |
 | 1 | `1c5c94fd` | Red L2 stub + run scripts |
 | 2 | `786470f1` | panel fills + `from_panel` hover; green L2 |
-| 3 | *(pending hash)* | `demo_live_fs_compile_ok` |
+| 3 | `64f1f588` | `demo_live_fs_compile_ok` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
