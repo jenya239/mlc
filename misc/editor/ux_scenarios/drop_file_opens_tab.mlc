@@ -1,0 +1,71 @@
+// TRACK_EDITOR_DROP_FILE STEP=1 — L1: drop_file_opens_tab (red until STEP=2).
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_index_of_path,
+  tab_set_count
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import { document_to_string } from '../document/piece_table'
+import {
+  open_buffer_from_text,
+  open_buffer_save,
+  open_buffer_has_error
+} from '../document/save'
+import {
+  editor_ux_state_new,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_open_dropped_path } from '../ux/drop_file'
+
+fn main() -> i32 = do
+  const path = ".tmp/editor_fixture/drop_open.txt"
+  const payload = "drop-body\n"
+  let mut seed = open_buffer_from_text(path, payload)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail drop_file_opens_tab seed")
+    return 1
+  end
+
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  const tabs = tab_set_new()
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+
+  state = editor_ux_open_dropped_path(state, path)
+
+  if tab_set_count(state.tabs) < 1 then
+    println("ux_fail drop_file_opens_tab no_tab")
+    return 2
+  end
+  if !tab_set_has_active(state.tabs) then
+    println("ux_fail drop_file_opens_tab no_active")
+    return 3
+  end
+  if tab_set_index_of_path(state.tabs, path) < 0 then
+    println("ux_fail drop_file_opens_tab path_missing")
+    return 4
+  end
+  const active = tab_set_active(state.tabs)
+  if active.path != path then
+    println("ux_fail drop_file_opens_tab active_path")
+    return 5
+  end
+  if document_to_string(active.buffer.document) != payload then
+    println("ux_fail drop_file_opens_tab text")
+    return 6
+  end
+
+  println("ux_ok drop_file_opens_tab")
+  0
+end

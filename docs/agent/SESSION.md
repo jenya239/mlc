@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 13:05 (Driver TRACK_EDITOR_DROP_FILE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DROP_FILE |
+| started | 2026-07-19 11:25 |
+| elapsed | ~10 min |
+| done    | Stub `ux/drop_file.mlc` (`editor_ux_open_dropped_path` no-op); L1 `drop_file_opens_tab` + `run_ux_drop_file_opens_tab.sh` → red `ux_fail drop_file_opens_tab no_tab` |
+| verify  | drop script exit 1 red; `ux_ok indent_width_config`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DROP_FILE |
+
 ### Turn 2026-07-19 12:55 (Planner TRACK_EDITOR_DROP_FILE STEP=0)
 
 | field   | value |

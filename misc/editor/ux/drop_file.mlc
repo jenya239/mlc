@@ -1,0 +1,10 @@
+// TRACK_EDITOR_DROP_FILE STEP=1 — stub open (red until STEP=2).
+import { EditorUxState } from './probe'
+
+export fn editor_ux_open_dropped_path(
+  state: EditorUxState,
+  path: string
+) -> EditorUxState = do
+  let _unused_path = path
+  state
+end

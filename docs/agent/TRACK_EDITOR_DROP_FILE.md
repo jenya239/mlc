@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#27**.
 No OS drag-and-drop → open file; only tree/session open. Needs GLFW drop
 ABI. Review gate: `drop_file_opens_tab` (L1). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L1 scenario first (`drop_file_opens_tab`) + stub
+**STEP=2** — GLFW drop ABI + take/test_push + open helper
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -40,7 +40,7 @@ ABI. Review gate: `drop_file_opens_tab` (L1). Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
-| 1 | L1 scenario first (`drop_file_opens_tab`) + stub | pending |
+| 1 | L1 scenario first (`drop_file_opens_tab`) + stub | **done** (2026-07-19) — stub red: `ux_fail drop_file_opens_tab no_tab` |
 | <!-- sub-steps: 1) scenario + run script; 2) stub take/open → red; 3) indent_width + demo_live_fs_compile green --> |
 | 2 | GLFW drop ABI + take/test_push + open helper | pending |
 | <!-- sub-steps: 1) runtime callback + queue; 2) gl_window extern; 3) ux open + L1 green --> |
