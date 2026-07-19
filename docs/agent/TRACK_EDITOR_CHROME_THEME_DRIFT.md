@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
 
 ## Next step
 
-**STEP=3** — `demo_live_fs_compile_ok`.
+**STEP=4** — Critic: gates; archive.
 
 ### STEPs done in git
 
@@ -16,6 +16,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 | 0 | `9554b13d` | Decision freeze + open |
 | 1 | `1c5c94fd` | Red L2 stub + run scripts |
 | 2 | `786470f1` | panel fills + `from_panel` hover; green L2 |
+| 3 | *(pending hash)* | `demo_live_fs_compile_ok` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -39,7 +40,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + run scripts | **done** — `ux_ok chrome_theme_drift_red` |
 | 2 | Wire panel RGB + Light hover; green token | **done** — `ux_ok chrome_panel_rgb_matches_theme` |
-| 3 | `demo_live_fs_compile_ok` | pending |
+| 3 | `demo_live_fs_compile_ok` | **done** |
 | 4 | Critic: gates; archive | pending |
 
 <!-- STEP=1: stub fail token; red script -->
