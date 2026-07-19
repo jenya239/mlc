@@ -1,13 +1,28 @@
 # Track: Editor Syntax Highlight MLC Richer
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#34**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#34**.
 Found 2026-07-19 live-demo audit. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran richer L2 + glyph L2 + demo. Anti-false-done:
+`8ada9c87`…`24cf8f39` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `highlighter` number/type/operator (+ extra keywords); `Theme` RGB +
+`theme_rgb_for_tag`; draw path already tag-driven (no demo re-slice).
+**reopen: none**.
+
+Honest residual: non-`.mlc` buffers still flat (Decision); no hex/float exponents;
+no semantic/scope coloring.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_syntax_mlc_richer_tags.sh` | `ux_ok syntax_mlc_richer_tags` EXIT=0 |
+| `run_ux_syntax_glyph_color.sh` | `ux_ok syntax_glyph_color_matches_theme` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#35 EDITOR_MINIMAP`).
 
 ### STEPs done in git
 
@@ -17,6 +32,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 | 1 | `722ae431` | Red L2 stub + run scripts |
 | 2 | `e2a9733f` | number/type/operator + Theme RGB; green L2 |
 | 3 | `24cf8f39` | glyph L2 + `demo_live_fs_compile_ok` |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,7 +57,7 @@ Found 2026-07-19 live-demo audit. Size **M**.
 | 1 | L2 red harness + run scripts | **done** — `ux_ok syntax_mlc_richer_red` |
 | 2 | Tags + theme RGB + green token | **done** — `ux_ok syntax_mlc_richer_tags` |
 | 3 | Keep glyph L2; `demo_live_fs_compile_ok` | **done** |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 <!-- STEP=1: stub fail token; red script -->
 <!-- STEP=2: highlighter + Theme fields + theme_rgb_for_tag; green L2 -->

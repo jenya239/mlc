@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 30:10 (Critic TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
+| started | 2026-07-19 23:12 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`8ada9c87`…`24cf8f39`); richer+glyph L2 + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #34 closed |
+| verify  | `ux_ok syntax_mlc_richer_tags`; `ux_ok syntax_glyph_color_matches_theme`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; residual: non-MLC flat; no hex/float exponents |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #35 EDITOR_MINIMAP) |
+
 ### Turn 2026-07-19 29:55 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER STEP=3)
 
 | field   | value |
