@@ -1,5 +1,5 @@
 // Folder browser rows / breadcrumbs / scroll helpers for the tree panel.
-import { FileTree, DirEntry, file_tree_new, file_tree_expand } from '../workspace/file_tree'
+import { FileTree, DirEntry, file_tree_new, file_tree_expand, file_tree_collapse, file_tree_is_expanded } from '../workspace/file_tree'
 import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
 
 export type FolderRow = {
@@ -504,6 +504,25 @@ export fn folder_click_parent() -> i32 = 5
 export fn folder_click_enter_dir() -> i32 = 6
 export fn folder_click_arm_dir() -> i32 = 7
 export fn folder_click_open_file() -> i32 = 8
+export fn folder_click_toggle_expand() -> i32 = 9
+
+// Toggle directory expand/collapse. `entries` used only when expanding a not-yet-loaded node.
+export fn folder_tree_toggle_node(
+  tree: FileTree,
+  node_id: i32,
+  entries: [DirEntry]
+) -> FileTree = do
+  if node_id < 0 || node_id >= tree.nodes.length() then
+    return tree
+  end
+  if tree.nodes[node_id].is_directory == 0 then
+    return tree
+  end
+  if file_tree_is_expanded(tree, node_id) != 0 then
+    return file_tree_collapse(tree, node_id)
+  end
+  file_tree_expand(tree, node_id, entries).tree
+end
 
 export type FolderBrowserClickResult = {
   handled: i32,
@@ -615,8 +634,8 @@ export fn folder_browser_resolve_click(
       )
     end
     return folder_browser_click_result(
-      1, folder_click_arm_dir(), folder_row.path, folder_nav, tree_scroll_y,
-      folder_row.path, frame_index, "tree_dir_arm"
+      1, folder_click_toggle_expand(), folder_row.path, folder_nav, tree_scroll_y,
+      folder_row.path, frame_index, "tree_toggle"
     )
   end
   folder_browser_click_result(

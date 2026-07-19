@@ -1,5 +1,129 @@
-// TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=1 — L1: dir click toggles expand (red until STEP=2).
+// TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=2 — L1: dir click toggles expand.
+import { rect_new } from '../../gui/layout'
+import {
+  DirEntry,
+  dir_entry_new,
+  file_tree_new,
+  file_tree_expand,
+  file_tree_is_expanded
+} from '../workspace/file_tree'
+import {
+  folder_tree_browser_rows,
+  folder_row_directory,
+  folder_row_file,
+  folder_row_rect,
+  folder_list_rect,
+  folder_nav_new,
+  folder_browser_resolve_click,
+  folder_click_toggle_expand,
+  folder_tree_toggle_node
+} from '../ux/folder_panel'
+
 fn main() -> i32 = do
-  println("ux_fail tree_row_click_toggles_expand stub")
-  1
+  let mut tree = file_tree_new("/proj", "proj")
+  let mut root_entries: [DirEntry] = []
+  root_entries.push(dir_entry_new("src", 1))
+  root_entries.push(dir_entry_new("a.txt", 0))
+  tree = file_tree_expand(tree, tree.root_id, root_entries).tree
+
+  let mut src_id = 0 - 1
+  let mut node_index = 0
+  while node_index < tree.nodes.length() do
+    if tree.nodes[node_index].name == "src" then
+      src_id = node_index
+    end
+    node_index = node_index + 1
+  end
+  if src_id < 0 then
+    println("ux_fail tree_row_click_toggles_expand no src")
+    return 1
+  end
+  if file_tree_is_expanded(tree, src_id) != 0 then
+    println("ux_fail tree_row_click_toggles_expand src already open")
+    return 2
+  end
+
+  const tree_rect = rect_new(0, 0, 240, 400)
+  const list_rect = folder_list_rect(tree_rect)
+  const before_rows = folder_tree_browser_rows(tree)
+  let mut src_row = 0 - 1
+  let mut row_index = 0
+  while row_index < before_rows.length() do
+    if before_rows[row_index].kind == folder_row_directory() &&
+        before_rows[row_index].name == "src" then
+      src_row = row_index
+    end
+    row_index = row_index + 1
+  end
+  if src_row < 0 then
+    println("ux_fail tree_row_click_toggles_expand no src row")
+    return 3
+  end
+
+  const src_rect = folder_row_rect(list_rect, src_row, 0)
+  const click = folder_browser_resolve_click(
+    tree_rect,
+    [],
+    rect_new(tree_rect.x, tree_rect.y, tree_rect.width, 16),
+    before_rows,
+    list_rect,
+    0,
+    folder_nav_new("/proj"),
+    "",
+    0 - 1000,
+    0,
+    src_rect.x + 4,
+    src_rect.y + 2
+  )
+  if click.action != folder_click_toggle_expand() then
+    println("ux_fail tree_row_click_toggles_expand action")
+    return 4
+  end
+  if click.path != "/proj/src" then
+    println("ux_fail tree_row_click_toggles_expand path")
+    return 5
+  end
+
+  let mut child_entries: [DirEntry] = []
+  child_entries.push(dir_entry_new("main.mlc", 0))
+  tree = folder_tree_toggle_node(tree, src_id, child_entries)
+  if file_tree_is_expanded(tree, src_id) == 0 then
+    println("ux_fail tree_row_click_toggles_expand not expanded")
+    return 6
+  end
+
+  const expanded_rows = folder_tree_browser_rows(tree)
+  let mut found_child = 0
+  row_index = 0
+  while row_index < expanded_rows.length() do
+    if expanded_rows[row_index].kind == folder_row_file() &&
+        expanded_rows[row_index].name == "main.mlc" &&
+        expanded_rows[row_index].depth == 1 then
+      found_child = 1
+    end
+    row_index = row_index + 1
+  end
+  if found_child == 0 then
+    println("ux_fail tree_row_click_toggles_expand missing child")
+    return 7
+  end
+
+  tree = folder_tree_toggle_node(tree, src_id, child_entries)
+  if file_tree_is_expanded(tree, src_id) != 0 then
+    println("ux_fail tree_row_click_toggles_expand not collapsed")
+    return 8
+  end
+
+  const collapsed_rows = folder_tree_browser_rows(tree)
+  row_index = 0
+  while row_index < collapsed_rows.length() do
+    if collapsed_rows[row_index].name == "main.mlc" then
+      println("ux_fail tree_row_click_toggles_expand child remains")
+      return 9
+    end
+    row_index = row_index + 1
+  end
+
+  println("ux_ok tree_row_click_toggles_expand")
+  0
 end

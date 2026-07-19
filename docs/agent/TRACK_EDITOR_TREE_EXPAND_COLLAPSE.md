@@ -5,11 +5,11 @@ User directive 2026-07-19 — **revises** §38 flat breadcrumb-only listing
 ([archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md](../archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md)).
 Expandable tree model already exists unused. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — Click resolve toggle + tree rows helpers; green token.
+**STEP=3** — `demo_live` wire listing+toggle; keep `tree_click_opens_tab`; compile.
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ Expandable tree model already exists unused. Size **M**.
 |------|-----------------|-------|
 | 0 | `144e20b9` | Decision freeze + open |
 | 1 | `1ecfddb3` | Red L1 stub + run scripts |
+| 2 | *(pending hash)* | `folder_click_toggle_expand` + `folder_tree_toggle_node`; green L1 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -39,7 +40,7 @@ Expandable tree model already exists unused. Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | L1 red harness + `run_ux_tree_row_click_toggles_expand.sh` | pending — red / stub fail |
+| 1 | L1 red harness + `run_ux_tree_row_click_toggles_expand.sh` | **done** — `ux_ok tree_expand_red` |
 | 2 | Click resolve toggle + tree rows helpers; green token | pending — `ux_ok tree_row_click_toggles_expand` |
 | 3 | `demo_live` wire listing+toggle; keep `tree_click_opens_tab`; compile | pending — `demo_live_fs_compile_ok` + `ux_ok tree_click_opens_tab` |
 | 4 | Critic: gates; archive | pending |
