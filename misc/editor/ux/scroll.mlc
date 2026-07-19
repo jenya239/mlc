@@ -33,36 +33,10 @@ fn text_viewport_rect(state: EditorUxState) -> Rect = do
 end
 
 fn state_with_scroll_y(state: EditorUxState, scroll_offset_y: i32) -> EditorUxState =
-  EditorUxState {
-    window_width: state.window_width,
-    window_height: state.window_height,
-    focus: state.focus,
-    panels: state.panels,
-    tabs: state.tabs,
-    selection: state.selection,
-    scroll_offset_x: state.scroll_offset_x,
-    scroll_offset_y: scroll_offset_y,
-    cursor_shape: state.cursor_shape,
-    clock_ms: state.clock_ms,
-    tab_strip_height: state.tab_strip_height,
-    overflows: state.overflows
-  }
+  { ...state, scroll_offset_y: scroll_offset_y }
 
 fn state_with_scroll_x(state: EditorUxState, scroll_offset_x: i32) -> EditorUxState =
-  EditorUxState {
-    window_width: state.window_width,
-    window_height: state.window_height,
-    focus: state.focus,
-    panels: state.panels,
-    tabs: state.tabs,
-    selection: state.selection,
-    scroll_offset_x: scroll_offset_x,
-    scroll_offset_y: state.scroll_offset_y,
-    cursor_shape: state.cursor_shape,
-    clock_ms: state.clock_ms,
-    tab_strip_height: state.tab_strip_height,
-    overflows: state.overflows
-  }
+  { ...state, scroll_offset_x: scroll_offset_x }
 
 fn line_height_or_one(metrics: EditorTextMetrics) -> i32 = do
   if metrics.line_height <= 0 then

@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#29**.
 Compiler track (not editor-only). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next STEP=4
+## Status: **active** (2026-07-19) — STEP=0–4 done; next Critic
 
 ## Next step
 
-**STEP=4** — Migrate ≥1 `misc/editor` state helper to `{ ...state, field: v }`; `demo_live_fs_compile_ok`.
+**STEP=5** — Critic: gates; archive; backlog #29 done → Planner #30.
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ Compiler track (not editor-only). Size **M**.
 | 1 | `e3e6c72c` | Red e2e + harness |
 | 2 | `efd8d9c6` | bare `{` parse + infer/transform type from base |
 | 3 | `be970c68` | wire `run_e2e.sh`; retire check script |
+| 4 | *(this turn)* | `scroll.mlc` state_with_scroll_* → anonymous update |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -49,7 +50,7 @@ Compiler track (not editor-only). Size **M**.
 | 1 | Scenario first: e2e (or harness) anonymous `{ ...p, x: N }` — **red** today | **done** (2026-07-19) — `record_update_anonymous_red_ok` |
 | 2 | Parser: bare `{` + spread+fields → `ExprRecordUpdate`; checker infer type from base | **done** (2026-07-19) — `record_update_anonymous_check_ok`; self-host identical; Tier B exit 0 |
 | 3 | Codegen polish if needed; e2e **green**; named regression; Tier B + self-host | **done** (2026-07-19) — `run_e2e` 10/0; no codegen polish; no `compiler/*.mlc` → reuse STEP=2 Tier B/self-host |
-| 4 | Migrate ≥1 `misc/editor` state helper off copy-all-fields; demo compile | pending — `demo_live_fs_compile_ok` |
+| 4 | Migrate ≥1 `misc/editor` state helper off copy-all-fields; demo compile | **done** (2026-07-19) — `state_with_scroll_y/x` → `{ ...state, … }`; `demo_live_fs_compile_ok` |
 | 5 | Critic: gates; archive; backlog #29 done → Planner #30 | pending |
 
 ## Out of scope

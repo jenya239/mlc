@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 16:25 (Driver TRACK_LANG_RECORD_UPDATE STEP=4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_LANG_RECORD_UPDATE |
+| started | 2026-07-19 13:02 |
+| elapsed | ~8 min |
+| done    | `misc/editor/ux/scroll.mlc`: `state_with_scroll_y` / `state_with_scroll_x` → `{ ...state, scroll_offset_*: … }` (drop copy-all-fields) |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok wheel_scroll_keeps_caret_visible`; `ux_ok shift_wheel_scrolls_horizontal` |
+| result  | STEP=4 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_LANG_RECORD_UPDATE |
+
 ### Turn 2026-07-19 16:15 (Driver TRACK_LANG_RECORD_UPDATE STEP=3)
 
 | field   | value |
