@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 09:50 (Driver TRACK_EDITOR_TRAILING_WS_VIZ STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TRAILING_WS_VIZ |
+| started | 2026-07-19 09:40 |
+| elapsed | ~10 min |
+| done    | Real `editor_ux_trailing_ws_draw_report` (space/tab EOL runs, visible-only); demo_live solid rects after current-line band |
+| verify  | `ux_ok trailing_ws_visualized`; `ux_ok current_line_highlight_draws`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_TRAILING_WS_VIZ |
+
 ### Turn 2026-07-19 08:30 (Driver TRACK_EDITOR_TRAILING_WS_VIZ STEP=1)
 
 | field   | value |

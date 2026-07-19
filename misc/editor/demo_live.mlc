@@ -265,6 +265,7 @@ import {
 } from './ux/nav_key'
 import { editor_ux_apply_word_nav_key } from './ux/word_nav'
 import { editor_ux_current_line_draw_report } from './ux/current_line_hl'
+import { editor_ux_trailing_ws_draw_report } from './ux/trailing_ws'
 import {
   caret_blink_period_ms,
   caret_blink_visible
@@ -1523,6 +1524,24 @@ fn main() -> i32 = do
         )
       end
       current_line_index = current_line_index + 1
+    end
+
+    // Trailing whitespace runs (Decision: muted selection tint).
+    const trailing_ws_report = editor_ux_trailing_ws_draw_report(
+      app.ux, current_line_metrics
+    )
+    let mut trailing_ws_index = 0
+    while trailing_ws_index < trailing_ws_report.highlights.length() do
+      const trailing_ws_highlight = trailing_ws_report.highlights[trailing_ws_index]
+      if trailing_ws_highlight.width > 0 then
+        solid = solid_renderer_rect(
+          solid, width, height,
+          trailing_ws_highlight.x, trailing_ws_highlight.y,
+          trailing_ws_highlight.width, trailing_ws_highlight.height,
+          theme.selection_red, theme.selection_green, theme.selection_blue, 0.35
+        )
+      end
+      trailing_ws_index = trailing_ws_index + 1
     end
 
     if find_session.matches.length() > 0 then

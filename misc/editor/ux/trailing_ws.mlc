@@ -1,4 +1,17 @@
-// TRACK_EDITOR_TRAILING_WS_VIZ STEP=1 — stub trailing-ws draw report (red until STEP=2).
+// TRACK_EDITOR_TRAILING_WS_VIZ STEP=2 — trailing-run draw report (visible lines).
+import { Rect, rect_new } from '../../gui/layout'
+import { shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_has_active,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  LineIndex,
+  line_index_from_document,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_offset_to_position
+} from '../document/line_index'
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 
@@ -14,13 +27,99 @@ export type TrailingWsDrawReport = {
   highlights: [TrailingWsHighlight]
 }
 
-// Stub: empty report until STEP=2 implements trailing-run geometry.
+fn text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
+
+fn trailing_line_end_exclusive(line_index: LineIndex, line: i32) -> i32 = do
+  if line + 1 < line_index_line_count(line_index) then
+    return line_index_line_start(line_index, line + 1)
+  end
+  line_index.text_length
+end
+
+fn is_trailing_whitespace_byte(character: string) -> bool =
+  character == " " || character == "\t"
+
+fn trailing_run_start(
+  text: string,
+  line_start: i32,
+  content_end: i32
+) -> i32 = do
+  let mut index = content_end
+  while index > line_start && is_trailing_whitespace_byte(text.byte_at(index - 1)) do
+    index = index - 1
+  end
+  index
+end
+
 export fn editor_ux_trailing_ws_draw_report(
   state: EditorUxState,
   metrics: EditorTextMetrics
 ) -> TrailingWsDrawReport = do
-  let _unused_width = state.window_width
-  let _unused_line_height = metrics.line_height
   let mut highlights: [TrailingWsHighlight] = []
+  if !tab_set_has_active(state.tabs) then
+    return TrailingWsDrawReport { highlights: highlights }
+  end
+  let mut line_height = metrics.line_height
+  if line_height <= 0 then
+    line_height = 1
+  end
+  let mut char_width = metrics.char_width
+  if char_width <= 0 then
+    char_width = 1
+  end
+  const active = tab_set_active(state.tabs)
+  const line_index = line_index_from_document(active.buffer.document)
+  const text = line_index.text
+  const viewport = text_viewport_rect(state)
+  if viewport.width <= 0 || viewport.height <= 0 then
+    return TrailingWsDrawReport { highlights: highlights }
+  end
+
+  let mut line = 0
+  const line_count = line_index_line_count(line_index)
+  while line < line_count do
+    const top = viewport.y + line * line_height - state.scroll_offset_y
+    const bottom = top + line_height
+    if bottom > viewport.y && top < viewport.y + viewport.height then
+      const line_start = line_index_line_start(line_index, line)
+      let mut content_end = trailing_line_end_exclusive(line_index, line)
+      if content_end > line_start && text.byte_at(content_end - 1) == "\n" then
+        content_end = content_end - 1
+      end
+      const run_start = trailing_run_start(text, line_start, content_end)
+      if run_start < content_end then
+        const run_columns = content_end - run_start
+        const column = line_index_offset_to_position(
+          line_index, text, run_start
+        ).column
+        const width = run_columns * char_width
+        if width > 0 then
+          highlights.push(TrailingWsHighlight {
+            line: line,
+            x: viewport.x + column * char_width - state.scroll_offset_x,
+            y: top,
+            width: width,
+            height: line_height
+          })
+        end
+      end
+    end
+    line = line + 1
+  end
   TrailingWsDrawReport { highlights: highlights }
 end
