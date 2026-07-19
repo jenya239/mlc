@@ -16,7 +16,7 @@ Expandable tree model already exists unused. Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `144e20b9` | Decision freeze + open |
-| 1 | *(pending hash)* | Red L1 stub + run scripts |
+| 1 | `1ecfddb3` | Red L1 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
