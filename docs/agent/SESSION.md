@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 12:35 (Driver TRACK_EDITOR_INDENT_MODEL STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_INDENT_MODEL |
+| started | 2026-07-19 11:13 |
+| elapsed | ~10 min |
+| done    | `ux/indent_apply` + `editor_app_indent_tab`/`outdent_lines`; demo_live Tab/Shift+Tab when ctrl up; Ctrl+Tab cycle unchanged |
+| verify  | `ux_ok indent_width_config`; `ux_ok tab_shift_tab_indents`; `ux_ok enter_keeps_indent`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_INDENT_MODEL |
+
 ### Turn 2026-07-19 12:25 (Driver TRACK_EDITOR_INDENT_MODEL STEP=2)
 
 | field   | value |

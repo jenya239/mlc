@@ -280,6 +280,9 @@ import {
   context_menu_action_is_paste
 } from './ux/context_menu'
 import {
+  editor_indent_config_default
+} from './document/indent'
+import {
   caret_blink_period_ms,
   caret_blink_visible
 } from './ux/caret_blink'
@@ -307,6 +310,8 @@ import {
   editor_app_insert_text,
   editor_app_insert_text_with_multi,
   editor_app_toggle_line_comment,
+  editor_app_indent_tab,
+  editor_app_outdent_lines,
   editor_app_insert_newline,
   editor_app_backspace,
   editor_app_delete_word_backward,
@@ -690,6 +695,7 @@ fn main() -> i32 = do
   let mut dragging_tab_index = 0 - 1
   let mut context_menu = editor_ux_context_menu_hidden()
   let mut mouse_right_was_down = 0
+  let mut indent_config = editor_indent_config_default()
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -1139,6 +1145,27 @@ fn main() -> i32 = do
         line_index = frame.line_index
         draw_text = frame.text
         last_command = "delete_word_forward"
+        binding_key = ""
+      end
+      if editor_focused != 0 && binding_key == "tab" &&
+          glfw_gl_mod_ctrl_down() == 0 then
+        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        if glfw_gl_mod_shift_down() != 0 then
+          app = editor_app_outdent_lines(app, indent_config)
+          last_command = "outdent"
+        else
+          app = editor_app_indent_tab(app, indent_config)
+          last_command = "indent"
+        end
+        tabs = app.ux.tabs
+        selection = app.ux.selection
+        multi = multi_selection_from_single(selection)
+        history = app.history
+        active = tab_set_active(tabs)
+        document = active.buffer.document
+        frame = document_frame_snapshot(document)
+        line_index = frame.line_index
+        draw_text = frame.text
         binding_key = ""
       end
       const dispatch_command = editor_app_frame_command_from_inputs(

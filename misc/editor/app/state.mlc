@@ -24,6 +24,11 @@ import {
 } from '../ux/multi_cursor'
 import { EditorMultiSelection } from '../document/multi_selection'
 import { editor_ux_toggle_line_comment } from '../ux/comment_toggle'
+import {
+  editor_ux_indent_tab,
+  editor_ux_outdent_lines
+} from '../ux/indent_apply'
+import { EditorIndentConfig } from '../document/indent'
 import { EditorTextMetrics } from '../ux/overflow'
 import { ShellPanels } from '../ui/shell_panels'
 import {
@@ -455,6 +460,50 @@ export fn editor_app_toggle_line_comment(
   editor_app_with_ux_and_history(
     app,
     editor_ux_toggle_line_comment(app.ux, language),
+    history
+  )
+end
+
+export fn editor_app_indent_tab(
+  app: EditorAppState,
+  config: EditorIndentConfig
+) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return app
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_insert_text(),
+    editor_app_clock_ms(app)
+  )
+  editor_app_with_ux_and_history(
+    app,
+    editor_ux_indent_tab(app.ux, config),
+    history
+  )
+end
+
+export fn editor_app_outdent_lines(
+  app: EditorAppState,
+  config: EditorIndentConfig
+) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return app
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const history = history_push_before_edit_kind(
+    app.history,
+    active.buffer.document,
+    app.ux.selection,
+    history_edit_insert_text(),
+    editor_app_clock_ms(app)
+  )
+  editor_app_with_ux_and_history(
+    app,
+    editor_ux_outdent_lines(app.ux, config),
     history
   )
 end

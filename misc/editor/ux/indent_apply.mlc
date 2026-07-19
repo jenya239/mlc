@@ -1,0 +1,71 @@
+// TRACK_EDITOR_INDENT_MODEL STEP=3 — UX wrappers for Tab/Shift+Tab.
+import {
+  EditorIndentConfig,
+  edit_indent_tab,
+  edit_outdent_lines
+} from '../document/indent'
+import {
+  tab_set_has_active,
+  tab_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  open_buffer_set_document
+} from '../document/save'
+import { EditorUxState } from './probe'
+
+export fn editor_ux_indent_tab(
+  state: EditorUxState,
+  config: EditorIndentConfig
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_indent_tab(
+    active.buffer.document, state.selection, config
+  )
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: edited.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end
+
+export fn editor_ux_outdent_lines(
+  state: EditorUxState,
+  config: EditorIndentConfig
+) -> EditorUxState = do
+  if !tab_set_has_active(state.tabs) then
+    return state
+  end
+  const active = tab_set_active(state.tabs)
+  const edited = edit_outdent_lines(
+    active.buffer.document, state.selection, config
+  )
+  const buffer = open_buffer_set_document(active.buffer, edited.document)
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tab_set_update_active_buffer(state.tabs, buffer),
+    selection: edited.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+end
