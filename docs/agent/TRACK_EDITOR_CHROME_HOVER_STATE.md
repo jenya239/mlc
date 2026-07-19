@@ -15,7 +15,7 @@ calls hover). Size **M**.
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | *(this turn)* | Decision freeze + open |
+| 0 | `f371158a` | Decision freeze + open |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
