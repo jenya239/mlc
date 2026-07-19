@@ -14,7 +14,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `7d52550b` | Decision freeze + open |
-| 1 | *(this turn)* | Two red stubs + run scripts + `run_ux_column_pixel_model_red.sh` |
+| 1 | `3b211fe8` | Two red stubs + run scripts + `run_ux_column_pixel_model_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
