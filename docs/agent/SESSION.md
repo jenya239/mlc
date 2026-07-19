@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 19:20 (Planner TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT (§46 #31) |
+| started | 2026-07-19 14:32 |
+| elapsed | ~10 min |
+| done    | Open `docs/agent/TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT.md`; freeze Decision: preferred/max-width layout + proportional shrink; ellipsis; shared hit/draw; tokens `tab_strip_rects_no_overlap` / `tab_strip_long_title_ellipsis`; STEPs 1–4; PLAN/backlog/CONTINUITY/DEVELOPMENT synced |
+| verify  | docs-only; confirmed equal-width `tab_strip_title_rect` + unclamped `demo_live` `push_line` |
+| result  | STEP=0 done; track active |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT |
+
 ### Turn 2026-07-19 19:10 (Critic TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX)
 
 | field   | value |

@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner open `#31 EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46).
+**Queue head:** Driver `STEP=1` `TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31) — red L1 harnesses.
+**`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** active — STEP=0 Decision frozen.
 **`TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** closed 2026-07-19; archived.
 **`TRACK_LANG_RECORD_UPDATE` (§46 #29)** closed 2026-07-19; archived.
