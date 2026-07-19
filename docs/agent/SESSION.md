@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 20:55 (Driver TRACK_EDITOR_CHROME_HOVER_STATE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CHROME_HOVER_STATE |
+| started | 2026-07-19 15:11 |
+| elapsed | ~8 min |
+| done    | Stub `ux/chrome_hover.mlc` (equal idle/hover RGB); L2 `chrome_hover_tint_differs`; `run_ux_chrome_hover_red.sh` + tint script |
+| verify  | `ux_ok chrome_hover_red`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CHROME_HOVER_STATE |
+
 ### Turn 2026-07-19 20:40 (Planner TRACK_EDITOR_CHROME_HOVER_STATE STEP=0)
 
 | field   | value |

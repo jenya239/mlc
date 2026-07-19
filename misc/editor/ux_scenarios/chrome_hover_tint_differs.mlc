@@ -1,0 +1,44 @@
+// TRACK_EDITOR_CHROME_HOVER_STATE STEP=1 — L2: hovered tint ≠ idle (red until STEP=2).
+import {
+  editor_ux_chrome_hover_draw_report_stub
+} from '../ux/chrome_hover'
+
+fn main() -> i32 = do
+  const report = editor_ux_chrome_hover_draw_report_stub()
+  if report.entries.length() < 2 then
+    println("ux_fail chrome_hover_tint_differs setup count")
+    return 1
+  end
+
+  let mut idle_index = 0 - 1
+  let mut hover_index = 0 - 1
+  let mut index = 0
+  while index < report.entries.length() do
+    const entry = report.entries[index]
+    if entry.width <= 0 || entry.height <= 0 then
+      println("ux_fail chrome_hover_tint_differs empty rect")
+      return 2
+    end
+    if entry.hovered == 0 && idle_index < 0 then
+      idle_index = index
+    end
+    if entry.hovered != 0 && hover_index < 0 then
+      hover_index = index
+    end
+    index = index + 1
+  end
+  if idle_index < 0 || hover_index < 0 then
+    println("ux_fail chrome_hover_tint_differs missing pair")
+    return 3
+  end
+
+  const idle = report.entries[idle_index]
+  const hover = report.entries[hover_index]
+  if idle.red == hover.red && idle.green == hover.green && idle.blue == hover.blue then
+    println("ux_fail chrome_hover_tint_differs stub")
+    return 4
+  end
+
+  println("ux_ok chrome_hover_tint_differs")
+  0
+end

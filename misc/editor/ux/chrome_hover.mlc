@@ -1,0 +1,57 @@
+// TRACK_EDITOR_CHROME_HOVER_STATE STEP=1 — stub: idle and hover RGB identical
+// until STEP=2. Draw report still emits ≥1 hovered + ≥1 idle entry.
+export type ChromeHoverRgb = {
+  red: f64,
+  green: f64,
+  blue: f64
+}
+
+export type ChromeHoverDrawEntry = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  hovered: i32
+}
+
+export type ChromeHoverDrawReport = {
+  entries: [ChromeHoverDrawEntry]
+}
+
+// Stub: same fill for idle and hover (scenario must stay red until STEP=2).
+export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb = do
+  let mut channel = hovered
+  channel = channel + 0
+  ChromeHoverRgb { red: 0.13, green: 0.15, blue: 0.19 }
+end
+
+// Minimal two-item report for L2 (toolbar-like rects); RGB still equal in stub.
+export fn editor_ux_chrome_hover_draw_report_stub() -> ChromeHoverDrawReport = do
+  let mut entries: [ChromeHoverDrawEntry] = []
+  const idle = editor_ux_chrome_hover_rgb(0)
+  const hover = editor_ux_chrome_hover_rgb(1)
+  entries.push(ChromeHoverDrawEntry {
+    x: 0,
+    y: 0,
+    width: 64,
+    height: 24,
+    red: idle.red,
+    green: idle.green,
+    blue: idle.blue,
+    hovered: 0
+  })
+  entries.push(ChromeHoverDrawEntry {
+    x: 64,
+    y: 0,
+    width: 64,
+    height: 24,
+    red: hover.red,
+    green: hover.green,
+    blue: hover.blue,
+    hovered: 1
+  })
+  ChromeHoverDrawReport { entries: entries }
+end
