@@ -74,3 +74,8 @@ export extern fn glfw_gl_mods_test_set(ctrl_down: i32, shift_down: i32, alt_down
   = "mlc::gl::glfw_gl_mods_test_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_binding_key_test_push(key: string) -> unit
   = "mlc::gl::glfw_gl_binding_key_test_push" from "mlc/gl/glfw_window_gl.hpp"
+// TRACK_EDITOR_DROP_FILE STEP=2
+export extern fn glfw_gl_take_drop_path() -> string
+  = "mlc::gl::glfw_gl_take_drop_path" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_drop_path_test_push(path: string) -> unit
+  = "mlc::gl::glfw_gl_drop_path_test_push" from "mlc/gl/glfw_window_gl.hpp"

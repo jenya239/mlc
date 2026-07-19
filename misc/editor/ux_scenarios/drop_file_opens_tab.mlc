@@ -1,4 +1,4 @@
-// TRACK_EDITOR_DROP_FILE STEP=1 — L1: drop_file_opens_tab (red until STEP=2).
+// TRACK_EDITOR_DROP_FILE STEP=2 — L1: drop_file_opens_tab.
 import { rect_new } from '../../gui/layout'
 import { shell_panels_new } from '../ui/shell_panels'
 import {
@@ -20,6 +20,10 @@ import {
   EditorUxState
 } from '../ux/probe'
 import { editor_ux_open_dropped_path } from '../ux/drop_file'
+import {
+  glfw_gl_drop_path_test_push,
+  glfw_gl_take_drop_path
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 fn main() -> i32 = do
   const path = ".tmp/editor_fixture/drop_open.txt"
@@ -42,7 +46,13 @@ fn main() -> i32 = do
     selection_collapsed(0)
   )
 
-  state = editor_ux_open_dropped_path(state, path)
+  glfw_gl_drop_path_test_push(path)
+  const taken = glfw_gl_take_drop_path()
+  if taken != path then
+    println("ux_fail drop_file_opens_tab take")
+    return 7
+  end
+  state = editor_ux_open_dropped_path(state, taken)
 
   if tab_set_count(state.tabs) < 1 then
     println("ux_fail drop_file_opens_tab no_tab")

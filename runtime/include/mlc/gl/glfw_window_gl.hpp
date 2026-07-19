@@ -59,5 +59,9 @@ String glfw_gl_take_binding_key();
 void glfw_gl_mods_test_set(int32_t ctrl_down, int32_t shift_down, int32_t alt_down);
 void glfw_gl_binding_key_test_push(String key);
 
+// TRACK_EDITOR_DROP_FILE STEP=2 — OS drag-drop path queue
+String glfw_gl_take_drop_path();
+void glfw_gl_drop_path_test_push(String path);
+
 } // namespace gl
 } // namespace mlc

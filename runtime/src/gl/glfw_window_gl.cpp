@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <string>
 
 namespace mlc {
@@ -58,6 +59,11 @@ InputTestOverride& input_test_override() {
 std::string& pending_text() {
   static std::string buffer;
   return buffer;
+}
+
+std::deque<std::string>& pending_drop_paths() {
+  static std::deque<std::string> paths;
+  return paths;
 }
 
 double& pending_scroll_y() {
@@ -209,6 +215,18 @@ void on_window_size(GLFWwindow* /*window*/, int width, int height) {
   cached_window_height() = height;
 }
 
+void on_drop(GLFWwindow* /*window*/, int path_count, const char** paths) {
+  if (paths == nullptr || path_count <= 0) {
+    return;
+  }
+  for (int index = 0; index < path_count; ++index) {
+    if (paths[index] == nullptr) {
+      continue;
+    }
+    pending_drop_paths().push_back(std::string(paths[index]));
+  }
+}
+
 } // namespace
 
 int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
@@ -240,12 +258,14 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     return -3;
   }
   pending_text().clear();
+  pending_drop_paths().clear();
   pending_scroll_y() = 0.0;
   cached_window_width() = window_width;
   cached_window_height() = window_height;
   glfwSetCharCallback(window, on_char);
   glfwSetScrollCallback(window, on_scroll);
   glfwSetWindowSizeCallback(window, on_window_size);
+  glfwSetDropCallback(window, on_drop);
   context_window() = window;
   return 0;
 }
@@ -277,6 +297,7 @@ void glfw_gl_context_end() {
   }
   glfw_gl_input_test_clear();
   pending_text().clear();
+  pending_drop_paths().clear();
   pending_scroll_y() = 0.0;
   cached_window_width() = 0;
   cached_window_height() = 0;
@@ -470,6 +491,7 @@ void glfw_gl_input_test_set(
 void glfw_gl_input_test_clear() {
   input_test_override() = InputTestOverride{};
   pending_text().clear();
+  pending_drop_paths().clear();
   pending_scroll_y() = 0.0;
   clipboard_test_override() = ClipboardTestOverride{};
   mods_test_override() = ModsTestOverride{};
@@ -688,6 +710,20 @@ void glfw_gl_binding_key_test_push(String key) {
   pending_binding_key() = std::string(key.raw_data(), key.size());
 }
 
+String glfw_gl_take_drop_path() {
+  std::deque<std::string>& paths = pending_drop_paths();
+  if (paths.empty()) {
+    return String();
+  }
+  String taken(paths.front());
+  paths.pop_front();
+  return taken;
+}
+
+void glfw_gl_drop_path_test_push(String path) {
+  pending_drop_paths().push_back(std::string(path.raw_data(), path.size()));
+}
+
 #else
 
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
@@ -725,6 +761,27 @@ int32_t glfw_gl_mod_alt_down() { return 0; }
 String glfw_gl_take_binding_key() { return String(); }
 void glfw_gl_mods_test_set(int32_t, int32_t, int32_t) {}
 void glfw_gl_binding_key_test_push(String) {}
+
+namespace {
+std::deque<std::string>& stub_pending_drop_paths() {
+  static std::deque<std::string> paths;
+  return paths;
+}
+} // namespace
+
+String glfw_gl_take_drop_path() {
+  std::deque<std::string>& paths = stub_pending_drop_paths();
+  if (paths.empty()) {
+    return String();
+  }
+  String taken(paths.front());
+  paths.pop_front();
+  return taken;
+}
+
+void glfw_gl_drop_path_test_push(String path) {
+  stub_pending_drop_paths().push_back(std::string(path.raw_data(), path.size()));
+}
 
 #endif
 

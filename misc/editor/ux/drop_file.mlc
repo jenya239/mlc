@@ -1,10 +1,66 @@
-// TRACK_EDITOR_DROP_FILE STEP=1 — stub open (red until STEP=2).
+// TRACK_EDITOR_DROP_FILE STEP=2 — open path from OS drop / test_push.
 import { EditorUxState } from './probe'
+import {
+  TabSet,
+  tab_set_open,
+  tab_set_index_of_path,
+  tab_set_set_active,
+  tab_set_update_active_buffer
+} from '../workspace/tabs'
+import {
+  open_buffer_from_path,
+  open_buffer_has_error
+} from '../document/save'
+import { document_to_string } from '../document/piece_table'
+import {
+  EditorSelection,
+  selection_collapsed
+} from '../document/selection'
+
+fn state_with_tabs_selection(
+  state: EditorUxState,
+  tabs: TabSet,
+  selection: EditorSelection
+) -> EditorUxState =
+  EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: tabs,
+    selection: selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
 
 export fn editor_ux_open_dropped_path(
   state: EditorUxState,
   path: string
 ) -> EditorUxState = do
-  let _unused_path = path
-  state
+  if path.byte_size() == 0 then
+    return state
+  end
+  const existing = tab_set_index_of_path(state.tabs, path)
+  if existing >= 0 then
+    return state_with_tabs_selection(
+      state,
+      tab_set_set_active(state.tabs, existing),
+      selection_collapsed(0)
+    )
+  end
+  const buffer = open_buffer_from_path(path)
+  if open_buffer_has_error(buffer) then
+    return state
+  end
+  let mut tabs = tab_set_open(
+    state.tabs,
+    path,
+    document_to_string(buffer.document)
+  )
+  tabs = tab_set_update_active_buffer(tabs, buffer)
+  state_with_tabs_selection(state, tabs, selection_collapsed(0))
 end

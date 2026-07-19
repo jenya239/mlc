@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 13:45 (Driver TRACK_EDITOR_DROP_FILE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DROP_FILE |
+| started | 2026-07-19 11:30 |
+| elapsed | ~15 min |
+| done    | GLFW `glfwSetDropCallback` + queue; `glfw_gl_take_drop_path`/`glfw_gl_drop_path_test_push`; `gl_window.mlc` externs; real `editor_ux_open_dropped_path` (`open_buffer_from_path`+`tab_set_open`/`activate`); L1 via test_push→take→open → `ux_ok drop_file_opens_tab` |
+| verify  | `ux_ok drop_file_opens_tab`; `ux_ok indent_width_config`; `demo_live_fs_compile_ok`; `dev_gate_fast` green (no test-fix) |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone; REG deferred to STEP=3/Critic |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_DROP_FILE |
+
 ### Turn 2026-07-19 13:05 (Driver TRACK_EDITOR_DROP_FILE STEP=1)
 
 | field   | value |
