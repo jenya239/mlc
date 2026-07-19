@@ -16,7 +16,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 |------|-----------------|-------|
 | 0 | `cc4cb1e9` | Decision freeze + open |
 | 1 | `6750c927` | Red L2 stub + run scripts |
-| 2 | *(pending hash)* | `byte_substring` in syntax row draw; green L2 |
+| 2 | `fe9ecfa4` | `byte_substring` in syntax row draw; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
