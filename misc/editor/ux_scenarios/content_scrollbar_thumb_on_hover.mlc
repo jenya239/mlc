@@ -1,0 +1,5 @@
+// TRACK_EDITOR_CONTENT_SCROLLBAR STEP=1 — L2: content scrollbar thumb on hover (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail content_scrollbar_thumb_on_hover stub")
+  1
+end

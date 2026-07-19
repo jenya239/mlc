@@ -3,17 +3,18 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — L2 red harness + `run_ux_content_scrollbar_thumb.sh`.
+**STEP=2** — Wire draw + delete dead hover; green token.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `a040b223` | Decision freeze + open |
+| 1 | *(pending hash)* | Red L2 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -35,7 +36,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | L2 red harness + run scripts | pending — `ux_ok content_scrollbar_red` |
+| 1 | L2 red harness + run scripts | **done** — `ux_ok content_scrollbar_red` |
 | 2 | Wire draw + delete dead hover; green token | pending — `ux_ok content_scrollbar_thumb_on_hover` |
 | 3 | `demo_live_fs_compile_ok` | pending |
 | 4 | Critic: gates; archive | pending |

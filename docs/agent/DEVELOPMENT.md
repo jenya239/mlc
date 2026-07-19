@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=1` `TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e) — L2 red harness.
-**`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** active — STEP=0 Decision frozen (reuse `editor_scrollbar_thumb`; delete dead hover wheel).
+**Queue head:** Driver `STEP=2` `TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e) — draw + delete dead hover.
+**`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** active — STEP=1 red harness green (`ux_ok content_scrollbar_red`).
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** closed 2026-07-19; archived.

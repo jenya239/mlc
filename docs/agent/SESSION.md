@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 28:10 (Driver TRACK_EDITOR_CONTENT_SCROLLBAR STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CONTENT_SCROLLBAR |
+| started | 2026-07-19 20:24 |
+| elapsed | ~5 min |
+| done    | Red stub `ux_scenarios/content_scrollbar_thumb_on_hover.mlc`; `run_ux_content_scrollbar_red.sh` + green-path script |
+| verify  | `ux_ok content_scrollbar_red` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CONTENT_SCROLLBAR |
+
 ### Turn 2026-07-19 27:55 (Planner TRACK_EDITOR_CONTENT_SCROLLBAR STEP=0)
 
 | field   | value |
