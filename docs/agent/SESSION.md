@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 18:40 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+| started | 2026-07-19 14:12 |
+| elapsed | ~15 min |
+| done    | `editor_measure_mono_char_width` (shape `"M"`); `editor_font_metrics_from_size` uses advance; drop unused `editor_app_char_width`; green `selection_highlight_matches_glyph_x`; update `ctrl_wheel_font_zoom` asserts |
+| verify  | `ux_ok selection_highlight_matches_glyph_x`; `ux_ok ctrl_wheel_font_zoom`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; DejaVu@11 advance=6 vs old ratio=7 |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+
 ### Turn 2026-07-19 18:25 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1)
 
 | field   | value |

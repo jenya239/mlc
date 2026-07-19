@@ -13,15 +13,19 @@ fn main() -> i32 = do
     return 1
   end
   const before_metrics = editor_font_metrics_from_size(font_size)
-  if before_metrics.line_height != 14 || before_metrics.char_width != 7 then
-    println("ux_fail font_zoom setup metrics")
+  if before_metrics.line_height != 14 then
+    println("ux_fail font_zoom setup line_height")
+    return 2
+  end
+  if before_metrics.char_width < 1 then
+    println("ux_fail font_zoom setup char_width")
     return 2
   end
   const viewport_width = 700
   const before_columns = wrap_max_columns(viewport_width, before_metrics.char_width)
 
   let mut zoomed = editor_ux_font_zoom(font_size, 1)
-  // Integer chrome ratio: char_width may stay flat for a few size steps.
+  // Measured advance may stay flat for a few size steps.
   let mut step = 0
   while step < 8 && zoomed.metrics.char_width <= before_metrics.char_width do
     zoomed = editor_ux_font_zoom(zoomed.font_size, 1)

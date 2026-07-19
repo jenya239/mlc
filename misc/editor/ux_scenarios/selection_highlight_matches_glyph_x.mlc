@@ -1,5 +1,67 @@
-// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1 — L1/L2: selection_highlight_matches_glyph_x (red until STEP=2).
+// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=2 — L1/L2: selection highlight
+// right edge matches shaped glyph x on a long ASCII line (N>40).
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_advance_at
+} from '../../gui/text_shaping'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  editor_font_metrics_from_size,
+  editor_measure_mono_char_width
+} from '../ux/font_zoom'
+
 fn main() -> i32 = do
-  println("ux_fail selection_highlight_matches_glyph_x stub")
-  1
+  const font_size = 11
+  const font_path = editor_resolve_font_path("")
+  const metrics = editor_font_metrics_from_size(font_size)
+  const measured = editor_measure_mono_char_width(font_path, font_size)
+  if metrics.char_width != measured then
+    println("ux_fail selection_highlight_matches_glyph_x metrics vs measure")
+    return 1
+  end
+  if metrics.char_width < 1 then
+    println("ux_fail selection_highlight_matches_glyph_x zero width")
+    return 2
+  end
+
+  // 42 ASCII cells (>40): highlight right edge = N * char_width.
+  const line = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  const column_count = 42
+  if line.byte_size() != column_count then
+    println("ux_fail selection_highlight_matches_glyph_x line length")
+    return 3
+  end
+
+  let mut state = text_shaping_new()
+  const shaped = text_shaping_shape(state, font_path, font_size, line)
+  state = shaped.state
+  if shaped.error_code != 0 || shaped.glyph_count != column_count then
+    println("ux_fail selection_highlight_matches_glyph_x shape")
+    return 4
+  end
+
+  let mut glyph_x = 0
+  let mut index = 0
+  while index < shaped.glyph_count do
+    glyph_x = glyph_x + text_shaping_glyph_advance_at(index) / 64
+    index = index + 1
+  end
+
+  const highlight_right = column_count * metrics.char_width
+  if highlight_right != glyph_x then
+    println("ux_fail selection_highlight_matches_glyph_x drift")
+    return 5
+  end
+
+  // Prove we left the old size*7/11 guess when it would drift (DejaVu @11: 6 vs 7).
+  const old_ratio_width = (font_size * 7) / 11
+  if old_ratio_width != metrics.char_width &&
+      column_count * old_ratio_width == glyph_x then
+    println("ux_fail selection_highlight_matches_glyph_x still ratio")
+    return 6
+  end
+
+  println("ux_ok selection_highlight_matches_glyph_x")
+  0
 end
