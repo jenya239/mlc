@@ -1,14 +1,44 @@
 # Track: Editor Drop File
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#27**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#27**.
 No OS drag-and-drop → open file; only tree/session open. Needs GLFW drop
 ABI. Review gate: `drop_file_opens_tab` (L1). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L1 + indent + demo compile.
+Anti-false-done: `2e1fc4c1`…`6dde5add` (STEP=0–3). Wire present:
+`glfwSetDropCallback` + queue; `glfw_gl_take_drop_path` /
+`glfw_gl_drop_path_test_push`; `gl_window.mlc`; `editor_ux_open_dropped_path`
+(`open_buffer_from_path` + tab open/activate); demo_live drain → open.
+REG: `lib/mlc/` touched — STEP=3 `regression_gate.sh` exit 0 (20/0 +
+examples 146/0); lib/runtime drop files unchanged since then.
+**reopen: none**.
+
+Honest residual: directory skip via open error only (no explicit
+`is_directory`); no recursive folder/URL drop (OOS); soft-tab/display
+unrelated.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_drop_file_opens_tab.sh` | `ux_ok drop_file_opens_tab` EXIT=0 |
+| `run_ux_indent_width_config.sh` | `ux_ok indent_width_config` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| `regression_gate.sh` (STEP=3) | 20 passed, 0 failed; examples ok=146 fail=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive
+**closed** — Critic OK. Queue → Planner (§46 `#28 EDITOR_WIDE_CHAR_COLUMNS`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `2e1fc4c1` | Decision freeze + open |
+| 1 | `c939a3de` | L1 red harness + stub |
+| 2 | `bffebbbc` | GLFW ABI + open helper green |
+| 3 | `6dde5add` | demo_live drain + REG |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,12 +71,9 @@ ABI. Review gate: `drop_file_opens_tab` (L1). Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open track / PLAN / backlog | **done** (2026-07-19) |
 | 1 | L1 scenario first (`drop_file_opens_tab`) + stub | **done** (2026-07-19) — stub red: `ux_fail drop_file_opens_tab no_tab` |
-| <!-- sub-steps: 1) scenario + run script; 2) stub take/open → red; 3) indent_width + demo_live_fs_compile green --> |
 | 2 | GLFW drop ABI + take/test_push + open helper | **done** (2026-07-19) — `ux_ok drop_file_opens_tab` |
-| <!-- sub-steps: 1) runtime callback + queue; 2) gl_window extern; 3) ux open + L1 green --> |
 | 3 | demo_live drain take_drop_path → open tabs | **done** (2026-07-19) — poll + REG |
-| <!-- sub-steps: 1) poll loop; 2) demo_live_fs_compile; 3) gates + REG --> |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
