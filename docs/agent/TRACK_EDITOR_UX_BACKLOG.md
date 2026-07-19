@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32 done; `#33 EDITOR_TREE_EXPAND_COLLAPSE` **active** (STEP=1 next); `#34`–`#35` queued (#22 superseded)
+## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32 done; `#33 EDITOR_TREE_EXPAND_COLLAPSE` **active** (STEP=2 next); `#34`–`#35` queued (#22 superseded)
 
 ## How to use this backlog
 

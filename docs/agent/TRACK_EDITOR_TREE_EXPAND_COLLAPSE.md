@@ -5,17 +5,18 @@ User directive 2026-07-19 — **revises** §38 flat breadcrumb-only listing
 ([archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md](../archive/tracks/TRACK_EDITOR_FOLDER_BROWSER.md)).
 Expandable tree model already exists unused. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — Red L1 harness `tree_row_click_toggles_expand` (+ `run_ux_*.sh`).
+**STEP=2** — Click resolve toggle + tree rows helpers; green token.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `144e20b9` | Decision freeze + open |
+| 1 | *(pending hash)* | Red L1 stub + run scripts |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 

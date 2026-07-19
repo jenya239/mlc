@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 22:10 (Driver TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+| started | 2026-07-19 15:35 |
+| elapsed | ~5 min |
+| done    | Red stub `ux_scenarios/tree_row_click_toggles_expand.mlc`; `run_ux_tree_expand_red.sh` + tint script |
+| verify  | `ux_ok tree_expand_red`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TREE_EXPAND_COLLAPSE |
+
 ### Turn 2026-07-19 21:55 (Planner TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=0)
 
 | field   | value |

@@ -1,0 +1,5 @@
+// TRACK_EDITOR_TREE_EXPAND_COLLAPSE STEP=1 — L1: dir click toggles expand (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail tree_row_click_toggles_expand stub")
+  1
+end
