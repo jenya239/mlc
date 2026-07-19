@@ -12,7 +12,7 @@
 | started | 2026-07-19 23:09 |
 | elapsed | ~3 min |
 | done    | No demo wire (draw already tag-driven); glyph + richer L2 + compile gates |
-| verify  | `ux_ok syntax_glyph_color_matches_theme`; `ux_ok syntax_mlc_richer_tags`; `demo_live_fs_compile_ok` |
+| verify  | `ux_ok syntax_glyph_color_matches_theme`; `ux_ok syntax_mlc_richer_tags`; `demo_live_fs_compile_ok`; commit `24cf8f39` |
 | result  | STEP=3 done; numbered STEPs complete → Critic |
 | issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER |
