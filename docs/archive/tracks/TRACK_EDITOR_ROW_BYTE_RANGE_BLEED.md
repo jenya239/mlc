@@ -1,14 +1,29 @@
 # Track: Editor Row Byte-Range Bleed
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 (pulled forward — correctness bug after live-demo audit 2026-07-19).
 **Not** PLAN §33b `EDITOR_LIVE_POLISH` (closed). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L2 + demo. Anti-false-done:
+`cc4cb1e9`…`1cf6471b` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `editor_ux_append_syntax_colored_row` `substring`→`byte_substring`
+(byte offsets from `VisualRow`/`HighlightSpan`); L2 buffer with leading UTF-8.
+**reopen: none**.
+
+Honest residual: `pen_x` still advances by byte-length × `column_width` (wide-char
+display advance is `#28` territory); other `substring` call sites outside this
+draw path not audited this track.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_row_byte_range_matches_line.sh` | `ux_ok row_byte_range_matches_line` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#33c EDITOR_CHROME_THEME_DRIFT`).
 
 ### STEPs done in git
 
@@ -18,6 +33,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 | 1 | `6750c927` | Red L2 stub + run scripts |
 | 2 | `fe9ecfa4` | `byte_substring` in syntax row draw; green L2 |
 | 3 | `1cf6471b` | `demo_live_fs_compile_ok` (no demo re-slice) |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,11 +57,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 | 1 | L2 red harness + `run_ux_row_byte_range_matches_line.sh` | **done** — `ux_ok row_byte_range_red` |
 | 2 | Trace root + fix; green L2 token | **done** — `ux_ok row_byte_range_matches_line` |
 | 3 | `demo_live` wire if needed; `demo_live_fs_compile_ok` | **done** — `demo_live_fs_compile_ok` (no demo change) |
-| 4 | Critic: gates; archive | pending |
-
-<!-- STEP=1: stub scenario that fails on current bleed; run script -->
-<!-- STEP=2: locate byte_start/end bug; green assert -->
-<!-- STEP=3: only if demo path still wrong after helper fix; always compile gate -->
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

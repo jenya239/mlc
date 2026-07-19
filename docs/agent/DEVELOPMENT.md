@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `STEP=critique-audit` `TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b).
-**`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** active — STEP=0–3 done; next Critic.
+**Queue head:** Planner `STEP=plan-refresh` `TRACK_EDITOR_UX_BACKLOG` (open `#33c EDITOR_CHROME_THEME_DRIFT`).
+**`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TAB_STRIP_CLASSIC_LAYOUT` (§46 #31)** closed 2026-07-19; archived.

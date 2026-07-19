@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 25:10 (Critic TRACK_EDITOR_ROW_BYTE_RANGE_BLEED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+| started | 2026-07-19 19:58 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`cc4cb1e9`…`1cf6471b`); L2+demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md`; PLAN/backlog/CONTINUITY/DEVELOPMENT → #33b closed |
+| verify  | `ux_ok row_byte_range_matches_line`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; residual: pen_x byte×width for wide chars |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #33c EDITOR_CHROME_THEME_DRIFT) |
+
 ### Turn 2026-07-19 24:55 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=3)
 
 | field   | value |
