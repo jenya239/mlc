@@ -1,0 +1,5 @@
+// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1 — L1: selection_full_line_uses_display_columns (red until STEP=3).
+fn main() -> i32 = do
+  println("ux_fail selection_full_line_uses_display_columns stub")
+  1
+end

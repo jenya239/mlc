@@ -3,17 +3,18 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 (pulled forward — coordinate-model correctness). Size **L**.
 
-## Status: **active** (2026-07-19) — STEP=0 done; next STEP=1
+## Status: **active** (2026-07-19) — STEP=0–1 done; next STEP=2
 
 ## Next step
 
-**STEP=1** — Red L1/L2 harnesses for both root causes.
+**STEP=2** — Measure `char_width` from font advance; green `selection_highlight_matches_glyph_x`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `7d52550b` | Decision freeze + open |
+| 1 | *(this turn)* | Two red stubs + run scripts + `run_ux_column_pixel_model_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -36,7 +37,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Two red L1/L2 harnesses + `run_ux_*.sh` | pending — `ux_ok …_red` or stub fails named tokens |
+| 1 | Two red L1/L2 harnesses + `run_ux_*.sh` | **done** — `ux_ok column_pixel_model_red` |
 | 2 | Measure `char_width` from font advance; wire load/zoom | pending — `ux_ok selection_highlight_matches_glyph_x` |
 | 3 | Full-line selection `col_end` → display columns (`selection_apply` + `demo_live`) | pending — `ux_ok selection_full_line_uses_display_columns` + demo |
 | 4 | Critic: both tokens + zoom + demo; archive | pending |

@@ -1,0 +1,5 @@
+// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1 — L1/L2: selection_highlight_matches_glyph_x (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail selection_highlight_matches_glyph_x stub")
+  1
+end

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 18:25 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+| started | 2026-07-19 14:07 |
+| elapsed | ~8 min |
+| done    | Red stubs `selection_highlight_matches_glyph_x` / `selection_full_line_uses_display_columns`; three `run_ux_*.sh` incl. `run_ux_column_pixel_model_red.sh` |
+| verify  | `ux_ok column_pixel_model_red`; `demo_live_fs_compile_ok` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+
 ### Turn 2026-07-19 18:15 (Planner TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=0)
 
 | field   | value |
