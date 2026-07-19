@@ -16,7 +16,7 @@ UX. Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `d1e0c679` | Decision freeze + open |
-| 1 | *(this turn)* | Four red L1 stubs + run scripts + `run_ux_l1_backfill_red.sh` |
+| 1 | `d46eae16` | Four red L1 stubs + run scripts + `run_ux_l1_backfill_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
