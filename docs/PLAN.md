@@ -441,7 +441,8 @@ compiler/
 | **43** | Editor folder nav history (back/forward; absorb WIP) | **closed** (2026-07-18) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_NAV](archive/tracks/TRACK_EDITOR_FOLDER_NAV.md) |
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
-| **46** | Editor UX backlog — #1…#32+#31a+#33+#33b done; `#33c EDITOR_CHROME_THEME_DRIFT` active STEP=3 done → Critic; then `#33d`/`#33e`; `#34`–`#35` queued (#22 superseded) | **active** (2026-07-19) Critic `#33c` | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [TRACK_EDITOR_CHROME_THEME_DRIFT](agent/TRACK_EDITOR_CHROME_THEME_DRIFT.md) · [archive/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED](archive/tracks/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md) |
+| **46** | Editor UX backlog — #1…#32+#31a+#33+#33b+#33c done; next `#33d`/`#33e`; `#34`–`#35` queued (#22 superseded) | **active** (2026-07-19) Planner open `#33d` | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/TRACK_EDITOR_CHROME_THEME_DRIFT](archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md) · [archive/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED](archive/tracks/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md) |
+| **47** | MLC concurrency refinement backlog — gap audit vs `CONCURRENCY_V2.md` design (mutable-capture check, general `Send`/`Sync` bound, move-tracking, cancellation-wakes-blocking, rendezvous/unbounded channel, atomics, FFI concurrency metadata, Isolate/Supervisor/TestRuntime MLC surface); no item started | **active** (2026-07-19, user request) queue head #1 `CONCURRENCY_MUTABLE_CAPTURE_CHECK` | [TRACK_MLC_CONCURRENCY_REFINEMENT](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) · [CONCURRENCY_V2.md](CONCURRENCY_V2.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -675,9 +676,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLEAN_ARCHITECTURE (§45, **closed** 2026-07-18: Critic OK; STEP=0+3+4;
       STEP=1/2 reframed → §46 #1; `caf412f4`…`0c03bfe2`;
       → [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md))**
-  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33+#33b closed; `#33c EDITOR_CHROME_THEME_DRIFT` active STEP=3 done → Critic; then `#33d`/`#33e` then #34–#35 (#22 superseded);
+  → **EDITOR_UX_BACKLOG (§46, **active**; #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33+#33b+#33c closed; next `#33d`/`#33e` then #34–#35 (#22 superseded);
       → [agent/TRACK_EDITOR_UX_BACKLOG.md](agent/TRACK_EDITOR_UX_BACKLOG.md) ·
-        [agent/TRACK_EDITOR_CHROME_THEME_DRIFT.md](agent/TRACK_EDITOR_CHROME_THEME_DRIFT.md) ·
+        [archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md](archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md) ·
         [archive/tracks/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md](archive/tracks/TRACK_EDITOR_ROW_BYTE_RANGE_BLEED.md) ·
         [archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md](archive/tracks/TRACK_EDITOR_TREE_EXPAND_COLLAPSE.md) ·
         [archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md](archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md) ·
@@ -715,6 +716,12 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
         [archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md](archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md](archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md](archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md))**
+  → **MLC_CONCURRENCY_REFINEMENT (§47, **active** 2026-07-19: no item started; queue head
+      #1 `CONCURRENCY_MUTABLE_CAPTURE_CHECK`; order: mutable-capture check → general
+      `Send` bound → move-tracking → `Sync` trait → cancellation-wakes-blocking →
+      rendezvous/unbounded channel → atomics → FFI concurrency metadata →
+      Isolate/Supervisor/TestRuntime MLC surface;
+      → [agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md))**
 ```
 
 

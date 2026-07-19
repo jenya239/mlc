@@ -1,13 +1,29 @@
 # Track: Editor Chrome Theme Drift
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 (pulled forward — live-demo audit 2026-07-19). Size **S**.
 
-## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L2 + demo. Anti-false-done:
+`9554b13d`…`64f1f588` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: tab/toolbar/breadcrumb base → `theme.panel_*`; hover via
+`editor_ux_chrome_hover_rgb_from_panel`; L2 `chrome_panel_rgb_matches_theme`.
+**reopen: none**.
+
+Honest residual: dirty-close / context-menu / nav button fills still dark
+(out of scope Decision); default `editor_ux_chrome_hover_rgb` still embeds
+Solarized Light panel constants as fallback when callers omit panel args.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_chrome_panel_rgb_matches_theme.sh` | `ux_ok chrome_panel_rgb_matches_theme` EXIT=0 |
+| `run_ux_chrome_hover_tint_differs.sh` | `ux_ok chrome_hover_tint_differs` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§46 `#33d EDITOR_TREE_PARENT_DOUBLE_CLICK`).
 
 ### STEPs done in git
 
@@ -17,6 +33,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 | 1 | `1c5c94fd` | Red L2 stub + run scripts |
 | 2 | `786470f1` | panel fills + `from_panel` hover; green L2 |
 | 3 | `64f1f588` | `demo_live_fs_compile_ok` |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -41,7 +58,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33c**
 | 1 | L2 red harness + run scripts | **done** — `ux_ok chrome_theme_drift_red` |
 | 2 | Wire panel RGB + Light hover; green token | **done** — `ux_ok chrome_panel_rgb_matches_theme` |
 | 3 | `demo_live_fs_compile_ok` | **done** |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 <!-- STEP=1: stub fail token; red script -->
 <!-- STEP=2: demo_live three rects + chrome_hover from panel; green L2 -->
