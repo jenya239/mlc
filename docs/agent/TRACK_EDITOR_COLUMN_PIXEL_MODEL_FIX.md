@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 (pulled forward — coordinate-model correctness). Size **L**.
 
-## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
 
 ## Next step
 
-**STEP=3** — Full-line selection `col_end` → display columns; green `selection_full_line_uses_display_columns`.
+**STEP=4** — Critic: both tokens + zoom + demo; archive; backlog #31a done.
 
 ### STEPs done in git
 
@@ -16,6 +16,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 | 0 | `7d52550b` | Decision freeze + open |
 | 1 | `3b211fe8` | Two red stubs + run scripts + `run_ux_column_pixel_model_red.sh` |
 | 2 | `4c75c268` | `editor_measure_mono_char_width` + metrics from advance; green glyph-x |
+| 3 | *(this turn)* | selection/demo `col_end` display columns; green display-columns L1 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -40,7 +41,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#31a**
 | 0 | Decision freeze + open | **done** |
 | 1 | Two red L1/L2 harnesses + `run_ux_*.sh` | **done** — `ux_ok column_pixel_model_red` |
 | 2 | Measure `char_width` from font advance; wire load/zoom | **done** — `ux_ok selection_highlight_matches_glyph_x` |
-| 3 | Full-line selection `col_end` → display columns (`selection_apply` + `demo_live`) | pending — `ux_ok selection_full_line_uses_display_columns` + demo |
+| 3 | Full-line selection `col_end` → display columns (`selection_apply` + `demo_live`) | **done** — `ux_ok selection_full_line_uses_display_columns` |
 | 4 | Critic: both tokens + zoom + demo; archive | pending |
 
 <!-- STEP=1 sub-steps: 1) `ux_scenarios/selection_highlight_matches_glyph_x.mlc` stub + script; 2) `ux_scenarios/selection_full_line_uses_display_columns.mlc` stub + script; 3) fail tokens until STEP=2/3 -->

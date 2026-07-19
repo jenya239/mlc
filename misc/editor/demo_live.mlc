@@ -504,6 +504,25 @@ fn line_text_at(
   full_text.byte_substring(start, length)
 end
 
+fn line_display_column_end_at(
+  full_text: string,
+  line_index: LineIndex,
+  line: i32
+) -> i32 = do
+  const start = line_index_line_start(line_index, line)
+  let mut end_exclusive = line_index.text_length
+  if line + 1 < line_index_line_count(line_index) then
+    end_exclusive = line_index_line_start(line_index, line + 1)
+  end
+  if end_exclusive > start && full_text.byte_at(end_exclusive - 1) == "\n" then
+    end_exclusive = end_exclusive - 1
+  end
+  if end_exclusive < start then
+    return 0
+  end
+  line_index_offset_to_position(line_index, full_text, end_exclusive).column
+end
+
 fn apply_edit(tabs: TabSet, next_document: TextDocument) -> TabSet = do
   const active = tab_set_active(tabs)
   const buffer = open_buffer_set_document(active.buffer, next_document)
@@ -1718,7 +1737,7 @@ fn main() -> i32 = do
         if highlight_line >= visible.first_line && highlight_line <= visible.last_line then
           const row = highlight_line - visible.first_line
           let mut col_start = 0
-          let mut col_end = line_text_at(draw_text, line_index, highlight_line).byte_size()
+          let mut col_end = line_display_column_end_at(draw_text, line_index, highlight_line)
           if highlight_line == start_position.line then
             col_start = start_position.column
           end

@@ -1,5 +1,112 @@
-// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=1 — L1: selection_full_line_uses_display_columns (red until STEP=3).
+// TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=3 — L1: full-line selection
+// highlight width uses display columns, not byte_size, on a non-ASCII middle line.
+import { rect_new } from '../../gui/layout'
+import { ux_focus_editor } from '../../gui/ux/snapshot'
+import {
+  TextEquals,
+  ux_check_expect
+} from '../../gui/ux/expect'
+import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_ux_state_new,
+  editor_ux_snapshot,
+  EditorUxState
+} from '../ux/probe'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { editor_font_metrics_from_size } from '../ux/font_zoom'
+import {
+  editor_ux_click_text,
+  editor_ux_drag_text,
+  editor_ux_selection_draw_report
+} from '../ux/selection_apply'
+import { utf8_count_display_columns } from '../document/line_index'
+
 fn main() -> i32 = do
-  println("ux_fail selection_full_line_uses_display_columns stub")
-  1
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "")
+
+  let mut state = editor_ux_state_new(
+    800,
+    600,
+    panels,
+    tabs,
+    selection_collapsed(0)
+  )
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: ux_focus_editor(),
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: state.selection,
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+
+  // Middle line "中文": 6 bytes, 4 display columns (wcwidth-lite).
+  const source = "aaa\n中文\nccc"
+  const middle = "中文"
+  const display_columns = utf8_count_display_columns(middle, 0, middle.byte_size())
+  if display_columns != 4 then
+    println("ux_fail selection_full_line_uses_display_columns setup cols")
+    return 1
+  end
+  if middle.byte_size() == display_columns then
+    println("ux_fail selection_full_line_uses_display_columns setup bytes")
+    return 2
+  end
+
+  const metrics = editor_font_metrics_from_size(11)
+  state = editor_ux_insert_text(state, source)
+
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  const text_x = editor_rect.x
+  const text_y = editor_rect.y + state.tab_strip_height
+
+  // Select all three lines (click start → drag past end).
+  state = editor_ux_click_text(state, metrics, text_x, text_y)
+  state = editor_ux_drag_text(
+    state,
+    metrics,
+    text_x + 8 * metrics.char_width,
+    text_y + 2 * metrics.line_height
+  )
+
+  const snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, TextEquals(source)).ok == 0 then
+    println("ux_fail selection_full_line_uses_display_columns text")
+    return 3
+  end
+
+  const report = editor_ux_selection_draw_report(state, metrics)
+  if report.line_span != 3 || report.highlights.length() != 3 then
+    println("ux_fail selection_full_line_uses_display_columns span")
+    return 4
+  end
+
+  const middle_highlight = report.highlights[1]
+  const expected_width = display_columns * metrics.char_width
+  const byte_wrong_width = middle.byte_size() * metrics.char_width
+  if middle_highlight.width != expected_width then
+    println("ux_fail selection_full_line_uses_display_columns width")
+    return 5
+  end
+  if middle_highlight.width == byte_wrong_width then
+    println("ux_fail selection_full_line_uses_display_columns still bytes")
+    return 6
+  end
+
+  println("ux_ok selection_full_line_uses_display_columns")
+  0
 end

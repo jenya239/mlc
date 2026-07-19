@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=3` `TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a) — selection col_end display columns.
-**`TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a)** active — STEP=2 char_width from advance green.
+**Queue head:** Critic `TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a); then Planner `#31 EDITOR_TAB_STRIP_CLASSIC_LAYOUT`.
+**`TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX` (§46 #31a)** active — STEP=0–3 done; both L1 green.
 **`TRACK_EDITOR_UX_L1_BACKFILL` (§46 #30)** closed 2026-07-19; archived.
 **`TRACK_LANG_RECORD_UPDATE` (§46 #29)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_WIDE_CHAR_COLUMNS` (§46 #28)** closed 2026-07-19; archived.

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 18:55 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+| started | 2026-07-19 14:22 |
+| elapsed | ~12 min |
+| done    | `selection_apply` + `demo_live` full-line `col_end` → display columns; green `selection_full_line_uses_display_columns` |
+| verify  | `ux_ok selection_full_line_uses_display_columns`; `ux_ok selection_highlight_matches_glyph_x`; `ux_ok ctrl_wheel_font_zoom`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX |
+
 ### Turn 2026-07-19 18:40 (Driver TRACK_EDITOR_COLUMN_PIXEL_MODEL_FIX STEP=2)
 
 | field   | value |
