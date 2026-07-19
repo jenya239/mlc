@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 12:05 (Planner TRACK_EDITOR_INDENT_MODEL STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_EDITOR_INDENT_MODEL |
+| started | 2026-07-19 11:01 |
+| elapsed | ~10 min |
+| done    | Opened `TRACK_EDITOR_INDENT_MODEL.md`; Decision: `EditorIndentConfig` spaces/tabs + width 1…8; Tab/Shift+Tab indent/outdent; Ctrl+Tab unchanged; L0 `indent_width_config` + L1 `tab_shift_tab_indents`; STEPs 1–3+Critic; PLAN/UX_BACKLOG #26 → active |
+| verify  | track file + PLAN §46 + backlog #26 active; no code |
+| result  | STEP=0 done; Decision frozen |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_INDENT_MODEL |
+
 ### Turn 2026-07-19 11:55 (Critic TRACK_EDITOR_CONTEXT_MENU critique-audit)
 
 | field   | value |
