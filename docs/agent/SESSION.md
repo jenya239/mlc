@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 17:55 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_UX_L1_BACKFILL |
+| started | 2026-07-19 13:47 |
+| elapsed | ~12 min |
+| done    | Green `utf8_caret_display_column` (display col round-trip + up/down preferred col); green `caret_after_word_wrap` (visual row + wrap hit) |
+| verify  | `ux_ok utf8_caret_display_column`; `ux_ok caret_after_word_wrap`; `ux_ok folder_breadcrumb_navigates`; `ux_ok folder_nav_back_forward`; `line_index_unit ok`; `word_wrap_unit ok`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` + `CLAUDE.md` + `README.md` + reddit drafts left alone; pre-existing dirty `#31a`–`#35` backlog rows included in PLAN/backlog sync |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_UX_L1_BACKFILL |
+
 ### Turn 2026-07-19 17:25 (Driver TRACK_EDITOR_UX_L1_BACKFILL STEP=2)
 
 | field   | value |

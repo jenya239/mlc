@@ -1,5 +1,71 @@
-// TRACK_EDITOR_UX_L1_BACKFILL STEP=1 — L1: utf8_caret_display_column (red until STEP=3).
+// TRACK_EDITOR_UX_L1_BACKFILL STEP=3 — L1: utf8_caret_display_column.
+import {
+  line_index_from_string,
+  line_index_offset_to_position,
+  line_index_position_to_offset,
+  TextPosition
+} from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_caret
+} from '../document/selection'
+import {
+  Collapse,
+  nav_move_down,
+  nav_move_up
+} from '../document/navigation'
+
 fn main() -> i32 = do
-  println("ux_fail utf8_caret_display_column stub")
-  1
+  // "a" = 1 col; "中" = 2 display cols; "b" = 1 → total 4 display columns.
+  const text = "a中b\nx\n"
+  const index = line_index_from_string(text)
+
+  // Byte after "a" (1) → display column 1.
+  const after_ascii = line_index_offset_to_position(index, text, 1)
+  if after_ascii.line != 0 || after_ascii.column != 1 then
+    println("ux_fail utf8_caret_display_column after_ascii")
+    return 1
+  end
+
+  // Byte after "中" (UTF-8 3 bytes → offset 4) → display column 3.
+  const after_cjk = line_index_offset_to_position(index, text, 4)
+  if after_cjk.line != 0 || after_cjk.column != 3 then
+    println("ux_fail utf8_caret_display_column after_cjk")
+    return 2
+  end
+
+  // Round-trip: display column 3 → byte offset after "中".
+  const back = line_index_position_to_offset(
+    index,
+    text,
+    TextPosition { line: 0, column: 3 }
+  )
+  if back != 4 then
+    println("ux_fail utf8_caret_display_column roundtrip")
+    return 3
+  end
+
+  // Up/down keep preferred display column across equal-width lines.
+  const twin = "a中b\na中b\n"
+  const twin_index = line_index_from_string(twin)
+  let mut selection = selection_collapsed(4)
+  selection = nav_move_down(twin_index, selection, Collapse)
+  const down_pos = line_index_offset_to_position(
+    twin_index, twin, selection_caret(selection)
+  )
+  if down_pos.line != 1 || down_pos.column != 3 then
+    println("ux_fail utf8_caret_display_column down_column")
+    return 4
+  end
+  selection = nav_move_up(twin_index, selection, Collapse)
+  const up_pos = line_index_offset_to_position(
+    twin_index, twin, selection_caret(selection)
+  )
+  if up_pos.line != 0 || up_pos.column != 3 then
+    println("ux_fail utf8_caret_display_column up_column")
+    return 5
+  end
+
+  println("ux_ok utf8_caret_display_column")
+  0
 end

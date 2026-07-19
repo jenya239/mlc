@@ -1,5 +1,62 @@
-// TRACK_EDITOR_UX_L1_BACKFILL STEP=1 — L1: caret_after_word_wrap (red until STEP=3).
+// TRACK_EDITOR_UX_L1_BACKFILL STEP=3 — L1: caret_after_word_wrap.
+import { line_index_from_string } from '../document/line_index'
+import {
+  visual_rows_for_line,
+  visual_row_index_for_caret,
+  wrap_offset_at_point
+} from '../layout/word_wrap'
+
 fn main() -> i32 = do
-  println("ux_fail caret_after_word_wrap stub")
-  1
+  const text = "abcdefgh\n"
+  const index = line_index_from_string(text)
+  const max_columns = 4
+  const rows = visual_rows_for_line(text, index, 0, max_columns)
+  if rows.length() != 2 then
+    println("ux_fail caret_after_word_wrap row_count")
+    return 1
+  end
+  if rows[1].is_wrap_continue != 1 then
+    println("ux_fail caret_after_word_wrap continue")
+    return 2
+  end
+
+  // Caret inside second visual row (not on shared boundary with first).
+  const wrap_column = rows[1].column_start + 1
+  const visual = visual_row_index_for_caret(text, index, max_columns, 0, wrap_column)
+  if visual != 1 then
+    println("ux_fail caret_after_word_wrap visual_index")
+    return 3
+  end
+
+  // Hit-test first pixel of second visual row → byte at wrap boundary.
+  const line_height = 20
+  const char_width = 10
+  const hit = wrap_offset_at_point(
+    text,
+    index,
+    max_columns,
+    0,
+    0,
+    0,
+    line_height,
+    char_width,
+    0,
+    line_height
+  )
+  if hit != rows[1].byte_start then
+    println("ux_fail caret_after_word_wrap hit")
+    return 4
+  end
+
+  // Caret still on first visual row when column is before wrap.
+  const visual_first = visual_row_index_for_caret(
+    text, index, max_columns, 0, rows[0].column_start
+  )
+  if visual_first != 0 then
+    println("ux_fail caret_after_word_wrap first_row")
+    return 5
+  end
+
+  println("ux_ok caret_after_word_wrap")
+  0
 end
