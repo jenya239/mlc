@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24 done; `#25` STEP=3 done → Critic (#22 superseded)
+## Status: **active** (2026-07-19) — #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25 done; next `#26` (#22 superseded)
 
 ## How to use this backlog
 
@@ -60,7 +60,7 @@ restringify is a direct speed regression, not a nice-to-have).
 | 22 | `EDITOR_LARGE_FILE_NO_FULL_STRINGIFY` | **superseded by `#1d` above (2026-07-17 pull-forward)** — do not do twice | — | — | superseded |
 | 23 | `EDITOR_MULTI_CURSOR` | `[EditorSelection]` model, Ctrl+click adds cursor, synchronized edit | `multi_cursor_model` + L1 | L | **done** (2026-07-19) Critic OK — [archive/tracks/TRACK_EDITOR_MULTI_CURSOR](../archive/tracks/TRACK_EDITOR_MULTI_CURSOR.md) |
 | 24 | `EDITOR_TRAILING_WS_VIZ` | Visualize trailing whitespace | `trailing_ws_visualized` (L2) | S | **done** (2026-07-19) Critic OK — [archive/tracks/TRACK_EDITOR_TRAILING_WS_VIZ](../archive/tracks/TRACK_EDITOR_TRAILING_WS_VIZ.md) |
-| 25 | `EDITOR_CONTEXT_MENU` | Right-click → cut/copy/paste menu | `context_menu_opens` | M | **active** STEP=3 done → Critic — [TRACK_EDITOR_CONTEXT_MENU](TRACK_EDITOR_CONTEXT_MENU.md) |
+| 25 | `EDITOR_CONTEXT_MENU` | Right-click → cut/copy/paste menu | `context_menu_opens` | M | **done** — [archive/tracks/TRACK_EDITOR_CONTEXT_MENU](../archive/tracks/TRACK_EDITOR_CONTEXT_MENU.md) |
 | 26 | `EDITOR_INDENT_MODEL` | Tabs-vs-spaces, indent width, Tab/Shift-Tab | `indent_width_config` (L0) + L1 | M | pending |
 | 27 | `EDITOR_DROP_FILE` | Runtime GLFW drop-callback → open file (needs ABI) | `drop_file_opens_tab` | M | pending |
 | 28 | `EDITOR_WIDE_CHAR_COLUMNS` | wcwidth-style column width for emoji/CJK (only if taken on) | `wide_char_column_width` (L0) | M | pending |

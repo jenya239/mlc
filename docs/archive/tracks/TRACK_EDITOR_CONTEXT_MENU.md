@@ -1,14 +1,43 @@
 # Track: Editor Context Menu
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#25**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#25**.
 No right-click menu; Cut/Copy/Paste only via shortcuts/toolbar. Review
 gate: `context_menu_opens` (L1). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=3 done; next Critic
+## Status: **closed** (2026-07-19) — Critic OK
+
+**Critic 2026-07-19 (STEP=4):** Re-ran L1 + trailing_ws regression + demo compile.
+Anti-false-done: `3ea4009b`…`0b7de9e4` (STEP=0–3). Wire present:
+`glfw_gl_mouse_right_down` + `GuiInput.mouse_right_down`;
+`editor_ux_context_menu_*` open/click/dismiss; demo_live right-open /
+draw panel+labels / Cut·Copy·Paste / Esc dismiss.
+REG cited from STEP=3 (`0b7de9e4`): 20/20 + examples ok=146 fail=0.
+**reopen: none**.
+
+Honest residual: GLFW input test override has no right button (returns 0);
+L1 covers open+Copy only (not live Cut/Paste); menu labels hardcoded in
+demo_live; no keyboard nav / native OS menu / tree-tab contexts (OOS).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_context_menu_opens.sh` | `ux_ok context_menu_opens` EXIT=0 |
+| `run_ux_trailing_ws_visualized.sh` | `ux_ok trailing_ws_visualized` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| `scripts/regression_gate.sh` (STEP=3) | 20 passed, 0 failed; examples ok=146 fail=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive
+**closed** — Critic OK. Queue → Planner (§46 `#26 EDITOR_INDENT_MODEL`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `3ea4009b` | Decision freeze + open |
+| 1 | `891e555d` | L1 red harness + stub |
+| 2 | `d78cc6fd` | open/click/dismiss model |
+| 3 | `0b7de9e4` | right-button ABI + demo_live + REG |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -50,7 +79,7 @@ gate: `context_menu_opens` (L1). Size **M**.
 | <!-- sub-steps: 1) EditorContextMenu + click helper; 2) L1 green for open+Copy; 3) trailing_ws regression --> |
 | 3 | right-button ABI + GuiInput + demo_live wire | **done** (2026-07-19) — `glfw_gl_mouse_right_down` + `GuiInput.mouse_right_down`; demo_live open/draw/Cut-Copy-Paste; REG green |
 | <!-- sub-steps: 1) glfw_gl_mouse_right_down; 2) demo_live open/draw/dispatch; 3) gates + REG if lib/mlc --> |
-| 4 | Critic: gates; archive | pending |
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 
