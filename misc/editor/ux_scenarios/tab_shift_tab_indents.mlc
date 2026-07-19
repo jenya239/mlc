@@ -1,0 +1,62 @@
+// TRACK_EDITOR_INDENT_MODEL STEP=2 — L1: tab_shift_tab_indents.
+import {
+  document_from_string,
+  document_to_string,
+  document_byte_length
+} from '../document/piece_table'
+import {
+  selection_collapsed,
+  selection_new,
+  selection_start
+} from '../document/selection'
+import {
+  editor_indent_config_default,
+  edit_indent_tab,
+  edit_outdent_lines
+} from '../document/indent'
+
+fn main() -> i32 = do
+  const config = editor_indent_config_default()
+  let mut document = document_from_string("foo")
+  let mut selection = selection_collapsed(0)
+
+  let mut edited = edit_indent_tab(document, selection, config)
+  document = edited.document
+  selection = edited.selection
+  if document_to_string(document) != "  foo" then
+    println("ux_fail tab_shift_tab_indents insert")
+    return 1
+  end
+  if selection_start(selection) != 2 then
+    println("ux_fail tab_shift_tab_indents caret_after_insert")
+    return 2
+  end
+
+  edited = edit_outdent_lines(document, selection, config)
+  document = edited.document
+  selection = edited.selection
+  if document_to_string(document) != "foo" then
+    println("ux_fail tab_shift_tab_indents outdent")
+    return 3
+  end
+
+  document = document_from_string("a\nb")
+  selection = selection_new(0, document_byte_length(document))
+  edited = edit_indent_tab(document, selection, config)
+  document = edited.document
+  if document_to_string(document) != "  a\n  b" then
+    println("ux_fail tab_shift_tab_indents multiline_indent")
+    return 4
+  end
+
+  selection = selection_new(0, document_byte_length(document))
+  edited = edit_outdent_lines(document, selection, config)
+  document = edited.document
+  if document_to_string(document) != "a\nb" then
+    println("ux_fail tab_shift_tab_indents multiline_outdent")
+    return 5
+  end
+
+  println("ux_ok tab_shift_tab_indents")
+  0
+end

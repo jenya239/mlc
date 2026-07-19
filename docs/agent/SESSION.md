@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 12:25 (Driver TRACK_EDITOR_INDENT_MODEL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_INDENT_MODEL |
+| started | 2026-07-19 11:08 |
+| elapsed | ~15 min |
+| done    | Real `EditorIndentConfig` + unit/clamp; `edit_indent_tab` / `edit_outdent_lines`; L1 `tab_shift_tab_indents` + run script |
+| verify  | `ux_ok indent_width_config`; `ux_ok tab_shift_tab_indents`; `ux_ok enter_keeps_indent`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_INDENT_MODEL |
+
 ### Turn 2026-07-19 12:15 (Driver TRACK_EDITOR_INDENT_MODEL STEP=1)
 
 | field   | value |

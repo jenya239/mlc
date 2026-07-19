@@ -1,32 +1,253 @@
-// TRACK_EDITOR_INDENT_MODEL STEP=1 — stub (red until STEP=2).
+// TRACK_EDITOR_INDENT_MODEL STEP=2 — config + indent/outdent edits.
+import {
+  TextDocument,
+  document_byte_length,
+  document_to_string,
+  document_from_string
+} from './piece_table'
+import {
+  EditorSelection,
+  selection_collapsed,
+  selection_is_empty,
+  selection_start,
+  selection_end,
+  selection_clamp
+} from './selection'
+import {
+  LineIndex,
+  line_index_from_string,
+  line_index_line_start,
+  line_index_line_count,
+  line_index_offset_to_position
+} from './line_index'
+import { EditResult, edit_insert_text } from './edit'
+
 export type EditorIndentConfig = {
   use_tabs: i32,
   indent_width: i32
 }
 
+type IndentLineRange = {
+  first_line: i32,
+  last_line: i32,
+  line_count: i32
+}
+
 export fn editor_indent_config_default() -> EditorIndentConfig =
   EditorIndentConfig {
     use_tabs: 0,
-    indent_width: 0
+    indent_width: 2
   }
 
 export fn editor_indent_config_set_width(
   config: EditorIndentConfig,
   width: i32
 ) -> EditorIndentConfig = do
-  let _unused_width = width
-  config
+  let mut clamped = width
+  if clamped < 1 then
+    clamped = 1
+  end
+  if clamped > 8 then
+    clamped = 8
+  end
+  EditorIndentConfig {
+    use_tabs: config.use_tabs,
+    indent_width: clamped
+  }
 end
 
 export fn editor_indent_config_set_use_tabs(
   config: EditorIndentConfig,
   use_tabs: i32
-) -> EditorIndentConfig = do
-  let _unused_use_tabs = use_tabs
-  config
-end
+) -> EditorIndentConfig =
+  EditorIndentConfig {
+    use_tabs: use_tabs,
+    indent_width: config.indent_width
+  }
 
 export fn editor_indent_unit(config: EditorIndentConfig) -> string = do
-  let _unused_config = config
-  ""
+  if config.use_tabs != 0 then
+    return "\t"
+  end
+  let mut unit = ""
+  let mut index = 0
+  while index < config.indent_width do
+    unit = unit + " "
+    index = index + 1
+  end
+  unit
+end
+
+fn line_content_exclusive_end(line_index: LineIndex, line: i32) -> i32 = do
+  const count = line_index_line_count(line_index)
+  if line + 1 < count then
+    return line_index_line_start(line_index, line + 1) - 1
+  end
+  line_index.text_length
+end
+
+fn selection_line_range(
+  text: string,
+  selection: EditorSelection
+) -> IndentLineRange = do
+  const line_index = line_index_from_string(text)
+  const line_count = line_index_line_count(line_index)
+  if line_count <= 0 then
+    return IndentLineRange {
+      first_line: 0,
+      last_line: 0,
+      line_count: 0
+    }
+  end
+  const range_start = selection_start(selection)
+  const range_end = selection_end(selection)
+  const start_position = line_index_offset_to_position(line_index, text, range_start)
+  let mut end_position = line_index_offset_to_position(line_index, text, range_end)
+  let mut first_line = start_position.line
+  let mut last_line = end_position.line
+  if !selection_is_empty(selection) &&
+     end_position.column == 0 &&
+     last_line > first_line then
+    last_line = last_line - 1
+  end
+  if first_line < 0 then
+    first_line = 0
+  end
+  if last_line >= line_count then
+    last_line = line_count - 1
+  end
+  if last_line < first_line then
+    last_line = first_line
+  end
+  IndentLineRange {
+    first_line: first_line,
+    last_line: last_line,
+    line_count: line_count
+  }
+end
+
+fn outdent_line_body(body: string, indent_width: i32) -> string = do
+  if body.byte_size() == 0 then
+    return body
+  end
+  if body.byte_at(0) == "\t" then
+    return body.byte_substring(1, body.byte_size() - 1)
+  end
+  let mut remove_count = 0
+  let mut scanning = 1
+  while scanning != 0 &&
+      remove_count < indent_width &&
+      remove_count < body.byte_size() do
+    if body.byte_at(remove_count) == " " then
+      remove_count = remove_count + 1
+    else
+      scanning = 0
+    end
+  end
+  if remove_count == 0 then
+    return body
+  end
+  body.byte_substring(remove_count, body.byte_size() - remove_count)
+end
+
+fn rebuild_lines_with_transform(
+  text: string,
+  first_line: i32,
+  last_line: i32,
+  line_count: i32,
+  indent_width: i32,
+  unit: string,
+  mode_indent: i32
+) -> string = do
+  const line_index = line_index_from_string(text)
+  let mut result = ""
+  let mut line = 0
+  while line < line_count do
+    const line_start = line_index_line_start(line_index, line)
+    const content_end = line_content_exclusive_end(line_index, line)
+    let mut length = content_end - line_start
+    if length < 0 then
+      length = 0
+    end
+    let mut body = text.byte_substring(line_start, length)
+    if line >= first_line && line <= last_line then
+      if mode_indent != 0 then
+        body = unit + body
+      else
+        body = outdent_line_body(body, indent_width)
+      end
+    end
+    result = result + body
+    if line + 1 < line_count then
+      result = result + "\n"
+    end
+    line = line + 1
+  end
+  result
+end
+
+// Tab: collapsed → insert unit at caret; range → prepend unit on intersecting lines.
+export fn edit_indent_tab(
+  document: TextDocument,
+  selection: EditorSelection,
+  config: EditorIndentConfig
+) -> EditResult = do
+  const unit = editor_indent_unit(config)
+  if selection_is_empty(selection) then
+    return edit_insert_text(document, selection, unit)
+  end
+  const text = document_to_string(document)
+  const range = selection_line_range(text, selection)
+  if range.line_count <= 0 then
+    return EditResult { document: document, selection: selection }
+  end
+  const next_text = rebuild_lines_with_transform(
+    text,
+    range.first_line,
+    range.last_line,
+    range.line_count,
+    config.indent_width,
+    unit,
+    1
+  )
+  const next_document = document_from_string(next_text)
+  const range_start = selection_start(selection)
+  EditResult {
+    document: next_document,
+    selection: selection_clamp(
+      selection_collapsed(range_start),
+      document_byte_length(next_document)
+    )
+  }
+end
+
+// Shift+Tab: outdent intersecting lines (collapsed → caret line).
+export fn edit_outdent_lines(
+  document: TextDocument,
+  selection: EditorSelection,
+  config: EditorIndentConfig
+) -> EditResult = do
+  const text = document_to_string(document)
+  const range = selection_line_range(text, selection)
+  if range.line_count <= 0 then
+    return EditResult { document: document, selection: selection }
+  end
+  const next_text = rebuild_lines_with_transform(
+    text,
+    range.first_line,
+    range.last_line,
+    range.line_count,
+    config.indent_width,
+    "",
+    0
+  )
+  const next_document = document_from_string(next_text)
+  const range_start = selection_start(selection)
+  EditResult {
+    document: next_document,
+    selection: selection_clamp(
+      selection_collapsed(range_start),
+      document_byte_length(next_document)
+    )
+  }
 end

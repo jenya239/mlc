@@ -5,11 +5,11 @@ No indent policy: Tab/Shift-Tab do not indent/outdent; no tabs-vs-spaces or
 width config. Auto-indent (#10) only copies leading bytes on Enter. Review
 gates: `indent_width_config` (L0) + L1 Tab/Shift-Tab. Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=1 done; next STEP=2
+## Status: **active** (2026-07-19) — STEP=2 done; next STEP=3
 
 ## Next step
 
-**STEP=2** — indent config + indent/outdent edit API
+**STEP=3** — demo_live Tab/Shift+Tab wire (ctrl up)
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 

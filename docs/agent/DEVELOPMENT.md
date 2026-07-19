@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=2` `TRACK_EDITOR_INDENT_MODEL` (§46 `#26`).
-**`TRACK_EDITOR_INDENT_MODEL` (§46 #26)** active; STEP=1 done (L0 red); Decision frozen.
+**Queue head:** Driver `STEP=3` `TRACK_EDITOR_INDENT_MODEL` (§46 `#26`).
+**`TRACK_EDITOR_INDENT_MODEL` (§46 #26)** active; STEP=2 done (L0+L1 green); Decision frozen.
 **`TRACK_EDITOR_CONTEXT_MENU` (§46 #25)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TRAILING_WS_VIZ` (§46 #24)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_MULTI_CURSOR` (§46 #23)** closed 2026-07-19; archived.
