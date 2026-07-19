@@ -15,7 +15,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 |------|-----------------|-------|
 | 0 | `a040b223` | Decision freeze + open |
 | 1 | `f6234070` | Red L2 stub + run scripts |
-| 2 | *(pending hash)* | hover draw + delete dead hover; green L2 |
+| 2 | `8a6399d0` | hover draw + delete dead hover; green L2 |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
