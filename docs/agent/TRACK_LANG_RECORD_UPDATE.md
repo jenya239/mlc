@@ -14,7 +14,7 @@ Compiler track (not editor-only). Size **M**.
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `10f7fb89` | Decision freeze + open |
-| 1 | `f1759e25` | Red e2e + `run_record_update_anonymous_red.sh` |
+| 1 | `e3e6c72c` | Red e2e + `run_record_update_anonymous_red.sh` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
