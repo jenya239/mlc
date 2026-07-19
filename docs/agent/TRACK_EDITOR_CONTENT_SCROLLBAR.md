@@ -13,7 +13,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33e**
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | *(pending hash)* | Decision freeze + open |
+| 0 | `a040b223` | Decision freeze + open |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
