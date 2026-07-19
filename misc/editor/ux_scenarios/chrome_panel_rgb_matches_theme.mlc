@@ -1,0 +1,5 @@
+// TRACK_EDITOR_CHROME_THEME_DRIFT STEP=1 — L2: chrome panel RGB matches theme (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail chrome_panel_rgb_matches_theme stub")
+  1
+end

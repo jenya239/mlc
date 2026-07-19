@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `STEP=1` `TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c) — red L2 chrome panel RGB harness.
-**`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** active — STEP=0 Decision frozen.
+**Queue head:** Driver `STEP=2` `TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c) — wire panel RGB + green L2.
+**`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** active — STEP=1 red harness green.
 **`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** closed 2026-07-19; archived.

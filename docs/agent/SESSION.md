@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 25:40 (Driver TRACK_EDITOR_CHROME_THEME_DRIFT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CHROME_THEME_DRIFT |
+| started | 2026-07-19 20:02 |
+| elapsed | ~5 min |
+| done    | Red stub `ux_scenarios/chrome_panel_rgb_matches_theme.mlc`; `run_ux_chrome_theme_drift_red.sh` + green-path script |
+| verify  | `ux_ok chrome_theme_drift_red` |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CHROME_THEME_DRIFT |
+
 ### Turn 2026-07-19 25:25 (Planner TRACK_EDITOR_CHROME_THEME_DRIFT STEP=0)
 
 | field   | value |
