@@ -4,11 +4,11 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 (pulled forward — correctness bug after live-demo audit 2026-07-19).
 **Not** PLAN §33b `EDITOR_LIVE_POLISH` (closed). Size **M**.
 
-## Status: **active** (2026-07-19) — STEP=0–2 done; next STEP=3
+## Status: **active** (2026-07-19) — STEP=0–3 done; next Critic
 
 ## Next step
 
-**STEP=3** — `demo_live` compile gate (`demo_live_fs_compile_ok`); no demo re-slice needed.
+**STEP=4** — Critic: gates; archive.
 
 ### STEPs done in git
 
@@ -17,6 +17,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 | 0 | `cc4cb1e9` | Decision freeze + open |
 | 1 | `6750c927` | Red L2 stub + run scripts |
 | 2 | `fe9ecfa4` | `byte_substring` in syntax row draw; green L2 |
+| 3 | *(pending hash)* | `demo_live_fs_compile_ok` (no demo re-slice) |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -39,7 +40,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#33b**
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + `run_ux_row_byte_range_matches_line.sh` | **done** — `ux_ok row_byte_range_red` |
 | 2 | Trace root + fix; green L2 token | **done** — `ux_ok row_byte_range_matches_line` |
-| 3 | `demo_live` wire if needed; `demo_live_fs_compile_ok` | pending |
+| 3 | `demo_live` wire if needed; `demo_live_fs_compile_ok` | **done** — `demo_live_fs_compile_ok` (no demo change) |
 | 4 | Critic: gates; archive | pending |
 
 <!-- STEP=1: stub scenario that fails on current bleed; run script -->

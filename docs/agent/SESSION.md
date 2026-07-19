@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 24:55 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+| started | 2026-07-19 19:56 |
+| elapsed | ~5 min |
+| done    | No `demo_live` re-slice (fix in `syntax_glyph_color`); compile gate only |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok row_byte_range_matches_line` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic` |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_ROW_BYTE_RANGE_BLEED |
+
 ### Turn 2026-07-19 24:40 (Driver TRACK_EDITOR_ROW_BYTE_RANGE_BLEED STEP=2)
 
 | field   | value |
