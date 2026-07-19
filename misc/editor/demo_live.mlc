@@ -20,6 +20,7 @@ import {
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { gui_input_poll } from '../gui/input'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
+import { editor_ux_chrome_hover_draw_entry } from './ux/chrome_hover'
 import {
   solid_renderer_create,
   solid_renderer_begin,
@@ -74,6 +75,7 @@ import {
   folder_listing_rows,
   folder_breadcrumb_segments,
   folder_list_rect,
+  folder_row_rect,
   folder_clamp_scroll,
   folder_scrollbar_thumb,
   folder_breadcrumb_height,
@@ -1569,6 +1571,25 @@ fn main() -> i32 = do
       scroll_offset_y / metrics.line_height, visible_row_budget
     )
 
+    // Refresh classic tab layout after input may have changed tabs.
+    tab_display_titles = []
+    tab_title_index = 0
+    while tab_title_index < tab_set_count(tabs) do
+      const hover_layout_tab = tabs.tabs[tab_title_index]
+      let mut hover_layout_title = hover_layout_tab.name
+      if tab_is_dirty(hover_layout_tab) then
+        hover_layout_title = hover_layout_title + "*"
+      end
+      if tab_title_index == tabs.active_index then
+        hover_layout_title = "[" + hover_layout_title + "]"
+      end
+      tab_display_titles.push(hover_layout_title)
+      tab_title_index = tab_title_index + 1
+    end
+    tab_widths = tab_strip_layout_from_titles(
+      tab_strip.width, tab_display_titles, metrics.char_width
+    )
+
     solid = solid_renderer_begin(solid)
     solid = solid_renderer_rect(
       solid, width, height, 0, 0, width, height,
@@ -1582,10 +1603,35 @@ fn main() -> i32 = do
       solid, width, height, 0, tab_bar_y, width, tab_bar_height(),
       0.12, 0.14, 0.18, 1.0
     )
+    let mut hover_tab_index = 0
+    while hover_tab_index < tab_widths.length() do
+      const tab_ux = tab_strip_title_rect_from_widths(
+        tab_strip, tab_widths, hover_tab_index
+      )
+      const tab_slot = rect_new(tab_ux.x, tab_ux.y, tab_ux.width, tab_ux.height)
+      const tab_fill = editor_ux_chrome_hover_draw_entry(input, tab_slot)
+      solid = solid_renderer_rect(
+        solid, width, height,
+        tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height,
+        tab_fill.red, tab_fill.green, tab_fill.blue, 1.0
+      )
+      hover_tab_index = hover_tab_index + 1
+    end
     solid = solid_renderer_rect(
       solid, width, height, 0, toolbar_y, width, toolbar_height(),
       0.13, 0.15, 0.19, 1.0
     )
+    let mut hover_tool_index = 0
+    while hover_tool_index < 11 do
+      const tool_slot = toolbar_button_rect(hover_tool_index, toolbar_y)
+      const tool_fill = editor_ux_chrome_hover_draw_entry(input, tool_slot)
+      solid = solid_renderer_rect(
+        solid, width, height,
+        tool_fill.x, tool_fill.y, tool_fill.width, tool_fill.height,
+        tool_fill.red, tool_fill.green, tool_fill.blue, 1.0
+      )
+      hover_tool_index = hover_tool_index + 1
+    end
     solid = solid_renderer_rect(
       solid, width, height,
       tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height,
@@ -1617,6 +1663,22 @@ fn main() -> i32 = do
     tree_scroll_y = folder_clamp_scroll(
       tree_scroll_y, draw_folder_rows.length(), tree_list_rect.height
     )
+    let mut hover_row_index = 0
+    while hover_row_index < draw_folder_rows.length() do
+      const row_slot = folder_row_rect(
+        tree_list_rect, hover_row_index, tree_scroll_y
+      )
+      if row_slot.y + row_slot.height > tree_list_rect.y &&
+          row_slot.y < tree_list_rect.y + tree_list_rect.height then
+        const row_fill = editor_ux_chrome_hover_draw_entry(input, row_slot)
+        solid = solid_renderer_rect(
+          solid, width, height,
+          row_fill.x, row_fill.y, row_fill.width, row_fill.height,
+          row_fill.red, row_fill.green, row_fill.blue, 1.0
+        )
+      end
+      hover_row_index = hover_row_index + 1
+    end
     if tree_hovered then
       const thumb = folder_scrollbar_thumb(
         tree_list_rect, draw_folder_rows.length(), tree_scroll_y
