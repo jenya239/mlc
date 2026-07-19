@@ -1,11 +1,13 @@
 // GLFW-polled GuiInput + hover/click edge (TRACK_GUI_FRAMEWORK STEP=4).
 // Keyboard text: TRACK_GUI_INPUT_ROBUSTNESS STEP=3.
+// TRACK_EDITOR_CONTEXT_MENU STEP=3 — mouse_right_down.
 
 import { Point, Rect, point_new, point_in_rect } from './layout'
 import {
   glfw_gl_mouse_x,
   glfw_gl_mouse_y,
   glfw_gl_mouse_left_down,
+  glfw_gl_mouse_right_down,
   glfw_gl_key_escape_down,
   glfw_gl_key_backspace_down,
   glfw_gl_key_enter_down,
@@ -20,6 +22,7 @@ export type GuiInput = {
   mouse_x: i32,
   mouse_y: i32,
   mouse_down: i32,
+  mouse_right_down: i32,
   escape: i32,
   text_buffer: string,
   backspace: i32,
@@ -33,6 +36,7 @@ export fn gui_input_new(
     mouse_x: mouse_x,
     mouse_y: mouse_y,
     mouse_down: mouse_down,
+    mouse_right_down: 0,
     escape: escape,
     text_buffer: "",
     backspace: 0,
@@ -44,6 +48,7 @@ export fn gui_input_poll() -> GuiInput =
     mouse_x: glfw_gl_mouse_x(),
     mouse_y: glfw_gl_mouse_y(),
     mouse_down: glfw_gl_mouse_left_down(),
+    mouse_right_down: glfw_gl_mouse_right_down(),
     escape: glfw_gl_key_escape_down(),
     text_buffer: glfw_gl_take_text(),
     backspace: glfw_gl_key_backspace_down(),

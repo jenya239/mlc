@@ -127,3 +127,15 @@ export fn context_menu_action_is_copy(action: ContextMenuAction) -> bool =
   | ContextMenuCopy => true
   | _ => false
   end
+
+export fn context_menu_action_is_cut(action: ContextMenuAction) -> bool =
+  match action
+  | ContextMenuCut => true
+  | _ => false
+  end
+
+export fn context_menu_action_is_paste(action: ContextMenuAction) -> bool =
+  match action
+  | ContextMenuPaste => true
+  | _ => false
+  end

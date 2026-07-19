@@ -267,6 +267,19 @@ import { editor_ux_apply_word_nav_key } from './ux/word_nav'
 import { editor_ux_current_line_draw_report } from './ux/current_line_hl'
 import { editor_ux_trailing_ws_draw_report } from './ux/trailing_ws'
 import {
+  editor_ux_context_menu_hidden,
+  editor_ux_context_menu_is_visible,
+  editor_ux_context_menu_open_at,
+  editor_ux_context_menu_dismiss,
+  editor_ux_context_menu_click,
+  editor_ux_context_menu_panel_rect,
+  editor_ux_context_menu_item_rect,
+  editor_ux_context_menu_item_count,
+  context_menu_action_is_cut,
+  context_menu_action_is_copy,
+  context_menu_action_is_paste
+} from './ux/context_menu'
+import {
   caret_blink_period_ms,
   caret_blink_visible
 } from './ux/caret_blink'
@@ -675,6 +688,8 @@ fn main() -> i32 = do
   let mut multi = multi_selection_from_single(app.ux.selection)
   let mut find_session = find_session_new()
   let mut dragging_tab_index = 0 - 1
+  let mut context_menu = editor_ux_context_menu_hidden()
+  let mut mouse_right_was_down = 0
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -695,8 +710,12 @@ fn main() -> i32 = do
     )
 
     const input = gui_input_poll()
-    if input.escape != 0 && !dirty_close_overlay_is_visible(overlay) then
-      break
+    if input.escape != 0 then
+      if editor_ux_context_menu_is_visible(context_menu) then
+        context_menu = editor_ux_context_menu_dismiss(context_menu)
+      else if !dirty_close_overlay_is_visible(overlay) then
+        break
+      end
     end
 
     let mut toolbar_tool = -1
@@ -859,6 +878,60 @@ fn main() -> i32 = do
         end
       end
       mouse_was_down = input.mouse_down
+      mouse_right_was_down = input.mouse_right_down
+    else if editor_ux_context_menu_is_visible(context_menu) then
+      if input.mouse_down != 0 && mouse_was_down == 0 then
+        const menu_click = editor_ux_context_menu_click(
+          context_menu, input.mouse_x, input.mouse_y
+        )
+        context_menu = menu_click.menu
+        if context_menu_action_is_copy(menu_click.action) then
+          if !selection_is_empty(selection) then
+            clipboard = edit_copy(document, selection, clipboard)
+            clipboard_push_to_os(clipboard)
+            last_command = "context_copy"
+          end
+        else if context_menu_action_is_cut(menu_click.action) then
+          if !selection_is_empty(selection) then
+            history = history_push_before_edit(history, document, selection)
+            const cut_result = edit_cut(document, selection, clipboard)
+            tabs = apply_edit(tabs, cut_result.document)
+            active = tab_set_active(tabs)
+            document = active.buffer.document
+            frame = document_frame_snapshot(document)
+            line_index = frame.line_index
+            draw_text = frame.text
+            selection = cut_result.selection
+            multi = multi_selection_from_single(selection)
+            clipboard = cut_result.clipboard
+            clipboard_push_to_os(clipboard)
+            last_command = "context_cut"
+          end
+        else if context_menu_action_is_paste(menu_click.action) then
+          clipboard = clipboard_pull_from_os(clipboard)
+          history = history_push_before_edit(history, document, selection)
+          const paste_result = edit_paste(document, selection, clipboard)
+          tabs = apply_edit(tabs, paste_result.document)
+          active = tab_set_active(tabs)
+          document = active.buffer.document
+          frame = document_frame_snapshot(document)
+          line_index = frame.line_index
+          draw_text = frame.text
+          selection = paste_result.selection
+          multi = multi_selection_from_single(selection)
+          last_command = "context_paste"
+        end
+      end
+      mouse_was_down = input.mouse_down
+      mouse_right_was_down = input.mouse_right_down
+    else if input.mouse_right_down != 0 && mouse_right_was_down == 0 &&
+        point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
+      editor_focused = 1
+      context_menu = editor_ux_context_menu_open_at(
+        context_menu, input.mouse_x, input.mouse_y
+      )
+      last_command = "context_menu"
+      mouse_right_was_down = input.mouse_right_down
     else if input.mouse_down != 0 && mouse_was_down == 0 then
       let mut handled = 0
       let mut tool = 0
@@ -1313,6 +1386,7 @@ fn main() -> i32 = do
         selecting_text = 0
       end
       mouse_was_down = input.mouse_down
+      mouse_right_was_down = input.mouse_right_down
 
       if input.text_buffer.length() > 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
@@ -1654,6 +1728,28 @@ fn main() -> i32 = do
       )
     end
 
+    if editor_ux_context_menu_is_visible(context_menu) then
+      editor_gl_scissor_disable()
+      const menu_panel = editor_ux_context_menu_panel_rect(context_menu)
+      solid = solid_renderer_rect(
+        solid, width, height,
+        menu_panel.x, menu_panel.y, menu_panel.width, menu_panel.height,
+        0.18, 0.20, 0.24, 1.0
+      )
+      let mut menu_item_index = 0
+      while menu_item_index < editor_ux_context_menu_item_count() do
+        const item_rect = editor_ux_context_menu_item_rect(
+          context_menu, menu_item_index
+        )
+        solid = solid_renderer_rect(
+          solid, width, height,
+          item_rect.x, item_rect.y, item_rect.width, item_rect.height,
+          0.22, 0.24, 0.28, 1.0
+        )
+        menu_item_index = menu_item_index + 1
+      end
+    end
+
     flush_status = solid_renderer_flush_over(solid, width, height)
     editor_gl_scissor_disable()
     if flush_status != 0 then
@@ -1702,6 +1798,24 @@ fn main() -> i32 = do
         chrome_lines, tools[tool_index], 11, button.x + 4, button.y + 16
       )
       tool_index = tool_index + 1
+    end
+
+    if editor_ux_context_menu_is_visible(context_menu) then
+      const menu_labels = ["Cut", "Copy", "Paste"]
+      let mut menu_label_index = 0
+      while menu_label_index < menu_labels.length() do
+        const label_rect = editor_ux_context_menu_item_rect(
+          context_menu, menu_label_index
+        )
+        chrome_lines = push_line(
+          chrome_lines,
+          menu_labels[menu_label_index],
+          13,
+          label_rect.x + 8,
+          label_rect.y + 16
+        )
+        menu_label_index = menu_label_index + 1
+      end
     end
 
     const draw_tree_rows = draw_folder_rows

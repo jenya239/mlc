@@ -26,6 +26,7 @@ double glfw_gl_window_content_scale_y();
 int32_t glfw_gl_mouse_x();
 int32_t glfw_gl_mouse_y();
 int32_t glfw_gl_mouse_left_down();
+int32_t glfw_gl_mouse_right_down();
 double glfw_gl_take_scroll_y();
 int32_t glfw_gl_key_escape_down();
 int32_t glfw_gl_key_backspace_down();

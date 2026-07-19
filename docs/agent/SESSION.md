@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-19 11:20 (Driver TRACK_EDITOR_CONTEXT_MENU STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_CONTEXT_MENU |
+| started | 2026-07-19 10:50 |
+| elapsed | ~30 min |
+| done    | `glfw_gl_mouse_right_down` (runtime+`gl_window`); `GuiInput.mouse_right_down`; demo_live right-open / draw / Cut-Copy-Paste / Esc dismiss; `context_menu_action_is_cut`/`is_paste` |
+| verify  | `ux_ok context_menu_opens`; `ux_ok trailing_ws_visualized`; `demo_live_fs_compile_ok`; `regression_gate` 20/20 + examples ok=146 fail=0 |
+| result  | STEP=3 done; ready for Critic |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `folder-nav-critic`; foreign `compiler/out/**` + `capture_analyzer.rb` left alone |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_CONTEXT_MENU |
+
 ### Turn 2026-07-19 10:45 (Driver TRACK_EDITOR_CONTEXT_MENU STEP=2)
 
 | field   | value |

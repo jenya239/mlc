@@ -380,6 +380,19 @@ int32_t glfw_gl_mouse_left_down() {
   return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ? 1 : 0;
 }
 
+int32_t glfw_gl_mouse_right_down() {
+  const InputTestOverride& override_state = input_test_override();
+  if (override_state.active) {
+    // Test override has no right button; live GLFW path is the product gate.
+    return 0;
+  }
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  return glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS ? 1 : 0;
+}
+
 double glfw_gl_take_scroll_y() {
   const double value = pending_scroll_y();
   pending_scroll_y() = 0.0;
@@ -691,6 +704,7 @@ double glfw_gl_window_content_scale_y() { return 1.0; }
 int32_t glfw_gl_mouse_x() { return 0; }
 int32_t glfw_gl_mouse_y() { return 0; }
 int32_t glfw_gl_mouse_left_down() { return 0; }
+int32_t glfw_gl_mouse_right_down() { return 0; }
 double glfw_gl_take_scroll_y() { return 0.0; }
 int32_t glfw_gl_key_escape_down() { return 0; }
 int32_t glfw_gl_key_backspace_down() { return 0; }

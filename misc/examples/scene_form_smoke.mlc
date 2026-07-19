@@ -85,6 +85,7 @@ fn gui_input_text(text: string) -> GuiInput =
     mouse_x: 0,
     mouse_y: 0,
     mouse_down: 0,
+    mouse_right_down: 0,
     escape: 0,
     text_buffer: text,
     backspace: 0,
