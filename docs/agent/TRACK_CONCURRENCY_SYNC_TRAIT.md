@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#4**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-20) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL sync (Sync / E093 / Array Send).
+**STEP=4** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -31,7 +31,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: move Array into spawn still E092 (gap) | **done** — `ok spawn_move_array_send_red` |
 | 2 | Send retune Array/Map + E093 free !Sync; green; Tier B; self-host | **done** — `ok spawn_array_sync_e093`; Tier B 1471/0; p1≡p2 |
-| 3 | MEMORY_MODEL sync (Sync / E093 / Array Send) | open |
+| 3 | MEMORY_MODEL sync (Sync / E093 / Array Send) | **done** |
 | 4 | Critic: gates; archive | open |
 
 ## Out of scope

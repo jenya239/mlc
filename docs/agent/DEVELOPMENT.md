@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4) STEP=3.
-**`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** active — STEP=2 Send retune + E093 done; next MEMORY_MODEL.
+**Queue head:** Critic `TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4).
+**`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** active — STEP=3 MEMORY_MODEL done; next Critic.
 **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
