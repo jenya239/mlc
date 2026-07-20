@@ -403,10 +403,29 @@ fn walk_spawn_sites_in_expr(
       diagnostics_append(
         walk_spawn_sites_in_expr(callee, mutable_scope, capture_context),
         walk_spawn_sites_in_expr_list(arguments, mutable_scope, capture_context)),
-    ExprMethod(receiver, _, arguments, _) =>
-      diagnostics_append(
-        walk_spawn_sites_in_expr(receiver, mutable_scope, capture_context),
-        walk_spawn_sites_in_expr_list(arguments, mutable_scope, capture_context)),
+    // TaskScope.spawn do…end → ExprMethod(..., "spawn", [ExprLambda]); apply the same
+    // free-mut capture gate as bare ExprSpawn (TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK).
+    ExprMethod(receiver, method_name, arguments, _) => do
+      let mut diagnostics = walk_spawn_sites_in_expr(receiver, mutable_scope, capture_context)
+      if method_name == "spawn" then
+        let mut argument_index = 0
+        while argument_index < arguments.length() do
+          const argument = arguments[argument_index]
+          diagnostics = diagnostics_append(
+            diagnostics,
+            free_mutable_capture_in_expr(argument, empty_names(), mutable_scope))
+          diagnostics = diagnostics_append(
+            diagnostics,
+            walk_spawn_sites_in_expr(argument, mutable_scope, capture_context))
+          argument_index = argument_index + 1
+        end
+      else
+        diagnostics = diagnostics_append(
+          diagnostics,
+          walk_spawn_sites_in_expr_list(arguments, mutable_scope, capture_context))
+      end
+      diagnostics
+    end,
     ExprField(object, _, _) =>
       walk_spawn_sites_in_expr(object, mutable_scope, capture_context),
     ExprIndex(object, index_expression, _) =>

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:40 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+| started | 2026-07-20 10:18 |
+| elapsed | ~20 min |
+| done    | `spawn_capture.mlc`: `ExprMethod` name=`spawn` runs `free_mutable_capture_in_expr` on args (TaskScope.spawn body); `compiler/build.sh` |
+| verify  | `ok task_scope_spawn_mutable_capture_e087`; Tier B `build_tests.sh` EXIT=0; self-host p1≡p2 DIFF_EXIT=0 |
+| result  | STEP=2 done |
+| issues  | used method_name==`spawn` (parser keyword), not type-aware TaskScope check |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+
 ### Turn 2026-07-20 10:30 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=1)
 
 | field   | value |

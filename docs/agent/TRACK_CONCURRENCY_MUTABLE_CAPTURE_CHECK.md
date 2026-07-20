@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#1**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §1/§4. Size **L**.
 
-## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — wire `.spawn` body into `spawn_capture` walk; green `ok task_scope_spawn_mutable_capture_e087`.
+**STEP=3** — MEMORY_MODEL sync (Tier B + self-host already green on STEP=2).
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §1/§4. Size **L**.
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red test: `TaskScope.spawn` mut capture (expect E087, currently fails) | **done** — `ok task_scope_spawn_mutable_capture_red` |
-| 2 | Wire `.spawn` body into `spawn_capture` walk; green tests | open — E087 on `.spawn` |
+| 2 | Wire `.spawn` body into `spawn_capture` walk; green tests | **done** — `ok task_scope_spawn_mutable_capture_e087`; Tier B; self-host identical |
 | 3 | MEMORY_MODEL sync; `compiler/build.sh` + Tier B + self-host diff | open |
 | 4 | Critic: gates; archive | open |
 
