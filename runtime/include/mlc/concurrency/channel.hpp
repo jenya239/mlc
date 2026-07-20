@@ -1,8 +1,10 @@
 #pragma once
 
-// Bounded / rendezvous channel + Sender/Receiver split (TRACK_CONCURRENCY_V2 STEP=2–3).
+// Bounded / rendezvous / unbounded channel + Sender/Receiver split
+// (TRACK_CONCURRENCY_V2 STEP=2–3; TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED).
 // Cancel wake (TRACK_CONCURRENCY_TASKSCOPE STEP=1): send/receive(StopToken) → ChannelStatus.
-// capacity >= 1: buffered; capacity 0: synchronous handoff.
+// capacity >= 1: buffered; capacity 0: synchronous handoff;
+// make_unbounded_channel: capacity == SIZE_MAX (never blocks on full).
 // Last Sender drop (or Sender::close) marks closed and wakes waiters.
 
 #include "mlc/concurrency/stop.hpp"
@@ -10,6 +12,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <deque>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -424,6 +427,8 @@ public:
     }
 };
 
+struct UnboundedChannelTag {};
+
 template<typename Value>
 class Channel {
     std::shared_ptr<detail::ChannelState<Value>> state_;
@@ -433,10 +438,18 @@ public:
         : state_(std::make_shared<detail::ChannelState<Value>>(
               detail::channel_validate_capacity(capacity))) {}
 
+    explicit Channel(UnboundedChannelTag)
+        : state_(std::make_shared<detail::ChannelState<Value>>(
+              std::numeric_limits<size_t>::max())) {}
+
     Channel(const Channel&) = default;
     Channel& operator=(const Channel&) = default;
 
     size_t capacity() const { return state_->capacity; }
+
+    [[nodiscard]] bool is_unbounded() const noexcept {
+        return state_->capacity == std::numeric_limits<size_t>::max();
+    }
 
     bool is_closed() const {
         std::lock_guard<std::mutex> lock(state_->mutex);
@@ -478,6 +491,11 @@ public:
 template<typename Value = int>
 Channel<Value> make_channel(size_t capacity = 64) {
     return Channel<Value>(capacity);
+}
+
+template<typename Value = int>
+Channel<Value> make_unbounded_channel() {
+    return Channel<Value>(UnboundedChannelTag{});
 }
 
 template<typename Value>

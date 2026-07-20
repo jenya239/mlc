@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 23:15 (Driver TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED |
+| started | 2026-07-20 22:22 |
+| elapsed | ~55 min |
+| done    | C++ `make_unbounded_channel` (SIZE_MAX); MLC registry/codegen; smoke 256 sends; `test_channel.cpp` unbounded; unit cases |
+| verify  | `ok channel_unbounded` + smoke; C++ ALL PASSED; Tier B EXIT=0 (arch lint 0); p1≡p2 DIFF=0 |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED |
+
 ### Turn 2026-07-20 22:20 (Driver TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=1)
 
 | field   | value |

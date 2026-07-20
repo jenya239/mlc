@@ -265,6 +265,10 @@ export fn empty_registry() -> TypeRegistry = do
     'make_channel',
     Shared.new(TFn([Shared.new(TUsize)], Shared.new(TGeneric('Channel', [Shared.new(TUnknown)])))))
   builtin_required_arity.set('make_channel', 1)
+  builtin_function_types.set(
+    'make_unbounded_channel',
+    Shared.new(TFn([], Shared.new(TGeneric('Channel', [Shared.new(TUnknown)])))))
+  builtin_required_arity.set('make_unbounded_channel', 0)
   builtin_required_arity.set('read_line', 0)
   builtin_required_arity.set('read_all', 0)
   const empty_private_constructors: Map<string, bool> = Map.new()

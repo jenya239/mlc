@@ -1,0 +1,12 @@
+// TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=2 —
+// Unbounded channel accepts many sends without a matching recv (no block on full).
+fn main() -> i32 = do
+  let channel_value: Channel<i32> = make_unbounded_channel()
+  let mut index = 0
+  while index < 256 do
+    let sent = channel_value.send(index)
+    if !sent then return 1 end
+    index = index + 1
+  end
+  0
+end

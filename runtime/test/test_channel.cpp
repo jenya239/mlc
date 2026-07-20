@@ -221,6 +221,21 @@ void test_cancellable_send_receive_ok() {
     CHECK(result.value.has_value() && *result.value == 7);
 }
 
+void test_unbounded_accepts_past_fixed_capacity() {
+    auto channel = mlc::concurrency::make_unbounded_channel<int>();
+    CHECK(channel.is_unbounded());
+    constexpr int send_count = 256;
+    for (int index = 0; index < send_count; ++index) {
+        CHECK(channel.try_send(index));
+    }
+    CHECK(channel.size() == static_cast<size_t>(send_count));
+    for (int index = 0; index < send_count; ++index) {
+        auto value = channel.receive();
+        CHECK(value.has_value() && *value == index);
+    }
+    CHECK(channel.size() == 0);
+}
+
 int main() {
     test_capacity_validation();
     test_rendezvous_handoff();
@@ -240,6 +255,7 @@ int main() {
     test_cancel_unblocks_receive();
     test_cancel_unblocks_send_when_full();
     test_cancellable_send_receive_ok();
+    test_unbounded_accepts_past_fixed_capacity();
 
     if (failed == 0) {
         std::cout << "ALL " << passed << " checks PASSED\n";

@@ -325,6 +325,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   names.set('block_on', true)
   names.set('is_ready', true)
   names.set('make_channel', true)
+  names.set('make_unbounded_channel', true)
   names.set('Channel', true)
   names.set('Arc', true)
   names.set('Mutex', true)

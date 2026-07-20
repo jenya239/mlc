@@ -1,6 +1,5 @@
-// TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=1 —
-// Desired unbounded API: make_unbounded_channel().
-// Red today: undefined (E001). Rendezvous make_channel(0) already green.
+// TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=2 —
+// make_unbounded_channel() must typecheck (green after wire).
 fn main() -> unit = do
   let channel_value: Channel<i32> = make_unbounded_channel()
   ()

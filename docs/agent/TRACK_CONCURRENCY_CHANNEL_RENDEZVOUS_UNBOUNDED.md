@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#6**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §10/§44. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — wire `make_unbounded_channel` (+ MLC); green smokes; Tier B; self-host if compiler/.
+**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 status sync.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -28,7 +28,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §10/§44. Size **M**.
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: unbounded API missing | **done** — `ok channel_unbounded_red` |
-| 2 | Wire unbounded (+ MLC); green smokes; Tier B; self-host if compiler/ | open |
+| 2 | Wire unbounded (+ MLC); green smokes; Tier B; self-host if compiler/ | **done** — `ok channel_unbounded` + smoke; C++ test; p1≡p2 |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 status sync | open |
 | 4 | Critic: gates; archive | open |
 

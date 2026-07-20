@@ -44,10 +44,10 @@ export fn channel_syntax_tests() -> [TestResult] = do
     check_error_count(
       'fn main() -> unit = do\n  let c = make_channel(1usize)\n  let stop = StopSource.new()\n  let _ = c.recv(stop.token())\n  ()\nend'), 0))
 
-  // TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=1 — red until STEP=2.
-  results.push(assert_true('make_unbounded_channel undefined (unbounded gap)',
+  // TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=2 — make_unbounded_channel.
+  results.push(assert_eq_int('make_unbounded_channel checks',
     check_error_count(
-      'fn main() -> unit = do let c: Channel<i32> = make_unbounded_channel(); () end') > 0))
+      'fn main() -> unit = do let c: Channel<i32> = make_unbounded_channel(); () end'), 0))
 
   results.push(assert_eq_int('make_channel(0) rendezvous checks',
     check_error_count(
