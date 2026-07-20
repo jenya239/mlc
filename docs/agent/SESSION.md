@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 22:05 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+| started | 2026-07-20 22:02 |
+| elapsed | ~5 min |
+| done    | `MEMORY_MODEL.md`: MLC `StopSource`/`StopToken`; `recv(token)`→`ChannelReceiveResult.cancelled()`; non-token `recv`→`Option`; cite track |
+| verify  | MEMORY_MODEL cites TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING + Cancelled; TRACK STEP=3 done → Critic |
+| result  | STEP=3 done |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+
 ### Turn 2026-07-20 15:50 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=2)
 
 | field   | value |
