@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 03:12 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #11)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-21 03:06 |
+| elapsed | ~6 min |
+| done    | Open `#11`: `TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md` Decision freeze; backlog/PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: C++ `test_scheduler` green (9 checks); MLC `TestRuntime`/`TestScheduler` → E001 status=1; freeze `TestRuntime`→`TestScheduler` method API |
+| result  | STEP=0 frozen; TestRuntime facade; TestMutex/Channel MLC out |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+
 ### Turn 2026-07-21 03:05 (Critic TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE)
 
 | field   | value |
