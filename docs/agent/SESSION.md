@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 13:35 (Critic TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+| started | 2026-07-20 12:30 |
+| elapsed | ~10 min |
+| done    | Re-ran stable + demo_live compile; anti-false-done `ebde8886`…`9cdaed0a`; archived track; §46 done; queue → MOVE_TRACKING STEP=1 |
+| verify  | `ux_ok wrap_count_cache_stable`; `demo_live_fs_compile_ok`; demo_live no bare `document_visual_row_count` |
+| result  | closed Critic OK |
+| issues  | residual: full recompute on edit (not viewport-only); red.sh historical post-green |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_MOVE_TRACKING |
+
 ### Turn 2026-07-20 13:20 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=3)
 
 | field   | value |

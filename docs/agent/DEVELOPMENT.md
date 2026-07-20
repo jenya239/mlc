@@ -41,17 +41,14 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36).
-**`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** active — STEP=3 `demo_live` wire done; next Critic.
-**`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** parked at STEP=0 (resume STEP=1 after `#36`).
-**`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#36` open.
+**Queue head:** Driver `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3) STEP=1.
+**`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** active — STEP=0 Decision frozen; next red E088 harness.
+**`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** closed 2026-07-20; archived.
+**`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#36).
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
 **`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#3` open.
-**`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#2` open.
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
-**`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#35).
 **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.
