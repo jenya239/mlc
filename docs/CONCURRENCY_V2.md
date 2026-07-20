@@ -384,7 +384,7 @@ extern type GtkWidget = "GtkWidget" from "<gtk.h>" thread_affine(MainThread)
 Без этого один FFI handle обесценивает всю checker-модель (особенно критично
 для GUI/DB-биндингов).
 
-**Статус:** **done** for gate ([TRACK_CONCURRENCY_FFI_METADATA](agent/TRACK_CONCURRENCY_FFI_METADATA.md)):
+**Статус:** **done** for gate ([TRACK_CONCURRENCY_FFI_METADATA](archive/tracks/TRACK_CONCURRENCY_FFI_METADATA.md)):
 parse `blocking` / `thread_safe` / `thread_affine(Name)` / `!…`; W-EXTERN-ATTR when
 `from "<header>"` lacks attrs (TRACK_FFI_SAFETY); `type_is_thread_affine` → `!Send`/`!Sync`;
 **E094** when a `thread_affine` **extern fn** is called inside `spawn` /
@@ -403,7 +403,7 @@ gui_paint()   // error[E094]
 Affine **type** values stay `!Send` (free capture / `Arc.new` → **E092**).
 Main-thread call of the same fn remains OK.
 
-**Статус:** **done** call-site fn check ([TRACK_CONCURRENCY_FFI_METADATA](agent/TRACK_CONCURRENCY_FFI_METADATA.md)).
+**Статус:** **done** call-site fn check ([TRACK_CONCURRENCY_FFI_METADATA](archive/tracks/TRACK_CONCURRENCY_FFI_METADATA.md)).
 ## 28. `Supervisor` — после Isolate, не раньше
 
 **Статус (2026-07-12):** C++ v1 **implemented** —

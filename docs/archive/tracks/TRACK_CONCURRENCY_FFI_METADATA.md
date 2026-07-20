@@ -1,13 +1,39 @@
 # Track: Concurrency FFI Metadata
 
-Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#8**.
+Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](../../agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#8**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §26/§27/§44. Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=3 done → Critic
+## Status: **closed** (2026-07-21) — Critic OK
+
+**Critic 2026-07-21 (STEP=4):** Re-ran `run_extern_thread_affine_spawn.sh` +
+main_ok + `--check-only compiler/main.mlc`. Anti-false-done: `b0499bea`…`83fcfb5d`
+(STEP=0–3); no `lib/mlc/` → REG skip. Wire: **E094** on `thread_affine` extern fn
+inside `spawn` / `TaskScope.spawn`; main-thread call OK; MEMORY_MODEL + CONCURRENCY_V2
+§26/§27 synced. **reopen: none**.
+
+Honest residual: `sendable` / `callback_concurrent` not parsed; no runtime MainThread
+TLS; optional attr parse deferred from Decision (gate was call-site E094 only).
+
+| Gate | Result |
+|------|--------|
+| `run_extern_thread_affine_spawn.sh` | `ok extern_thread_affine_spawn` (E094 spawn + TaskScope) EXIT=0 |
+| `extern_thread_affine_main_ok.mlc` check-only | EXIT=0 |
+| `mlcc --check-only compiler/main.mlc` | EXIT=0 |
+| Tier B / self-host | STEP=2: Tier B EXIT=0; p1≡p2 DIFF_EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§47 `#9 CONCURRENCY_ISOLATE_MLC_SURFACE`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `b0499bea` | Decision freeze + open |
+| 1 | `85d9d0aa` (+ `475cb2ec`) | Red harness (no E094 gap) |
+| 2 | `b3aec205` (+ `ec0d459f`) | E094 wire; Tier B + self-host |
+| 3 | `83fcfb5d` | MEMORY_MODEL + CONCURRENCY_V2 sync |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -30,7 +56,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §26/§27/§44. Size **M**.
 | 1 | Red: affine fn in spawn allowed | **done** — `ok extern_thread_affine_spawn_red` (freeze E094) |
 | 2 | Wire call-site affinity check; green; Tier B; self-host if compiler/ | **done** — `ok extern_thread_affine_spawn` (E094); main_ok; Tier B; self-host DIFF 0 |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §26/§27 sync | **done** — E094 + attrs status; §26/§27 |
-| 4 | Critic: gates; archive | open |
+| 4 | Critic: gates; archive | **done** — closed |
 
 ## Out of scope
 

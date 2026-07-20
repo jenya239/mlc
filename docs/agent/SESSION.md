@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:52 (Critic TRACK_CONCURRENCY_FFI_METADATA)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_FFI_METADATA |
+| started | 2026-07-21 00:48 |
+| elapsed | ~4 min |
+| done    | Close `#8`: re-ran affine spawn green + main_ok + `--check-only`; archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → `#8` done |
+| verify  | `ok extern_thread_affine_spawn`; main_ok+main check-only EXIT=0; anti-false-done `b0499bea`…`83fcfb5d`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: sendable/callback_concurrent parse; no MainThread TLS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #9 CONCURRENCY_ISOLATE_MLC_SURFACE) |
+
 ### Turn 2026-07-21 00:48 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=3)
 
 | field   | value |
