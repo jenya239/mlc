@@ -59,8 +59,12 @@ fn type_is_send_field(
   if field_map.has(field_name) then type_is_send(field_map.get(field_name), registry) else false
 
 fn type_is_send_named(record_name: string, registry: TypeRegistry) -> bool = do
-  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus' then
+  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus'
+    || record_name == 'RestartPolicy' then
     return true
+  end
+  if record_name == 'Supervisor' then
+    return false
   end
   if record_name == 'AtomicBool' || record_name == 'AtomicI32'
     || record_name == 'AtomicI64' || record_name == 'AtomicU64' then
@@ -85,8 +89,12 @@ fn type_is_sync_field(
   if field_map.has(field_name) then type_is_sync(field_map.get(field_name), registry) else false
 
 fn type_is_sync_named(record_name: string, registry: TypeRegistry) -> bool = do
-  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus' then
+  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus'
+    || record_name == 'RestartPolicy' then
     return true
+  end
+  if record_name == 'Supervisor' then
+    return false
   end
   if record_name == 'AtomicBool' || record_name == 'AtomicI32'
     || record_name == 'AtomicI64' || record_name == 'AtomicU64' then

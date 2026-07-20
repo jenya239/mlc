@@ -1,0 +1,86 @@
+// Supervisor.new / .add codegen (TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE).
+
+import {
+  SemanticExpression, SemanticExpressionLambda, SemanticExpressionIdent, SemanticStatement, sexpr_type
+} from '../../ir/semantic_ir'
+import {
+  CppExpression, CppCall, CppMember, CppMutableLambda, CppCapture, CppParam, CppTypeName
+} from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { CodegenContext } from '../context'
+import { cpp_safe } from '../cpp_naming'
+
+export fn gen_method_supervisor_new_cpp() -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('mlc::concurrency::Supervisor'),
+    []))
+
+fn gen_supervisor_handler_lambda_cpp(
+  handler: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
+  match handler {
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      if parameter_names.length() == 1 then
+        const token_name = cpp_safe(parameter_names[0])
+        const body_expression = evaluate_expression(body, context, gen_stmts)
+        Shared.new(CppMutableLambda(
+          [Shared.new(CppCapture { name: '', by_reference: true })],
+          [
+            Shared.new(CppParam {
+              name: token_name,
+              parameter_type: Shared.new(CppTypeName('mlc::concurrency::StopToken'))
+            })
+          ],
+          body_expression))
+      else
+        evaluate_expression(handler, context, gen_stmts)
+      end,
+    SemanticExpressionIdent(function_name, _, _) => do
+      const callee = emit_helpers.make_identifier_cpp_expression(cpp_safe(function_name))
+      const token_name = '__supervisor_token'
+      const call_body = Shared.new(CppCall(
+        callee,
+        [emit_helpers.make_identifier_cpp_expression(token_name)]))
+      Shared.new(CppMutableLambda(
+        [Shared.new(CppCapture { name: '', by_reference: true })],
+        [
+          Shared.new(CppParam {
+            name: token_name,
+            parameter_type: Shared.new(CppTypeName('mlc::concurrency::StopToken'))
+          })
+        ],
+        call_body))
+    end,
+    _ => evaluate_expression(handler, context, gen_stmts)
+  }
+
+export fn gen_method_supervisor_add_cpp(
+  receiver_expression: Shared<CppExpression>,
+  name_argument: Shared<SemanticExpression>,
+  policy_argument: Shared<SemanticExpression>,
+  handler_argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const name_mlc_string = evaluate_expression(name_argument, context, gen_stmts)
+  const name_expression = Shared.new(CppCall(
+    Shared.new(CppMember(name_mlc_string, 'as_std_string', false)),
+    []))
+  const policy_expression = evaluate_expression(policy_argument, context, gen_stmts)
+  const handler_expression = gen_supervisor_handler_lambda_cpp(
+    handler_argument, context, gen_stmts, evaluate_expression)
+  Shared.new(CppCall(
+    Shared.new(CppMember(receiver_expression, 'add', false)),
+    [name_expression, policy_expression, handler_expression]))
+end
+
+export fn is_supervisor_static_receiver_name(type_name: string) -> bool =
+  type_name == 'Supervisor'
+
+export fn gen_restart_policy_variant_cpp(variant_name: string) -> Shared<CppExpression> =
+  emit_helpers.make_identifier_cpp_expression(
+    `mlc::concurrency::RestartPolicy::${variant_name}`)

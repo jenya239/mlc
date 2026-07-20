@@ -1,7 +1,7 @@
 // Method call code generation.
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
-import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, SemanticExpressionLambda, sexpr_type } from '../../ir/semantic_ir'
+import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, SemanticExpressionLambda, SemanticExpressionField, sexpr_type } from '../../ir/semantic_ir'
 import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
 import { CppExpression, CppCall, CppMember, CppInitList, CppMutableLambda, CppCapture, CppParam, CppTypeName } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
@@ -33,6 +33,26 @@ import {
   gen_method_isolate_start_cpp,
   is_isolate_static_receiver_name
 } from './isolate_method_gen'
+import {
+  gen_method_supervisor_new_cpp,
+  gen_method_supervisor_add_cpp,
+  is_supervisor_static_receiver_name
+} from './supervisor_method_gen'
+import {
+  type_is_restart_policy,
+  is_restart_policy_variant_name
+} from '../../checker/infer/infer_supervisor_method'
+
+fn is_restart_policy_argument_expression(argument: Shared<SemanticExpression>) -> bool =
+  match argument {
+    SemanticExpressionField(object_expression, field_name, _, _) =>
+      match object_expression {
+        SemanticExpressionIdent(type_name, _, _) =>
+          type_name == 'RestartPolicy' && is_restart_policy_variant_name(field_name),
+        _ => false
+      },
+    _ => false
+  }
 
 fn make_shared_call(element_type: string, argument_code: string) -> string =
   `std::make_shared<${element_type}>(${argument_code})`
@@ -717,6 +737,10 @@ fn gen_method_expr_after_object_cpp(
         evaluate_expression)
     else gen_method_expr_fallback_cpp(
       receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+  else if is_supervisor_static_receiver_name(static_receiver_name) then
+    if method_name == 'new' && argument_count == 0 then gen_method_supervisor_new_cpp()
+    else gen_method_expr_fallback_cpp(
+      receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   else gen_method_expr_fallback_cpp(
     receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   end
@@ -811,6 +835,20 @@ export fn gen_method_expr_cpp(
       materialization_outcome.prelude_statements,
       gen_method_mutex_lock_cpp(
         receiver_expression, arguments[0], object_type, context, gen_stmts, evaluate_expression))
+  else if method_name == 'add' && arguments.length() == 3 &&
+      (object_type_name == 'Supervisor'
+        || type_is_restart_policy(sexpr_type(arguments[1]))
+        || is_restart_policy_argument_expression(arguments[1])) then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_supervisor_add_cpp(
+        receiver_expression,
+        arguments[0],
+        arguments[1],
+        arguments[2],
+        context,
+        gen_stmts,
+        evaluate_expression))
   else if is_shared_weak_sugar_method(method_name) && type_is_shared_pointer(object_type) && arguments.length() == 0 then
     mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
       materialization_outcome.prelude_statements,

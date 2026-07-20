@@ -142,6 +142,8 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       else if type_name == 'AtomicI32' then 'mlc::concurrency::AtomicI32'
       else if type_name == 'AtomicI64' then 'mlc::concurrency::AtomicI64'
       else if type_name == 'AtomicU64' then 'mlc::concurrency::AtomicU64'
+      else if type_name == 'Supervisor' then 'mlc::concurrency::Supervisor'
+      else if type_name == 'RestartPolicy' then 'mlc::concurrency::RestartPolicy'
       else if type_name.length() >= 10 && type_name.substring(0, 10) == 'RegionTag_' then 'void'
       else context.resolve(type_name)
       end,
@@ -222,6 +224,21 @@ fn associated_type_name_cpp(context: CodegenContext, associated_type_name: strin
 fn resolved_type_name_cpp(context: CodegenContext, type_name: string) -> string =
   context.resolve(type_name)
 
+fn concurrency_builtin_type_name_to_cpp(type_name: string) -> string =
+  if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
+  else if type_name == 'StopSource' then 'mlc::concurrency::StopSource'
+  else if type_name == 'StopToken' then 'mlc::concurrency::StopToken'
+  else if type_name == 'ChannelStatus' then 'mlc::concurrency::ChannelStatus'
+  else if type_name == 'AtomicBool' then 'mlc::concurrency::AtomicBool'
+  else if type_name == 'AtomicI32' then 'mlc::concurrency::AtomicI32'
+  else if type_name == 'AtomicI64' then 'mlc::concurrency::AtomicI64'
+  else if type_name == 'AtomicU64' then 'mlc::concurrency::AtomicU64'
+  else if type_name == 'Supervisor' then 'mlc::concurrency::Supervisor'
+  else if type_name == 'RestartPolicy' then 'mlc::concurrency::RestartPolicy'
+  else if type_name == 'Isolate' then 'mlc::concurrency::Isolate'
+  else ''
+  end
+
 export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string =
   if type_alias_annotation_cpp(context, type_name) != '' then
     type_alias_annotation_cpp(context, type_name)
@@ -230,6 +247,8 @@ export fn type_name_to_cpp(context: CodegenContext, type_name: string) -> string
           context.trait_associated_type_names.get(context.self_type).any(entry => entry == type_name) then
     associated_type_name_cpp(context, type_name)
   else if type_name_to_cpp_literal(type_name) != '' then type_name_to_cpp_literal(type_name)
+  else if concurrency_builtin_type_name_to_cpp(type_name) != '' then
+    concurrency_builtin_type_name_to_cpp(type_name)
   else resolved_type_name_cpp(context, type_name)
   end
 

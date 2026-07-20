@@ -4,12 +4,11 @@ Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.m
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §28/§29/§44 phase 10.
 C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md). Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-21) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — wire MLC `Supervisor.new` / `.add` / `.start` / `.stop`; green
-`run_supervisor_mlc.sh` + restart e2e; Tier B + self-host.
+**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 §28/§29 sync; then Critic.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -30,7 +29,7 @@ C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR](../archive/tracks
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: Supervisor MLC missing | **done** — `ok supervisor_mlc_red` (E001; `supervisor.hpp` present) |
-| 2 | Wire MLC Supervisor add/start/stop (+ intensity); green e2e restart; Tier B; self-host | open |
+| 2 | Wire MLC Supervisor add/start/stop (+ intensity); green e2e restart; Tier B; self-host | **done** — `ok supervisor_mlc` (check-only + link + Permanent restart + Temporary sibling + `test_supervisor`); Tier B EXIT=0; self-host DIFF=0 |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §28/§29 sync | open |
 | 4 | Critic: gates; archive | open |
 

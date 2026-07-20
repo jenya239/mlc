@@ -20,6 +20,8 @@ import { sem_type_to_cpp } from './codegen/decl/type_gen'
 import { ExprVisitor } from './expr_visitor'
 import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
 import { stmts_final_ctx } from './codegen/stmt/statement_context'
+import { is_restart_policy_variant_name } from './checker/infer/infer_supervisor_method'
+import { gen_restart_policy_variant_cpp } from './codegen/expr/supervisor_method_gen'
 
 type CodegenPass = CodegenPass {
   context: CodegenContext,
@@ -733,10 +735,22 @@ export fn gen_field_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> =
-  Shared.new(CppMember(
-    eval_expr_cpp(object, context, gen_stmts),
-    cpp_safe(field_name),
-    field_access_operator(object, context) == '->'))
+  match object {
+    SemanticExpressionIdent(type_name, _, _) =>
+      if type_name == 'RestartPolicy' && is_restart_policy_variant_name(field_name) then
+        gen_restart_policy_variant_cpp(field_name)
+      else
+        Shared.new(CppMember(
+          eval_expr_cpp(object, context, gen_stmts),
+          cpp_safe(field_name),
+          field_access_operator(object, context) == '->'))
+      end,
+    _ =>
+      Shared.new(CppMember(
+        eval_expr_cpp(object, context, gen_stmts),
+        cpp_safe(field_name),
+        field_access_operator(object, context) == '->'))
+  }
 
 export fn gen_index_via_cpp_visitor(
   object: Shared<SemanticExpression>,

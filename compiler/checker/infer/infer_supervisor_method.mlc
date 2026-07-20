@@ -1,0 +1,158 @@
+// Supervisor.new / add / start / stop inference (TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE).
+
+import {
+  Expr, ExprIdent, ExprLambda, Span, Diagnostic,
+  diagnostic_error_with_code, diagnostics_append, expr_span
+} from '../../frontend/ast'
+import { Type, TNamed, TUnknown, TUnit, TBool } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import {
+  type_is_unknown, type_description, function_parameter_list
+} from '../semantic_type_structure'
+import { type_is_stop_token } from './infer_stop_method'
+import { call_arity_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { infer_lambda_with_param_types } from './infer_lambda_context'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+export fn is_supervisor_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'Supervisor' && method_name == 'new',
+    _ => false
+  }
+
+export fn type_is_supervisor(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'Supervisor',
+    _ => false
+  }
+
+export fn type_is_restart_policy(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'RestartPolicy',
+    _ => false
+  }
+
+export fn is_restart_policy_variant_name(field_name: string) -> bool =
+  field_name == 'Permanent' || field_name == 'Transient' || field_name == 'Temporary'
+
+export fn is_supervisor_method(method_name: string) -> bool =
+  method_name == 'add'
+    || method_name == 'start'
+    || method_name == 'stop'
+    || method_name == 'set_restart_intensity'
+    || method_name == 'storm_tripped'
+
+fn supervisor_receiver_error(
+  supervisor_type: Shared<Type>,
+  method_name: string,
+  method_span: Span
+) -> [Diagnostic] =
+  if !type_is_unknown(supervisor_type) && !type_is_supervisor(supervisor_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects a Supervisor receiver, got ${type_description(supervisor_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+export fn infer_supervisor_static_new_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span
+) -> InferResult = do
+  const arity_errors = call_arity_diagnostics(0, method_arguments.length(), method_span)
+  InferResult {
+    inferred_type: Shared.new(TNamed('Supervisor')),
+    errors: diagnostics_append(object_parsed.errors, arity_errors)
+  }
+end
+
+fn infer_supervisor_handler(
+  handler_expression: Shared<Expr>,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult =
+  match handler_expression {
+    ExprLambda(parameter_names, body, _) =>
+      infer_lambda_with_param_types(
+        parameter_names,
+        [Shared.new(TNamed('StopToken'))],
+        body,
+        inference_context,
+        infer_expr_fn),
+    _ => infer_expr_fn(handler_expression, inference_context)
+  }
+
+fn supervisor_add_policy_errors(policy_type: Shared<Type>, argument_span: Span) -> [Diagnostic] =
+  if !type_is_unknown(policy_type) && !type_is_restart_policy(policy_type) then
+    [diagnostic_error_with_code(
+      'Supervisor.add expects RestartPolicy, got ' + type_description(policy_type),
+      argument_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+fn supervisor_handler_token_errors(handler_type: Shared<Type>, argument_span: Span) -> [Diagnostic] = do
+  const parameters = function_parameter_list(handler_type)
+  if parameters.length() == 0 then
+    []
+  else if parameters.length() == 1 && type_is_stop_token(parameters[0]) then
+    []
+  else if parameters.length() == 1 && type_is_unknown(parameters[0]) then
+    []
+  else
+    [diagnostic_error_with_code(
+      'Supervisor.add handler expects (StopToken) -> unit',
+      argument_span,
+      diagnostic_code_e082())]
+  end
+end
+
+export fn infer_supervisor_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const receiver_errors = supervisor_receiver_error(object_parsed.inferred_type, method_name, method_span)
+  let mut errors = diagnostics_append(object_parsed.errors, receiver_errors)
+  if method_name == 'add' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(3, method_arguments.length(), method_span))
+    if method_arguments.length() == 3 then
+      const name_parsed = infer_expr_fn(method_arguments[0], inference_context)
+      const policy_parsed = infer_expr_fn(method_arguments[1], inference_context)
+      const handler_parsed = infer_supervisor_handler(
+        method_arguments[2], inference_context, infer_expr_fn)
+      errors = diagnostics_append(errors, name_parsed.errors)
+      errors = diagnostics_append(errors, policy_parsed.errors)
+      errors = diagnostics_append(errors, handler_parsed.errors)
+      errors = diagnostics_append(errors, supervisor_add_policy_errors(
+        policy_parsed.inferred_type, expr_span(method_arguments[1])))
+      errors = diagnostics_append(errors, supervisor_handler_token_errors(
+        handler_parsed.inferred_type, expr_span(method_arguments[2])))
+    end
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'start' || method_name == 'stop' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'set_restart_intensity' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(2, method_arguments.length(), method_span))
+    let mut argument_index = 0
+    while argument_index < method_arguments.length() do
+      const argument_parsed = infer_expr_fn(method_arguments[argument_index], inference_context)
+      errors = diagnostics_append(errors, argument_parsed.errors)
+      argument_index = argument_index + 1
+    end
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'storm_tripped' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TBool), errors: errors }
+  else
+    InferResult { inferred_type: Shared.new(TUnknown), errors: errors }
+  end
+end
