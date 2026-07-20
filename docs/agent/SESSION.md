@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 15:05 (Planner TRACK_CONCURRENCY_SYNC_TRAIT STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh / 0 |
+| track   | TRACK_CONCURRENCY_SYNC_TRAIT (§47 #4) |
+| started | 2026-07-20 13:28 |
+| elapsed | ~8 min |
+| done    | Opened `docs/agent/TRACK_CONCURRENCY_SYNC_TRAIT.md`; Decision frozen: Array/Map Send iff T (residual #2); free !Sync share → E093; move Array[i32] into spawn should be OK (today E092) |
+| verify  | Decision table present; backlog #4 → active; probe: move Array spawn E092; free Arc[Config] EXIT=0 |
+| result  | STEP=0 done → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_SYNC_TRAIT |
+
 ### Turn 2026-07-20 14:50 (Critic TRACK_CONCURRENCY_MOVE_TRACKING)
 
 | field   | value |

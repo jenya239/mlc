@@ -41,11 +41,12 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `TRACK_MLC_CONCURRENCY_REFINEMENT` (§47) — open `#4 CONCURRENCY_SYNC_TRAIT`.
+**Queue head:** Driver `TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4) STEP=1.
+**`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** active — STEP=0 Decision frozen; next red harness (move Array Send gap).
 **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — next `#4`.
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#4` open.
 **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** closed 2026-07-20; archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#36).
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
