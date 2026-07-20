@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#3**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red checker harness: `TaskScope.spawn do move job end` then use `job` must emit **E088** (today no E088).
+**STEP=2** — wire move_check for ExprMethod spawn; green tests; Tier B; self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -28,7 +28,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red test: TaskScope.spawn move then use → expect E088 (fails today) | open |
+| 1 | Red test: TaskScope.spawn move then use → expect E088 (fails today) | **done** — `ok task_scope_spawn_move_then_use_red` |
 | 2 | Wire move_check for ExprMethod spawn; green tests; Tier B; self-host | open |
 | 3 | MEMORY_MODEL sync (E088 / TaskScope.spawn move) | open |
 | 4 | Critic: gates; archive | open |

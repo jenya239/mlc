@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3) STEP=1.
-**`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** active — STEP=0 Decision frozen; next red E088 harness.
+**Queue head:** Driver `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3) STEP=2.
+**`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** active — STEP=1 red harness done; next wire E088 on TaskScope.spawn move.
 **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** closed 2026-07-20; archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#36).
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.

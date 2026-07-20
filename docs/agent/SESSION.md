@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 13:50 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_MOVE_TRACKING |
+| started | 2026-07-20 12:38 |
+| elapsed | ~10 min |
+| done    | Fixture `task_scope_spawn_move_then_use.mlc`; red/green shell gates; `test_spawn.mlc` E088 cases (pending green until STEP=2) |
+| verify  | `ok task_scope_spawn_move_then_use_red`; green script EXIT=1 missing E088 (expected) |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_MOVE_TRACKING |
+
 ### Turn 2026-07-20 13:35 (Critic TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE)
 
 | field   | value |

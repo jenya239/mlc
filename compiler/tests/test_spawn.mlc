@@ -199,6 +199,18 @@ export fn spawn_tests() -> [TestResult] = do
       'fn main() -> i32 = do\n  let mut x = 7\n  let t = spawn do return move x end\n  x\nend'),
     1))
 
+  // TRACK_CONCURRENCY_MOVE_TRACKING STEP=1 — red until STEP=2 wires .spawn move export.
+  results.push(assert_eq_int('TaskScope.spawn move then use E088',
+    check_error_count(
+      'fn main() -> i32 = do\n  scope |task_scope| do\n    let mut job = 7\n    task_scope.spawn do\n      let _ = move job\n      0\n    end\n    let _ = job\n  end\n  0\nend'),
+    1))
+
+  results.push(assert_eq_int('TaskScope.spawn move then use diagnostic code',
+    if first_error_line(
+      'fn main() -> i32 = do\n  scope |task_scope| do\n    let mut job = 7\n    task_scope.spawn do\n      let _ = move job\n      0\n    end\n    let _ = job\n  end\n  0\nend'
+    ).contains("error[" + diagnostic_code_e088() + "]") then 1 else 0 end,
+    1))
+
   const return_value = Shared.new(SemanticExpressionInt(7, integer_type(), span_unknown()))
   const block = Shared.new(SemanticExpressionBlock([], return_value, integer_type(), span_unknown()))
   const lambda = Shared.new(SemanticExpressionLambda(

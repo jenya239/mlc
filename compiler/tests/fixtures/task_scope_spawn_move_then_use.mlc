@@ -1,0 +1,13 @@
+// TRACK_CONCURRENCY_MOVE_TRACKING STEP=1 —
+// TaskScope.spawn move then outer use must be E088 (red until STEP=2).
+fn main() -> i32 = do
+  scope |task_scope| do
+    let mut job = 7
+    task_scope.spawn do
+      let _ = move job
+      0
+    end
+    let _ = job
+  end
+  0
+end
