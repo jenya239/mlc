@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#8**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §26/§27/§44. Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-21) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 §26/§27 sync.
+**STEP=4** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §26/§27/§44. Size **M**.
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: affine fn in spawn allowed | **done** — `ok extern_thread_affine_spawn_red` (freeze E094) |
 | 2 | Wire call-site affinity check; green; Tier B; self-host if compiler/ | **done** — `ok extern_thread_affine_spawn` (E094); main_ok; Tier B; self-host DIFF 0 |
-| 3 | MEMORY_MODEL + CONCURRENCY_V2 §26/§27 sync | open |
+| 3 | MEMORY_MODEL + CONCURRENCY_V2 §26/§27 sync | **done** — E094 + attrs status; §26/§27 |
 | 4 | Critic: gates; archive | open |
 
 ## Out of scope

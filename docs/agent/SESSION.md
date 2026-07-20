@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:48 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_FFI_METADATA |
+| started | 2026-07-21 00:44 |
+| elapsed | ~4 min |
+| done    | MEMORY_MODEL FFI affinity E094; CONCURRENCY_V2 §26/§27 status; TRACK/PLAN → Critic |
+| verify  | docs cite E094 + attrs residual sendable/callback_concurrent |
+| result  | STEP=3 done |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_FFI_METADATA |
+
 ### Turn 2026-07-21 00:45 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=2)
 
 | field   | value |

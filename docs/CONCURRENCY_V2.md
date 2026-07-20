@@ -373,25 +373,37 @@ defer lock.release()
 
 ## 26. FFI concurrency-контракт
 
-Каждый `extern c` type/fn — метаданные: `thread_safe | sendable | blocking |
+Каждый `extern` type/fn — метаданные: `thread_safe | sendable | blocking |
 callback_concurrent | thread_affine`.
 
 ```mlc
-extern c fn sqlite_step(...) blocking !thread_safe
-extern c type GtkWidget !Send thread_affine(MainThread)
+extern fn sqlite_step(...) = "…" from "<sqlite3.h>" blocking
+extern type GtkWidget = "GtkWidget" from "<gtk.h>" thread_affine(MainThread)
 ```
 
 Без этого один FFI handle обесценивает всю checker-модель (особенно критично
 для GUI/DB-биндингов).
 
+**Статус:** **done** for gate ([TRACK_CONCURRENCY_FFI_METADATA](agent/TRACK_CONCURRENCY_FFI_METADATA.md)):
+parse `blocking` / `thread_safe` / `thread_affine(Name)` / `!…`; W-EXTERN-ATTR when
+`from "<header>"` lacks attrs (TRACK_FFI_SAFETY); `type_is_thread_affine` → `!Send`/`!Sync`;
+**E094** when a `thread_affine` **extern fn** is called inside `spawn` /
+`TaskScope.spawn`. Residual: `sendable` / `callback_concurrent` not in parser;
+no runtime MainThread TLS.
+
 ## 27. Thread affinity
 
 ```mlc
-fn update(widget: GtkWidget) { ... }
+extern fn gui_paint() -> unit = "gui_paint" from "<stdio.h>" thread_affine(MainThread)
+// inside spawn / TaskScope.spawn:
+gui_paint()   // error[E094]
 ```
 
-Вызов из worker-потока → `error: GtkWidget is bound to MainThread`.
+Вызов `thread_affine` **fn** из worker (`spawn` / `TaskScope.spawn`) → **E094**.
+Affine **type** values stay `!Send` (free capture / `Arc.new` → **E092**).
+Main-thread call of the same fn remains OK.
 
+**Статус:** **done** call-site fn check ([TRACK_CONCURRENCY_FFI_METADATA](agent/TRACK_CONCURRENCY_FFI_METADATA.md)).
 ## 28. `Supervisor` — после Isolate, не раньше
 
 **Статус (2026-07-12):** C++ v1 **implemented** —
@@ -614,7 +626,7 @@ Checker → SemanticIR → C++20`)
 13. Есть deterministic concurrency tests.
 14. Есть stress tests.
 15. Generated C++ проходит TSan.
-16. FFI types имеют concurrency metadata.
+16. FFI types/fns имеют concurrency metadata (**done** attrs + **E094** affinity fn-in-spawn; residual sendable/callback_concurrent).
 17. Runtime выдерживает реальное многопоточное приложение (эталонный чат).
 
 ## Итоговая формула архитектуры
