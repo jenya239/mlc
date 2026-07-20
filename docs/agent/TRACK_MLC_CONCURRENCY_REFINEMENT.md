@@ -7,7 +7,7 @@ against current code 2026-07-19 (`compiler/checker/send_safe.mlc`,
 в треки именно доработку mlc по многопоточности") — Driver opens STEP=1 of the next
 **pending** item in order without further permission, same rule as §46.
 
-## Status: **active** (2026-07-21) — `#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` STEP=0 done → Driver STEP=1; `#10` done
+## Status: **active** (2026-07-21) — `#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` STEP=1 done → Driver STEP=2; `#10` done
 
 ## How to use this backlog
 
@@ -36,7 +36,7 @@ one is blocked.
 | 8 | `CONCURRENCY_FFI_METADATA` | `extern c` type/fn concurrency attributes (`thread_safe`/`sendable`/`blocking`/`callback_concurrent`/`thread_affine(MainThread)`) + checker enforcement of thread affinity at call sites, per §26/§27 | checker test: calling a `thread_affine(MainThread)`-tagged extern fn from inside `spawn`/`TaskScope.spawn` is a compile error | M | **done** — [archive/tracks/TRACK_CONCURRENCY_FFI_METADATA](../archive/tracks/TRACK_CONCURRENCY_FFI_METADATA.md) |
 | 9 | `CONCURRENCY_ISOLATE_MLC_SURFACE` | Expose `Isolate[State, Msg]` at the MLC level (today C++-only, `runtime/include/mlc/concurrency/` — MLC syntax deferred per §16 "same closure gap as JobQueue") with a bounded mailbox and explicit overflow policy (`Block \| DropNewest \| DropOldest \| Reject`), per §16/§17/§44 phase 8 | e2e: `Isolate.start(...)` from MLC source, `room.send(...)` observed serialized (no concurrent handler re-entry) under concurrent senders | L | **done** — [archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](../archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md) |
 | 10 | `CONCURRENCY_SUPERVISOR_MLC_SURFACE` | Expose `Supervisor` (C++ v1 done, [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md)) at the MLC level — same closure-capture gap noted in §28 | e2e: permanent restart + Temporary sibling unaffected (method API; block sugar deferred) | M | **done** — [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md) |
-| 11 | `CONCURRENCY_TESTRUNTIME_MLC_SURFACE` | Expose `TestRuntime.new(seed:)` deterministic scheduler (C++ v1 done, `TestScheduler`/`TestMutex`/`TestChannel`) at the MLC level, per §34 | e2e: same `seed` reproduces the same interleaving across two runs, from MLC source | M | **active** — [TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md) (STEP=0 done → Driver STEP=1; `TestRuntime`→`TestScheduler`) |
+| 11 | `CONCURRENCY_TESTRUNTIME_MLC_SURFACE` | Expose `TestRuntime.new(seed:)` deterministic scheduler (C++ v1 done, `TestScheduler`/`TestMutex`/`TestChannel`) at the MLC level, per §34 | e2e: same `seed` reproduces the same interleaving across two runs, from MLC source | M | **active** — [TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md) (STEP=1 done → Driver STEP=2; `TestRuntime`→`TestScheduler`) |
 
 ## Non-goals (frozen, per CONCURRENCY_V2.md §20/§41)
 

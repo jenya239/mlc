@@ -1,0 +1,12 @@
+// TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE —
+// TestRuntime.new(seed) / .spawn do…end / .join (facade over C++ TestScheduler).
+fn child_body() -> unit = ()
+
+fn main() -> i32 = do
+  let runtime = TestRuntime.new(918271)
+  runtime.spawn do
+    child_body()
+  end
+  runtime.join()
+  0
+end

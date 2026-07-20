@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 03:16 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+| started | 2026-07-21 03:13 |
+| elapsed | ~3 min |
+| done    | Red: `fixtures/testruntime_new_spawn.mlc` + `run_testruntime_mlc_red.sh` / green stub `run_testruntime_mlc.sh`; `.spawn do…end` (parser); freeze `TestRuntime.new`/`spawn`/`join` |
+| verify  | `ok testruntime_mlc_red` (E001 TestRuntime, status=1, `scheduler.hpp` present); green stub EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+
 ### Turn 2026-07-21 03:12 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #11)
 
 | field   | value |

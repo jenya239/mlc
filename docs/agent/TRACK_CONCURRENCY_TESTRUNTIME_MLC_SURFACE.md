@@ -4,18 +4,19 @@ Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.m
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §34.
 C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) (T7 deferred MLC). Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-21) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: `TestRuntime` / `TestScheduler` MLC missing (E001); C++ harness present.
+**STEP=2** — wire MLC `TestRuntime.new` / `.spawn do…end` / `.join`; green
+`run_testruntime_mlc.sh` + same-seed e2e; Tier B + self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
 | Item | Choice |
 |------|--------|
 | Problem | CONCURRENCY_V2 §34: deterministic `TestRuntime.new(seed:)` for reproducible interleavings. **Already present (C++):** `runtime/include/mlc/concurrency/testing/scheduler.hpp` — `TestScheduler(seed)` / `spawn` / `join` / `yield` / `park` / `unpark` / `log_event` / `events`; `TestMutex`/`TestChannel`; smoke `runtime/test/test_scheduler.cpp` (9 checks, green in `run_concurrency_smoke.sh`). Prior TEST_HARNESS T7 closed **C++-only** (JobQueue/Supervisor-style closure deferral). **Real gap:** no MLC name (probed 2026-07-21: `TestRuntime` → **E001** status=1; `TestScheduler` → **E001**). Supervisor/Isolate MLC (#9–#10) proved handler wrap shippable — same path |
-| Boundaries in scope | (1) MLC method API: `TestRuntime` as facade over C++ `TestScheduler` — `TestRuntime.new(seed)` / `.spawn(handler)` / `.join()` / `.seed()`; handler `() -> unit` (named fn or lambda). (2) Optional MVP extras if needed for gate: `.yield()` / `.log_event(string)` (or events via C++ smoke). (3) Gate: MLC e2e — same `seed` → identical event/order snapshot across two runs (mirror `test_scheduler` determinism). (4) Ensure generated TU sees `testing/scheduler.hpp` (not in `mlc.hpp` today — add include or emit). (5) Docs MEMORY_MODEL / CONCURRENCY_V2 §34 |
+| Boundaries in scope | (1) MLC method API: `TestRuntime` as facade over C++ `TestScheduler` — `TestRuntime.new(seed)` / `.spawn do … end` (parser requires `do`; body = `() -> unit` lambda) / `.join()` / `.seed()`. (2) Optional MVP extras if needed for gate: `.yield()` / `.log_event(string)` (or events via C++ smoke). (3) Gate: MLC e2e — same `seed` → identical event/order snapshot across two runs (mirror `test_scheduler` determinism). (4) Ensure generated TU sees `testing/scheduler.hpp` (not in `mlc.hpp` today — add include or emit). (5) Docs MEMORY_MODEL / CONCURRENCY_V2 §34 |
 | Boundaries out | Full MLC `TestMutex`/`TestChannel` surface (defer unless trivial); rewriting C++ scheduler; fuzz/sanitize CI (already T6); `rt.run()` sugar (C++ is `join`); model checker; `lib/mlc/`; JobQueue MLC |
 | Wire location | `compiler/` registry + infer/codegen; reuse `testing/scheduler.hpp`; tests under `compiler/tests/` + existing `test_scheduler` |
 | Token / gate | (a) red: TestRuntime MLC undefined; (b) green: `--check-only` + linked same-seed determinism e2e; (c) `mlcc --check-only`; Tier B + self-host on every `compiler/` STEP |
@@ -28,7 +29,7 @@ C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS](../archive/trac
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: TestRuntime MLC missing | open — E001; `scheduler.hpp` + `test_scheduler` present |
+| 1 | Red: TestRuntime MLC missing | **done** — `ok testruntime_mlc_red` (E001; `scheduler.hpp` present) |
 | 2 | Wire MLC TestRuntime new/spawn/join; green same-seed e2e; Tier B; self-host | open |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §34 sync | open |
 | 4 | Critic: gates; archive | open |
