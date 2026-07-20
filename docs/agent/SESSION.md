@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 02:57 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+| started | 2026-07-21 02:55 |
+| elapsed | ~2 min |
+| done    | MEMORY_MODEL Supervisor row + notes; CONCURRENCY_V2 §0/§28/§29/§43/§44; TRACK/PLAN → Critic |
+| verify  | docs cite `Supervisor.new`/`add`/`start`/`stop`; RestartPolicy; !Send/!Sync; track link |
+| result  | STEP=3 done → Critic |
+| issues  | residual: block sugar deferred; one_for_all/backoff out |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+
 ### Turn 2026-07-21 02:53 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=2)
 
 | field   | value |
