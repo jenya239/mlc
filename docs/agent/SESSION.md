@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 11:20 (Driver TRACK_CONCURRENCY_SEND_BOUND STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_SEND_BOUND |
+| started | 2026-07-20 10:48 |
+| elapsed | ~8 min |
+| done    | Fixtures `spawn_shared_capture_not_send.mlc` + `task_scope_spawn_shared_capture_not_send.mlc`; red/green shell gates; `test_spawn.mlc` E092 cases (pending green until STEP=2) |
+| verify  | `ok spawn_shared_capture_not_send_red`; green script EXIT=1 missing E092 (expected) |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-19-concurrency-refinement-backlog` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_SEND_BOUND |
+
 ### Turn 2026-07-20 11:10 (Planner TRACK_CONCURRENCY_SEND_BOUND STEP=0)
 
 | field   | value |

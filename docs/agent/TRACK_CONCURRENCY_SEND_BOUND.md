@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#2**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §2/§44 phase 3. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red checker harness: free capture of `!Send` (`Shared[i32]`) in bare `spawn` / `TaskScope.spawn` must emit **E092** (today no Send diagnostic).
+**STEP=2** — wire `type_is_send` on spawn / TaskScope.spawn sites; catalog **E092**; migrate Channel/Arc Send diag E082→E092; green harness + Tier B + self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §2/§44 phase 3. Size **M**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red test: spawn / TaskScope.spawn `Shared` capture → expect E092 (fails today) | open |
+| 1 | Red test: spawn / TaskScope.spawn `Shared` capture → expect E092 (fails today) | **done** |
 | 2 | Wire Send check on spawn sites + E092 catalog; migrate Channel/Arc Send diag; green tests; Tier B; self-host | open |
 | 3 | MEMORY_MODEL sync (E092 / spawn Send) | open |
 | 4 | Critic: gates; archive | open |

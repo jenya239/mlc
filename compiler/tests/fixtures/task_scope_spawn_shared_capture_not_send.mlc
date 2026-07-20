@@ -1,0 +1,12 @@
+// TRACK_CONCURRENCY_SEND_BOUND STEP=1 —
+// TaskScope.spawn free Shared capture must be E092 (red until STEP=2).
+fn main() -> i32 = do
+  scope |task_scope| do
+    let shared_value = Shared.new(7)
+    task_scope.spawn do
+      let _ = shared_value
+      0
+    end
+  end
+  0
+end
