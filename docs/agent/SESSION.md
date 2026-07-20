@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 14:20 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_MOVE_TRACKING |
+| started | 2026-07-20 12:51 |
+| elapsed | ~25 min |
+| done    | `move_check.mlc`: `method_name == "spawn"` exports ExprLambda body moves like ExprSpawn |
+| verify  | `ok task_scope_spawn_move_then_use_e088`; Tier B 1471/0; self-host DIFF_EXIT=0; bare spawn E088; no-move scope ok |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_MOVE_TRACKING |
+
 ### Turn 2026-07-20 13:50 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=1)
 
 | field   | value |

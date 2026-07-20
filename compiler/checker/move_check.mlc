@@ -105,9 +105,15 @@ fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkSt
       const callee_state = move_check_expr(callee, moved)
       move_check_expr_list(arguments, callee_state)
     end,
-    ExprMethod(receiver, _, arguments, _) => do
+    ExprMethod(receiver, method_name, arguments, _) => do
       const receiver_state = move_check_expr(receiver, moved)
-      move_check_expr_list(arguments, receiver_state)
+      // TaskScope.spawn / receiver.spawn: ExprLambda body is a concurrency
+      // handoff — export moves like bare ExprSpawn (do not change general lambdas).
+      if method_name == "spawn" then
+        move_check_spawn_method_arguments(arguments, receiver_state)
+      else
+        move_check_expr_list(arguments, receiver_state)
+      end
     end,
     ExprField(object, _, _) => move_check_expr(object, moved),
     ExprIndex(object, index_expression, _) => do
@@ -201,6 +207,24 @@ fn move_check_expr_list(
     state,
     (accumulator, expression) => do
       const next = move_check_expr(expression, accumulator.moved)
+      MoveCheckWalkState {
+        diagnostics: diagnostics_append(accumulator.diagnostics, next.diagnostics),
+        moved: next.moved
+      }
+    end)
+
+// `.spawn` args: walk ExprLambda body with outer moved set and export marks.
+fn move_check_spawn_method_arguments(
+  expressions: [Shared<Expr>],
+  state: MoveCheckWalkState
+) -> MoveCheckWalkState =
+  expressions.fold(
+    state,
+    (accumulator, expression) => do
+      const next = match expression {
+        ExprLambda(_, body, _) => move_check_expr(body, accumulator.moved),
+        _ => move_check_expr(expression, accumulator.moved)
+      }
       MoveCheckWalkState {
         diagnostics: diagnostics_append(accumulator.diagnostics, next.diagnostics),
         moved: next.moved
