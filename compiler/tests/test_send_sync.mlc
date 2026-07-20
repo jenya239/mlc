@@ -68,5 +68,10 @@ export fn send_sync_tests() -> [TestResult] = do
       'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>" blocking\n' +
       'fn main() -> i32 = pq_exec(0)') == 0))
 
+  // TRACK_CONCURRENCY_ATOMICS STEP=1 — red until STEP=2 AtomicI32 wire.
+  results.push(assert_true('AtomicI32 undefined (atomics gap)',
+    check_error_count(
+      'fn main() -> i32 = do let c = AtomicI32.new(0); c.fetch_add(1) end') > 0))
+
   results
 end

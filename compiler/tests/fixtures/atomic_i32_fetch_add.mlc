@@ -1,0 +1,8 @@
+// TRACK_CONCURRENCY_ATOMICS STEP=1 —
+// Desired API: AtomicI32.new / .fetch_add (seq_cst).
+// Red today: AtomicI32 undefined (E001).
+fn main() -> i32 = do
+  let counter = AtomicI32.new(0)
+  let previous = counter.fetch_add(1)
+  previous
+end

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 23:30 (Driver TRACK_CONCURRENCY_ATOMICS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_ATOMICS |
+| started | 2026-07-20 23:26 |
+| elapsed | ~4 min |
+| done    | Fixture `atomic_i32_fetch_add.mlc`; `run_atomic_i32_red.sh` + green stub; gap case in `test_send_sync.mlc`; freeze API `AtomicI32` |
+| verify  | `ok atomic_i32_red` (E001 + no atomic.hpp); green still fails |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_ATOMICS |
+
 ### Turn 2026-07-20 23:30 (Planner open CONCURRENCY_ATOMICS)
 
 | field   | value |
