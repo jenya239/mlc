@@ -1,0 +1,10 @@
+// StopSource static method codegen (TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING).
+
+import { CppExpression, CppCall } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+
+export fn gen_method_stop_source_new() -> string =
+  'mlc::concurrency::StopSource()'
+
+export fn gen_method_stop_source_new_cpp() -> Shared<CppExpression> =
+  Shared.new(CppCall(emit_helpers.make_identifier_cpp_expression('mlc::concurrency::StopSource'), []))

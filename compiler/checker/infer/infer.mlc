@@ -58,6 +58,16 @@ import { is_mutex_static_new, infer_mutex_static_new_call, infer_mutex_method_ca
 import { is_mutex_method } from '../check/method_types/mutex_method_types'
 import { type_is_mutex } from '../semantic_type_structure'
 import { is_channel_method } from '../check/method_types/channel_method_types'
+import {
+  is_stop_source_static_new,
+  infer_stop_source_static_new_call,
+  is_stop_source_method,
+  type_is_stop_source,
+  infer_stop_source_method_call,
+  is_channel_receive_result_method,
+  type_is_channel_receive_result,
+  infer_channel_receive_result_method_call
+} from './infer_stop_method'
 import { infer_result_option_hof_method_call } from './infer_result_option_method'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver } from '../hof_method_spec'
 import {
@@ -230,6 +240,8 @@ fn infer_expr_method(
   else if is_mutex_static_new(object, method_name) then
     infer_mutex_static_new_call(
       object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_stop_source_static_new(object, method_name) then
+    infer_stop_source_static_new_call(object_parsed, method_arguments, method_span)
   else if is_shared_weak_method_on_receiver(object_parsed.inferred_type, method_name) then
     infer_shared_weak_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
@@ -242,6 +254,11 @@ fn infer_expr_method(
   else if is_channel_method(method_name) then
     infer_channel_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_stop_source_method(method_name) && type_is_stop_source(object_parsed.inferred_type) then
+    infer_stop_source_method_call(object_parsed, method_name, method_arguments, method_span)
+  else if is_channel_receive_result_method(method_name)
+    && type_is_channel_receive_result(object_parsed.inferred_type) then
+    infer_channel_receive_result_method_call(object_parsed, method_name, method_arguments, method_span)
   else if is_mutex_method(method_name) && type_is_mutex(object_parsed.inferred_type) then
     infer_mutex_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)

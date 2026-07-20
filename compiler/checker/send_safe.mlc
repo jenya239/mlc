@@ -59,6 +59,9 @@ fn type_is_send_field(
   if field_map.has(field_name) then type_is_send(field_map.get(field_name), registry) else false
 
 fn type_is_send_named(record_name: string, registry: TypeRegistry) -> bool = do
+  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus' then
+    return true
+  end
   if registry.type_is_thread_affine(record_name) then return false end
   if registry.type_is_thread_safe(record_name) then return true end
   if registry.concurrency_attributes_for_type(record_name).any(attribute => attribute == '!thread_safe') then
@@ -78,6 +81,9 @@ fn type_is_sync_field(
   if field_map.has(field_name) then type_is_sync(field_map.get(field_name), registry) else false
 
 fn type_is_sync_named(record_name: string, registry: TypeRegistry) -> bool = do
+  if record_name == 'StopSource' || record_name == 'StopToken' || record_name == 'ChannelStatus' then
+    return true
+  end
   if registry.type_is_thread_affine(record_name) then return false end
   if registry.type_is_thread_safe(record_name) then return true end
   if registry.concurrency_attributes_for_type(record_name).any(attribute => attribute == '!thread_safe') then
@@ -104,6 +110,9 @@ fn type_is_send_generic(
     return type_is_send(type_arguments[0], registry)
   end
   if type_name == 'Mutex' && type_arguments.length() == 1 then
+    return type_is_send(type_arguments[0], registry)
+  end
+  if type_name == 'ChannelReceiveResult' && type_arguments.length() == 1 then
     return type_is_send(type_arguments[0], registry)
   end
   // Map[K,V]: Send iff K,V Send (CONCURRENCY_V2 §39). Unknown key/value stays !Send.
@@ -135,6 +144,9 @@ fn type_is_sync_generic(
   if type_name == 'Mutex' && type_arguments.length() == 1 then return true end
   // Arc<T> is Sync iff T is Sync.
   if type_name == 'Arc' && type_arguments.length() == 1 then
+    return type_is_sync(type_arguments[0], registry)
+  end
+  if type_name == 'ChannelReceiveResult' && type_arguments.length() == 1 then
     return type_is_sync(type_arguments[0], registry)
   end
   if type_name == 'Channel' || type_name == 'Task' || type_name == 'Map' || type_name == 'Shared'

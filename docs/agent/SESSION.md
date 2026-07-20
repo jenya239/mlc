@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 15:50 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+| started | 2026-07-20 14:41 |
+| elapsed | ~70 min |
+| done    | Wire `StopSource`/`StopToken`, `recv(token)`→`ChannelReceiveResult`, `.cancelled()`; smoke; `stop_method_gen.mlc`; make_channel default `int` |
+| verify  | `ok channel_recv_cancel` + smoke; p1≡p2 DIFF=0; Tier B phases ok; arch lint failures=0 (method_gen allowlisted) |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+
 ### Turn 2026-07-20 14:40 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=1)
 
 | field   | value |

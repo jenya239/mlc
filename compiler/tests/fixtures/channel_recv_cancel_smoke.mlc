@@ -1,0 +1,10 @@
+// TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=2 —
+// Already-requested StopToken makes empty-channel recv return Cancelled.
+fn main() -> i32 = do
+  let channel_value: Channel<i32> = make_channel(1usize)
+  let stop = StopSource.new()
+  let token = stop.token()
+  stop.request()
+  let receive_result = channel_value.recv(token)
+  if receive_result.cancelled() then 0 else 1 end
+end

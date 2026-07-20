@@ -23,6 +23,7 @@ import {
   gen_method_shared_weak_cpp,
   gen_method_weak_upgrade_cpp
 } from './weak_method_gen'
+import { gen_method_stop_source_new, gen_method_stop_source_new_cpp } from './stop_method_gen'
 
 fn make_shared_call(element_type: string, argument_code: string) -> string =
   `std::make_shared<${element_type}>(${argument_code})`
@@ -332,6 +333,10 @@ fn gen_method_expr_after_object_using_fragments(
   else if static_receiver_name == 'Mutex' then gen_method_mutex_using_fragments(
     receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context,
     original_trailing_arguments, gen_stmts, eval_expr_fn)
+  else if static_receiver_name == 'StopSource' then
+    if method_name == 'new' && argument_count == 0 then gen_method_stop_source_new()
+    else gen_method_expr_fallback_using_fragments(
+      receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
   else gen_method_expr_fallback_using_fragments(
     receiver_fragment, object_type_name, method_name, trailing_arguments_joined, argument_count, context)
   end
@@ -670,6 +675,10 @@ fn gen_method_expr_after_object_cpp(
   else if static_receiver_name == 'Mutex' then gen_method_mutex_cpp(
     receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context,
     original_trailing_arguments, gen_stmts, evaluate_expression)
+  else if static_receiver_name == 'StopSource' then
+    if method_name == 'new' && argument_count == 0 then gen_method_stop_source_new_cpp()
+    else gen_method_expr_fallback_cpp(
+      receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   else gen_method_expr_fallback_cpp(
     receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   end

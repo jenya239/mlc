@@ -31,14 +31,18 @@ export fn channel_syntax_tests() -> [TestResult] = do
   results.push(assert_true('channel send rejects non-send array',
     check_error_count('fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end') > 0))
 
-  // TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=1 — red until STEP=2 MLC StopToken.
-  results.push(assert_true('channel StopSource undefined (cancel gap)',
+  // TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=2 — StopSource + recv(token).
+  results.push(assert_eq_int('channel StopSource.new checks',
     check_error_count(
-      'fn main() -> unit = do let stop = StopSource.new(); () end') > 0))
+      'fn main() -> unit = do let stop = StopSource.new(); let _ = stop.token(); () end'), 0))
 
-  results.push(assert_true('channel recv rejects StopToken arity (cancel gap)',
+  results.push(assert_true('channel recv rejects non-StopToken arity arg',
     check_error_count(
       'fn main() -> unit = do let c = make_channel(1usize); let _ = c.recv(0); () end') > 0))
+
+  results.push(assert_eq_int('channel recv(StopToken) checks',
+    check_error_count(
+      'fn main() -> unit = do\n  let c = make_channel(1usize)\n  let stop = StopSource.new()\n  let _ = c.recv(stop.token())\n  ()\nend'), 0))
 
   const channel_receiver = Shared.new(SemanticExpressionIdent('channel_value', channel_type(), span_unknown()))
   const send_call = Shared.new(SemanticExpressionMethod(

@@ -111,6 +111,7 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   else if type_name == 'Arc' then 'mlc::concurrency::Arc'
   else if type_name == 'Mutex' then 'mlc::concurrency::Mutex'
   else if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
+  else if type_name == 'ChannelReceiveResult' then 'mlc::concurrency::ChannelReceiveResult'
   else if type_name == 'RegionHandle' then 'mlc::memory::RegionHandle'
   else if type_name == 'Region' then 'mlc::memory::RegionPtr'
   else context.resolve(type_name)
@@ -133,6 +134,9 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TShared(inner) => cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  =>
       if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
+      else if type_name == 'StopSource' then 'mlc::concurrency::StopSource'
+      else if type_name == 'StopToken' then 'mlc::concurrency::StopToken'
+      else if type_name == 'ChannelStatus' then 'mlc::concurrency::ChannelStatus'
       else if type_name.length() >= 10 && type_name.substring(0, 10) == 'RegionTag_' then 'void'
       else context.resolve(type_name)
       end,

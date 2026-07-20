@@ -1,4 +1,4 @@
-// Type inference for Channel send/recv (TRACK_CONCURRENCY STEP=4).
+// Type inference for Channel send/recv (TRACK_CONCURRENCY STEP=4 + cancel token).
 
 import { Expr, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append, expr_span } from '../../frontend/ast'
 import { Type, TypeRegistry } from '../registry'
@@ -8,7 +8,8 @@ import { type_is_unknown, types_structurally_equal, type_description, type_is_ch
          channel_element_type_from_channel_type } from '../semantic_type_structure'
 import { is_channel_method, channel_method_result_type } from '../check/method_types/channel_method_types'
 import { type_is_send_safe } from '../send_safe'
-import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
+import { call_arity_range_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { type_is_stop_token } from './infer_stop_method'
 import { diagnostic_code_e082, diagnostic_code_e092 } from '../diagnostic_codes'
 
 fn channel_method_receiver_error(channel_type: Shared<Type>, method_name: string, method_span: Span) -> [Diagnostic] =
@@ -44,6 +45,28 @@ fn channel_send_argument_errors(
   errors
 end
 
+fn channel_stop_token_argument_errors(
+  argument_type: Shared<Type>,
+  argument_span: Span
+) -> [Diagnostic] =
+  if !type_is_unknown(argument_type) && !type_is_stop_token(argument_type) then
+    [diagnostic_error_with_code(
+      'channel cancellable call expects StopToken, got ' + type_description(argument_type),
+      argument_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+fn channel_method_arity_errors(method_name: string, argument_count: i32, method_span: Span) -> [Diagnostic] =
+  if method_name == 'recv' then
+    call_arity_range_diagnostics(0, 1, argument_count, method_span)
+  else if method_name == 'send' then
+    call_arity_range_diagnostics(1, 2, argument_count, method_span)
+  else
+    []
+  end
+
 export fn infer_channel_method_call(
   object_parsed: InferResult,
   method_name: string,
@@ -54,22 +77,37 @@ export fn infer_channel_method_call(
 ) -> InferResult = do
   const channel_type = object_parsed.inferred_type
   const receiver_errors = channel_method_receiver_error(channel_type, method_name, method_span)
-  const arity_errors = method_arity_after_receiver(
-    receiver_errors, method_name, method_arguments.length(), method_span)
+  const arity_errors =
+    if receiver_errors.length() > 0 then []
+    else channel_method_arity_errors(method_name, method_arguments.length(), method_span)
   let mut merged = object_parsed
-  let mut errors = arity_errors
+  let mut errors = diagnostics_append(receiver_errors, arity_errors)
   const element_type = channel_element_type_from_channel_type(channel_type)
+  const argument_count = method_arguments.length()
 
-  if method_name == 'send' && method_arguments.length() == 1 then
+  if method_name == 'send' && (argument_count == 1 || argument_count == 2) then
     const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
     const argument_type = argument_parsed.inferred_type
     merged = merged.absorb(argument_parsed)
     errors = diagnostics_append(errors, channel_send_argument_errors(
       element_type, argument_type, expr_span(method_arguments[0]), inference_context.registry))
+    if argument_count == 2 then
+      const token_parsed = infer_expr_fn(method_arguments[1], inference_context)
+      merged = merged.absorb(token_parsed)
+      errors = diagnostics_append(errors, channel_stop_token_argument_errors(
+        token_parsed.inferred_type, expr_span(method_arguments[1])))
+    end
+  end
+
+  if method_name == 'recv' && argument_count == 1 then
+    const token_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    merged = merged.absorb(token_parsed)
+    errors = diagnostics_append(errors, channel_stop_token_argument_errors(
+      token_parsed.inferred_type, expr_span(method_arguments[0])))
   end
 
   InferResult {
-    inferred_type: channel_method_result_type(channel_type, method_name),
+    inferred_type: channel_method_result_type(channel_type, method_name, argument_count),
     errors: diagnostics_append(merged.errors, errors)
   }
 end

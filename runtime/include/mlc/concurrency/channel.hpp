@@ -29,6 +29,10 @@ template<typename Value>
 struct ChannelReceiveResult {
     ChannelStatus status = ChannelStatus::Closed;
     std::optional<Value> value;
+
+    [[nodiscard]] bool cancelled() const noexcept {
+        return status == ChannelStatus::Cancelled;
+    }
 };
 
 namespace detail {
@@ -471,7 +475,7 @@ public:
     Receiver<Value> receiver() { return Receiver<Value>(state_); }
 };
 
-template<typename Value>
+template<typename Value = int>
 Channel<Value> make_channel(size_t capacity = 64) {
     return Channel<Value>(capacity);
 }

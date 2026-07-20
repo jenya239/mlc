@@ -1,0 +1,100 @@
+// StopSource.new / StopToken methods (TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING).
+
+import { Expr, ExprIdent, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
+import { Type, TNamed, TGeneric, TBool, TUnit, TUnknown } from '../registry'
+import { InferResult } from './infer_result'
+import { type_is_unknown, type_description } from '../semantic_type_structure'
+import { call_arity_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+export fn is_stop_source_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'StopSource' && method_name == 'new',
+    _ => false
+  }
+
+export fn infer_stop_source_static_new_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span
+) -> InferResult = do
+  const arity_errors = call_arity_diagnostics(0, method_arguments.length(), method_span)
+  InferResult {
+    inferred_type: Shared.new(TNamed('StopSource')),
+    errors: diagnostics_append(object_parsed.errors, arity_errors)
+  }
+end
+
+export fn type_is_stop_source(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'StopSource',
+    _ => false
+  }
+
+export fn type_is_stop_token(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'StopToken',
+    _ => false
+  }
+
+export fn type_is_channel_receive_result(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TGeneric(type_name, _) => type_name == 'ChannelReceiveResult',
+    TNamed(type_name) => type_name == 'ChannelReceiveResult',
+    _ => false
+  }
+
+export fn is_stop_source_method(method_name: string) -> bool =
+  method_name == 'token' || method_name == 'request' || method_name == 'requested'
+
+export fn is_channel_receive_result_method(method_name: string) -> bool =
+  method_name == 'cancelled'
+
+fn stop_source_method_result_type(method_name: string) -> Shared<Type> =
+  if method_name == 'token' then Shared.new(TNamed('StopToken'))
+  else if method_name == 'requested' then Shared.new(TBool)
+  else Shared.new(TUnit)
+
+fn stop_source_receiver_error(stop_source_type: Shared<Type>, method_name: string, method_span: Span) -> [Diagnostic] =
+  if !type_is_unknown(stop_source_type) && !type_is_stop_source(stop_source_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects a StopSource receiver, got ${type_description(stop_source_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+export fn infer_stop_source_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span
+) -> InferResult = do
+  const receiver_errors = stop_source_receiver_error(object_parsed.inferred_type, method_name, method_span)
+  const arity_errors = call_arity_diagnostics(0, method_arguments.length(), method_span)
+  InferResult {
+    inferred_type: stop_source_method_result_type(method_name),
+    errors: diagnostics_append(object_parsed.errors, diagnostics_append(receiver_errors, arity_errors))
+  }
+end
+
+export fn infer_channel_receive_result_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span
+) -> InferResult = do
+  let mut errors = object_parsed.errors
+  if !type_is_unknown(object_parsed.inferred_type) && !type_is_channel_receive_result(object_parsed.inferred_type) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      `method ${method_name} expects a ChannelReceiveResult receiver, got ${type_description(object_parsed.inferred_type)}`,
+      method_span,
+      diagnostic_code_e082())])
+  end
+  errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+  InferResult {
+    inferred_type: Shared.new(TBool),
+    errors: errors
+  }
+end
