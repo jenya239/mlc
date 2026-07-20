@@ -1,13 +1,38 @@
 # Track: Concurrency Sync Trait
 
-Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#4**.
+Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](../../agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#4**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=3 done → Critic
+## Status: **closed** (2026-07-20) — Critic OK
+
+**Critic 2026-07-20 (STEP=4):** Re-ran `run_spawn_array_sync.sh` + `--check-only main`.
+Anti-false-done: `ad696efb`…`2f9c1498` (STEP=0–3); no `lib/mlc/` → REG skip.
+Wire: `send_safe.mlc` Array/Map Send iff elems; `spawn_capture.mlc` free Ident →
+Send+Sync (**E093**); `move` Ident → Send only; MEMORY_MODEL cites E093 / Array Send.
+**reopen: none**.
+
+Honest residual: `.spawn` still `method_name == "spawn"`; general ExprLambda Sync
+export unchanged; Atomic Sync deferred to later §47 items.
+
+| Gate | Result |
+|------|--------|
+| `run_spawn_array_sync.sh` | `ok spawn_array_sync_e093` EXIT=0 |
+| `mlcc --check-only compiler/main.mlc` | EXIT=0 |
+| Tier B / self-host | STEP=2: `build_tests.sh` 1471/0; p1≡p2 DIFF_EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§47 `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `ad696efb` | Decision freeze + open |
+| 1 | `81b2ce72` | Red harness (gap E092 on move Array) |
+| 2 | `0e82aa43` | Array Send iff T + E093; Tier B + self-host |
+| 3 | `2f9c1498` | MEMORY_MODEL sync |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -32,7 +57,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **
 | 1 | Red: move Array into spawn still E092 (gap) | **done** — `ok spawn_move_array_send_red` |
 | 2 | Send retune Array/Map + E093 free !Sync; green; Tier B; self-host | **done** — `ok spawn_array_sync_e093`; Tier B 1471/0; p1≡p2 |
 | 3 | MEMORY_MODEL sync (Sync / E093 / Array Send) | **done** |
-| 4 | Critic: gates; archive | open |
+| 4 | Critic: gates; archive | **done** — closed |
 
 ## Out of scope
 

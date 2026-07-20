@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Critic** `TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4). Priority override `#36` **closed** 2026-07-20.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** open §47 `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING`. Priority override `#36` **closed** 2026-07-20.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -86,8 +86,8 @@ INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** | **closed** 2026-07-19 (Critic OK). Archived. Panel fills + `from_panel` hover. Do not reopen numbered STEPs |
-| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#3` done. **`#4 CONCURRENCY_SYNC_TRAIT` active** (STEP=2 → Driver STEP=3). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
-| **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** | **active** — STEP=0–2 done (Array Send iff T + E093 free !Sync); next Driver STEP=3 (MEMORY_MODEL) |
+| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#4` done. Next Planner open `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING`. Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** | **closed** 2026-07-20 (Critic OK). Archived. Array Send iff T + E093 free !Sync. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** | **closed** 2026-07-20 (Critic OK). Archived. E088 on TaskScope.spawn move. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** | **closed** 2026-07-20 (Critic OK). Archived. E092 on spawn/TaskScope.spawn + Channel/Arc Send. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** | **closed** 2026-07-20 (Critic OK). Archived. E087 on bare `spawn` + `TaskScope.spawn`. Do not reopen numbered STEPs |
