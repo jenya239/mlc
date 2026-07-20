@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:54 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #9)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-21 00:51 |
+| elapsed | ~3 min |
+| done    | Open `#9`: `TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md` Decision freeze; backlog/PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: C++ `isolate.hpp` Block-only green; MLC `Isolate` → E001; design `.start` parse-fails; Drop* out of v1 gate |
+| result  | STEP=0 frozen; Block-only MLC surface; Drop*/#10–#11 out |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+
 ### Turn 2026-07-21 00:52 (Critic TRACK_CONCURRENCY_FFI_METADATA)
 
 | field   | value |

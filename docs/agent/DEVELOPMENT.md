@@ -41,17 +41,17 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `TRACK_MLC_CONCURRENCY_REFINEMENT` (§47 open `#9 CONCURRENCY_ISOLATE_MLC_SURFACE`).
+**Queue head:** Driver `TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 `#9` STEP=1).
+**`TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 #9)** active 2026-07-21 — STEP=0 done → Driver STEP=1.
 **`TRACK_CONCURRENCY_FFI_METADATA` (§47 #8)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_ATOMICS` (§47 #7)** closed 2026-07-21; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#8` done; next `#9`.
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#9` open; `#8` done.
 **`TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING` (§47 #5)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#7` open.
 **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** closed 2026-07-20; archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#36).
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
