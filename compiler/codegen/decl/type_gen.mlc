@@ -137,6 +137,10 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       else if type_name == 'StopSource' then 'mlc::concurrency::StopSource'
       else if type_name == 'StopToken' then 'mlc::concurrency::StopToken'
       else if type_name == 'ChannelStatus' then 'mlc::concurrency::ChannelStatus'
+      else if type_name == 'AtomicBool' then 'mlc::concurrency::AtomicBool'
+      else if type_name == 'AtomicI32' then 'mlc::concurrency::AtomicI32'
+      else if type_name == 'AtomicI64' then 'mlc::concurrency::AtomicI64'
+      else if type_name == 'AtomicU64' then 'mlc::concurrency::AtomicU64'
       else if type_name.length() >= 10 && type_name.substring(0, 10) == 'RegionTag_' then 'void'
       else context.resolve(type_name)
       end,

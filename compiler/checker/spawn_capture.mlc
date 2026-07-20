@@ -10,14 +10,19 @@ import {
 } from '../frontend/ast'
 import { pattern_bindings } from './names'
 import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092, diagnostic_code_e093 } from './diagnostic_codes'
-import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, TShared, type_from_annotation_with_registry } from './registry'
+import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, TShared, TNamed, type_from_annotation_with_registry } from './registry'
 import { type_is_sync, type_is_send } from './send_safe'
 import { type_description, type_is_unknown } from './semantic_type_structure'
 
-// Sync-safe sharing across spawn: Mutex (always) or Arc<T> when T is Sync.
+// Sync-safe sharing across spawn: Mutex (always), Atomic*, or Arc<T> when T is Sync.
 // Plain Sync scalars (i32, …) still need `move` for `let mut` capture.
 fn type_is_sync_safe_shared(type_value: Shared<Type>, registry: TypeRegistry) -> bool = do
   match type_value {
+    TNamed(type_name) =>
+      type_name == 'AtomicBool'
+        || type_name == 'AtomicI32'
+        || type_name == 'AtomicI64'
+        || type_name == 'AtomicU64',
     TGeneric(type_name, type_arguments) => do
       if type_name == 'Mutex' && type_arguments.length() == 1 then
         true
@@ -138,6 +143,9 @@ fn type_hint_from_value(
                   type_hint_from_value(arguments[0], type_environment, registry)
                 else Shared.new(TUnknown)
                 end))
+            else if type_name == 'AtomicBool' || type_name == 'AtomicI32'
+              || type_name == 'AtomicI64' || type_name == 'AtomicU64' then
+              Shared.new(TNamed(type_name))
             else Shared.new(TUnknown)
             end,
           _ => Shared.new(TUnknown)

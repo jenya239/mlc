@@ -2,6 +2,22 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:00 (Driver TRACK_CONCURRENCY_ATOMICS STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_ATOMICS |
+| started | 2026-07-20 23:29 |
+| elapsed | ~31 min |
+| done    | `atomic.hpp` AtomicBool/I32/I64/U64; `test_atomic` concurrent sum; MLC infer/codegen/send_safe/spawn; green `ok atomic_i32` |
+| verify  | `ok atomic_i32`; runtime 13 checks; Tier B exit 0; self-host DIFF 0 |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_ATOMICS |
+| instructions_rev | 2026-07-20-editor-wrap-perf-priority (prompt cited 2026-07-17-codegen-cppast-handoff; synced) |
+
 ### Turn 2026-07-20 23:30 (Driver TRACK_CONCURRENCY_ATOMICS STEP=1)
 
 | field   | value |

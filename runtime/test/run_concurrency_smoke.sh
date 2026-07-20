@@ -46,6 +46,8 @@ echo "[concurrency smoke] test_arc"
 run_test test_arc
 echo "[concurrency smoke] test_mutex"
 run_test test_mutex
+echo "[concurrency smoke] test_atomic"
+run_test test_atomic
 echo "[concurrency smoke] test_scheduler"
 run_test test_scheduler
 echo "[concurrency smoke] test_stop"

@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_CONCURRENCY_ATOMICS` (§47 #7) STEP=2.
-**`TRACK_CONCURRENCY_ATOMICS` (§47 #7)** active — STEP=1 red done; next Driver STEP=2 (wire).
+**Queue head:** Driver `TRACK_CONCURRENCY_ATOMICS` (§47 #7) STEP=3.
+**`TRACK_CONCURRENCY_ATOMICS` (§47 #7)** active — STEP=2 wire done; next Driver STEP=3 (MEMORY_MODEL).
 **`TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING` (§47 #5)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** closed 2026-07-20; archived.

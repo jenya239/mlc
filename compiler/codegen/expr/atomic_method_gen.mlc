@@ -1,0 +1,21 @@
+// Atomic*.new codegen (TRACK_CONCURRENCY_ATOMICS).
+
+import { CppExpression, CppCall } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+
+export fn gen_method_atomic_new(atomic_type_name: string, argument_code: string) -> string =
+  `mlc::concurrency::${atomic_type_name}(${argument_code})`
+
+export fn gen_method_atomic_new_cpp(
+  atomic_type_name: string,
+  argument_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression(`mlc::concurrency::${atomic_type_name}`),
+    [argument_expression]))
+
+export fn is_atomic_static_receiver_name(type_name: string) -> bool =
+  type_name == 'AtomicBool'
+    || type_name == 'AtomicI32'
+    || type_name == 'AtomicI64'
+    || type_name == 'AtomicU64'

@@ -4,7 +4,7 @@ import { TestResult, assert_true } from './test_runner'
 import { tokenize } from '../frontend/lexer'
 import { parse_program } from '../frontend/parser/decls'
 import { check } from '../checker/check/check'
-import { empty_registry, TI32, TArray, TShared, TGeneric } from '../checker/registry'
+import { empty_registry, TI32, TArray, TShared, TGeneric, TNamed } from '../checker/registry'
 import { type_is_send, type_is_sync, type_is_send_safe } from '../checker/send_safe'
 
 fn check_error_count(source: string) -> i32 =
@@ -21,6 +21,7 @@ export fn send_sync_tests() -> [TestResult] = do
   const shared_type = Shared.new(TShared(integer_type))
   const arc_type = Shared.new(TGeneric('Arc', [integer_type]))
   const mutex_type = Shared.new(TGeneric('Mutex', [integer_type]))
+  const atomic_i32_type = Shared.new(TNamed('AtomicI32'))
 
   results.push(assert_true('i32 is Send', type_is_send(integer_type, registry)))
   results.push(assert_true('i32 is Sync', type_is_sync(integer_type, registry)))
@@ -32,6 +33,8 @@ export fn send_sync_tests() -> [TestResult] = do
   results.push(assert_true('Arc<i32> is Sync', type_is_sync(arc_type, registry)))
   results.push(assert_true('Mutex<i32> is Send', type_is_send(mutex_type, registry)))
   results.push(assert_true('Mutex<i32> is Sync', type_is_sync(mutex_type, registry)))
+  results.push(assert_true('AtomicI32 is Send', type_is_send(atomic_i32_type, registry)))
+  results.push(assert_true('AtomicI32 is Sync', type_is_sync(atomic_i32_type, registry)))
   results.push(assert_true('type_is_send_safe aliases type_is_send',
     type_is_send_safe(arc_type, registry) == type_is_send(arc_type, registry)))
 
@@ -68,10 +71,10 @@ export fn send_sync_tests() -> [TestResult] = do
       'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>" blocking\n' +
       'fn main() -> i32 = pq_exec(0)') == 0))
 
-  // TRACK_CONCURRENCY_ATOMICS STEP=1 — red until STEP=2 AtomicI32 wire.
-  results.push(assert_true('AtomicI32 undefined (atomics gap)',
+  // TRACK_CONCURRENCY_ATOMICS STEP=2 — AtomicI32.new / fetch_add typechecks.
+  results.push(assert_true('AtomicI32.new fetch_add checks',
     check_error_count(
-      'fn main() -> i32 = do let c = AtomicI32.new(0); c.fetch_add(1) end') > 0))
+      'fn main() -> i32 = do let c = AtomicI32.new(0); c.fetch_add(1) end') == 0))
 
   results
 end

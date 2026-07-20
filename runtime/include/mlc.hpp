@@ -32,6 +32,7 @@
 #include "mlc/concurrency/spawn.hpp"
 #include "mlc/concurrency/arc.hpp"
 #include "mlc/concurrency/mutex.hpp"
+#include "mlc/concurrency/atomic.hpp"
 #include "mlc/concurrency/stop.hpp"
 #include "mlc/concurrency/task_scope.hpp"
 #include "mlc/concurrency/thread_pool.hpp"

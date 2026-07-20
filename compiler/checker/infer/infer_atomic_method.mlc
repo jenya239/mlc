@@ -1,0 +1,139 @@
+// Atomic*.new and seq_cst methods (TRACK_CONCURRENCY_ATOMICS).
+
+import { Expr, ExprIdent, Span, Diagnostic, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
+import { Type, TNamed, TBool, TI32, TI64, TUnit, TUnknown } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import { type_is_unknown, type_description } from '../semantic_type_structure'
+import { call_arity_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+fn is_atomic_type_name(type_name: string) -> bool =
+  type_name == 'AtomicBool'
+    || type_name == 'AtomicI32'
+    || type_name == 'AtomicI64'
+    || type_name == 'AtomicU64'
+
+export fn is_atomic_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => is_atomic_type_name(name) && method_name == 'new',
+    _ => false
+  }
+
+export fn type_is_atomic(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => is_atomic_type_name(type_name),
+    _ => false
+  }
+
+export fn is_atomic_method(method_name: string) -> bool =
+  method_name == 'load'
+    || method_name == 'store'
+    || method_name == 'exchange'
+    || method_name == 'compare_exchange'
+    || method_name == 'fetch_add'
+    || method_name == 'fetch_sub'
+
+fn atomic_type_name_from_type(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(type_name) => type_name,
+    _ => ''
+  }
+
+fn atomic_value_type(atomic_type_name: string) -> Shared<Type> =
+  if atomic_type_name == 'AtomicBool' then Shared.new(TBool)
+  else if atomic_type_name == 'AtomicI64' then Shared.new(TI64)
+  else if atomic_type_name == 'AtomicU64' then Shared.new(TI64)
+  else Shared.new(TI32)
+
+fn atomic_static_new_type_name(object: Shared<Expr>) -> string =
+  match object {
+    ExprIdent(name, _) => name,
+    _ => ''
+  }
+
+export fn infer_atomic_static_new_call(
+  object: Shared<Expr>,
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const arity_errors = call_arity_diagnostics(1, method_arguments.length(), method_span)
+  const type_name = atomic_static_new_type_name(object)
+  if method_arguments.length() != 1 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    let mut errors = diagnostics_append(object_parsed.errors, arity_errors)
+    errors = diagnostics_append(errors, argument_parsed.errors)
+    InferResult {
+      inferred_type: Shared.new(TNamed(type_name)),
+      errors: errors
+    }
+  end
+end
+
+fn atomic_method_arity(method_name: string) -> i32 =
+  if method_name == 'load' then 0
+  else if method_name == 'compare_exchange' then 2
+  else 1
+
+fn atomic_method_result_type(atomic_type_name: string, method_name: string) -> Shared<Type> =
+  if method_name == 'store' then Shared.new(TUnit)
+  else if method_name == 'compare_exchange' then Shared.new(TBool)
+  else atomic_value_type(atomic_type_name)
+
+fn atomic_receiver_error(
+  atomic_type: Shared<Type>,
+  method_name: string,
+  method_span: Span
+) -> [Diagnostic] =
+  if !type_is_unknown(atomic_type) && !type_is_atomic(atomic_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects an Atomic receiver, got ${type_description(atomic_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+fn atomic_method_allowed(atomic_type_name: string, method_name: string) -> bool =
+  if method_name == 'fetch_add' || method_name == 'fetch_sub' then
+    atomic_type_name != 'AtomicBool'
+  else
+    true
+  end
+
+export fn infer_atomic_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const atomic_type = object_parsed.inferred_type
+  const atomic_type_name = atomic_type_name_from_type(atomic_type)
+  const receiver_errors = atomic_receiver_error(atomic_type, method_name, method_span)
+  let mut errors = diagnostics_append(object_parsed.errors, receiver_errors)
+  if !atomic_method_allowed(atomic_type_name, method_name) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      `method ${method_name} is not defined on ${atomic_type_name}`,
+      method_span,
+      diagnostic_code_e082())])
+  end
+  const expected_arity = atomic_method_arity(method_name)
+  errors = diagnostics_append(errors, call_arity_diagnostics(expected_arity, method_arguments.length(), method_span))
+  let mut argument_index = 0
+  while argument_index < method_arguments.length() do
+    const argument_parsed = infer_expr_fn(method_arguments[argument_index], inference_context)
+    errors = diagnostics_append(errors, argument_parsed.errors)
+    argument_index = argument_index + 1
+  end
+  InferResult {
+    inferred_type: atomic_method_result_type(atomic_type_name, method_name),
+    errors: errors
+  }
+end
