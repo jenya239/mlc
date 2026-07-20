@@ -1,0 +1,10 @@
+// TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=1 —
+// Desired MLC cancel-wake API: StopSource + Channel.recv(token).
+// Red today: StopSource undefined (E001); recv arity 0 (E014).
+fn main() -> unit = do
+  let channel_value = make_channel(1usize)
+  let stop = StopSource.new()
+  let token = stop.token()
+  let _result = channel_value.recv(token)
+  ()
+end

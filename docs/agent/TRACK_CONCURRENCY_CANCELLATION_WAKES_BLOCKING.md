@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#5**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §8/§9/§44. Size **L**.
 
-## Status: **active** (2026-07-20) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red harness: MLC cannot express cancel-wake on blocked `Channel.recv` (no `StopToken` / no `Cancelled` outcome on MLC `recv`).
+**STEP=2** — wire MLC StopSource/StopToken + Channel.recv(token) Cancelled; green smoke; Tier B; self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -27,7 +27,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §8/§9/§44. Size **L**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: MLC cannot cancel-wake blocked `Channel.recv` | open |
+| 1 | Red: MLC cannot cancel-wake blocked `Channel.recv` | **done** — `ok channel_recv_cancel_red` |
 | 2 | Wire MLC Stop*/token + cancellable send/recv; green smoke; Tier B; self-host | open |
 | 3 | MEMORY_MODEL sync (MLC Cancelled / StopToken) | open |
 | 4 | Critic: gates; archive | open |

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 14:40 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+| started | 2026-07-20 14:33 |
+| elapsed | ~7 min |
+| done    | Fixture `channel_recv_with_stop_token.mlc`; `run_channel_recv_cancel_red.sh` + green stub; gap cases in `test_channel_syntax.mlc` |
+| verify  | `ok channel_recv_cancel_red` (E001+E014); green script still fails (expected) |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+
 ### Turn 2026-07-20 14:30 (Planner open CONCURRENCY_CANCELLATION_WAKES_BLOCKING)
 
 | field   | value |
