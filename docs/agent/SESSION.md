@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 11:00 (Critic TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+| started | 2026-07-20 10:41 |
+| elapsed | ~6 min |
+| done    | Re-audit STEP=0–3 (`eaeeb3d9`…`317e0d56`); E087 gate + check-only main green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK.md`; PLAN/backlog → #1 closed |
+| verify  | `ok task_scope_spawn_mutable_capture_e087`; `mlcc --check-only compiler/main.mlc` EXIT=0 |
+| result  | Critic OK; track closed |
+| issues  | residual: name=`spawn` not type-aware; Channel.send Send → #2 |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #2 CONCURRENCY_SEND_BOUND) |
+
 ### Turn 2026-07-20 10:50 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=3)
 
 | field   | value |
