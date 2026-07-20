@@ -29,7 +29,7 @@ limiting, graceful shutdown.
 
 | Компонент | Файл | Реальное поведение |
 |-----------|------|---------------------|
-| `Channel<T>` | `runtime/include/mlc/concurrency/channel.hpp` | bounded (default 64, max 1048576), **capacity 0 запрещён** (кидает `invalid_argument`) — rendezvous-варианта нет |
+| `Channel<T>` | `runtime/include/mlc/concurrency/channel.hpp` | bounded (default 64, max 1048576); **capacity 0 = rendezvous** (TRACK_CONCURRENCY_V2 STEP=2); **`make_unbounded_channel`** (capacity `SIZE_MAX`, never blocks on full — [TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED](agent/TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED.md)) |
 | `spawn { ... }` | `runtime/include/mlc/concurrency/spawn.hpp` | `std::async` + `future.get()` через `mlc::Task` coroutine; **нет TaskScope, нет explicit owner beyond Task handle, нет cancellation** |
 | `Arc<T>` | `runtime/include/mlc/concurrency/arc.hpp` | atomic refcount, требует "send-safe" inner |
 | `Mutex<T>` | `runtime/include/mlc/concurrency/mutex.hpp` | scoped `mutex.lock(fn mut val => ...)`, lambda-only — уже соответствует §13 требования "lexical API, не lock()/unlock()" |
@@ -224,9 +224,9 @@ jobs.close()
 
 | Вид | API | Статус сегодня |
 |-----|-----|-----------------|
-| Bounded (основной) | `Channel[T].bounded(256)` | есть (`channel.hpp`, default 64) |
-| Rendezvous | `Channel[T].bounded(0)` | **нет** — сегодня `capacity == 0` кидает исключение, надо разрешить как синхронный handoff |
-| Unbounded | `Channel[T].unbounded()` | нет, явный "не рекомендуется для server ingress" API |
+| Bounded (основной) | `make_channel(n)` / `Channel(n)` | есть (`channel.hpp`, default 64) |
+| Rendezvous | `make_channel(0)` | **есть** — синхронный handoff (C++ + MLC) |
+| Unbounded | `make_unbounded_channel()` | **есть** — grow queue; не для server ingress без backpressure |
 
 Без backpressure сервер нестабилен по определению
 (`producer 100k msg/s > consumer 20k msg/s → unbounded queue → OOM`).
