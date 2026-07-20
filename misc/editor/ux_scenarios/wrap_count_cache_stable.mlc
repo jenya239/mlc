@@ -1,0 +1,6 @@
+// TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=1 —
+// L2: wrap-count cache idle/scroll (red until STEP=2).
+fn main() -> i32 = do
+  println("ux_fail wrap_count_cache_stable stub")
+  1
+end

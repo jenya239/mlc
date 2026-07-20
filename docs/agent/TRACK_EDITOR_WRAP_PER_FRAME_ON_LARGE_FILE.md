@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#36**
 (pulled forward 2026-07-20 — measured frame-latency regression). Size **L**.
 
-## Status: **active** (2026-07-20) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red L1/L2 harness: prove per-frame full `document_visual_row_count` on idle/scroll (call-count or equivalent); token pending green until STEP=2.
+**STEP=2** — wrap-count cache API + green `ux_ok wrap_count_cache_stable` (idle/scroll 0 recomputes; edit +1).
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -18,7 +18,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#36**
 | Viewport-only wrap | **Out of scope for v1** (honest residual). Full Sublime-class O(viewport) wrap layout may follow later if cache+edit cost still hurts typing on 10MB; gate for this track is call-count / “0 full recomputes on idle/scroll”, not wall-clock FPS in CI |
 | Cache home | Prefer thin helper next to wrap/snapshot (`layout/word_wrap.mlc` or small `layout/wrap_cache.mlc` / field on app state) + `demo_live` uses cached count at both call sites. Do not leave a third uncached call site |
 | Invalidate | On any path that already does `document_frame_snapshot` after mutation; when `wrap_max_columns(...)` result differs from cached `wrap_columns`; on buffer/tab identity change |
-| Token / gate | New L1 or L2 scenario (name at STEP=1): after open, N idle/scroll frames → full wrap recompute count stays **0** (or does not increase); one edit → exactly **1** recompute (or increments by 1). Plus `demo_live_fs_compile_ok` when wiring. Prefer call-count probe over wall-clock in CI |
+| Token / gate | `ux_ok wrap_count_cache_stable` — L2: after warm, N idle ticks → recompute_count unchanged; one text/wrap_columns change → +1. Plus `demo_live_fs_compile_ok` at STEP=3 |
 | Standing discipline | Scenario-first; name token in SESSION `done` |
 | Module touch | `misc/editor/**` only (layout + demo_live + ux_scenarios/tests). No `compiler/`. No `lib/mlc/` |
 | REG | no |
@@ -29,7 +29,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#36**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red harness: per-frame full wrap on idle (expect fail today) | open |
+| 1 | Red harness: per-frame full wrap on idle (expect fail today) | **done** — `ux_ok wrap_count_cache_red` |
 | 2 | Wrap-count cache + invalidate; green token | open |
 | 3 | `demo_live` both sites use cache; `demo_live_fs_compile_ok` | open |
 | 4 | Critic: gates; archive | open |

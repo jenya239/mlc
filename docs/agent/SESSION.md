@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 12:50 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+| started | 2026-07-20 12:05 |
+| elapsed | ~8 min |
+| done    | Stub `ux_scenarios/wrap_count_cache_stable.mlc`; `scripts/run_ux_wrap_count_cache_red.sh` + `run_ux_wrap_count_cache_stable.sh` |
+| verify  | `ux_ok wrap_count_cache_red`; green script EXIT=1 (stub, expected until STEP=2) |
+| result  | STEP=1 done |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-20-editor-wrap-perf-priority` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+
 ### Turn 2026-07-20 12:40 (Planner TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=0)
 
 | field   | value |
