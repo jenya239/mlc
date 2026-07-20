@@ -265,6 +265,14 @@ import {
 import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
 import { editor_ux_content_scrollbar_thumb } from './ux/scroll'
 import {
+  editor_ux_minimap_pixel_size,
+  editor_ux_minimap_layout,
+  editor_ux_minimap_cache_new,
+  editor_ux_minimap_cache_tick,
+  editor_ux_minimap_viewport_indicator,
+  editor_ux_minimap_scroll_at_y
+} from './ux/minimap'
+import {
   editor_font_size_default,
   editor_font_metrics_from_size,
   editor_ux_font_zoom
@@ -728,6 +736,10 @@ fn main() -> i32 = do
   let mut context_menu = editor_ux_context_menu_hidden()
   let mut mouse_right_was_down = 0
   let mut indent_config = editor_indent_config_default()
+  let mut minimap_cache = editor_ux_minimap_cache_new("")
+  let mut minimap_lines: [StaticTextLine] = []
+  let mut minimap_cached_height = 0 - 1
+  let mut minimap_drag = 0
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -826,7 +838,11 @@ fn main() -> i32 = do
     const gutter_metrics = gutter_metrics_new(metrics.char_width, 8, 8, 36)
     const gutter_width = gutter_width_for_line_count(line_count, gutter_metrics)
     const panes = gutter_layout(editor_rect, gutter_width)
-    const text_rect = panes.text
+    const content_band = panes.text
+    const minimap_layout = editor_ux_minimap_layout(content_band)
+    const text_rect = minimap_layout.text_rect
+    const minimap_rect = minimap_layout.minimap_rect
+    const minimap_enabled = minimap_layout.enabled
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const visual_row_count = document_visual_row_count(
@@ -1097,6 +1113,19 @@ fn main() -> i32 = do
         end
       end
 
+      if handled == 0 && minimap_enabled != 0 &&
+          point_in_rect(point_new(input.mouse_x, input.mouse_y), minimap_rect) != 0 then
+        const mapped = editor_ux_minimap_scroll_at_y(
+          input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
+        )
+        app = editor_app_set_scroll_y(app, mapped)
+        scroll_offset_y = mapped
+        minimap_drag = 1
+        selecting_text = 0
+        last_command = "minimap_scroll"
+        handled = 1
+      end
+
       if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
         if dragging_tab_index < 0 then
           editor_focused = 1
@@ -1126,6 +1155,7 @@ fn main() -> i32 = do
             multi = multi_selection_from_single(selection)
           end
           selecting_text = 1
+          minimap_drag = 0
           handled = 1
         end
       end
@@ -1475,8 +1505,18 @@ fn main() -> i32 = do
       if input.mouse_down != 0 && panels.dragging != 0 then
         panels = shell_panels_drag_to(panels, input.mouse_x)
       end
+      if input.mouse_down != 0 && minimap_drag != 0 &&
+          panels.dragging == 0 && minimap_enabled != 0 then
+        const mapped_drag = editor_ux_minimap_scroll_at_y(
+          input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
+        )
+        app = editor_app_set_scroll_y(app, mapped_drag)
+        scroll_offset_y = mapped_drag
+        last_command = "minimap_scroll"
+      end
       if input.mouse_down != 0 && selecting_text != 0 &&
-          panels.dragging == 0 && dragging_tab_index < 0 then
+          panels.dragging == 0 && dragging_tab_index < 0 &&
+          minimap_drag == 0 then
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
         app = editor_app_set_scroll_y(app, scroll_offset_y)
         app = editor_app_drag_text_autoscroll(
@@ -1506,6 +1546,7 @@ fn main() -> i32 = do
           dragging_tab_index = 0 - 1
         end
         selecting_text = 0
+        minimap_drag = 0
       end
       mouse_was_down = input.mouse_down
       mouse_right_was_down = input.mouse_right_down
@@ -1727,6 +1768,13 @@ fn main() -> i32 = do
       editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height,
       theme.background_red, theme.background_green, theme.background_blue, 1.0
     )
+    if minimap_enabled != 0 then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        minimap_rect.x, minimap_rect.y, minimap_rect.width, minimap_rect.height,
+        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+      )
+    end
     solid = solid_renderer_rect(
       solid, width, height,
       gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height,
@@ -1911,6 +1959,19 @@ fn main() -> i32 = do
         content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height,
         0.45, 0.48, 0.55, 1.0
       )
+    end
+    if minimap_enabled != 0 then
+      const minimap_indicator = editor_ux_minimap_viewport_indicator(
+        minimap_rect, wrapped_content_height_now, text_rect.height, scroll_offset_y
+      )
+      if minimap_indicator.width > 0 then
+        solid = solid_renderer_rect(
+          solid, width, height,
+          minimap_indicator.x, minimap_indicator.y,
+          minimap_indicator.width, minimap_indicator.height,
+          0.35, 0.40, 0.45, 1.0
+        )
+      end
     end
 
     if dirty_close_overlay_is_visible(overlay) then
@@ -2127,6 +2188,44 @@ fn main() -> i32 = do
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
       return tree_drawn.error_code
+    end
+
+    if minimap_enabled != 0 then
+      const prev_rebuild = minimap_cache.rebuild_count
+      minimap_cache = editor_ux_minimap_cache_tick(minimap_cache, draw_text)
+      if minimap_cache.rebuild_count != prev_rebuild ||
+          minimap_cached_height != minimap_rect.height then
+        minimap_lines = []
+        const minimap_pixel = editor_ux_minimap_pixel_size()
+        let mut map_line = 0
+        let mut map_line_count = line_index_line_count(line_index)
+        if map_line_count < 1 then
+          map_line_count = 1
+        end
+        while map_line < line_index_line_count(line_index) do
+          const map_text = line_text_at(draw_text, line_index, map_line)
+          const pen_y =
+            minimap_rect.y + (map_line * minimap_rect.height) / map_line_count + 2
+          minimap_lines = push_line(
+            minimap_lines, map_text, minimap_pixel, minimap_rect.x + 1, pen_y
+          )
+          map_line = map_line + 1
+        end
+        minimap_cached_height = minimap_rect.height
+      end
+      editor_gl_scissor_enable_rect(height, minimap_rect)
+      const minimap_drawn = static_text_draw_lines_colored(
+        text_state, minimap_lines, width, height, 0,
+        theme.text_red, theme.text_green, theme.text_blue, 1.0
+      )
+      editor_gl_scissor_disable()
+      text_state = minimap_drawn.state
+      if minimap_drawn.error_code != 0 then
+        static_text_destroy(text_state)
+        solid_renderer_destroy(solid)
+        glfw_gl_context_end()
+        return minimap_drawn.error_code
+      end
     end
 
     let mut editor_lines: [StaticTextLine] = []

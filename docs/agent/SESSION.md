@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:05 (Driver TRACK_EDITOR_MINIMAP STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_MINIMAP |
+| started | 2026-07-20 10:01 |
+| elapsed | ~15 min |
+| done    | `demo_live`: shrink text via `editor_ux_minimap_layout`; cache rebuild glyph strip; viewport indicator; click/drag→scroll |
+| verify  | `ux_ok editor_minimap_cache_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_MINIMAP |
+
 ### Turn 2026-07-20 09:55 (Driver TRACK_EDITOR_MINIMAP STEP=2)
 
 | field   | value |
