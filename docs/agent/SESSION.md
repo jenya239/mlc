@@ -2,6 +2,36 @@
 
 ## Entries
 
+### Turn 2026-07-20 12:05 (Driver TRACK_CONCURRENCY_SEND_BOUND STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_SEND_BOUND |
+| started | 2026-07-20 11:21 |
+| elapsed | ~5 min |
+| done    | `MEMORY_MODEL.md`: Channel/Arc/Shared/TaskScope rows cite E092; spawn free `!Send` documented; also record missing STEP=2 SESSION entry from `dcae89d3` |
+| verify  | `ok spawn_shared_capture_not_send_e092`; `mlcc --check-only compiler/main.mlc` EXIT=0 |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_SEND_BOUND |
+
+### Turn 2026-07-20 11:55 (Driver TRACK_CONCURRENCY_SEND_BOUND STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_SEND_BOUND |
+| started | 2026-07-20 10:53 |
+| elapsed | ~25 min |
+| done    | E092 catalog; `free_send_capture_*` in `spawn_capture.mlc` + Shared.new type hint; Channel/Arc Send diag → E092; `compiler/build.sh` |
+| verify  | `ok spawn_shared_capture_not_send_e092`; Tier B `build_tests.sh` EXIT=0 (1471 passed); self-host p1≡p2 DIFF_EXIT=0 |
+| result  | STEP=2 done |
+| issues  | `spawn_capture.mlc` now ~1079 lines (arch lint allowlisted WARN); Array Send residual unchanged |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_SEND_BOUND |
+
 ### Turn 2026-07-20 11:20 (Driver TRACK_CONCURRENCY_SEND_BOUND STEP=1)
 
 | field   | value |

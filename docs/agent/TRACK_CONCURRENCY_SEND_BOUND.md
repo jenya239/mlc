@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#2**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §2/§44 phase 3. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-20) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL sync (E092 / spawn Send); then Critic.
+**STEP=4** — Critic: re-run gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -31,7 +31,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §2/§44 phase 3. Size **M**.
 | 0 | Decision freeze + open | **done** |
 | 1 | Red test: spawn / TaskScope.spawn `Shared` capture → expect E092 (fails today) | **done** |
 | 2 | Wire Send check on spawn sites + E092 catalog; migrate Channel/Arc Send diag; green tests; Tier B; self-host | **done** |
-| 3 | MEMORY_MODEL sync (E092 / spawn Send) | open |
+| 3 | MEMORY_MODEL sync (E092 / spawn Send) | **done** |
 | 4 | Critic: gates; archive | open |
 
 ### STEPs done in git
@@ -40,7 +40,8 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §2/§44 phase 3. Size **M**.
 |------|-----------------|-------|
 | 0 | `a1d68295` | Decision freeze + open |
 | 1 | `d7d0bf5a` | Red harness |
-| 2 | this | E092 wire + Tier B + self-host |
+| 2 | `dcae89d3` | E092 wire + Tier B + self-host |
+| 3 | this | MEMORY_MODEL E092 / spawn Send |
 
 ## Out of scope
 
