@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-19-concurrency-refinement-backlog` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-20-editor-wrap-perf-priority` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
+INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3) STEP=1.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36) STEP=1. **Priority override 2026-07-20:** `#36` ahead of `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3 STEP=0 parked). After `#36` closes, resume §47 `#3` STEP=1.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,13 +79,15 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33+#33b+#33c+#33d+#33e+#34+#35 done. Product ceiling: **Sublime Text** |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#35 done. **`#36 EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` active** (STEP=0 → Driver STEP=1). Priority ahead of §47 #3. Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
+| **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** | **active** — STEP=0 Decision frozen (cache full wrap count; invalidate on edit/wrap_columns; not viewport-only v1). Next Driver STEP=1 red harness |
 | **`TRACK_EDITOR_MINIMAP` (§46 #35)** | **closed** 2026-07-20 (Critic OK). Archived. Reduced-scale glyph strip + cache-on-edit + click/drag scroll. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** | **closed** 2026-07-19 (Critic OK). Archived. number/type/operator tags + Theme RGB. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** | **closed** 2026-07-19 (Critic OK). Archived. Panel fills + `from_panel` hover. Do not reopen numbered STEPs |
-| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#2` done. Next `#3 CONCURRENCY_MOVE_TRACKING`. Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#2` done. **`#3 CONCURRENCY_MOVE_TRACKING` active** (STEP=0 → Driver STEP=1). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** | **active** — STEP=0 Decision frozen; next Driver STEP=1 (red E088 harness). Gap: TaskScope.spawn ExprLambda swallows move marks |
 | **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** | **closed** 2026-07-20 (Critic OK). Archived. E092 on spawn/TaskScope.spawn + Channel/Arc Send. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** | **closed** 2026-07-20 (Critic OK). Archived. E087 on bare `spawn` + `TaskScope.spawn`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** | **closed** 2026-07-19 (Critic OK). Archived. `byte_substring` in syntax row draw. Do not reopen numbered STEPs |

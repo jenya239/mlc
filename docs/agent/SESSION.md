@@ -2,6 +2,34 @@
 
 ## Entries
 
+### Turn 2026-07-20 12:40 (Planner TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh / 0 |
+| track   | TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE (§46 #36) |
+| started | 2026-07-20 11:57 |
+| elapsed | ~8 min |
+| done    | Opened `docs/agent/TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE.md`; Decision frozen: cache full `document_visual_row_count` by (text fingerprint, wrap_columns); invalidate on edit/resize/tab; not viewport-only v1; MOVE_TRACKING STEP=1 not mid-flight → skipped per priority override; committed interactive #36 reopen docs |
+| verify  | Decision table present; backlog #36 → active; PLAN §46 points at TRACK; CONTINUITY queue head = Driver STEP=1 |
+| result  | STEP=0 done → Driver STEP=1 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-20-editor-wrap-perf-priority` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+
+### Turn 2026-07-20 (interactive, user request — editor perf measurement)
+
+| field   | value |
+|---------|-------|
+| role    | Planner (interactive) |
+| step    | measurement + priority reopen |
+| track   | TRACK_EDITOR_UX_BACKLOG (§46), new item #36 |
+| done    | Standalone benchmark of `open_buffer_from_path` + `line_index_from_document` + `document_visual_row_count` (exact call used by `demo_live.mlc`) against synthetic 1MB/8014-line and 10MB/79523-line files, 3-5 runs each. Found: full-document word-wrap pass alone costs ~230-260ms (1MB) / ~2.3-2.8s (10MB); confirmed by code read that `document_visual_row_count` is called unconditionally inside the per-frame `while glfw_gl_context_should_close()` loop (`demo_live.mlc:848`,`:1623`), not viewport-only/cached. Reopened `TRACK_EDITOR_UX_BACKLOG` with `#36 EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE`; PLAN §46 → active; CONTINUITY priority override + INSTRUCTIONS_REV bump `2026-07-20-editor-wrap-perf-priority` |
+| verify  | Benchmark scratch files deleted (`misc/editor/bench_open_scratch.mlc`, `.tmp/bench_*`), not committed — measurement only, no source change this turn |
+| result  | `#36` queued ahead of `TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3) per user priority ("главное чтобы не было проблем с базовой функциональностью") |
+| issues  | none |
+| next    | ROLE=Driver, finish `TRACK_CONCURRENCY_MOVE_TRACKING` STEP=1 if already mid-flight and near commit, else ROLE=Planner STEP=0 TRACK=TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE (create track file, Decision on cache/incremental-recompute strategy) |
+
 ### Turn 2026-07-20 12:25 (Planner TRACK_CONCURRENCY_MOVE_TRACKING STEP=0)
 
 | field   | value |
