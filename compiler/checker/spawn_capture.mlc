@@ -9,7 +9,7 @@ import {
   diagnostic_error_with_code, diagnostics_append, TyUnit
 } from '../frontend/ast'
 import { pattern_bindings } from './names'
-import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092, diagnostic_code_e093 } from './diagnostic_codes'
+import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092, diagnostic_code_e093, diagnostic_code_e094 } from './diagnostic_codes'
 import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, TShared, TNamed, type_from_annotation_with_registry } from './registry'
 import { type_is_sync, type_is_send } from './send_safe'
 import { type_description, type_is_unknown } from './semantic_type_structure'
@@ -101,6 +101,28 @@ fn not_sync_capture_diagnostic(
       + ' is not Sync across concurrency boundary (spawn); use move or Sync-safe sharing',
     source_span,
     diagnostic_code_e093())
+
+fn thread_affine_call_diagnostic(function_name: string, source_span: Span) -> Diagnostic =
+  diagnostic_error_with_code(
+    'extern function \'' + function_name
+      + '\' is thread_affine and cannot be called across concurrency boundary (spawn)',
+    source_span,
+    diagnostic_code_e094())
+
+fn thread_affine_call_errors(
+  callee: Shared<Expr>,
+  call_span: Span,
+  registry: TypeRegistry
+) -> [Diagnostic] =
+  match callee {
+    ExprIdent(name, _) =>
+      if registry.function_is_thread_affine(name) then
+        [thread_affine_call_diagnostic(name, call_span)]
+      else
+        empty_diagnostics()
+      end,
+    _ => empty_diagnostics()
+  }
 
 fn bare_spawn_diagnostic(source_span: Span) -> Diagnostic =
   diagnostic_error_with_code(
@@ -466,10 +488,12 @@ fn free_send_capture_in_expr(
       diagnostics_append(
         free_send_capture_in_expr(left, local_bound, capture_context),
         free_send_capture_in_expr(right, local_bound, capture_context)),
-    ExprCall(callee, arguments, _) =>
+    ExprCall(callee, arguments, call_span) =>
       diagnostics_append(
-        free_send_capture_in_expr(callee, local_bound, capture_context),
-        free_send_capture_in_expr_list(arguments, local_bound, capture_context)),
+        diagnostics_append(
+          free_send_capture_in_expr(callee, local_bound, capture_context),
+          free_send_capture_in_expr_list(arguments, local_bound, capture_context)),
+        thread_affine_call_errors(callee, call_span, capture_context.registry)),
     ExprMethod(receiver, _, arguments, _) =>
       diagnostics_append(
         free_send_capture_in_expr(receiver, local_bound, capture_context),

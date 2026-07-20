@@ -1,6 +1,5 @@
-// TRACK_CONCURRENCY_FFI_METADATA STEP=1 —
-// Desired: thread_affine(MainThread) extern fn inside spawn → error[E094].
-// Red today: check-only succeeds (no affinity call-site check).
+// TRACK_CONCURRENCY_FFI_METADATA STEP=2 —
+// thread_affine(MainThread) extern fn inside spawn → error[E094].
 extern fn gui_paint() -> unit = "gui_paint" from "<stdio.h>" thread_affine(MainThread)
 
 fn main() -> unit = do

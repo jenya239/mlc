@@ -170,6 +170,12 @@ export extend TypeRegistry {
   fn function_is_blocking(self, function_name: string) -> bool =
     self.concurrency_attributes_for_function(function_name).any(attribute => attribute == 'blocking')
 
+  fn function_is_thread_affine(self, function_name: string) -> bool =
+    self.concurrency_attributes_for_function(function_name).any(
+      attribute =>
+        attribute == 'thread_affine' ||
+        (attribute.length() >= 14 && attribute.substring(0, 14) == 'thread_affine('))
+
   fn type_is_thread_safe(self, type_name: string) -> bool =
     self.concurrency_attributes_for_type(type_name).any(attribute => attribute == 'thread_safe')
 

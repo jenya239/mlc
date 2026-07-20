@@ -1,6 +1,6 @@
 // Stable checker error codes for diagnostic_format (error[Exxx]: message).
 
-export fn diagnostic_code_catalog_count() -> i32 = 92
+export fn diagnostic_code_catalog_count() -> i32 = 93
 
 // E001: undefined identifier
 export fn diagnostic_code_e001() -> string = 'E001'
@@ -194,3 +194,5 @@ export fn diagnostic_code_e091() -> string = 'E091'
 export fn diagnostic_code_e092() -> string = 'E092'
 // E093: free capture of !Sync type across concurrency boundary (spawn)
 export fn diagnostic_code_e093() -> string = 'E093'
+// E094: thread_affine extern fn called across concurrency boundary (spawn)
+export fn diagnostic_code_e094() -> string = 'E094'

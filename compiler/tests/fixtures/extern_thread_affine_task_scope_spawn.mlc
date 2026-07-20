@@ -1,5 +1,5 @@
-// TRACK_CONCURRENCY_FFI_METADATA STEP=1 —
-// Same gap on TaskScope.spawn (red until STEP=2 wires E094).
+// TRACK_CONCURRENCY_FFI_METADATA STEP=2 —
+// TaskScope.spawn also rejects thread_affine extern fn (E094).
 extern fn gui_paint() -> unit = "gui_paint" from "<stdio.h>" thread_affine(MainThread)
 
 fn main() -> i32 = do
