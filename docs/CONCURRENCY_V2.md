@@ -34,6 +34,7 @@ limiting, graceful shutdown.
 | `Arc<T>` | `runtime/include/mlc/concurrency/arc.hpp` | atomic refcount, требует "send-safe" inner |
 | `Mutex<T>` | `runtime/include/mlc/concurrency/mutex.hpp` | scoped `mutex.lock(fn mut val => ...)`, lambda-only — уже соответствует §13 требования "lexical API, не lock()/unlock()" |
 | `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)) |
+| `Isolate[State, Msg]` | `runtime/include/mlc/concurrency/isolate.hpp` | owner thread + bounded mailbox; Block overflow; MLC `Isolate.start` / `.send` / `.shutdown`; !Send/!Sync ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](agent/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)) |
 | "Send-safe" check | `compiler/checker/send_safe.mlc` (`type_is_send_safe`) | компоновочный (compositional) предикат, **уже структурно решает Rust-style Send inference**, но: (a) используется только в `Channel.send`, не как общий bound; (b) конфлирует Send и Shared в одно понятие — `Arc<T>` в текущем предикате `false` (не send-safe), хотя по предложению `Arc<ImmutableConfig>` должен быть и `Send`, и `Shared` |
 
 Замыкания в MLC **всегда** захватывают по значению (`MEMORY_MODEL.md` §Замыкания,
@@ -283,26 +284,37 @@ shared var users = Mutex.new(...)     // явно разрешённая фор�
 Второй по ценности high-level primitive после channels:
 
 ```mlc
-let room = Isolate[RoomState, RoomMsg].start(RoomState.new()) |state, msg| {
+fn handle(state: RoomState, msg: RoomMsg) -> unit = do
   match msg {
-    .Join(user, client) => state.clients.put(user, client)
-    .Leave(user)         => state.clients.remove(user)
-    .Post(user, text)    => state.append_message(user, text)
+    Join(user, client) => ()
+    Leave(user) => ()
+    Post(user, text) => ()
   }
-}
-room.send(.Post(user, text))?
+end
+let room = Isolate.start(RoomState.new(), 1024usize, handle)
+room.send(Post(user, text))
+room.shutdown()
 ```
 
 Гарантия: `RoomState` никогда не обрабатывается двумя workers одновременно.
 Не полный actor model — state + bounded mailbox + serial handler.
 
+**Статус:** **done** C++ + MLC ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](agent/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)):
+`isolate.hpp`; MLC `Isolate.start(state, capacity, handler)` / `.send` / `.shutdown` /
+`.state_after_shutdown`; Block overflow; Msg Send (**E092**); Isolate !Send/!Sync.
+Named typed handler preferred (lambda Msg may stay Unknown). Concurrent serial under
+senders: `runtime/test/test_isolate.cpp` (MLC multi-thread share deferred — Isolate not copyable).
+
 ## 17. `Isolate` mailbox обязан быть bounded
 
 ```mlc
-Isolate.start(capacity: 1024, ...)
+Isolate.start(initial_state, 1024usize, handle)
 ```
 
-Overflow policy явная: `Block | DropNewest | DropOldest | Reject`.
+Overflow policy v1: **Block** only (`send` waits). `DropNewest | DropOldest | Reject` —
+deferred (not in C++/MLC yet).
+
+**Статус:** bounded mailbox **done**; Drop*/Reject **deferred**.
 
 ## 18. `ThreadPool`
 
@@ -582,11 +594,13 @@ Channel[T], Sender[T], Receiver[T]
 StopSource, StopToken
 Task, TaskHandle[T], TaskScope
 ThreadPool
+Isolate[State, Msg]
 Instant, Duration, Timer
 ```
 
-После v1: `Isolate[State, Msg]` (**done** C++), `Supervisor` (**done** C++ v1;
-MLC deferred), `Select`. После них: `Future`,
+После v1: `Isolate[State, Msg]` (**done** C++ + MLC,
+[TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](agent/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)),
+`Supervisor` (**done** C++ v1; MLC deferred), `Select`. После них: `Future`,
 `async/await`, `IoReactor`, `AsyncSocket`.
 
 ## 44. Порядок реализации (маппинг на текущий pipeline `Lexer → Parser → AST →
@@ -601,7 +615,7 @@ Checker → SemanticIR → C++20`)
 | 5 | `Sync` (см. ⚠️) | checker | нет |
 | 6 | `TaskScope` (`scope \|s\| { s.spawn { ... } }`) | новый construct | нет |
 | 7 | Cancellation propagation (scope failure/cancel) | runtime + checker | нет |
-| 8 | `Isolate[State, Msg]` (сначала библиотечно) | нет (library) | нет |
+| 8 | `Isolate[State, Msg]` (сначала библиотечно) | нет (library) | **есть** C++ + MLC ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](agent/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)): `Isolate.start`/`send`/`shutdown`; Block only |
 | 9 | **Стоп. Не добавлять фичи, пока эталонное приложение (чат, см. north star) не выдержит:** 1000 connections, 100k messages, slow clients, random disconnect, SIGTERM, DB delays, worker crashes, TSan | — | — |
 | 10 | `Supervisor` | library | **есть** C++ v1 (2026-07-12): `supervisor.hpp`; policies + one_for_one + storm intensity; MLC deferred ([TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md) **closed**) |
 | 11 | async I/O (`Future`/`async`/`await`/`IoReactor`) | язык + runtime | нет |

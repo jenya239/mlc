@@ -7,7 +7,7 @@ against current code 2026-07-19 (`compiler/checker/send_safe.mlc`,
 в треки именно доработку mlc по многопоточности") — Driver opens STEP=1 of the next
 **pending** item in order without further permission, same rule as §46.
 
-## Status: **active** (2026-07-21) — `#9 CONCURRENCY_ISOLATE_MLC_SURFACE` STEP=2 done → Driver STEP=3; `#8` done
+## Status: **active** (2026-07-21) — `#9 CONCURRENCY_ISOLATE_MLC_SURFACE` STEP=3 done → Critic; `#8` done
 
 ## How to use this backlog
 

@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#9**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §16/§17/§44 phase 8. Size **L**.
 
-## Status: **active** (2026-07-21) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-21) — STEP=3 done → Critic STEP=4
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 §16/§17 sync (MLC Isolate surface; Block-only).
+**STEP=4** — Critic: re-run gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
