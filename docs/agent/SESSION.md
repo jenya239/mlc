@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 22:15 (Planner open CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-20 22:11 |
+| elapsed | ~4 min |
+| done    | Open `#6`: `TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED.md` Decision — rendezvous C++/MLC check-only green (docs stale); gap = unbounded API |
+| verify  | TRACK STEP=0 done; PLAN/CONTINUITY/DEVELOPMENT/backlog → Driver STEP=1 |
+| result  | STEP=0 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED |
+
 ### Turn 2026-07-20 22:10 (Critic TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING)
 
 | field   | value |
