@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 22:10 (Critic TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+| started | 2026-07-20 22:07 |
+| elapsed | ~5 min |
+| done    | Close `#5`: re-ran cancel check + smoke + `--check-only`; archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → `#5` done |
+| verify  | `ok channel_recv_cancel` + smoke; check-only EXIT=0; anti-false-done `7b8a33c7`…`692d1489`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: sleep/socket deferred; TaskScope.token MLC not primary |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #6 CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED) |
+
 ### Turn 2026-07-20 22:05 (Driver TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING STEP=3)
 
 | field   | value |
