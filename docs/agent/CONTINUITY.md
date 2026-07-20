@@ -86,8 +86,8 @@ INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** | **closed** 2026-07-19 (Critic OK). Archived. Panel fills + `from_panel` hover. Do not reopen numbered STEPs |
-| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#3` done. **`#4 CONCURRENCY_SYNC_TRAIT` active** (STEP=1 → Driver STEP=2). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
-| **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** | **active** — STEP=0–1 done (red: move Array still E092); next Driver STEP=2 (Send retune + E093) |
+| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#3` done. **`#4 CONCURRENCY_SYNC_TRAIT` active** (STEP=2 → Driver STEP=3). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** | **active** — STEP=0–2 done (Array Send iff T + E093 free !Sync); next Driver STEP=3 (MEMORY_MODEL) |
 | **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** | **closed** 2026-07-20 (Critic OK). Archived. E088 on TaskScope.spawn move. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** | **closed** 2026-07-20 (Critic OK). Archived. E092 on spawn/TaskScope.spawn + Channel/Arc Send. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** | **closed** 2026-07-20 (Critic OK). Archived. E087 on bare `spawn` + `TaskScope.spawn`. Do not reopen numbered STEPs |

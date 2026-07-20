@@ -30,7 +30,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: move Array into spawn still E092 (gap) | **done** — `ok spawn_move_array_send_red` |
-| 2 | Send retune Array/Map + E093 free !Sync; green; Tier B; self-host | open |
+| 2 | Send retune Array/Map + E093 free !Sync; green; Tier B; self-host | **done** — `ok spawn_array_sync_e093`; Tier B 1471/0; p1≡p2 |
 | 3 | MEMORY_MODEL sync (Sync / E093 / Array Send) | open |
 | 4 | Critic: gates; archive | open |
 

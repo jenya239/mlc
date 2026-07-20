@@ -721,7 +721,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
         [archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md](archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md](archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md](archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md))**
-  → **MLC_CONCURRENCY_REFINEMENT (§47, **active** 2026-07-20: `#4 CONCURRENCY_SYNC_TRAIT` STEP=1 done → Driver STEP=2;
+  → **MLC_CONCURRENCY_REFINEMENT (§47, **active** 2026-07-20: `#4 CONCURRENCY_SYNC_TRAIT` STEP=2 done → Driver STEP=3;
       order: mutable-capture check → general
       `Send` bound → move-tracking → `Sync` trait → cancellation-wakes-blocking →
       rendezvous/unbounded channel → atomics → FFI concurrency metadata →
