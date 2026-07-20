@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#7**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §14/§44. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-21) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 §14 sync.
+**STEP=4** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §14/§44. Size **M**.
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: Atomic API missing | **done** — `ok atomic_i32_red` |
 | 2 | Wire C++ + MLC Atomic*; green; Tier B; self-host if compiler/ | **done** — `ok atomic_i32`; runtime concurrent sum; Tier B; self-host DIFF 0 |
-| 3 | MEMORY_MODEL + CONCURRENCY_V2 §14 sync | open |
+| 3 | MEMORY_MODEL + CONCURRENCY_V2 §14 sync | **done** — Atomic* Send/Sync + seq_cst; §0/§14/§44 |
 | 4 | Critic: gates; archive | open |
 
 ## Out of scope
