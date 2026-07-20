@@ -1,0 +1,13 @@
+// TRACK_CONCURRENCY_FFI_METADATA STEP=1 —
+// Same gap on TaskScope.spawn (red until STEP=2 wires E094).
+extern fn gui_paint() -> unit = "gui_paint" from "<stdio.h>" thread_affine(MainThread)
+
+fn main() -> i32 = do
+  scope |task_scope| do
+    task_scope.spawn do
+      gui_paint()
+      0
+    end
+  end
+  0
+end

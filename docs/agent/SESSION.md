@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:18 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_FFI_METADATA |
+| started | 2026-07-21 00:13 |
+| elapsed | ~5 min |
+| done    | Fixtures spawn+TaskScope+main_ok; `run_extern_thread_affine_spawn_red.sh` + green stub; freeze E094; gap case in `test_spawn.mlc` |
+| verify  | `ok extern_thread_affine_spawn_red` (both EXIT=0, no E094); green still fails |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_FFI_METADATA |
+
 ### Turn 2026-07-21 00:15 (Planner open CONCURRENCY_FFI_METADATA)
 
 | field   | value |

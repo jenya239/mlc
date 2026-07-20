@@ -1,0 +1,7 @@
+// TRACK_CONCURRENCY_FFI_METADATA — main-thread call of affine fn must stay OK after STEP=2.
+extern fn gui_paint() -> unit = "gui_paint" from "<stdio.h>" thread_affine(MainThread)
+
+fn main() -> unit = do
+  gui_paint()
+  ()
+end
