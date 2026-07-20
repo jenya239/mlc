@@ -1,0 +1,9 @@
+// TRACK_CONCURRENCY_SYNC_TRAIT STEP=1 —
+// move Array[i32] into spawn must be Send-OK (red until STEP=2 Send retune).
+fn main() -> i32 = do
+  let mut items: [i32] = [1, 2]
+  let task_a = spawn do
+    return move items
+  end
+  0
+end

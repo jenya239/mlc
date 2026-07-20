@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 15:20 (Driver TRACK_CONCURRENCY_SYNC_TRAIT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_SYNC_TRAIT |
+| started | 2026-07-20 13:35 |
+| elapsed | ~8 min |
+| done    | Fixtures `spawn_move_array_send.mlc` + `spawn_free_array_not_sync.mlc`; red/green shell gates; `test_spawn.mlc` Array Send/E093 cases (pending green until STEP=2) |
+| verify  | `ok spawn_move_array_send_red`; green script EXIT=1 (move still E092; free missing E093) |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_SYNC_TRAIT |
+
 ### Turn 2026-07-20 15:05 (Planner TRACK_CONCURRENCY_SYNC_TRAIT STEP=0)
 
 | field   | value |

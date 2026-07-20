@@ -1,0 +1,10 @@
+// TRACK_CONCURRENCY_SYNC_TRAIT STEP=1 —
+// Free Array share across spawn must stay rejected (E092 today → E093 after STEP=2).
+fn main() -> i32 = do
+  let items: [i32] = [1, 2]
+  let task_a = spawn do
+    let _ = items
+    0
+  end
+  0
+end

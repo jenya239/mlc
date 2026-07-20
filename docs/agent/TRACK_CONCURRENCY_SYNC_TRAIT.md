@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#4**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red harness: `move` of `Array[i32]` into `spawn` must be accepted (today **E092**; Send retune gap). Free share of Array stays rejected (today E092 → after wire **E093** Sync).
+**STEP=2** — Send retune Array/Map + E093 free !Sync; green; Tier B; self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: move Array into spawn still E092 (gap) | open |
+| 1 | Red: move Array into spawn still E092 (gap) | **done** — `ok spawn_move_array_send_red` |
 | 2 | Send retune Array/Map + E093 free !Sync; green; Tier B; self-host | open |
 | 3 | MEMORY_MODEL sync (Sync / E093 / Array Send) | open |
 | 4 | Critic: gates; archive | open |
