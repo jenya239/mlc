@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:50 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+| started | 2026-07-20 10:38 |
+| elapsed | ~5 min |
+| done    | `MEMORY_MODEL.md` §2: E087 covers bare `spawn` + `TaskScope.spawn`; TaskScope row notes MLC `scope`+`.spawn`; free-mut race not a safe-code path |
+| verify  | `ok task_scope_spawn_mutable_capture_e087`; `mlcc --check-only compiler/main.mlc` EXIT=0 (Tier B+self-host reused from STEP=2) |
+| result  | STEP=3 done; numbered STEPs complete → Critic |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+
 ### Turn 2026-07-20 10:40 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=2)
 
 | field   | value |
