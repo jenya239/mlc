@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:15 (Planner open CONCURRENCY_FFI_METADATA)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-21 00:10 |
+| elapsed | ~5 min |
+| done    | Open `#8`: `TRACK_CONCURRENCY_FFI_METADATA.md` Decision — affine fn in spawn EXIT=0 gap; attrs parse partial; type Send already |
+| verify  | TRACK STEP=0 done; PLAN/CONTINUITY/DEVELOPMENT/backlog → Driver STEP=1 |
+| result  | STEP=0 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_FFI_METADATA |
+
 ### Turn 2026-07-21 00:10 (Critic TRACK_CONCURRENCY_ATOMICS)
 
 | field   | value |
