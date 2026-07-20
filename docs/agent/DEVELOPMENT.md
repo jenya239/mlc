@@ -41,11 +41,12 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `TRACK_MLC_CONCURRENCY_REFINEMENT` (§47 open `#10 CONCURRENCY_SUPERVISOR_MLC_SURFACE`).
+**Queue head:** Driver `TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 `#10` STEP=1).
+**`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** active 2026-07-21 — STEP=0 done → Driver STEP=1.
 **`TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 #9)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_FFI_METADATA` (§47 #8)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_ATOMICS` (§47 #7)** closed 2026-07-21; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#9` done; next `#10`.
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#10` open; `#9` done.
 **`TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING` (§47 #5)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** closed 2026-07-20; archived.

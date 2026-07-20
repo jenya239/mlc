@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 01:55 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #10)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-21 01:53 |
+| elapsed | ~2 min |
+| done    | Open `#10`: `TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md` Decision freeze; backlog/PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: C++ `supervisor.hpp` green; MLC `Supervisor` → E001; freeze method API (not `supervisor { }` sugar) |
+| result  | STEP=0 frozen; method API + RestartPolicy; block sugar/#11 out |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+
 ### Turn 2026-07-21 01:52 (Critic TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE)
 
 | field   | value |
