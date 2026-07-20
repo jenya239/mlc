@@ -29,7 +29,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §16/§17/§44 phase 8. Size *
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: Isolate MLC missing / not constructible | **done** — `ok isolate_mlc_red` (E001; `isolate.hpp` present) |
 | 2 | Wire MLC Isolate start/send/shutdown; green e2e serial; Tier B; self-host | **done** — `ok isolate_mlc`; Tier B EXIT=0; self-host DIFF=0 |
-| 3 | MEMORY_MODEL + CONCURRENCY_V2 §16/§17 sync | open |
+| 3 | MEMORY_MODEL + CONCURRENCY_V2 §16/§17 sync | **done** — MLC Isolate.start/send/shutdown; Block-only; !Send/!Sync |
 | 4 | Critic: gates; archive | open |
 
 ## Out of scope

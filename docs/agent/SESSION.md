@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 01:46 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+| started | 2026-07-21 01:44 |
+| elapsed | ~2 min |
+| done    | MEMORY_MODEL Isolate MLC surface; CONCURRENCY_V2 §0/§16/§17/§43/§44; TRACK/PLAN → Critic |
+| verify  | docs cite `Isolate.start`/`send`/`shutdown`; Block-only; !Send/!Sync; track link |
+| result  | STEP=3 done → Critic |
+| issues  | residual: Drop*/Reject; MLC concurrent share handle |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+
 ### Turn 2026-07-21 01:25 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=2)
 
 | field   | value |
