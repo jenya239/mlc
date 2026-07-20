@@ -29,7 +29,7 @@ limiting, graceful shutdown.
 
 | Компонент | Файл | Реальное поведение |
 |-----------|------|---------------------|
-| `Channel<T>` | `runtime/include/mlc/concurrency/channel.hpp` | bounded (default 64, max 1048576); **capacity 0 = rendezvous** (TRACK_CONCURRENCY_V2 STEP=2); **`make_unbounded_channel`** (capacity `SIZE_MAX`, never blocks on full — [TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED](agent/TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED.md)) |
+| `Channel<T>` | `runtime/include/mlc/concurrency/channel.hpp` | bounded (default 64, max 1048576); **capacity 0 = rendezvous** (TRACK_CONCURRENCY_V2 STEP=2); **`make_unbounded_channel`** (capacity `SIZE_MAX`, never blocks on full — [TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED](archive/tracks/TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED.md)) |
 | `spawn { ... }` | `runtime/include/mlc/concurrency/spawn.hpp` | `std::async` + `future.get()` через `mlc::Task` coroutine; **нет TaskScope, нет explicit owner beyond Task handle, нет cancellation** |
 | `Arc<T>` | `runtime/include/mlc/concurrency/arc.hpp` | atomic refcount, требует "send-safe" inner |
 | `Mutex<T>` | `runtime/include/mlc/concurrency/mutex.hpp` | scoped `mutex.lock(fn mut val => ...)`, lambda-only — уже соответствует §13 требования "lexical API, не lock()/unlock()" |

@@ -41,14 +41,14 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6).
-**`TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6)** active — STEP=3 docs done; next Critic.
+**Queue head:** Planner open §47 `#7 CONCURRENCY_ATOMICS`.
+**`TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED` (§47 #6)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING` (§47 #5)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SYNC_TRAIT` (§47 #4)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
-**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#6` open.
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#7` next.
 **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** closed 2026-07-20; archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#36).
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.

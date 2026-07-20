@@ -1,13 +1,40 @@
 # Track: Concurrency Channel Rendezvous / Unbounded
 
-Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#6**.
+Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](../../agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#6**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §10/§44. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=3 done → Critic
+## Status: **closed** (2026-07-20) — Critic OK
+
+**Critic 2026-07-20 (STEP=4):** Re-ran `run_channel_unbounded.sh` + smoke +
+`--check-only main` + rendezvous fixture. Anti-false-done: `910563ef`…`6a142919`
+(STEP=0–3); no `lib/mlc/` → REG skip. Wire: C++ `make_unbounded_channel`
+(SIZE_MAX); MLC registry/codegen; MEMORY_MODEL + CONCURRENCY_V2 §0/§10 synced.
+**reopen: none**.
+
+Honest residual: lock-free / overflow policies out; smoke proves send-past-capacity
+without drain match; unbounded not recommended for server ingress without backpressure.
+
+| Gate | Result |
+|------|--------|
+| `run_channel_unbounded.sh` | `ok channel_unbounded` EXIT=0 |
+| `run_channel_unbounded_smoke.sh` | `ok channel_unbounded_smoke` EXIT=0 |
+| `channel_rendezvous_zero.mlc` check-only | EXIT=0 |
+| `mlcc --check-only compiler/main.mlc` | EXIT=0 |
+| Tier B / self-host | STEP=2: Tier B EXIT=0; p1≡p2 DIFF_EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§47 `#7 CONCURRENCY_ATOMICS`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `910563ef` | Decision freeze + open |
+| 1 | `1ad2554d` | Red harness (E001 gap) |
+| 2 | `5e96c3d1` | make_unbounded_channel; smoke; Tier B + self-host |
+| 3 | `6a142919` | MEMORY_MODEL + CONCURRENCY_V2 sync |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -30,7 +57,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §10/§44. Size **M**.
 | 1 | Red: unbounded API missing | **done** — `ok channel_unbounded_red` |
 | 2 | Wire unbounded (+ MLC); green smokes; Tier B; self-host if compiler/ | **done** — `ok channel_unbounded` + smoke; C++ test; p1≡p2 |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 status sync | **done** |
-| 4 | Critic: gates; archive | open |
+| 4 | Critic: gates; archive | **done** — closed |
 
 ## Out of scope
 
