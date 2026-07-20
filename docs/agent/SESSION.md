@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:45 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_FFI_METADATA |
+| started | 2026-07-21 00:18 |
+| elapsed | ~27 min |
+| done    | E094 + `function_is_thread_affine`; spawn_capture call check; catalog 93; green harness + unit tests |
+| verify  | `ok extern_thread_affine_spawn`; main_ok EXIT=0; Tier B 0; self-host DIFF 0 |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_FFI_METADATA |
+
 ### Turn 2026-07-21 00:18 (Driver TRACK_CONCURRENCY_FFI_METADATA STEP=1)
 
 | field   | value |
