@@ -1,5 +1,89 @@
-// TRACK_EDITOR_MINIMAP STEP=1 — L2: minimap cache/geometry (red until STEP=2).
+// TRACK_EDITOR_MINIMAP STEP=2 — L2: geometry, cache-on-edit, indicator, click→scroll.
+import { rect_new } from '../../gui/layout'
+import {
+  editor_ux_minimap_width,
+  editor_ux_minimap_layout,
+  editor_ux_minimap_cache_new,
+  editor_ux_minimap_cache_tick,
+  editor_ux_minimap_viewport_indicator,
+  editor_ux_minimap_scroll_at_y
+} from '../ux/minimap'
+
 fn main() -> i32 = do
-  println("ux_fail editor_minimap_cache_stable stub")
-  1
+  const band = rect_new(10, 20, 400, 300)
+  const layout = editor_ux_minimap_layout(band)
+  if layout.enabled != 1 then
+    println("ux_fail editor_minimap_cache_stable layout disabled")
+    return 1
+  end
+  const strip_width = editor_ux_minimap_width()
+  if layout.minimap_rect.width != strip_width then
+    println("ux_fail editor_minimap_cache_stable width")
+    return 2
+  end
+  if layout.text_rect.width != band.width - strip_width then
+    println("ux_fail editor_minimap_cache_stable text shrink")
+    return 3
+  end
+  if layout.minimap_rect.x != layout.text_rect.x + layout.text_rect.width then
+    println("ux_fail editor_minimap_cache_stable strip x")
+    return 4
+  end
+
+  const narrow = editor_ux_minimap_layout(rect_new(0, 0, 100, 200))
+  if narrow.enabled != 0 || narrow.minimap_rect.width != 0 then
+    println("ux_fail editor_minimap_cache_stable narrow")
+    return 5
+  end
+
+  let mut cache = editor_ux_minimap_cache_new("line one\n")
+  const after_same = editor_ux_minimap_cache_tick(cache, "line one\n")
+  if after_same.rebuild_count != cache.rebuild_count then
+    println("ux_fail editor_minimap_cache_stable same-frame rebuild")
+    return 6
+  end
+  cache = after_same
+  const after_edit = editor_ux_minimap_cache_tick(cache, "line one\nline two\n")
+  if after_edit.rebuild_count != cache.rebuild_count + 1 then
+    println("ux_fail editor_minimap_cache_stable edit rebuild")
+    return 7
+  end
+
+  const content_height = 800
+  const viewport_height = 300
+  const scroll_y = 100
+  const indicator = editor_ux_minimap_viewport_indicator(
+    layout.minimap_rect, content_height, viewport_height, scroll_y
+  )
+  if indicator.height < 4 then
+    println("ux_fail editor_minimap_cache_stable indicator short")
+    return 8
+  end
+  if indicator.width != layout.minimap_rect.width then
+    println("ux_fail editor_minimap_cache_stable indicator width")
+    return 9
+  end
+  if indicator.y < layout.minimap_rect.y ||
+      indicator.y + indicator.height >
+        layout.minimap_rect.y + layout.minimap_rect.height then
+    println("ux_fail editor_minimap_cache_stable indicator y")
+    return 10
+  end
+
+  const click_y = layout.minimap_rect.y + layout.minimap_rect.height / 2
+  const mapped = editor_ux_minimap_scroll_at_y(
+    click_y, layout.minimap_rect, content_height, viewport_height
+  )
+  if mapped < 0 then
+    println("ux_fail editor_minimap_cache_stable scroll neg")
+    return 11
+  end
+  const max_scroll = content_height - viewport_height
+  if mapped > max_scroll then
+    println("ux_fail editor_minimap_cache_stable scroll past max")
+    return 12
+  end
+
+  println("ux_ok editor_minimap_cache_stable")
+  0
 end

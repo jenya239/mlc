@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 09:55 (Driver TRACK_EDITOR_MINIMAP STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MINIMAP |
+| started | 2026-07-20 09:51 |
+| elapsed | ~12 min |
+| done    | `ux/minimap.mlc`: layout(width=64), cache tick, viewport indicator, click→scroll; green L2 scenario |
+| verify  | `ux_ok editor_minimap_cache_stable` |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_MINIMAP |
+
 ### Turn 2026-07-19 30:40 (Driver TRACK_EDITOR_MINIMAP STEP=1)
 
 | field   | value |

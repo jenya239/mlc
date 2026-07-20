@@ -1,0 +1,135 @@
+// TRACK_EDITOR_MINIMAP STEP=2 — geometry, cache key, viewport indicator, click→scroll.
+import { Rect, rect_new } from '../../gui/layout'
+import { editor_ux_clamp_scroll_offset } from './scroll'
+
+export fn editor_ux_minimap_width() -> i32 = 64
+export fn editor_ux_minimap_pixel_size() -> i32 = 2
+export fn editor_ux_minimap_line_height() -> i32 = 3
+
+export type MinimapLayout = {
+  text_rect: Rect,
+  minimap_rect: Rect,
+  enabled: i32
+}
+
+export type MinimapCacheState = {
+  text: string,
+  rebuild_count: i32
+}
+
+export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout = do
+  const width = editor_ux_minimap_width()
+  const min_text = 80
+  if content_band.width < width + min_text then
+    return MinimapLayout {
+      text_rect: content_band,
+      minimap_rect: rect_new(0, 0, 0, 0),
+      enabled: 0
+    }
+  end
+  const text_width = content_band.width - width
+  MinimapLayout {
+    text_rect: rect_new(
+      content_band.x,
+      content_band.y,
+      text_width,
+      content_band.height
+    ),
+    minimap_rect: rect_new(
+      content_band.x + text_width,
+      content_band.y,
+      width,
+      content_band.height
+    ),
+    enabled: 1
+  }
+end
+
+export fn editor_ux_minimap_needs_rebuild(prev_text: string, next_text: string) -> i32 = do
+  if prev_text.byte_size() != next_text.byte_size() then
+    return 1
+  end
+  if prev_text != next_text then
+    return 1
+  end
+  0
+end
+
+export fn editor_ux_minimap_cache_new(text: string) -> MinimapCacheState =
+  MinimapCacheState { text: text, rebuild_count: 1 }
+
+export fn editor_ux_minimap_cache_tick(
+  state: MinimapCacheState,
+  next_text: string
+) -> MinimapCacheState = do
+  if editor_ux_minimap_needs_rebuild(state.text, next_text) == 0 then
+    return state
+  end
+  MinimapCacheState {
+    text: next_text,
+    rebuild_count: state.rebuild_count + 1
+  }
+end
+
+export fn editor_ux_minimap_viewport_indicator(
+  minimap_rect: Rect,
+  content_height: i32,
+  viewport_height: i32,
+  scroll_y: i32
+) -> Rect = do
+  if minimap_rect.width <= 0 || minimap_rect.height <= 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  let mut content_h = content_height
+  if content_h <= 0 then
+    content_h = 1
+  end
+  let mut viewport_h = viewport_height
+  if viewport_h <= 0 then
+    viewport_h = 1
+  end
+  let mut height = viewport_h * minimap_rect.height / content_h
+  if height < 4 then
+    height = 4
+  end
+  if height > minimap_rect.height then
+    height = minimap_rect.height
+  end
+  let mut top = scroll_y * minimap_rect.height / content_h
+  if top < 0 then
+    top = 0
+  end
+  if top + height > minimap_rect.height then
+    top = minimap_rect.height - height
+  end
+  if top < 0 then
+    top = 0
+  end
+  rect_new(minimap_rect.x, minimap_rect.y + top, minimap_rect.width, height)
+end
+
+// Click/drag in strip → scroll so mapped doc y is near viewport center.
+export fn editor_ux_minimap_scroll_at_y(
+  click_y: i32,
+  minimap_rect: Rect,
+  content_height: i32,
+  viewport_height: i32
+) -> i32 = do
+  if minimap_rect.height <= 0 then
+    return 0
+  end
+  let mut content_h = content_height
+  if content_h <= 0 then
+    content_h = 1
+  end
+  let mut rel_y = click_y - minimap_rect.y
+  if rel_y < 0 then
+    rel_y = 0
+  end
+  if rel_y > minimap_rect.height then
+    rel_y = minimap_rect.height
+  end
+  const doc_y = rel_y * content_h / minimap_rect.height
+  const scroll_y = doc_y - viewport_height / 2
+  editor_ux_clamp_scroll_offset(scroll_y, content_h, viewport_height)
+end

@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#35**.
 User question 2026-07-19 (Sublime-style feasibility). Size **L**.
 
-## Status: **active** (2026-07-19) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — model geometry + cache + indicator + click→scroll; green `ux_ok editor_minimap_cache_stable`.
+**STEP=3** — `demo_live` wire (shrink text, draw glyphs+indicator, click/drag); `demo_live_fs_compile_ok`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -32,7 +32,7 @@ User question 2026-07-19 (Sublime-style feasibility). Size **L**.
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | L2 red harness + run scripts | **done** — `ux_ok editor_minimap_red` |
-| 2 | Model: geometry + cache key + indicator + click→scroll; green token | open — `ux_ok editor_minimap_cache_stable` |
+| 2 | Model: geometry + cache key + indicator + click→scroll; green token | **done** — `ux_ok editor_minimap_cache_stable` |
 | 3 | `demo_live` wire (shrink text, draw glyphs+indicator, click/drag); `demo_live_fs_compile_ok` | open |
 | 4 | Critic: gates; archive | open |
 
