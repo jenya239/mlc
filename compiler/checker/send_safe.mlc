@@ -120,6 +120,9 @@ fn type_is_send_generic(
   if type_name == 'Mutex' && type_arguments.length() == 1 then
     return type_is_send(type_arguments[0], registry)
   end
+  if type_name == 'Isolate' && type_arguments.length() == 2 then
+    return false
+  end
   if type_name == 'ChannelReceiveResult' && type_arguments.length() == 1 then
     return type_is_send(type_arguments[0], registry)
   end
@@ -150,6 +153,8 @@ fn type_is_sync_generic(
   end
   // Mutex is always Sync (interior mutability behind lock).
   if type_name == 'Mutex' && type_arguments.length() == 1 then return true end
+  // Isolate owns state on one thread; not Sync for free sharing.
+  if type_name == 'Isolate' && type_arguments.length() == 2 then return false end
   // Arc<T> is Sync iff T is Sync.
   if type_name == 'Arc' && type_arguments.length() == 1 then
     return type_is_sync(type_arguments[0], registry)

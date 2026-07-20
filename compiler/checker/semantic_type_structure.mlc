@@ -161,6 +161,23 @@ export fn mutex_inner_type_from_mutex_type(mutex_type: Shared<Type>) -> Shared<T
   else Shared.new(TUnknown) end
 end
 
+export fn type_is_isolate(type_value: Shared<Type>) -> bool =
+  generic_type_name_from_type(type_value) == 'Isolate'
+
+export fn isolate_state_type_from_isolate_type(isolate_type: Shared<Type>) -> Shared<Type> = do
+  if generic_type_name_from_type(isolate_type) == 'Isolate' then
+    const type_arguments = generic_type_arguments_from_type(isolate_type)
+    if type_arguments.length() == 2 then type_arguments[0] else Shared.new(TUnknown) end
+  else Shared.new(TUnknown) end
+end
+
+export fn isolate_message_type_from_isolate_type(isolate_type: Shared<Type>) -> Shared<Type> = do
+  if generic_type_name_from_type(isolate_type) == 'Isolate' then
+    const type_arguments = generic_type_arguments_from_type(isolate_type)
+    if type_arguments.length() == 2 then type_arguments[1] else Shared.new(TUnknown) end
+  else Shared.new(TUnknown) end
+end
+
 export fn type_is_array(type_value: Shared<Type>) -> bool =
   match type_value { TArray(_) => true, TI32 => false, TString => false, TBool => false, TUnit => false, TI64 => false, TF64 => false, TU8 => false, TUsize => false, TChar => false, TShared(_) => false, TNamed(_) => false, TGeneric(_, _) => false, TPair(_, _) => false, TTuple(_) => false, TFn(_, _) => false, TAssoc(_, _) => false, TUnknown => false }
 

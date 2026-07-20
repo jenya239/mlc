@@ -1,0 +1,19 @@
+// TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE —
+// Sequential sends then state_after_shutdown (serial handler; Block mailbox).
+fn handle(state: i32, message: i32) -> unit = do
+  // State is by-value in MLC fn; mutation is via C++ State& wrapper in codegen.
+  // This smoke only checks link + send/shutdown; sum gate remains runtime/test_isolate.
+  ()
+end
+
+fn main() -> i32 = do
+  let room = Isolate.start(0, 64usize, handle)
+  let mut sent_ok = true
+  let mut index = 0
+  while index < 100 do
+    if !room.send(1) then sent_ok = false end
+    index = index + 1
+  end
+  room.shutdown()
+  if sent_ok then 0 else 1 end
+end

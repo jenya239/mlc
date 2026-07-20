@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 01:25 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+| started | 2026-07-21 01:00 |
+| elapsed | ~25 min |
+| done    | Wire `Isolate.start`/`send`/`shutdown`/`state_after_shutdown`: infer+codegen+type_gen+send_safe; fixtures + `run_isolate_mlc.sh` |
+| verify  | `ok isolate_mlc`; Tier B EXIT=0; self-host p1≡p2 DIFF=0; `main` check-only 0; concurrent serial via `test_isolate` |
+| result  | STEP=2 done → Driver STEP=3 |
+| issues  | residual: Drop* overflow; MLC multi-thread senders need shareable handle (Isolate !Send/!copy); lambda Msg often Unknown — named typed handler preferred |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+
 ### Turn 2026-07-21 00:59 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=1)
 
 | field   | value |

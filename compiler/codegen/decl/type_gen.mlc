@@ -110,6 +110,7 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   else if type_name == 'Channel' then 'mlc::concurrency::Channel'
   else if type_name == 'Arc' then 'mlc::concurrency::Arc'
   else if type_name == 'Mutex' then 'mlc::concurrency::Mutex'
+  else if type_name == 'Isolate' then 'mlc::concurrency::Isolate'
   else if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
   else if type_name == 'ChannelReceiveResult' then 'mlc::concurrency::ChannelReceiveResult'
   else if type_name == 'RegionHandle' then 'mlc::memory::RegionHandle'

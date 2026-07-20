@@ -1,0 +1,111 @@
+// Isolate.start codegen (TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE).
+
+import {
+  SemanticExpression, SemanticExpressionLambda, SemanticExpressionIdent, SemanticStatement, sexpr_type
+} from '../../ir/semantic_ir'
+import { Type } from '../../checker/registry'
+import {
+  CppExpression, CppCall, CppMutableLambda, CppCapture, CppParam, CppTypeName
+} from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { CodegenContext } from '../context'
+import { cpp_safe } from '../cpp_naming'
+import { sem_type_to_cpp } from '../decl/type_gen'
+import { function_parameter_list } from '../../checker/semantic_type_structure'
+
+fn message_type_from_handler(handler: Shared<SemanticExpression>) -> Shared<Type> = do
+  const handler_type = sexpr_type(handler)
+  const parameters = function_parameter_list(handler_type)
+  if parameters.length() >= 2 then parameters[1] else sexpr_type(handler) end
+end
+
+fn make_isolate_constructor_cpp(
+  state_type_cpp: string,
+  message_type_cpp: string,
+  state_expression: Shared<CppExpression>,
+  capacity_expression: Shared<CppExpression>,
+  handler_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression(
+      `mlc::concurrency::Isolate<${state_type_cpp}, ${message_type_cpp}>`),
+    [state_expression, capacity_expression, handler_expression]))
+
+fn gen_isolate_handler_lambda_cpp(
+  handler: Shared<SemanticExpression>,
+  state_type_cpp: string,
+  message_type_cpp: string,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
+  match handler {
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      if parameter_names.length() == 2 then
+        const state_name = cpp_safe(parameter_names[0])
+        const message_name = cpp_safe(parameter_names[1])
+        const body_expression = evaluate_expression(body, context, gen_stmts)
+        Shared.new(CppMutableLambda(
+          [Shared.new(CppCapture { name: '', by_reference: true })],
+          [
+            Shared.new(CppParam {
+              name: state_name,
+              parameter_type: Shared.new(CppTypeName(`${state_type_cpp}&`))
+            }),
+            Shared.new(CppParam {
+              name: message_name,
+              parameter_type: Shared.new(CppTypeName(message_type_cpp))
+            })
+          ],
+          body_expression))
+      else
+        evaluate_expression(handler, context, gen_stmts)
+      end,
+    SemanticExpressionIdent(function_name, _, _) => do
+      const callee = emit_helpers.make_identifier_cpp_expression(cpp_safe(function_name))
+      const state_name = '__isolate_state'
+      const message_name = '__isolate_message'
+      const call_body = Shared.new(CppCall(
+        callee,
+        [
+          emit_helpers.make_identifier_cpp_expression(state_name),
+          emit_helpers.make_identifier_cpp_expression(message_name)
+        ]))
+      Shared.new(CppMutableLambda(
+        [Shared.new(CppCapture { name: '', by_reference: true })],
+        [
+          Shared.new(CppParam {
+            name: state_name,
+            parameter_type: Shared.new(CppTypeName(`${state_type_cpp}&`))
+          }),
+          Shared.new(CppParam {
+            name: message_name,
+            parameter_type: Shared.new(CppTypeName(message_type_cpp))
+          })
+        ],
+        call_body))
+    end,
+    _ => evaluate_expression(handler, context, gen_stmts)
+  }
+
+export fn gen_method_isolate_start_cpp(
+  state_argument: Shared<SemanticExpression>,
+  capacity_argument: Shared<SemanticExpression>,
+  handler_argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const state_type_cpp = sem_type_to_cpp(context, sexpr_type(state_argument))
+  const message_type = message_type_from_handler(handler_argument)
+  const message_type_cpp = sem_type_to_cpp(context, message_type)
+  const state_expression = evaluate_expression(state_argument, context, gen_stmts)
+  const capacity_expression = evaluate_expression(capacity_argument, context, gen_stmts)
+  const handler_expression = gen_isolate_handler_lambda_cpp(
+    handler_argument, state_type_cpp, message_type_cpp, context, gen_stmts, evaluate_expression)
+  make_isolate_constructor_cpp(
+    state_type_cpp, message_type_cpp, state_expression, capacity_expression, handler_expression)
+end
+
+export fn is_isolate_static_receiver_name(type_name: string) -> bool =
+  type_name == 'Isolate'

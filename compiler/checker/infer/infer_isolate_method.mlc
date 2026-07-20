@@ -1,0 +1,166 @@
+// Isolate.start / send / shutdown inference (TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE).
+
+import {
+  Expr, ExprIdent, ExprLambda, Span, Diagnostic,
+  diagnostic_error_with_code, diagnostics_append, expr_span
+} from '../../frontend/ast'
+import { Type, TypeRegistry, TGeneric, TUnknown, TBool, TUnit } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import {
+  type_is_unknown, type_description, type_is_isolate,
+  isolate_state_type_from_isolate_type, isolate_message_type_from_isolate_type,
+  function_parameter_list, types_structurally_equal
+} from '../semantic_type_structure'
+import { type_is_send_safe } from '../send_safe'
+import { call_arity_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { infer_lambda_with_param_types } from './infer_lambda_context'
+import { diagnostic_code_e082, diagnostic_code_e092 } from '../diagnostic_codes'
+
+export fn is_isolate_static_start(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'Isolate' && method_name == 'start',
+    _ => false
+  }
+
+export fn is_isolate_method(method_name: string) -> bool =
+  method_name == 'send' || method_name == 'shutdown' || method_name == 'state_after_shutdown'
+
+fn isolate_receiver_error(
+  isolate_type: Shared<Type>,
+  method_name: string,
+  method_span: Span
+) -> [Diagnostic] =
+  if !type_is_unknown(isolate_type) && !type_is_isolate(isolate_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects an Isolate receiver, got ${type_description(isolate_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+fn isolate_handler_arity_errors(handler_expression: Shared<Expr>) -> [Diagnostic] =
+  match handler_expression {
+    ExprLambda(parameter_names, _, _) =>
+      if parameter_names.length() != 2 then
+        [diagnostic_error_with_code(
+          'Isolate.start expects a handler with two parameters (state, message)',
+          expr_span(handler_expression),
+          diagnostic_code_e082())]
+      else
+        []
+      end,
+    _ => []
+  }
+
+fn message_type_from_handler_type(handler_type: Shared<Type>) -> Shared<Type> =
+  if function_parameter_list(handler_type).length() >= 2 then
+    function_parameter_list(handler_type)[1]
+  else
+    Shared.new(TUnknown)
+  end
+
+fn infer_isolate_handler(
+  handler_expression: Shared<Expr>,
+  state_type: Shared<Type>,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult =
+  match handler_expression {
+    ExprLambda(parameter_names, body, _) =>
+      infer_lambda_with_param_types(
+        parameter_names,
+        [state_type, Shared.new(TUnknown)],
+        body,
+        inference_context,
+        infer_expr_fn),
+    _ => infer_expr_fn(handler_expression, inference_context)
+  }
+
+export fn infer_isolate_static_start_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const arity_errors = call_arity_diagnostics(3, method_arguments.length(), method_span)
+  if method_arguments.length() != 3 then
+    InferResult { inferred_type: Shared.new(TUnknown), errors: diagnostics_append(object_parsed.errors, arity_errors) }
+  else
+    const state_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    const capacity_parsed = infer_expr_fn(method_arguments[1], inference_context)
+    let mut errors = diagnostics_append(object_parsed.errors, arity_errors)
+    errors = diagnostics_append(errors, state_parsed.errors)
+    errors = diagnostics_append(errors, capacity_parsed.errors)
+    errors = diagnostics_append(errors, isolate_handler_arity_errors(method_arguments[2]))
+    const handler_parsed = infer_isolate_handler(
+      method_arguments[2], state_parsed.inferred_type, inference_context, infer_expr_fn)
+    errors = diagnostics_append(errors, handler_parsed.errors)
+    const message_type = message_type_from_handler_type(handler_parsed.inferred_type)
+    InferResult {
+      inferred_type: Shared.new(TGeneric('Isolate', [state_parsed.inferred_type, message_type])),
+      errors: errors
+    }
+  end
+end
+
+fn isolate_send_argument_errors(
+  message_type: Shared<Type>,
+  argument_type: Shared<Type>,
+  argument_span: Span,
+  registry: TypeRegistry
+) -> [Diagnostic] = do
+  let mut errors: [Diagnostic] = []
+  if !type_is_unknown(argument_type) && !type_is_send_safe(argument_type, registry) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      'Isolate.send requires a Send-safe value, got ' + type_description(argument_type),
+      argument_span,
+      diagnostic_code_e092())])
+  end
+  if !type_is_unknown(message_type) && !type_is_unknown(argument_type)
+    && !types_structurally_equal(message_type, argument_type) then
+    errors = diagnostics_append(errors, [diagnostic_error_with_code(
+      'Isolate.send expected ' + type_description(message_type) + ', got ' + type_description(argument_type),
+      argument_span,
+      diagnostic_code_e082())])
+  end
+  errors
+end
+
+export fn infer_isolate_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const isolate_type = object_parsed.inferred_type
+  const receiver_errors = isolate_receiver_error(isolate_type, method_name, method_span)
+  let mut errors = diagnostics_append(object_parsed.errors, receiver_errors)
+  if method_name == 'send' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(1, method_arguments.length(), method_span))
+    if method_arguments.length() == 1 then
+      const argument_parsed = infer_expr_fn(method_arguments[0], inference_context)
+      errors = diagnostics_append(errors, argument_parsed.errors)
+      const message_type = isolate_message_type_from_isolate_type(isolate_type)
+      errors = diagnostics_append(errors, isolate_send_argument_errors(
+        message_type, argument_parsed.inferred_type, expr_span(method_arguments[0]),
+        inference_context.registry))
+    end
+    InferResult { inferred_type: Shared.new(TBool), errors: errors }
+  else if method_name == 'shutdown' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'state_after_shutdown' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult {
+      inferred_type: isolate_state_type_from_isolate_type(isolate_type),
+      errors: errors
+    }
+  else
+    InferResult { inferred_type: Shared.new(TUnknown), errors: errors }
+  end
+end
