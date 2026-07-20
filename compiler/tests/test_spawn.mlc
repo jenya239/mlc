@@ -1,4 +1,4 @@
-import { TestResult, assert_eq_int } from './test_runner'
+import { TestResult, assert_eq_int, assert_true } from './test_runner'
 import { assert_code_contains, assert_type_generates } from './codegen_test_helpers'
 import { tokenize } from '../frontend/lexer'
 import { parse_program, parse_program_with_errors } from '../frontend/parser/decls'
