@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 01:59 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+| started | 2026-07-21 01:56 |
+| elapsed | ~3 min |
+| done    | Red: `fixtures/supervisor_add_start.mlc` + `run_supervisor_mlc_red.sh` / green stub `run_supervisor_mlc.sh`; freeze `Supervisor.new`/`add`/`start`/`stop` + `RestartPolicy` |
+| verify  | `ok supervisor_mlc_red` (E001 Supervisor+RestartPolicy, status=1, `supervisor.hpp` present); green stub EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+
 ### Turn 2026-07-21 01:55 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #10)
 
 | field   | value |
