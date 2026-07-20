@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 12:15 (Critic TRACK_CONCURRENCY_SEND_BOUND)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_SEND_BOUND |
+| started | 2026-07-20 11:23 |
+| elapsed | ~6 min |
+| done    | Re-audit STEP=0–3 (`a1d68295`…`9691e847`); E092 gate + check-only main green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_CONCURRENCY_SEND_BOUND.md`; PLAN/backlog → #2 closed |
+| verify  | `ok spawn_shared_capture_not_send_e092`; `mlcc --check-only compiler/main.mlc` EXIT=0 |
+| result  | Critic OK; track closed |
+| issues  | residual: Array always !Send; spawn type-env Unknown skipped; method_name==spawn |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #3 CONCURRENCY_MOVE_TRACKING) |
+
 ### Turn 2026-07-20 12:05 (Driver TRACK_CONCURRENCY_SEND_BOUND STEP=3)
 
 | field   | value |

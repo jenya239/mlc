@@ -41,8 +41,10 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_CONCURRENCY_SEND_BOUND` (§47 #2).
-**`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** active — STEP=0–3 done; next Critic.
+**Queue head:** Planner open §47 `#3 CONCURRENCY_MOVE_TRACKING`.
+**`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.
+**`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — next `#3`.
 **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** closed 2026-07-20; archived.
 **`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#2` open.
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
