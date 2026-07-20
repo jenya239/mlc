@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 14:30 (Planner open CONCURRENCY_CANCELLATION_WAKES_BLOCKING)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_MLC_CONCURRENCY_REFINEMENT |
+| started | 2026-07-20 14:27 |
+| elapsed | ~4 min |
+| done    | Open `#5`: `TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING.md` Decision — C++ cancel wake green; gap = MLC StopToken + Cancelled on Channel; sleep/socket out |
+| verify  | TRACK STEP=0 done; PLAN/CONTINUITY/DEVELOPMENT/backlog → Driver STEP=1 |
+| result  | STEP=0 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING |
+
 ### Turn 2026-07-20 14:25 (Critic TRACK_CONCURRENCY_SYNC_TRAIT)
 
 | field   | value |

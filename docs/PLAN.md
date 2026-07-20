@@ -442,7 +442,7 @@ compiler/
 | **44** | Codegen: eliminate string-concatenation, CppAST only (`expr.mlc` deleted; DeclFragments→AST; `GenStmtsResult`/`GenModuleOut` AST; residual Fragment/print bridges — not 0%) | **closed** (2026-07-17) Critic OK; STEP=1…9 | [archive/tracks/TRACK_CODEGEN_CPPAST_ONLY](archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md) |
 | **45** | Editor development discipline — TDD-scenario-first standing rule (`GUI_UX_TESTING.md`) + `demo_live.mlc` Clean Architecture debt (refined: replace duplicated inline logic with existing `ux/*` calls, not just split `main()`) | **closed** (2026-07-18) Critic OK; STEP=0+3+4; STEP=1/2 → §46 #1 | [archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE](archive/tracks/TRACK_EDITOR_CLEAN_ARCHITECTURE.md) |
 | **46** | Editor UX backlog — #1…#36 done (#22 superseded); `#36 EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` closed Critic OK | **done** (2026-07-20) | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE](archive/tracks/TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE.md) · [archive/TRACK_EDITOR_MINIMAP](archive/tracks/TRACK_EDITOR_MINIMAP.md) |
-| **47** | MLC concurrency refinement backlog — `#1`–`#4` done; next Planner open `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING`; #6…#11 pending | **active** (2026-07-20) Planner `#5` | [TRACK_MLC_CONCURRENCY_REFINEMENT](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) · [archive/TRACK_CONCURRENCY_SYNC_TRAIT](archive/tracks/TRACK_CONCURRENCY_SYNC_TRAIT.md) · [CONCURRENCY_V2.md](CONCURRENCY_V2.md) |
+| **47** | MLC concurrency refinement backlog — `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING` active STEP=0 → Driver STEP=1; #6…#11 pending | **active** (2026-07-20) Driver `#5` STEP=1 | [TRACK_MLC_CONCURRENCY_REFINEMENT](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) · [TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING](agent/TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING.md) · [CONCURRENCY_V2.md](CONCURRENCY_V2.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -721,14 +721,14 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
         [archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md](archive/tracks/TRACK_EDITOR_STALE_HELP_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md](archive/tracks/TRACK_EDITOR_LIVE_SOLARIZED_TEXT.md) ·
         [archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md](archive/tracks/TRACK_EDITOR_DEMO_ORCHESTRATOR.md))**
-  → **MLC_CONCURRENCY_REFINEMENT (§47, **active** 2026-07-20: `#4` closed Critic OK; next Planner open `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING`;
+  → **MLC_CONCURRENCY_REFINEMENT (§47, **active** 2026-07-20: `#5 CONCURRENCY_CANCELLATION_WAKES_BLOCKING` STEP=0 done → Driver STEP=1;
       order: mutable-capture check → general
       `Send` bound → move-tracking → `Sync` trait → cancellation-wakes-blocking →
       rendezvous/unbounded channel → atomics → FFI concurrency metadata →
       Isolate/Supervisor/TestRuntime MLC surface;
       → [agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) ·
-        [archive/tracks/TRACK_CONCURRENCY_SYNC_TRAIT.md](archive/tracks/TRACK_CONCURRENCY_SYNC_TRAIT.md) ·
-        [archive/tracks/TRACK_CONCURRENCY_MOVE_TRACKING.md](archive/tracks/TRACK_CONCURRENCY_MOVE_TRACKING.md))**
+        [agent/TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING.md](agent/TRACK_CONCURRENCY_CANCELLATION_WAKES_BLOCKING.md) ·
+        [archive/tracks/TRACK_CONCURRENCY_SYNC_TRAIT.md](archive/tracks/TRACK_CONCURRENCY_SYNC_TRAIT.md))**
 ```
 
 
