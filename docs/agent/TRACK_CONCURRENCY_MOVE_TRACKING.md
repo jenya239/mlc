@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#3**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-20) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — MEMORY_MODEL sync (E088 / TaskScope.spawn move).
+**STEP=4** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -30,7 +30,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 | 0 | Decision freeze + open | **done** |
 | 1 | Red test: TaskScope.spawn move then use → expect E088 (fails today) | **done** — `ok task_scope_spawn_move_then_use_red` |
 | 2 | Wire move_check for ExprMethod spawn; green tests; Tier B; self-host | **done** — `ok task_scope_spawn_move_then_use_e088`; Tier B 1471/0; p1≡p2 |
-| 3 | MEMORY_MODEL sync (E088 / TaskScope.spawn move) | open |
+| 3 | MEMORY_MODEL sync (E088 / TaskScope.spawn move) | **done** |
 | 4 | Critic: gates; archive | open |
 
 ## Out of scope

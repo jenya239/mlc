@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 14:35 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_MOVE_TRACKING |
+| started | 2026-07-20 13:19 |
+| elapsed | ~5 min |
+| done    | `MEMORY_MODEL.md`: E088 after move into bare spawn **and** TaskScope.spawn; TaskScope row cites E088 |
+| verify  | MEMORY_MODEL cites move_check ExprMethod `"spawn"`; TRACK STEP=3 done → Critic |
+| result  | STEP=3 done |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_MOVE_TRACKING |
+
 ### Turn 2026-07-20 14:20 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=2)
 
 | field   | value |
