@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 11:10 (Planner TRACK_CONCURRENCY_SEND_BOUND STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh / 0 |
+| track   | TRACK_CONCURRENCY_SEND_BOUND (§47 #2) |
+| started | 2026-07-20 10:44 |
+| elapsed | ~8 min |
+| done    | Opened `docs/agent/TRACK_CONCURRENCY_SEND_BOUND.md`; Decision frozen: gap = spawn/TaskScope.spawn skip `type_is_send`; fixture `Shared[i32]` (no MLC RawPtr); new E092 + migrate Channel/Arc Send E082→E092; Array Send residual out |
+| verify  | Decision table present; backlog #2 → active; PLAN §47 points at TRACK_CONCURRENCY_SEND_BOUND |
+| result  | STEP=0 done → Driver STEP=1 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-19-concurrency-refinement-backlog` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_SEND_BOUND |
+
 ### Turn 2026-07-20 11:00 (Critic TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK)
 
 | field   | value |
