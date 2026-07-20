@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 02:53 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+| started | 2026-07-21 02:01 |
+| elapsed | ~52 min |
+| done    | Wire `Supervisor.new`/`add`/`start`/`stop` + `RestartPolicy`: infer+codegen+type_gen+send_safe; `.add` wraps handler + `as_std_string`; fixtures + `run_supervisor_mlc.sh` (restart Permanent + Temporary sibling) |
+| verify  | `ok supervisor_mlc`; Tier B EXIT=0; self-host p1≡p2 DIFF=0; `main` check-only 0 |
+| result  | STEP=2 done → Driver STEP=3 |
+| issues  | residual: receiver `TNamed(Supervisor)` often missing at codegen — gate also on `RestartPolicy.*` arg shape; block sugar out |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+
 ### Turn 2026-07-21 01:59 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=1)
 
 | field   | value |
