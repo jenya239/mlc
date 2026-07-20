@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 01:52 (Critic TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+| started | 2026-07-21 01:49 |
+| elapsed | ~3 min |
+| done    | Close `#9`: re-ran `ok isolate_mlc` + main check-only + `test_isolate`; archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → `#9` done |
+| verify  | `ok isolate_mlc`; main+fixture check-only EXIT=0; anti-false-done `07ee30cd`…`659b268a`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: Drop*/Reject; MLC concurrent share handle; lambda Msg Unknown |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #10 CONCURRENCY_SUPERVISOR_MLC_SURFACE) |
+
 ### Turn 2026-07-21 01:46 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=3)
 
 | field   | value |
