@@ -1,0 +1,75 @@
+// TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2 —
+// Cache full-document visual row count; invalidate on text / wrap_columns change.
+import {
+  LineIndex,
+  line_index_from_string
+} from '../document/line_index'
+import { document_visual_row_count } from './word_wrap'
+
+export type DocumentWrapCountCache = {
+  text: string,
+  wrap_columns: i32,
+  visual_row_count: i32,
+  recompute_count: i32
+}
+
+fn wrap_count_cache_needs_recompute(
+  state: DocumentWrapCountCache,
+  next_text: string,
+  next_wrap_columns: i32
+) -> i32 = do
+  if state.wrap_columns != next_wrap_columns then
+    return 1
+  end
+  if state.text.byte_size() != next_text.byte_size() then
+    return 1
+  end
+  if state.text != next_text then
+    return 1
+  end
+  0
+end
+
+export fn wrap_count_cache_new(
+  text: string,
+  line_index: LineIndex,
+  wrap_columns: i32
+) -> DocumentWrapCountCache =
+  DocumentWrapCountCache {
+    text: text,
+    wrap_columns: wrap_columns,
+    visual_row_count: document_visual_row_count(text, line_index, wrap_columns),
+    recompute_count: 1
+  }
+
+export fn wrap_count_cache_tick(
+  state: DocumentWrapCountCache,
+  next_text: string,
+  next_line_index: LineIndex,
+  next_wrap_columns: i32
+) -> DocumentWrapCountCache = do
+  if wrap_count_cache_needs_recompute(state, next_text, next_wrap_columns) == 0 then
+    return state
+  end
+  DocumentWrapCountCache {
+    text: next_text,
+    wrap_columns: next_wrap_columns,
+    visual_row_count: document_visual_row_count(
+      next_text, next_line_index, next_wrap_columns
+    ),
+    recompute_count: state.recompute_count + 1
+  }
+end
+
+// Convenience when caller only has the flat string (rebuilds line_index).
+export fn wrap_count_cache_tick_text(
+  state: DocumentWrapCountCache,
+  next_text: string,
+  next_wrap_columns: i32
+) -> DocumentWrapCountCache =
+  wrap_count_cache_tick(
+    state,
+    next_text,
+    line_index_from_string(next_text),
+    next_wrap_columns
+  )

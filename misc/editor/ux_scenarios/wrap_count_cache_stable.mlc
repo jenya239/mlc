@@ -1,6 +1,74 @@
-// TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=1 —
-// L2: wrap-count cache idle/scroll (red until STEP=2).
+// TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2 —
+// L2: idle/scroll ticks do not recompute; text/wrap_columns change does.
+import { line_index_from_string } from '../document/line_index'
+import { document_visual_row_count } from '../layout/word_wrap'
+import {
+  wrap_count_cache_new,
+  wrap_count_cache_tick,
+  wrap_count_cache_tick_text
+} from '../layout/wrap_cache'
+
+fn build_fixture(line_count: i32) -> string = do
+  let mut body = ""
+  let mut line = 0
+  while line < line_count do
+    body = body + "line_" + line.to_string() + " abcdefghijklmnopqrstuvwxyz0123456789\n"
+    line = line + 1
+  end
+  body
+end
+
 fn main() -> i32 = do
-  println("ux_fail wrap_count_cache_stable stub")
-  1
+  const fixture = build_fixture(80)
+  const line_index = line_index_from_string(fixture)
+  const wrap_columns = 40
+  let mut cache = wrap_count_cache_new(fixture, line_index, wrap_columns)
+
+  if cache.recompute_count != 1 then
+    println("ux_fail wrap_count_cache_stable warm count")
+    return 1
+  end
+  const expected = document_visual_row_count(fixture, line_index, wrap_columns)
+  if cache.visual_row_count != expected then
+    println("ux_fail wrap_count_cache_stable value mismatch")
+    return 2
+  end
+
+  let mut idle = 0
+  while idle < 5 do
+    const after_idle = wrap_count_cache_tick(
+      cache, fixture, line_index, wrap_columns
+    )
+    if after_idle.recompute_count != cache.recompute_count then
+      println("ux_fail wrap_count_cache_stable idle recompute")
+      return 3
+    end
+    if after_idle.visual_row_count != cache.visual_row_count then
+      println("ux_fail wrap_count_cache_stable idle value")
+      return 4
+    end
+    cache = after_idle
+    idle = idle + 1
+  end
+
+  const edited = fixture + "extra line for edit invalidate\n"
+  const after_edit = wrap_count_cache_tick_text(cache, edited, wrap_columns)
+  if after_edit.recompute_count != cache.recompute_count + 1 then
+    println("ux_fail wrap_count_cache_stable edit recompute")
+    return 5
+  end
+  cache = after_edit
+
+  const after_columns = wrap_count_cache_tick_text(cache, edited, wrap_columns + 8)
+  if after_columns.recompute_count != cache.recompute_count + 1 then
+    println("ux_fail wrap_count_cache_stable columns recompute")
+    return 6
+  end
+  if after_columns.wrap_columns != wrap_columns + 8 then
+    println("ux_fail wrap_count_cache_stable columns key")
+    return 7
+  end
+
+  println("ux_ok wrap_count_cache_stable")
+  0
 end

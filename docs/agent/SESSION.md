@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 13:00 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+| started | 2026-07-20 12:14 |
+| elapsed | ~10 min |
+| done    | `misc/editor/layout/wrap_cache.mlc` (`wrap_count_cache_new`/`tick`); green L2 scenario idle=0 recompute, edit/columns +1 |
+| verify  | `ux_ok wrap_count_cache_stable` |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+
 ### Turn 2026-07-20 12:50 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=1)
 
 | field   | value |
