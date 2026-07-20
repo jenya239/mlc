@@ -169,6 +169,7 @@ import {
 } from './document/frame_snapshot'
 import {
   LineIndex,
+  line_index_from_string,
   line_index_line_count,
   line_index_line_start,
   line_index_offset_to_position,
@@ -228,11 +229,14 @@ import {
 } from './layout/gutter'
 import {
   wrap_max_columns,
-  document_visual_row_count,
   collect_visible_visual_rows,
   visual_row_index_for_caret,
   wrap_offset_at_point
 } from './layout/word_wrap'
+import {
+  wrap_count_cache_new,
+  wrap_count_cache_tick
+} from './layout/wrap_cache'
 import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
@@ -740,6 +744,9 @@ fn main() -> i32 = do
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_drag = 0
+  let mut wrap_count_cache = wrap_count_cache_new(
+    "", line_index_from_string(""), 1
+  )
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -845,9 +852,10 @@ fn main() -> i32 = do
     const minimap_enabled = minimap_layout.enabled
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
-    const visual_row_count = document_visual_row_count(
-      draw_text, line_index, wrap_columns
+    wrap_count_cache = wrap_count_cache_tick(
+      wrap_count_cache, draw_text, line_index, wrap_columns
     )
+    const visual_row_count = wrap_count_cache.visual_row_count
     let mut wrapped_content_height = visual_row_count * metrics.line_height
     if wrapped_content_height < 0 then
       wrapped_content_height = 0
@@ -1620,9 +1628,10 @@ fn main() -> i32 = do
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_ensure_caret_visible(app, metrics)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
-    const visual_row_count_now = document_visual_row_count(
-      draw_text, line_index, wrap_columns_now
+    wrap_count_cache = wrap_count_cache_tick(
+      wrap_count_cache, draw_text, line_index, wrap_columns_now
     )
+    const visual_row_count_now = wrap_count_cache.visual_row_count
     let mut wrapped_content_height_now = visual_row_count_now * metrics.line_height
     if wrapped_content_height_now < 0 then
       wrapped_content_height_now = 0

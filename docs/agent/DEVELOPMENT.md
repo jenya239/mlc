@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36) STEP=3.
-**`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** active — STEP=2 cache done; next `demo_live` wire.
+**Queue head:** Critic `TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36).
+**`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** active — STEP=3 `demo_live` wire done; next Critic.
 **`TRACK_CONCURRENCY_MOVE_TRACKING` (§47 #3)** parked at STEP=0 (resume STEP=1 after `#36`).
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#36` open.
 **`TRACK_CONCURRENCY_SEND_BOUND` (§47 #2)** closed 2026-07-20; archived.

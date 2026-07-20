@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 13:20 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+| started | 2026-07-20 12:18 |
+| elapsed | ~15 min |
+| done    | `demo_live.mlc`: `wrap_count_cache` outside loop; both per-frame sites → `wrap_count_cache_tick` + `.visual_row_count` |
+| verify  | `demo_live_fs_compile_ok`; `ux_ok wrap_count_cache_stable` |
+| result  | STEP=3 done |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE |
+
 ### Turn 2026-07-20 13:00 (Driver TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2)
 
 | field   | value |
