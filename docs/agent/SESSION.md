@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 00:59 (Driver TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+| started | 2026-07-21 00:55 |
+| elapsed | ~4 min |
+| done    | Red: `fixtures/isolate_start_send.mlc` + `run_isolate_mlc_red.sh` / green stub `run_isolate_mlc.sh`; freeze `Isolate.start`/`send`/`shutdown` |
+| verify  | `ok isolate_mlc_red` (E001 `undefined: Isolate`, status=1, `isolate.hpp` present); green stub EXIT=1 as expected |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE |
+
 ### Turn 2026-07-21 00:54 (Planner TRACK_MLC_CONCURRENCY_REFINEMENT → #9)
 
 | field   | value |

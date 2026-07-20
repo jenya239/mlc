@@ -3,12 +3,12 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#9**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §16/§17/§44 phase 8. Size **L**.
 
-## Status: **active** (2026-07-21) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-21) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red harness: MLC `Isolate` / `.start` / `.send` does **not** resolve today
-(`E001` / parse fail); document exact failure.
+**STEP=2** — wire MLC `Isolate.start` / `.send` / `.shutdown`; green
+`run_isolate_mlc.sh` + concurrent-sender e2e; Tier B + self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -28,7 +28,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §16/§17/§44 phase 8. Size *
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: Isolate MLC missing / not constructible | open |
+| 1 | Red: Isolate MLC missing / not constructible | **done** — `ok isolate_mlc_red` (E001; `isolate.hpp` present) |
 | 2 | Wire MLC Isolate start/send/shutdown; green e2e serial; Tier B; self-host | open |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §16/§17 sync | open |
 | 4 | Critic: gates; archive | open |

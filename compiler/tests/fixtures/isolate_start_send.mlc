@@ -1,0 +1,10 @@
+// TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE —
+// Isolate.start(state, capacity, handler) / .send / .shutdown (Block overflow).
+fn main() -> i32 = do
+  let room = Isolate.start(0, 32usize, (state, message) => do
+    ()
+  end)
+  let ok = room.send(1)
+  room.shutdown()
+  if ok then 0 else 1 end
+end
