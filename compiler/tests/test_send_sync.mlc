@@ -38,6 +38,13 @@ export fn send_sync_tests() -> [TestResult] = do
   results.push(assert_true('channel send still rejects Array',
     check_error_count(
       'fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end') > 0))
+  results.push(assert_true('channel send Array diagnostic is E092',
+    match check(parse_program(tokenize(
+      'fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end'
+    ).tokens)) {
+      Ok(_) => false,
+      Err(errors) => errors.length() > 0 && errors[0].contains('error[E092]')
+    }))
   results.push(assert_true('channel send accepts i32',
     check_error_count(
       'fn main() -> bool = do let c = make_channel(4usize); c.send(7) end') == 0))

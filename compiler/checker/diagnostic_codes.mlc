@@ -190,3 +190,5 @@ export fn diagnostic_code_e089() -> string = 'E089'
 export fn diagnostic_code_e090() -> string = 'E090'
 // E091: region value escapes region block (return / closure / assign / field)
 export fn diagnostic_code_e091() -> string = 'E091'
+// E092: value type is not Send across concurrency boundary (spawn / Channel.send / Arc.new)
+export fn diagnostic_code_e092() -> string = 'E092'

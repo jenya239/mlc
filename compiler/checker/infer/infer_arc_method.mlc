@@ -7,7 +7,7 @@ import { InferResult } from './infer_result'
 import { type_is_unknown, type_description } from '../semantic_type_structure'
 import { type_is_send_safe } from '../send_safe'
 import { method_arity_after_receiver } from '../check/diagnostics/type_diagnostics'
-import { diagnostic_code_e082 } from '../diagnostic_codes'
+import { diagnostic_code_e092 } from '../diagnostic_codes'
 
 export fn is_arc_static_new(object: Shared<Expr>, method_name: string) -> bool =
   match object {
@@ -36,7 +36,7 @@ export fn infer_arc_static_new_call(
       errors = diagnostics_append(errors, [diagnostic_error_with_code(
         'Arc.new requires a Send-safe value, got ' + type_description(argument_type),
         expr_span(method_arguments[0]),
-        diagnostic_code_e082())])
+        diagnostic_code_e092())])
     end
     InferResult {
       inferred_type: Shared.new(TGeneric('Arc', [argument_type])),
