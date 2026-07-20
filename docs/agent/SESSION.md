@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 14:50 (Critic TRACK_CONCURRENCY_MOVE_TRACKING)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_MOVE_TRACKING |
+| started | 2026-07-20 13:23 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`f579f711`…`05bb2890`); E088 gate + check-only main green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_CONCURRENCY_MOVE_TRACKING.md`; PLAN/backlog → #3 closed |
+| verify  | `ok task_scope_spawn_move_then_use_e088`; `mlcc --check-only compiler/main.mlc` EXIT=0 |
+| result  | Critic OK; track closed |
+| issues  | residual: method_name==spawn; general ExprLambda no move export |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #4 CONCURRENCY_SYNC_TRAIT) |
+
 ### Turn 2026-07-20 14:35 (Driver TRACK_CONCURRENCY_MOVE_TRACKING STEP=3)
 
 | field   | value |

@@ -1,13 +1,39 @@
 # Track: Concurrency Move Tracking
 
-Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#3**.
+Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](../../agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#3**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=3 done → Critic
+## Status: **closed** (2026-07-20) — Critic OK
+
+**Critic 2026-07-20 (STEP=4):** Re-ran E088 gate + `--check-only main`. Anti-false-done:
+`f579f711`…`05bb2890` (STEP=0–3); no `lib/mlc/` → REG skip.
+Wire: `move_check.mlc` `move_check_spawn_method_arguments` when
+`method_name == "spawn"` — ExprLambda body inherits/export moves like bare
+ExprSpawn; MEMORY_MODEL cites E088 on bare spawn **and** TaskScope.spawn.
+**reopen: none**.
+
+Honest residual: `.spawn` still `method_name == "spawn"` not type-aware
+TaskScope; general ExprLambda still does not export moves (by design).
+
+| Gate | Result |
+|------|--------|
+| `run_task_scope_spawn_move_then_use.sh` | `ok task_scope_spawn_move_then_use_e088` EXIT=0 |
+| `mlcc --check-only compiler/main.mlc` | EXIT=0 |
+| Tier B / self-host | STEP=2: `build_tests.sh` 1471/0; p1≡p2 DIFF_EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§47 `#4 CONCURRENCY_SYNC_TRAIT`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `f579f711` | Decision freeze + open |
+| 1 | `13b65618` | Red harness (gap no E088) |
+| 2 | `c923d250` | ExprMethod spawn move export; Tier B + self-host |
+| 3 | `05bb2890` | MEMORY_MODEL sync |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 
@@ -31,7 +57,7 @@ Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §4/§44 phase 4. Size **M**.
 | 1 | Red test: TaskScope.spawn move then use → expect E088 (fails today) | **done** — `ok task_scope_spawn_move_then_use_red` |
 | 2 | Wire move_check for ExprMethod spawn; green tests; Tier B; self-host | **done** — `ok task_scope_spawn_move_then_use_e088`; Tier B 1471/0; p1≡p2 |
 | 3 | MEMORY_MODEL sync (E088 / TaskScope.spawn move) | **done** |
-| 4 | Critic: gates; archive | open |
+| 4 | Critic: gates; archive | **done** |
 
 ## Out of scope
 
