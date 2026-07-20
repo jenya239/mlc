@@ -24,7 +24,7 @@ export fn send_sync_tests() -> [TestResult] = do
 
   results.push(assert_true('i32 is Send', type_is_send(integer_type, registry)))
   results.push(assert_true('i32 is Sync', type_is_sync(integer_type, registry)))
-  results.push(assert_true('Array is not Send', !type_is_send(array_type, registry)))
+  results.push(assert_true('Array[i32] is Send', type_is_send(array_type, registry)))
   results.push(assert_true('Array is not Sync', !type_is_sync(array_type, registry)))
   results.push(assert_true('Shared is not Send', !type_is_send(shared_type, registry)))
   results.push(assert_true('Shared is not Sync', !type_is_sync(shared_type, registry)))
@@ -35,12 +35,12 @@ export fn send_sync_tests() -> [TestResult] = do
   results.push(assert_true('type_is_send_safe aliases type_is_send',
     type_is_send_safe(arc_type, registry) == type_is_send(arc_type, registry)))
 
-  results.push(assert_true('channel send still rejects Array',
+  results.push(assert_true('channel send still rejects Shared payload',
     check_error_count(
-      'fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end') > 0))
-  results.push(assert_true('channel send Array diagnostic is E092',
+      'fn main() -> unit = do let c: Channel<Shared<i32>> = make_channel(4usize); c.send(Shared.new(7)) end') > 0))
+  results.push(assert_true('channel send Shared diagnostic is E092',
     match check(parse_program(tokenize(
-      'fn main() -> unit = do let c: Channel<i32> = make_channel(4usize); c.send([]) end'
+      'fn main() -> unit = do let c: Channel<Shared<i32>> = make_channel(4usize); c.send(Shared.new(7)) end'
     ).tokens)) {
       Ok(_) => false,
       Err(errors) => errors.length() > 0 && errors[0].contains('error[E092]')
@@ -48,7 +48,9 @@ export fn send_sync_tests() -> [TestResult] = do
   results.push(assert_true('channel send accepts i32',
     check_error_count(
       'fn main() -> bool = do let c = make_channel(4usize); c.send(7) end') == 0))
-  results.push(assert_true('Arc.new still rejects Array payload',
+  results.push(assert_true('Arc.new still rejects Shared payload',
+    check_error_count('fn main() -> Arc<Shared<i32>> = Arc.new(Shared.new(7))') > 0))
+  results.push(assert_true('Arc.new rejects Array with unknown elem',
     check_error_count('fn main() -> Arc<[i32]> = Arc.new([])') > 0))
 
   results.push(assert_true('extern thread_safe allows Arc.new',

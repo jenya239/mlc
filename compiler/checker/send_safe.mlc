@@ -5,12 +5,25 @@
 
 import { Type, TypeRegistry, TUnknown, TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
          TArray, TShared, TFn, TGeneric, TPair, TTuple, TNamed, TAssoc } from './registry'
+import { type_is_unknown } from './semantic_type_structure'
+
+fn type_is_send_array_element(
+  element_type: Shared<Type>,
+  registry: TypeRegistry
+) -> bool =
+  if type_is_unknown(element_type) then
+    false
+  else
+    type_is_send(element_type, registry)
+  end
 
 export fn type_is_send(type_value: Shared<Type>, registry: TypeRegistry) -> bool =
   match type_value {
     TUnknown => true,
     TI32 | TString | TBool | TUnit | TI64 | TF64 | TU8 | TUsize | TChar => true,
-    TArray(_) | TShared(_) | TFn(_, _) => false,
+    // Array[T]: Send iff T Send (CONCURRENCY_V2 §39). Unknown elem stays !Send.
+    TArray(element_type) => type_is_send_array_element(element_type, registry),
+    TShared(_) | TFn(_, _) => false,
     TAssoc(_, _) => false,
     TTuple(parameter_types) =>
       parameter_types.all(entry => type_is_send(entry, registry)),
@@ -93,7 +106,15 @@ fn type_is_send_generic(
   if type_name == 'Mutex' && type_arguments.length() == 1 then
     return type_is_send(type_arguments[0], registry)
   end
-  if type_name == 'Channel' || type_name == 'Task' || type_name == 'Map' || type_name == 'Shared'
+  // Map[K,V]: Send iff K,V Send (CONCURRENCY_V2 §39). Unknown key/value stays !Send.
+  if type_name == 'Map' && type_arguments.length() == 2 then
+    if type_is_unknown(type_arguments[0]) || type_is_unknown(type_arguments[1]) then
+      return false
+    end
+    return type_is_send(type_arguments[0], registry)
+      && type_is_send(type_arguments[1], registry)
+  end
+  if type_name == 'Channel' || type_name == 'Task' || type_name == 'Shared'
     || type_name == 'Future' || type_name == 'Weak' then return false end
   if type_arguments.length() == 0 then return false end
   type_arguments.all(argument => type_is_send(argument, registry))

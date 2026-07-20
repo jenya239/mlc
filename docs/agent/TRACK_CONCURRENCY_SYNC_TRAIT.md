@@ -3,11 +3,11 @@
 Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.md) §47 **#4**.
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §3/§39/§44 phase 5. Size **M**.
 
-## Status: **active** (2026-07-20) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-20) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — Send retune Array/Map + E093 free !Sync; green; Tier B; self-host.
+**STEP=3** — MEMORY_MODEL sync (Sync / E093 / Array Send).
 
 ## Decision (STEP=0) — **frozen** 2026-07-20
 

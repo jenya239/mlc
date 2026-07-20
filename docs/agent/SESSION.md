@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 16:10 (Driver TRACK_CONCURRENCY_SYNC_TRAIT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_SYNC_TRAIT |
+| started | 2026-07-20 13:40 |
+| elapsed | ~45 min |
+| done    | `send_safe.mlc` Array/Map Send iff T; `spawn_capture.mlc` free !Sync → E093; `diagnostic_codes` E093; `test_send_sync` updated |
+| verify  | `ok spawn_array_sync_e093`; Tier B 1471/0; self-host DIFF_EXIT=0; move Array ok; Shared E092; Arc Sync ok |
+| result  | STEP=2 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_SYNC_TRAIT |
+
 ### Turn 2026-07-20 15:20 (Driver TRACK_CONCURRENCY_SYNC_TRAIT STEP=1)
 
 | field   | value |

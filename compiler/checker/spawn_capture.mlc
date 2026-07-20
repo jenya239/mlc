@@ -9,7 +9,7 @@ import {
   diagnostic_error_with_code, diagnostics_append, TyUnit
 } from '../frontend/ast'
 import { pattern_bindings } from './names'
-import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092 } from './diagnostic_codes'
+import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092, diagnostic_code_e093 } from './diagnostic_codes'
 import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, TShared, type_from_annotation_with_registry } from './registry'
 import { type_is_sync, type_is_send } from './send_safe'
 import { type_description, type_is_unknown } from './semantic_type_structure'
@@ -85,6 +85,17 @@ fn not_send_capture_diagnostic(
       + ' is not Send across concurrency boundary (spawn)',
     source_span,
     diagnostic_code_e092())
+
+fn not_sync_capture_diagnostic(
+  binding_name: string,
+  binding_type: Shared<Type>,
+  source_span: Span
+) -> Diagnostic =
+  diagnostic_error_with_code(
+    'value \'' + binding_name + '\' of type ' + type_description(binding_type)
+      + ' is not Sync across concurrency boundary (spawn); use move or Sync-safe sharing',
+    source_span,
+    diagnostic_code_e093())
 
 fn bare_spawn_diagnostic(source_span: Span) -> Diagnostic =
   diagnostic_error_with_code(
@@ -394,17 +405,24 @@ fn free_send_capture_for_ident(
   name: string,
   source_span: Span,
   local_bound: [string],
-  capture_context: SpawnCaptureContext
+  capture_context: SpawnCaptureContext,
+  require_sync: bool
 ) -> [Diagnostic] =
   if names_contains(local_bound, name) then empty_diagnostics()
   else if !capture_context.type_environment.has(name) then empty_diagnostics()
   else do
     const binding_type = capture_context.type_environment.get(name)
-    if type_is_unknown(binding_type) || type_is_send(binding_type, capture_context.registry) then
-      empty_diagnostics()
-    else
-      [not_send_capture_diagnostic(name, binding_type, source_span)]
+    if type_is_unknown(binding_type) then
+      return empty_diagnostics()
     end
+    if !type_is_send(binding_type, capture_context.registry) then
+      return [not_send_capture_diagnostic(name, binding_type, source_span)]
+    end
+    // Free share (not move) also requires Sync — Array/Map are Send iff T but !Sync.
+    if require_sync && !type_is_sync(binding_type, capture_context.registry) then
+      return [not_sync_capture_diagnostic(name, binding_type, source_span)]
+    end
+    empty_diagnostics()
   end
 
 fn free_send_capture_in_expr(
@@ -414,13 +432,13 @@ fn free_send_capture_in_expr(
 ) -> [Diagnostic] =
   match expression {
     ExprIdent(name, source_span) =>
-      free_send_capture_for_ident(name, source_span, local_bound, capture_context),
+      free_send_capture_for_ident(name, source_span, local_bound, capture_context, true),
     ExprUn(operation, operand, _) =>
       if operation == "move" then
         match operand {
-          // move still crosses the boundary — !Send values remain illegal.
+          // move transfers ownership — Send required, Sync not.
           ExprIdent(name, source_span) =>
-            free_send_capture_for_ident(name, source_span, local_bound, capture_context),
+            free_send_capture_for_ident(name, source_span, local_bound, capture_context, false),
           _ => free_send_capture_in_expr(operand, local_bound, capture_context)
         }
       else
