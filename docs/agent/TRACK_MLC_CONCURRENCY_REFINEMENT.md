@@ -7,7 +7,7 @@ against current code 2026-07-19 (`compiler/checker/send_safe.mlc`,
 в треки именно доработку mlc по многопоточности") — Driver opens STEP=1 of the next
 **pending** item in order without further permission, same rule as §46.
 
-## Status: **active** (2026-07-20) — `#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK` active (STEP=0 done → Driver STEP=1)
+## Status: **active** (2026-07-20) — `#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK` active (STEP=1 done → Driver STEP=2)
 
 ## How to use this backlog
 
@@ -26,7 +26,7 @@ one is blocked.
 
 | # | Track name | Scope (one line) | Gate scenario | Size | Status |
 |---|-----------|-------------------|----------------|------|--------|
-| 1 | `CONCURRENCY_MUTABLE_CAPTURE_CHECK` | Checker rejects mutable-value capture (no `move`/`Arc`/`Channel`) across a concurrency boundary (`spawn`, `TaskScope.spawn`, `Channel.send`) as a compile error, per CONCURRENCY_V2.md §1/§4. Acceptance bar: the already-documented known limitation (`MEMORY_MODEL.md` §Известные ограничения п.2 — COW detach race via `spawn { array.push(x) }` on a shared variable) must become **unreachable from safe code**, not just documented | new checker diagnostic test: `spawn` capturing a non-moved mutable local is a compile error; existing race repro from `MEMORY_MODEL.md` now fails to compile | L | **active** — [TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK](TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK.md) STEP=0 done → Driver STEP=1 |
+| 1 | `CONCURRENCY_MUTABLE_CAPTURE_CHECK` | Checker rejects mutable-value capture (no `move`/`Arc`/`Channel`) across a concurrency boundary (`spawn`, `TaskScope.spawn`, `Channel.send`) as a compile error, per CONCURRENCY_V2.md §1/§4. Acceptance bar: the already-documented known limitation (`MEMORY_MODEL.md` §Известные ограничения п.2 — COW detach race via `spawn { array.push(x) }` on a shared variable) must become **unreachable from safe code**, not just documented | new checker diagnostic test: `spawn` capturing a non-moved mutable local is a compile error; existing race repro from `MEMORY_MODEL.md` now fails to compile | L | **active** — [TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK](TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK.md) STEP=1 done → Driver STEP=2 |
 | 2 | `CONCURRENCY_SEND_BOUND` | Generalize `type_is_send_safe` (`compiler/checker/send_safe.mlc`) from a `Channel.send`-only helper into a real `Send` bound enforced at every concurrency boundary (`spawn`, `TaskScope.spawn`, `Channel.send`), per §2/§44 phase 3 | new checker test: passing a `!Send` type (e.g. `RawPtr[T]`) to `spawn`/`TaskScope.spawn` is a compile error, matching existing `Channel.send` behavior | M | pending |
 | 3 | `CONCURRENCY_MOVE_TRACKING` | Simple move-state tracking (not full borrow checker) so `spawn(move job) { ... }` forbids `use(job)` after the move, per §4/§44 phase 4 | new checker test: `use` of a moved-into-spawn binding after the `spawn` call is a compile error | M | pending |
 | 4 | `CONCURRENCY_SYNC_TRAIT` | Introduce `Sync` trait (name per CONCURRENCY_V2.md §⚠️ recommendation 1 — avoids collision with the existing `Shared<T>`/`std::shared_ptr` type), compositional inference per §3 (`Atomic[T]`/`Mutex[T]`/`Arc[ImmutableConfig]` → `Sync`; `HashMap`/mutable `Array` → `!Sync`) | new checker test: `Arc[Config]` usable without explicit keyword across a boundary that requires `Sync`; mutable `Array` rejected | M | pending |

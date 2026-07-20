@@ -1,0 +1,9 @@
+// TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=1 —
+// TaskScope.spawn free let mut capture must be E087 (red until STEP=2).
+fn main() -> i32 = do
+  scope |task_scope| do
+    let mut value = 7
+    task_scope.spawn do value end
+  end
+  0
+end

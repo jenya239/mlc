@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` STEP=1 (§47 #1).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` STEP=2 (§47 #1).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -85,8 +85,8 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** | **closed** 2026-07-19 (Critic OK). Archived. Panel fills + `from_panel` hover. Do not reopen numbered STEPs |
-| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. **`#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK` active** (STEP=0 → Driver STEP=1). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
-| **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** | **active** — STEP=0 Decision frozen; next Driver STEP=1 red test. Gap: `TaskScope.spawn` skips E087 (bare `spawn` already OK). Touches `compiler/`. Self-host + Tier B required |
+| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. **`#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK` active** (STEP=1 done → Driver STEP=2). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** | **active** — STEP=0–1 done; next Driver STEP=2 wire E087 on `TaskScope.spawn`. Touches `compiler/`. Self-host + Tier B required |
 | **`TRACK_EDITOR_ROW_BYTE_RANGE_BLEED` (§46 #33b)** | **closed** 2026-07-19 (Critic OK). Archived. `byte_substring` in syntax row draw. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_EXPAND_COLLAPSE` (§46 #33)** | **closed** 2026-07-19 (Critic OK). Archived. Nested tree rows + single-click toggle. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_HOVER_STATE` (§46 #32)** | **closed** 2026-07-19 (Critic OK). Archived. toolbar/tab/tree hover via `gui_is_hovered`. Do not reopen numbered STEPs |

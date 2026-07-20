@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:30 (Driver TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+| started | 2026-07-20 10:16 |
+| elapsed | ~8 min |
+| done    | Fixture + `run_task_scope_spawn_mutable_capture_red.sh` / green-path script; red cases in `test_spawn.mlc` (TaskScope.spawn E087) |
+| verify  | `ok task_scope_spawn_mutable_capture_red` (green script correctly fails: missing E087) |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+
 ### Turn 2026-07-20 10:25 (Planner TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=0)
 
 | field   | value |

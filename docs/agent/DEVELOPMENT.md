@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` STEP=1 (§47 #1).
-**`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** active — STEP=0 Decision frozen; next red E087 on `TaskScope.spawn`.
+**Queue head:** Driver `TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` STEP=2 (§47 #1).
+**`TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK` (§47 #1)** active — STEP=0–1 done; next wire E087 on `TaskScope.spawn`.
 **`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — `#1` in progress.
 **`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#35).
