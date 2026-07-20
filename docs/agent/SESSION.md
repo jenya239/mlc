@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 12:25 (Planner TRACK_CONCURRENCY_MOVE_TRACKING STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh / 0 |
+| track   | TRACK_CONCURRENCY_MOVE_TRACKING (§47 #3) |
+| started | 2026-07-20 11:26 |
+| elapsed | ~6 min |
+| done    | Opened `docs/agent/TRACK_CONCURRENCY_MOVE_TRACKING.md`; Decision frozen: gap = TaskScope.spawn ExprLambda does not export `move` marks (bare ExprSpawn already does); reuse E088; do not change general lambda move isolation |
+| verify  | Decision table present; backlog #3 → active; PLAN §47 points at TRACK_CONCURRENCY_MOVE_TRACKING; probe: TaskScope.spawn move+use no E088 |
+| result  | STEP=0 done → Driver STEP=1 |
+| issues  | instructions_rev sync: prompt `codegen-cppast-handoff` → CONTINUITY `2026-07-19-concurrency-refinement-backlog` |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_MOVE_TRACKING |
+
 ### Turn 2026-07-20 12:15 (Critic TRACK_CONCURRENCY_SEND_BOUND)
 
 | field   | value |
