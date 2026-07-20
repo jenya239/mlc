@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:15 (Critic TRACK_EDITOR_MINIMAP)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_MINIMAP |
+| started | 2026-07-20 10:10 |
+| elapsed | ~8 min |
+| done    | Re-audit STEP=0–3 (`65b3b4ab`…`ffd0566b`); L2 + demo green; no lib/mlc → REG skip; archive `docs/archive/tracks/TRACK_EDITOR_MINIMAP.md`; PLAN/backlog → #35/#46 done |
+| verify  | `ux_ok editor_minimap_cache_stable`; `demo_live_fs_compile_ok` |
+| result  | Critic OK; track closed |
+| issues  | residual: no syntax on strip; reshape-on-edit for large buffers; no zoom-linked scale |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #1 CONCURRENCY_MUTABLE_CAPTURE_CHECK) |
+
 ### Turn 2026-07-20 10:05 (Driver TRACK_EDITOR_MINIMAP STEP=3)
 
 | field   | value |

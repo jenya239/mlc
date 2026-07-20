@@ -41,9 +41,10 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_MINIMAP` (§46 #35).
-**`TRACK_EDITOR_MINIMAP` (§46 #35)** active — STEP=0–3 done; next Critic.
-**`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** closed 2026-07-19; archived.
+**Queue head:** Planner open §47 `#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK`.
+**`TRACK_EDITOR_MINIMAP` (§46 #35)** closed 2026-07-20; archived.
+**`TRACK_EDITOR_UX_BACKLOG` (§46)** done (#1…#35).
+**`TRACK_MLC_CONCURRENCY_REFINEMENT` (§47)** active — queue head `#1`.
 **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** closed 2026-07-19; archived.
 **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** closed 2026-07-19; archived.

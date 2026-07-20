@@ -1,13 +1,38 @@
 # Track: Editor Minimap
 
-Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#35**.
+Parent: [TRACK_EDITOR_UX_BACKLOG.md](../../agent/TRACK_EDITOR_UX_BACKLOG.md) §46 **#35**.
 User question 2026-07-19 (Sublime-style feasibility). Size **L**.
 
-## Status: **active** (2026-07-20) — STEP=3 done → Critic
+## Status: **closed** (2026-07-20) — Critic OK
+
+**Critic 2026-07-20 (STEP=4):** Re-ran L2 + demo. Anti-false-done:
+`65b3b4ab`…`ffd0566b` (STEP=0–3); no `compiler/` / `lib/mlc/` → REG skip.
+Wire: `ux/minimap.mlc` layout/cache/indicator/click→scroll; `demo_live` shrink
+text, cached reduced-scale glyphs, viewport indicator, click/drag scroll.
+**reopen: none**.
+
+Honest residual: minimap glyphs use theme text color (no syntax tags on strip);
+`line_height=3` helper unused in live draw (scaled y per line); full-line reshape
+on edit for large buffers (unchanged frames skip rebuild); no zoom-linked scale.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_editor_minimap_cache_stable.sh` | `ux_ok editor_minimap_cache_stable` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
 
 ## Next step
 
-**STEP=4** — Critic: gates; archive.
+**closed** — Critic OK. Queue → Planner (§47 `#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK`).
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `65b3b4ab` | Decision freeze + open |
+| 1 | `a2391996` | Red L2 stub + run scripts |
+| 2 | `93869ed5` | `ux/minimap.mlc` + green L2 |
+| 3 | `ffd0566b` | `demo_live` wire + compile |
+| 4 | this Critic | close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-19
 
@@ -34,11 +59,7 @@ User question 2026-07-19 (Sublime-style feasibility). Size **L**.
 | 1 | L2 red harness + run scripts | **done** — `ux_ok editor_minimap_red` |
 | 2 | Model: geometry + cache key + indicator + click→scroll; green token | **done** — `ux_ok editor_minimap_cache_stable` |
 | 3 | `demo_live` wire (shrink text, draw glyphs+indicator, click/drag); `demo_live_fs_compile_ok` | **done** |
-| 4 | Critic: gates; archive | open |
-
-<!-- STEP=1: stub fail token; red script -->
-<!-- STEP=2: ux/minimap.mlc + green L2 -->
-<!-- STEP=3: demo_live layout/draw/input + compile -->
+| 4 | Critic: gates; archive | **done** (closed) |
 
 ## Out of scope
 

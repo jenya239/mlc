@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Critic** `TRACK_EDITOR_MINIMAP` (§46 #35).
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** open §47 `#1 CONCURRENCY_MUTABLE_CAPTURE_CHECK`.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,8 +79,8 @@ INSTRUCTIONS_REV=2026-07-19-concurrency-refinement-backlog
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33+#33b+#33c+#33d+#33e+#34 done. **`#35 EDITOR_MINIMAP` active** (STEP=3 done → Critic). Product ceiling: **Sublime Text** |
-| **`TRACK_EDITOR_MINIMAP` (§46 #35)** | **active** — STEP=0–3 done; next Critic. Reduced-scale glyph strip + cache-on-edit + click/drag scroll. No `compiler/`. Do not skip Critic |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | Umbrella. #1…#1d+#2+#3+#4+#5+#6+#7+#8+#9+#10+#11+#12+#13+#14+#15+#16+#17+#18+#19+#20+#21+#23+#24+#25+#26+#27+#28+#29+#30+#31+#31a+#32+#33+#33b+#33c+#33d+#33e+#34+#35 done. Product ceiling: **Sublime Text** |
+| **`TRACK_EDITOR_MINIMAP` (§46 #35)** | **closed** 2026-07-20 (Critic OK). Archived. Reduced-scale glyph strip + cache-on-edit + click/drag scroll. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** | **closed** 2026-07-19 (Critic OK). Archived. number/type/operator tags + Theme RGB. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
