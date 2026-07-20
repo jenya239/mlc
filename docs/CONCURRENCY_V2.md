@@ -33,7 +33,7 @@ limiting, graceful shutdown.
 | `spawn { ... }` | `runtime/include/mlc/concurrency/spawn.hpp` | `std::async` + `future.get()` через `mlc::Task` coroutine; **нет TaskScope, нет explicit owner beyond Task handle, нет cancellation** |
 | `Arc<T>` | `runtime/include/mlc/concurrency/arc.hpp` | atomic refcount, требует "send-safe" inner |
 | `Mutex<T>` | `runtime/include/mlc/concurrency/mutex.hpp` | scoped `mutex.lock(fn mut val => ...)`, lambda-only — уже соответствует §13 требования "lexical API, не lock()/unlock()" |
-| `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](agent/TRACK_CONCURRENCY_ATOMICS.md)) |
+| `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)) |
 | "Send-safe" check | `compiler/checker/send_safe.mlc` (`type_is_send_safe`) | компоновочный (compositional) предикат, **уже структурно решает Rust-style Send inference**, но: (a) используется только в `Channel.send`, не как общий bound; (b) конфлирует Send и Shared в одно понятие — `Arc<T>` в текущем предикате `false` (не send-safe), хотя по предложению `Arc<ImmutableConfig>` должен быть и `Send`, и `Shared` |
 
 Замыкания в MLC **всегда** захватывают по значению (`MEMORY_MODEL.md` §Замыкания,
@@ -267,7 +267,7 @@ condition variable **сначала**, lock-free — не начинать с н
 `compare_exchange`/`fetch_add`/`fetch_sub` (Bool без add/sub). Default =
 sequentially consistent. `.acquire`/`.release` — не в v1.
 
-**Статус:** **done** C++ + MLC ([TRACK_CONCURRENCY_ATOMICS](agent/TRACK_CONCURRENCY_ATOMICS.md)):
+**Статус:** **done** C++ + MLC ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)):
 `runtime/include/mlc/concurrency/atomic.hpp`; MLC `AtomicI32.new` / `.fetch_add`
 (+ siblings); Send+Sync; Sync-safe mut spawn capture; concurrent `fetch_add` sum gate.
 
@@ -582,7 +582,7 @@ Checker → SemanticIR → C++20`)
 
 | Фаза | Содержание | Изменения языка | Готовность сегодня |
 |------|------------|-------------------|----------------------|
-| 1 | `Thread`/`Mutex`/`Atomics`/`BoundedChannel`/`StopToken` как runtime-библиотека | нет | Channel/Mutex/Arc/StopToken/**Atomics** есть ([TRACK_CONCURRENCY_ATOMICS](agent/TRACK_CONCURRENCY_ATOMICS.md)); Thread API deferred |
+| 1 | `Thread`/`Mutex`/`Atomics`/`BoundedChannel`/`StopToken` как runtime-библиотека | нет | Channel/Mutex/Arc/StopToken/**Atomics** есть ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)); Thread API deferred |
 | 2 | `spawn_thread { }` + `.join()?`, conservative checker (mutable capture forbidden) | минимальный parser/AST/SemanticIR | `spawn` есть, capture-check — нет |
 | 3 | Типовое свойство `Send` (компоновочный inference) | checker | `type_is_send_safe` есть, но привязан только к `Channel.send` — нужно обобщить в bound |
 | 4 | `spawn_thread(move job) { ... }` — move-tracking | простой move-state tracking, не полный borrow checker | нет |
