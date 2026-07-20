@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 `#10` STEP=1).
-**`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** active 2026-07-21 — STEP=0 done → Driver STEP=1.
+**Queue head:** Driver `TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 `#10` STEP=2).
+**`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** active 2026-07-21 — STEP=1 done → Driver STEP=2.
 **`TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 #9)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_FFI_METADATA` (§47 #8)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_ATOMICS` (§47 #7)** closed 2026-07-21; archived.

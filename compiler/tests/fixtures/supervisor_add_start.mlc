@@ -1,0 +1,11 @@
+// TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE —
+// Supervisor.new / .add / .start / .stop (method API; Block sugar out).
+fn child_body(token: StopToken) -> unit = ()
+
+fn main() -> i32 = do
+  let supervisor = Supervisor.new()
+  supervisor.add("child", RestartPolicy.Permanent, child_body)
+  supervisor.start()
+  supervisor.stop()
+  0
+end

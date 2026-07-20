@@ -4,12 +4,12 @@ Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.m
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §28/§29/§44 phase 10.
 C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR](../archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md). Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-21) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — red harness: MLC `Supervisor` / `.add` / `.start` does **not** resolve today
-(`E001`); document exact failure.
+**STEP=2** — wire MLC `Supervisor.new` / `.add` / `.start` / `.stop`; green
+`run_supervisor_mlc.sh` + restart e2e; Tier B + self-host.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -29,7 +29,7 @@ C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR](../archive/tracks
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: Supervisor MLC missing | open |
+| 1 | Red: Supervisor MLC missing | **done** — `ok supervisor_mlc_red` (E001; `supervisor.hpp` present) |
 | 2 | Wire MLC Supervisor add/start/stop (+ intensity); green e2e restart; Tier B; self-host | open |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §28/§29 sync | open |
 | 4 | Critic: gates; archive | open |
