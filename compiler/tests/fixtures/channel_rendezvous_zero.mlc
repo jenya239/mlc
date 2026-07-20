@@ -1,0 +1,6 @@
+// TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED —
+// Rendezvous capacity 0 already supported (positive control for unbounded track).
+fn main() -> unit = do
+  let channel_value = make_channel(0usize)
+  ()
+end

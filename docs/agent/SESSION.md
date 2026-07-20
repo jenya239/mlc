@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 22:20 (Driver TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED |
+| started | 2026-07-20 22:17 |
+| elapsed | ~5 min |
+| done    | Fixture `channel_unbounded.mlc` + rendezvous control; `run_channel_unbounded_red.sh` + green stub; gap cases in `test_channel_syntax.mlc`; freeze API `make_unbounded_channel` |
+| verify  | `ok channel_unbounded_red` (E001 + no unbounded in channel.hpp); green still fails |
+| result  | STEP=1 done |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED |
+
 ### Turn 2026-07-20 22:15 (Planner open CONCURRENCY_CHANNEL_RENDEZVOUS_UNBOUNDED)
 
 | field   | value |
