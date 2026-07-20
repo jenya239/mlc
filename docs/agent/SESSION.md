@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-20 10:25 (Planner TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh (STEP=0 Decision) |
+| track   | TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK (§47 #1) |
+| started | 2026-07-20 10:12 |
+| elapsed | ~12 min |
+| done    | Open track; freeze Decision: bare spawn E087 exists; gap=`TaskScope.spawn` ExprMethod body skips capture walk (verified `--check-only`); reuse E087; Channel.send→#2; STEPs 1–4; commit umbrella backlog |
+| verify  | docs-only; probe: `let mut`+`task_scope.spawn` EXIT 0 no E087; bare `spawn` still E087 |
+| result  | STEP=0 done; track active |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_CONCURRENCY_MUTABLE_CAPTURE_CHECK |
+
 ### Turn 2026-07-20 10:15 (Critic TRACK_EDITOR_MINIMAP)
 
 | field   | value |
