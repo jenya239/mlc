@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 03:05 (Critic TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE |
+| started | 2026-07-21 03:01 |
+| elapsed | ~4 min |
+| done    | Close `#10`: re-ran `ok supervisor_mlc` + main/fixture check-only + `test_supervisor`; archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → `#10` done |
+| verify  | `ok supervisor_mlc`; main+fixtures check-only EXIT=0; `test_supervisor` 26 PASSED; anti-false-done `297c56a5`…`9a57ee84`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: block sugar; one_for_all/backoff; codegen Supervisor TNamed gap |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_MLC_CONCURRENCY_REFINEMENT (open #11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE) |
+
 ### Turn 2026-07-21 02:57 (Driver TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE STEP=3)
 
 | field   | value |

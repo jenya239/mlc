@@ -35,7 +35,7 @@ limiting, graceful shutdown.
 | `Mutex<T>` | `runtime/include/mlc/concurrency/mutex.hpp` | scoped `mutex.lock(fn mut val => ...)`, lambda-only — уже соответствует §13 требования "lexical API, не lock()/unlock()" |
 | `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)) |
 | `Isolate[State, Msg]` | `runtime/include/mlc/concurrency/isolate.hpp` | owner thread + bounded mailbox; Block overflow; MLC `Isolate.start` / `.send` / `.shutdown`; !Send/!Sync ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)) |
-| `Supervisor` | `runtime/include/mlc/concurrency/supervisor.hpp` | children + `RestartPolicy` + one_for_one + storm intensity; MLC `Supervisor.new` / `.add` / `.start` / `.stop`; !Send/!Sync ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](agent/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)) |
+| `Supervisor` | `runtime/include/mlc/concurrency/supervisor.hpp` | children + `RestartPolicy` + one_for_one + storm intensity; MLC `Supervisor.new` / `.add` / `.start` / `.stop`; !Send/!Sync ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)) |
 | "Send-safe" check | `compiler/checker/send_safe.mlc` (`type_is_send_safe`) | компоновочный (compositional) предикат, **уже структурно решает Rust-style Send inference**, но: (a) используется только в `Channel.send`, не как общий bound; (b) конфлирует Send и Shared в одно понятие — `Arc<T>` в текущем предикате `false` (не send-safe), хотя по предложению `Arc<ImmutableConfig>` должен быть и `Send`, и `Shared` |
 
 Замыкания в MLC **всегда** захватывают по значению (`MEMORY_MODEL.md` §Замыкания,
@@ -419,7 +419,7 @@ Main-thread call of the same fn remains OK.
 **Статус:** **done** call-site fn check ([TRACK_CONCURRENCY_FFI_METADATA](archive/tracks/TRACK_CONCURRENCY_FFI_METADATA.md)).
 ## 28. `Supervisor` — после Isolate, не раньше
 
-**Статус:** **done** C++ + MLC method API ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](agent/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)):
+**Статус:** **done** C++ + MLC method API ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)):
 `supervisor.hpp`; MLC `Supervisor.new` / `.add(name, RestartPolicy, handler)` /
 `.start` / `.stop` (+ `.set_restart_intensity` / `.storm_tripped`); handler
 `(StopToken) -> unit`; `RestartPolicy.Permanent|Transient|Temporary`; one_for_one;
@@ -613,7 +613,7 @@ Instant, Duration, Timer
 После v1: `Isolate[State, Msg]` (**done** C++ + MLC,
 [TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)),
 `Supervisor` (**done** C++ + MLC method API,
-[TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](agent/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md);
+[TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md);
 block sugar deferred), `Select`. После них: `Future`,
 `async/await`, `IoReactor`, `AsyncSocket`.
 
@@ -631,7 +631,7 @@ Checker → SemanticIR → C++20`)
 | 7 | Cancellation propagation (scope failure/cancel) | runtime + checker | нет |
 | 8 | `Isolate[State, Msg]` (сначала библиотечно) | нет (library) | **есть** C++ + MLC ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)): `Isolate.start`/`send`/`shutdown`; Block only |
 | 9 | **Стоп. Не добавлять фичи, пока эталонное приложение (чат, см. north star) не выдержит:** 1000 connections, 100k messages, slow clients, random disconnect, SIGTERM, DB delays, worker crashes, TSan | — | — |
-| 10 | `Supervisor` | library | **есть** C++ + MLC ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](agent/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)): `Supervisor.new`/`add`/`start`/`stop`; `RestartPolicy`; one_for_one + storm intensity; block sugar deferred |
+| 10 | `Supervisor` | library | **есть** C++ + MLC ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)): `Supervisor.new`/`add`/`start`/`stop`; `RestartPolicy`; one_for_one + storm intensity; block sugar deferred |
 | 11 | async I/O (`Future`/`async`/`await`/`IoReactor`) | язык + runtime | нет |
 
 ## Критерий приёмки ("MLC умеет стабильную многопоточность")
