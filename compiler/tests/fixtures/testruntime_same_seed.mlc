@@ -1,0 +1,19 @@
+// TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE —
+// Same seed → identical events_joined across two runs.
+fn scenario(seed: i64) -> string = do
+  let runtime = TestRuntime.new(seed)
+  runtime.spawn do
+    runtime.log_event("a")
+  end
+  runtime.spawn do
+    runtime.log_event("b")
+  end
+  runtime.join()
+  runtime.events_joined()
+end
+
+fn main() -> i32 = do
+  let first = scenario(918271)
+  let second = scenario(918271)
+  if first == second && first.length() > 0 then 0 else 1 end
+end

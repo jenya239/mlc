@@ -1,0 +1,126 @@
+// TestRuntime.new / spawn / join / seed / log_event / events_joined
+// (TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE). Facade over C++ TestScheduler.
+
+import {
+  Expr, ExprIdent, ExprLambda, Span, Diagnostic,
+  diagnostic_error_with_code, diagnostics_append, expr_span
+} from '../../frontend/ast'
+import { Type, TNamed, TUnknown, TUnit, TString, TI64 } from '../registry'
+import { CheckContext } from '../check/check_context'
+import { InferResult } from './infer_result'
+import {
+  type_is_unknown, type_description
+} from '../semantic_type_structure'
+import { call_arity_diagnostics } from '../check/diagnostics/type_diagnostics'
+import { infer_lambda_with_param_types } from './infer_lambda_context'
+import { diagnostic_code_e082 } from '../diagnostic_codes'
+
+export fn is_testruntime_static_new(object: Shared<Expr>, method_name: string) -> bool =
+  match object {
+    ExprIdent(name, _) => name == 'TestRuntime' && method_name == 'new',
+    _ => false
+  }
+
+export fn type_is_testruntime(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(type_name) => type_name == 'TestRuntime',
+    _ => false
+  }
+
+export fn is_testruntime_method(method_name: string) -> bool =
+  method_name == 'spawn'
+    || method_name == 'join'
+    || method_name == 'seed'
+    || method_name == 'yield'
+    || method_name == 'log_event'
+    || method_name == 'events_joined'
+
+fn testruntime_receiver_error(
+  runtime_type: Shared<Type>,
+  method_name: string,
+  method_span: Span
+) -> [Diagnostic] =
+  if !type_is_unknown(runtime_type) && !type_is_testruntime(runtime_type) then
+    [diagnostic_error_with_code(
+      `method ${method_name} expects a TestRuntime receiver, got ${type_description(runtime_type)}`,
+      method_span,
+      diagnostic_code_e082())]
+  else
+    []
+  end
+
+export fn infer_testruntime_static_new_call(
+  object_parsed: InferResult,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  let mut errors = diagnostics_append(
+    object_parsed.errors,
+    call_arity_diagnostics(1, method_arguments.length(), method_span))
+  if method_arguments.length() == 1 then
+    const seed_parsed = infer_expr_fn(method_arguments[0], inference_context)
+    errors = diagnostics_append(errors, seed_parsed.errors)
+  end
+  InferResult {
+    inferred_type: Shared.new(TNamed('TestRuntime')),
+    errors: errors
+  }
+end
+
+fn infer_testruntime_spawn_handler(
+  handler_expression: Shared<Expr>,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult =
+  match handler_expression {
+    ExprLambda(parameter_names, body, _) =>
+      infer_lambda_with_param_types(
+        parameter_names,
+        [],
+        body,
+        inference_context,
+        infer_expr_fn),
+    _ => infer_expr_fn(handler_expression, inference_context)
+  }
+
+export fn infer_testruntime_method_call(
+  object_parsed: InferResult,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  method_span: Span,
+  inference_context: CheckContext,
+  infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
+) -> InferResult = do
+  const receiver_errors = testruntime_receiver_error(
+    object_parsed.inferred_type, method_name, method_span)
+  let mut errors = diagnostics_append(object_parsed.errors, receiver_errors)
+  if method_name == 'spawn' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(1, method_arguments.length(), method_span))
+    if method_arguments.length() == 1 then
+      const handler_parsed = infer_testruntime_spawn_handler(
+        method_arguments[0], inference_context, infer_expr_fn)
+      errors = diagnostics_append(errors, handler_parsed.errors)
+    end
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'join' || method_name == 'yield' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'seed' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TI64), errors: errors }
+  else if method_name == 'log_event' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(1, method_arguments.length(), method_span))
+    if method_arguments.length() == 1 then
+      const message_parsed = infer_expr_fn(method_arguments[0], inference_context)
+      errors = diagnostics_append(errors, message_parsed.errors)
+    end
+    InferResult { inferred_type: Shared.new(TUnit), errors: errors }
+  else if method_name == 'events_joined' then
+    errors = diagnostics_append(errors, call_arity_diagnostics(0, method_arguments.length(), method_span))
+    InferResult { inferred_type: Shared.new(TString), errors: errors }
+  else
+    InferResult { inferred_type: Shared.new(TUnknown), errors: errors }
+  end
+end

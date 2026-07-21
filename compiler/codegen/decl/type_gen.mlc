@@ -144,6 +144,7 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       else if type_name == 'AtomicU64' then 'mlc::concurrency::AtomicU64'
       else if type_name == 'Supervisor' then 'mlc::concurrency::Supervisor'
       else if type_name == 'RestartPolicy' then 'mlc::concurrency::RestartPolicy'
+      else if type_name == 'TestRuntime' then 'mlc::concurrency::testing::TestScheduler'
       else if type_name.length() >= 10 && type_name.substring(0, 10) == 'RegionTag_' then 'void'
       else context.resolve(type_name)
       end,
@@ -236,6 +237,7 @@ fn concurrency_builtin_type_name_to_cpp(type_name: string) -> string =
   else if type_name == 'Supervisor' then 'mlc::concurrency::Supervisor'
   else if type_name == 'RestartPolicy' then 'mlc::concurrency::RestartPolicy'
   else if type_name == 'Isolate' then 'mlc::concurrency::Isolate'
+  else if type_name == 'TestRuntime' then 'mlc::concurrency::testing::TestScheduler'
   else ''
   end
 

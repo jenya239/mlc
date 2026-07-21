@@ -1,0 +1,107 @@
+// TestRuntime.new / .spawn / .join codegen (TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE).
+// Maps MLC TestRuntime → mlc::concurrency::testing::TestScheduler.
+
+import {
+  SemanticExpression, SemanticExpressionLambda, SemanticExpressionIdent, SemanticStatement
+} from '../../ir/semantic_ir'
+import {
+  CppExpression, CppCall, CppMember, CppMutableLambda, CppCapture,
+  CppTypeName, CppCast, CppCastStatic
+} from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { CodegenContext } from '../context'
+import { cpp_safe } from '../cpp_naming'
+
+export fn is_testruntime_static_receiver_name(type_name: string) -> bool =
+  type_name == 'TestRuntime'
+
+export fn gen_method_testruntime_new_cpp(
+  seed_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('mlc::concurrency::testing::TestScheduler'),
+    [
+      Shared.new(CppCast(
+        CppCastStatic,
+        Shared.new(CppTypeName('uint64_t')),
+        seed_expression))
+    ]))
+
+fn gen_testruntime_spawn_handler_cpp(
+  handler: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
+  match handler {
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      if parameter_names.length() == 0 then
+        const body_expression = evaluate_expression(body, context, gen_stmts)
+        Shared.new(CppMutableLambda(
+          [Shared.new(CppCapture { name: '', by_reference: true })],
+          [],
+          body_expression))
+      else
+        evaluate_expression(handler, context, gen_stmts)
+      end,
+    SemanticExpressionIdent(function_name, _, _) => do
+      const callee = emit_helpers.make_identifier_cpp_expression(cpp_safe(function_name))
+      const call_body = Shared.new(CppCall(callee, []))
+      Shared.new(CppMutableLambda(
+        [Shared.new(CppCapture { name: '', by_reference: true })],
+        [],
+        call_body))
+    end,
+    _ => evaluate_expression(handler, context, gen_stmts)
+  }
+
+export fn gen_method_testruntime_spawn_cpp(
+  receiver_expression: Shared<CppExpression>,
+  handler_argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const handler_expression = gen_testruntime_spawn_handler_cpp(
+    handler_argument, context, gen_stmts, evaluate_expression)
+  Shared.new(CppCall(
+    Shared.new(CppMember(receiver_expression, 'spawn', false)),
+    [handler_expression]))
+end
+
+export fn gen_method_testruntime_log_event_cpp(
+  receiver_expression: Shared<CppExpression>,
+  message_argument: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> = do
+  const message_mlc = evaluate_expression(message_argument, context, gen_stmts)
+  const message_std = Shared.new(CppCall(
+    Shared.new(CppMember(message_mlc, 'as_std_string', false)),
+    []))
+  Shared.new(CppCall(
+    Shared.new(CppMember(receiver_expression, 'log_event', false)),
+    [message_std]))
+end
+
+export fn gen_method_testruntime_events_joined_cpp(
+  receiver_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('mlc::String'),
+    [
+      Shared.new(CppCall(
+        Shared.new(CppMember(receiver_expression, 'events_joined', false)),
+        []))
+    ]))
+
+export fn gen_method_testruntime_seed_cpp(
+  receiver_expression: Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppCast(
+    CppCastStatic,
+    Shared.new(CppTypeName('int64_t')),
+    Shared.new(CppCall(
+      Shared.new(CppMember(receiver_expression, 'seed', false)),
+      []))))

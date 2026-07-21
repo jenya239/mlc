@@ -13,6 +13,7 @@ import { diagnostic_code_e087, diagnostic_code_e089, diagnostic_code_e092, diagn
 import { Type, TypeRegistry, TUnknown, TI32, TGeneric, TArray, TShared, TNamed, type_from_annotation_with_registry } from './registry'
 import { type_is_sync, type_is_send } from './send_safe'
 import { type_description, type_is_unknown } from './semantic_type_structure'
+import { type_is_testruntime } from './infer/infer_testruntime_method'
 
 // Sync-safe sharing across spawn: Mutex (always), Atomic*, or Arc<T> when T is Sync.
 // Plain Sync scalars (i32, …) still need `move` for `let mut` capture.
@@ -68,6 +69,17 @@ fn names_add(names: [string], name: string) -> [string] =
 
 fn names_add_all(names: [string], additions: [string]) -> [string] =
   additions.fold(names, (accumulated, addition) => names_add(accumulated, addition))
+
+fn receiver_is_testruntime(receiver: Shared<Expr>, capture_context: SpawnCaptureContext) -> bool =
+  match receiver {
+    ExprIdent(name, _) =>
+      if !capture_context.type_environment.has(name) then
+        false
+      else
+        type_is_testruntime(capture_context.type_environment.get(name))
+      end,
+    _ => false
+  }
 
 fn empty_diagnostics() -> [Diagnostic] = do
   let diagnostics: [Diagnostic] = []
@@ -688,19 +700,31 @@ fn walk_spawn_sites_in_expr(
     ExprMethod(receiver, method_name, arguments, _) => do
       let mut diagnostics = walk_spawn_sites_in_expr(receiver, mutable_scope, capture_context)
       if method_name == "spawn" then
-        let mut argument_index = 0
-        while argument_index < arguments.length() do
-          const argument = arguments[argument_index]
-          diagnostics = diagnostics_append(
-            diagnostics,
-            free_mutable_capture_in_expr(argument, empty_names(), mutable_scope))
-          diagnostics = diagnostics_append(
-            diagnostics,
-            free_send_capture_in_expr(argument, empty_names(), capture_context))
-          diagnostics = diagnostics_append(
-            diagnostics,
-            walk_spawn_sites_in_expr(argument, mutable_scope, capture_context))
-          argument_index = argument_index + 1
+        // TestRuntime.spawn is a deterministic harness (C++ captures scheduler by ref);
+        // do not apply TaskScope/bare-spawn Send/mut gates on its handler body.
+        if receiver_is_testruntime(receiver, capture_context) then
+          let mut argument_index = 0
+          while argument_index < arguments.length() do
+            diagnostics = diagnostics_append(
+              diagnostics,
+              walk_spawn_sites_in_expr(arguments[argument_index], mutable_scope, capture_context))
+            argument_index = argument_index + 1
+          end
+        else
+          let mut argument_index = 0
+          while argument_index < arguments.length() do
+            const argument = arguments[argument_index]
+            diagnostics = diagnostics_append(
+              diagnostics,
+              free_mutable_capture_in_expr(argument, empty_names(), mutable_scope))
+            diagnostics = diagnostics_append(
+              diagnostics,
+              free_send_capture_in_expr(argument, empty_names(), capture_context))
+            diagnostics = diagnostics_append(
+              diagnostics,
+              walk_spawn_sites_in_expr(argument, mutable_scope, capture_context))
+            argument_index = argument_index + 1
+          end
         end
       else
         diagnostics = diagnostics_append(

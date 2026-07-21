@@ -4,12 +4,11 @@ Parent: [TRACK_MLC_CONCURRENCY_REFINEMENT.md](TRACK_MLC_CONCURRENCY_REFINEMENT.m
 Source: [CONCURRENCY_V2.md](../CONCURRENCY_V2.md) §34.
 C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS](../archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md) (T7 deferred MLC). Size **M**.
 
-## Status: **active** (2026-07-21) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-21) — STEP=2 done → Driver STEP=3
 
 ## Next step
 
-**STEP=2** — wire MLC `TestRuntime.new` / `.spawn do…end` / `.join`; green
-`run_testruntime_mlc.sh` + same-seed e2e; Tier B + self-host.
+**STEP=3** — MEMORY_MODEL + CONCURRENCY_V2 §34 sync; then Critic.
 
 ## Decision (STEP=0) — **frozen** 2026-07-21
 
@@ -30,7 +29,7 @@ C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS](../archive/trac
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: TestRuntime MLC missing | **done** — `ok testruntime_mlc_red` (E001; `scheduler.hpp` present) |
-| 2 | Wire MLC TestRuntime new/spawn/join; green same-seed e2e; Tier B; self-host | open |
+| 2 | Wire MLC TestRuntime new/spawn/join; green same-seed e2e; Tier B; self-host | **done** — `ok testruntime_mlc`; Tier B EXIT=0; p1≡p2 DIFF=0 |
 | 3 | MEMORY_MODEL + CONCURRENCY_V2 §34 sync | open |
 | 4 | Critic: gates; archive | open |
 

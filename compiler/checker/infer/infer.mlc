@@ -89,6 +89,13 @@ import {
   type_is_supervisor,
   is_restart_policy_variant_name
 } from './infer_supervisor_method'
+import {
+  is_testruntime_static_new,
+  infer_testruntime_static_new_call,
+  is_testruntime_method,
+  infer_testruntime_method_call,
+  type_is_testruntime
+} from './infer_testruntime_method'
 import { infer_result_option_hof_method_call } from './infer_result_option_method'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver } from '../hof_method_spec'
 import {
@@ -271,6 +278,9 @@ fn infer_expr_method(
       object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_supervisor_static_new(object, method_name) then
     infer_supervisor_static_new_call(object_parsed, method_arguments, method_span)
+  else if is_testruntime_static_new(object, method_name) then
+    infer_testruntime_static_new_call(
+      object_parsed, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_shared_weak_method_on_receiver(object_parsed.inferred_type, method_name) then
     infer_shared_weak_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
@@ -285,6 +295,9 @@ fn infer_expr_method(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_supervisor_method(method_name) && type_is_supervisor(object_parsed.inferred_type) then
     infer_supervisor_method_call(
+      object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
+  else if is_testruntime_method(method_name) && type_is_testruntime(object_parsed.inferred_type) then
+    infer_testruntime_method_call(
       object_parsed, method_name, method_arguments, method_span, inference_context, infer_expr_fn)
   else if is_channel_method(method_name) then
     infer_channel_method_call(

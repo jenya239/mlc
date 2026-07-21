@@ -337,6 +337,7 @@ fn collect_globals(program: Program) -> Map<string, bool> = do
   names.set('AtomicU64', true)
   names.set('Isolate', true)
   names.set('Supervisor', true)
+  names.set('TestRuntime', true)
   names.set('RestartPolicy', true)
   names.set('File', true); names.set('Profile', true); names.set('Shared', true); names.set('Weak', true); names.set('Map', true)
   names.set('RawPointer', true)

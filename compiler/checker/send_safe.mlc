@@ -66,6 +66,9 @@ fn type_is_send_named(record_name: string, registry: TypeRegistry) -> bool = do
   if record_name == 'Supervisor' then
     return false
   end
+  if record_name == 'TestRuntime' then
+    return false
+  end
   if record_name == 'AtomicBool' || record_name == 'AtomicI32'
     || record_name == 'AtomicI64' || record_name == 'AtomicU64' then
     return true
@@ -94,6 +97,9 @@ fn type_is_sync_named(record_name: string, registry: TypeRegistry) -> bool = do
     return true
   end
   if record_name == 'Supervisor' then
+    return false
+  end
+  if record_name == 'TestRuntime' then
     return false
   end
   if record_name == 'AtomicBool' || record_name == 'AtomicI32'

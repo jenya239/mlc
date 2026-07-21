@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-21 04:05 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+| started | 2026-07-21 03:19 |
+| elapsed | ~46 min |
+| done    | Wire `TestRuntime`→`TestScheduler`: infer+codegen+type_gen+send_safe+spawn_capture; `.spawn`/`log_event`/`events_joined`/`seed` gates (TNamed gap); `events_joined()`; `ok testruntime_mlc` + same-seed |
+| verify  | `ok testruntime_mlc`; Tier B EXIT=0; self-host p1≡p2 DIFF=0; `main` check-only 0 |
+| result  | STEP=2 done → Driver STEP=3 |
+| issues  | residual: receiver TNamed often missing — gate spawn≠TaskScope + unique method names |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+
 ### Turn 2026-07-21 03:16 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=1)
 
 | field   | value |

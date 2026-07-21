@@ -39,10 +39,17 @@ import {
   is_supervisor_static_receiver_name
 } from './supervisor_method_gen'
 import {
+  gen_method_testruntime_new_cpp,
+  gen_method_testruntime_spawn_cpp,
+  gen_method_testruntime_log_event_cpp,
+  gen_method_testruntime_events_joined_cpp,
+  gen_method_testruntime_seed_cpp,
+  is_testruntime_static_receiver_name
+} from './testruntime_method_gen'
+import {
   type_is_restart_policy,
   is_restart_policy_variant_name
 } from '../../checker/infer/infer_supervisor_method'
-
 fn is_restart_policy_argument_expression(argument: Shared<SemanticExpression>) -> bool =
   match argument {
     SemanticExpressionField(object_expression, field_name, _, _) =>
@@ -741,6 +748,12 @@ fn gen_method_expr_after_object_cpp(
     if method_name == 'new' && argument_count == 0 then gen_method_supervisor_new_cpp()
     else gen_method_expr_fallback_cpp(
       receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
+  else if is_testruntime_static_receiver_name(static_receiver_name) then
+    if method_name == 'new' && argument_count == 1 then
+      gen_method_testruntime_new_cpp(
+        evaluate_expression(original_trailing_arguments[0], context, gen_stmts))
+    else gen_method_expr_fallback_cpp(
+      receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   else gen_method_expr_fallback_cpp(
     receiver_expression, object_type_name, method_name, trailing_arguments, argument_count, context)
   end
@@ -849,6 +862,26 @@ export fn gen_method_expr_cpp(
         context,
         gen_stmts,
         evaluate_expression))
+  // TestRuntime: receiver TNamed often missing on Idents (same as Supervisor.add).
+  // spawn: not TaskScope; log_event/events_joined/seed: unique method names.
+  else if method_name == 'spawn' && arguments.length() == 1 && object_type_name != 'TaskScope' then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_testruntime_spawn_cpp(
+        receiver_expression, arguments[0], context, gen_stmts, evaluate_expression))
+  else if method_name == 'log_event' && arguments.length() == 1 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_testruntime_log_event_cpp(
+        receiver_expression, arguments[0], context, gen_stmts, evaluate_expression))
+  else if method_name == 'events_joined' && arguments.length() == 0 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_testruntime_events_joined_cpp(receiver_expression))
+  else if method_name == 'seed' && arguments.length() == 0 then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      gen_method_testruntime_seed_cpp(receiver_expression))
   else if is_shared_weak_sugar_method(method_name) && type_is_shared_pointer(object_type) && arguments.length() == 0 then
     mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
       materialization_outcome.prelude_statements,

@@ -117,6 +117,18 @@ public:
 
     const std::vector<std::string>& events() const { return events_; }
 
+    // Comma-joined event log for MLC same-seed determinism gates.
+    [[nodiscard]] std::string events_joined() const {
+      std::string result;
+      for (size_t index = 0; index < events_.size(); ++index) {
+        if (index > 0) {
+          result.push_back(',');
+        }
+        result += events_[index];
+      }
+      return result;
+    }
+
     void spawn(std::function<void()> body) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (joining_)
