@@ -1,6 +1,9 @@
 # TRACK_EDITOR_CARET_BLINK — caret blink phases (clock_ms; no sleep).
+# TRACK_EDITOR_IDLE_CARET_BLINK — paint_dirty vs last drawn phase.
 
 export fn caret_blink_period_ms() -> i32 = 1000
+
+export fn caret_blink_idle_wait_ms() -> i32 = 50
 
 export fn caret_blink_visible(clock_ms: i32, period_ms: i32) -> bool = do
   if period_ms <= 0 then
@@ -11,4 +14,20 @@ export fn caret_blink_visible(clock_ms: i32, period_ms: i32) -> bool = do
     clock = 0
   end
   ((clock % period_ms) * 2) < period_ms
+end
+
+// 1 when blink phase differs from last drawn (forces paint-only redraw).
+export fn caret_blink_paint_dirty(
+  clock_ms: i32,
+  period_ms: i32,
+  last_visible: i32
+) -> i32 = do
+  let mut visible = 0
+  if caret_blink_visible(clock_ms, period_ms) then
+    visible = 1
+  end
+  if visible != last_visible then
+    return 1
+  end
+  0
 end

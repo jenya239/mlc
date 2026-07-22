@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:22 (Driver TRACK_EDITOR_IDLE_CARET_BLINK STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_IDLE_CARET_BLINK |
+| started | 2026-07-22 18:16 |
+| elapsed | ~5 min |
+| done    | `content_dirty` / `paint_dirty`; `clock_ms` + `caret_blink_paint_dirty`; idle wait advances clock; blink uses `clock_ms`; paint-only keeps snapshot cache |
+| verify  | `ux_ok idle_caret_blink_stable`; `ux_ok idle_frame_snapshot_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_IDLE_CARET_BLINK |
+
 ### Turn 2026-07-22 18:20 (Driver TRACK_EDITOR_IDLE_CARET_BLINK STEP=1)
 
 | field   | value |

@@ -312,7 +312,9 @@ import {
 } from './document/indent'
 import {
   caret_blink_period_ms,
-  caret_blink_visible
+  caret_blink_idle_wait_ms,
+  caret_blink_visible,
+  caret_blink_paint_dirty
 } from './ux/caret_blink'
 import {
   editor_app_header_height,
@@ -758,6 +760,8 @@ fn main() -> i32 = do
   let mut last_backspace = 0
   let mut last_enter = 0
   let mut last_active_index = 0 - 1
+  let mut clock_ms = 0
+  let mut last_blink_visible = 0
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -794,37 +798,37 @@ fn main() -> i32 = do
     let mut pending_binding_key = glfw_gl_take_binding_key()
     let mut pending_drop_path = glfw_gl_take_drop_path()
 
-    let mut activity = 0
+    let mut content_dirty = 0
     if width != last_width || height != last_height then
-      activity = 1
+      content_dirty = 1
     end
     if input.mouse_x != last_mouse_x || input.mouse_y != last_mouse_y then
-      activity = 1
+      content_dirty = 1
     end
     if input.mouse_down != last_mouse_down ||
         input.mouse_right_down != last_mouse_right_down then
-      activity = 1
+      content_dirty = 1
     end
     if input.backspace != last_backspace || input.enter != last_enter then
-      activity = 1
+      content_dirty = 1
     end
     if input.text_buffer.byte_size() > 0 then
-      activity = 1
+      content_dirty = 1
     end
     if pending_scroll_y != 0.0 then
-      activity = 1
+      content_dirty = 1
     end
     if pending_binding_key.byte_size() > 0 then
-      activity = 1
+      content_dirty = 1
     end
     if pending_drop_path.byte_size() > 0 then
-      activity = 1
+      content_dirty = 1
     end
     if editor_ux_context_menu_is_visible(context_menu) then
-      activity = 1
+      content_dirty = 1
     end
     if dirty_close_overlay_is_visible(overlay) then
-      activity = 1
+      content_dirty = 1
     end
 
     const content_top = header_height() + tab_bar_height() + toolbar_height()
@@ -838,11 +842,11 @@ fn main() -> i32 = do
 
     tabs = ensure_tabs(tabs, panels)
     if tabs.active_index != last_active_index then
-      activity = 1
+      content_dirty = 1
     end
     let mut active = tab_set_active(tabs)
     let mut document = active.buffer.document
-    frame_cache = frame_snapshot_cache_tick(frame_cache, document, activity)
+    frame_cache = frame_snapshot_cache_tick(frame_cache, document, content_dirty)
     let mut frame = frame_cache.snapshot
     let mut line_index = frame.line_index
     let mut draw_text = frame.text
@@ -854,9 +858,18 @@ fn main() -> i32 = do
     last_backspace = input.backspace
     last_enter = input.enter
 
-    if activity == 0 then
+    let mut paint_dirty = 0
+    if content_dirty == 0 then
       glfw_gl_context_wait_events_timeout(0.05)
-      continue
+      clock_ms = clock_ms + caret_blink_idle_wait_ms()
+      paint_dirty = caret_blink_paint_dirty(
+        clock_ms, caret_blink_period_ms(), last_blink_visible
+      )
+      if paint_dirty == 0 then
+        continue
+      end
+    else
+      clock_ms = clock_ms + 16
     end
 
     last_width = width
@@ -2036,9 +2049,14 @@ fn main() -> i32 = do
     )
     const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
     const blink_on = caret_blink_visible(
-      frame_index * 16,
+      clock_ms,
       caret_blink_period_ms()
     )
+    if blink_on then
+      last_blink_visible = 1
+    else
+      last_blink_visible = 0
+    end
     if blink_on && caret_row >= 0 && caret_row < visual_rows.length() then
       const caret_row_info = visual_rows[caret_row]
       const caret_col = caret_position.column - caret_row_info.column_start
