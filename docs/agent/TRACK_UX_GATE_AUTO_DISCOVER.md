@@ -4,12 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §48.
 Size **S**. Source: uncommitted interactive WIP + `GUI_UX_TESTING.md` Standing
 discipline item 5 (frozen 2026-07-20, user request).
 
-## Status: **active** (2026-07-22) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Critic
 
 ## Next step
 
-**STEP=1** — Land auto-discover `run_ux_gate.sh` + `GUI_UX_TESTING.md` discipline;
-full gate EXIT=0 with reported scenario count (baseline ≥ 60, excludes `*_red`).
+**STEP=2** — Critic: gate ×2; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -27,7 +26,7 @@ full gate EXIT=0 with reported scenario count (baseline ≥ 60, excludes `*_red`
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Commit auto-discover + docs; full gate green | open |
+| 1 | Commit auto-discover + docs; full gate green | **done** — 63 scenarios EXIT=0 (47+16 after interrupt resume); strip `.sh` from names |
 | 2 | Critic: gate ×2; archive | open |
 
 <!-- STEP=1: land WIP; run_ux_gate all ok (N≥60) -->

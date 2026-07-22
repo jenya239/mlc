@@ -210,3 +210,21 @@ Clean-Architecture debt item (`demo_live.mlc` decomposition).
    (PLAN §46; source: `mlc-support/responses/editor_tdd_ux_*.md`). Do not
    hand-wave "UX polish" as one track — split into atomic, independently-gated
    items like §36-43 already do.
+5. **Full-suite regression, not just the new scenario (frozen 2026-07-20,
+   user request).** `scripts/run_ux_gate.sh` auto-discovers every
+   `scripts/run_ux_*.sh` (excluding `*_red.sh` STEP=1 scaffolding) — a new
+   track's scenario is picked up with zero manual wiring, closing the gap
+   that let it silently drift to a hand-maintained 14-of-70 subset. Critic
+   **must run the full `run_ux_gate.sh`**, not only the STEP's own new
+   script, before closing any `misc/editor/**` track — a change can fix its
+   own scenario while silently breaking an older one (scroll/selection/hover/
+   tree click have each regressed at least once this way, see archived
+   `TRACK_EDITOR_ROW_BYTE_RANGE_BLEED`/`TRACK_EDITOR_CHROME_THEME_DRIFT`/
+   `TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK`). Run it **twice back-to-back**
+   as the determinism check (harness has no `sleep`/wall-clock by design —
+   two identical exit-0 runs is the cheap proof that holds; a script that
+   passes once and fails the second run is not green, it is undiscovered
+   flake — quarantine per the Reliability rules table, do not average it
+   away). Record the gate's scenario count in the Critic checklist entry so
+   a silent drop in coverage (a script deleted/renamed without a
+   replacement) is visible in SESSION history.

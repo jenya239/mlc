@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:00 (Driver TRACK_UX_GATE_AUTO_DISCOVER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_UX_GATE_AUTO_DISCOVER |
+| started | 2026-07-22 17:28 |
+| elapsed | ~32 min |
+| done    | Land auto-discover `run_ux_gate.sh` + `GUI_UX_TESTING.md` item 5; strip `.sh` from scenario names |
+| verify  | 63 non-red scenarios EXIT=0 (first run 47 ok then interrupt; resume 16 remaining all ok); N≥60 |
+| result  | STEP=1 done → Critic |
+| issues  | long gate (~26 min); first full run interrupted mid-suite, completed via remaining list |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_UX_GATE_AUTO_DISCOVER |
+
 ### Turn 2026-07-22 17:30 (Planner TRACK_EDITOR_UX_BACKLOG → §48)
 
 | field   | value |

@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-# TRACK_UX_HEADLESS — run all registered UX gates (grows with steps).
+# TRACK_UX_HEADLESS — full UX regression gate.
+#
+# Auto-discovers every scripts/run_ux_*.sh (self-registering: a new track's
+# STEP=1 script is picked up automatically, no manual list to keep in sync —
+# see docs/GUI_UX_TESTING.md "Standing discipline"). Excludes:
+#   - this script itself
+#   - *_red.sh: STEP=1 red-state scaffolding proving a bug reproduces before
+#     the fix: intentionally fails on a fixed tree, not a regression check.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 fail=0
+count=0
 run_one() {
   local name="$1"
   local script="$2"
+  count=$((count + 1))
   if ! bash "$script"; then
     echo "[ux gate] FAIL $name" >&2
     fail=1
@@ -16,24 +25,20 @@ run_one() {
   fi
 }
 
-run_one expect_unit "$ROOT_DIR/scripts/run_ux_expect_unit.sh"
-run_one driver_unit "$ROOT_DIR/scripts/run_ux_driver_unit.sh"
-run_one probe_unit "$ROOT_DIR/scripts/run_ux_probe_unit.sh"
-run_one tab_strip_click "$ROOT_DIR/scripts/run_ux_tab_strip_click.sh"
-run_one newline_caret "$ROOT_DIR/scripts/run_ux_newline_caret.sh"
-run_one overflow_editor_text "$ROOT_DIR/scripts/run_ux_overflow_editor_text.sh"
-run_one wheel_scroll "$ROOT_DIR/scripts/run_ux_wheel_scroll.sh"
-run_one multi_line_selection "$ROOT_DIR/scripts/run_ux_multi_line_selection.sh"
-run_one tree_click "$ROOT_DIR/scripts/run_ux_tree_click.sh"
-run_one divider_cursor "$ROOT_DIR/scripts/run_ux_divider_cursor.sh"
-run_one draw_report "$ROOT_DIR/scripts/run_ux_draw_report.sh"
-run_one caret_mae "$ROOT_DIR/scripts/run_ux_caret_mae.sh"
-run_one copy_paste "$ROOT_DIR/scripts/run_ux_copy_paste.sh"
-run_one caret_blink_phases "$ROOT_DIR/scripts/run_ux_caret_blink_phases.sh"
+for script in "$ROOT_DIR"/scripts/run_ux_*.sh; do
+  base="$(basename "$script")"
+  [ "$base" = "run_ux_gate.sh" ] && continue
+  case "$base" in
+    *_red.sh) continue ;;
+  esac
+  name="${base#run_ux_}"
+  name="${name%.sh}"
+  run_one "$name" "$script"
+done
 
 if [ "$fail" != 0 ]; then
-  echo "[ux gate] FAILED" >&2
+  echo "[ux gate] FAILED ($count scenarios run)" >&2
   exit 1
 fi
-echo "[ux gate] all ok"
+echo "[ux gate] all ok ($count scenarios)"
 exit 0
