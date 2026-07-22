@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:08 (Planner PLAN → §49)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-22 18:05 |
+| elapsed | ~3 min |
+| done    | Authorized queue empty (SCRIPT_VM/MIR Epic5/LANG_AUTO_CYCLE gated). Open §49 `TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP`: #37 residual — solid pass still scissors `editor_rect`; freeze content_clip + minimap indicator under `minimap_rect`; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: glyph batch uses `content_clip` @2362; solid pass `editor_rect` @1907; minimap_indicator under same pass @2066 |
+| result  | STEP=0 frozen; primary gate solid scissor → content_clip |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP |
+
 ### Turn 2026-07-22 18:05 (Critic TRACK_UX_GATE_AUTO_DISCOVER)
 
 | field   | value |
@@ -15,7 +30,7 @@
 | verify  | run1 EXIT=0 N=63; run2 EXIT=0 N=63; anti-false-done `6422b6c4`…`8d8d154e`; REG skip |
 | result  | closed Critic OK; reopen none |
 | issues  | none |
-| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_UX_GATE_AUTO_DISCOVER (closed; select next PLAN item or document idle queue) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
 
 ### Turn 2026-07-22 18:00 (Driver TRACK_UX_GATE_AUTO_DISCOVER STEP=1)
 
