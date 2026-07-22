@@ -273,6 +273,7 @@ import { editor_ux_content_scrollbar_thumb } from './ux/scroll'
 import {
   editor_ux_minimap_pixel_size,
   editor_ux_minimap_layout,
+  editor_ux_content_clip_rect,
   editor_ux_minimap_cache_new,
   editor_ux_minimap_cache_tick,
   editor_ux_minimap_viewport_indicator,
@@ -918,6 +919,7 @@ fn main() -> i32 = do
     const text_rect = minimap_layout.text_rect
     const minimap_rect = minimap_layout.minimap_rect
     const minimap_enabled = minimap_layout.enabled
+    const content_clip = editor_ux_content_clip_rect(editor_rect, minimap_layout)
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     wrap_count_cache = wrap_count_cache_tick(
@@ -2357,7 +2359,7 @@ fn main() -> i32 = do
       draw_row = draw_row + 1
     end
 
-    editor_gl_scissor_enable_rect(height, editor_rect)
+    editor_gl_scissor_enable_rect(height, content_clip)
     const editor_drawn = static_text_draw_lines_colored(
       text_state, editor_lines, width, height, 0,
       theme.text_red, theme.text_green, theme.text_blue, 1.0

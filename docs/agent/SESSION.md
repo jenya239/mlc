@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:22 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+| started | 2026-07-22 17:19 |
+| elapsed | ~3 min |
+| done    | `demo_live`: `content_clip = editor_ux_content_clip_rect`; glyph batch scissor uses `content_clip` (not full `editor_rect`) |
+| verify  | `ux_ok minimap_content_clip_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done → Critic |
+| issues  | residual: solid-pass still scissors full `editor_rect` (selection/minimap indicator); `*_red` post-green |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+
 ### Turn 2026-07-22 17:18 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=2)
 
 | field   | value |
