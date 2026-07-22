@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner idle (authorized queue empty after §50).
+**Queue head:** Driver `TRACK_EDITOR_IDLE_CPU_BUDGET` (§51 STEP=1).
+**`TRACK_EDITOR_IDLE_CPU_BUDGET` (§51)** active 2026-07-22 — STEP=0 done → Driver STEP=1.
 **`TRACK_EDITOR_IDLE_CARET_BLINK` (§50)** **closed** 2026-07-22 (Critic OK). Archived.
-**Idle residuals (deferred, no TRACK):** wrap-budget HarfBuzz rewrite (needs user auth); live idle CPU sample (optional/sandbox-limited).
 **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (§49)** **closed** 2026-07-22 (Critic OK). Archived.
 **`TRACK_UX_GATE_AUTO_DISCOVER` (§48)** closed 2026-07-22 (Critic OK); archived.
 **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** closed 2026-07-22 (Critic OK); archived.

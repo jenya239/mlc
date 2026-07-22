@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:32 (Planner PLAN → §51)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-22 18:25 |
+| elapsed | ~4 min |
+| done    | Break idle loop: open §51 `TRACK_EDITOR_IDLE_CPU_BUDGET` — #38 residual live `/proc` idle CPU% &lt;10 never measured; freeze sample gate (N sec, budget 10%); wrap-budget HarfBuzz still deferred; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: #38 archive lists live CPU sample optional; no `run_ux_idle_cpu_budget_*` scripts; L2 snapshot gates alone miss busy-loop regression |
+| result  | STEP=0 frozen; primary gate live CPU% &lt;10 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_IDLE_CPU_BUDGET |
+
 ### Turn 2026-07-22 18:30 (Planner PLAN — idle reconfirm)
 
 | field   | value |

@@ -446,6 +446,7 @@ compiler/
 | **48** | UX gate auto-discover full suite (63 scenarios; was hand-maintained 14) | **closed** (2026-07-22) Critic OK; STEP=0–2 | [archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER](archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md) |
 | **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
 | **50** | Editor idle caret blink (#38 residual: blink freezes on idle early-out) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK](archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md) |
+| **51** | Editor idle CPU budget (live `/proc` sample; #38 residual) | **active** (2026-07-22) Driver STEP=1 | [TRACK_EDITOR_IDLE_CPU_BUDGET](agent/TRACK_EDITOR_IDLE_CPU_BUDGET.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -747,9 +748,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_IDLE_CARET_BLINK (§50, **closed** 2026-07-22: Critic OK; STEP=0–3;
       `clock_ms` + `paint_dirty`; `d6168cb4`…`6a9cf56c`;
       → [archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md](archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md))**
-  → **(idle 2026-07-22, reconfirmed)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
-      LANG_AUTO_CYCLE gated; wrap-budget HarfBuzz residual deferred (needs user auth);
-      live idle CPU sample optional/sandbox-limited; no Driver work until new authorization
+  → **EDITOR_IDLE_CPU_BUDGET (§51, **active** 2026-07-22: STEP=0→Driver STEP=1;
+      live `/proc` idle CPU% &lt;10; #38 residual measurement gate;
+      → [agent/TRACK_EDITOR_IDLE_CPU_BUDGET.md](agent/TRACK_EDITOR_IDLE_CPU_BUDGET.md))**
 ```
 
 

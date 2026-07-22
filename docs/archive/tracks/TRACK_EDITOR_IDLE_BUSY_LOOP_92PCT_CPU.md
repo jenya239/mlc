@@ -11,7 +11,8 @@ Anti-false-done: `4f630e01`…`669297b5` (STEP=0–3); no bare `document_frame_s
 no `sleep_ms`; `misc/editor/**` + thin `runtime/src/gl/` wait wrapper → REG skip; no `compiler/`/`lib/mlc/`.
 L2: idle `dirty=0` keeps `snapshot_count`. **reopen: none**.
 
-Honest residual: live process CPU sample (&lt;10%) optional, not measured here; caret blink may freeze
+Honest residual: live process CPU sample (&lt;10%) optional, not measured here — **open** §51
+`TRACK_EDITOR_IDLE_CPU_BUDGET`. Caret blink may freeze
 while idle (activity flag has no blink deadline) — **fixed** §50
 `TRACK_EDITOR_IDLE_CARET_BLINK` (Critic OK 2026-07-22). Profile scopes only on dirty snapshot tick, not
 full frame phases. Historical `run_ux_idle_frame_snapshot_red.sh` expects pre-wire demo_live and
