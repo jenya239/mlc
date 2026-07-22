@@ -10,8 +10,9 @@ Anti-false-done: `9310f1e2`…`81fb086a` (STEP=0–3); `editor_ux_content_clip_r
 `editor_gl_scissor_enable_rect(height, content_clip)`; `misc/editor/**` only → REG skip; no
 `compiler/`/`lib/mlc/`. L2: clip right edge == `minimap_rect.x` when enabled. **reopen: none**.
 
-Honest residual: solid-pass still scissors full `editor_rect` (selection/minimap indicator under
-that pass); wrap budget still uniform `char_width` (secondary, L2 green without it). Historical
+Honest residual: solid-pass scissors full `editor_rect` — **fixed** §49
+`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (Critic OK 2026-07-22). Wrap budget still
+uniform `char_width` (secondary, L2 green without it). Historical
 `run_ux_minimap_content_clip_red.sh` expects pre-wire demo_live and fails post-green — use
 `run_ux_minimap_content_clip_stable.sh` only. Early-return in `do` body was dropped by codegen
 (STEP=2 used if/else expression form).

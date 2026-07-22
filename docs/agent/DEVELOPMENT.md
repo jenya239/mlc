@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (§49 STEP=3).
-**`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (§49)** active 2026-07-22 — STEP=2 done → Critic STEP=3.
+**Queue head:** Planner `PLAN` (authorized queue empty after §49 close).
+**`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (§49)** **closed** 2026-07-22 (Critic OK). Archived.
 **`TRACK_UX_GATE_AUTO_DISCOVER` (§48)** closed 2026-07-22 (Critic OK); archived.
 **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** closed 2026-07-22 (Critic OK); archived.
 **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** closed 2026-07-22 (Critic OK); archived.
