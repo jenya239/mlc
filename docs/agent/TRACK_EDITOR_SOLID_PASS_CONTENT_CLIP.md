@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §49.
 Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](../archive/tracks/TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP.md)
 (§46 #37). Size **S**.
 
-## Status: **active** (2026-07-22) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: solid-pass still scissors `editor_rect` (gap probe).
+**STEP=2** — Wire solid → `content_clip`; minimap indicator under `minimap_rect`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -26,7 +26,7 @@ Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](../archive/tracks/TR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: solid-pass `editor_rect` gap | open |
+| 1 | Red: solid-pass `editor_rect` gap | **done** — `ux_ok solid_pass_content_clip_red`; stable EXIT=1 |
 | 2 | Wire solid → `content_clip`; minimap indicator clip | open |
 | 3 | Critic: compile + full `run_ux_gate` | open |
 
