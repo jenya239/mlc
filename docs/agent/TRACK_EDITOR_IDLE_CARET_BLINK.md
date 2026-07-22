@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §50.
 Residual of [TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU](../archive/tracks/TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU.md)
 (§46 #38). Size **S**.
 
-## Status: **active** (2026-07-22) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: idle path has no blink deadline (caret clock frozen on `continue`).
+**STEP=2** — Wire `clock_ms` + `paint_dirty` blink redraw.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -26,7 +26,7 @@ Residual of [TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU](../archive/tracks/TRACK_EDIT
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: idle path no blink deadline | open |
+| 1 | Red: idle path no blink deadline | **done** — `ux_ok idle_caret_blink_red`; stable EXIT=1 |
 | 2 | Wire clock_ms + paint_dirty blink redraw | open |
 | 3 | Critic: compile + full `run_ux_gate` | open |
 

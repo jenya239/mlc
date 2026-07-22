@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:20 (Driver TRACK_EDITOR_IDLE_CARET_BLINK STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_IDLE_CARET_BLINK |
+| started | 2026-07-22 18:15 |
+| elapsed | ~2 min |
+| done    | Red: `run_ux_idle_caret_blink_red.sh` / stable; gap = idle `activity==0` continue + blink on `frame_index * 16`, no `paint_dirty` |
+| verify  | `ux_ok idle_caret_blink_red`; stable EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_IDLE_CARET_BLINK |
+
 ### Turn 2026-07-22 18:18 (Planner PLAN → §50)
 
 | field   | value |
