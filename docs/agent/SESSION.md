@@ -2,6 +2,36 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:12 (Driver TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP |
+| started | 2026-07-22 18:08 |
+| elapsed | ~4 min |
+| done    | Solid pass scissor → `content_clip`; minimap indicator under `minimap_rect` scissor (`demo_live.mlc`) |
+| verify  | `ux_ok solid_pass_content_clip_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP |
+
+### Turn 2026-07-22 18:10 (Driver TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP |
+| started | 2026-07-22 18:06 |
+| elapsed | ~2 min |
+| done    | Red: `run_ux_solid_pass_content_clip_red.sh` / stable; gap = solid `editor_rect` scissor while glyph uses `content_clip` |
+| verify  | `ux_ok solid_pass_content_clip_red`; stable EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP |
+
 ### Turn 2026-07-22 18:08 (Planner PLAN → §49)
 
 | field   | value |

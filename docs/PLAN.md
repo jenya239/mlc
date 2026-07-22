@@ -444,7 +444,7 @@ compiler/
 | **46** | Editor UX backlog — #1…#38 **done** (`#37 EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` Critic OK) | **done** (2026-07-22) | [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) · [archive/TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](archive/tracks/TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP.md) · [archive/TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU](archive/tracks/TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU.md) · [archive/TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE](archive/tracks/TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE.md) · [archive/TRACK_EDITOR_MINIMAP](archive/tracks/TRACK_EDITOR_MINIMAP.md) |
 | **47** | MLC concurrency refinement backlog — `#1`–`#11` **done** (`#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` Critic OK) | **done** (2026-07-22) | [TRACK_MLC_CONCURRENCY_REFINEMENT](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) · [archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md) · [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md) · [CONCURRENCY_V2.md](CONCURRENCY_V2.md) |
 | **48** | UX gate auto-discover full suite (63 scenarios; was hand-maintained 14) | **closed** (2026-07-22) Critic OK; STEP=0–2 | [archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER](archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md) |
-| **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **active** (2026-07-22) Driver STEP=2 | [TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](agent/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
+| **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **active** (2026-07-22) Critic STEP=3 | [TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](agent/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -740,7 +740,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **UX_GATE_AUTO_DISCOVER (§48, **closed** 2026-07-22: Critic OK; STEP=0–2; 63 scenarios ×2;
       `6422b6c4`…`8d8d154e`;
       → [archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md](archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md))**
-  → **EDITOR_SOLID_PASS_CONTENT_CLIP (§49, **active** 2026-07-22: STEP=1→Driver STEP=2;
+  → **EDITOR_SOLID_PASS_CONTENT_CLIP (§49, **active** 2026-07-22: STEP=2→Critic STEP=3;
       solid pass → `content_clip`; minimap indicator under `minimap_rect`;
       → [agent/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md](agent/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md))**
 ```

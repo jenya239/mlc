@@ -1904,7 +1904,7 @@ fn main() -> i32 = do
     end
 
     solid = solid_renderer_begin(solid)
-    editor_gl_scissor_enable_rect(height, editor_rect)
+    editor_gl_scissor_enable_rect(height, content_clip)
 
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
     let mut syntax_spans: [HighlightSpan] = []
@@ -2064,6 +2064,7 @@ fn main() -> i32 = do
       )
     end
     if minimap_enabled != 0 then
+      editor_gl_scissor_enable_rect(height, minimap_rect)
       const minimap_indicator = editor_ux_minimap_viewport_indicator(
         minimap_rect, wrapped_content_height_now, text_rect.height, scroll_offset_y
       )
