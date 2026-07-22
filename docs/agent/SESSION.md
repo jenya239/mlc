@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:45 (Driver TRACK_EDITOR_IDLE_CPU_BUDGET STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_IDLE_CPU_BUDGET |
+| started | 2026-07-22 18:30 |
+| elapsed | ~15 min |
+| done    | Paint-only caret overlay (`flush_over`, no full-frame clear); live `/proc` sample min-of-rounds &lt;10%; `run_ux_idle_cpu_budget_stable.sh` |
+| verify  | `ux_ok idle_cpu_budget_stable` ×5; `idle_caret_blink_stable`; `idle_frame_snapshot_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_IDLE_CPU_BUDGET |
+
 ### Turn 2026-07-22 18:35 (Driver TRACK_EDITOR_IDLE_CPU_BUDGET STEP=1)
 
 | field   | value |

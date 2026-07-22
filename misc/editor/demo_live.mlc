@@ -762,6 +762,11 @@ fn main() -> i32 = do
   let mut last_active_index = 0 - 1
   let mut clock_ms = 0
   let mut last_blink_visible = 0
+  let mut last_caret_x = 0
+  let mut last_caret_y = 0
+  let mut last_caret_w = 0
+  let mut last_caret_h = 0
+  let mut last_caret_valid = 0
 
   while glfw_gl_context_should_close() == 0 do
     let mut tabs = app.ux.tabs
@@ -866,6 +871,37 @@ fn main() -> i32 = do
         clock_ms, caret_blink_period_ms(), last_blink_visible
       )
       if paint_dirty == 0 then
+        continue
+      end
+      // Paint-only blink: overlay caret without clearing / reshaping the frame.
+      if last_caret_valid != 0 then
+        const blink_on = caret_blink_visible(clock_ms, caret_blink_period_ms())
+        if blink_on then
+          last_blink_visible = 1
+        else
+          last_blink_visible = 0
+        end
+        solid = solid_renderer_begin(solid)
+        solid = solid_renderer_rect(
+          solid, width, height,
+          last_caret_x, last_caret_y, last_caret_w, last_caret_h,
+          theme.background_red, theme.background_green, theme.background_blue, 1.0
+        )
+        if blink_on then
+          solid = solid_renderer_rect(
+            solid, width, height,
+            last_caret_x, last_caret_y, last_caret_w, last_caret_h,
+            theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
+          )
+        end
+        const overlay_status = solid_renderer_flush_over(solid, width, height)
+        if overlay_status != 0 then
+          static_text_destroy(text_state)
+          solid_renderer_destroy(solid)
+          glfw_gl_context_end()
+          return overlay_status
+        end
+        glfw_gl_context_swap_poll()
         continue
       end
     else
@@ -2057,16 +2093,22 @@ fn main() -> i32 = do
     else
       last_blink_visible = 0
     end
-    if blink_on && caret_row >= 0 && caret_row < visual_rows.length() then
+    last_caret_valid = 0
+    if caret_row >= 0 && caret_row < visual_rows.length() then
       const caret_row_info = visual_rows[caret_row]
       const caret_col = caret_position.column - caret_row_info.column_start
-      solid = solid_renderer_rect(
-        solid, width, height,
-        text_rect.x + 4 + caret_col * metrics.char_width,
-        text_rect.y + 2 + caret_row * metrics.line_height,
-        1, metrics.line_height - 2,
-        theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
-      )
+      last_caret_x = text_rect.x + 4 + caret_col * metrics.char_width
+      last_caret_y = text_rect.y + 2 + caret_row * metrics.line_height
+      last_caret_w = 1
+      last_caret_h = metrics.line_height - 2
+      last_caret_valid = 1
+      if blink_on then
+        solid = solid_renderer_rect(
+          solid, width, height,
+          last_caret_x, last_caret_y, last_caret_w, last_caret_h,
+          theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
+        )
+      end
     end
 
     const editor_hovered =

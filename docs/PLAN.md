@@ -446,7 +446,7 @@ compiler/
 | **48** | UX gate auto-discover full suite (63 scenarios; was hand-maintained 14) | **closed** (2026-07-22) Critic OK; STEP=0–2 | [archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER](archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md) |
 | **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
 | **50** | Editor idle caret blink (#38 residual: blink freezes on idle early-out) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK](archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md) |
-| **51** | Editor idle CPU budget (live `/proc` sample; #38 residual) | **active** (2026-07-22) Driver STEP=2 | [TRACK_EDITOR_IDLE_CPU_BUDGET](agent/TRACK_EDITOR_IDLE_CPU_BUDGET.md) |
+| **51** | Editor idle CPU budget (live `/proc` sample; #38 residual) | **active** (2026-07-22) Critic STEP=3 | [TRACK_EDITOR_IDLE_CPU_BUDGET](agent/TRACK_EDITOR_IDLE_CPU_BUDGET.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
