@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 16:15 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+| started | 2026-07-22 16:15 |
+| elapsed | ~5 min |
+| done    | MEMORY_MODEL TestRuntime row/notes; CONCURRENCY_V2 §0/§34/§43; TRACK/PLAN → Critic |
+| verify  | docs cite `TestRuntime.new`/`spawn`/`join`/`log_event`/`events_joined`/`seed`; !Send/!Sync; track link |
+| result  | STEP=3 done → Critic |
+| issues  | residual: TestMutex/Channel MLC out; TNamed codegen gap (STEP=2) |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+
 ### Turn 2026-07-21 04:05 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=2)
 
 | field   | value |

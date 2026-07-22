@@ -36,6 +36,7 @@ limiting, graceful shutdown.
 | `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)) |
 | `Isolate[State, Msg]` | `runtime/include/mlc/concurrency/isolate.hpp` | owner thread + bounded mailbox; Block overflow; MLC `Isolate.start` / `.send` / `.shutdown`; !Send/!Sync ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)) |
 | `Supervisor` | `runtime/include/mlc/concurrency/supervisor.hpp` | children + `RestartPolicy` + one_for_one + storm intensity; MLC `Supervisor.new` / `.add` / `.start` / `.stop`; !Send/!Sync ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)) |
+| `TestRuntime` | `runtime/include/mlc/concurrency/testing/scheduler.hpp` (`TestScheduler`) | deterministic seed scheduler; MLC `TestRuntime.new` / `.spawn` / `.join` / `.log_event` / `.events_joined` / `.seed`; !Send/!Sync ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)) |
 | "Send-safe" check | `compiler/checker/send_safe.mlc` (`type_is_send_safe`) | компоновочный (compositional) предикат, **уже структурно решает Rust-style Send inference**, но: (a) используется только в `Channel.send`, не как общий bound; (b) конфлирует Send и Shared в одно понятие — `Arc<T>` в текущем предикате `false` (не send-safe), хотя по предложению `Arc<ImmutableConfig>` должен быть и `Send`, и `Shared` |
 
 Замыкания в MLC **всегда** захватывают по значению (`MEMORY_MODEL.md` §Замыкания,
@@ -504,27 +505,34 @@ Per-source quotas, bounded ingress queues, batch limits, yield points — что
 
 Развёрнутый дизайн (deterministic scheduler, полная stress-матрица, sanitizer
 CI gate) — [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md);
-трек: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md)
-(**closed** 2026-07-12, awaiting Critic).
+C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md)
+(**closed** 2026-07-12, T7 C++-only).
 
-**Статус (2026-07-12):** C++ v1 **implemented** —
-`runtime/include/mlc/concurrency/testing/scheduler.hpp` (`TestScheduler`) +
-`TestMutex`/`TestChannel`; smoke + sanitize + nightly seed fuzz
-(`scripts/concurrency_fuzz_gate.sh`). MLC `TestRuntime.new(seed:)` **deferred**
-(same closure gap as JobQueue/Supervisor; see track Decision T7). Sketch below
-is long-term MLC shape, not shipped syntax.
+**Статус:** **done** C++ + MLC facade ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)):
+`testing/scheduler.hpp` (`TestScheduler`); MLC `TestRuntime.new(seed)` /
+`.spawn do … end` / `.join()` / `.seed()` / `.log_event(string)` /
+`.events_joined()`; TestRuntime !Send/!Sync; handler wrap uses `[&]` (harness
+captures scheduler by ref — not TaskScope Send gates). Gate: same seed →
+identical `events_joined` (`run_testruntime_mlc.sh`) + `test_scheduler.cpp`.
+`TestMutex`/`TestChannel` MLC **out**; fuzz/sanitize already on C++ harness.
 
 ```mlc
-let rt = TestRuntime.new(seed: 918271)
-rt.spawn { actor_a() }
-rt.spawn { actor_b() }
-rt.run()
+fn scenario(seed: i64) -> string = do
+  let runtime = TestRuntime.new(seed)
+  runtime.spawn do
+    runtime.log_event("a")
+  end
+  runtime.spawn do
+    runtime.log_event("b")
+  end
+  runtime.join()
+  runtime.events_joined()
+end
 ```
 
-При падении — `seed` + `schedule` для воспроизведения. Не обязательно полный
-model checker на старте — даже собственный deterministic scheduler для
-`Task`/`Channel` тестов даёт огромную пользу против "прошёл 999 раз, упал один
-раз ночью".
+При падении — `seed` + event snapshot для воспроизведения. Не полный
+model checker — deterministic scheduler для `Task`/`Channel` тестов против
+"прошёл 999 раз, упал один раз ночью".
 
 ## 35. Обязательные stress suites на каждый primitive
 
@@ -607,6 +615,7 @@ Task, TaskHandle[T], TaskScope
 ThreadPool
 Isolate[State, Msg]
 Supervisor
+TestRuntime
 Instant, Duration, Timer
 ```
 
@@ -614,7 +623,10 @@ Instant, Duration, Timer
 [TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)),
 `Supervisor` (**done** C++ + MLC method API,
 [TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md);
-block sugar deferred), `Select`. После них: `Future`,
+block sugar deferred), `TestRuntime` (**done** C++ + MLC facade over
+`TestScheduler`,
+[TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md);
+`TestMutex`/`TestChannel` MLC out), `Select`. После них: `Future`,
 `async/await`, `IoReactor`, `AsyncSocket`.
 
 ## 44. Порядок реализации (маппинг на текущий pipeline `Lexer → Parser → AST →
