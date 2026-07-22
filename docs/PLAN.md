@@ -747,6 +747,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_IDLE_CARET_BLINK (§50, **closed** 2026-07-22: Critic OK; STEP=0–3;
       `clock_ms` + `paint_dirty`; `d6168cb4`…`6a9cf56c`;
       → [archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md](archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md))**
+  → **(idle 2026-07-22)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
+      LANG_AUTO_CYCLE gated; wrap-budget HarfBuzz residual deferred (needs user auth);
+      live idle CPU sample optional/sandbox-limited; no Driver work until new authorization
 ```
 
 

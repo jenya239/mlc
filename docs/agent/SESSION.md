@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:28 (Planner PLAN — idle)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-22 18:21 |
+| elapsed | ~3 min |
+| done    | Document idle: authorized queue empty after §50. Gated: SCRIPT_VM, MIR Epic 5, LANG_AUTO_CYCLE. Residuals deferred (no TRACK): wrap-budget HarfBuzz rewrite (needs user auth); live idle CPU sample (optional/sandbox). PLAN/CONTINUITY/DEVELOPMENT idle |
+| verify  | Active agent TRACK_* only design/done: UX_BACKLOG done, CONCURRENCY_REFINEMENT done, MIR_VM_FULL Epic5 gated, LANG_AUTO_CYCLE gated, SCRIPT_VM design-only; no pending numbered Driver STEP |
+| result  | idle; no Driver work |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (idle: authorized queue empty; no Driver until user authorizes gated item or new residual) |
+
 ### Turn 2026-07-22 18:25 (Critic TRACK_EDITOR_IDLE_CARET_BLINK)
 
 | field   | value |
