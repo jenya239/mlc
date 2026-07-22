@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 16:26 (Planner TRACK_EDITOR_UX_BACKLOG → #38)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_EDITOR_UX_BACKLOG |
+| started | 2026-07-22 16:26 |
+| elapsed | ~3 min |
+| done    | Open `#38`: `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU.md` Decision freeze; backlog/PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `document_frame_snapshot` @794 every loop; `swap_poll`→`PollEvents`; `sleep_ms(16)`; `glfwSwapInterval(0)`; freeze dirty/wait/snapshot-cache + Profile scopes |
+| result  | STEP=0 frozen; primary gate snapshot call-count; `#37` out |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+
 ### Turn 2026-07-22 16:21 (Critic TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE)
 
 | field   | value |
