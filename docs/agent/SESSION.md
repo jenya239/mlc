@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:18 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+| started | 2026-07-22 17:15 |
+| elapsed | ~3 min |
+| done    | `editor_ux_content_clip_rect`: enabled → width `minimap_rect.x - editor_rect.x`; disabled → full editor_rect (if/else, not early-return) |
+| verify  | `ux_ok minimap_content_clip_stable` |
+| result  | STEP=2 done → Driver STEP=3 |
+| issues  | residual: demo_live still scissors editor_rect (STEP=3); early-return in do-block codegen dropped body |
+| next    | ROLE=Driver STEP=3 TRACK=TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+
 ### Turn 2026-07-22 17:12 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=1)
 
 | field   | value |

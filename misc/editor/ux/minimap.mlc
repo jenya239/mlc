@@ -45,13 +45,22 @@ export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout = do
   }
 end
 
-// TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=1 stub —
-// Returns editor_rect unchanged (includes minimap). STEP=2 clips at minimap_rect.x.
+// TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=2 —
+// Clip editor glyph batch to non-minimap strip (right edge = minimap_rect.x).
 export fn editor_ux_content_clip_rect(
   editor_rect: Rect,
   minimap_layout: MinimapLayout
-) -> Rect =
-  editor_rect
+) -> Rect = do
+  if minimap_layout.enabled == 0 then
+    editor_rect
+  else
+    let mut width = minimap_layout.minimap_rect.x - editor_rect.x
+    if width < 0 then
+      width = 0
+    end
+    rect_new(editor_rect.x, editor_rect.y, width, editor_rect.height)
+  end
+end
 
 export fn editor_ux_minimap_needs_rebuild(prev_text: string, next_text: string) -> i32 = do
   if prev_text.byte_size() != next_text.byte_size() then

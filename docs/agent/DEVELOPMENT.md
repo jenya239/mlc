@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 `#37` STEP=2).
-**`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** active 2026-07-22 — STEP=1 done → Driver STEP=2.
+**Queue head:** Driver `TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 `#37` STEP=3).
+**`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** active 2026-07-22 — STEP=2 done → Driver STEP=3.
 **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** closed 2026-07-22 (Critic OK); archived.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#37` open; `#38` closed.
 **`TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE` (§47 #11)** closed 2026-07-22; archived.
