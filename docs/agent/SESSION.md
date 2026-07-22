@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:25 (Critic TRACK_EDITOR_IDLE_CARET_BLINK)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_IDLE_CARET_BLINK |
+| started | 2026-07-22 18:19 |
+| elapsed | ~5 min |
+| done    | Close §50: re-ran stable + idle_frame_snapshot_stable + demo_live_fs_compile + HEAD run_ux_gate (65); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok idle_caret_blink_stable`; `ux_ok idle_frame_snapshot_stable`; `demo_live_fs_compile_ok`; `[ux gate] all ok (65 scenarios)`; anti-false-done `d6168cb4`…`6a9cf56c`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: wrap `char_width` budget; live idle CPU sample optional; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-22 18:22 (Driver TRACK_EDITOR_IDLE_CARET_BLINK STEP=2)
 
 | field   | value |
