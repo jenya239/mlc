@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:08 (Planner TRACK_EDITOR_UX_BACKLOG → #37)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | TRACK_EDITOR_UX_BACKLOG |
+| started | 2026-07-22 17:05 |
+| elapsed | ~3 min |
+| done    | Open `#37`: `TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP.md` Decision freeze; backlog/PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: content draw scissor `editor_rect` @2360 includes minimap; layout non-overlap; `wrap_max_columns` uniform `char_width`; freeze clip-primary |
+| result  | STEP=0 frozen; primary gate content clip right == minimap_rect.x |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+
 ### Turn 2026-07-22 17:05 (Critic TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU)
 
 | field   | value |
