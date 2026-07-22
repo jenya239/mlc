@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#37**
 (pulled forward 2026-07-22 — live screenshot). Size **M**.
 
-## Status: **active** (2026-07-22) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: L2 / clip-rect probe proving content draw can paint past `minimap_rect.x`.
+**STEP=2** — Clip at `minimap_rect.x`; `ux_ok minimap_content_clip_stable`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -25,7 +25,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#37**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: clip / bleed probe | open |
+| 1 | Red: clip / bleed probe | **done** — `ux_ok minimap_content_clip_red` (stub; demo_live gap) |
 | 2 | Clip (and secondary wrap only if needed) | open |
 | 3 | `demo_live` wire if needed; compile; Critic | open |
 

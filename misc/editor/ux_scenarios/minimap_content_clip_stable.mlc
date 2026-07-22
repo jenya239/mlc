@@ -1,0 +1,47 @@
+// TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP —
+// L2: content clip right edge must equal minimap_rect.x when minimap enabled.
+import { rect_new } from '../../gui/layout'
+import {
+  editor_ux_minimap_layout,
+  editor_ux_content_clip_rect
+} from '../ux/minimap'
+
+fn main() -> i32 = do
+  const editor_rect = rect_new(100, 0, 400, 200)
+  const content_band = rect_new(140, 0, 360, 200)
+  const layout = editor_ux_minimap_layout(content_band)
+  if layout.enabled == 0 then
+    println("ux_fail minimap_content_clip_stable layout disabled")
+    return 1
+  end
+
+  const clip = editor_ux_content_clip_rect(editor_rect, layout)
+  const clip_right = clip.x + clip.width
+  if clip_right != layout.minimap_rect.x then
+    println("ux_fail minimap_content_clip_stable stub")
+    return 2
+  end
+  if clip.x != editor_rect.x then
+    println("ux_fail minimap_content_clip_stable left")
+    return 3
+  end
+  if clip.height != editor_rect.height then
+    println("ux_fail minimap_content_clip_stable height")
+    return 4
+  end
+
+  const narrow = rect_new(0, 0, 100, 50)
+  const disabled = editor_ux_minimap_layout(narrow)
+  if disabled.enabled != 0 then
+    println("ux_fail minimap_content_clip_stable expected disabled")
+    return 5
+  end
+  const clip_disabled = editor_ux_content_clip_rect(narrow, disabled)
+  if clip_disabled.x != narrow.x || clip_disabled.width != narrow.width then
+    println("ux_fail minimap_content_clip_stable disabled clip")
+    return 6
+  end
+
+  println("ux_ok minimap_content_clip_stable")
+  0
+end

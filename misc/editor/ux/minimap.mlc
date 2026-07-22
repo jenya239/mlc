@@ -45,6 +45,14 @@ export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout = do
   }
 end
 
+// TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=1 stub —
+// Returns editor_rect unchanged (includes minimap). STEP=2 clips at minimap_rect.x.
+export fn editor_ux_content_clip_rect(
+  editor_rect: Rect,
+  minimap_layout: MinimapLayout
+) -> Rect =
+  editor_rect
+
 export fn editor_ux_minimap_needs_rebuild(prev_text: string, next_text: string) -> i32 = do
   if prev_text.byte_size() != next_text.byte_size() then
     return 1

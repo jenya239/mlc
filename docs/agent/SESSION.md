@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:12 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+| started | 2026-07-22 17:08 |
+| elapsed | ~4 min |
+| done    | Red: `editor_ux_content_clip_rect` stub + `minimap_content_clip_stable.mlc`; red/stable scripts; demo_live gap assert |
+| verify  | `ux_ok minimap_content_clip_red` (FAIL_TOKEN stub; demo_live scissors editor_rect, no clip helper); stable EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+
 ### Turn 2026-07-22 17:08 (Planner TRACK_EDITOR_UX_BACKLOG → #37)
 
 | field   | value |
