@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:28 (Critic TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP |
+| started | 2026-07-22 17:23 |
+| elapsed | ~5 min |
+| done    | Close `#37`: re-ran stable + demo_live_fs_compile + HEAD run_ux_gate (14); archive track; §46 backlog done; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok minimap_content_clip_stable`; `demo_live_fs_compile_ok`; `[ux gate] all ok`; anti-false-done `9310f1e2`…`81fb086a`; REG skip |
+| result  | closed Critic OK; reopen none; §46 done |
+| issues  | residual: solid-pass still scissors full editor_rect; wrap budget uniform char_width; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (backlog done; select next PLAN item) |
+
 ### Turn 2026-07-22 17:22 (Driver TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=3)
 
 | field   | value |
