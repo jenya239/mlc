@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:30 (Planner PLAN — idle reconfirm)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-22 18:24 |
+| elapsed | ~2 min |
+| done    | Reconfirm idle: no authorized Driver TRACK. agent TRACK_* = UX_BACKLOG done, CONCURRENCY_REFINEMENT done, MIR_VM_FULL Epic5 gated, LANG_AUTO_CYCLE design-only gated (pending STEPs not authorized), SCRIPT_VM design-only. Residuals still deferred (wrap-budget HarfBuzz; live idle CPU sample) |
+| verify  | `ls docs/agent/TRACK_*.md` = 5 files, none active numbered Driver STEP; PLAN §48–50 closed; priority chain idle line present |
+| result  | idle; no Driver work |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (idle: authorized queue empty; no Driver until user authorizes gated item or new residual) |
+
 ### Turn 2026-07-22 18:28 (Planner PLAN — idle)
 
 | field   | value |
