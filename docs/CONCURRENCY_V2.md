@@ -36,7 +36,7 @@ limiting, graceful shutdown.
 | `AtomicBool` / `AtomicI32` / `AtomicI64` / `AtomicU64` | `runtime/include/mlc/concurrency/atomic.hpp` | seq_cst only (`load`/`store`/`exchange`/`compare_exchange`/`fetch_add`/`fetch_sub`; Bool без add/sub); MLC `AtomicI32.new` / `.fetch_add` (+ siblings); Send+Sync ([TRACK_CONCURRENCY_ATOMICS](archive/tracks/TRACK_CONCURRENCY_ATOMICS.md)) |
 | `Isolate[State, Msg]` | `runtime/include/mlc/concurrency/isolate.hpp` | owner thread + bounded mailbox; Block overflow; MLC `Isolate.start` / `.send` / `.shutdown`; !Send/!Sync ([TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE.md)) |
 | `Supervisor` | `runtime/include/mlc/concurrency/supervisor.hpp` | children + `RestartPolicy` + one_for_one + storm intensity; MLC `Supervisor.new` / `.add` / `.start` / `.stop`; !Send/!Sync ([TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md)) |
-| `TestRuntime` | `runtime/include/mlc/concurrency/testing/scheduler.hpp` (`TestScheduler`) | deterministic seed scheduler; MLC `TestRuntime.new` / `.spawn` / `.join` / `.log_event` / `.events_joined` / `.seed`; !Send/!Sync ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)) |
+| `TestRuntime` | `runtime/include/mlc/concurrency/testing/scheduler.hpp` (`TestScheduler`) | deterministic seed scheduler; MLC `TestRuntime.new` / `.spawn` / `.join` / `.log_event` / `.events_joined` / `.seed`; !Send/!Sync ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)) |
 | "Send-safe" check | `compiler/checker/send_safe.mlc` (`type_is_send_safe`) | компоновочный (compositional) предикат, **уже структурно решает Rust-style Send inference**, но: (a) используется только в `Channel.send`, не как общий bound; (b) конфлирует Send и Shared в одно понятие — `Arc<T>` в текущем предикате `false` (не send-safe), хотя по предложению `Arc<ImmutableConfig>` должен быть и `Send`, и `Shared` |
 
 Замыкания в MLC **всегда** захватывают по значению (`MEMORY_MODEL.md` §Замыкания,
@@ -508,7 +508,7 @@ CI gate) — [CONCURRENCY_TEST_HARNESS.md](CONCURRENCY_TEST_HARNESS.md);
 C++ predecessor: [archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md](archive/tracks/TRACK_CONCURRENCY_TEST_HARNESS.md)
 (**closed** 2026-07-12, T7 C++-only).
 
-**Статус:** **done** C++ + MLC facade ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)):
+**Статус:** **done** C++ + MLC facade ([TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md)):
 `testing/scheduler.hpp` (`TestScheduler`); MLC `TestRuntime.new(seed)` /
 `.spawn do … end` / `.join()` / `.seed()` / `.log_event(string)` /
 `.events_joined()`; TestRuntime !Send/!Sync; handler wrap uses `[&]` (harness
@@ -625,7 +625,7 @@ Instant, Duration, Timer
 [TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md);
 block sugar deferred), `TestRuntime` (**done** C++ + MLC facade over
 `TestScheduler`,
-[TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](agent/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md);
+[TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md);
 `TestMutex`/`TestChannel` MLC out), `Select`. После них: `Future`,
 `async/await`, `IoReactor`, `AsyncSocket`.
 

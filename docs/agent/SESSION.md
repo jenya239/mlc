@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 16:21 (Critic TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE |
+| started | 2026-07-22 16:21 |
+| elapsed | ~4 min |
+| done    | Close `#11`: re-ran `ok testruntime_mlc` + main/fixture check-only + `test_scheduler`; archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → §47 done; queue Planner `#38` |
+| verify  | `ok testruntime_mlc`; main+fixtures check-only EXIT=0; `test_scheduler` 9 PASSED; anti-false-done `4550e1cf`…`a6dce083`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: TestMutex/Channel MLC out; TNamed codegen gap |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU) |
+
 ### Turn 2026-07-22 16:15 (Driver TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE STEP=3)
 
 | field   | value |

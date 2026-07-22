@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-20-editor-wrap-perf-priority` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-22-idle-cpu-priority` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
+INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Critic** `TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE` (§47 `#11`). Priority override `#36` **closed** 2026-07-20.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** `TRACK_EDITOR_UX_BACKLOG` (§46 `#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU`). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-22:** §47 `#1`–`#11` **done** — next `#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (measured 92% idle CPU), then `#37 EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP`, ahead of opening any other new track.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,14 +79,15 @@ INSTRUCTIONS_REV=2026-07-20-editor-wrap-perf-priority
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | **done** 2026-07-20 — #1…#36 closed (#22 superseded). Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | #1…#36 closed (#22 superseded). **Reopened 2026-07-22, two items, `#38` first:** `#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` — measured 92% CPU sustained on a fully idle demo window (`top -p <pid>`, no interaction); confirmed by code read: no dirty-flag/idle path at all in the main loop (`glfwPollEvents`+flat `sleep_ms(16)`, `glfwSwapInterval(0)`), plus `document_frame_snapshot` at `demo_live.mlc:794` re-flattens+re-indexes unconditionally every frame (same anti-pattern as already-fixed `#36`/`#35`, never applied here); dominant cost not fully isolated (`perf`/`strace`/`gdb` ptrace blocked in this sandbox) — STEP=1 should add `Profile.scope_begin/end` timers around frame phases before attempting a fix. `#37 EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` — full-size wrapped-line glyphs draw inside `minimap_rect` on a long mixed-script line, root cause not isolated, queued after `#38`. Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
 | **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** | **closed** 2026-07-20 (Critic OK). Archived. `wrap_cache.mlc` + `demo_live` both sites. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_MINIMAP` (§46 #35)** | **closed** 2026-07-20 (Critic OK). Archived. Reduced-scale glyph strip + cache-on-edit + click/drag scroll. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** | **closed** 2026-07-19 (Critic OK). Archived. number/type/operator tags + Theme RGB. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CONTENT_SCROLLBAR` (§46 #33e)** | **closed** 2026-07-19 (Critic OK). Archived. Hover content thumb; dead hover wheel deleted. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_PARENT_DOUBLE_CLICK` (§46 #33d)** | **closed** 2026-07-19 (Critic OK). Archived. Parent `..` arm/double. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_THEME_DRIFT` (§46 #33c)** | **closed** 2026-07-19 (Critic OK). Archived. Panel fills + `from_panel` hover. Do not reopen numbered STEPs |
-| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | Umbrella. `#1`–`#10` done. `#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` **active** (Critic). Order fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_MLC_CONCURRENCY_REFINEMENT` (PLAN §47)** | **done** 2026-07-22 — `#1`–`#11` closed. `#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` Critic OK; archived. Order was fixed per `CONCURRENCY_V2.md` §20. `Future`/`async`/`await`/`select` out of scope |
+| **`TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE` (§47 #11)** | **closed** 2026-07-22 (Critic OK). Archived. MLC `TestRuntime`→`TestScheduler` new/spawn/join/log_event/events_joined/seed. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** | **closed** 2026-07-21 (Critic OK). Archived. MLC Supervisor.new/add/start/stop + RestartPolicy. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 #9)** | **closed** 2026-07-21 (Critic OK). Archived. Isolate.start/send/shutdown. Do not reopen numbered STEPs |
 | **`TRACK_CONCURRENCY_FFI_METADATA` (§47 #8)** | **closed** 2026-07-21 (Critic OK). Archived. E094 thread_affine fn-in-spawn. Do not reopen numbered STEPs |
