@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **done** (2026-07-22) — #1…#38 closed (#22 superseded); `#37` Critic OK
+## Status: **done** (2026-07-22) — #1…#38 closed (#22 superseded); `#37` Critic OK; queue → §48
 
 ## How to use this backlog
 
