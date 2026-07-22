@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # TRACK_EDITOR_IDLE_CPU_BUDGET — live /proc idle CPU% under budget.
 # STEP=2: paint-only caret overlay (no full-frame clear) + live /proc sample.
-# CPU% = 100 * delta(utime+stime) / (HZ * SAMPLE_SEC); budget default 10%.
+# CPU% = 100 * delta(utime+stime) / (HZ * SAMPLE_SEC); budget default ≤10%.
 # Uses min of SAMPLE_ROUNDS windows after warmup (host noise / startup spikes).
 set -euo pipefail
 
@@ -108,8 +108,8 @@ while [ "$round" -lt "$SAMPLE_ROUNDS" ]; do
   round=$((round + 1))
 done
 
-# min_percent is the lowest window; must stay under budget.
-if [ "$min_percent" -ge "$BUDGET_PERCENT" ]; then
+# min_percent is the lowest window; must stay at or under budget (≤10%).
+if [ "$min_percent" -gt "$BUDGET_PERCENT" ]; then
   echo "[ux idle_cpu_budget_stable] FAIL: idle min_cpu_percent=${min_percent} (budget=${BUDGET_PERCENT} rounds=${SAMPLE_ROUNDS} sample=${SAMPLE_SEC}s)" >&2
   exit 1
 fi

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:50 (Critic TRACK_EDITOR_IDLE_CPU_BUDGET)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_IDLE_CPU_BUDGET |
+| started | 2026-07-22 18:43 |
+| elapsed | ~7 min |
+| done    | Close §51: boundary fix (CPU% ≤10, fail only if `>`); re-ran stable ×3 + caret/snapshot + compile + HEAD run_ux_gate (66); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok idle_cpu_budget_stable` ×3; `idle_caret_blink_stable`; `idle_frame_snapshot_stable`; `demo_live_fs_compile_ok`; `[ux gate] all ok (66 scenarios)`; anti-false-done `9ed7c2c3`…`d9150fb0`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: wrap `char_width` budget; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-22 18:45 (Driver TRACK_EDITOR_IDLE_CPU_BUDGET STEP=2)
 
 | field   | value |

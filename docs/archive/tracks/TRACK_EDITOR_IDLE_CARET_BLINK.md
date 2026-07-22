@@ -13,7 +13,8 @@ HEAD `run_ux_gate` (65 scenarios). Anti-false-done: `d6168cb4`…`6a9cf56c` (STE
 `misc/editor/**` only → REG skip; no `compiler/`/`lib/mlc/`. **reopen: none**.
 
 Honest residual: wrap budget still uniform `char_width` (out of scope); live idle CPU
-sample optional; Profile scopes only on dirty snapshot. Historical
+sample optional — **fixed** §51 `TRACK_EDITOR_IDLE_CPU_BUDGET`; Profile scopes only
+on dirty snapshot. Historical
 `run_ux_idle_caret_blink_red.sh` expects pre-wire demo_live and fails post-green — use
 `run_ux_idle_caret_blink_stable.sh` only.
 
