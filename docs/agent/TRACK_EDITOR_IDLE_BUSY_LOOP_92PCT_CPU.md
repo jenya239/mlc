@@ -3,11 +3,11 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#38**
 (pulled forward 2026-07-22 — measured idle CPU / user "тормозит"). Size **L**.
 
-## Status: **active** (2026-07-22) — STEP=2 done → Driver STEP=3
+## Status: **active** (2026-07-22) — STEP=3 done → Critic
 
 ## Next step
 
-**STEP=3** — `demo_live` idle path (cache + wait); `demo_live_fs_compile_ok`.
+**STEP=4** — Critic: gates; archive.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -27,7 +27,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#38**
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: idle-frame / snapshot-every-tick probe | **done** — `ux_ok idle_frame_snapshot_red` (stub; demo_live gap) |
 | 2 | Profile scopes + dirty/wait/snapshot-cache implement | **done** — `ux_ok idle_frame_snapshot_stable`; wait API; Profile on dirty tick |
-| 3 | `demo_live` idle path green; compile | open |
+| 3 | `demo_live` idle path green; compile | **done** — activity early-out + `frame_snapshot_cache_tick` + `wait_events_timeout`; `demo_live_fs_compile_ok` |
 | 4 | Critic: gates; archive | open |
 
 <!-- STEP=1: red harness — assert current loop still hits snapshot every frame or idle-CPU red script EXIT≠0 -->

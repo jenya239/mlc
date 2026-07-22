@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 16:48 (Driver TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 3 |
+| track   | TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+| started | 2026-07-22 16:38 |
+| elapsed | ~10 min |
+| done    | `demo_live`: activity dirty-flag; idle → `wait_events_timeout(0.05)`+`continue`; all snapshots via `frame_snapshot_cache_tick`; drop `sleep_ms(16)` |
+| verify  | `ux_ok idle_frame_snapshot_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=3 done → Critic |
+| issues  | residual: live idle CPU sample optional; `*_red` script expects pre-wire demo_live (use stable only) |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+
 ### Turn 2026-07-22 16:34 (Driver TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2)
 
 | field   | value |
