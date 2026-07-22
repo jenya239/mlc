@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 17:05 (Critic TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+| started | 2026-07-22 16:49 |
+| elapsed | ~16 min |
+| done    | Close `#38`: re-ran stable + demo_live_fs_compile + HEAD run_ux_gate (14); archive track; PLAN/CONTINUITY/DEVELOPMENT/backlog → Planner `#37` |
+| verify  | `ux_ok idle_frame_snapshot_stable`; `demo_live_fs_compile_ok`; `[ux gate] all ok`; anti-false-done `4f630e01`…`669297b5`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: live idle CPU sample optional; caret blink may freeze idle; Profile only on dirty snapshot; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_EDITOR_UX_BACKLOG (open #37 EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP) |
+
 ### Turn 2026-07-22 16:48 (Driver TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=3)
 
 | field   | value |

@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 `#38`).
-**`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** active 2026-07-22 — STEP=3 done → Critic.
-**`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#38` open; `#37` pending.
+**Queue head:** Planner `TRACK_EDITOR_UX_BACKLOG` (§46 `#37 EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP`).
+**`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** closed 2026-07-22 (Critic OK); archived.
+**`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#38` closed; `#37` pending.
 **`TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE` (§47 #11)** closed 2026-07-22; archived.
 **`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** closed 2026-07-21; archived.
 **`TRACK_CONCURRENCY_ISOLATE_MLC_SURFACE` (§47 #9)** closed 2026-07-21; archived.
