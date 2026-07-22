@@ -1,0 +1,36 @@
+// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=1 —
+// Stub: always snapshots (ignores dirty=false). STEP=2 skips when clean.
+import {
+  TextDocument
+} from './piece_table'
+import {
+  DocumentFrameSnapshot,
+  document_frame_snapshot
+} from './frame_snapshot'
+
+export type DocumentFrameSnapshotCache = {
+  snapshot: DocumentFrameSnapshot,
+  snapshot_count: i32,
+  dirty: i32
+}
+
+export fn frame_snapshot_cache_new(
+  document: TextDocument
+) -> DocumentFrameSnapshotCache =
+  DocumentFrameSnapshotCache {
+    snapshot: document_frame_snapshot(document),
+    snapshot_count: 1,
+    dirty: 1
+  }
+
+// STEP=1 stub: always re-snapshot even when dirty=false (demo_live gap).
+export fn frame_snapshot_cache_tick(
+  state: DocumentFrameSnapshotCache,
+  document: TextDocument,
+  dirty: i32
+) -> DocumentFrameSnapshotCache =
+  DocumentFrameSnapshotCache {
+    snapshot: document_frame_snapshot(document),
+    snapshot_count: state.snapshot_count + 1,
+    dirty: dirty
+  }

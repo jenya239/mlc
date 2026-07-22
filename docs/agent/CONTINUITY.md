@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 `#38` STEP=1). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-22:** §47 done — `#38` idle CPU first, then `#37` minimap bleed.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 `#38` STEP=2). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-22:** §47 done — `#38` idle CPU first, then `#37` minimap bleed.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -79,8 +79,8 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_FOLDER_NAV` (PLAN §43)** | **closed** 2026-07-18 (Critic OK). Archived. `folder_nav_*` + demo_live wire. Do not reopen numbered STEPs |
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | #1…#36 closed (#22 superseded). **`#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` active** (Driver STEP=1). `#37` pending after `#38`. Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
-| **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **active** 2026-07-22 — STEP=0 frozen → Driver STEP=1. Idle `demo_live` ~92% CPU; dirty/wait/snapshot-cache |
+| **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | #1…#36 closed (#22 superseded). **`#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` active** (Driver STEP=2). `#37` pending after `#38`. Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
+| **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **active** 2026-07-22 — STEP=1 done → Driver STEP=2. Idle `demo_live` ~92% CPU; dirty/wait/snapshot-cache |
 | **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** | **closed** 2026-07-20 (Critic OK). Archived. `wrap_cache.mlc` + `demo_live` both sites. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_MINIMAP` (§46 #35)** | **closed** 2026-07-20 (Critic OK). Archived. Reduced-scale glyph strip + cache-on-edit + click/drag scroll. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER` (§46 #34)** | **closed** 2026-07-19 (Critic OK). Archived. number/type/operator tags + Theme RGB. Do not reopen numbered STEPs |

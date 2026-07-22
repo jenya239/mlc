@@ -3,12 +3,12 @@
 Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#38**
 (pulled forward 2026-07-22 — measured idle CPU / user "тормозит"). Size **L**.
 
-## Status: **active** (2026-07-22) — STEP=0 frozen → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: idle-frame probe / harness showing unconditional per-frame work
-(`document_frame_snapshot` every tick, no dirty skip).
+**STEP=2** — Profile scopes + dirty/wait/snapshot-cache implement; green
+`run_ux_idle_frame_snapshot_stable.sh`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -26,7 +26,7 @@ Parent: [TRACK_EDITOR_UX_BACKLOG.md](TRACK_EDITOR_UX_BACKLOG.md) §46 **#38**
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: idle-frame / snapshot-every-tick probe | open |
+| 1 | Red: idle-frame / snapshot-every-tick probe | **done** — `ux_ok idle_frame_snapshot_red` (stub; demo_live gap) |
 | 2 | Profile scopes + dirty/wait/snapshot-cache implement | open |
 | 3 | `demo_live` idle path green; compile | open |
 | 4 | Critic: gates; archive | open |

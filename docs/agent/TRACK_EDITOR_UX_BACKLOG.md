@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §46. Source: [archive/tracks/TRACK_EDITOR_CLEA
 [`mlc-support/responses/editor_tdd_ux_20260717_114221.md`](../../../mlc-support/responses/editor_tdd_ux_20260717_114221.md)
 (Opus review, 2026-07-17, $2.24).
 
-## Status: **active** (2026-07-22) — `#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` open (STEP=0 → Driver STEP=1); `#37` pending
+## Status: **active** (2026-07-22) — `#38 EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` open (STEP=1 → Driver STEP=2); `#37` pending
 
 ## How to use this backlog
 

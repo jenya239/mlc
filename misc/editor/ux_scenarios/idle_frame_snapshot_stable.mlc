@@ -1,0 +1,36 @@
+// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU —
+// L2: idle dirty=false ticks must not re-call document_frame_snapshot.
+import { document_from_string } from '../document/piece_table'
+import {
+  frame_snapshot_cache_new,
+  frame_snapshot_cache_tick
+} from '../document/frame_snapshot_cache'
+
+fn main() -> i32 = do
+  const document = document_from_string("line one\nline two\n")
+  let mut cache = frame_snapshot_cache_new(document)
+  if cache.snapshot_count != 1 then
+    println("ux_fail idle_frame_snapshot_stable warm count")
+    return 1
+  end
+
+  let mut idle = 0
+  while idle < 5 do
+    cache = frame_snapshot_cache_tick(cache, document, 0)
+    idle = idle + 1
+  end
+  if cache.snapshot_count != 1 then
+    println("ux_fail idle_frame_snapshot_stable stub")
+    return 2
+  end
+
+  const edited = document_from_string("line one\nline two\nextra\n")
+  cache = frame_snapshot_cache_tick(cache, edited, 1)
+  if cache.snapshot_count != 2 then
+    println("ux_fail idle_frame_snapshot_stable dirty tick")
+    return 3
+  end
+
+  println("ux_ok idle_frame_snapshot_stable")
+  0
+end

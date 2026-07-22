@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 16:29 (Driver TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+| started | 2026-07-22 16:29 |
+| elapsed | ~4 min |
+| done    | Red: `frame_snapshot_cache.mlc` stub + `idle_frame_snapshot_stable.mlc`; `run_ux_idle_frame_snapshot_red.sh` / green stub EXIT=1; demo_live gap assert |
+| verify  | `ux_ok idle_frame_snapshot_red` (FAIL_TOKEN stub; demo_live has snapshot, no cache tick); stable EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU |
+
 ### Turn 2026-07-22 16:26 (Planner TRACK_EDITOR_UX_BACKLOG → #38)
 
 | field   | value |
