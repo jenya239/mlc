@@ -445,6 +445,7 @@ compiler/
 | **47** | MLC concurrency refinement backlog — `#1`–`#11` **done** (`#11 CONCURRENCY_TESTRUNTIME_MLC_SURFACE` Critic OK) | **done** (2026-07-22) | [TRACK_MLC_CONCURRENCY_REFINEMENT](agent/TRACK_MLC_CONCURRENCY_REFINEMENT.md) · [archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE.md) · [archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE.md) · [CONCURRENCY_V2.md](CONCURRENCY_V2.md) |
 | **48** | UX gate auto-discover full suite (63 scenarios; was hand-maintained 14) | **closed** (2026-07-22) Critic OK; STEP=0–2 | [archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER](archive/tracks/TRACK_UX_GATE_AUTO_DISCOVER.md) |
 | **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
+| **50** | Editor idle caret blink (#38 residual: blink freezes on idle early-out) | **active** (2026-07-22) Driver STEP=1 | [TRACK_EDITOR_IDLE_CARET_BLINK](agent/TRACK_EDITOR_IDLE_CARET_BLINK.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -743,6 +744,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_SOLID_PASS_CONTENT_CLIP (§49, **closed** 2026-07-22: Critic OK; STEP=0–3;
       solid `content_clip` + minimap indicator under `minimap_rect`; `915dc910`…`eb7ba4f6`;
       → [archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md](archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md))**
+  → **EDITOR_IDLE_CARET_BLINK (§50, **active** 2026-07-22: STEP=0→Driver STEP=1;
+      idle paint_dirty blink deadline; content_dirty stays snapshot-gated;
+      → [agent/TRACK_EDITOR_IDLE_CARET_BLINK.md](agent/TRACK_EDITOR_IDLE_CARET_BLINK.md))**
 ```
 
 

@@ -12,10 +12,10 @@ no `sleep_ms`; `misc/editor/**` + thin `runtime/src/gl/` wait wrapper → REG sk
 L2: idle `dirty=0` keeps `snapshot_count`. **reopen: none**.
 
 Honest residual: live process CPU sample (&lt;10%) optional, not measured here; caret blink may freeze
-while idle (activity flag has no blink deadline); Profile scopes only on dirty snapshot tick, not
+while idle (activity flag has no blink deadline) — **open** §50
+`TRACK_EDITOR_IDLE_CARET_BLINK`. Profile scopes only on dirty snapshot tick, not
 full frame phases. Historical `run_ux_idle_frame_snapshot_red.sh` expects pre-wire demo_live and
-fails post-green — use `run_ux_idle_frame_snapshot_stable.sh` only. HEAD `run_ux_gate` does not
-auto-include the new stable script (uncommitted auto-discover WIP left alone).
+fails post-green — use `run_ux_idle_frame_snapshot_stable.sh` only.
 
 | Gate | Result |
 |------|--------|

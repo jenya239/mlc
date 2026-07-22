@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:18 (Planner PLAN → §50)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-22 18:12 |
+| elapsed | ~4 min |
+| done    | Authorized queue empty (SCRIPT_VM/MIR Epic5/LANG_AUTO_CYCLE gated). Open §50 `TRACK_EDITOR_IDLE_CARET_BLINK`: #38 residual — idle `continue` freezes caret blink; freeze clock_ms + paint_dirty (snapshot stays content_dirty-gated); PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: activity==0 → wait+continue @857–860; blink `frame_index * 16` @2038; no blink deadline in activity block |
+| result  | STEP=0 frozen; primary gate paint_dirty blink redraw without extra snapshot |
+| issues  | wrap char_width budget still deferred (HarfBuzz out of scope) |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_IDLE_CARET_BLINK |
+
 ### Turn 2026-07-22 18:15 (Critic TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP)
 
 | field   | value |
