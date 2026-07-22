@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:35 (Driver TRACK_EDITOR_IDLE_CPU_BUDGET STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_IDLE_CPU_BUDGET |
+| started | 2026-07-22 18:28 |
+| elapsed | ~3 min |
+| done    | Red: `run_ux_idle_cpu_budget_red.sh` / stable stub; gap = no live `/proc` sample in stable |
+| verify  | `ux_ok idle_cpu_budget_red`; stable EXIT=1 |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_IDLE_CPU_BUDGET |
+
 ### Turn 2026-07-22 18:32 (Planner PLAN → §51)
 
 | field   | value |

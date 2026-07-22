@@ -81,7 +81,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | #1…#38 closed (#22 superseded). **done** 2026-07-22 (`#37` Critic OK). Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
 | **`TRACK_UX_GATE_AUTO_DISCOVER` (PLAN §48)** | **closed** 2026-07-22 (Critic OK). Archived. Auto-discover 63 non-red scripts; gate ×2. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **active** 2026-07-22 — STEP=0 done → Driver STEP=1. Live `/proc` idle CPU% &lt;10 (#38 residual) |
+| **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **active** 2026-07-22 — STEP=1 done → Driver STEP=2. Red: stable stub no `/proc` sample |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
 | **Authorized queue** | **active** §51 (was idle after §50) |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
