@@ -1,0 +1,4 @@
+// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2 —
+// Idle wait: glfwWaitEventsTimeout (demo_live wires in STEP=3).
+export extern fn glfw_gl_context_wait_events_timeout(timeout_seconds: f64) -> unit
+  = "mlc::gl::glfw_gl_context_wait_events_timeout" from "mlc/gl/glfw_window_gl.hpp"

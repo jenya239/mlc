@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 `#38` STEP=2).
-**`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** active 2026-07-22 — STEP=1 done → Driver STEP=2.
+**Queue head:** Driver `TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 `#38` STEP=3).
+**`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** active 2026-07-22 — STEP=2 done → Driver STEP=3.
 **`TRACK_EDITOR_UX_BACKLOG` (§46)** active — `#38` open; `#37` pending.
 **`TRACK_CONCURRENCY_TESTRUNTIME_MLC_SURFACE` (§47 #11)** closed 2026-07-22; archived.
 **`TRACK_CONCURRENCY_SUPERVISOR_MLC_SURFACE` (§47 #10)** closed 2026-07-21; archived.

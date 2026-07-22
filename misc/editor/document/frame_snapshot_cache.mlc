@@ -1,5 +1,5 @@
-// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=1 —
-// Stub: always snapshots (ignores dirty=false). STEP=2 skips when clean.
+// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2 —
+// Idle dirty=false reuses snapshot; dirty tick re-flattens (+ Profile scopes).
 import {
   TextDocument
 } from './piece_table'
@@ -23,14 +23,24 @@ export fn frame_snapshot_cache_new(
     dirty: 1
   }
 
-// STEP=1 stub: always re-snapshot even when dirty=false (demo_live gap).
 export fn frame_snapshot_cache_tick(
   state: DocumentFrameSnapshotCache,
   document: TextDocument,
   dirty: i32
-) -> DocumentFrameSnapshotCache =
+) -> DocumentFrameSnapshotCache = do
+  if dirty == 0 then
+    return DocumentFrameSnapshotCache {
+      snapshot: state.snapshot,
+      snapshot_count: state.snapshot_count,
+      dirty: 0
+    }
+  end
+  Profile.scope_begin("frame_snapshot")
+  const snapshot = document_frame_snapshot(document)
+  Profile.scope_end("frame_snapshot")
   DocumentFrameSnapshotCache {
-    snapshot: document_frame_snapshot(document),
+    snapshot: snapshot,
     snapshot_count: state.snapshot_count + 1,
     dirty: dirty
   }
+end

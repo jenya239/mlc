@@ -290,6 +290,17 @@ void glfw_gl_context_swap_poll() {
   glfwPollEvents();
 }
 
+void glfw_gl_context_wait_events_timeout(double timeout_seconds) {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return;
+  }
+  if (timeout_seconds < 0.0) {
+    timeout_seconds = 0.0;
+  }
+  glfwWaitEventsTimeout(timeout_seconds);
+}
+
 void glfw_gl_context_end() {
   GLFWwindow* window = context_window();
   if (window == nullptr) {
@@ -729,6 +740,7 @@ void glfw_gl_drop_path_test_push(String path) {
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
 int32_t glfw_gl_context_should_close() { return 1; }
 void glfw_gl_context_swap_poll() {}
+void glfw_gl_context_wait_events_timeout(double) {}
 void glfw_gl_context_end() {}
 double glfw_gl_get_time() { return 0.0; }
 double glfw_gl_anim_unit() { return 0.0; }

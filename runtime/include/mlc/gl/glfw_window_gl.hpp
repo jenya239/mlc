@@ -13,6 +13,8 @@ namespace gl {
 int32_t glfw_gl_context_begin(int32_t width, int32_t height);
 int32_t glfw_gl_context_should_close();
 void glfw_gl_context_swap_poll();
+// TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2 — idle path (WaitEventsTimeout).
+void glfw_gl_context_wait_events_timeout(double timeout_seconds);
 void glfw_gl_context_end();
 double glfw_gl_get_time();
 double glfw_gl_anim_unit();
