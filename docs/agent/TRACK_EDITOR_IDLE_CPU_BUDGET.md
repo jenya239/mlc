@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §51.
 Residual of [TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU](../archive/tracks/TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU.md)
 (§46 #38). Size **S**.
 
-## Status: **active** (2026-07-22) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-22) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: no live idle CPU budget gate (gap).
+**STEP=2** — Implement live `/proc` sample; green under 10%.
 
 ## Decision (STEP=0) — **frozen** 2026-07-22
 
@@ -26,7 +26,7 @@ Residual of [TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU](../archive/tracks/TRACK_EDIT
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: no live idle CPU budget script | open |
+| 1 | Red: no live idle CPU budget script | **done** — `ux_ok idle_cpu_budget_red`; stable EXIT=1 |
 | 2 | Implement sample script; green under 10% | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
