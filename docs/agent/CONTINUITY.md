@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Critic** `TRACK_UX_GATE_AUTO_DISCOVER` (§48). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-22:** §46/#47 done — §48 UX gate auto-discover.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** (no open TRACK STEP; §48 closed). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-22:** §46/#47/#48 done — authorized queue empty (SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE gated).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -80,7 +80,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_CODEGEN_CPPAST_ONLY` (PLAN §44)** | **closed** 2026-07-17 (Critic OK). Archived. `expr.mlc` deleted; residual Fragment/print bridges (not 0%). Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLEAN_ARCHITECTURE` (PLAN §45)** | **closed** 2026-07-18 (Critic OK). Archived. Standing discipline frozen; STEP=1/2 → §46 #1. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_UX_BACKLOG` (PLAN §46)** | #1…#38 closed (#22 superseded). **done** 2026-07-22 (`#37` Critic OK). Product ceiling: **Sublime Text**, stability/speed beats feature breadth |
-| **`TRACK_UX_GATE_AUTO_DISCOVER` (PLAN §48)** | **active** 2026-07-22 — STEP=1 done → Critic. Auto-discover 63 non-red scripts green |
+| **`TRACK_UX_GATE_AUTO_DISCOVER` (PLAN §48)** | **closed** 2026-07-22 (Critic OK). Archived. Auto-discover 63 non-red scripts; gate ×2. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE` (§46 #36)** | **closed** 2026-07-20 (Critic OK). Archived. `wrap_cache.mlc` + `demo_live` both sites. Do not reopen numbered STEPs |

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-22 18:05 (Critic TRACK_UX_GATE_AUTO_DISCOVER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_UX_GATE_AUTO_DISCOVER |
+| started | 2026-07-22 18:02 |
+| elapsed | ~3 min |
+| done    | Close §48: gate ×2 both `all ok (63 scenarios)`; archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | run1 EXIT=0 N=63; run2 EXIT=0 N=63; anti-false-done `6422b6c4`…`8d8d154e`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=TRACK_UX_GATE_AUTO_DISCOVER (closed; select next PLAN item or document idle queue) |
+
 ### Turn 2026-07-22 18:00 (Driver TRACK_UX_GATE_AUTO_DISCOVER STEP=1)
 
 | field   | value |
