@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §66.
 Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md)
 (§46 #33c) / post-§65 idle. Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: chrome_hover still embeds bare Light panel RGB; failing stable stub.
+**STEP=2** — Wire theme_solarized_light; green stable.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -26,7 +26,7 @@ Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: bare Light RGB in chrome_hover | open |
+| 1 | Red: bare Light RGB in chrome_hover | **done** |
 | 2 | Wire theme_solarized_light; green | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 

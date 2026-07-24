@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:50 (Driver TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME |
+| started | 2026-07-24 18:42 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_chrome_hover_default_theme_red.sh` + failing stable stub; proves ≥2 bare `0.933/0.910/0.835` in `chrome_hover.mlc` |
+| verify  | `ux_ok chrome_hover_default_theme_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME |
+
 ### Turn 2026-07-24 18:48 (Planner PLAN → §66)
 
 | field   | value |
