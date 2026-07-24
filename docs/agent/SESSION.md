@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:40 (Critic TRACK_EDITOR_MINIMAP_SYNTAX_TAGS)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+| started | 2026-07-25 02:35 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + minimap/syntax gates + demo_live + `run_ux_gate` 89; archive §74 |
+| verify  | `minimap_syntax_tags_stable` EXIT=0 ×2; cache/syntax EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (89 scenarios)` |
+| result  | §74 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; zoom scale OOS; highlight on rebuild only) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 02:35 (Driver TRACK_EDITOR_MINIMAP_SYNTAX_TAGS STEP=2)
 
 | field   | value |
