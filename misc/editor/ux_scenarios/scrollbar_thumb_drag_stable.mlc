@@ -1,0 +1,46 @@
+// TRACK_EDITOR_SCROLLBAR_THUMB_DRAG STEP=2 —
+// Drag along Y/X track changes scroll_y / scroll_x.
+import { rect_new } from '../../gui/layout'
+import {
+  editor_ux_content_scrollbar_scroll_at_y,
+  editor_ux_content_scrollbar_scroll_at_x
+} from '../ux/scroll'
+
+fn main() -> i32 = do
+  const text_rect = rect_new(100, 50, 400, 200)
+  const content_tall = 800
+  const content_wide = 800
+
+  const scroll_y_low = editor_ux_content_scrollbar_scroll_at_y(
+    text_rect.y + 20, text_rect, content_tall, text_rect.height
+  )
+  const scroll_y_high = editor_ux_content_scrollbar_scroll_at_y(
+    text_rect.y + text_rect.height - 20, text_rect, content_tall, text_rect.height
+  )
+  if scroll_y_low == scroll_y_high then
+    println("ux_fail scrollbar_thumb_drag_stable y same")
+    return 1
+  end
+  if scroll_y_high <= scroll_y_low then
+    println("ux_fail scrollbar_thumb_drag_stable y order")
+    return 2
+  end
+
+  const scroll_x_low = editor_ux_content_scrollbar_scroll_at_x(
+    text_rect.x + 20, text_rect, content_wide, text_rect.width
+  )
+  const scroll_x_high = editor_ux_content_scrollbar_scroll_at_x(
+    text_rect.x + text_rect.width - 20, text_rect, content_wide, text_rect.width
+  )
+  if scroll_x_low == scroll_x_high then
+    println("ux_fail scrollbar_thumb_drag_stable x same")
+    return 3
+  end
+  if scroll_x_high <= scroll_x_low then
+    println("ux_fail scrollbar_thumb_drag_stable x order")
+    return 4
+  end
+
+  println("ux_ok scrollbar_thumb_drag_stable")
+  0
+end

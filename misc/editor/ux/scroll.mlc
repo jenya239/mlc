@@ -256,3 +256,99 @@ export fn editor_ux_content_scrollbar_thumb_x(
   const thumb_y = text_rect.y + text_rect.height - thumb_height - inset
   rect_new(thumb_x, thumb_y, thumb, thumb_height)
 end
+
+// TRACK_EDITOR_SCROLLBAR_THUMB_DRAG — Y track geometry (right edge).
+export fn editor_ux_content_scrollbar_track_y(text_rect: Rect) -> Rect = do
+  const thumb_width = 5
+  const inset = 2
+  rect_new(
+    text_rect.x + text_rect.width - thumb_width - inset,
+    text_rect.y,
+    thumb_width,
+    text_rect.height
+  )
+end
+
+// TRACK_EDITOR_SCROLLBAR_THUMB_DRAG — X track geometry (bottom edge).
+export fn editor_ux_content_scrollbar_track_x(text_rect: Rect) -> Rect = do
+  const thumb_height = 5
+  const inset = 2
+  rect_new(
+    text_rect.x,
+    text_rect.y + text_rect.height - thumb_height - inset,
+    text_rect.width,
+    thumb_height
+  )
+end
+
+// Map pointer Y along content scrollbar track → scroll_offset_y.
+export fn editor_ux_content_scrollbar_scroll_at_y(
+  pointer_y: i32,
+  text_rect: Rect,
+  content_height: i32,
+  viewport_height: i32
+) -> i32 = do
+  const track = editor_ux_content_scrollbar_track_y(text_rect)
+  if content_height <= track.height || track.height <= 0 then
+    return 0
+  end
+  let mut thumb = track.height * track.height / content_height
+  if thumb < 12 then
+    thumb = 12
+  end
+  if thumb > track.height then
+    thumb = track.height
+  end
+  let mut max_scroll = content_height - track.height
+  if max_scroll < 1 then
+    max_scroll = 1
+  end
+  let mut usable = track.height - thumb
+  if usable < 1 then
+    usable = 1
+  end
+  let mut rel = pointer_y - track.y - thumb / 2
+  if rel < 0 then
+    rel = 0
+  end
+  if rel > usable then
+    rel = usable
+  end
+  editor_ux_clamp_scroll_offset(rel * max_scroll / usable, content_height, viewport_height)
+end
+
+// Map pointer X along content scrollbar track → scroll_offset_x.
+export fn editor_ux_content_scrollbar_scroll_at_x(
+  pointer_x: i32,
+  text_rect: Rect,
+  content_width: i32,
+  viewport_width: i32
+) -> i32 = do
+  const track = editor_ux_content_scrollbar_track_x(text_rect)
+  if content_width <= track.width || track.width <= 0 then
+    return 0
+  end
+  let mut thumb = track.width * track.width / content_width
+  if thumb < 12 then
+    thumb = 12
+  end
+  if thumb > track.width then
+    thumb = track.width
+  end
+  let mut max_scroll = content_width - track.width
+  if max_scroll < 1 then
+    max_scroll = 1
+  end
+  let mut usable = track.width - thumb
+  if usable < 1 then
+    usable = 1
+  end
+  let mut rel = pointer_x - track.x - thumb / 2
+  if rel < 0 then
+    rel = 0
+  end
+  if rel > usable then
+    rel = usable
+  end
+  editor_ux_clamp_scroll_offset_x(rel * max_scroll / usable, content_width, viewport_width)
+end

@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_HORIZONTAL_SCROLLBAR](../archive/tracks/TRACK_EDITOR_H
 (§60) / [TRACK_EDITOR_CONTENT_SCROLLBAR](../archive/tracks/TRACK_EDITOR_CONTENT_SCROLLBAR.md)
 (§46 #33e). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Helpers + demo wire; green stable.
+**STEP=3** — Critic: stable + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -28,7 +28,7 @@ Residual of [TRACK_EDITOR_HORIZONTAL_SCROLLBAR](../archive/tracks/TRACK_EDITOR_H
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: no thumb drag | **done** |
-| 2 | Helpers + demo wire; green | open |
+| 2 | Helpers + demo wire; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves thumbs drawn; no scroll-from-thumb-drag helper -->

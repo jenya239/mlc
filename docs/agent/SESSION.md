@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:56 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_DRAG STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 17:52 |
+| elapsed | ~5 min |
+| done    | `content_scrollbar_scroll_at_y/x` + track helpers; demo press/drag wire; scenario + stable green |
+| verify  | stable EXIT=0 `ux_ok scrollbar_thumb_drag_stable`; red EXIT=1 post-green; content/horizontal stables; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 17:52 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_DRAG STEP=1)
 
 | field   | value |
