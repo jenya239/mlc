@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §84.
 Residual of [TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX.md)
 (§83) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert overflow helpers still call `line_index_from_document`; stable stub `not implemented`.
+**STEP=2** — Pass frame `LineIndex` into overflow helpers; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: overflow path reuses frame `LineIndex` |
+| 0 | `93490972` | Decision: overflow path reuses frame `LineIndex` |
+| 1 | (this) | Red: ≥1 `line_index_from_document` in `overflow.mlc`; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX](../archive/tracks/TR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: overflow still re-stringifies | pending |
+| 1 | Red: overflow still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts ≥1 line_index_from_document in overflow.mlc; 2) stable stub; 3) docs -->
 <!-- STEP=2 sub-steps: 1) LineIndex param on collect/refresh (+ content_rect); 2) wire draw_frame + scenarios; 3) green stable -->
 
 ## Out of scope

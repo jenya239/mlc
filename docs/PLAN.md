@@ -479,7 +479,7 @@ compiler/
 | **81** | Editor scroll reuses frame LineIndex (§80 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md) |
 | **82** | Editor selection reuses frame LineIndex (§81 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md) |
 | **83** | Editor goto-line reuses frame LineIndex (§82 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX.md) |
-| **84** | Editor overflow reuses frame LineIndex (§83 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX.md) |
+| **84** | Editor overflow reuses frame LineIndex (§83 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
