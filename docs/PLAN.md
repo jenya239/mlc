@@ -454,7 +454,7 @@ compiler/
 | **56** | Editor multi-caret draw + blink (§55 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW](archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md) |
 | **57** | Editor idle multi-caret paint overlay (§56 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md) |
 | **58** | Editor wrap hit-test respects scroll_x (§46 #17 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X](archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md) |
-| **59** | Editor text draw respects scroll_x (§58 residual) | **active** — STEP=0 frozen → Driver STEP=1 | [TRACK_EDITOR_TEXT_DRAW_SCROLL_X](agent/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md) |
+| **59** | Editor text draw respects scroll_x (§58 residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_TEXT_DRAW_SCROLL_X](agent/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -780,7 +780,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_WRAP_HIT_SCROLL_X (§58, **closed** 2026-07-24: Critic OK; STEP=0–3;
       wrap pixel hit + scroll_offset_x; `e00cc359`…`c35bbb67`;
       → [archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md](archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md))**
-  → **EDITOR_TEXT_DRAW_SCROLL_X (§59, active: STEP=0 frozen → Driver STEP=1;
+  → **EDITOR_TEXT_DRAW_SCROLL_X (§59, active: STEP=1 red done → Driver STEP=2;
       §58 residual — glyph/caret/selection draw ignore scroll_offset_x;
       → [agent/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md](agent/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md))**
 ```

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:51 (Driver TRACK_EDITOR_TEXT_DRAW_SCROLL_X STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+| started | 2026-07-24 12:50 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_text_draw_scroll_x_red.sh` + failing stable stub; proves syntax/caret/fill use `text_rect.x + 4` without scroll_x |
+| verify  | `ux_ok text_draw_scroll_x_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+
 ### Turn 2026-07-24 12:48 (Planner PLAN → §59)
 
 | field   | value |
