@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 19:10 (Driver TRACK_EDITOR_DISCARD_DANGER_THEME STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DISCARD_DANGER_THEME |
+| started | 2026-07-24 19:05 |
+| elapsed | ~5 min |
+| done    | Theme.danger_* on light/dark; discard draw → `theme.danger_*`; stable green; overlay stable asserts theme.danger_; theme_unit danger check |
+| verify  | `ux_ok discard_danger_theme_stable`; `ux_ok overlay_theme_tint_stable`; red EXIT=1; `demo_live_fs_compile_ok` |
+| result  | STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (`*_red` post-green by design) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_DISCARD_DANGER_THEME |
+
 ### Turn 2026-07-24 19:05 (Driver TRACK_EDITOR_DISCARD_DANGER_THEME STEP=1)
 
 | field   | value |
