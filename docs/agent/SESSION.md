@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:08 (Driver TRACK_EDITOR_SCROLLBAR_THEME_TINT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SCROLLBAR_THEME_TINT |
+| started | 2026-07-24 18:06 |
+| elapsed | ~2 min |
+| done    | Folder + content Y/X thumbs draw `theme.muted_*`; L0 stable green |
+| verify  | stable EXIT=0 `ux_ok scrollbar_theme_tint_stable`; red EXIT=1 post-green; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SCROLLBAR_THEME_TINT |
+
 ### Turn 2026-07-24 18:06 (Driver TRACK_EDITOR_SCROLLBAR_THEME_TINT STEP=1)
 
 | field   | value |

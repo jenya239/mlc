@@ -2003,7 +2003,7 @@ fn main() -> i32 = do
         solid = solid_renderer_rect(
           solid, width, height,
           thumb.x, thumb.y, thumb.width, thumb.height,
-          0.45, 0.48, 0.55, 1.0
+          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
         )
       end
     end
@@ -2233,7 +2233,7 @@ fn main() -> i32 = do
       solid = solid_renderer_rect(
         solid, width, height,
         content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height,
-        0.45, 0.48, 0.55, 1.0
+        theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
       )
     end
     // horizontal_scrollbar: bottom thumb when content wider than viewport
@@ -2250,7 +2250,7 @@ fn main() -> i32 = do
       solid = solid_renderer_rect(
         solid, width, height,
         content_thumb_x.x, content_thumb_x.y, content_thumb_x.width, content_thumb_x.height,
-        0.45, 0.48, 0.55, 1.0
+        theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
       )
     end
     if minimap_enabled != 0 then
