@@ -5,17 +5,18 @@ Residual of [TRACK_EDITOR_NAV_CRUMB_HOVER](../archive/tracks/TRACK_EDITOR_NAV_CR
 (§69) / [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
 (§46 #32). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert content/folder thumbs draw flat `theme.muted_*` without `chrome_hover_draw_entry`; stable stub `not implemented`.
+**STEP=2** — Wire `chrome_hover_draw_entry` for content/folder thumbs; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: thumb hover via chrome_hover |
+| 0 | `c6edcfc2` | Decision: thumb hover via chrome_hover |
+| 1 | (this) | Red/stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -33,7 +34,7 @@ Residual of [TRACK_EDITOR_NAV_CRUMB_HOVER](../archive/tracks/TRACK_EDITOR_NAV_CR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: flat muted thumbs | pending |
+| 1 | Red: flat muted thumbs | **done** |
 | 2 | Wire chrome_hover; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 

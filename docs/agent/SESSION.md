@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:25 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_HOVER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+| started | 2026-07-25 01:20 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_scrollbar_thumb_hover_red.sh` + stable stub `not implemented`; asserts flat muted thumbs |
+| verify  | `ux_ok scrollbar_thumb_hover_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+
 ### Turn 2026-07-25 01:20 (Planner plan-refresh → §71)
 
 | field   | value |
