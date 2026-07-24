@@ -652,6 +652,7 @@ export fn wrap_offset_at_point_pixel(
   text_origin_x: i32,
   text_origin_y: i32,
   scroll_offset_y: i32,
+  scroll_offset_x: i32,
   line_height: i32,
   pixel_x: i32,
   pixel_y: i32
@@ -665,7 +666,7 @@ export fn wrap_offset_at_point_pixel(
     content_y = 0
   end
   const visual_target = content_y / row_height
-  let mut content_x = pixel_x - text_origin_x
+  let mut content_x = pixel_x - text_origin_x + scroll_offset_x
   if content_x < 0 then
     content_x = 0
   end
@@ -777,6 +778,7 @@ export fn wrap_offset_at_point(
   text_origin_x: i32,
   text_origin_y: i32,
   scroll_offset_y: i32,
+  scroll_offset_x: i32,
   line_height: i32,
   char_width: i32,
   pixel_x: i32,
@@ -795,7 +797,7 @@ export fn wrap_offset_at_point(
     content_y = 0
   end
   const visual_target = content_y / row_height
-  let mut content_x = pixel_x - text_origin_x
+  let mut content_x = pixel_x - text_origin_x + scroll_offset_x
   if content_x < 0 then
     content_x = 0
   end

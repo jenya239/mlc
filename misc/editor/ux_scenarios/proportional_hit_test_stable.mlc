@@ -55,7 +55,7 @@ fn main() -> i32 = do
   // Full-line click path (no wrap): pixel hit at advance_x → prefix_end.
   const pixel_hit = wrap_offset_at_point_pixel(
     line, line_index, 4000, font_path, pixel_size,
-    0, 0, 0, 16, advance_x, 0
+    0, 0, 0, 0, 16, advance_x, 0
   )
   if pixel_hit != prefix_end then
     println("ux_fail proportional_hit_test_stable wrap_pixel")

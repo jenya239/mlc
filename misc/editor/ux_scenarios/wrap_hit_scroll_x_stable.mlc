@@ -1,0 +1,43 @@
+// TRACK_EDITOR_WRAP_HIT_SCROLL_X STEP=2 —
+// Same screen x → different byte when scroll_offset_x differs.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import { wrap_offset_at_point_pixel } from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail wrap_hit_scroll_x_stable char_width")
+    return 1
+  end
+
+  const line = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"
+  const line_index = line_index_from_string(line)
+  const viewport_width = char_width * 80
+  const line_height = 16
+  const screen_x = char_width * 4
+  const screen_y = 0
+
+  const hit_zero = wrap_offset_at_point_pixel(
+    line, line_index, viewport_width, font_path, pixel_size,
+    0, 0, 0, 0, line_height, screen_x, screen_y
+  )
+  const hit_scrolled = wrap_offset_at_point_pixel(
+    line, line_index, viewport_width, font_path, pixel_size,
+    0, 0, 0, char_width * 4, line_height, screen_x, screen_y
+  )
+  if hit_zero == hit_scrolled then
+    println("ux_fail wrap_hit_scroll_x_stable same_byte")
+    return 2
+  end
+  if hit_scrolled <= hit_zero then
+    println("ux_fail wrap_hit_scroll_x_stable not_advanced")
+    return 3
+  end
+
+  println("ux_ok wrap_hit_scroll_x_stable")
+  0
+end

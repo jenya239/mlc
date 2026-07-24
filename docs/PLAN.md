@@ -453,7 +453,7 @@ compiler/
 | **55** | Editor multi-cursor selection visual fills (§54 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md) |
 | **56** | Editor multi-caret draw + blink (§55 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW](archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md) |
 | **57** | Editor idle multi-caret paint overlay (§56 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md) |
-| **58** | Editor wrap hit-test respects scroll_x (§46 #17 residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_WRAP_HIT_SCROLL_X](agent/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md) |
+| **58** | Editor wrap hit-test respects scroll_x (§46 #17 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_WRAP_HIT_SCROLL_X](agent/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -776,8 +776,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_IDLE_MULTI_CARET_OVERLAY (§57, **closed** 2026-07-24: Critic OK; STEP=0–3;
       idle multi-caret paint overlay; `22339446`…`f61f51e3`;
       → [archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md](archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md))**
-  → **EDITOR_WRAP_HIT_SCROLL_X (§58, active: STEP=0 frozen → Driver STEP=1;
-      §46 #17 residual — wrap pixel hit ignores scroll_offset_x;
+  → **EDITOR_WRAP_HIT_SCROLL_X (§58, active: STEP=2 done → Critic STEP=3;
+      `scroll_offset_x` on wrap pixel hit + demo wire; `ux_ok wrap_hit_scroll_x_stable`;
       → [agent/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md](agent/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md))**
 ```
 

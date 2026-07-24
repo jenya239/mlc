@@ -38,6 +38,7 @@ fn main() -> i32 = do
     0,
     0,
     0,
+    0,
     line_height,
     char_width,
     0,

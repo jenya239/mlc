@@ -85,7 +85,7 @@ fn main() -> i32 = do
 
   const hit = wrap_offset_at_point(
     hard_text, hard_index, 4,
-    0, 0, 0,
+    0, 0, 0, 0,
     20, 10,
     0, 0
   )

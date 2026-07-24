@@ -1281,7 +1281,7 @@ fn main() -> i32 = do
           editor_focused = 1
           const click_offset = wrap_offset_at_point_pixel(
             draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-            text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
+            text_rect.x + 4, text_rect.y + 2, scroll_offset_y, app.ux.scroll_offset_x,
             metrics.line_height,
             input.mouse_x, input.mouse_y
           )
