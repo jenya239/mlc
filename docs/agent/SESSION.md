@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:20 (Driver TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+| started | 2026-07-25 04:15 |
+| elapsed | ~10 min |
+| done    | `minimap_span_cache` full-buffer tick; L2 green; syntax_tags stable accepts cache; demo_live compiles |
+| verify  | stable EXIT=0; red EXIT=1; syntax/width/syntax_cache EXIT=0; `demo_live_fs_compile_ok` |
+| result  | §78 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 04:10 (Driver TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=1)
 
 | field   | value |

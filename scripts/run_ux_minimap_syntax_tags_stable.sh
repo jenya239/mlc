@@ -15,8 +15,8 @@ if ! grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -q 
   exit 1
 fi
 
-if ! grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -q 'highlight_mlc'; then
-  echo "[ux minimap_syntax_tags_stable] FAIL: minimap missing full-buffer highlight_mlc" >&2
+if ! grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -qE 'highlight_mlc|minimap_span_cache'; then
+  echo "[ux minimap_syntax_tags_stable] FAIL: minimap missing full-buffer highlight spans" >&2
   exit 1
 fi
 

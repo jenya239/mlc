@@ -5,18 +5,19 @@ Residual of [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITOR
 (§77) / [TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](../archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md)
 (§74). Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Cache wire on minimap rebuild; green stable.
+**STEP=3** — Critic: stable×2 + `run_ux_gate`; close.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | bbff3983 | Decision: cache full-buffer spans for minimap rebuild |
-| 1 | (this) | Red harness + stable stub `not implemented` |
+| 1 | 60ee67b4 | Red harness + stable stub `not implemented` |
+| 2 | (this) | `minimap_span_cache` wire + L2 green |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -35,7 +36,7 @@ Residual of [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITOR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: bare `highlight_mlc` on minimap rebuild | **done** |
-| 2 | Cache wire; green | pending |
+| 2 | Cache wire; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
 ## Out of scope

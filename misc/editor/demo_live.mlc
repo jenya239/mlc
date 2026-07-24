@@ -220,7 +220,7 @@ import {
   edit_cut,
   edit_paste
 } from './document/clipboard_edit'
-import { HighlightSpan, highlight_mlc } from './syntax/highlighter'
+import { HighlightSpan } from './syntax/highlighter'
 import {
   editor_ux_syntax_span_cache_new,
   editor_ux_syntax_span_cache_tick
@@ -772,6 +772,7 @@ fn main() -> i32 = do
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
   let mut syntax_span_cache = editor_ux_syntax_span_cache_new()
+  let mut minimap_span_cache = editor_ux_syntax_span_cache_new()
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut wrap_count_cache = wrap_count_cache_new_pixel(
@@ -2565,7 +2566,10 @@ fn main() -> i32 = do
           minimap_cached_font_size != zoom_font_size then
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
-        const minimap_spans = highlight_mlc(draw_text)
+        minimap_span_cache = editor_ux_syntax_span_cache_tick(
+          minimap_span_cache, draw_text, 0, draw_text.byte_size()
+        )
+        const minimap_spans = minimap_span_cache.spans
         let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
         if map_line_count < 1 then
