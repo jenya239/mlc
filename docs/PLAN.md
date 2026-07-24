@@ -474,6 +474,7 @@ compiler/
 | **76** | Editor minimap strip width × font zoom (§75 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM](archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM.md) |
 | **77** | Editor syntax highlight span cache (§76 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](archive/tracks/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE.md) |
 | **78** | Editor minimap highlight span cache (§77 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE](archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE.md) |
+| **79** | Editor shared full-buffer syntax span cache (§78 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE](agent/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -859,6 +860,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_MINIMAP_HIGHLIGHT_CACHE (§78, **closed** 2026-07-25: Critic OK; STEP=0–3;
       cache full-buffer spans for minimap rebuild; `bbff3983`…`4848ccdb`;
       → [archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE.md](archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE.md))**
+  → **EDITOR_SHARED_SYNTAX_SPAN_CACHE (§79, open STEP=1 next:
+      one full-buffer cache for paint+minimap; [TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE](agent/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE.md))**
 ```
 
 

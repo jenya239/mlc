@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:40 (Planner plan-refresh → §79)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 04:35 |
+| elapsed | ~5 min |
+| done    | Opened §79 `TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE`: Decision — one full-buffer cache for paint+minimap; §78 residual |
+| verify  | dual caches: visible-range tick (~2107) + minimap full-buffer (~2569) |
+| result  | §79 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+
 ### Turn 2026-07-25 04:30 (Critic TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE)
 
 | field   | value |
