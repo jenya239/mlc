@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 03:05 (Planner plan-refresh → §76)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 03:00 |
+| elapsed | ~5 min |
+| done    | Opened §76 `TRACK_EDITOR_MINIMAP_WIDTH_ZOOM`: Decision — `width_for_font` + zoom-aware layout; #35 residual after §75 |
+| verify  | strip width still fixed 64 |
+| result  | §76 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP_WIDTH_ZOOM |
+
 ### Turn 2026-07-25 03:00 (Critic TRACK_EDITOR_MINIMAP_ZOOM_SCALE)
 
 | field   | value |
