@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:22 (Planner PLAN — idle reconfirm)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 12:20 |
+| elapsed | ~3 min |
+| done    | Reconfirm idle after §57: agent TRACK_* = 5 gated/done; no ungated Driver TRACK. Critic residual none material; full-frame idle reshape stays deferred (§57 Decision OOS, needs user auth). Gated unchanged: SCRIPT_VM, MIR Epic5, LANG_AUTO_CYCLE |
+| verify  | Probe: §52–§57 closed; UX backlog #1…#38 done; agent TRACK_* = 5; SESSION ~453+15 |
+| result  | idle; no Driver work |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (idle: authorized queue empty; no Driver until user authorizes gated item or new residual) |
+
 ### Turn 2026-07-24 12:20 (Critic TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY)
 
 | field   | value |
