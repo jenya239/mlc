@@ -115,9 +115,10 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX` (PLAN §83)** | **closed** 2026-07-25 (Critic OK). Archived. Goto-line reuses frame LineIndex. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX` (PLAN §84)** | **closed** 2026-07-25 (Critic OK). Archived. Overflow reuses frame LineIndex. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX` (PLAN §85)** | **closed** 2026-07-25 (Critic OK). Archived. Probe snapshot reuses frame LineIndex. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (PLAN §86)** | **open** STEP=1 next. Snapshot `document_text` from `line_index.text` (§85 residual). Size S |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | empty → Planner plan-refresh — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
+| **Authorized queue** | **§86** Driver STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
