@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:20 (Driver TRACK_EDITOR_PROPORTIONAL_HIT_TEST STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+| started | 2026-07-24 10:20 |
+| elapsed | ~3 min |
+| done    | Red harness: `run_ux_proportional_hit_test_red.sh` + failing stable stub; proves `wrap_offset_at_point` mono cell + demo caret `char_width` (no pixel hit API) |
+| verify  | `ux_ok proportional_hit_test_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+
 ### Turn 2026-07-24 10:18 (Planner PLAN → §53)
 
 | field   | value |
