@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 13:22 (Planner PLAN → §60)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 13:19 |
+| elapsed | ~3 min |
+| done    | Break idle: open §60 `TRACK_EDITOR_HORIZONTAL_SCROLLBAR` — §59/#33e residual (vertical thumb only; no bottom thumb for `scroll_offset_x`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `editor_ux_content_scrollbar_thumb` Y-only; Shift+wheel uses content_width; no `run_ux_horizontal_scrollbar_*`; agent TRACK_* = 6; SESSION ~273+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok horizontal_scrollbar_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+
 ### Turn 2026-07-24 13:18 (Planner PLAN — idle + SESSION archive)
 
 | field   | value |
