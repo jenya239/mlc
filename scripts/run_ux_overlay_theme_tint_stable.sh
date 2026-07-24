@@ -50,9 +50,9 @@ if ! grep -A6 'nav_forward_rect.x, nav_forward_rect.y' "$DEMO" | grep -q 'theme.
   exit 1
 fi
 
-# Discard danger red kept intentionally.
-if ! grep -q '0.55, 0.22, 0.22' "$DEMO"; then
-  echo "[ux overlay_theme_tint_stable] FAIL: discard danger red missing" >&2
+# Discard danger follows Theme (§67).
+if ! grep -A12 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
+  echo "[ux overlay_theme_tint_stable] FAIL: discard missing theme.danger_" >&2
   exit 1
 fi
 

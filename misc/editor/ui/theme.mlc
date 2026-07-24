@@ -47,7 +47,10 @@ export type Theme = {
   type_blue: f64,
   operator_red: f64,
   operator_green: f64,
-  operator_blue: f64
+  operator_blue: f64,
+  danger_red: f64,
+  danger_green: f64,
+  danger_blue: f64
 }
 
 export type ThemeRgb = {
@@ -120,7 +123,11 @@ export fn theme_solarized_light() -> Theme =
     // base00 #657b83
     operator_red: 0.396,
     operator_green: 0.482,
-    operator_blue: 0.514
+    operator_blue: 0.514,
+    // discard / danger button
+    danger_red: 0.55,
+    danger_green: 0.22,
+    danger_blue: 0.22
   }
 
 export fn theme_default() -> Theme =
@@ -199,5 +206,8 @@ export fn theme_editor_dark() -> Theme =
     type_blue: 0.35,
     operator_red: 0.70,
     operator_green: 0.72,
-    operator_blue: 0.75
+    operator_blue: 0.75,
+    danger_red: 0.55,
+    danger_green: 0.22,
+    danger_blue: 0.22
   }

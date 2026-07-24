@@ -47,6 +47,9 @@ fn main() -> i32 = do
   if !near(theme.gutter_red, theme.panel_red) then
     return 9
   end
+  if !near(theme.danger_red, 0.55) || !near(theme.danger_green, 0.22) then
+    return 15
+  end
 
   const keyword = theme_rgb_for_tag(theme, "keyword")
   if !near(keyword.red, theme.keyword_red) then

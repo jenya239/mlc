@@ -2300,7 +2300,7 @@ fn main() -> i32 = do
       )
       solid = solid_renderer_rect(
         solid, width, height, width / 2 - 120, height / 2 + 20, 100, 28,
-        0.55, 0.22, 0.22, 1.0
+        theme.danger_red, theme.danger_green, theme.danger_blue, 1.0
       )
       solid = solid_renderer_rect(
         solid, width, height, width / 2 + 20, height / 2 + 20, 100, 28,
