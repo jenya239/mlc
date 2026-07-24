@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:38 (Driver TRACK_EDITOR_HORIZONTAL_SCROLLBAR STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+| started | 2026-07-24 17:36 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_horizontal_scrollbar_red.sh` + failing stable stub; proves vertical thumb only, no X helper in demo/scroll |
+| verify  | `ux_ok horizontal_scrollbar_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+
 ### Turn 2026-07-24 13:22 (Planner PLAN → §60)
 
 | field   | value |
