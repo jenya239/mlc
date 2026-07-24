@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:48 (Planner PLAN → §59)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 12:47 |
+| elapsed | ~3 min |
+| done    | Break idle: open §59 `TRACK_EDITOR_TEXT_DRAW_SCROLL_X` — §58 residual (syntax/caret/selection draw at `text_rect.x+4` without `- scroll_offset_x`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `editor_ux_append_syntax_colored_row` / caret / fill use `text_rect.x + 4` only; no `run_ux_text_draw_scroll_x_*`; agent TRACK_* = 6; SESSION ~528+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok text_draw_scroll_x_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+
 ### Turn 2026-07-24 12:42 (Critic TRACK_EDITOR_WRAP_HIT_SCROLL_X)
 
 | field   | value |

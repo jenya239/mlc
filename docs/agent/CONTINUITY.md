@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** (authorized queue empty after §58 close). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58 done.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_TEXT_DRAW_SCROLL_X` STEP=1. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58 done; §59 STEP=0 frozen.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -88,6 +88,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_MULTI_CARET_DRAW` (PLAN §56)** | **closed** 2026-07-24 (Critic OK). Archived. Multi-caret draw + blink. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY` (PLAN §57)** | **closed** 2026-07-24 (Critic OK). Archived. Idle multi-caret paint overlay. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAP_HIT_SCROLL_X` (PLAN §58)** | **closed** 2026-07-24 (Critic OK). Archived. Wrap pixel hit + scroll_offset_x. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_TEXT_DRAW_SCROLL_X` (PLAN §59)** | **active** — STEP=0 frozen → Driver STEP=1. §58 residual: glyph/caret/selection draw ignore scroll_offset_x |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
 | **Authorized queue** | empty after §58 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
