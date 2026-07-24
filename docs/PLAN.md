@@ -761,7 +761,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       advance-sum hit/caret/selection; `a2424a12`…`6a1b1ce9`;
       → [archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md](archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md))**
   → **EDITOR_WRAP_SELECTION_VISUAL (§54, active: STEP=2 done → Critic STEP=3;
-      visual-row selection fill; `4ddb3c3c`…`0940ddd6`;
+      visual-row selection fill; `4ddb3c3c`…`33fcee28`;
       → [agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md](agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md))**
 ```
 
