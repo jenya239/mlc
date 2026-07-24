@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:45 (Critic TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT |
+| started | 2026-07-24 18:37 |
+| elapsed | ~8 min |
+| done    | Critic OK: stable×2 + scrollbar/overlay tint + demo_live compile + `run_ux_gate` 80; archive §65 |
+| verify  | `minimap_indicator_theme_tint_stable` EXIT=0 ×2; related tint stables EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (80 scenarios)` |
+| result  | §65 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 18:42 (Driver TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT STEP=2)
 
 | field   | value |
