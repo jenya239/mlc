@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:30 (Driver TRACK_EDITOR_OVERLAY_THEME_TINT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_OVERLAY_THEME_TINT |
+| started | 2026-07-24 18:25 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_overlay_theme_tint_red.sh` + failing stable stub; proves dark RGB at dirty-close/menu/nav |
+| verify  | `ux_ok overlay_theme_tint_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_OVERLAY_THEME_TINT |
+
 ### Turn 2026-07-24 18:28 (Planner PLAN → §64)
 
 | field   | value |
