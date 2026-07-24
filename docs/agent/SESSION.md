@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:10 (Driver TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+| started | 2026-07-25 02:05 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_dirty_close_button_hover_red.sh` + stable stub `not implemented`; gap = flat danger/accent button fills |
+| verify  | red EXIT=0 `ux_ok dirty_close_button_hover_red`; stable EXIT=1 `not implemented` |
+| result  | §73 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+
 ### Turn 2026-07-25 02:05 (Planner plan-refresh → §73)
 
 | field   | value |

@@ -6,17 +6,18 @@ Residual of [TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](../archive/tracks/TRACK_EDITO
 (§46 #32) / [TRACK_EDITOR_DISCARD_DANGER_THEME](../archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md)
 (§67). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert discard/cancel draw flat `theme.danger_*` / `theme.accent_*` without `chrome_hover_draw_entry`; stable stub `not implemented`.
+**STEP=2** — Wire `editor_ux_chrome_hover_draw_entry` (danger base discard, accent base cancel); green `dirty_close_button_hover_stable`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: dirty-close buttons via chrome_hover |
+| 0 | e6d88360 | Decision: dirty-close buttons via chrome_hover |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,7 +35,7 @@ Residual of [TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](../archive/tracks/TRACK_EDITO
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: flat danger/accent button fills | pending |
+| 1 | Red: flat danger/accent button fills | **done** |
 | 2 | Wire chrome_hover; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
