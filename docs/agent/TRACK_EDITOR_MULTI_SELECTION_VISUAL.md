@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §55.
 Residual of [TRACK_EDITOR_WRAP_SELECTION_VISUAL](../archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md)
 (§54 Decision OOS). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Implement multi-range visual fills; green stable.
+**STEP=3** — Critic: stable + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_WRAP_SELECTION_VISUAL](../archive/tracks/TRACK_EDITOR_
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: no multi-selection visual script | **done** |
-| 2 | Implement multi-range visual fills; green | open |
+| 2 | Implement multi-range visual fills; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves stable script missing or documents gap -->

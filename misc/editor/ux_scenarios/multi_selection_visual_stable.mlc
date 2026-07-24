@@ -1,0 +1,82 @@
+// TRACK_EDITOR_MULTI_SELECTION_VISUAL STEP=2 —
+// Two non-empty ranges → ≥2 fill span groups via selection_fill_visual_rows.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  visual_rows_for_line_pixel_budget,
+  selection_fill_visual_rows
+} from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+import {
+  selection_new,
+  selection_start,
+  selection_end,
+  selection_is_empty
+} from '../document/selection'
+import {
+  multi_selection_from_single,
+  multi_selection_count,
+  EditorMultiSelection
+} from '../document/multi_selection'
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail multi_selection_visual_stable char_width")
+    return 1
+  end
+
+  const line = "AAAAAAAA AAAAAAAA BBBBBBBB BBBBBBBB\n"
+  const line_index = line_index_from_string(line)
+  const viewport_width = char_width * 40
+  const rows = visual_rows_for_line_pixel_budget(
+    line, line_index, 0, viewport_width, font_path, pixel_size
+  )
+  if rows.length() < 1 then
+    println("ux_fail multi_selection_visual_stable rows")
+    return 2
+  end
+
+  // Two disjoint non-empty ranges (same shape as multi.selections).
+  const first = selection_new(0, 4)
+  const second = selection_new(16, 20)
+  let mut multi = multi_selection_from_single(first)
+  let mut selections = multi.selections
+  selections.push(second)
+  multi = EditorMultiSelection {
+    selections: selections,
+    primary_index: 0
+  }
+
+  if multi_selection_count(multi) < 2 then
+    println("ux_fail multi_selection_visual_stable count")
+    return 3
+  end
+
+  let mut fill_groups = 0
+  let mut multi_index = 0
+  while multi_index < multi_selection_count(multi) do
+    const range_sel = multi.selections[multi_index]
+    if !selection_is_empty(range_sel) then
+      const spans = selection_fill_visual_rows(
+        line, rows,
+        selection_start(range_sel), selection_end(range_sel),
+        font_path, pixel_size
+      )
+      if spans.length() > 0 then
+        fill_groups = fill_groups + 1
+      end
+    end
+    multi_index = multi_index + 1
+  end
+
+  if fill_groups < 2 then
+    println("ux_fail multi_selection_visual_stable groups")
+    return 4
+  end
+
+  println("ux_ok multi_selection_visual_stable")
+  0
+end

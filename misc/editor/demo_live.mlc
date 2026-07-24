@@ -2049,28 +2049,34 @@ fn main() -> i32 = do
       end
     end
 
-    if !selection_is_empty(selection) then
-      const range_start = selection_start(selection)
-      const range_end = selection_end(selection)
-      const fill_spans = selection_fill_visual_rows(
-        draw_text, visual_rows, range_start, range_end,
-        font_path, zoom_font_size
-      )
-      let mut span_index = 0
-      while span_index < fill_spans.length() do
-        const span = fill_spans[span_index]
-        const highlight_width = span.x1 - span.x0
-        if highlight_width > 0 then
-          solid = solid_renderer_rect(
-            solid, width, height,
-            text_rect.x + 4 + span.x0,
-            text_rect.y + 2 + span.visual_row_index * metrics.line_height,
-            highlight_width, metrics.line_height,
-            theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
-          )
+    // multi_selection_fill: one visual-row fill pass per multi range
+    let mut multi_index = 0
+    while multi_index < multi_selection_count(multi) do
+      const range_sel = multi.selections[multi_index]
+      if !selection_is_empty(range_sel) then
+        const range_start = selection_start(range_sel)
+        const range_end = selection_end(range_sel)
+        const fill_spans = selection_fill_visual_rows(
+          draw_text, visual_rows, range_start, range_end,
+          font_path, zoom_font_size
+        )
+        let mut span_index = 0
+        while span_index < fill_spans.length() do
+          const span = fill_spans[span_index]
+          const highlight_width = span.x1 - span.x0
+          if highlight_width > 0 then
+            solid = solid_renderer_rect(
+              solid, width, height,
+              text_rect.x + 4 + span.x0,
+              text_rect.y + 2 + span.visual_row_index * metrics.line_height,
+              highlight_width, metrics.line_height,
+              theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
+            )
+          end
+          span_index = span_index + 1
         end
-        span_index = span_index + 1
       end
+      multi_index = multi_index + 1
     end
 
     const caret_position = line_index_offset_to_position(

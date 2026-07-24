@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:14 (Driver TRACK_EDITOR_MULTI_SELECTION_VISUAL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MULTI_SELECTION_VISUAL |
+| started | 2026-07-24 11:14 |
+| elapsed | ~8 min |
+| done    | demo_live `multi_selection_fill` loop over `multi.selections`; scenario `multi_selection_visual_stable` |
+| verify  | `ux_ok multi_selection_visual_stable`; `demo_live_fs_compile_ok`; `wrap_selection_visual_stable` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_MULTI_SELECTION_VISUAL |
+
 ### Turn 2026-07-24 11:11 (Driver TRACK_EDITOR_MULTI_SELECTION_VISUAL STEP=1)
 
 | field   | value |

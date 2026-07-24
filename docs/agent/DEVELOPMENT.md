@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55) STEP=2.
-**`TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55)** **active** — STEP=1 red done → Driver STEP=2.
+**Queue head:** Critic `TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55) STEP=3.
+**`TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55)** **active** — STEP=2 done → Critic STEP=3.
 **`TRACK_EDITOR_WRAP_SELECTION_VISUAL` (§54)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_PROPORTIONAL_HIT_TEST` (§53)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_WRAP_BUDGET_ADVANCE` (§52)** **closed** 2026-07-24 (Critic OK). Archived.
