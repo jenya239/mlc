@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 09:15 (Planner plan-refresh → §84)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 09:05 |
+| elapsed | ~5 min |
+| done    | Opened §84 `TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX`: Decision — overflow collect/refresh reuse frame `LineIndex`; §83 residual |
+| verify  | `content_rect_for_state` still calls `line_index_from_document`; probe deferred |
+| result  | §84 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 09:00 (Critic TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX)
 
 | field   | value |
