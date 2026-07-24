@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:11 (Driver TRACK_EDITOR_MULTI_SELECTION_VISUAL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MULTI_SELECTION_VISUAL |
+| started | 2026-07-24 11:11 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_multi_selection_visual_red.sh` + failing stable stub; proves `demo_live` fill uses primary `selection` only (no multi-range walk) |
+| verify  | `ux_ok multi_selection_visual_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MULTI_SELECTION_VISUAL |
+
 ### Turn 2026-07-24 11:06 (Planner PLAN → §55)
 
 | field   | value |
