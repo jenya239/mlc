@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 05:10 (Critic TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+| started | 2026-07-25 05:05 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + related gates + demo_live + `run_ux_gate` 94; archive §79 |
+| verify  | `shared_syntax_span_cache_stable` EXIT=0 ×2; syn/mini/syntax/cache EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (94 scenarios)` |
+| result  | §79 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 05:00 (Driver TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=2)
 
 | field   | value |
