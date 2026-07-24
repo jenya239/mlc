@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:20 (Planner plan-refresh → §71)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 01:15 |
+| elapsed | ~5 min |
+| done    | Opened §71 `TRACK_EDITOR_SCROLLBAR_THUMB_HOVER`: Decision — content Y/X + folder thumbs via `chrome_hover_draw_entry` (muted base); #32 residual |
+| verify  | thumbs still flat `theme.muted_*` without chrome_hover |
+| result  | §71 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+
 ### Turn 2026-07-25 01:15 (Critic TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN)
 
 | field   | value |
