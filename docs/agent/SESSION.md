@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:45 (Planner plan-refresh → §72)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 01:40 |
+| elapsed | ~5 min |
+| done    | Opened §72 `TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER`: Decision — menu item rows via `chrome_hover_draw_entry` (muted base); #32 residual after §71 |
+| verify  | menu items still flat `theme.muted_*` without chrome_hover |
+| result  | §72 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+
 ### Turn 2026-07-25 01:40 (Critic TRACK_EDITOR_SCROLLBAR_THUMB_HOVER)
 
 | field   | value |
