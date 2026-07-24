@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:30 (Critic TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+| started | 2026-07-25 04:25 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + related gates + demo_live + `run_ux_gate` 93; archive §78 |
+| verify  | `minimap_highlight_cache_stable` EXIT=0 ×2; syn/syntax/width/cache EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (93 scenarios)` |
+| result  | §78 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 04:20 (Driver TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=2)
 
 | field   | value |
