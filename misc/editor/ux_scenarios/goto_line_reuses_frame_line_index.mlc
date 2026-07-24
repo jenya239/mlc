@@ -1,4 +1,4 @@
-// TRACK_EDITOR_GOTO_LINE STEP=1 — L1: goto line scrolls caret into view.
+// TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX STEP=2 — L2: goto helpers reuse LineIndex.
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
 import {
@@ -10,7 +10,10 @@ import {
   tab_set_new,
   tab_set_open
 } from '../workspace/tabs'
-import { selection_collapsed } from '../document/selection'
+import {
+  selection_collapsed,
+  selection_new
+} from '../document/selection'
 import {
   editor_ux_state_new,
   editor_ux_snapshot,
@@ -18,8 +21,10 @@ import {
 } from '../ux/probe'
 import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
-import { editor_ux_caret_in_viewport } from '../ux/scroll'
-import { editor_ux_goto_line } from '../ux/goto_line'
+import {
+  editor_ux_goto_line,
+  editor_ux_goto_line_from_selection
+} from '../ux/goto_line'
 import { line_index_from_string } from '../document/line_index'
 
 fn main() -> i32 = do
@@ -51,7 +56,7 @@ fn main() -> i32 = do
   }
 
   const metrics = editor_text_metrics_default()
-  let mut body = "L1"
+  let mut body = "30"
   let mut line = 2
   while line <= 40 do
     body = body + "\nL" + line.to_string()
@@ -60,23 +65,35 @@ fn main() -> i32 = do
   state = editor_ux_insert_text(state, body)
   const line_index = line_index_from_string(body)
 
-  // 1-based line 30 → 0-based line 29, column 0.
-  state = editor_ux_goto_line(state, metrics, 30, line_index)
-
+  state = editor_ux_goto_line(state, metrics, 10, line_index)
   let mut snapshot = editor_ux_snapshot(state)
-  if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
-    println("ux_fail goto caret line")
+  if ux_check_expect(snapshot, CaretAt(9, 0)).ok == 0 then
+    println("ux_fail goto_line_reuses_frame_line_index goto")
     return 1
   end
-  if snapshot.scroll_offset_y <= 0 then
-    println("ux_fail goto scroll_offset_y")
+
+  // Select "30" at start → from_selection jumps to line 30.
+  state = EditorUxState {
+    window_width: state.window_width,
+    window_height: state.window_height,
+    focus: state.focus,
+    panels: state.panels,
+    tabs: state.tabs,
+    selection: selection_new(0, 2),
+    scroll_offset_x: state.scroll_offset_x,
+    scroll_offset_y: state.scroll_offset_y,
+    cursor_shape: state.cursor_shape,
+    clock_ms: state.clock_ms,
+    tab_strip_height: state.tab_strip_height,
+    overflows: state.overflows
+  }
+  state = editor_ux_goto_line_from_selection(state, metrics, line_index)
+  snapshot = editor_ux_snapshot(state)
+  if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
+    println("ux_fail goto_line_reuses_frame_line_index from_selection")
     return 2
   end
-  if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
-    println("ux_fail goto caret not in viewport")
-    return 3
-  end
 
-  println("ux_ok goto_line_scrolls_caret")
+  println("ux_ok goto_line_reuses_frame_line_index")
   0
 end

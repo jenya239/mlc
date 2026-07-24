@@ -321,10 +321,11 @@ export fn editor_app_ensure_caret_visible(
 
 export fn editor_app_goto_line_from_selection(
   app: EditorAppState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorAppState =
   EditorAppState {
-    ux: editor_ux_goto_line_from_selection(app.ux, metrics),
+    ux: editor_ux_goto_line_from_selection(app.ux, metrics, line_index),
     history: app.history,
     clipboard: app.clipboard,
     overlay: app.overlay,

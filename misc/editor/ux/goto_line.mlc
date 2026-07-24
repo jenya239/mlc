@@ -2,11 +2,10 @@
 import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 import {
-  tab_set_has_active,
-  tab_set_active
+  tab_set_has_active
 } from '../workspace/tabs'
 import {
-  line_index_from_document,
+  LineIndex,
   line_index_line_count,
   line_index_line_start
 } from '../document/line_index'
@@ -85,13 +84,12 @@ end
 export fn editor_ux_goto_line(
   state: EditorUxState,
   metrics: EditorTextMetrics,
-  line_number_1based: i32
+  line_number_1based: i32,
+  line_index: LineIndex
 ) -> EditorUxState = do
   if !tab_set_has_active(state.tabs) then
     return state
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const line_count = line_index_line_count(line_index)
   if line_count <= 0 then
     return state
@@ -111,7 +109,8 @@ end
 // Seed line from non-empty digit selection; invalid/empty → no-op.
 export fn editor_ux_goto_line_from_selection(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorUxState = do
   if !tab_set_has_active(state.tabs) then
     return state
@@ -119,8 +118,6 @@ export fn editor_ux_goto_line_from_selection(
   if selection_is_empty(state.selection) then
     return state
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const range_start = selection_start(state.selection)
   const range_finish = selection_end(state.selection)
   const selected = line_index.text.byte_substring(
@@ -130,5 +127,5 @@ export fn editor_ux_goto_line_from_selection(
   if line_number < 0 then
     return state
   end
-  editor_ux_goto_line(state, metrics, line_number)
+  editor_ux_goto_line(state, metrics, line_number, line_index)
 end

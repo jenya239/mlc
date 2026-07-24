@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 08:45 (Driver TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 08:30 |
+| elapsed | ~15 min |
+| done    | Pass `LineIndex` into `editor_ux_goto_line` / `from_selection`; wire `app/state` + `demo_live`; scenario + green stable |
+| verify  | stable EXIT=0 `ux_ok goto_line_reuses_frame_line_index`; goto_line_scrolls_caret + selection_reuses + large_file EXIT=0 |
+| result  | §83 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 08:25 (Driver TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX STEP=1)
 
 | field   | value |

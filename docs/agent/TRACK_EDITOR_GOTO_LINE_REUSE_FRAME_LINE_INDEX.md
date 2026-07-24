@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §83.
 Residual of [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md)
 (§82) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Pass frame `LineIndex` into goto helpers; green stable.
+**STEP=3** — Critic: stable×2 + related + `demo_live_fs_compile` + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `0f6806e8` | Decision: goto-line path reuses frame `LineIndex` |
-| 1 | (this) | Red: ≥2 `line_index_from_document` in `goto_line.mlc`; stable stub |
+| 1 | `eb729639` | Red: ≥2 `line_index_from_document` in `goto_line.mlc`; stable stub |
+| 2 | (this) | Pass `LineIndex` into goto helpers; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](../archive/tracks/TR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: goto-line still re-stringifies | **done** |
-| 2 | Pass frame LineIndex; green | pending |
+| 2 | Pass frame LineIndex; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
-
-<!-- STEP=2 sub-steps: 1) LineIndex param on goto_line + from_selection; 2) wire app/demo/scenarios; 3) green stable -->
 
 ## Out of scope
 

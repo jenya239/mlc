@@ -1616,7 +1616,7 @@ fn main() -> i32 = do
           end
         | CmdGotoLine => do
             app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
-            app = editor_app_goto_line_from_selection(app, metrics)
+            app = editor_app_goto_line_from_selection(app, metrics, line_index)
             selection = app.ux.selection
             scroll_offset_y = app.ux.scroll_offset_y
           end
