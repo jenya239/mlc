@@ -751,7 +751,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_IDLE_CPU_BUDGET (§51, **closed** 2026-07-22: Critic OK; STEP=0–3;
       paint-only caret overlay + `/proc` CPU% ≤10; `9ed7c2c3`…`d9150fb0`;
       → [archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md](archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md))**
-  → **(idle 2026-07-22 after §51, reconfirmed)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
+  → **(idle 2026-07-24 after §51, reconfirmed)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
       LANG_AUTO_CYCLE gated; wrap-budget HarfBuzz residual deferred (needs user auth);
       no Driver work until new authorization
 ```
