@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:00 (Planner PLAN → §57)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 11:59 |
+| elapsed | ~3 min |
+| done    | Break idle: open §57 `TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY` — §56 residual (idle paint-only primary `last_caret_*` vs multi carets); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: idle path `Paint-only blink` uses only `last_caret_*`; no `run_ux_idle_multi_caret_overlay_*`; agent TRACK_* = 6; SESSION ~393+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok idle_multi_caret_overlay_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY |
+
 ### Turn 2026-07-24 11:55 (Critic TRACK_EDITOR_MULTI_CARET_DRAW)
 
 | field   | value |
