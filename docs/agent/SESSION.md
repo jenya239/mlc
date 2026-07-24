@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 03:25 (Critic TRACK_EDITOR_MINIMAP_WIDTH_ZOOM)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_MINIMAP_WIDTH_ZOOM |
+| started | 2026-07-25 03:20 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + minimap gates + demo_live + `run_ux_gate` 91; archive §76 |
+| verify  | `minimap_width_zoom_stable` EXIT=0 ×2; cache/zoom/syntax EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (91 scenarios)` |
+| result  | §76 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; per-frame rehighlight OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 03:15 (Driver TRACK_EDITOR_MINIMAP_WIDTH_ZOOM STEP=2)
 
 | field   | value |
