@@ -31,11 +31,5 @@ if ! grep -A25 'while hover_tab_index < tab_widths.length()' "$DEMO" | grep -q '
   exit 1
 fi
 
-# [title] mark kept.
-if ! grep -q 'draw_title = "\[" + draw_title + "\]"' "$DEMO"; then
-  echo "[ux active_tab_tint_stable] FAIL: [title] active text mark removed" >&2
-  exit 1
-fi
-
 echo "ux_ok active_tab_tint_stable"
 echo "[ux active_tab_tint_stable] ok" >&2

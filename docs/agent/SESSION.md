@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:05 (Driver TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN |
+| started | 2026-07-25 01:00 |
+| elapsed | ~5 min |
+| done    | Removed 3 `[title]` wraps; tightened red/stable regex; dropped bracket assert from `active_tab_tint_stable` |
+| verify  | `ux_ok active_tab_title_plain_stable`; `ux_ok active_tab_tint_stable`; red EXIT=1; `demo_live_fs_compile_ok` |
+| result  | STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (`*_red` post-green by design) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN |
+
 ### Turn 2026-07-25 01:00 (Driver TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN STEP=1)
 
 | field   | value |

@@ -12,7 +12,7 @@ if [ ! -f "$DEMO" ]; then
 fi
 
 # Gap: three active-title bracket wraps.
-bracket_count="$(grep -cE '= "\[" \+ .* \+ "\]"' "$DEMO" || true)"
+bracket_count="$(grep -cE '= "\[" \+ [a-z_]+ \+ "\]"' "$DEMO" || true)"
 if [ "$bracket_count" -lt 3 ]; then
   echo "[ux active_tab_title_plain_red] FAIL: expected ≥3 [title] wraps, got $bracket_count" >&2
   exit 1
