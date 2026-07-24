@@ -12,7 +12,8 @@ Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](TRACK_EDITOR_WRAPPED
 `minimap_rect` scissor; glyph batch still `content_clip`; no `editor_rect` solid
 scissor. `misc/editor/**` only → REG skip; no `compiler/`/`lib/mlc/`. **reopen: none**.
 
-Honest residual: wrap budget still uniform `char_width` (out of scope). Historical
+Honest residual: wrap budget still uniform `char_width` — **fixed** §52
+`TRACK_EDITOR_WRAP_BUDGET_ADVANCE`. Historical
 `run_ux_solid_pass_content_clip_red.sh` expects pre-wire demo_live and fails
 post-green — use `run_ux_solid_pass_content_clip_stable.sh` only.
 

@@ -12,7 +12,8 @@ HEAD `run_ux_gate` (65 scenarios). Anti-false-done: `d6168cb4`…`6a9cf56c` (STE
 (not `frame_index * 16`); paint-only keeps `frame_snapshot_cache_tick` dirty=0.
 `misc/editor/**` only → REG skip; no `compiler/`/`lib/mlc/`. **reopen: none**.
 
-Honest residual: wrap budget still uniform `char_width` (out of scope); live idle CPU
+Honest residual: wrap budget still uniform `char_width` — **fixed** §52
+`TRACK_EDITOR_WRAP_BUDGET_ADVANCE`; live idle CPU
 sample optional — **fixed** §51 `TRACK_EDITOR_IDLE_CPU_BUDGET`; Profile scopes only
 on dirty snapshot. Historical
 `run_ux_idle_caret_blink_red.sh` expects pre-wire demo_live and fails post-green — use

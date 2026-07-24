@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:05 (Critic TRACK_EDITOR_WRAP_BUDGET_ADVANCE)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+| started | 2026-07-24 09:58 |
+| elapsed | ~7 min |
+| done    | Close §52: re-ran stable ×2 + wrap_count_cache + demo compile + HEAD run_ux_gate (67); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok wrap_budget_advance_stable` ×2; `wrap_count_cache_stable`; `demo_live_fs_compile_ok`; `[ux gate] all ok (67 scenarios)`; anti-false-done `717a690d`…`af121425`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: proportional hit-test OOS; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-24 09:55 (Driver TRACK_EDITOR_WRAP_BUDGET_ADVANCE STEP=2)
 
 | field   | value |
