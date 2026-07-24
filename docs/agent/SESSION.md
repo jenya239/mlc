@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:20 (Driver TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 18:14 |
+| elapsed | ~6 min |
+| done    | `folder_scrollbar_track` + `folder_scrollbar_scroll_at_y`; demo press/drag (`scrollbar_drag=3`); green scenario + stable script |
+| verify  | `bash scripts/run_ux_folder_scrollbar_thumb_drag_stable.sh` → `ux_ok folder_scrollbar_thumb_drag_stable` EXIT=0 |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 18:15 (Driver TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG STEP=1)
 
 | field   | value |
