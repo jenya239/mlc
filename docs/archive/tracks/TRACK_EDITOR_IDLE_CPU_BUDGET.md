@@ -13,7 +13,8 @@ live `/proc` min-of-rounds CPU% ≤10 (boundary: fail only if `>` budget — Cri
 integer `==10` flake). `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual: wrap budget still uniform `char_width` (out of scope); Profile scopes only
+Honest residual: wrap budget still uniform `char_width` — **open** §52
+`TRACK_EDITOR_WRAP_BUDGET_ADVANCE` (2026-07-24). Profile scopes only
 on dirty snapshot. Historical `run_ux_idle_cpu_budget_red.sh` expects pre-wire stable stub
 and fails post-green — use `run_ux_idle_cpu_budget_stable.sh` only.
 

@@ -447,6 +447,7 @@ compiler/
 | **49** | Editor solid-pass content clip (minimap residual of §46 #37) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP](archive/tracks/TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP.md) |
 | **50** | Editor idle caret blink (#38 residual: blink freezes on idle early-out) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK](archive/tracks/TRACK_EDITOR_IDLE_CARET_BLINK.md) |
 | **51** | Editor idle CPU budget (live `/proc` sample; #38 residual) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET](archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md) |
+| **52** | Editor wrap budget by glyph advance (#37 residual) | **active** (2026-07-24) STEP=0→Driver STEP=1 | [TRACK_EDITOR_WRAP_BUDGET_ADVANCE](agent/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -751,9 +752,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_IDLE_CPU_BUDGET (§51, **closed** 2026-07-22: Critic OK; STEP=0–3;
       paint-only caret overlay + `/proc` CPU% ≤10; `9ed7c2c3`…`d9150fb0`;
       → [archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md](archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md))**
-  → **(idle 2026-07-24 after §51, reconfirmed ×4 post-archive)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
-      LANG_AUTO_CYCLE gated; wrap-budget HarfBuzz residual deferred (needs user auth);
-      no Driver work until new authorization
+  → **EDITOR_WRAP_BUDGET_ADVANCE (§52, **active** 2026-07-24: STEP=0→Driver STEP=1;
+      pixel-budget wrap via shaped advances; #37 residual;
+      → [agent/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md](agent/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md))**
 ```
 
 

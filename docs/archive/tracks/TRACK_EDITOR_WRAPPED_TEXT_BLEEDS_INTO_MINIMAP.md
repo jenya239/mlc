@@ -12,7 +12,7 @@ Anti-false-done: `9310f1e2`…`81fb086a` (STEP=0–3); `editor_ux_content_clip_r
 
 Honest residual: solid-pass scissors full `editor_rect` — **fixed** §49
 `TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (Critic OK 2026-07-22). Wrap budget still
-uniform `char_width` (secondary, L2 green without it). Historical
+uniform `char_width` — **open** §52 `TRACK_EDITOR_WRAP_BUDGET_ADVANCE` (2026-07-24). Historical
 `run_ux_minimap_content_clip_red.sh` expects pre-wire demo_live and fails post-green — use
 `run_ux_minimap_content_clip_stable.sh` only. Early-return in `do` body was dropped by codegen
 (STEP=2 used if/else expression form).

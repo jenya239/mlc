@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 09:45 (Planner PLAN → §52)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 09:40 |
+| elapsed | ~4 min |
+| done    | Break idle loop: open §52 `TRACK_EDITOR_WRAP_BUDGET_ADVANCE` — #37 residual (uniform wrap budget vs shaped advances); Decision freeze pixel-budget wrap; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: wrap still display-column × mono cell; archives §49–§51 list wrap residual; no `run_ux_wrap_budget_advance_*` |
+| result  | STEP=0 frozen; primary gate `ux_ok wrap_budget_advance_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+
 ### Turn 2026-07-24 09:42 (Planner PLAN — idle reconfirm)
 
 | field   | value |
