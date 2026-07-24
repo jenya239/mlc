@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY` (§57) STEP=3.
-**`TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY` (§57)** **active** — STEP=2 done → Critic STEP=3.
+**Queue head:** Planner (authorized queue empty after §57).
+**`TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY` (§57)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_MULTI_CARET_DRAW` (§56)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_WRAP_SELECTION_VISUAL` (§54)** **closed** 2026-07-24 (Critic OK). Archived.

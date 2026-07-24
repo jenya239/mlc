@@ -12,8 +12,9 @@ Anti-false-done: `728d014a`…`a163d58f` (STEP=0–2); `multi_caret_draw` loop o
 `caret_pixel_in_visual_rows`; `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual (Decision OOS, not a reopen):
-paint-only idle path still overlays primary `last_caret_*` only.
+Honest residual (Decision OOS at close time; **absorbed by §57** 2026-07-24):
+paint-only idle path was primary `last_caret_*` only → fixed in
+[TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md).
 `*_red` post-green fails (use stable only).
 
 | Gate | Result |
