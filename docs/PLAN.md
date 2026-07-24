@@ -451,7 +451,7 @@ compiler/
 | **53** | Editor proportional hit-test / caret / selection (§52 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST](archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md) |
 | **54** | Editor selection highlight on visual wrap rows (§53 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md) |
 | **55** | Editor multi-cursor selection visual fills (§54 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md) |
-| **56** | Editor multi-caret draw + blink (§55 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_MULTI_CARET_DRAW](agent/TRACK_EDITOR_MULTI_CARET_DRAW.md) |
+| **56** | Editor multi-caret draw + blink (§55 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW](archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -768,9 +768,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_MULTI_SELECTION_VISUAL (§55, **closed** 2026-07-24: Critic OK; STEP=0–3;
       multi-range visual fills; `c2223498`…`298aa166`;
       → [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md))**
-  → **EDITOR_MULTI_CARET_DRAW (§56, active: STEP=2 done → Critic STEP=3;
-      `caret_pixel_in_visual_rows` + demo multi loop; `ux_ok multi_caret_draw_stable`;
-      → [agent/TRACK_EDITOR_MULTI_CARET_DRAW.md](agent/TRACK_EDITOR_MULTI_CARET_DRAW.md))**
+  → **EDITOR_MULTI_CARET_DRAW (§56, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      multi-caret draw + blink; `728d014a`…`a163d58f`;
+      → [archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md](archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md))**
 ```
 
 

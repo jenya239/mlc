@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:55 (Critic TRACK_EDITOR_MULTI_CARET_DRAW)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_MULTI_CARET_DRAW |
+| started | 2026-07-24 11:46 |
+| elapsed | ~12 min |
+| done    | Close §56: re-ran stable ×2 + multi_selection + wrap_selection + proportional + demo + HEAD run_ux_gate (71); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok multi_caret_draw_stable` ×2; related stables; `demo_live_fs_compile_ok`; `[ux gate] all ok (71 scenarios)`; anti-false-done `728d014a`…`a163d58f`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: idle paint-only multi overlay OOS; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-24 11:43 (Driver TRACK_EDITOR_MULTI_CARET_DRAW STEP=2)
 
 | field   | value |
