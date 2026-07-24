@@ -1,14 +1,42 @@
 # Track: Editor overlay / menu / nav theme tint
 
-Parent: [../PLAN.md](../PLAN.md) §64.
-Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md)
+Parent: [../../PLAN.md](../../PLAN.md) §64.
+Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](TRACK_EDITOR_CHROME_THEME_DRIFT.md)
 (§46 #33c) / post-§63 idle. Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
+## Status: **closed** (2026-07-24) — Critic OK
+
+**Critic 2026-07-24 (STEP=3):** Re-ran `overlay_theme_tint_stable` ×2 +
+`chrome_panel_rgb_matches_theme` + `scrollbar_theme_tint_stable` + `demo_live` compile +
+HEAD `run_ux_gate` (79 scenarios).
+Anti-false-done: `d77fa0a3`…`c72841c5` (STEP=0–2); dirty-close/nav/menu panel →
+`theme.panel_*`; menu items → `theme.muted_*`; discard danger kept; `misc/editor/**` +
+scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: minimap indicator tint still OOS; `*_red` post-green fails (use stable only).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_overlay_theme_tint_stable.sh` | `ux_ok overlay_theme_tint_stable` EXIT=0 (×2) |
+| `run_ux_chrome_panel_rgb_matches_theme.sh` | `ux_ok chrome_panel_rgb_matches_theme` EXIT=0 |
+| `run_ux_scrollbar_theme_tint_stable.sh` | `ux_ok scrollbar_theme_tint_stable` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (79 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable×2 + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
+
+### STEPs done in git
+
+| Step | Commit (abbrev) | Notes |
+|------|-----------------|-------|
+| 0 | `d77fa0a3` | Decision: overlay/menu/nav theme |
+| 1 | `2b4eb1ee` | Red/stable stub |
+| 2 | `c72841c5` | theme.panel_/muted_ + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -28,11 +56,7 @@ Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: hardcoded overlay/menu/nav | **done** |
 | 2 | Wire theme.*; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | open |
-
-<!-- STEP=1: red proves dark constants at overlay/menu/nav; stable stub not implemented -->
-<!-- STEP=2: theme.panel_*/muted_* at those sites; SKIP if font missing -->
-<!-- STEP=3: Critic archive -->
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
