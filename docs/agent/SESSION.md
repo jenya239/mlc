@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:40 (Critic TRACK_EDITOR_SCROLLBAR_THUMB_HOVER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+| started | 2026-07-25 01:30 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + tint/chrome gates + demo_live + `run_ux_gate` 86; archive §71 |
+| verify  | `scrollbar_thumb_hover_stable` EXIT=0 ×2; tint/chrome EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (86 scenarios)` |
+| result  | §71 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; #32 hover chain largely done) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 01:30 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_HOVER STEP=2)
 
 | field   | value |
