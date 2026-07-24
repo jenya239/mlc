@@ -7,13 +7,10 @@ import {
 } from '../ui/clip'
 import { shell_panels_editor_rect } from '../ui/shell_panels'
 import {
-  tab_set_has_active,
-  tab_set_active
+  tab_set_has_active
 } from '../workspace/tabs'
-import { document_to_string } from '../document/piece_table'
 import {
   LineIndex,
-  line_index_from_document,
   line_index_line_count,
   line_index_line_start,
   utf8_count_display_columns
@@ -77,13 +74,12 @@ end
 
 fn content_rect_for_state(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> Rect = do
   if !tab_set_has_active(state.tabs) then
     return rect_new(0, 0, 0, 0)
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const line_count = line_index_line_count(line_index)
   const max_columns = editor_ux_max_line_columns_from_index(line_index)
   let mut line_height = metrics.line_height
@@ -106,11 +102,12 @@ end
 // Content that sticks outside the text clip (no scissor).
 export fn editor_ux_collect_overflows(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> [UxOverflow] = do
   let mut overflows: [UxOverflow] = []
   const clip = text_viewport_rect(state)
-  const content = content_rect_for_state(state, metrics)
+  const content = content_rect_for_state(state, metrics, line_index)
   if content.width <= 0 && content.height <= 0 then
     return overflows
   end
@@ -153,17 +150,21 @@ fn state_with_overflows(
 // Probe without scissor: overflows if content exceeds text clip.
 export fn editor_ux_refresh_overflows(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorUxState =
-  state_with_overflows(state, editor_ux_collect_overflows(state, metrics))
+  state_with_overflows(
+    state, editor_ux_collect_overflows(state, metrics, line_index)
+  )
 
 // Honest: report overflows when content exceeds clip (no fake clear).
 // After real/model GL scissor draw, call `editor_ux_clear_overflows_after_scissor`.
 export fn editor_ux_apply_scissor_clip(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorUxState =
-  editor_ux_refresh_overflows(state, metrics)
+  editor_ux_refresh_overflows(state, metrics, line_index)
 
 export fn editor_ux_clear_overflows_after_scissor(state: EditorUxState) -> EditorUxState =
   state_with_overflows(state, [])

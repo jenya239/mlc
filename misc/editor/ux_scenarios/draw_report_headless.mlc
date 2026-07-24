@@ -21,6 +21,7 @@ import {
 import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
 import { editor_ux_draw_frame } from '../ux/draw_frame'
+import { line_index_from_string } from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 320, 200)
@@ -60,9 +61,10 @@ fn main() -> i32 = do
     line = line + 1
   end
   state = editor_ux_insert_text(state, body)
+  const line_index = line_index_from_string(body)
 
   // Frame 0: no scissor → overflow present after draw.
-  let mut drawn = editor_ux_draw_frame(state, metrics, 0, 0)
+  let mut drawn = editor_ux_draw_frame(state, metrics, 0, 0, line_index)
   state = drawn.state
   if drawn.report.draw_count < 4 then
     println("ux_fail expected panel+text draws")
@@ -78,7 +80,7 @@ fn main() -> i32 = do
   driver = ux_driver_apply(driver, WaitFrames(3))
   let mut frame = 1
   while frame <= 3 do
-    drawn = editor_ux_draw_frame(state, metrics, frame, 1)
+    drawn = editor_ux_draw_frame(state, metrics, frame, 1, line_index)
     state = drawn.state
     state = EditorUxState {
       window_width: state.window_width,
