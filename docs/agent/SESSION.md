@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:15 (Driver TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 18:13 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_folder_scrollbar_thumb_drag_red.sh` + failing stable stub; proves folder thumb draws, no scroll_at helper |
+| verify  | `ux_ok folder_scrollbar_thumb_drag_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 18:14 (Planner PLAN → §63)
 
 | field   | value |
