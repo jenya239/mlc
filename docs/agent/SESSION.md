@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:30 (Critic TRACK_EDITOR_ACTIVE_TAB_TINT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_ACTIVE_TAB_TINT |
+| started | 2026-07-25 00:25 |
+| elapsed | ~8 min |
+| done    | Critic OK: stable×2 + chrome hover gates + demo_live compile + `run_ux_gate` 83; archive §68 |
+| verify  | `active_tab_tint_stable` EXIT=0 ×2; chrome EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (83 scenarios)` |
+| result  | §68 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; `[title]` kept) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 00:25 (Driver TRACK_EDITOR_ACTIVE_TAB_TINT STEP=2)
 
 | field   | value |

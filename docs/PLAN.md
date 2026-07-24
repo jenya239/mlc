@@ -463,7 +463,7 @@ compiler/
 | **65** | Editor minimap indicator theme tint (§64 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT](archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md) |
 | **66** | Editor chrome hover default from Theme (§46 #33c residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md) |
 | **67** | Editor discard danger from Theme (§66 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME](archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md) |
-| **68** | Editor active-tab idle tint (§46 #32 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_ACTIVE_TAB_TINT](agent/TRACK_EDITOR_ACTIVE_TAB_TINT.md) |
+| **68** | Editor active-tab idle tint (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT](archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -816,8 +816,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_DISCARD_DANGER_THEME (§67, **closed** 2026-07-24: Critic OK; STEP=0–3;
       Theme.danger_* + discard button; `8ce50d63`…`c9190ac0`;
       → [archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md](archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md))**
-  → **EDITOR_ACTIVE_TAB_TINT (§68, open STEP=3 Critic next:
-      active tab idle → theme.selection_*; [TRACK_EDITOR_ACTIVE_TAB_TINT](agent/TRACK_EDITOR_ACTIVE_TAB_TINT.md))**
+  → **EDITOR_ACTIVE_TAB_TINT (§68, **closed** 2026-07-25: Critic OK; STEP=0–3;
+      active tab idle → theme.selection_*; `7058b240`…`c786e5ec`;
+      → [archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md](archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md))**
 ```
 
 

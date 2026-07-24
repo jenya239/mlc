@@ -1,14 +1,33 @@
 # Track: Editor active-tab idle tint
 
-Parent: [../PLAN.md](../PLAN.md) §68.
-Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
+Parent: [../../PLAN.md](../../PLAN.md) §68.
+Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](TRACK_EDITOR_CHROME_HOVER_STATE.md)
 (§46 #32). Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `active_tab_tint_stable` ×2 +
+`chrome_hover_default_theme_stable` + `chrome_hover_tint_differs` + `demo_live` compile +
+HEAD `run_ux_gate` (83 scenarios).
+Anti-false-done: `7058b240`…`c786e5ec` (STEP=0–2); active → `theme.selection_*`;
+inactive → `theme.panel_*`; `[title]` kept; `misc/editor/**` + scripts → REG skip; no
+`compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); `[title]` brackets kept by Decision.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_active_tab_tint_stable.sh` | `ux_ok active_tab_tint_stable` EXIT=0 (×2) |
+| `run_ux_chrome_hover_default_theme_stable.sh` | `ux_ok chrome_hover_default_theme_stable` EXIT=0 |
+| `run_ux_chrome_hover_tint_differs.sh` | `ux_ok chrome_hover_tint_differs` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (83 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable ×2 + related chrome + demo_live compile + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +35,8 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 |------|-----------------|-------|
 | 0 | `7058b240` | Decision: active-tab idle from Theme.selection_* |
 | 1 | `c2907e19` | Red/stable stub |
-| 2 | (this) | selection_* for active + L0 green |
+| 2 | `c786e5ec` | selection_* for active + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +56,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: active==inactive panel idle | **done** |
 | 2 | Wire selection_* for active; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
