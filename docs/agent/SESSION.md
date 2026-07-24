@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:00 (Critic TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+| started | 2026-07-25 01:55 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + overlay/chrome tint + demo_live + `run_ux_gate` 87; archive §72 |
+| verify  | `context_menu_item_hover_stable` EXIT=0 ×2; tint EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (87 scenarios)` |
+| result  | §72 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; dirty-close button hover OOS; minimap syntax tags residual) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 01:55 (Driver TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER STEP=2)
 
 | field   | value |

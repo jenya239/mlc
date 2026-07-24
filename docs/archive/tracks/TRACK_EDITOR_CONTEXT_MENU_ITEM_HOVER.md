@@ -1,23 +1,45 @@
 # Track: Editor context-menu item hover
 
-Parent: [../PLAN.md](../PLAN.md) §72.
-Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
-(§46 #32) / [TRACK_EDITOR_CONTEXT_MENU](../archive/tracks/TRACK_EDITOR_CONTEXT_MENU.md)
+Parent: [../../PLAN.md](../../PLAN.md) §72.
+Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](TRACK_EDITOR_CHROME_HOVER_STATE.md)
+(§46 #32) / [TRACK_EDITOR_CONTEXT_MENU](TRACK_EDITOR_CONTEXT_MENU.md)
 (§46 #25). Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `context_menu_item_hover_stable` ×2 +
+`overlay_theme_tint_stable` + `chrome_hover_tint_differs` + `demo_live` compile +
+HEAD `run_ux_gate`.
+Anti-false-done: `598bba3d`…`74fb0662` (STEP=0–2); menu item loop →
+`chrome_hover_draw_entry` (muted base); `misc/editor/**` + scripts → REG skip; no
+`compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); dirty-close button hover
+still OOS; minimap glyphs theme-text only (no syntax tags); #32 chrome-hover chain
+otherwise done for tabs/toolbar/tree/nav/thumbs/menu items.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_context_menu_item_hover_stable.sh` | `ux_ok context_menu_item_hover_stable` EXIT=0 (×2) |
+| `run_ux_overlay_theme_tint_stable.sh` | `ux_ok overlay_theme_tint_stable` EXIT=0 |
+| `run_ux_chrome_hover_tint_differs.sh` | `ux_ok chrome_hover_tint_differs` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (87 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable×2 + `run_ux_gate`; close.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | 598bba3d | Decision: menu item hover via chrome_hover |
-| 1 | 16a5ef4f | Red harness + stable stub `not implemented` |
-| 2 | (this) | Wire chrome_hover in item draw loop; green stable |
+| 0 | `598bba3d` | Decision: menu item hover via chrome_hover |
+| 1 | `16a5ef4f` | Red/stable stub |
+| 2 | `74fb0662` | chrome_hover wire + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -37,7 +59,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: flat muted item fills | **done** |
 | 2 | Wire chrome_hover; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
