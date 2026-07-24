@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 12:05 (Driver TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT |
+| started | 2026-07-25 11:55 |
+| elapsed | ~10 min |
+| done    | `document_text = line_index.text`; drop `document_to_string` import; scenario + green stable |
+| verify  | stable EXIT=0 `ux_ok probe_reuses_line_index_text`; frame/unit/large_file EXIT=0 |
+| result  | §86 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT |
+
 ### Turn 2026-07-25 11:50 (Driver TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT STEP=1)
 
 | field   | value |

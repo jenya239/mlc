@@ -26,9 +26,6 @@ import {
   selection_caret
 } from '../document/selection'
 import {
-  document_to_string
-} from '../document/piece_table'
-import {
   LineIndex,
   line_index_offset_to_position
 } from '../document/line_index'
@@ -97,7 +94,7 @@ export fn editor_ux_snapshot(
   let mut caret_byte = 0
   if tab_set_has_active(state.tabs) then
     const active = tab_set_active(state.tabs)
-    document_text = document_to_string(active.buffer.document)
+    document_text = line_index.text
     if tab_is_dirty(active) then
       dirty = 1
     end
