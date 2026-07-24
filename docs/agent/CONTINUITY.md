@@ -95,10 +95,10 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` (PLAN §63)** | **closed** 2026-07-24 (Critic OK). Archived. `folder_scrollbar_scroll_at_y` + demo drag. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_OVERLAY_THEME_TINT` (PLAN §64)** | **closed** 2026-07-24 (Critic OK). Archived. overlay/menu/nav use theme.panel_*/muted_*. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (PLAN §65)** | **closed** 2026-07-24 (Critic OK). Archived. indicator uses theme.muted_*. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` (PLAN §66)** | **active** — STEP=0 done → Driver STEP=1. §46 #33c residual: chrome_hover default → theme_solarized_light |
+| **`TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` (PLAN §66)** | **active** — STEP=1 done → Driver STEP=2. Red: chrome_hover bare Light RGB |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **§66** `TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
+| **Authorized queue** | **§66** `TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` STEP=2 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
