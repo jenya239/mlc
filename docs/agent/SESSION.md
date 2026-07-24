@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:04 (Planner PLAN → §62)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:02 |
+| elapsed | ~2 min |
+| done    | Break idle: open §62 `TRACK_EDITOR_SCROLLBAR_THEME_TINT` — §61/#33e residual (thumbs hardcoded `0.45/0.48/0.55`; use `theme.muted_*`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: content/folder thumbs use `0.45, 0.48, 0.55`; Theme has `muted_*`; no `run_ux_scrollbar_theme_tint_*`; agent TRACK_* = 6; SESSION ~393+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok scrollbar_theme_tint_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SCROLLBAR_THEME_TINT |
+
 ### Turn 2026-07-24 18:00 (Critic TRACK_EDITOR_SCROLLBAR_THUMB_DRAG)
 
 | field   | value |

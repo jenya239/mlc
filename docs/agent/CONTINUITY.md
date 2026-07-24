@@ -91,9 +91,10 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_TEXT_DRAW_SCROLL_X` (PLAN §59)** | **closed** 2026-07-24 (Critic OK). Archived. `text_pen_x_scrolled` on find/fill/caret/glyphs. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_HORIZONTAL_SCROLLBAR` (PLAN §60)** | **closed** 2026-07-24 (Critic OK). Archived. `content_scrollbar_thumb_x` + demo hover draw. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` (PLAN §61)** | **closed** 2026-07-24 (Critic OK). Archived. `content_scrollbar_scroll_at_y/x` + demo drag. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (PLAN §62)** | **active** — STEP=0 done → Driver STEP=1. §61/#33e residual: thumbs use theme.muted_* |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | empty — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated; no ungated Driver residual |
+| **Authorized queue** | **§62** `TRACK_EDITOR_SCROLLBAR_THEME_TINT` STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
