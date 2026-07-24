@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:20 (Critic TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+| started | 2026-07-25 02:15 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + discard/overlay/chrome tint + demo_live + `run_ux_gate` 88; archive §73 |
+| verify  | `dirty_close_button_hover_stable` EXIT=0 ×2; tint EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (88 scenarios)` |
+| result  | §73 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; minimap syntax tags residual; #32 hover chain done) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 02:15 (Driver TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER STEP=2)
 
 | field   | value |
