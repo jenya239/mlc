@@ -1,10 +1,25 @@
 // TRACK_EDITOR_MINIMAP STEP=2 — geometry, cache key, viewport indicator, click→scroll.
+// TRACK_EDITOR_MINIMAP_ZOOM_SCALE STEP=2 — pixel size scales with font zoom.
 import { Rect, rect_new } from '../../gui/layout'
 import { editor_ux_clamp_scroll_offset } from './scroll'
+import { editor_font_size_default } from './font_zoom'
 
 export fn editor_ux_minimap_width() -> i32 = 64
 export fn editor_ux_minimap_pixel_size() -> i32 = 2
 export fn editor_ux_minimap_line_height() -> i32 = 3
+
+// Base 2 at default font; scales linearly with Ctrl+wheel zoom.
+export fn editor_ux_minimap_pixel_size_for_font(font_size: i32) -> i32 = do
+  const base_font = editor_font_size_default()
+  if base_font <= 0 then
+    return editor_ux_minimap_pixel_size()
+  end
+  let mut size = (editor_ux_minimap_pixel_size() * font_size) / base_font
+  if size < 1 then
+    size = 1
+  end
+  size
+end
 
 export type MinimapLayout = {
   text_rect: Rect,

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:55 (Driver TRACK_EDITOR_MINIMAP_ZOOM_SCALE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MINIMAP_ZOOM_SCALE |
+| started | 2026-07-25 02:50 |
+| elapsed | ~5 min |
+| done    | `pixel_size_for_font` + demo wire + `minimap_cached_font_size` sentinel; green stable; demo_live compiles |
+| verify  | stable EXIT=0; cache/syntax EXIT=0; `demo_live_fs_compile_ok`; red EXIT=1 |
+| result  | §75 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_MINIMAP_ZOOM_SCALE |
+
 ### Turn 2026-07-25 02:50 (Driver TRACK_EDITOR_MINIMAP_ZOOM_SCALE STEP=1)
 
 | field   | value |

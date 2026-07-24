@@ -285,7 +285,7 @@ import {
   text_pen_x_scrolled
 } from './ux/scroll'
 import {
-  editor_ux_minimap_pixel_size,
+  editor_ux_minimap_pixel_size_for_font,
   editor_ux_minimap_layout,
   editor_ux_content_clip_rect,
   editor_ux_minimap_cache_new,
@@ -766,6 +766,7 @@ fn main() -> i32 = do
   let mut minimap_cache = editor_ux_minimap_cache_new("")
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
+  let mut minimap_cached_font_size = 0 - 1
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut wrap_count_cache = wrap_count_cache_new_pixel(
@@ -2551,9 +2552,10 @@ fn main() -> i32 = do
       const prev_rebuild = minimap_cache.rebuild_count
       minimap_cache = editor_ux_minimap_cache_tick(minimap_cache, draw_text)
       if minimap_cache.rebuild_count != prev_rebuild ||
-          minimap_cached_height != minimap_rect.height then
+          minimap_cached_height != minimap_rect.height ||
+          minimap_cached_font_size != zoom_font_size then
         minimap_lines = []
-        const minimap_pixel = editor_ux_minimap_pixel_size()
+        const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
         const minimap_spans = highlight_mlc(draw_text)
         let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
@@ -2587,6 +2589,7 @@ fn main() -> i32 = do
           map_line = map_line + 1
         end
         minimap_cached_height = minimap_rect.height
+        minimap_cached_font_size = zoom_font_size
       end
       editor_gl_scissor_enable_rect(height, minimap_rect)
       const minimap_drawn = static_text_draw_lines_colored(

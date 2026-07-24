@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=2 `TRACK_EDITOR_MINIMAP_ZOOM_SCALE` (§75).
+**Queue head:** Critic STEP=3 `TRACK_EDITOR_MINIMAP_ZOOM_SCALE` (§75).
 **`TRACK_EDITOR_MINIMAP_SYNTAX_TAGS` (§74)** **closed** 2026-07-25 (Critic OK). Archived.
-**`TRACK_EDITOR_MINIMAP_ZOOM_SCALE` (§75)** **open** — STEP=1 red done; STEP=2 wire for_font.
+**`TRACK_EDITOR_MINIMAP_ZOOM_SCALE` (§75)** **open** — STEP=2 green; Critic next.
 **`TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER` (§73)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (§65)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_OVERLAY_THEME_TINT` (§64)** **closed** 2026-07-24 (Critic OK). Archived.
