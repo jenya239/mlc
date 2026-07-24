@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §80.
 Residual of [TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY.md)
 (§46 #1d) / idle CPU / highlight-cache chain (§77–§79). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert paint overlays still call `line_index_from_document` (re-stringify); stable stub `not implemented`.
+**STEP=2** — Pass `frame.line_index` into paint helpers; green `ux_ok paint_reuses_frame_line_index`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: paint path reuses `frame.line_index` |
+| 0 | `2968b98c` | Decision: paint path reuses `frame.line_index` |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,7 +33,7 @@ Residual of [TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: paint still re-stringifies | pending |
+| 1 | Red: paint still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 05:30 (Driver TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 05:25 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_paint_reuses_frame_line_index_red.sh` + stable stub `not implemented`; gap = three paint helpers call `line_index_from_document` |
+| verify  | red EXIT=0 `ux_ok paint_reuses_frame_line_index_red`; stable EXIT=1 `not implemented` |
+| result  | §80 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 05:20 (Planner plan-refresh → §80)
 
 | field   | value |
