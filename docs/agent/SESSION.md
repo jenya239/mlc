@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 10:25 (Planner plan-refresh → §85)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 10:20 |
+| elapsed | ~5 min |
+| done    | Opened §85 `TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX`: Decision — `editor_ux_snapshot` reuses frame `LineIndex`; §84 residual |
+| verify  | `probe.mlc` still calls `line_index_from_document`; last production UX flatten |
+| result  | §85 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 10:15 (Critic TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX)
 
 | field   | value |
