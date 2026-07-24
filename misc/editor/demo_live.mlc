@@ -286,7 +286,7 @@ import {
 } from './ux/scroll'
 import {
   editor_ux_minimap_pixel_size_for_font,
-  editor_ux_minimap_layout,
+  editor_ux_minimap_layout_for_font,
   editor_ux_content_clip_rect,
   editor_ux_minimap_cache_new,
   editor_ux_minimap_cache_tick,
@@ -990,7 +990,7 @@ fn main() -> i32 = do
     const gutter_width = gutter_width_for_line_count(line_count, gutter_metrics)
     const panes = gutter_layout(editor_rect, gutter_width)
     const content_band = panes.text
-    const minimap_layout = editor_ux_minimap_layout(content_band)
+    const minimap_layout = editor_ux_minimap_layout_for_font(content_band, zoom_font_size)
     const text_rect = minimap_layout.text_rect
     const minimap_rect = minimap_layout.minimap_rect
     const minimap_enabled = minimap_layout.enabled

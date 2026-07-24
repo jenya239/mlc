@@ -5,18 +5,19 @@ Residual of [TRACK_EDITOR_MINIMAP_ZOOM_SCALE](../archive/tracks/TRACK_EDITOR_MIN
 (§75) / [TRACK_EDITOR_MINIMAP](../archive/tracks/TRACK_EDITOR_MINIMAP.md)
 (§46 #35). Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Add `width_for_font` + `layout_for_font`; wire demo; green `minimap_width_zoom_stable`.
+**STEP=3** — Critic: stable×2 + `run_ux_gate`; close.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | 46a9c264 | Decision: minimap strip width scales with font zoom |
-| 1 | (this) | Red harness + stable stub `not implemented` |
+| 1 | 0c9780b2 | Red harness + stable stub `not implemented` |
+| 2 | (this) | width_for_font + layout_for_font + demo wire; green |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -35,7 +36,7 @@ Residual of [TRACK_EDITOR_MINIMAP_ZOOM_SCALE](../archive/tracks/TRACK_EDITOR_MIN
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: fixed width = 64 | **done** |
-| 2 | Width helper + layout wire; green | pending |
+| 2 | Width helper + layout wire; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
 ## Out of scope

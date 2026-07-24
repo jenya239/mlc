@@ -1,5 +1,6 @@
 // TRACK_EDITOR_MINIMAP STEP=2 — geometry, cache key, viewport indicator, click→scroll.
 // TRACK_EDITOR_MINIMAP_ZOOM_SCALE STEP=2 — pixel size scales with font zoom.
+// TRACK_EDITOR_MINIMAP_WIDTH_ZOOM STEP=2 — strip width scales with font zoom.
 import { Rect, rect_new } from '../../gui/layout'
 import { editor_ux_clamp_scroll_offset } from './scroll'
 import { editor_font_size_default } from './font_zoom'
@@ -21,6 +22,19 @@ export fn editor_ux_minimap_pixel_size_for_font(font_size: i32) -> i32 = do
   size
 end
 
+// Base 64 at default font; floor 32 so text band still fits.
+export fn editor_ux_minimap_width_for_font(font_size: i32) -> i32 = do
+  const base_font = editor_font_size_default()
+  if base_font <= 0 then
+    return editor_ux_minimap_width()
+  end
+  let mut width = (editor_ux_minimap_width() * font_size) / base_font
+  if width < 32 then
+    width = 32
+  end
+  width
+end
+
 export type MinimapLayout = {
   text_rect: Rect,
   minimap_rect: Rect,
@@ -32,8 +46,10 @@ export type MinimapCacheState = {
   rebuild_count: i32
 }
 
-export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout = do
-  const width = editor_ux_minimap_width()
+fn editor_ux_minimap_layout_with_width(
+  content_band: Rect,
+  width: i32
+) -> MinimapLayout = do
   const min_text = 80
   if content_band.width < width + min_text then
     return MinimapLayout {
@@ -59,6 +75,17 @@ export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout = do
     enabled: 1
   }
 end
+
+export fn editor_ux_minimap_layout(content_band: Rect) -> MinimapLayout =
+  editor_ux_minimap_layout_with_width(content_band, editor_ux_minimap_width())
+
+export fn editor_ux_minimap_layout_for_font(
+  content_band: Rect,
+  font_size: i32
+) -> MinimapLayout =
+  editor_ux_minimap_layout_with_width(
+    content_band, editor_ux_minimap_width_for_font(font_size)
+  )
 
 // TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP STEP=2 —
 // Clip editor glyph batch to non-minimap strip (right edge = minimap_rect.x).
