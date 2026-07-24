@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:42 (Driver TRACK_EDITOR_WRAP_SELECTION_VISUAL STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WRAP_SELECTION_VISUAL |
+| started | 2026-07-24 10:42 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_wrap_selection_visual_red.sh` + failing stable stub; proves `demo_live` selection uses `highlight_line - visible.first_line` (no visual-row fill) |
+| verify  | `ux_ok wrap_selection_visual_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WRAP_SELECTION_VISUAL |
+
 ### Turn 2026-07-24 10:40 (Planner PLAN → §54)
 
 | field   | value |
