@@ -13,7 +13,8 @@ Anti-false-done: `a2424a12`…`6a1b1ce9` (STEP=0–2); `wrap_offset_at_point_pix
 `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual: selection highlight still doc-line based (not per visual wrap row);
+Honest residual → **§54** `TRACK_EDITOR_WRAP_SELECTION_VISUAL` (opened 2026-07-24):
+selection highlight still doc-line based (not per visual wrap row).
 `*_red` post-green fails (use stable only). ICU grapheme OOS.
 
 | Gate | Result |
@@ -27,7 +28,7 @@ Honest residual: selection highlight still doc-line based (not per visual wrap r
 
 ## Next step
 
-**closed** — Critic OK. Queue → Planner (authorized queue empty; select next or document idle).
+**closed** — Critic OK. Residual → §54 `TRACK_EDITOR_WRAP_SELECTION_VISUAL`.
 
 ### STEPs done in git
 
