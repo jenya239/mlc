@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 03:30 (Planner plan-refresh → §77)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 03:25 |
+| elapsed | ~5 min |
+| done    | Opened §77 `TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE`: Decision — cache visible-range `highlight_range`; §76 residual |
+| verify  | `demo_live` still calls `highlight_range` every paint (~2093–2100) |
+| result  | §77 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 03:25 (Critic TRACK_EDITOR_MINIMAP_WIDTH_ZOOM)
 
 | field   | value |
