@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN` (§70).
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN` (§70).
 **`TRACK_EDITOR_NAV_CRUMB_HOVER` (§69)** **closed** 2026-07-25 (Critic OK). Archived.
-**`TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN` (§70)** **open** — drop active `[title]` brackets.
+**`TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN` (§70)** **open** STEP=2 — drop active `[title]` brackets.
 **`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (§65)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_OVERLAY_THEME_TINT` (§64)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` (§63)** **closed** 2026-07-24 (Critic OK). Archived.

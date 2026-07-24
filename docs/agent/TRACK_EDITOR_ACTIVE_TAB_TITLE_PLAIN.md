@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §70.
 Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](../archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md)
 (§68). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `[title]` brackets still wrap active tab titles; stable stub `not implemented`.
+**STEP=2** — Drop three `[title]` wraps; update `active_tab_tint_stable` bracket assert; green.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: drop active-tab `[title]` brackets |
+| 0 | `95c15893` | Decision: drop active-tab `[title]` brackets |
+| 1 | (this) | Red/stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,7 +33,7 @@ Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](../archive/tracks/TRACK_EDITOR_ACTIVE
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: brackets still present | pending |
+| 1 | Red: brackets still present | **done** |
 | 2 | Drop brackets; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
