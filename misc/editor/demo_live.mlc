@@ -271,7 +271,7 @@ import {
   tab_strip_hit_close_index_from_widths
 } from './ux/tab_strip'
 import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
-import { editor_ux_content_scrollbar_thumb } from './ux/scroll'
+import { editor_ux_content_scrollbar_thumb, text_pen_x_scrolled } from './ux/scroll'
 import {
   editor_ux_minimap_pixel_size,
   editor_ux_minimap_layout,
@@ -2026,13 +2026,16 @@ fn main() -> i32 = do
       trailing_ws_index = trailing_ws_index + 1
     end
 
+    // text_draw_scroll_x: shared scrolled origin for find/fill/caret/glyphs
+    const text_pen_x = text_pen_x_scrolled(text_rect.x + 4, app.ux.scroll_offset_x)
+
     if find_session.matches.length() > 0 then
       const find_report = find_visible_highlights(
         find_session,
         line_index,
         visible.first_line,
         visible.last_line,
-        text_rect.x + 4,
+        text_pen_x,
         text_rect.y + 2,
         0,
         metrics.line_height,
@@ -2080,7 +2083,7 @@ fn main() -> i32 = do
           if highlight_width > 0 then
             solid = solid_renderer_rect(
               solid, width, height,
-              text_rect.x + 4 + span.x0,
+              text_pen_x + span.x0,
               text_rect.y + 2 + span.visual_row_index * metrics.line_height,
               highlight_width, metrics.line_height,
               theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
@@ -2121,7 +2124,7 @@ fn main() -> i32 = do
       const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
       if caret_row >= 0 && caret_row < visual_rows.length() then
         const caret_row_info = visual_rows[caret_row]
-        const caret_x = text_rect.x + 4 + pixel_x_for_byte_offset(
+        const caret_x = text_pen_x + pixel_x_for_byte_offset(
           draw_text, caret_row_info.byte_start, caret_row_info.byte_end,
           caret_byte, font_path, zoom_font_size
         )
@@ -2451,7 +2454,7 @@ fn main() -> i32 = do
         row.byte_start,
         row.byte_end,
         scaled_font_size,
-        text_rect.x + 4,
+        text_pen_x,
         baseline,
         metrics.char_width
       )

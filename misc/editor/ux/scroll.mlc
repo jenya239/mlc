@@ -181,6 +181,10 @@ export fn editor_ux_clamp_scroll_offset_x(
   scroll_x
 end
 
+// TRACK_EDITOR_TEXT_DRAW_SCROLL_X — screen pen for scrolled text origin.
+export fn text_pen_x_scrolled(text_origin_x: i32, scroll_offset_x: i32) -> i32 =
+  text_origin_x - scroll_offset_x
+
 // TRACK_EDITOR_HORIZONTAL_SCROLL STEP=2 — Shift+wheel horizontal scroll.
 // Same sign as vertical: positive ticks decrease offset_x.
 export fn editor_ux_wheel_scroll_horizontal(

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 13:05 (Driver TRACK_EDITOR_TEXT_DRAW_SCROLL_X STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+| started | 2026-07-24 12:55 |
+| elapsed | ~10 min |
+| done    | `text_pen_x_scrolled` in scroll.mlc; demo_live find/fill/caret/syntax use scrolled pen; scenario + `run_ux_text_draw_scroll_x_stable.sh` green |
+| verify  | stable EXIT=0 `ux_ok text_draw_scroll_x_stable`; red EXIT=1 post-green; `demo_live_fs_compile_ok`; wrap_hit_scroll_x_stable ok |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+
 ### Turn 2026-07-24 12:51 (Driver TRACK_EDITOR_TEXT_DRAW_SCROLL_X STEP=1)
 
 | field   | value |

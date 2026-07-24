@@ -1,0 +1,25 @@
+// TRACK_EDITOR_TEXT_DRAW_SCROLL_X STEP=2 —
+// Draw origin with scroll_x differs from origin without.
+import { text_pen_x_scrolled } from '../ux/scroll'
+
+fn main() -> i32 = do
+  const origin = 40
+  const scroll_x = 24
+  const pen_zero = text_pen_x_scrolled(origin, 0)
+  const pen_scrolled = text_pen_x_scrolled(origin, scroll_x)
+  if pen_zero != origin then
+    println("ux_fail text_draw_scroll_x_stable zero")
+    return 1
+  end
+  if pen_scrolled == pen_zero then
+    println("ux_fail text_draw_scroll_x_stable same")
+    return 2
+  end
+  if pen_scrolled != origin - scroll_x then
+    println("ux_fail text_draw_scroll_x_stable formula")
+    return 3
+  end
+
+  println("ux_ok text_draw_scroll_x_stable")
+  0
+end

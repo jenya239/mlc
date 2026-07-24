@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_WRAP_HIT_SCROLL_X](../archive/tracks/TRACK_EDITOR_WRAP
 (§58) / [TRACK_EDITOR_HORIZONTAL_SCROLL](../archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLL.md)
 (§46 #17). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Subtract scroll_x on draw; green stable.
+**STEP=3** — Critic: stable + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -28,7 +28,7 @@ Residual of [TRACK_EDITOR_WRAP_HIT_SCROLL_X](../archive/tracks/TRACK_EDITOR_WRAP
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: draw ignores scroll_x | **done** |
-| 2 | Subtract scroll_x on draw; green | open |
+| 2 | Subtract scroll_x on draw; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves syntax/caret/fill use text_rect.x+4 without scroll_offset_x -->
