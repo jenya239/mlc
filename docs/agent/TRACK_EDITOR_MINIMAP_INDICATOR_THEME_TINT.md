@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_OVERLAY_THEME_TINT](../archive/tracks/TRACK_EDITOR_OVE
 (§64) / [TRACK_EDITOR_MINIMAP](../archive/tracks/TRACK_EDITOR_MINIMAP.md)
 (§46 #35). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Wire theme.muted_*; green stable.
+**STEP=3** — Critic: stable×2 + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -28,7 +28,7 @@ Residual of [TRACK_EDITOR_OVERLAY_THEME_TINT](../archive/tracks/TRACK_EDITOR_OVE
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: hardcoded indicator tint | **done** |
-| 2 | Wire theme.muted_*; green | open |
+| 2 | Wire theme.muted_*; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves 0.35/0.40/0.45 at indicator; stable stub not implemented -->

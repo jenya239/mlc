@@ -2287,7 +2287,7 @@ fn main() -> i32 = do
           solid, width, height,
           minimap_indicator.x, minimap_indicator.y,
           minimap_indicator.width, minimap_indicator.height,
-          0.35, 0.40, 0.45, 1.0
+          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
         )
       end
     end
