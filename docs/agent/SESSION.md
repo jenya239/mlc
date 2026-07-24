@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:12 (Driver TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY |
+| started | 2026-07-24 12:06 |
+| elapsed | ~8 min |
+| done    | `ux/caret_overlay.mlc` + demo `last_caret_rects` cache; idle paint-only loops all rects; scenario `idle_multi_caret_overlay_stable` |
+| verify  | `ux_ok idle_multi_caret_overlay_stable` EXIT=0; `demo_live_fs_compile_ok`; red post-green fails (expected) |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY |
+
 ### Turn 2026-07-24 12:04 (Driver TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY STEP=1)
 
 | field   | value |
