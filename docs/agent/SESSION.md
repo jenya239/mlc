@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:35 (Driver TRACK_EDITOR_WRAP_HIT_SCROLL_X STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+| started | 2026-07-24 12:29 |
+| elapsed | ~8 min |
+| done    | `wrap_offset_at_point_pixel`/`wrap_offset_at_point` + `scroll_offset_x`; demo click wire; scenario `wrap_hit_scroll_x_stable`; call-site updates |
+| verify  | `ux_ok wrap_hit_scroll_x_stable`; proportional + caret_after_word_wrap; `demo_live_fs_compile_ok`; red post-green fails (expected) |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+
 ### Turn 2026-07-24 12:28 (Driver TRACK_EDITOR_WRAP_HIT_SCROLL_X STEP=1)
 
 | field   | value |
