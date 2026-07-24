@@ -1984,14 +1984,14 @@ fn main() -> i32 = do
       solid = solid_renderer_rect(
         solid, width, height,
         nav_back_rect.x, nav_back_rect.y, nav_back_rect.width, nav_back_rect.height,
-        0.22, 0.24, 0.30, 1.0
+        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
     end
     if folder_nav_can_forward(folder_nav) != 0 then
       solid = solid_renderer_rect(
         solid, width, height,
         nav_forward_rect.x, nav_forward_rect.y, nav_forward_rect.width, nav_forward_rect.height,
-        0.22, 0.24, 0.30, 1.0
+        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
     end
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)
@@ -2296,7 +2296,7 @@ fn main() -> i32 = do
       editor_gl_scissor_disable()
       solid = solid_renderer_rect(
         solid, width, height, width / 2 - 180, height / 2 - 70, 360, 140,
-        0.16, 0.18, 0.22, 1.0
+        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
       solid = solid_renderer_rect(
         solid, width, height, width / 2 - 120, height / 2 + 20, 100, 28,
@@ -2314,7 +2314,7 @@ fn main() -> i32 = do
       solid = solid_renderer_rect(
         solid, width, height,
         menu_panel.x, menu_panel.y, menu_panel.width, menu_panel.height,
-        0.18, 0.20, 0.24, 1.0
+        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
       let mut menu_item_index = 0
       while menu_item_index < editor_ux_context_menu_item_count() do
@@ -2324,7 +2324,7 @@ fn main() -> i32 = do
         solid = solid_renderer_rect(
           solid, width, height,
           item_rect.x, item_rect.y, item_rect.width, item_rect.height,
-          0.22, 0.24, 0.28, 1.0
+          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
         )
         menu_item_index = menu_item_index + 1
       end

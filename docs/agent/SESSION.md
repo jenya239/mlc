@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:32 (Driver TRACK_EDITOR_OVERLAY_THEME_TINT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_OVERLAY_THEME_TINT |
+| started | 2026-07-24 18:27 |
+| elapsed | ~3 min |
+| done    | Wire dirty-close/nav/menu panel → `theme.panel_*`; menu items → `theme.muted_*`; keep discard danger; green L0 stable |
+| verify  | `bash scripts/run_ux_overlay_theme_tint_stable.sh` → `ux_ok overlay_theme_tint_stable` EXIT=0 |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_OVERLAY_THEME_TINT |
+
 ### Turn 2026-07-24 18:30 (Driver TRACK_EDITOR_OVERLAY_THEME_TINT STEP=1)
 
 | field   | value |

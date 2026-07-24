@@ -459,7 +459,7 @@ compiler/
 | **61** | Editor content scrollbar thumb drag (§60 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md) |
 | **62** | Editor scrollbar thumb theme tint (§61 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md) |
 | **63** | Editor folder scrollbar thumb drag (§62 / §61 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md) |
-| **64** | Editor overlay/menu/nav theme tint (§46 #33c residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_OVERLAY_THEME_TINT](agent/TRACK_EDITOR_OVERLAY_THEME_TINT.md) |
+| **64** | Editor overlay/menu/nav theme tint (§46 #33c residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_OVERLAY_THEME_TINT](agent/TRACK_EDITOR_OVERLAY_THEME_TINT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -800,7 +800,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG (§63, **closed** 2026-07-24: Critic OK; STEP=0–3;
       folder_scrollbar_scroll_at_y + demo drag; `4afce0fe`…`84253492`;
       → [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md))**
-  → **EDITOR_OVERLAY_THEME_TINT (§64, active: STEP=1 red done → Driver STEP=2;
+  → **EDITOR_OVERLAY_THEME_TINT (§64, active: STEP=2 green → Critic STEP=3;
       §46 #33c residual — dirty-close / context-menu / nav fills → theme.*;
       → [agent/TRACK_EDITOR_OVERLAY_THEME_TINT.md](agent/TRACK_EDITOR_OVERLAY_THEME_TINT.md))**
 ```
