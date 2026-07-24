@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:20 (Driver TRACK_EDITOR_ACTIVE_TAB_TINT STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_ACTIVE_TAB_TINT |
+| started | 2026-07-25 00:15 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_active_tab_tint_red.sh` + stable stub `not implemented`; asserts tab fill panel-only, no selection_* |
+| verify  | `ux_ok active_tab_tint_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_ACTIVE_TAB_TINT |
+
 ### Turn 2026-07-25 00:15 (Planner plan-refresh → §68)
 
 | field   | value |

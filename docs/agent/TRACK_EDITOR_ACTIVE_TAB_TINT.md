@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §68.
 Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
 (§46 #32). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert active tab uses same panel idle fill as inactive; stable stub `not implemented`.
+**STEP=2** — Wire `theme.selection_*` for active tab fill; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: active-tab idle from Theme.selection_* |
+| 0 | `7058b240` | Decision: active-tab idle from Theme.selection_* |
+| 1 | (this) | Red/stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,7 +33,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: active==inactive panel idle | pending |
+| 1 | Red: active==inactive panel idle | **done** |
 | 2 | Wire selection_* for active; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
