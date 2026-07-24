@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:18 (Planner PLAN → §53)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 10:18 |
+| elapsed | ~4 min |
+| done    | Break idle: open §53 `TRACK_EDITOR_PROPORTIONAL_HIT_TEST` — §52 residual (mono hit/caret/selection vs shaped wrap); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `wrap_offset_at_point` + demo caret/selection still `char_width` cell; no `run_ux_proportional_hit_test_*`; agent TRACK_* = 6 |
+| result  | STEP=0 frozen; primary gate `ux_ok proportional_hit_test_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+
 ### Turn 2026-07-24 10:16 (Planner PLAN — idle reconfirm)
 
 | field   | value |

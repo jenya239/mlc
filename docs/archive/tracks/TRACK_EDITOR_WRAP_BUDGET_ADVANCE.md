@@ -12,7 +12,8 @@ Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](TRACK_EDITOR_WRAPPED
 pixel tick; `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual: proportional caret/selection/hit-test still mono cell (Decision OOS);
+Honest residual → **§53** `TRACK_EDITOR_PROPORTIONAL_HIT_TEST` (opened 2026-07-24):
+proportional caret/selection/hit-test still mono cell (Decision OOS here).
 `*_red` post-green fails (use stable only). Full-document pixel reshape cost on large files
 cached via wrap_count_cache_tick_pixel (invalidate on text/viewport/font).
 
@@ -26,7 +27,7 @@ cached via wrap_count_cache_tick_pixel (invalidate on text/viewport/font).
 
 ## Next step
 
-**closed** — Critic OK. Queue → Planner (authorized queue empty; select next or document idle).
+**closed** — Critic OK. Residual → §53 `TRACK_EDITOR_PROPORTIONAL_HIT_TEST`.
 
 ### STEPs done in git
 
