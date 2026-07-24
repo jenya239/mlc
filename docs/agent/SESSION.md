@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:28 (Driver TRACK_EDITOR_WRAP_HIT_SCROLL_X STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+| started | 2026-07-24 12:26 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_wrap_hit_scroll_x_red.sh` + failing stable stub; proves `wrap_offset_at_point_pixel` + demo click omit `scroll_offset_x` |
+| verify  | `ux_ok wrap_hit_scroll_x_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+
 ### Turn 2026-07-24 12:25 (Planner PLAN → §58)
 
 | field   | value |
