@@ -462,7 +462,7 @@ compiler/
 | **64** | Editor overlay/menu/nav theme tint (§46 #33c residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT](archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT.md) |
 | **65** | Editor minimap indicator theme tint (§64 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT](archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md) |
 | **66** | Editor chrome hover default from Theme (§46 #33c residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md) |
-| **67** | Editor discard danger from Theme (§66 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_DISCARD_DANGER_THEME](agent/TRACK_EDITOR_DISCARD_DANGER_THEME.md) |
+| **67** | Editor discard danger from Theme (§66 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME](archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -812,8 +812,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CHROME_HOVER_DEFAULT_THEME (§66, **closed** 2026-07-24: Critic OK; STEP=0–3;
       chrome_hover default → theme_solarized_light; `8f177065`…`ae896b1a`;
       → [archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md](archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md))**
-  → **EDITOR_DISCARD_DANGER_THEME (§67, open STEP=3 Critic next:
-      Theme.danger_* + discard button; [TRACK_EDITOR_DISCARD_DANGER_THEME](agent/TRACK_EDITOR_DISCARD_DANGER_THEME.md))**
+  → **EDITOR_DISCARD_DANGER_THEME (§67, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      Theme.danger_* + discard button; `8ce50d63`…`c9190ac0`;
+      → [archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md](archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md))**
 ```
 
 

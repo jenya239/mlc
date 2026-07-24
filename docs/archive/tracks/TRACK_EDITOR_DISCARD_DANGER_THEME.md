@@ -1,14 +1,33 @@
 # Track: Editor discard danger button from Theme
 
-Parent: [../PLAN.md](../PLAN.md) §67.
-Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md)
+Parent: [../../PLAN.md](../../PLAN.md) §67.
+Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md)
 (§66) / overlay theme chain. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-24) — Critic OK
+
+**Critic 2026-07-24 (STEP=3):** Re-ran `discard_danger_theme_stable` ×2 +
+`overlay_theme_tint_stable` + `chrome_hover_default_theme_stable` + `demo_live` compile +
+HEAD `run_ux_gate` (82 scenarios).
+Anti-false-done: `8ce50d63`…`c9190ac0` (STEP=0–2); discard → `theme.danger_*`;
+Theme fields on light/dark; `misc/editor/**` + scripts → REG skip; no
+`compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); theme-tint chrome chain largely done.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_discard_danger_theme_stable.sh` | `ux_ok discard_danger_theme_stable` EXIT=0 (×2) |
+| `run_ux_overlay_theme_tint_stable.sh` | `ux_ok overlay_theme_tint_stable` EXIT=0 |
+| `run_ux_chrome_hover_default_theme_stable.sh` | `ux_ok chrome_hover_default_theme_stable` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (82 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable ×2 + related overlay + demo_live compile + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +35,8 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](../archive/tracks/TRACK_ED
 |------|-----------------|-------|
 | 0 | `8ce50d63` | Decision: Theme.danger_* + discard wire |
 | 1 | `d7249641` | Red/stable stub |
-| 2 | (this) | Theme.danger_* + discard wire + L0 green |
+| 2 | `c9190ac0` | Theme.danger_* + discard wire + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -36,7 +56,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](../archive/tracks/TRACK_ED
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: bare discard RGB + stable stub | **done** |
 | 2 | Theme.danger_* + wire discard; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
