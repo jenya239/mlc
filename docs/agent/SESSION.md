@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 07:00 (Critic TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 06:50 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + related gates + demo_live + `run_ux_gate` 96; archive §81 |
+| verify  | `scroll_reuses_frame_line_index` EXIT=0 ×2; wheel/goto/drag/paint/lf EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (96 scenarios)` |
+| result  | §81 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; selection/overflow/probe/goto flatten + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 06:45 (Driver TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX STEP=2)
 
 | field   | value |
