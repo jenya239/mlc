@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:50 (Driver TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+| started | 2026-07-25 04:45 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_shared_syntax_span_cache_red.sh` + stable stub `not implemented`; gap = dual caches |
+| verify  | red EXIT=0 `ux_ok shared_syntax_span_cache_red`; stable EXIT=1 `not implemented` |
+| result  | §79 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+
 ### Turn 2026-07-25 04:40 (Planner plan-refresh → §79)
 
 | field   | value |

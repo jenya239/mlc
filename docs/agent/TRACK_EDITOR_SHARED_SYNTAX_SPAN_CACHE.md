@@ -5,17 +5,18 @@ Residual of [TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITO
 (§78) / [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE.md)
 (§77). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert main paint still ticks visible-range-only cache (re-lex on scroll); stable stub `not implemented`.
+**STEP=2** — Shared full-buffer wire; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: one full-buffer span cache for paint + minimap |
+| 0 | 77e83af9 | Decision: one full-buffer span cache for paint + minimap |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -33,7 +34,7 @@ Residual of [TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITO
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: dual / visible-range cache | pending |
+| 1 | Red: dual / visible-range cache | **done** |
 | 2 | Shared full-buffer wire; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
