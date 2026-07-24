@@ -460,7 +460,7 @@ compiler/
 | **62** | Editor scrollbar thumb theme tint (§61 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md) |
 | **63** | Editor folder scrollbar thumb drag (§62 / §61 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md) |
 | **64** | Editor overlay/menu/nav theme tint (§46 #33c residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT](archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT.md) |
-| **65** | Editor minimap indicator theme tint (§64 residual) | **active** — STEP=0 done → Driver STEP=1 | [TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT](agent/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md) |
+| **65** | Editor minimap indicator theme tint (§64 residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT](agent/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -804,7 +804,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_OVERLAY_THEME_TINT (§64, **closed** 2026-07-24: Critic OK; STEP=0–3;
       dirty-close/menu/nav → theme.panel_/muted_*; `d77fa0a3`…`c72841c5`;
       → [archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT.md](archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT.md))**
-  → **EDITOR_MINIMAP_INDICATOR_THEME_TINT (§65, active: STEP=0 Decision → Driver STEP=1;
+  → **EDITOR_MINIMAP_INDICATOR_THEME_TINT (§65, active: STEP=1 red done → Driver STEP=2;
       §64 residual — minimap indicator `0.35/0.40/0.45` → theme.muted_*;
       → [agent/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md](agent/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md))**
 ```
