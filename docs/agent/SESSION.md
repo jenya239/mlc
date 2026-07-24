@@ -2,6 +2,36 @@
 
 ## Entries
 
+### Turn 2026-07-25 07:45 (Driver TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 07:30 |
+| elapsed | ~15 min |
+| done    | Pass `LineIndex` into click/drag/draw_report; wire drag_autoscroll + scenarios; L2 green |
+| verify  | stable EXIT=0; red EXIT=1; multi/full/drag/scroll/paint/large_file EXIT=0 |
+| result  | §82 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX |
+
+### Turn 2026-07-25 07:25 (Driver TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 07:20 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_selection_reuses_frame_line_index_red.sh` + stable stub `not implemented`; gap = 3× `line_index_from_document` in selection_apply.mlc |
+| verify  | red EXIT=0 `ux_ok selection_reuses_frame_line_index_red`; stable EXIT=1 `not implemented` |
+| result  | §82 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 07:15 (Planner plan-refresh → §82)
 
 | field   | value |

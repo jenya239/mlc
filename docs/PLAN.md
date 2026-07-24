@@ -477,7 +477,7 @@ compiler/
 | **79** | Editor shared full-buffer syntax span cache (§78 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE](archive/tracks/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE.md) |
 | **80** | Editor paint reuses frame LineIndex (#1d residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md) |
 | **81** | Editor scroll reuses frame LineIndex (§80 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md) |
-| **82** | Editor selection reuses frame LineIndex (§81 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md) |
+| **82** | Editor selection reuses frame LineIndex (§81 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -872,7 +872,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX (§81, **closed** 2026-07-25: Critic OK; STEP=0–3;
       scroll reuses frame LineIndex; `bbdcccf5`…`672fe791`;
       → [archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md](archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md))**
-  → **EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX (§82, open STEP=2 next:
+  → **EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX (§82, open STEP=3 Critic next:
       selection reuses frame LineIndex; [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md))**
 ```
 

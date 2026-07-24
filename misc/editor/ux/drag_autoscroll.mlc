@@ -70,5 +70,5 @@ export fn editor_ux_drag_text_autoscroll(
     next_state = state_with_scroll_y(state, scroll_y)
     hit_y = viewport.y + viewport.height - 1
   end
-  editor_ux_drag_text(next_state, metrics, pixel_x, hit_y)
+  editor_ux_drag_text(next_state, metrics, pixel_x, hit_y, line_index)
 end

@@ -71,11 +71,14 @@ fn main() -> i32 = do
   const text_origin_y = editor_rect.y + strip_height
   const text_bottom = editor_rect.y + editor_rect.height
 
+  const line_index_before = line_index_from_document(
+    tab_set_active(state.tabs).buffer.document
+  )
   // Anchor at first visible line.
-  state = editor_ux_click_text(state, metrics, text_origin_x, text_origin_y + 2)
+  state = editor_ux_click_text(
+    state, metrics, text_origin_x, text_origin_y + 2, line_index_before
+  )
   const scroll_before = state.scroll_offset_y
-  const active_before = tab_set_active(state.tabs)
-  const line_index_before = line_index_from_document(active_before.buffer.document)
   const position_before = line_index_offset_to_position(
     line_index_before,
     line_index_before.text,

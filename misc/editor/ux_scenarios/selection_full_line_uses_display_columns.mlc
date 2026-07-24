@@ -9,7 +9,8 @@ import {
 import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -24,7 +25,10 @@ import {
   editor_ux_drag_text,
   editor_ux_selection_draw_report
 } from '../ux/selection_apply'
-import { utf8_count_display_columns } from '../document/line_index'
+import {
+  utf8_count_display_columns,
+  line_index_from_document
+} from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 800, 600)
@@ -69,18 +73,22 @@ fn main() -> i32 = do
 
   const metrics = editor_font_metrics_from_size(11)
   state = editor_ux_insert_text(state, source)
+  const line_index = line_index_from_document(
+    tab_set_active(state.tabs).buffer.document
+  )
 
   const editor_rect = shell_panels_editor_rect(state.panels)
   const text_x = editor_rect.x
   const text_y = editor_rect.y + state.tab_strip_height
 
   // Select all three lines (click start → drag past end).
-  state = editor_ux_click_text(state, metrics, text_x, text_y)
+  state = editor_ux_click_text(state, metrics, text_x, text_y, line_index)
   state = editor_ux_drag_text(
     state,
     metrics,
     text_x + 8 * metrics.char_width,
-    text_y + 2 * metrics.line_height
+    text_y + 2 * metrics.line_height,
+    line_index
   )
 
   const snapshot = editor_ux_snapshot(state)
@@ -89,7 +97,7 @@ fn main() -> i32 = do
     return 3
   end
 
-  const report = editor_ux_selection_draw_report(state, metrics)
+  const report = editor_ux_selection_draw_report(state, metrics, line_index)
   if report.line_span != 3 || report.highlights.length() != 3 then
     println("ux_fail selection_full_line_uses_display_columns span")
     return 4
