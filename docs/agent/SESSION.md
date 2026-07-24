@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:45 (Planner plan-refresh → §75)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 02:40 |
+| elapsed | ~5 min |
+| done    | Opened §75 `TRACK_EDITOR_MINIMAP_ZOOM_SCALE`: Decision — `minimap_pixel_size_for_font(zoom)` + rebuild on zoom; #35 residual after §74 |
+| verify  | minimap still fixed `pixel_size = 2` |
+| result  | §75 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP_ZOOM_SCALE |
+
 ### Turn 2026-07-25 02:40 (Critic TRACK_EDITOR_MINIMAP_SYNTAX_TAGS)
 
 | field   | value |
