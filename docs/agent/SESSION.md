@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:00 (Driver TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN |
+| started | 2026-07-25 00:55 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_active_tab_title_plain_red.sh` + stable stub `not implemented`; asserts ≥3 `[title]` wraps |
+| verify  | `ux_ok active_tab_title_plain_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN |
+
 ### Turn 2026-07-25 00:55 (Planner plan-refresh → §70)
 
 | field   | value |
