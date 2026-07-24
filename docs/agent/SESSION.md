@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:55 (Planner plan-refresh → §70)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 00:50 |
+| elapsed | ~5 min |
+| done    | Opened §70 `TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN`: Decision — drop three `[title]` wraps; selection fill keeps active mark (§68 residual) |
+| verify  | three `"[" + … + "]"` sites still in `demo_live`; selection_* fill present |
+| result  | §70 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN |
+
 ### Turn 2026-07-25 00:50 (Critic TRACK_EDITOR_NAV_CRUMB_HOVER)
 
 | field   | value |

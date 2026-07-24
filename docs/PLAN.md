@@ -465,6 +465,7 @@ compiler/
 | **67** | Editor discard danger from Theme (§66 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME](archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md) |
 | **68** | Editor active-tab idle tint (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT](archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md) |
 | **69** | Editor folder nav/breadcrumb hover (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER](archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER.md) |
+| **70** | Editor active-tab title without brackets (§68 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN](agent/TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -823,6 +824,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_NAV_CRUMB_HOVER (§69, **closed** 2026-07-25: Critic OK; STEP=0–3;
       nav/breadcrumb chrome_hover; `0d14ad1c`…`d0268f6e`;
       → [archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER.md](archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER.md))**
+  → **EDITOR_ACTIVE_TAB_TITLE_PLAIN (§70, open STEP=1 next:
+      drop `[title]` brackets; [TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN](agent/TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN.md))**
 ```
 
 
