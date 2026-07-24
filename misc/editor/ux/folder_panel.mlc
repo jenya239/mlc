@@ -369,6 +369,53 @@ export fn folder_scrollbar_thumb(
   )
 end
 
+// TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG — Y track (right edge of tree list).
+export fn folder_scrollbar_track(list_rect: Rect) -> Rect =
+  rect_new(
+    list_rect.x + list_rect.width - folder_scrollbar_width() - 2,
+    list_rect.y,
+    folder_scrollbar_width(),
+    list_rect.height
+  )
+
+// Map pointer Y along folder scrollbar track → tree_scroll_y.
+export fn folder_scrollbar_scroll_at_y(
+  pointer_y: i32,
+  list_rect: Rect,
+  row_count: i32
+) -> i32 = do
+  const track = folder_scrollbar_track(list_rect)
+  const content = folder_content_height(row_count)
+  if content <= track.height || track.height <= 0 then
+    return 0
+  end
+  let mut thumb = track.height * track.height / content
+  if thumb < 12 then
+    thumb = 12
+  end
+  if thumb > track.height then
+    thumb = track.height
+  end
+  let mut max_scroll = folder_max_scroll(row_count, list_rect.height)
+  if max_scroll < 1 then
+    max_scroll = 1
+  end
+  let mut usable = track.height - thumb
+  if usable < 1 then
+    usable = 1
+  end
+  let mut relative = pointer_y - track.y - thumb / 2
+  if relative < 0 then
+    relative = 0
+  end
+  if relative > usable then
+    relative = usable
+  end
+  folder_clamp_scroll(
+    relative * max_scroll / usable, row_count, list_rect.height
+  )
+end
+
 // Directory browse history for double-click / breadcrumb / parent navigation.
 export type FolderNavHistory = {
   paths: [string],

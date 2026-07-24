@@ -79,6 +79,8 @@ import {
   folder_row_rect,
   folder_clamp_scroll,
   folder_scrollbar_thumb,
+  folder_scrollbar_track,
+  folder_scrollbar_scroll_at_y,
   folder_breadcrumb_height,
   folder_row_height,
   folder_row_parent,
@@ -1358,6 +1360,21 @@ fn main() -> i32 = do
         end
       end
 
+      // folder_scrollbar_thumb_drag: press on tree track → tree_scroll_y
+      if handled == 0 then
+        const folder_track = folder_scrollbar_track(tree_list_rect)
+        if point_in_rect(point_new(input.mouse_x, input.mouse_y), folder_track) != 0 then
+          tree_scroll_y = folder_scrollbar_scroll_at_y(
+            input.mouse_y, tree_list_rect, folder_rows.length()
+          )
+          scrollbar_drag = 3
+          minimap_drag = 0
+          selecting_text = 0
+          last_command = "folder_scrollbar_thumb_drag"
+          handled = 1
+        end
+      end
+
       if handled == 0 then
         const folder_click = folder_browser_resolve_click(
           tree_rect,
@@ -1748,6 +1765,13 @@ fn main() -> i32 = do
         )
         app = editor_app_set_scroll_x(app, mapped_sb_x)
         last_command = "scrollbar_thumb_drag"
+      end
+      if input.mouse_down != 0 && scrollbar_drag == 3 &&
+          panels.dragging == 0 && minimap_drag == 0 then
+        tree_scroll_y = folder_scrollbar_scroll_at_y(
+          input.mouse_y, tree_list_rect, folder_rows.length()
+        )
+        last_command = "folder_scrollbar_thumb_drag"
       end
       if input.mouse_down != 0 && selecting_text != 0 &&
           panels.dragging == 0 && dragging_tab_index < 0 &&

@@ -1,0 +1,27 @@
+// TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG STEP=2 —
+// Pointer low vs high on folder track → different tree_scroll_y.
+import { rect_new } from '../../gui/layout'
+import { folder_scrollbar_scroll_at_y } from '../ux/folder_panel'
+
+fn main() -> i32 = do
+  const list_rect = rect_new(10, 40, 180, 200)
+  const row_count = 80
+
+  const scroll_low = folder_scrollbar_scroll_at_y(
+    list_rect.y + 20, list_rect, row_count
+  )
+  const scroll_high = folder_scrollbar_scroll_at_y(
+    list_rect.y + list_rect.height - 20, list_rect, row_count
+  )
+  if scroll_low == scroll_high then
+    println("ux_fail folder_scrollbar_thumb_drag_stable same")
+    return 1
+  end
+  if scroll_high <= scroll_low then
+    println("ux_fail folder_scrollbar_thumb_drag_stable order")
+    return 2
+  end
+
+  println("ux_ok folder_scrollbar_thumb_drag_stable")
+  0
+end
