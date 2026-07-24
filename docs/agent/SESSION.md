@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:50 (Planner PLAN → §61)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 17:48 |
+| elapsed | ~2 min |
+| done    | Break idle: open §61 `TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` — §60/#33e residual (thumbs draw, no drag→scroll; minimap already maps); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: content thumbs Y/X draw only; no `run_ux_scrollbar_thumb_drag_*`; minimap has `scroll_at_y`; agent TRACK_* = 6; SESSION ~333+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok scrollbar_thumb_drag_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 17:48 (Critic TRACK_EDITOR_HORIZONTAL_SCROLLBAR)
 
 | field   | value |
