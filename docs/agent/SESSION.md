@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:35 (Planner plan-refresh → §69)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 00:30 |
+| elapsed | ~5 min |
+| done    | Opened §69 `TRACK_EDITOR_NAV_CRUMB_HOVER`: Decision — nav back/forward + breadcrumb via `chrome_hover_draw_entry` (§46 #32 residual) |
+| verify  | nav/crumb draw still flat `theme.panel_*` without hover helper |
+| result  | §69 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_NAV_CRUMB_HOVER |
+
 ### Turn 2026-07-25 00:30 (Critic TRACK_EDITOR_ACTIVE_TAB_TINT)
 
 | field   | value |

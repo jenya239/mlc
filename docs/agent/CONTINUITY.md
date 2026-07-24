@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Planner** (authorized queue empty after §68 close). Priority override `#36` **closed** 2026-07-20. **Override 2026-07-25:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61/#62/#63/#64/#65/#66/#67/#68 done.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver STEP=1 `TRACK_EDITOR_NAV_CRUMB_HOVER` (§69)**. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-25:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61/#62/#63/#64/#65/#66/#67/#68 done; §69 open.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -97,10 +97,11 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (PLAN §65)** | **closed** 2026-07-24 (Critic OK). Archived. indicator uses theme.muted_*. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` (PLAN §66)** | **closed** 2026-07-24 (Critic OK). Archived. default hover from theme_solarized_light. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_DISCARD_DANGER_THEME` (PLAN §67)** | **closed** 2026-07-24 (Critic OK). Archived. Theme.danger_* + discard. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_ACTIVE_TAB_TINT` (PLAN §68)** | **open** STEP=3 Critic next. Active tab idle → theme.selection_*. Size S |
+| **`TRACK_EDITOR_ACTIVE_TAB_TINT` (PLAN §68)** | **closed** 2026-07-25 (Critic OK). Archived. Active tab idle → theme.selection_*. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_NAV_CRUMB_HOVER` (PLAN §69)** | **open** STEP=1 next. Nav/breadcrumb chrome_hover. Size S |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **§68** Critic STEP=3 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
+| **Authorized queue** | **§69** Driver STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
