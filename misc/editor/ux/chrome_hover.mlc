@@ -1,6 +1,8 @@
 // TRACK_EDITOR_CHROME_THEME_DRIFT STEP=2 — panel-based idle/hover chrome fills.
+// TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME STEP=2 — default from theme_solarized_light.
 import { Rect, rect_new } from '../../gui/layout'
 import { GuiInput, gui_is_hovered, gui_input_new } from '../../gui/input'
+import { theme_solarized_light } from '../ui/theme'
 
 export type ChromeHoverRgb = {
   red: f64,
@@ -58,9 +60,13 @@ export fn editor_ux_chrome_hover_rgb_from_panel(
   editor_ux_chrome_panel_bar_rgb(panel_red, panel_green, panel_blue)
 end
 
-// Default Solarized Light base2 — same numbers as theme_solarized_light().panel_*.
-export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb =
-  editor_ux_chrome_hover_rgb_from_panel(0.933, 0.910, 0.835, hovered)
+// Default panel = theme_solarized_light().panel_*.
+export fn editor_ux_chrome_hover_rgb(hovered: i32) -> ChromeHoverRgb = do
+  const theme = theme_solarized_light()
+  editor_ux_chrome_hover_rgb_from_panel(
+    theme.panel_red, theme.panel_green, theme.panel_blue, hovered
+  )
+end
 
 export fn editor_ux_chrome_hover_draw_entry(
   input: GuiInput,
@@ -113,5 +119,8 @@ export fn editor_ux_chrome_hover_draw_report_stub() -> ChromeHoverDrawReport = d
   let mut rects: [Rect] = []
   rects.push(idle_rect)
   rects.push(hover_rect)
-  editor_ux_chrome_hover_draw_report(input, rects, 0.933, 0.910, 0.835)
+  const theme = theme_solarized_light()
+  editor_ux_chrome_hover_draw_report(
+    input, rects, theme.panel_red, theme.panel_green, theme.panel_blue
+  )
 end

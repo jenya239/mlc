@@ -461,7 +461,7 @@ compiler/
 | **63** | Editor folder scrollbar thumb drag (§62 / §61 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md) |
 | **64** | Editor overlay/menu/nav theme tint (§46 #33c residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT](archive/tracks/TRACK_EDITOR_OVERLAY_THEME_TINT.md) |
 | **65** | Editor minimap indicator theme tint (§64 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT](archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md) |
-| **66** | Editor chrome hover default from Theme (§46 #33c residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](agent/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md) |
+| **66** | Editor chrome hover default from Theme (§46 #33c residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](agent/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -808,7 +808,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_MINIMAP_INDICATOR_THEME_TINT (§65, **closed** 2026-07-24: Critic OK; STEP=0–3;
       indicator → theme.muted_*; `e3e34e2c`…`a21da97b`;
       → [archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md](archive/tracks/TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT.md))**
-  → **EDITOR_CHROME_HOVER_DEFAULT_THEME (§66, active: STEP=1 red done → Driver STEP=2;
+  → **EDITOR_CHROME_HOVER_DEFAULT_THEME (§66, active: STEP=2 green → Critic STEP=3;
       §46 #33c residual — chrome_hover default bare Light RGB → theme_solarized_light;
       → [agent/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md](agent/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md))**
 ```

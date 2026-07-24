@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:52 (Driver TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME |
+| started | 2026-07-24 18:45 |
+| elapsed | ~3 min |
+| done    | `chrome_hover` default+stub → `theme_solarized_light().panel_*`; scenario uses theme; green L0 stable |
+| verify  | `ux_ok chrome_hover_default_theme_stable` EXIT=0; `chrome_hover_tint_differs` + `chrome_panel_rgb_matches_theme` EXIT=0 |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME |
+
 ### Turn 2026-07-24 18:50 (Driver TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME STEP=1)
 
 | field   | value |

@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §66.
 Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHROME_THEME_DRIFT.md)
 (§46 #33c) / post-§65 idle. Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Wire theme_solarized_light; green stable.
+**STEP=3** — Critic: stable×2 + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_CHROME_THEME_DRIFT](../archive/tracks/TRACK_EDITOR_CHR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: bare Light RGB in chrome_hover | **done** |
-| 2 | Wire theme_solarized_light; green | open |
+| 2 | Wire theme_solarized_light; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves 0.933/0.910/0.835 in chrome_hover; stable stub -->

@@ -1,6 +1,7 @@
 // TRACK_EDITOR_CHROME_HOVER_STATE — L2: hovered tint ≠ idle same frame.
 import { rect_new, Rect } from '../../gui/layout'
 import { gui_input_new } from '../../gui/input'
+import { theme_solarized_light } from '../ui/theme'
 import {
   editor_ux_chrome_hover_rgb,
   editor_ux_chrome_hover_draw_report
@@ -22,8 +23,9 @@ fn main() -> i32 = do
   let mut rects: [Rect] = []
   rects.push(idle_rect)
   rects.push(hover_rect)
+  const theme = theme_solarized_light()
   const report = editor_ux_chrome_hover_draw_report(
-    input, rects, 0.933, 0.910, 0.835
+    input, rects, theme.panel_red, theme.panel_green, theme.panel_blue
   )
   if report.entries.length() < 2 then
     println("ux_fail chrome_hover_tint_differs setup count")
