@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:25 (Planner PLAN → §58)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 12:22 |
+| elapsed | ~3 min |
+| done    | Break idle: open §58 `TRACK_EDITOR_WRAP_HIT_SCROLL_X` — §46 #17 residual (`wrap_offset_at_point_pixel` ignores `scroll_offset_x`; nav path already accounts); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: pixel hit API has scroll_y only; demo click omits scroll_x; no `run_ux_wrap_hit_scroll_x_*`; agent TRACK_* = 6; SESSION ~468+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok wrap_hit_scroll_x_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+
 ### Turn 2026-07-24 12:22 (Planner PLAN — idle reconfirm)
 
 | field   | value |
