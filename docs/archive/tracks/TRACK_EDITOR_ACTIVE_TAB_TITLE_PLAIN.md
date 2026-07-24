@@ -1,14 +1,31 @@
 # Track: Editor active-tab title without brackets
 
-Parent: [../PLAN.md](../PLAN.md) §70.
-Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](../archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TINT.md)
+Parent: [../../PLAN.md](../../PLAN.md) §70.
+Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](TRACK_EDITOR_ACTIVE_TAB_TINT.md)
 (§68). Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `active_tab_title_plain_stable` ×2 +
+`active_tab_tint_stable` + `demo_live` compile + HEAD `run_ux_gate` (85 scenarios).
+Anti-false-done: `95c15893`…`1f45a8f7` (STEP=0–2); three `[title]` wraps removed;
+selection_* fill remains; `misc/editor/**` + scripts → REG skip; no
+`compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); scrollbar thumb hover still OOS (#32).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_active_tab_title_plain_stable.sh` | `ux_ok active_tab_title_plain_stable` EXIT=0 (×2) |
+| `run_ux_active_tab_tint_stable.sh` | `ux_ok active_tab_tint_stable` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (85 scenarios) | `[ux gate] all ok` EXIT=0 (retry; first run raced idle_cpu with compile) |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable ×2 + active_tab_tint + demo_live compile + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +33,8 @@ Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](../archive/tracks/TRACK_EDITOR_ACTIVE
 |------|-----------------|-------|
 | 0 | `95c15893` | Decision: drop active-tab `[title]` brackets |
 | 1 | `68fa8020` | Red/stable stub |
-| 2 | (this) | Drop three wraps + L0 green |
+| 2 | `1f45a8f7` | Drop three wraps + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +54,7 @@ Residual of [TRACK_EDITOR_ACTIVE_TAB_TINT](../archive/tracks/TRACK_EDITOR_ACTIVE
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: brackets still present | **done** |
 | 2 | Drop brackets; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
