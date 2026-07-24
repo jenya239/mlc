@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §82.
 Residual of [TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md)
 (§81) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert selection helpers still call `line_index_from_document`; stable stub `not implemented`.
+**STEP=2** — Pass `LineIndex` into selection helpers; green `ux_ok selection_reuses_frame_line_index`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: selection path reuses frame `LineIndex` |
+| 0 | `56473a41` | Decision: selection path reuses frame `LineIndex` |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: selection still re-stringifies | pending |
+| 1 | Red: selection still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts ≥3 line_index_from_document in selection_apply.mlc; 2) stable stub not implemented; 3) docs -->
 <!-- STEP=2 sub-steps: 1) LineIndex param on click/drag/draw_report; 2) wire callers; 3) green stable + related selection scenarios -->
 
 ## Out of scope
