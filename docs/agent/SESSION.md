@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:38 (Planner PLAN → §65)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:32 |
+| elapsed | ~3 min |
+| done    | Break idle: open §65 `TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` — §64 residual (minimap indicator hardcoded `0.35/0.40/0.45`; scrollbars already `theme.muted_*`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `0.35, 0.40, 0.45` at `demo_live` minimap_indicator; no `run_ux_minimap_indicator_theme_tint_*`; agent TRACK_* = 6; SESSION ~573 |
+| result  | STEP=0 frozen; primary gate `ux_ok minimap_indicator_theme_tint_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT |
+
 ### Turn 2026-07-24 18:35 (Critic TRACK_EDITOR_OVERLAY_THEME_TINT)
 
 | field   | value |

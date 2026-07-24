@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner (authorized queue empty after §64 close).
+**Queue head:** Driver `TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (§65) STEP=1.
+**`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (§65)** **active** — STEP=0 Decision done → Driver STEP=1.
 **`TRACK_EDITOR_OVERLAY_THEME_TINT` (§64)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` (§63)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62)** **closed** 2026-07-24 (Critic OK). Archived.
