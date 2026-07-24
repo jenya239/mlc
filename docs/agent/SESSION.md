@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:14 (Planner PLAN → §63)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:11 |
+| elapsed | ~3 min |
+| done    | Break idle: open §63 `TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` — §62 residual (folder thumb draws; no drag→`tree_scroll_y`; content already has §61); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `folder_scrollbar_thumb` + wheel scroll; no `folder_scrollbar_scroll_at`; no `run_ux_folder_scrollbar_thumb_drag_*`; agent TRACK_* = 6; SESSION ~453+15 |
+| result  | STEP=0 frozen; primary gate `ux_ok folder_scrollbar_thumb_drag_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 18:12 (Critic TRACK_EDITOR_SCROLLBAR_THEME_TINT)
 
 | field   | value |

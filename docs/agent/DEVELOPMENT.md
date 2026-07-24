@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner plan-refresh (authorized queue empty after §62).
+**Queue head:** Driver `TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` (§63) STEP=1.
+**`TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG` (§63)** **active** — STEP=0 Decision done → Driver STEP=1.
 **`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` (§61)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_HORIZONTAL_SCROLLBAR` (§60)** **closed** 2026-07-24 (Critic OK). Archived.
