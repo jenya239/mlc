@@ -1,4 +1,4 @@
-// TRACK_EDITOR_CURRENT_LINE_HL STEP=1 — L2: current-line draw report geometry.
+// TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX STEP=2 — L2: paint helpers reuse LineIndex.
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
 import { shell_panels_new } from '../ui/shell_panels'
@@ -15,7 +15,9 @@ import {
 import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
 import { editor_ux_current_line_draw_report } from '../ux/current_line_hl'
-import { line_index_from_document } from '../document/line_index'
+import { editor_ux_trailing_ws_draw_report } from '../ux/trailing_ws'
+import { status_bar_from_buffer } from '../ui/status_bar'
+import { line_index_from_string } from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 800, 600)
@@ -46,15 +48,14 @@ fn main() -> i32 = do
   }
 
   const metrics = editor_text_metrics_default()
-  state = editor_ux_insert_text(state, "aaa\nbbb\nccc")
-  // Caret on line 1 (0-based): start of "bbb" = byte 4.
+  state = editor_ux_insert_text(state, "aaa  \nbbb\nccc ")
   state = EditorUxState {
     window_width: state.window_width,
     window_height: state.window_height,
     focus: state.focus,
     panels: state.panels,
     tabs: state.tabs,
-    selection: selection_collapsed(4),
+    selection: selection_collapsed(6),
     scroll_offset_x: state.scroll_offset_x,
     scroll_offset_y: state.scroll_offset_y,
     cursor_shape: state.cursor_shape,
@@ -63,31 +64,33 @@ fn main() -> i32 = do
     overflows: state.overflows
   }
 
-  const line_index = line_index_from_document(
-    tab_set_active(state.tabs).buffer.document
+  // One LineIndex for paint path (frame snapshot reuse); no helper re-flatten.
+  const line_index = line_index_from_string("aaa  \nbbb\nccc ")
+  const current_line = editor_ux_current_line_draw_report(
+    state, metrics, line_index
   )
-  const report = editor_ux_current_line_draw_report(state, metrics, line_index)
-  if report.highlights.length() != 1 then
-    println(
-      "ux_fail current_line highlights count got " +
-        report.highlights.length().to_string()
-    )
+  if current_line.highlights.length() != 1 then
+    println("ux_fail paint_reuses_frame_line_index current_line count")
     return 1
   end
-  const highlight = report.highlights[0]
-  if highlight.line != 1 then
-    println("ux_fail current_line highlight line")
+  if current_line.highlights[0].line != 1 then
+    println("ux_fail paint_reuses_frame_line_index current_line")
     return 2
   end
-  if highlight.height != metrics.line_height then
-    println("ux_fail current_line highlight height")
+
+  const trailing = editor_ux_trailing_ws_draw_report(state, metrics, line_index)
+  if trailing.highlights.length() != 2 then
+    println("ux_fail paint_reuses_frame_line_index trailing count")
     return 3
   end
-  if highlight.width <= 0 then
-    println("ux_fail current_line highlight width")
+
+  const active = tab_set_active(state.tabs)
+  const status = status_bar_from_buffer(active.buffer, 6, line_index)
+  if status.line != 2 || status.column != 1 then
+    println("ux_fail paint_reuses_frame_line_index status")
     return 4
   end
 
-  println("ux_ok current_line_highlight_draws")
+  println("ux_ok paint_reuses_frame_line_index")
   0
 end

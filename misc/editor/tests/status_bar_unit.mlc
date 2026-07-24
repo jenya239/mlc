@@ -9,6 +9,7 @@ import {
   status_bar_from_buffer,
   status_bar_format
 } from '../ui/status_bar'
+import { line_index_from_document } from '../document/line_index'
 
 fn main() -> i32 = do
   if status_bar_language_from_path("/proj/a.mlc") != "mlc" then
@@ -23,7 +24,9 @@ fn main() -> i32 = do
 
   let mut buffer = open_buffer_from_text("/proj/main.mlc", "ab\nc")
   // caret at start of second line (byte 3) → Ln 2, Col 1
-  let mut model = status_bar_from_buffer(buffer, 3)
+  let mut model = status_bar_from_buffer(
+    buffer, 3, line_index_from_document(buffer.document)
+  )
   if model.path != "/proj/main.mlc" then
     return 4
   end
@@ -38,7 +41,9 @@ fn main() -> i32 = do
   end
 
   buffer = open_buffer_set_document(buffer, document_from_string("ab\ncd"))
-  model = status_bar_from_buffer(buffer, 0)
+  model = status_bar_from_buffer(
+    buffer, 0, line_index_from_document(buffer.document)
+  )
   if model.dirty != 1 then
     return 8
   end

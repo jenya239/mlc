@@ -4,7 +4,8 @@ import { ux_focus_editor } from '../../gui/ux/snapshot'
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -14,6 +15,7 @@ import {
 import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
 import { editor_ux_trailing_ws_draw_report } from '../ux/trailing_ws'
+import { line_index_from_document } from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 800, 600)
@@ -47,7 +49,10 @@ fn main() -> i32 = do
   // Line 0 trailing spaces; line 1 clean; line 2 trailing space at EOF.
   state = editor_ux_insert_text(state, "aaa  \nbbb\nccc ")
 
-  const report = editor_ux_trailing_ws_draw_report(state, metrics)
+  const line_index = line_index_from_document(
+    tab_set_active(state.tabs).buffer.document
+  )
+  const report = editor_ux_trailing_ws_draw_report(state, metrics, line_index)
   if report.highlights.length() != 2 then
     println(
       "ux_fail trailing_ws_visualized count got " +

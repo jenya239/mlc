@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 05:45 (Driver TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 05:35 |
+| elapsed | ~10 min |
+| done    | Pass `LineIndex` into current_line_hl/trailing_ws/status_bar; demo_live wires frame `line_index`; L2 green |
+| verify  | stable EXIT=0; red EXIT=1; current_line/trailing_ws/status_bar/large_file EXIT=0 |
+| result  | §80 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 05:30 (Driver TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX STEP=1)
 
 | field   | value |

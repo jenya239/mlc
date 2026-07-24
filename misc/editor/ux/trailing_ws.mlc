@@ -1,13 +1,9 @@
 // TRACK_EDITOR_TRAILING_WS_VIZ STEP=2 — trailing-run draw report (visible lines).
 import { Rect, rect_new } from '../../gui/layout'
 import { shell_panels_editor_rect } from '../ui/shell_panels'
-import {
-  tab_set_has_active,
-  tab_set_active
-} from '../workspace/tabs'
+import { tab_set_has_active } from '../workspace/tabs'
 import {
   LineIndex,
-  line_index_from_document,
   line_index_line_count,
   line_index_line_start,
   line_index_offset_to_position
@@ -68,7 +64,8 @@ end
 
 export fn editor_ux_trailing_ws_draw_report(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> TrailingWsDrawReport = do
   let mut highlights: [TrailingWsHighlight] = []
   if !tab_set_has_active(state.tabs) then
@@ -82,8 +79,6 @@ export fn editor_ux_trailing_ws_draw_report(
   if char_width <= 0 then
     char_width = 1
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const text = line_index.text
   const viewport = text_viewport_rect(state)
   if viewport.width <= 0 || viewport.height <= 0 then

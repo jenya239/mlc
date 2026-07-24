@@ -1,13 +1,10 @@
 // TRACK_EDITOR_CURRENT_LINE_HL STEP=2 — caret-line full-viewport draw report.
 import { Rect, rect_new } from '../../gui/layout'
 import { shell_panels_editor_rect } from '../ui/shell_panels'
-import {
-  tab_set_has_active,
-  tab_set_active
-} from '../workspace/tabs'
+import { tab_set_has_active } from '../workspace/tabs'
 import { selection_caret } from '../document/selection'
 import {
-  line_index_from_document,
+  LineIndex,
   line_index_offset_to_position
 } from '../document/line_index'
 import { EditorTextMetrics } from './overflow'
@@ -44,7 +41,8 @@ end
 
 export fn editor_ux_current_line_draw_report(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> CurrentLineDrawReport = do
   let mut highlights: [CurrentLineHighlight] = []
   if !tab_set_has_active(state.tabs) then
@@ -54,8 +52,6 @@ export fn editor_ux_current_line_draw_report(
   if line_height <= 0 then
     line_height = 1
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const caret_pos = line_index_offset_to_position(
     line_index,
     line_index.text,

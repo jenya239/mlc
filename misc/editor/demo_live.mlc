@@ -2107,7 +2107,7 @@ fn main() -> i32 = do
       char_width: metrics.char_width
     }
     const current_line_report = editor_ux_current_line_draw_report(
-      app.ux, current_line_metrics
+      app.ux, current_line_metrics, line_index
     )
     let mut current_line_index = 0
     while current_line_index < current_line_report.highlights.length() do
@@ -2125,7 +2125,7 @@ fn main() -> i32 = do
 
     // Trailing whitespace runs (Decision: muted selection tint).
     const trailing_ws_report = editor_ux_trailing_ws_draw_report(
-      app.ux, current_line_metrics
+      app.ux, current_line_metrics, line_index
     )
     let mut trailing_ws_index = 0
     while trailing_ws_index < trailing_ws_report.highlights.length() do
@@ -2506,7 +2506,9 @@ fn main() -> i32 = do
     end
 
     const status = status_bar_format(
-      status_bar_from_buffer(active.buffer, selection_caret(selection))
+      status_bar_from_buffer(
+        active.buffer, selection_caret(selection), line_index
+      )
     )
     chrome_lines = push_line(chrome_lines, status, 12, 12, height - 8)
 
