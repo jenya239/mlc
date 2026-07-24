@@ -12,7 +12,9 @@ Anti-false-done: `7c078e1e`…`33fcee28` (STEP=0–2); `selection_fill_visual_ro
 `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual: multi-cursor selection fills OOS; `*_red` post-green fails (use stable only).
+Honest residual → **§55** `TRACK_EDITOR_MULTI_SELECTION_VISUAL` (opened 2026-07-24):
+multi-cursor selection fills OOS here.
+`*_red` post-green fails (use stable only).
 
 | Gate | Result |
 |------|--------|
@@ -25,7 +27,7 @@ Honest residual: multi-cursor selection fills OOS; `*_red` post-green fails (use
 
 ## Next step
 
-**closed** — Critic OK. Queue → Planner (authorized queue empty; select next or document idle).
+**closed** — Critic OK. Residual → §55 `TRACK_EDITOR_MULTI_SELECTION_VISUAL`.
 
 ### STEPs done in git
 

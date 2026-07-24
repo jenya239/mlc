@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:06 (Planner PLAN → §55)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 11:06 |
+| elapsed | ~3 min |
+| done    | Break idle: open §55 `TRACK_EDITOR_MULTI_SELECTION_VISUAL` — §54 residual (primary-only selection fill vs multi ranges); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `demo_live` fill uses only `selection` not `multi` ranges; no `run_ux_multi_selection_visual_*`; agent TRACK_* = 6 |
+| result  | STEP=0 frozen; primary gate `ux_ok multi_selection_visual_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MULTI_SELECTION_VISUAL |
+
 ### Turn 2026-07-24 10:55 (Critic TRACK_EDITOR_WRAP_SELECTION_VISUAL)
 
 | field   | value |
