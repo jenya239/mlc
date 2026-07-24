@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 05:00 (Driver TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+| started | 2026-07-25 04:50 |
+| elapsed | ~10 min |
+| done    | `shared_span_cache` full-buffer tick for paint+minimap; L2 green; related stables updated; demo_live compiles |
+| verify  | stable EXIT=0; red EXIT=1; syn/mini/syntax EXIT=0; `demo_live_fs_compile_ok` |
+| result  | §79 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE |
+
 ### Turn 2026-07-25 04:50 (Driver TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=1)
 
 | field   | value |

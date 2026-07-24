@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=2 `TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE` (§79).
-**`TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE` (§79)** **open** — STEP=1 red done; STEP=2 shared wire.
+**Queue head:** Critic STEP=3 `TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE` (§79).
+**`TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE` (§79)** **open** — STEP=2 green; Critic next.
 **`TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE` (§78)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE` (§77)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT` (§65)** **closed** 2026-07-24 (Critic OK). Archived.

@@ -771,8 +771,7 @@ fn main() -> i32 = do
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
-  let mut syntax_span_cache = editor_ux_syntax_span_cache_new()
-  let mut minimap_span_cache = editor_ux_syntax_span_cache_new()
+  let mut shared_span_cache = editor_ux_syntax_span_cache_new()
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut wrap_count_cache = wrap_count_cache_new_pixel(
@@ -2096,19 +2095,11 @@ fn main() -> i32 = do
     editor_gl_scissor_enable_rect(height, content_clip)
 
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
-    // Span cache: same text+visible range → reuse (no per-paint rehighlight).
-    let mut syntax_spans: [HighlightSpan] = []
-    if visible.first_line <= visible.last_line then
-      const range_start = line_index_line_start(line_index, visible.first_line)
-      let mut range_end = line_index.text_length
-      if visible.last_line + 1 < line_index_line_count(line_index) then
-        range_end = line_index_line_start(line_index, visible.last_line + 1)
-      end
-      syntax_span_cache = editor_ux_syntax_span_cache_tick(
-        syntax_span_cache, draw_text, range_start, range_end
-      )
-      syntax_spans = syntax_span_cache.spans
-    end
+    // One full-buffer span cache for paint + minimap (scroll does not re-lex).
+    shared_span_cache = editor_ux_syntax_span_cache_tick(
+      shared_span_cache, draw_text, 0, draw_text.byte_size()
+    )
+    const syntax_spans = shared_span_cache.spans
 
     // Current-line band under find/selection (Decision: panel tint ~0.55).
     const current_line_metrics = EditorTextMetrics {
@@ -2566,10 +2557,7 @@ fn main() -> i32 = do
           minimap_cached_font_size != zoom_font_size then
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
-        minimap_span_cache = editor_ux_syntax_span_cache_tick(
-          minimap_span_cache, draw_text, 0, draw_text.byte_size()
-        )
-        const minimap_spans = minimap_span_cache.spans
+        const minimap_spans = shared_span_cache.spans
         let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
         if map_line_count < 1 then

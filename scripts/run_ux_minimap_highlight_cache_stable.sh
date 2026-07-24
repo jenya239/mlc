@@ -14,8 +14,8 @@ if [ ! -x "$MLCC" ]; then
   echo "[ux minimap_highlight_cache_stable] FAIL: mlcc not found at $MLCC" >&2
   exit 1
 fi
-if ! grep -q 'minimap_span_cache' "$DEMO"; then
-  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing minimap_span_cache" >&2
+if ! grep -qE 'minimap_span_cache|shared_span_cache' "$DEMO"; then
+  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing minimap/shared span cache" >&2
   exit 1
 fi
 if grep -q 'const minimap_spans = highlight_mlc(draw_text)' "$DEMO"; then
