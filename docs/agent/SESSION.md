@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 11:40 (Planner plan-refresh → §86)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 11:35 |
+| elapsed | ~5 min |
+| done    | Opened §86 `TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT`: Decision — snapshot `document_text` from `line_index.text`; §85 residual |
+| verify  | `probe.mlc` still calls `document_to_string` for snapshot text |
+| result  | §86 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT |
+
 ### Turn 2026-07-25 11:30 (Critic TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX)
 
 | field   | value |
