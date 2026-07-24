@@ -757,7 +757,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       pixel-budget wrap via shaped advances; `717a690d`…`af121425`;
       → [archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md](archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md))**
   → **EDITOR_PROPORTIONAL_HIT_TEST (§53, active: STEP=2 done → Critic STEP=3;
-      advance-sum hit/caret/selection; `fe1f77e5`…STEP=2;
+      advance-sum hit/caret/selection; `fe1f77e5`…`6a1b1ce9`;
       → [agent/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md](agent/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md))**
 ```
 
