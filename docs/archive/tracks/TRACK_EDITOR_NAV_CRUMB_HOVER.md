@@ -1,14 +1,33 @@
 # Track: Editor folder nav/breadcrumb hover
 
-Parent: [../PLAN.md](../PLAN.md) §69.
-Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
+Parent: [../../PLAN.md](../../PLAN.md) §69.
+Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](TRACK_EDITOR_CHROME_HOVER_STATE.md)
 (§46 #32). Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `nav_crumb_hover_stable` ×2 +
+`overlay_theme_tint_stable` + `chrome_hover_tint_differs` + `demo_live` compile +
+HEAD `run_ux_gate` (84 scenarios).
+Anti-false-done: `0d14ad1c`…`d0268f6e` (STEP=0–2); crumb/nav →
+`chrome_hover_draw_entry`; `misc/editor/**` + scripts → REG skip; no
+`compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); scrollbar thumb hover fill still OOS (#32).
+
+| Gate | Result |
+|------|--------|
+| `run_ux_nav_crumb_hover_stable.sh` | `ux_ok nav_crumb_hover_stable` EXIT=0 (×2) |
+| `run_ux_overlay_theme_tint_stable.sh` | `ux_ok overlay_theme_tint_stable` EXIT=0 |
+| `run_ux_chrome_hover_tint_differs.sh` | `ux_ok chrome_hover_tint_differs` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (84 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable ×2 + overlay + demo_live compile + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +35,8 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 |------|-----------------|-------|
 | 0 | `0d14ad1c` | Decision: nav/crumb hover via chrome_hover |
 | 1 | `d4f6cb7c` | Red/stable stub |
-| 2 | (this) | chrome_hover wire + L0 green |
+| 2 | `d0268f6e` | chrome_hover wire + L0 green |
+| 3 | (this) | Critic close + archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +56,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: flat nav/crumb fills | **done** |
 | 2 | Wire chrome_hover; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** — Critic OK |
 
 ## Out of scope
 
