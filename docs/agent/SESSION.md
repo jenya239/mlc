@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:48 (Planner PLAN → §66)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:40 |
+| elapsed | ~3 min |
+| done    | Break idle: open §66 `TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME` — §46 #33c residual (`chrome_hover` default/stub still bare `0.933/0.910/0.835`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: bare Light RGB in `ux/chrome_hover.mlc`; demo already `from_panel`; no `run_ux_chrome_hover_default_theme_*`; agent TRACK_* = 6; SESSION ~304 |
+| result  | STEP=0 frozen; primary gate `ux_ok chrome_hover_default_theme_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME |
+
 ### Turn 2026-07-24 18:45 (Critic TRACK_EDITOR_MINIMAP_INDICATOR_THEME_TINT)
 
 | field   | value |
