@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 19:05 (Driver TRACK_EDITOR_DISCARD_DANGER_THEME STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DISCARD_DANGER_THEME |
+| started | 2026-07-24 19:00 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_discard_danger_theme_red.sh` + stable stub `not implemented`; asserts bare `0.55, 0.22, 0.22` + no `danger_*` |
+| verify  | `ux_ok discard_danger_theme_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DISCARD_DANGER_THEME |
+
 ### Turn 2026-07-24 19:00 (Planner plan-refresh → §67)
 
 | field   | value |

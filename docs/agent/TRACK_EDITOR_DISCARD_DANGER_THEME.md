@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §67.
 Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME.md)
 (§66) / overlay theme chain. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert bare discard danger RGB in `demo_live`; stable stub `not implemented`.
+**STEP=2** — Theme.danger_* + wire discard draw; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: Theme.danger_* + discard wire |
+| 0 | `8ce50d63` | Decision: Theme.danger_* + discard wire |
+| 1 | (this) | Red/stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -32,7 +33,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME](../archive/tracks/TRACK_ED
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: bare discard RGB + stable stub | pending |
+| 1 | Red: bare discard RGB + stable stub | **done** |
 | 2 | Theme.danger_* + wire discard; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
