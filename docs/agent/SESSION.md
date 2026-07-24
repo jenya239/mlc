@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:05 (Planner plan-refresh → §78)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 04:00 |
+| elapsed | ~5 min |
+| done    | Opened §78 `TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE`: Decision — cache full-buffer spans on minimap rebuild; §77 residual |
+| verify  | minimap still `highlight_mlc(draw_text)` on height/font rebuild (~2568) |
+| result  | §78 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 03:55 (Critic TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE)
 
 | field   | value |
