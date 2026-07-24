@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:43 (Driver TRACK_EDITOR_MULTI_CARET_DRAW STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MULTI_CARET_DRAW |
+| started | 2026-07-24 11:39 |
+| elapsed | ~8 min |
+| done    | `caret_pixel_in_visual_rows` + demo_live `multi_caret_draw` loop over `multi_selection_count`; scenario `multi_caret_draw_stable`; real stable script |
+| verify  | `ux_ok multi_caret_draw_stable` EXIT=0; `demo_live_fs_compile_ok`; red post-green fails (expected) |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_MULTI_CARET_DRAW |
+
 ### Turn 2026-07-24 11:31 (Driver TRACK_EDITOR_MULTI_CARET_DRAW STEP=1)
 
 | field   | value |

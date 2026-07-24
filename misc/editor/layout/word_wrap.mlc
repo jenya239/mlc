@@ -606,6 +606,42 @@ export fn selection_fill_visual_rows(
   spans
 end
 
+export type CaretPixel = {
+  visual_row_index: i32,
+  x: i32,
+  valid: i32
+}
+
+// Caret x within visible visual rows (valid=0 if caret not in this window).
+export fn caret_pixel_in_visual_rows(
+  text: string,
+  visual_rows: [VisualRow],
+  caret_byte: i32,
+  font_path: string,
+  pixel_size: i32
+) -> CaretPixel = do
+  let mut row_index = 0
+  while row_index < visual_rows.length() do
+    const row = visual_rows[row_index]
+    if caret_byte >= row.byte_start && caret_byte <= row.byte_end then
+      const x = pixel_x_for_byte_offset(
+        text, row.byte_start, row.byte_end, caret_byte, font_path, pixel_size
+      )
+      return CaretPixel {
+        visual_row_index: row_index,
+        x: x,
+        valid: 1
+      }
+    end
+    row_index = row_index + 1
+  end
+  CaretPixel {
+    visual_row_index: 0,
+    x: 0,
+    valid: 0
+  }
+end
+
 // Click → doc byte via pixel-budget wrap rows + advance hit within row.
 export fn wrap_offset_at_point_pixel(
   text: string,

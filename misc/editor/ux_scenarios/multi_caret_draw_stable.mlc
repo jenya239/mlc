@@ -1,0 +1,63 @@
+// TRACK_EDITOR_MULTI_CARET_DRAW STEP=2 —
+// Two collapsed carets → two distinct caret x via caret_pixel_in_visual_rows.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  visual_rows_for_line_pixel_budget,
+  caret_pixel_in_visual_rows
+} from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+import { selection_collapsed, selection_caret } from '../document/selection'
+import {
+  multi_selection_from_single,
+  multi_selection_count,
+  multi_selection_add_collapsed,
+} from '../document/multi_selection'
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail multi_caret_draw_stable char_width")
+    return 1
+  end
+
+  const line = "AAAAAAAA AAAAAAAA BBBBBBBB BBBBBBBB\n"
+  const line_index = line_index_from_string(line)
+  const viewport_width = char_width * 80
+  const rows = visual_rows_for_line_pixel_budget(
+    line, line_index, 0, viewport_width, font_path, pixel_size
+  )
+  if rows.length() < 1 then
+    println("ux_fail multi_caret_draw_stable rows")
+    return 2
+  end
+
+  let mut multi = multi_selection_from_single(selection_collapsed(0))
+  multi = multi_selection_add_collapsed(multi, 16)
+  if multi_selection_count(multi) < 2 then
+    println("ux_fail multi_caret_draw_stable count")
+    return 3
+  end
+
+  const caret0 = selection_caret(multi.selections[0])
+  const caret1 = selection_caret(multi.selections[1])
+  const pixel0 = caret_pixel_in_visual_rows(
+    line, rows, caret0, font_path, pixel_size
+  )
+  const pixel1 = caret_pixel_in_visual_rows(
+    line, rows, caret1, font_path, pixel_size
+  )
+  if pixel0.valid == 0 || pixel1.valid == 0 then
+    println("ux_fail multi_caret_draw_stable invalid")
+    return 4
+  end
+  if pixel0.x == pixel1.x then
+    println("ux_fail multi_caret_draw_stable same_x")
+    return 5
+  end
+
+  println("ux_ok multi_caret_draw_stable")
+  0
+end

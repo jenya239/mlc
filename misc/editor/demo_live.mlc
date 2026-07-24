@@ -2079,16 +2079,7 @@ fn main() -> i32 = do
       multi_index = multi_index + 1
     end
 
-    const caret_position = line_index_offset_to_position(
-      line_index,
-      draw_text,
-      selection_caret(selection)
-    )
-    const caret_visual = visual_row_index_for_caret_pixel_budget(
-      draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
-      caret_position.line, caret_position.column
-    )
-    const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
+    // multi_caret_draw: one caret per multi selection range
     const blink_on = caret_blink_visible(
       clock_ms,
       caret_blink_period_ms()
@@ -2099,24 +2090,45 @@ fn main() -> i32 = do
       last_blink_visible = 0
     end
     last_caret_valid = 0
-    if caret_row >= 0 && caret_row < visual_rows.length() then
-      const caret_row_info = visual_rows[caret_row]
-      const caret_byte = selection_caret(selection)
-      last_caret_x = text_rect.x + 4 + pixel_x_for_byte_offset(
-        draw_text, caret_row_info.byte_start, caret_row_info.byte_end,
-        caret_byte, font_path, zoom_font_size
+    let mut caret_multi_index = 0
+    while caret_multi_index < multi_selection_count(multi) do
+      const caret_sel = multi.selections[caret_multi_index]
+      const caret_byte = selection_caret(caret_sel)
+      const caret_position = line_index_offset_to_position(
+        line_index,
+        draw_text,
+        caret_byte
       )
-      last_caret_y = text_rect.y + 2 + caret_row * metrics.line_height
-      last_caret_w = 1
-      last_caret_h = metrics.line_height - 2
-      last_caret_valid = 1
-      if blink_on then
-        solid = solid_renderer_rect(
-          solid, width, height,
-          last_caret_x, last_caret_y, last_caret_w, last_caret_h,
-          theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
+      const caret_visual = visual_row_index_for_caret_pixel_budget(
+        draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
+        caret_position.line, caret_position.column
+      )
+      const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
+      if caret_row >= 0 && caret_row < visual_rows.length() then
+        const caret_row_info = visual_rows[caret_row]
+        const caret_x = text_rect.x + 4 + pixel_x_for_byte_offset(
+          draw_text, caret_row_info.byte_start, caret_row_info.byte_end,
+          caret_byte, font_path, zoom_font_size
         )
+        const caret_y = text_rect.y + 2 + caret_row * metrics.line_height
+        const caret_w = 1
+        const caret_h = metrics.line_height - 2
+        if blink_on then
+          solid = solid_renderer_rect(
+            solid, width, height,
+            caret_x, caret_y, caret_w, caret_h,
+            theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
+          )
+        end
+        if caret_multi_index == multi.primary_index then
+          last_caret_x = caret_x
+          last_caret_y = caret_y
+          last_caret_w = caret_w
+          last_caret_h = caret_h
+          last_caret_valid = 1
+        end
       end
+      caret_multi_index = caret_multi_index + 1
     end
 
     const editor_hovered =
