@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:00 (Critic TRACK_EDITOR_SCROLLBAR_THUMB_DRAG)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 17:57 |
+| elapsed | ~4 min |
+| done    | Close §61: stable×2 + content/horizontal/shift_wheel + demo_live compile + `run_ux_gate` 76; archive TRACK; PLAN/CONTINUITY/DEVELOPMENT → idle Planner |
+| verify  | `ux_ok scrollbar_thumb_drag_stable` ×2; related stables; `demo_live_fs_compile_ok`; `[ux gate] all ok (76)`; commits `30c7388f`…`f24dcdd7` |
+| result  | closed Critic OK; queue empty |
+| issues  | residual: theme tint hardcoded; folder thumb drag OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 17:56 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_DRAG STEP=2)
 
 | field   | value |
