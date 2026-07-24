@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:28 (Planner PLAN → §64)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:22 |
+| elapsed | ~3 min |
+| done    | Break idle: open §64 `TRACK_EDITOR_OVERLAY_THEME_TINT` — §46 #33c residual (dirty-close / context-menu / nav fills still dark; panels already `theme.panel_*`); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: hardcoded `0.16/0.18/0.22`, `0.18/0.20/0.24`, `0.22/0.24/0.28`, `0.22/0.24/0.30` at overlay/menu/nav in `demo_live`; no `run_ux_overlay_theme_tint_*`; agent TRACK_* = 6; SESSION ~513 |
+| result  | STEP=0 frozen; primary gate `ux_ok overlay_theme_tint_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_OVERLAY_THEME_TINT |
+
 ### Turn 2026-07-24 18:25 (Critic TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG)
 
 | field   | value |
