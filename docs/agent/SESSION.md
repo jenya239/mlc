@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 13:12 (Critic TRACK_EDITOR_TEXT_DRAW_SCROLL_X)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_TEXT_DRAW_SCROLL_X |
+| started | 2026-07-24 13:05 |
+| elapsed | ~7 min |
+| done    | Close §59: stable×2 + wrap_hit/shift_wheel + demo_live compile + `run_ux_gate` 74; archive TRACK; PLAN/CONTINUITY/DEVELOPMENT → idle Planner |
+| verify  | `ux_ok text_draw_scroll_x_stable` ×2; wrap_hit + shift_wheel ok; `demo_live_fs_compile_ok`; `[ux gate] all ok (74)`; commits `b950bc84`…`836e0e1f` |
+| result  | closed Critic OK; queue empty |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 13:05 (Driver TRACK_EDITOR_TEXT_DRAW_SCROLL_X STEP=2)
 
 | field   | value |
