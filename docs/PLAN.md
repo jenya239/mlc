@@ -455,7 +455,7 @@ compiler/
 | **57** | Editor idle multi-caret paint overlay (§56 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](archive/tracks/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md) |
 | **58** | Editor wrap hit-test respects scroll_x (§46 #17 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X](archive/tracks/TRACK_EDITOR_WRAP_HIT_SCROLL_X.md) |
 | **59** | Editor text draw respects scroll_x (§58 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X](archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md) |
-| **60** | Editor horizontal content scrollbar (§59 / #33e residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_HORIZONTAL_SCROLLBAR](agent/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md) |
+| **60** | Editor horizontal content scrollbar (§59 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR](archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -784,9 +784,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_TEXT_DRAW_SCROLL_X (§59, **closed** 2026-07-24: Critic OK; STEP=0–3;
       text_pen_x_scrolled on find/fill/caret/glyphs; `b950bc84`…`836e0e1f`;
       → [archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md](archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md))**
-  → **EDITOR_HORIZONTAL_SCROLLBAR (§60, active: STEP=2 green done → Critic STEP=3;
-      content_scrollbar_thumb_x + demo draw; `ux_ok horizontal_scrollbar_stable`;
-      → [agent/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md](agent/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md))**
+  → **EDITOR_HORIZONTAL_SCROLLBAR (§60, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      content_scrollbar_thumb_x + demo hover draw; `9d3287e3`…`8f6e230e`;
+      → [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md](archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md))**
 ```
 
 

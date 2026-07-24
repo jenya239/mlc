@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:48 (Critic TRACK_EDITOR_HORIZONTAL_SCROLLBAR)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+| started | 2026-07-24 17:43 |
+| elapsed | ~5 min |
+| done    | Close §60: stable×2 + content/shift_wheel/text_draw_scroll_x + demo_live compile + `run_ux_gate` 75; archive TRACK; PLAN/CONTINUITY/DEVELOPMENT → idle Planner |
+| verify  | `ux_ok horizontal_scrollbar_stable` ×2; related stables; `demo_live_fs_compile_ok`; `[ux gate] all ok (75)`; commits `9d3287e3`…`8f6e230e` |
+| result  | closed Critic OK; queue empty |
+| issues  | residual: thumb drag OOS; theme tint hardcoded |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 17:42 (Driver TRACK_EDITOR_HORIZONTAL_SCROLLBAR STEP=2)
 
 | field   | value |
