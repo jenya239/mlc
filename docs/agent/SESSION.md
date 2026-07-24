@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 04:10 (Driver TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+| started | 2026-07-25 04:05 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_minimap_highlight_cache_red.sh` + stable stub `not implemented`; gap = bare `highlight_mlc(draw_text)` |
+| verify  | red EXIT=0 `ux_ok minimap_highlight_cache_red`; stable EXIT=1 `not implemented` |
+| result  | §78 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 04:05 (Planner plan-refresh → §78)
 
 | field   | value |

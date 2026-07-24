@@ -5,17 +5,18 @@ Residual of [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITOR
 (§77) / [TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](../archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md)
 (§74). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert minimap rebuild still calls bare `highlight_mlc(draw_text)` on height/font path; stable stub `not implemented`.
+**STEP=2** — Cache wire on minimap rebuild; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: cache full-buffer spans for minimap rebuild |
+| 0 | bbff3983 | Decision: cache full-buffer spans for minimap rebuild |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -33,7 +34,7 @@ Residual of [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](../archive/tracks/TRACK_EDITOR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: bare `highlight_mlc` on minimap rebuild | pending |
+| 1 | Red: bare `highlight_mlc` on minimap rebuild | **done** |
 | 2 | Cache wire; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
