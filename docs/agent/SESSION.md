@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:50 (Critic TRACK_EDITOR_NAV_CRUMB_HOVER)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_NAV_CRUMB_HOVER |
+| started | 2026-07-25 00:45 |
+| elapsed | ~8 min |
+| done    | Critic OK: stable×2 + overlay/chrome gates + demo_live compile + `run_ux_gate` 84; archive §69 |
+| verify  | `nav_crumb_hover_stable` EXIT=0 ×2; overlay/chrome EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (84 scenarios)` |
+| result  | §69 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; scrollbar thumb hover OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 00:45 (Driver TRACK_EDITOR_NAV_CRUMB_HOVER STEP=2)
 
 | field   | value |
