@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:04 (Driver TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY |
+| started | 2026-07-24 12:02 |
+| elapsed | ~3 min |
+| done    | Red harness: `run_ux_idle_multi_caret_overlay_red.sh` + failing stable stub; proves idle `Paint-only blink` uses only `last_caret_*` |
+| verify  | `ux_ok idle_multi_caret_overlay_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY |
+
 ### Turn 2026-07-24 12:00 (Planner PLAN → §57)
 
 | field   | value |
