@@ -1,22 +1,44 @@
 # Track: Editor goto-line reuses frame LineIndex
 
-Parent: [../PLAN.md](../PLAN.md) §83.
-Residual of [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md)
+Parent: [../../PLAN.md](../../PLAN.md) §83.
+Residual of [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX.md)
 (§82) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `goto_line_reuses_frame_line_index_stable` ×2 +
+`goto_line_scrolls_caret` + `selection_reuses_frame_line_index` +
+`large_file_no_full_stringify` + `demo_live` compile + HEAD `run_ux_gate`.
+Anti-false-done: `0f6806e8`…`051d9440` (STEP=0–2); goto helpers take
+`LineIndex` (no `line_index_from_document` in `ux/goto_line.mlc`);
+`misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); overflow / probe
+own flatten + incremental/diff lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_goto_line_reuses_frame_line_index_stable.sh` | `ux_ok goto_line_reuses_frame_line_index` EXIT=0 (×2) |
+| `run_ux_goto_line_scrolls_caret.sh` | `ux_ok goto_line_scrolls_caret` EXIT=0 |
+| `run_ux_selection_reuses_frame_line_index_stable.sh` | `ux_ok selection_reuses_frame_line_index` EXIT=0 |
+| `run_ux_large_file_no_full_stringify.sh` | `ux_ok large_file_no_full_stringify` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (98 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable×2 + related + `demo_live_fs_compile` + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `0f6806e8` | Decision: goto-line path reuses frame `LineIndex` |
-| 1 | `eb729639` | Red: ≥2 `line_index_from_document` in `goto_line.mlc`; stable stub |
-| 2 | (this) | Pass `LineIndex` into goto helpers; green stable |
+| 1 | `eb729639` | Red harness + stable stub `not implemented` |
+| 2 | `051d9440` | Pass `LineIndex` into goto helpers; green |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +58,7 @@ Residual of [TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX](../archive/tracks/TR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: goto-line still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** |
 
 ## Out of scope
 
