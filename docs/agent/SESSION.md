@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:50 (Driver TRACK_EDITOR_MINIMAP_ZOOM_SCALE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MINIMAP_ZOOM_SCALE |
+| started | 2026-07-25 02:45 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_minimap_zoom_scale_red.sh` + stable stub `not implemented`; gap = fixed `pixel_size()` |
+| verify  | red EXIT=0 `ux_ok minimap_zoom_scale_red`; stable EXIT=1 `not implemented` |
+| result  | §75 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MINIMAP_ZOOM_SCALE |
+
 ### Turn 2026-07-25 02:45 (Planner plan-refresh → §75)
 
 | field   | value |

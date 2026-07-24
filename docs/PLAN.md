@@ -470,7 +470,7 @@ compiler/
 | **72** | Editor context-menu item hover (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](archive/tracks/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER.md) |
 | **73** | Editor dirty-close button hover (§72 / #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER](archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER.md) |
 | **74** | Editor minimap syntax tags (§46 #35 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md) |
-| **75** | Editor minimap zoom-linked scale (§74 / #35 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_MINIMAP_ZOOM_SCALE](agent/TRACK_EDITOR_MINIMAP_ZOOM_SCALE.md) |
+| **75** | Editor minimap zoom-linked scale (§74 / #35 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_MINIMAP_ZOOM_SCALE](agent/TRACK_EDITOR_MINIMAP_ZOOM_SCALE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -844,7 +844,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_MINIMAP_SYNTAX_TAGS (§74, **closed** 2026-07-25: Critic OK; STEP=0–3;
       minimap syntax glyphs; `8a1837d9`…`70c91b60`;
       → [archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md](archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md))**
-  → **EDITOR_MINIMAP_ZOOM_SCALE (§75, open STEP=1 next:
+  → **EDITOR_MINIMAP_ZOOM_SCALE (§75, open STEP=2 next:
       minimap pixel size × font zoom; [TRACK_EDITOR_MINIMAP_ZOOM_SCALE](agent/TRACK_EDITOR_MINIMAP_ZOOM_SCALE.md))**
 ```
 
