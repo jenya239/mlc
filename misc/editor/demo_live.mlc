@@ -1090,7 +1090,7 @@ fn main() -> i32 = do
           text_rect.height / metrics.line_height
         )
       else
-        app = editor_app_wheel_scroll(app, metrics, scroll_ticks)
+        app = editor_app_wheel_scroll(app, metrics, scroll_ticks, line_index)
         app = editor_app_clamp_scroll_to_content(
           app, wrapped_content_height, text_rect.height
         )
@@ -1784,7 +1784,7 @@ fn main() -> i32 = do
         app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
         app = editor_app_set_scroll_y(app, scroll_offset_y)
         app = editor_app_drag_text_autoscroll(
-          app, metrics, input.mouse_x, input.mouse_y
+          app, metrics, input.mouse_x, input.mouse_y, line_index
         )
         selection = app.ux.selection
         scroll_offset_y = app.ux.scroll_offset_y
@@ -1888,7 +1888,7 @@ fn main() -> i32 = do
     line_index = frame.line_index
     draw_text = frame.text
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
-    app = editor_app_ensure_caret_visible(app, metrics)
+    app = editor_app_ensure_caret_visible(app, metrics, line_index)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
     wrap_count_cache = wrap_count_cache_tick_pixel(

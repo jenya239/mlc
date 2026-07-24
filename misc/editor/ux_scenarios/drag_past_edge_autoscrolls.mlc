@@ -86,10 +86,10 @@ fn main() -> i32 = do
   // Hold pointer past bottom ≥2 frames (Decision multi-frame).
   const past_bottom_y = text_bottom + 20
   state = editor_ux_drag_text_autoscroll(
-    state, metrics, text_origin_x, past_bottom_y
+    state, metrics, text_origin_x, past_bottom_y, line_index_before
   )
   state = editor_ux_drag_text_autoscroll(
-    state, metrics, text_origin_x, past_bottom_y
+    state, metrics, text_origin_x, past_bottom_y, line_index_before
   )
 
   let mut snapshot = editor_ux_snapshot(state)

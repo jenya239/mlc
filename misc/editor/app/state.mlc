@@ -30,6 +30,7 @@ import {
 import { EditorIndentConfig } from '../document/indent'
 import { EditorTextMetrics } from '../ux/overflow'
 import { ShellPanels } from '../ui/shell_panels'
+import { LineIndex } from '../document/line_index'
 import {
   TabSet,
   tab_set_has_active,
@@ -186,10 +187,11 @@ export fn editor_app_commit_session(
 export fn editor_app_wheel_scroll(
   app: EditorAppState,
   metrics: EditorTextMetrics,
-  wheel_ticks: i32
+  wheel_ticks: i32,
+  line_index: LineIndex
 ) -> EditorAppState =
   EditorAppState {
-    ux: editor_ux_wheel_scroll(app.ux, metrics, wheel_ticks),
+    ux: editor_ux_wheel_scroll(app.ux, metrics, wheel_ticks, line_index),
     history: app.history,
     clipboard: app.clipboard,
     overlay: app.overlay,
@@ -300,10 +302,11 @@ export fn editor_app_clamp_scroll_to_content(
 
 export fn editor_app_ensure_caret_visible(
   app: EditorAppState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorAppState =
   EditorAppState {
-    ux: editor_ux_ensure_caret_visible(app.ux, metrics),
+    ux: editor_ux_ensure_caret_visible(app.ux, metrics, line_index),
     history: app.history,
     clipboard: app.clipboard,
     overlay: app.overlay,
@@ -338,10 +341,13 @@ export fn editor_app_drag_text_autoscroll(
   app: EditorAppState,
   metrics: EditorTextMetrics,
   pixel_x: i32,
-  pixel_y: i32
+  pixel_y: i32,
+  line_index: LineIndex
 ) -> EditorAppState =
   EditorAppState {
-    ux: editor_ux_drag_text_autoscroll(app.ux, metrics, pixel_x, pixel_y),
+    ux: editor_ux_drag_text_autoscroll(
+      app.ux, metrics, pixel_x, pixel_y, line_index
+    ),
     history: app.history,
     clipboard: app.clipboard,
     overlay: app.overlay,

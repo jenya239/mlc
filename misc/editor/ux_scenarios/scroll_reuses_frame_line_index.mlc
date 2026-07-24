@@ -1,10 +1,6 @@
-// TRACK_EDITOR_GOTO_LINE STEP=1 — L1: goto line scrolls caret into view.
+// TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX STEP=2 — L2: scroll helpers reuse LineIndex.
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
-import {
-  CaretAt,
-  ux_check_expect
-} from '../../gui/ux/expect'
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
@@ -14,14 +10,16 @@ import {
 import { selection_collapsed } from '../document/selection'
 import {
   editor_ux_state_new,
-  editor_ux_snapshot,
   EditorUxState
 } from '../ux/probe'
 import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
-import { editor_ux_caret_in_viewport } from '../ux/scroll'
-import { editor_ux_goto_line } from '../ux/goto_line'
-import { line_index_from_document } from '../document/line_index'
+import {
+  editor_ux_ensure_caret_visible,
+  editor_ux_caret_in_viewport,
+  editor_ux_clamp_scroll_y
+} from '../ux/scroll'
+import { line_index_from_string } from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 320, 200)
@@ -52,34 +50,32 @@ fn main() -> i32 = do
   }
 
   const metrics = editor_text_metrics_default()
-  let mut body = "L1"
-  let mut line = 2
-  while line <= 40 do
+  let mut body = "L0"
+  let mut line = 1
+  while line < 40 do
     body = body + "\nL" + line.to_string()
     line = line + 1
   end
   state = editor_ux_insert_text(state, body)
 
-  // 1-based line 30 → 0-based line 29, column 0.
-  state = editor_ux_goto_line(state, metrics, 30)
-
-  let mut snapshot = editor_ux_snapshot(state)
-  if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
-    println("ux_fail goto caret line")
+  const line_index = line_index_from_string(body)
+  state = editor_ux_ensure_caret_visible(state, metrics, line_index)
+  if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
+    println("ux_fail scroll_reuses_frame_line_index caret")
     return 1
   end
-  if snapshot.scroll_offset_y <= 0 then
-    println("ux_fail goto scroll_offset_y")
+  const clamped = editor_ux_clamp_scroll_y(
+    state, metrics, state.scroll_offset_y + 100000, line_index
+  )
+  if clamped < state.scroll_offset_y then
+    println("ux_fail scroll_reuses_frame_line_index clamp")
     return 2
   end
-  const line_index = line_index_from_document(
-    tab_set_active(state.tabs).buffer.document
-  )
-  if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
-    println("ux_fail goto caret not in viewport")
+  if tab_set_active(state.tabs).name.byte_size() == 0 then
+    println("ux_fail scroll_reuses_frame_line_index tab")
     return 3
   end
 
-  println("ux_ok goto_line_scrolls_caret")
+  println("ux_ok scroll_reuses_frame_line_index")
   0
 end

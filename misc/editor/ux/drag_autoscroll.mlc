@@ -5,6 +5,7 @@ import { EditorTextMetrics } from './overflow'
 import { EditorUxState } from './probe'
 import { editor_ux_drag_text } from './selection_apply'
 import { editor_ux_clamp_scroll_y } from './scroll'
+import { LineIndex } from '../document/line_index'
 
 fn text_viewport_rect(state: EditorUxState) -> Rect = do
   const editor_rect = shell_panels_editor_rect(state.panels)
@@ -46,7 +47,8 @@ export fn editor_ux_drag_text_autoscroll(
   state: EditorUxState,
   metrics: EditorTextMetrics,
   pixel_x: i32,
-  pixel_y: i32
+  pixel_y: i32,
+  line_index: LineIndex
 ) -> EditorUxState = do
   const viewport = text_viewport_rect(state)
   let mut line_height = metrics.line_height
@@ -57,13 +59,13 @@ export fn editor_ux_drag_text_autoscroll(
   let mut hit_y = pixel_y
   if pixel_y < viewport.y then
     const scroll_y = editor_ux_clamp_scroll_y(
-      state, metrics, state.scroll_offset_y - line_height
+      state, metrics, state.scroll_offset_y - line_height, line_index
     )
     next_state = state_with_scroll_y(state, scroll_y)
     hit_y = viewport.y
   else if pixel_y >= viewport.y + viewport.height then
     const scroll_y = editor_ux_clamp_scroll_y(
-      state, metrics, state.scroll_offset_y + line_height
+      state, metrics, state.scroll_offset_y + line_height, line_index
     )
     next_state = state_with_scroll_y(state, scroll_y)
     hit_y = viewport.y + viewport.height - 1

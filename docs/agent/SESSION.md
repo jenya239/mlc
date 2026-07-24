@@ -2,6 +2,36 @@
 
 ## Entries
 
+### Turn 2026-07-25 06:45 (Driver TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 06:30 |
+| elapsed | ~15 min |
+| done    | Pass `LineIndex` into clamp/caret/ensure/wheel; wire app/demo/drag/goto callers; L2 green |
+| verify  | stable EXIT=0; red EXIT=1; wheel/goto/drag/paint/large_file/demo EXIT=0 |
+| result  | §81 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+
+### Turn 2026-07-25 06:25 (Driver TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 06:20 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_scroll_reuses_frame_line_index_red.sh` + stable stub `not implemented`; gap = 3× `line_index_from_document` in scroll.mlc |
+| verify  | red EXIT=0 `ux_ok scroll_reuses_frame_line_index_red`; stable EXIT=1 `not implemented` |
+| result  | §81 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 06:15 (Planner plan-refresh → §81)
 
 | field   | value |

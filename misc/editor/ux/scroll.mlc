@@ -2,12 +2,11 @@
 import { Rect, rect_new } from '../../gui/layout'
 import { shell_panels_editor_rect } from '../ui/shell_panels'
 import {
-  tab_set_has_active,
-  tab_set_active
+  tab_set_has_active
 } from '../workspace/tabs'
 import { selection_caret } from '../document/selection'
 import {
-  line_index_from_document,
+  LineIndex,
   line_index_offset_to_position,
   line_index_line_count
 } from '../document/line_index'
@@ -77,13 +76,12 @@ end
 export fn editor_ux_clamp_scroll_y(
   state: EditorUxState,
   metrics: EditorTextMetrics,
-  scroll_offset_y: i32
+  scroll_offset_y: i32,
+  line_index: LineIndex
 ) -> i32 = do
   if !tab_set_has_active(state.tabs) then
     return editor_ux_clamp_scroll_offset(scroll_offset_y, 0, 0)
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const line_count = line_index_line_count(line_index)
   const content_height = document_content_height(line_count, line_height_or_one(metrics))
   const viewport = text_viewport_rect(state)
@@ -93,13 +91,12 @@ end
 // 1 if caret row intersects the text viewport.
 export fn editor_ux_caret_in_viewport(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> i32 = do
   if !tab_set_has_active(state.tabs) then
     return 0
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const position = line_index_offset_to_position(
     line_index,
     line_index.text,
@@ -121,13 +118,12 @@ end
 
 export fn editor_ux_ensure_caret_visible(
   state: EditorUxState,
-  metrics: EditorTextMetrics
+  metrics: EditorTextMetrics,
+  line_index: LineIndex
 ) -> EditorUxState = do
   if !tab_set_has_active(state.tabs) then
     return state
   end
-  const active = tab_set_active(state.tabs)
-  const line_index = line_index_from_document(active.buffer.document)
   const position = line_index_offset_to_position(
     line_index,
     line_index.text,
@@ -143,7 +139,7 @@ export fn editor_ux_ensure_caret_visible(
   if caret_top + line_height > scroll_y + viewport.height then
     scroll_y = caret_top + line_height - viewport.height
   end
-  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
+  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y, line_index)
   state_with_scroll_y(state, scroll_y)
 end
 
@@ -151,14 +147,15 @@ end
 export fn editor_ux_wheel_scroll(
   state: EditorUxState,
   metrics: EditorTextMetrics,
-  wheel_ticks: i32
+  wheel_ticks: i32,
+  line_index: LineIndex
 ) -> EditorUxState = do
   const line_height = line_height_or_one(metrics)
   let mut scroll_y = state.scroll_offset_y - wheel_ticks * line_height
-  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y)
+  scroll_y = editor_ux_clamp_scroll_y(state, metrics, scroll_y, line_index)
   let mut next_state = state_with_scroll_y(state, scroll_y)
   // L2 product: wheel must keep caret visible.
-  editor_ux_ensure_caret_visible(next_state, metrics)
+  editor_ux_ensure_caret_visible(next_state, metrics, line_index)
 end
 
 // Clamp horizontal scroll to [0, max(0, content_width - viewport_width)].

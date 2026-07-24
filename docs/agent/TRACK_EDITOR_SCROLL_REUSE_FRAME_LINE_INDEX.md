@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §81.
 Residual of [TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md)
 (§80) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Pass `LineIndex` into scroll helpers; green `ux_ok scroll_reuses_frame_line_index`.
+**STEP=3** — Critic: stable×2 + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `bbdcccf5` | Decision: scroll path reuses frame `LineIndex` |
-| 1 | (this) | Red harness + stable stub `not implemented` |
+| 1 | `122f8b62` | Red harness + stable stub `not implemented` |
+| 2 | (this) | Pass `LineIndex` into scroll helpers; green |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: scroll still re-stringifies | **done** |
-| 2 | Pass frame LineIndex; green | pending |
+| 2 | Pass frame LineIndex; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
-
-<!-- STEP=2 sub-steps: 1) add LineIndex param to clamp_scroll_y/caret_in_viewport/ensure_caret_visible; 2) wire app/state + goto_line + drag_autoscroll + scenarios; 3) green stable + related scroll scenarios -->
 
 ## Out of scope
 

@@ -10,7 +10,8 @@ import {
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -25,6 +26,7 @@ import {
   editor_ux_wheel_scroll,
   editor_ux_caret_in_viewport
 } from '../ux/scroll'
+import { line_index_from_document } from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 320, 200)
@@ -63,7 +65,10 @@ fn main() -> i32 = do
     line = line + 1
   end
   state = editor_ux_insert_text(state, body)
-  state = editor_ux_ensure_caret_visible(state, metrics)
+  let mut line_index = line_index_from_document(
+    tab_set_active(state.tabs).buffer.document
+  )
+  state = editor_ux_ensure_caret_visible(state, metrics, line_index)
 
   let mut snapshot = editor_ux_snapshot(state)
   if ux_check_expect(snapshot, CaretAt(39, 3)).ok == 0 then
@@ -74,7 +79,7 @@ fn main() -> i32 = do
     println("ux_fail expected scroll_offset_y > 0")
     return 2
   end
-  if editor_ux_caret_in_viewport(state, metrics) == 0 then
+  if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
     println("ux_fail caret not in viewport after ensure")
     return 3
   end
@@ -86,9 +91,9 @@ fn main() -> i32 = do
   end
 
   // Wheel toward start would hide bottom caret without keep-visible.
-  state = editor_ux_wheel_scroll(state, metrics, 8)
+  state = editor_ux_wheel_scroll(state, metrics, 8, line_index)
   snapshot = editor_ux_snapshot(state)
-  if editor_ux_caret_in_viewport(state, metrics) == 0 then
+  if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
     println("ux_fail caret left viewport after wheel")
     return 6
   end

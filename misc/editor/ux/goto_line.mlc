@@ -105,7 +105,7 @@ export fn editor_ux_goto_line(
   end
   const offset = line_index_line_start(line_index, target - 1)
   const next_state = state_with_selection(state, selection_collapsed(offset))
-  editor_ux_ensure_caret_visible(next_state, metrics)
+  editor_ux_ensure_caret_visible(next_state, metrics, line_index)
 end
 
 // Seed line from non-empty digit selection; invalid/empty → no-op.
