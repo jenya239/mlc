@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:27 (Planner PLAN → §56)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 11:27 |
+| elapsed | ~3 min |
+| done    | Break idle: open §56 `TRACK_EDITOR_MULTI_CARET_DRAW` — §55 residual (primary-only caret vs multi carets); Decision freeze; PLAN/CONTINUITY/DEVELOPMENT → Driver STEP=1 |
+| verify  | Probe: `demo_live` caret uses only `selection_caret(selection)` / `last_caret_*`; no `run_ux_multi_caret_draw_*`; agent TRACK_* = 6; SESSION 574→~589 |
+| result  | STEP=0 frozen; primary gate `ux_ok multi_caret_draw_stable` |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MULTI_CARET_DRAW |
+
 ### Turn 2026-07-24 11:22 (Critic TRACK_EDITOR_MULTI_SELECTION_VISUAL)
 
 | field   | value |

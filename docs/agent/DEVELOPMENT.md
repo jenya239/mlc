@@ -41,7 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `PLAN` (idle after §55; authorized queue empty).
+**Queue head:** Driver `TRACK_EDITOR_MULTI_CARET_DRAW` (§56) STEP=1.
+**`TRACK_EDITOR_MULTI_CARET_DRAW` (§56)** **active** — STEP=0 Decision frozen → Driver STEP=1.
 **`TRACK_EDITOR_MULTI_SELECTION_VISUAL` (§55)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_WRAP_SELECTION_VISUAL` (§54)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_PROPORTIONAL_HIT_TEST` (§53)** **closed** 2026-07-24 (Critic OK). Archived.

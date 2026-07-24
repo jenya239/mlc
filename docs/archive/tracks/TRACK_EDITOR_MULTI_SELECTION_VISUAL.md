@@ -12,7 +12,9 @@ Anti-false-done: `c2223498`…`298aa166` (STEP=0–2); `multi_selection_fill` lo
 `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual: multi-caret blink polish OOS; `*_red` post-green fails (use stable only).
+Honest residual → **§56** `TRACK_EDITOR_MULTI_CARET_DRAW` (opened 2026-07-24):
+multi-caret blink polish OOS here.
+`*_red` post-green fails (use stable only).
 
 | Gate | Result |
 |------|--------|
@@ -25,7 +27,7 @@ Honest residual: multi-caret blink polish OOS; `*_red` post-green fails (use sta
 
 ## Next step
 
-**closed** — Critic OK. Queue → Planner (authorized queue empty; select next or document idle).
+**closed** — Critic OK. Residual → §56 `TRACK_EDITOR_MULTI_CARET_DRAW`.
 
 ### STEPs done in git
 
