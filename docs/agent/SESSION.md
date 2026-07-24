@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 12:42 (Critic TRACK_EDITOR_WRAP_HIT_SCROLL_X)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WRAP_HIT_SCROLL_X |
+| started | 2026-07-24 12:37 |
+| elapsed | ~8 min |
+| done    | Close §58: re-ran stable ×2 + proportional + shift_wheel + demo + HEAD run_ux_gate (73); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok wrap_hit_scroll_x_stable` ×2; proportional/shift_wheel; `demo_live_fs_compile_ok`; `[ux gate] all ok (73 scenarios)`; anti-false-done `e00cc359`…`c35bbb67`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: horizontal scrollbar UI OOS; glyph-draw shift under wrap may lag; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-24 12:35 (Driver TRACK_EDITOR_WRAP_HIT_SCROLL_X STEP=2)
 
 | field   | value |

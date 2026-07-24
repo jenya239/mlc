@@ -15,7 +15,8 @@ Anti-false-done: `e17a2f93`…`1396621f` (STEP=0–2). Wire present:
 `app.ux.scroll_offset_x` (no longer hardcoded 0); plain/Ctrl wheel unchanged.
 **reopen: none**.
 
-Honest residual: live wrap click (`wrap_offset_at_point`) ignores scroll_x;
+Honest residual: live wrap click ignored scroll_x — **absorbed by §58** 2026-07-24
+([TRACK_EDITOR_WRAP_HIT_SCROLL_X](TRACK_EDITOR_WRAP_HIT_SCROLL_X.md));
 glyph draw under wrap may not shift with scroll_x; no scrollbar UI;
 horizontal drag autoscroll out of scope; L1 uses negative ticks (formula −ticks×char_width).
 
