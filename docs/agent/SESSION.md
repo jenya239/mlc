@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:12 (Critic TRACK_EDITOR_SCROLLBAR_THEME_TINT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SCROLLBAR_THEME_TINT |
+| started | 2026-07-24 18:08 |
+| elapsed | ~4 min |
+| done    | Close §62: stable×2 + content/horizontal/chrome_theme + demo_live compile + `run_ux_gate` 77; archive TRACK; PLAN/CONTINUITY/DEVELOPMENT → idle Planner |
+| verify  | `ux_ok scrollbar_theme_tint_stable` ×2; related stables; `demo_live_fs_compile_ok`; `[ux gate] all ok (77)`; commits `8cf6c637`…`d4835288` |
+| result  | closed Critic OK; queue empty |
+| issues  | residual: folder thumb drag OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 18:08 (Driver TRACK_EDITOR_SCROLLBAR_THEME_TINT STEP=2)
 
 | field   | value |

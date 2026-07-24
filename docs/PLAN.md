@@ -457,7 +457,7 @@ compiler/
 | **59** | Editor text draw respects scroll_x (§58 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X](archive/tracks/TRACK_EDITOR_TEXT_DRAW_SCROLL_X.md) |
 | **60** | Editor horizontal content scrollbar (§59 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR](archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md) |
 | **61** | Editor content scrollbar thumb drag (§60 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md) |
-| **62** | Editor scrollbar thumb theme tint (§61 / #33e residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_SCROLLBAR_THEME_TINT](agent/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md) |
+| **62** | Editor scrollbar thumb theme tint (§61 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -792,9 +792,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_SCROLLBAR_THUMB_DRAG (§61, **closed** 2026-07-24: Critic OK; STEP=0–3;
       scroll_at_y/x + demo drag wire; `30c7388f`…`f24dcdd7`;
       → [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md))**
-  → **EDITOR_SCROLLBAR_THEME_TINT (§62, active: STEP=2 green done → Critic STEP=3;
-      thumbs draw theme.muted_*; `ux_ok scrollbar_theme_tint_stable`;
-      → [agent/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md](agent/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md))**
+  → **EDITOR_SCROLLBAR_THEME_TINT (§62, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      thumbs draw theme.muted_*; `8cf6c637`…`d4835288`;
+      → [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md))**
 ```
 
 
