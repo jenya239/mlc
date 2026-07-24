@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:33 (Critic TRACK_EDITOR_PROPORTIONAL_HIT_TEST)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+| started | 2026-07-24 10:33 |
+| elapsed | ~8 min |
+| done    | Close §53: re-ran stable ×2 + wrap_budget + wrap_cache + demo + HEAD run_ux_gate (68); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok proportional_hit_test_stable` ×2; wrap_budget/cache; `demo_live_fs_compile_ok`; `[ux gate] all ok (68 scenarios)`; anti-false-done `a2424a12`…`6a1b1ce9`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: selection still doc-line (not visual-row); `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-24 10:23 (Driver TRACK_EDITOR_PROPORTIONAL_HIT_TEST STEP=2)
 
 | field   | value |
