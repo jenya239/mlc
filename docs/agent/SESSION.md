@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:52 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_DRAG STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 17:50 |
+| elapsed | ~2 min |
+| done    | Red harness: `run_ux_scrollbar_thumb_drag_red.sh` + failing stable stub; proves Y/X thumbs draw, no drag→scroll helper |
+| verify  | `ux_ok scrollbar_thumb_drag_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_DRAG |
+
 ### Turn 2026-07-24 17:50 (Planner PLAN → §61)
 
 | field   | value |
