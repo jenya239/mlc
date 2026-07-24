@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 07:15 (Planner plan-refresh → §82)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 07:10 |
+| elapsed | ~5 min |
+| done    | Opened §82 `TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX`: Decision — selection helpers reuse frame `LineIndex`; §81 residual |
+| verify  | click_text/drag_text/selection_draw_report still call `line_index_from_document` |
+| result  | §82 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SELECTION_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 07:00 (Critic TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX)
 
 | field   | value |
