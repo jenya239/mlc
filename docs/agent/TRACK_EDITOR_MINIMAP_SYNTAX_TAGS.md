@@ -5,17 +5,18 @@ Residual of [TRACK_EDITOR_MINIMAP](../archive/tracks/TRACK_EDITOR_MINIMAP.md)
 (§46 #35) / [TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER](../archive/tracks/TRACK_EDITOR_SYNTAX_HIGHLIGHT_MLC_RICHER.md)
 (§46 #34). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert minimap draw uses uniform `theme.text_*` via `push_line` (no `append_syntax_colored_row`); stable stub `not implemented`.
+**STEP=2** — Wire `editor_ux_append_syntax_colored_row` + full-buffer highlight on minimap rebuild; green `minimap_syntax_tags_stable`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: minimap glyphs via syntax tags |
+| 0 | 8a1837d9 | Decision: minimap glyphs via syntax tags |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -33,7 +34,7 @@ Residual of [TRACK_EDITOR_MINIMAP](../archive/tracks/TRACK_EDITOR_MINIMAP.md)
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: uniform text minimap glyphs | pending |
+| 1 | Red: uniform text minimap glyphs | **done** |
 | 2 | Wire syntax-colored rebuild; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 

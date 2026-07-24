@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:30 (Driver TRACK_EDITOR_MINIMAP_SYNTAX_TAGS STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+| started | 2026-07-25 02:25 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_minimap_syntax_tags_red.sh` + stable stub `not implemented`; gap = bare `push_line` + uniform `theme.text_*` |
+| verify  | red EXIT=0 `ux_ok minimap_syntax_tags_red`; stable EXIT=1 `not implemented` |
+| result  | §74 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+
 ### Turn 2026-07-25 02:25 (Planner plan-refresh → §74)
 
 | field   | value |
