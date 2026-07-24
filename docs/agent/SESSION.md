@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 10:35 (Driver TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 10:30 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_probe_reuses_frame_line_index_red.sh` + stable stub `not implemented`; gap = 1× `line_index_from_document` in probe.mlc |
+| verify  | red EXIT=0 `ux_ok probe_reuses_frame_line_index_red`; stable EXIT=1 `not implemented` |
+| result  | §85 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 10:25 (Planner plan-refresh → §85)
 
 | field   | value |

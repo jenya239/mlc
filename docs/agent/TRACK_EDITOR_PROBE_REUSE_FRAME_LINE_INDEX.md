@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §85.
 Residual of [TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX.md)
 (§84) / #1d. Size **M**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `editor_ux_snapshot` still calls `line_index_from_document`; stable stub `not implemented`.
+**STEP=2** — Pass frame `LineIndex` into `editor_ux_snapshot`; wire callers; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: probe snapshot reuses frame `LineIndex` |
+| 0 | `f866a137` | Decision: probe snapshot reuses frame `LineIndex` |
+| 1 | (this) | Red: ≥1 `line_index_from_document` in `probe.mlc`; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRA
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: probe still re-stringifies | pending |
+| 1 | Red: probe still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; wire callers; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts ≥1 line_index_from_document in probe.mlc; 2) stable stub; 3) docs -->
 <!-- STEP=2 sub-steps: 1) LineIndex param on editor_ux_snapshot; 2) wire all callers; 3) green stable -->
 
 ## Out of scope
