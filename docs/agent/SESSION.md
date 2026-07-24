@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:30 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_HOVER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+| started | 2026-07-25 01:25 |
+| elapsed | ~5 min |
+| done    | content Y/X + folder thumbs → `chrome_hover_draw_entry` (muted base); L0 green |
+| verify  | `ux_ok scrollbar_thumb_hover_stable`; `ux_ok scrollbar_theme_tint_stable`; red EXIT=1; `demo_live_fs_compile_ok` |
+| result  | STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (`*_red` post-green by design) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SCROLLBAR_THUMB_HOVER |
+
 ### Turn 2026-07-25 01:25 (Driver TRACK_EDITOR_SCROLLBAR_THUMB_HOVER STEP=1)
 
 | field   | value |

@@ -2035,10 +2035,14 @@ fn main() -> i32 = do
         tree_list_rect, draw_folder_rows.length(), tree_scroll_y
       )
       if thumb.width > 0 then
+        const folder_thumb_slot = rect_new(thumb.x, thumb.y, thumb.width, thumb.height)
+        const folder_thumb_fill = editor_ux_chrome_hover_draw_entry(
+          input, folder_thumb_slot, theme.muted_red, theme.muted_green, theme.muted_blue
+        )
         solid = solid_renderer_rect(
           solid, width, height,
-          thumb.x, thumb.y, thumb.width, thumb.height,
-          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
+          folder_thumb_fill.x, folder_thumb_fill.y, folder_thumb_fill.width, folder_thumb_fill.height,
+          folder_thumb_fill.red, folder_thumb_fill.green, folder_thumb_fill.blue, 1.0
         )
       end
     end
@@ -2265,10 +2269,16 @@ fn main() -> i32 = do
       editor_hovered, text_rect, wrapped_content_height_now, scroll_offset_y
     )
     if content_thumb.width > 0 then
+      const content_thumb_slot = rect_new(
+        content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height
+      )
+      const content_thumb_fill = editor_ux_chrome_hover_draw_entry(
+        input, content_thumb_slot, theme.muted_red, theme.muted_green, theme.muted_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
-        content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height,
-        theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
+        content_thumb_fill.x, content_thumb_fill.y, content_thumb_fill.width, content_thumb_fill.height,
+        content_thumb_fill.red, content_thumb_fill.green, content_thumb_fill.blue, 1.0
       )
     end
     // horizontal_scrollbar: bottom thumb when content wider than viewport
@@ -2282,10 +2292,16 @@ fn main() -> i32 = do
       editor_hovered, text_rect, horizontal_content_width, app.ux.scroll_offset_x
     )
     if content_thumb_x.width > 0 then
+      const content_thumb_x_slot = rect_new(
+        content_thumb_x.x, content_thumb_x.y, content_thumb_x.width, content_thumb_x.height
+      )
+      const content_thumb_x_fill = editor_ux_chrome_hover_draw_entry(
+        input, content_thumb_x_slot, theme.muted_red, theme.muted_green, theme.muted_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
-        content_thumb_x.x, content_thumb_x.y, content_thumb_x.width, content_thumb_x.height,
-        theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
+        content_thumb_x_fill.x, content_thumb_x_fill.y, content_thumb_x_fill.width, content_thumb_x_fill.height,
+        content_thumb_x_fill.red, content_thumb_x_fill.green, content_thumb_x_fill.blue, 1.0
       )
     end
     if minimap_enabled != 0 then
