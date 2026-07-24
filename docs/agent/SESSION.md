@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:35 (Critic TRACK_EDITOR_OVERLAY_THEME_TINT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_OVERLAY_THEME_TINT |
+| started | 2026-07-24 18:28 |
+| elapsed | ~7 min |
+| done    | Critic OK: stable×2 + chrome/scrollbar tint + demo_live compile + `run_ux_gate` 79; archive §64 |
+| verify  | `overlay_theme_tint_stable` EXIT=0 ×2; `chrome_panel_rgb_matches_theme`/`scrollbar_theme_tint_stable` EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (79 scenarios)` |
+| result  | §64 **closed**; authorized queue empty |
+| issues  | none (honest: minimap indicator OOS; `*_red` post-green) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 18:32 (Driver TRACK_EDITOR_OVERLAY_THEME_TINT STEP=2)
 
 | field   | value |
