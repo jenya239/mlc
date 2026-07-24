@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 06:00 (Critic TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 05:50 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + related gates + demo_live + `run_ux_gate` 95; archive §80 |
+| verify  | `paint_reuses_frame_line_index` EXIT=0 ×2; cl/tw/sb/lf EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (95 scenarios)` |
+| result  | §80 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; nav/scroll line_index + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 05:45 (Driver TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX STEP=2)
 
 | field   | value |
