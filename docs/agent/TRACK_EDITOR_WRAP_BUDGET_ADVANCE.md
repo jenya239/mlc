@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §52.
 Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](../archive/tracks/TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP.md)
 (§46 #37) / deferred from §49–§51. Size **M**.
 
-## Status: **active** (2026-07-24) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: no wrap-budget advance gate (gap).
+**STEP=2** — Implement advance-sum wrap; green stable.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -26,7 +26,7 @@ Residual of [TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP](../archive/tracks/TR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: no wrap-budget advance script | open |
+| 1 | Red: no wrap-budget advance script | **done** |
 | 2 | Implement advance-sum wrap; green | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 

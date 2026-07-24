@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 09:48 (Driver TRACK_EDITOR_WRAP_BUDGET_ADVANCE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+| started | 2026-07-24 09:42 |
+| elapsed | ~4 min |
+| done    | Red harness: `run_ux_wrap_budget_advance_red.sh` + failing stable stub; proves `word_wrap.mlc` still display-column only (no advance budget) |
+| verify  | `ux_ok wrap_budget_advance_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+
 ### Turn 2026-07-24 09:45 (Planner PLAN → §52)
 
 | field   | value |
