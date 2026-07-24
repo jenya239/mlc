@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_SCROLLBAR_THEME_TINT](../archive/tracks/TRACK_EDITOR_S
 (§62) / [TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](../archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md)
 (§61). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: folder thumb draws; no drag→`tree_scroll_y`; failing stable stub.
+**STEP=2** — Helper + demo wire; green stable.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_SCROLLBAR_THEME_TINT](../archive/tracks/TRACK_EDITOR_S
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: no folder thumb drag | open |
+| 1 | Red: no folder thumb drag | **done** |
 | 2 | Helper + demo wire; green | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
