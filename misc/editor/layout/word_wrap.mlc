@@ -549,6 +549,63 @@ export fn byte_offset_at_pixel_x(
   range_end
 end
 
+export type SelectionFillSpan = {
+  visual_row_index: i32,
+  x0: i32,
+  x1: i32
+}
+
+// Intersect selection bytes with each visible visual wrap row → fill spans.
+export fn selection_fill_visual_rows(
+  text: string,
+  visual_rows: [VisualRow],
+  range_start: i32,
+  range_end: i32,
+  font_path: string,
+  pixel_size: i32
+) -> [SelectionFillSpan] = do
+  let mut spans: [SelectionFillSpan] = []
+  let mut sel_start = range_start
+  let mut sel_end = range_end
+  if sel_end < sel_start then
+    const swap = sel_start
+    sel_start = sel_end
+    sel_end = swap
+  end
+  if sel_end <= sel_start then
+    return spans
+  end
+  let mut row_index = 0
+  while row_index < visual_rows.length() do
+    const row = visual_rows[row_index]
+    let mut clip_start = sel_start
+    if clip_start < row.byte_start then
+      clip_start = row.byte_start
+    end
+    let mut clip_end = sel_end
+    if clip_end > row.byte_end then
+      clip_end = row.byte_end
+    end
+    if clip_end > clip_start then
+      const x0 = pixel_x_for_byte_offset(
+        text, row.byte_start, row.byte_end, clip_start, font_path, pixel_size
+      )
+      const x1 = pixel_x_for_byte_offset(
+        text, row.byte_start, row.byte_end, clip_end, font_path, pixel_size
+      )
+      if x1 > x0 then
+        spans.push(SelectionFillSpan {
+          visual_row_index: row_index,
+          x0: x0,
+          x1: x1
+        })
+      end
+    end
+    row_index = row_index + 1
+  end
+  spans
+end
+
 // Click → doc byte via pixel-budget wrap rows + advance hit within row.
 export fn wrap_offset_at_point_pixel(
   text: string,

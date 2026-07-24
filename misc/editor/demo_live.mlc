@@ -171,12 +171,10 @@ import {
 import { glfw_gl_context_wait_events_timeout } from './ui/gl_idle'
 import {
   LineIndex,
-  TextPosition,
   line_index_from_string,
   line_index_line_count,
   line_index_line_start,
   line_index_offset_to_position,
-  line_index_position_to_offset,
   line_index_matches_document
 } from './document/line_index'
 import {
@@ -236,7 +234,8 @@ import {
   collect_visible_visual_rows_pixel_budget,
   visual_row_index_for_caret_pixel_budget,
   wrap_offset_at_point_pixel,
-  pixel_x_for_byte_offset
+  pixel_x_for_byte_offset,
+  selection_fill_visual_rows
 } from './layout/word_wrap'
 import {
   wrap_count_cache_new_pixel,
@@ -2053,57 +2052,24 @@ fn main() -> i32 = do
     if !selection_is_empty(selection) then
       const range_start = selection_start(selection)
       const range_end = selection_end(selection)
-      const start_position = line_index_offset_to_position(line_index, draw_text, range_start)
-      const end_position = line_index_offset_to_position(line_index, draw_text, range_end)
-      let mut highlight_line = start_position.line
-      while highlight_line <= end_position.line do
-        if highlight_line >= visible.first_line && highlight_line <= visible.last_line then
-          const row = highlight_line - visible.first_line
-          let mut col_start = 0
-          let mut col_end = line_display_column_end_at(draw_text, line_index, highlight_line)
-          if highlight_line == start_position.line then
-            col_start = start_position.column
-          end
-          if highlight_line == end_position.line then
-            col_end = end_position.column
-          end
-          const line_byte_start = line_index_line_start(line_index, highlight_line)
-          let mut line_byte_end = line_index.text_length
-          if highlight_line + 1 < line_index_line_count(line_index) then
-            line_byte_end = line_index_line_start(line_index, highlight_line + 1)
-          end
-          if line_byte_end > line_byte_start &&
-              draw_text.byte_at(line_byte_end - 1) == "\n" then
-            line_byte_end = line_byte_end - 1
-          end
-          const sel_byte_start = line_index_position_to_offset(
-            line_index, draw_text,
-            TextPosition { line: highlight_line, column: col_start }
+      const fill_spans = selection_fill_visual_rows(
+        draw_text, visual_rows, range_start, range_end,
+        font_path, zoom_font_size
+      )
+      let mut span_index = 0
+      while span_index < fill_spans.length() do
+        const span = fill_spans[span_index]
+        const highlight_width = span.x1 - span.x0
+        if highlight_width > 0 then
+          solid = solid_renderer_rect(
+            solid, width, height,
+            text_rect.x + 4 + span.x0,
+            text_rect.y + 2 + span.visual_row_index * metrics.line_height,
+            highlight_width, metrics.line_height,
+            theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
           )
-          const sel_byte_end = line_index_position_to_offset(
-            line_index, draw_text,
-            TextPosition { line: highlight_line, column: col_end }
-          )
-          const highlight_x0 = pixel_x_for_byte_offset(
-            draw_text, line_byte_start, line_byte_end, sel_byte_start,
-            font_path, zoom_font_size
-          )
-          const highlight_x1 = pixel_x_for_byte_offset(
-            draw_text, line_byte_start, line_byte_end, sel_byte_end,
-            font_path, zoom_font_size
-          )
-          const highlight_width = highlight_x1 - highlight_x0
-          if highlight_width > 0 then
-            solid = solid_renderer_rect(
-              solid, width, height,
-              text_rect.x + 4 + highlight_x0,
-              text_rect.y + 2 + row * metrics.line_height,
-              highlight_width, metrics.line_height,
-              theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
-            )
-          end
         end
-        highlight_line = highlight_line + 1
+        span_index = span_index + 1
       end
     end
 

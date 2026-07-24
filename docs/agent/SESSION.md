@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:46 (Driver TRACK_EDITOR_WRAP_SELECTION_VISUAL STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WRAP_SELECTION_VISUAL |
+| started | 2026-07-24 10:46 |
+| elapsed | ~10 min |
+| done    | `selection_fill_visual_rows` in word_wrap; demo_live selection draw via visual spans; scenario `wrap_selection_visual_stable` |
+| verify  | `ux_ok wrap_selection_visual_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_WRAP_SELECTION_VISUAL |
+
 ### Turn 2026-07-24 10:42 (Driver TRACK_EDITOR_WRAP_SELECTION_VISUAL STEP=1)
 
 | field   | value |

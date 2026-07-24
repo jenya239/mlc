@@ -1,0 +1,81 @@
+// TRACK_EDITOR_WRAP_SELECTION_VISUAL STEP=2 —
+// Selection fill: one span per intersecting visual wrap row.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  visual_rows_for_line_pixel_budget,
+  selection_fill_visual_rows,
+  visual_row_advance_width_px
+} from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail wrap_selection_visual_stable char_width")
+    return 1
+  end
+
+  const line =
+    "AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH IIII JJJJ\n"
+  const line_index = line_index_from_string(line)
+  const viewport_width = char_width * 12
+  const rows = visual_rows_for_line_pixel_budget(
+    line, line_index, 0, viewport_width, font_path, pixel_size
+  )
+  if rows.length() < 2 then
+    println("ux_fail wrap_selection_visual_stable need_wrap")
+    return 2
+  end
+
+  // Select whole wrapped line (exclude trailing newline).
+  let mut sel_end = line.byte_size() - 1
+  if sel_end < 1 then
+    println("ux_fail wrap_selection_visual_stable empty")
+    return 3
+  end
+  const spans = selection_fill_visual_rows(
+    line, rows, 0, sel_end, font_path, pixel_size
+  )
+  if spans.length() < 2 then
+    println("ux_fail wrap_selection_visual_stable need_spans")
+    return 4
+  end
+  if spans.length() != rows.length() then
+    println("ux_fail wrap_selection_visual_stable span_count")
+    return 5
+  end
+
+  let mut span_index = 0
+  while span_index < spans.length() do
+    const span = spans[span_index]
+    if span.visual_row_index != span_index then
+      println("ux_fail wrap_selection_visual_stable row_index")
+      return 6
+    end
+    if span.x1 <= span.x0 then
+      println("ux_fail wrap_selection_visual_stable empty_span")
+      return 7
+    end
+    const row = rows[span_index]
+    const row_width = visual_row_advance_width_px(
+      line, row.byte_start, row.byte_end, font_path, pixel_size
+    )
+    if span.x1 > row_width then
+      println("ux_fail wrap_selection_visual_stable overflow")
+      return 8
+    end
+    span_index = span_index + 1
+  end
+
+  // Doc-line model would emit exactly one highlight for one doc line.
+  if rows.length() <= 1 then
+    println("ux_fail wrap_selection_visual_stable mono_rows")
+    return 9
+  end
+
+  println("ux_ok wrap_selection_visual_stable")
+  0
+end

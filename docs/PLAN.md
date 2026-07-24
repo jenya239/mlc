@@ -449,7 +449,7 @@ compiler/
 | **51** | Editor idle CPU budget (live `/proc` sample; #38 residual) | **closed** (2026-07-22) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET](archive/tracks/TRACK_EDITOR_IDLE_CPU_BUDGET.md) |
 | **52** | Editor wrap budget by glyph advance (#37 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE](archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md) |
 | **53** | Editor proportional hit-test / caret / selection (§52 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST](archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md) |
-| **54** | Editor selection highlight on visual wrap rows (§53 residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_WRAP_SELECTION_VISUAL](agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md) |
+| **54** | Editor selection highlight on visual wrap rows (§53 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_WRAP_SELECTION_VISUAL](agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -760,8 +760,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_PROPORTIONAL_HIT_TEST (§53, **closed** 2026-07-24: Critic OK; STEP=0–3;
       advance-sum hit/caret/selection; `a2424a12`…`6a1b1ce9`;
       → [archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md](archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md))**
-  → **EDITOR_WRAP_SELECTION_VISUAL (§54, active: STEP=0 Decision frozen 2026-07-24 →
-      Driver STEP=1 red; §53 residual — selection fill still doc-line vs visual wrap rows;
+  → **EDITOR_WRAP_SELECTION_VISUAL (§54, active: STEP=2 done → Critic STEP=3;
+      visual-row selection fill; `4ddb3c3c`…`0940ddd6`;
       → [agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md](agent/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md))**
 ```
 
