@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_HORIZONTAL_SCROLL](../archive/tracks/TRACK_EDITOR_HORI
 (§46 #17) — exposed after §53 pixel hit API still omits `scroll_offset_x`.
 Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=0 frozen → Driver STEP=1
+## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: prove `wrap_offset_at_point_pixel` ignores `scroll_offset_x`.
+**STEP=2** — Add scroll_x to pixel hit; green stable.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Size **S**.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: hit API ignores scroll_x | open |
+| 1 | Red: hit API ignores scroll_x | **done** |
 | 2 | Add scroll_x to pixel hit; green | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
