@@ -452,7 +452,7 @@ compiler/
 | **54** | Editor selection highlight on visual wrap rows (§53 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md) |
 | **55** | Editor multi-cursor selection visual fills (§54 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md) |
 | **56** | Editor multi-caret draw + blink (§55 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW](archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md) |
-| **57** | Editor idle multi-caret paint overlay (§56 residual) | **active** — STEP=1 done → Driver STEP=2 | [TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](agent/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md) |
+| **57** | Editor idle multi-caret paint overlay (§56 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY](agent/TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**

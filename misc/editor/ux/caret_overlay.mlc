@@ -1,0 +1,30 @@
+# TRACK_EDITOR_IDLE_MULTI_CARET_OVERLAY — cached caret rects for paint-only blink.
+
+export type CaretOverlayRect = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export fn caret_overlay_empty() -> [CaretOverlayRect] = []
+
+export fn caret_overlay_add(
+  rects: [CaretOverlayRect],
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> [CaretOverlayRect] = do
+  let mut out = rects
+  out.push(CaretOverlayRect {
+    x: x,
+    y: y,
+    width: width,
+    height: height
+  })
+  out
+end
+
+export fn caret_overlay_count(rects: [CaretOverlayRect]) -> i32 =
+  rects.length()

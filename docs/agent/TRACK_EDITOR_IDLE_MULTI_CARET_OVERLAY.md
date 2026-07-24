@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §57.
 Residual of [TRACK_EDITOR_MULTI_CARET_DRAW](../archive/tracks/TRACK_EDITOR_MULTI_CARET_DRAW.md)
 (§56 Decision OOS). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Implement multi-caret idle overlay; green stable.
+**STEP=3** — Critic: stable + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_MULTI_CARET_DRAW](../archive/tracks/TRACK_EDITOR_MULTI
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: idle overlay primary-only | **done** |
-| 2 | Implement multi-caret idle overlay; green | open |
+| 2 | Implement multi-caret idle overlay; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves paint-only uses single last_caret_* / no multi cache -->
