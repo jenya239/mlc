@@ -458,7 +458,7 @@ compiler/
 | **60** | Editor horizontal content scrollbar (§59 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR](archive/tracks/TRACK_EDITOR_HORIZONTAL_SCROLLBAR.md) |
 | **61** | Editor content scrollbar thumb drag (§60 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_DRAG.md) |
 | **62** | Editor scrollbar thumb theme tint (§61 / #33e residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md) |
-| **63** | Editor folder scrollbar thumb drag (§62 / §61 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG](agent/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md) |
+| **63** | Editor folder scrollbar thumb drag (§62 / §61 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -796,9 +796,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_SCROLLBAR_THEME_TINT (§62, **closed** 2026-07-24: Critic OK; STEP=0–3;
       thumbs draw theme.muted_*; `8cf6c637`…`d4835288`;
       → [archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md](archive/tracks/TRACK_EDITOR_SCROLLBAR_THEME_TINT.md))**
-  → **EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG (§63, active: STEP=2 green → Critic STEP=3;
-      §62 residual — folder thumb drag → tree_scroll_y;
-      → [agent/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md](agent/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md))**
+  → **EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG (§63, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      folder_scrollbar_scroll_at_y + demo drag; `4afce0fe`…`84253492`;
+      → [archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md](archive/tracks/TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG.md))**
 ```
 
 

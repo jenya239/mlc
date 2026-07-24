@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 18:25 (Critic TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG |
+| started | 2026-07-24 18:18 |
+| elapsed | ~7 min |
+| done    | Critic OK: stable×2 + related scrollbar stables + demo_live compile + `run_ux_gate` 78; archive §63 |
+| verify  | `folder_scrollbar_thumb_drag_stable` EXIT=0 ×2; `scrollbar_thumb_drag_stable`/`scrollbar_theme_tint_stable` EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (78 scenarios)` |
+| result  | §63 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green fails) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-24 18:20 (Driver TRACK_EDITOR_FOLDER_SCROLLBAR_THUMB_DRAG STEP=2)
 
 | field   | value |
