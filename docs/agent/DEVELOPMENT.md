@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62) STEP=1.
-**`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62)** **active** — STEP=0 Decision done → Driver STEP=1.
+**Queue head:** Driver `TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62) STEP=2.
+**`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (§62)** **active** — STEP=1 red done → Driver STEP=2.
 **`TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` (§61)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_HORIZONTAL_SCROLLBAR` (§60)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_TEXT_DRAW_SCROLL_X` (§59)** **closed** 2026-07-24 (Critic OK). Archived.

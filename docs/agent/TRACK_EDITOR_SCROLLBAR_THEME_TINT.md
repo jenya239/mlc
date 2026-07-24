@@ -5,11 +5,11 @@ Residual of [TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](../archive/tracks/TRACK_EDITOR_S
 (§61) / [TRACK_EDITOR_CONTENT_SCROLLBAR](../archive/tracks/TRACK_EDITOR_CONTENT_SCROLLBAR.md)
 (§46 #33e). Size **S**.
 
-## Status: **active** (2026-07-24) — STEP=0 done → Driver STEP=1
+## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: content/folder thumbs still hardcoded `0.45/0.48/0.55`; failing stable stub.
+**STEP=2** — Wire theme.muted_*; green stable.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_SCROLLBAR_THUMB_DRAG](../archive/tracks/TRACK_EDITOR_S
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: hardcoded thumb tint | open |
+| 1 | Red: hardcoded thumb tint | **done** |
 | 2 | Wire theme.muted_*; green | open |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 

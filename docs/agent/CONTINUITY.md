@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_SCROLLBAR_THEME_TINT` STEP=1. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61 done; §62 STEP=0 done.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_SCROLLBAR_THEME_TINT` STEP=2. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61 done; §62 STEP=1 done.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -91,10 +91,10 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_TEXT_DRAW_SCROLL_X` (PLAN §59)** | **closed** 2026-07-24 (Critic OK). Archived. `text_pen_x_scrolled` on find/fill/caret/glyphs. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_HORIZONTAL_SCROLLBAR` (PLAN §60)** | **closed** 2026-07-24 (Critic OK). Archived. `content_scrollbar_thumb_x` + demo hover draw. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` (PLAN §61)** | **closed** 2026-07-24 (Critic OK). Archived. `content_scrollbar_scroll_at_y/x` + demo drag. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (PLAN §62)** | **active** — STEP=0 done → Driver STEP=1. §61/#33e residual: thumbs use theme.muted_* |
+| **`TRACK_EDITOR_SCROLLBAR_THEME_TINT` (PLAN §62)** | **active** — STEP=1 done → Driver STEP=2. Red: thumbs hardcoded `0.45/0.48/0.55` |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **§62** `TRACK_EDITOR_SCROLLBAR_THEME_TINT` STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
+| **Authorized queue** | **§62** `TRACK_EDITOR_SCROLLBAR_THEME_TINT` STEP=2 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
