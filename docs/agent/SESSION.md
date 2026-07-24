@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:15 (Driver TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+| started | 2026-07-25 02:10 |
+| elapsed | ~5 min |
+| done    | Discard/cancel → `chrome_hover_draw_entry` (danger/accent bases) via rect helpers; green stable |
+| verify  | stable EXIT=0; `discard_danger_theme_stable` + `overlay_theme_tint_stable` EXIT=0; red EXIT=1 |
+| result  | §73 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+
 ### Turn 2026-07-25 02:10 (Driver TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER STEP=1)
 
 | field   | value |

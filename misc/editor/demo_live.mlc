@@ -116,6 +116,8 @@ import {
 } from './workspace/tabs'
 import {
   dirty_close_overlay_is_visible,
+  dirty_close_overlay_discard_rect,
+  dirty_close_overlay_cancel_rect,
   tab_set_request_close,
   dirty_close_overlay_click
 } from './workspace/tab_close'
@@ -2325,13 +2327,23 @@ fn main() -> i32 = do
         solid, width, height, width / 2 - 180, height / 2 - 70, 360, 140,
         theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
-      solid = solid_renderer_rect(
-        solid, width, height, width / 2 - 120, height / 2 + 20, 100, 28,
-        theme.danger_red, theme.danger_green, theme.danger_blue, 1.0
+      const discard_rect = dirty_close_overlay_discard_rect(width, height)
+      const discard_fill = editor_ux_chrome_hover_draw_entry(
+        input, discard_rect, theme.danger_red, theme.danger_green, theme.danger_blue
       )
       solid = solid_renderer_rect(
-        solid, width, height, width / 2 + 20, height / 2 + 20, 100, 28,
-        theme.accent_red, theme.accent_green, theme.accent_blue, 1.0
+        solid, width, height,
+        discard_fill.x, discard_fill.y, discard_fill.width, discard_fill.height,
+        discard_fill.red, discard_fill.green, discard_fill.blue, 1.0
+      )
+      const cancel_rect = dirty_close_overlay_cancel_rect(width, height)
+      const cancel_fill = editor_ux_chrome_hover_draw_entry(
+        input, cancel_rect, theme.accent_red, theme.accent_green, theme.accent_blue
+      )
+      solid = solid_renderer_rect(
+        solid, width, height,
+        cancel_fill.x, cancel_fill.y, cancel_fill.width, cancel_fill.height,
+        cancel_fill.red, cancel_fill.green, cancel_fill.blue, 1.0
       )
     end
 

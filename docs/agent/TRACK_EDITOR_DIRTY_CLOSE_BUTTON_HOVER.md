@@ -6,18 +6,19 @@ Residual of [TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](../archive/tracks/TRACK_EDITO
 (§46 #32) / [TRACK_EDITOR_DISCARD_DANGER_THEME](../archive/tracks/TRACK_EDITOR_DISCARD_DANGER_THEME.md)
 (§67). Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Wire `editor_ux_chrome_hover_draw_entry` (danger base discard, accent base cancel); green `dirty_close_button_hover_stable`.
+**STEP=3** — Critic: stable×2 + `run_ux_gate`; close.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | e6d88360 | Decision: dirty-close buttons via chrome_hover |
-| 1 | (this) | Red harness + stable stub `not implemented` |
+| 1 | 99a7e297 | Red harness + stable stub `not implemented` |
+| 2 | (this) | Wire chrome_hover on discard/cancel; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +37,7 @@ Residual of [TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](../archive/tracks/TRACK_EDITO
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: flat danger/accent button fills | **done** |
-| 2 | Wire chrome_hover; green | pending |
+| 2 | Wire chrome_hover; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
 ## Out of scope
