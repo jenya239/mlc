@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:40 (Driver TRACK_EDITOR_NAV_CRUMB_HOVER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_NAV_CRUMB_HOVER |
+| started | 2026-07-25 00:35 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_nav_crumb_hover_red.sh` + stable stub `not implemented`; asserts flat nav/crumb fills |
+| verify  | `ux_ok nav_crumb_hover_red` EXIT=0; stable EXIT=1 (`not implemented`) |
+| result  | STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_NAV_CRUMB_HOVER |
+
 ### Turn 2026-07-25 00:35 (Planner plan-refresh → §69)
 
 | field   | value |
