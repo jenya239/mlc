@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:15 (Planner plan-refresh → §68)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 00:10 |
+| elapsed | ~5 min |
+| done    | Opened §68 `TRACK_EDITOR_ACTIVE_TAB_TINT`: Decision — active tab idle fill `theme.selection_*` (§46 #32 residual); `[title]` kept |
+| verify  | tab fill loop always passes `theme.panel_*`; active only via `[title]` brackets |
+| result  | §68 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_ACTIVE_TAB_TINT |
+
 ### Turn 2026-07-24 19:15 (Critic TRACK_EDITOR_DISCARD_DANGER_THEME)
 
 | field   | value |
