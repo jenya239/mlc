@@ -467,7 +467,7 @@ compiler/
 | **69** | Editor folder nav/breadcrumb hover (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER](archive/tracks/TRACK_EDITOR_NAV_CRUMB_HOVER.md) |
 | **70** | Editor active-tab title without brackets (§68 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN](archive/tracks/TRACK_EDITOR_ACTIVE_TAB_TITLE_PLAIN.md) |
 | **71** | Editor scrollbar thumb hover lift (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER.md) |
-| **72** | Editor context-menu item hover (§46 #32 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](agent/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER.md) |
+| **72** | Editor context-menu item hover (§46 #32 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](agent/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -832,7 +832,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_SCROLLBAR_THUMB_HOVER (§71, **closed** 2026-07-25: Critic OK; STEP=0–3;
       thumb chrome_hover; `c6edcfc2`…`1e49413a`;
       → [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER.md](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER.md))**
-  → **EDITOR_CONTEXT_MENU_ITEM_HOVER (§72, open STEP=2 next:
+  → **EDITOR_CONTEXT_MENU_ITEM_HOVER (§72, open STEP=3 Critic next:
       menu item chrome_hover; [TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](agent/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER.md))**
 ```
 

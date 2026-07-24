@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:55 (Driver TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+| started | 2026-07-25 01:50 |
+| elapsed | ~5 min |
+| done    | Menu item draw loop → `editor_ux_chrome_hover_draw_entry` (muted base); green `context_menu_item_hover_stable` |
+| verify  | stable EXIT=0 `ux_ok`; `overlay_theme_tint_stable` EXIT=0; red EXIT=1 (gap closed) |
+| result  | §72 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+
 ### Turn 2026-07-25 01:50 (Driver TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER STEP=1)
 
 | field   | value |

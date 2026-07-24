@@ -2348,10 +2348,13 @@ fn main() -> i32 = do
         const item_rect = editor_ux_context_menu_item_rect(
           context_menu, menu_item_index
         )
+        const item_fill = editor_ux_chrome_hover_draw_entry(
+          input, item_rect, theme.muted_red, theme.muted_green, theme.muted_blue
+        )
         solid = solid_renderer_rect(
           solid, width, height,
-          item_rect.x, item_rect.y, item_rect.width, item_rect.height,
-          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
+          item_fill.x, item_fill.y, item_fill.width, item_fill.height,
+          item_fill.red, item_fill.green, item_fill.blue, 1.0
         )
         menu_item_index = menu_item_index + 1
       end
