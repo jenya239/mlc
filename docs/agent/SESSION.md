@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 06:15 (Planner plan-refresh → §81)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 06:10 |
+| elapsed | ~5 min |
+| done    | Opened §81 `TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX`: Decision — scroll helpers reuse frame `LineIndex`; §80 residual |
+| verify  | clamp_scroll_y/caret_in_viewport/ensure_caret_visible still call `line_index_from_document` |
+| result  | §81 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 06:00 (Critic TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX)
 
 | field   | value |

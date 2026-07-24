@@ -476,6 +476,7 @@ compiler/
 | **78** | Editor minimap highlight span cache (§77 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE](archive/tracks/TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE.md) |
 | **79** | Editor shared full-buffer syntax span cache (§78 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE](archive/tracks/TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE.md) |
 | **80** | Editor paint reuses frame LineIndex (#1d residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md) |
+| **81** | Editor scroll reuses frame LineIndex (§80 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -867,6 +868,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_PAINT_REUSE_FRAME_LINE_INDEX (§80, **closed** 2026-07-25: Critic OK; STEP=0–3;
       paint reuses frame LineIndex; `2968b98c`…`094e0c4d`;
       → [archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md](archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md))**
+  → **EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX (§81, open STEP=1 next:
+      scroll reuses frame LineIndex; [TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX](agent/TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX.md))**
 ```
 
 
