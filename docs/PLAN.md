@@ -765,7 +765,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       visual-row selection fill; `7c078e1e`…`33fcee28`;
       → [archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md](archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md))**
   → **EDITOR_MULTI_SELECTION_VISUAL (§55, active: STEP=2 done → Critic STEP=3;
-      multi-range visual fills; `ad8b0d7e`…STEP=2;
+      multi-range visual fills; `ad8b0d7e`…`298aa166`;
       → [agent/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md](agent/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md))**
 ```
 
