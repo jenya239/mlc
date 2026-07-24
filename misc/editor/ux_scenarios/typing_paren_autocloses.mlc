@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_EDITOR_BRACKET_AUTOCLOSE STEP=1 — L1: typing_paren_autocloses (red until STEP=2).
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
@@ -9,7 +10,8 @@ import {
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -48,7 +50,7 @@ fn main() -> i32 = do
   }
 
   state = editor_ux_insert_text_autoclose(state, "(")
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("()")).ok == 0 then
     println("ux_fail paren autoclose text")
     return 1
@@ -59,7 +61,7 @@ fn main() -> i32 = do
   end
 
   state = editor_ux_insert_text_autoclose(state, ")")
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("()")).ok == 0 then
     println("ux_fail paren skip-over text")
     return 3

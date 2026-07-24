@@ -95,7 +95,7 @@ fn main() -> i32 = do
     state, metrics, text_origin_x, past_bottom_y, line_index_before
   )
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if snapshot.scroll_offset_y <= scroll_before then
     println("ux_fail drag autoscroll scroll_offset_y")
     return 1

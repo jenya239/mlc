@@ -76,7 +76,7 @@ fn main() -> i32 = do
     line_index
   )
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, TextEquals("aaa\nbbb\nccc")).ok == 0 then
     return 1
   end

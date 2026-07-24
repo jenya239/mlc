@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_UX_HEADLESS STEP=3 — editor probe unit (fixture state).
 import { rect_new } from '../../gui/layout'
 import {
@@ -64,7 +65,7 @@ fn main() -> i32 = do
     overflows: state.overflows
   }
 
-  const snapshot = editor_ux_snapshot(state)
+  const snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, FocusIs(ux_focus_editor())).ok == 0 then
     return 1
   end

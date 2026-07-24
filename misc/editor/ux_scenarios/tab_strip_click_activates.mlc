@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_UX_HEADLESS STEP=4 — scenario: tab_strip_click_activates (L5).
 import { rect_new } from '../../gui/layout'
 import { ux_focus_tabs } from '../../gui/ux/snapshot'
@@ -14,7 +15,8 @@ import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
   tab_set_open,
-  tab_set_set_active
+  tab_set_set_active,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -51,7 +53,7 @@ fn main() -> i32 = do
     overflows: state.overflows
   }
 
-  const before = editor_ux_snapshot(state)
+  const before = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(before, ActiveTabIndex(0)).ok == 0 then
     return 1
   end
@@ -65,7 +67,7 @@ fn main() -> i32 = do
   driver = ux_driver_apply(driver, Click(click_x, click_y))
   state = editor_ux_click_tab_strip(state, driver.pointer_x, driver.pointer_y)
 
-  const after = editor_ux_snapshot(state)
+  const after = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(after, ActiveTabIndex(1)).ok == 0 then
     println("[ux] tab_strip_click_activates FAIL active=" + after.active_tab_index.to_string())
     return 2

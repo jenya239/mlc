@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_UX_HEADLESS STEP=9 — scenario: tree_click_opens_tab (L4).
 import { rect_new } from '../../gui/layout'
 import {
@@ -17,7 +18,10 @@ import {
   dir_entry_new,
   file_tree_expand
 } from '../workspace/file_tree'
-import { tab_set_new } from '../workspace/tabs'
+import {
+  tab_set_new,
+  tab_set_active
+} from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
   editor_ux_state_new,
@@ -90,7 +94,7 @@ fn main() -> i32 = do
     "readme-body"
   )
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, ActiveTabIndex(0)).ok == 0 then
     return 3
   end
@@ -113,7 +117,7 @@ fn main() -> i32 = do
     main_rect.y + 4,
     "main-body"
   )
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if snapshot.tabs.length() != 2 then
     println("ux_fail expected two tabs")
     return 7
@@ -136,7 +140,7 @@ fn main() -> i32 = do
     root_rect.y + 4,
     "ignored"
   )
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if snapshot.tabs.length() != tabs_before then
     println("ux_fail directory click opened tab")
     return 10

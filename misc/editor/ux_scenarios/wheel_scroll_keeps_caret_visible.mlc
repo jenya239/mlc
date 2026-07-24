@@ -70,7 +70,7 @@ fn main() -> i32 = do
   )
   state = editor_ux_ensure_caret_visible(state, metrics, line_index)
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, CaretAt(39, 3)).ok == 0 then
     println("ux_fail caret at last line")
     return 1
@@ -92,7 +92,7 @@ fn main() -> i32 = do
 
   // Wheel toward start would hide bottom caret without keep-visible.
   state = editor_ux_wheel_scroll(state, metrics, 8, line_index)
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index)
   if editor_ux_caret_in_viewport(state, metrics, line_index) == 0 then
     println("ux_fail caret left viewport after wheel")
     return 6

@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_UX_HEADLESS STEP=10 — scenario: divider_hover_cursor_ew (L6).
 import { rect_new } from '../../gui/layout'
 import { ux_focus_none } from '../../gui/ux/snapshot'
@@ -11,7 +12,11 @@ import {
   ux_driver_apply
 } from '../../gui/ux/driver'
 import { shell_panels_new } from '../ui/shell_panels'
-import { tab_set_new, tab_set_open } from '../workspace/tabs'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_active
+} from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
   editor_ux_state_new,
@@ -60,7 +65,7 @@ fn main() -> i32 = do
 
   driver = ux_driver_apply(driver, Move(divider_x, divider_y))
   state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, CursorShape(ux_cursor_ew_resize())).ok == 0 then
     println("ux_fail expected ew-resize on divider")
     return 1
@@ -70,7 +75,7 @@ fn main() -> i32 = do
   const text_y = state.panels.panes.second.y + state.tab_strip_height + 20
   driver = ux_driver_apply(driver, Move(text_x, text_y))
   state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, CursorShape(ux_cursor_ibeam())).ok == 0 then
     println("ux_fail expected ibeam in text")
     return 2
@@ -80,7 +85,7 @@ fn main() -> i32 = do
   const tree_y = state.panels.panes.first.y + 10
   driver = ux_driver_apply(driver, Move(tree_x, tree_y))
   state = editor_ux_hover(state, driver.pointer_x, driver.pointer_y)
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, CursorShape(ux_cursor_arrow())).ok == 0 then
     println("ux_fail expected arrow in tree")
     return 3

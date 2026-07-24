@@ -9,7 +9,8 @@ import {
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -24,7 +25,10 @@ import {
   editor_ux_apply_scissor_clip
 } from '../ux/overflow'
 import { editor_ux_draw_frame } from '../ux/draw_frame'
-import { line_index_from_string } from '../document/line_index'
+import {
+  line_index_from_string,
+  line_index_from_document
+} from '../document/line_index'
 
 fn main() -> i32 = do
   // Narrow shell so long line + many lines exceed text clip.
@@ -68,7 +72,7 @@ fn main() -> i32 = do
   const line_index = line_index_from_string(tall)
 
   state = editor_ux_refresh_overflows(state, metrics, line_index)
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index)
   if snapshot.overflows.length() == 0 then
     println("ux_fail expected overflow without scissor")
     return 1
@@ -83,7 +87,7 @@ fn main() -> i32 = do
 
   // Honest apply_scissor_clip still reports overflows (no fake clear).
   state = editor_ux_apply_scissor_clip(state, metrics, line_index)
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index)
   if snapshot.overflows.length() == 0 then
     println("ux_fail expected overflow after honest apply_scissor_clip")
     return 4
@@ -92,7 +96,7 @@ fn main() -> i32 = do
   // Model GL scissor draw → NoOverflow.
   const drawn = editor_ux_draw_frame(state, metrics, 1, 1, line_index)
   state = drawn.state
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, NoOverflow).ok == 0 then
     println("ux_fail NoOverflow after scissor draw_frame")
     return 5

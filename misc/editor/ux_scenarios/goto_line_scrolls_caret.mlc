@@ -8,7 +8,8 @@ import {
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -20,7 +21,10 @@ import { editor_ux_insert_text } from '../ux/edit_apply'
 import { editor_text_metrics_default } from '../ux/overflow'
 import { editor_ux_caret_in_viewport } from '../ux/scroll'
 import { editor_ux_goto_line } from '../ux/goto_line'
-import { line_index_from_string } from '../document/line_index'
+import {
+  line_index_from_string,
+  line_index_from_document
+} from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 320, 200)
@@ -63,7 +67,7 @@ fn main() -> i32 = do
   // 1-based line 30 → 0-based line 29, column 0.
   state = editor_ux_goto_line(state, metrics, 30, line_index)
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
     println("ux_fail goto caret line")
     return 1

@@ -8,7 +8,8 @@ import {
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open
+  tab_set_open,
+  tab_set_active
 } from '../workspace/tabs'
 import {
   selection_collapsed,
@@ -25,7 +26,10 @@ import {
   editor_ux_goto_line,
   editor_ux_goto_line_from_selection
 } from '../ux/goto_line'
-import { line_index_from_string } from '../document/line_index'
+import {
+  line_index_from_string,
+  line_index_from_document
+} from '../document/line_index'
 
 fn main() -> i32 = do
   const bounds = rect_new(0, 0, 320, 200)
@@ -66,7 +70,7 @@ fn main() -> i32 = do
   const line_index = line_index_from_string(body)
 
   state = editor_ux_goto_line(state, metrics, 10, line_index)
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, CaretAt(9, 0)).ok == 0 then
     println("ux_fail goto_line_reuses_frame_line_index goto")
     return 1
@@ -88,7 +92,7 @@ fn main() -> i32 = do
     overflows: state.overflows
   }
   state = editor_ux_goto_line_from_selection(state, metrics, line_index)
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index)
   if ux_check_expect(snapshot, CaretAt(29, 0)).ok == 0 then
     println("ux_fail goto_line_reuses_frame_line_index from_selection")
     return 2

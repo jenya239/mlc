@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 10:55 (Driver TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX |
+| started | 2026-07-25 10:40 |
+| elapsed | ~15 min |
+| done    | Pass `LineIndex` into `editor_ux_snapshot`; wire scenario/unit callers; green stable |
+| verify  | stable EXIT=0 `ux_ok probe_reuses_frame_line_index`; probe_unit + goto/overflow/newline/lf EXIT=0 |
+| result  | §85 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX |
+
 ### Turn 2026-07-25 10:35 (Driver TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX STEP=1)
 
 | field   | value |

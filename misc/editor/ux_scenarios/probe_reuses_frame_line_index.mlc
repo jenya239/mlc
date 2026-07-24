@@ -1,17 +1,14 @@
-import { line_index_from_document } from '../document/line_index'
-// TRACK_EDITOR_AUTO_INDENT STEP=1 — L1: Enter keeps leading indent.
+// TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX STEP=2 — L2: snapshot reuses LineIndex.
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
 import {
   CaretAt,
-  TextEquals,
   ux_check_expect
 } from '../../gui/ux/expect'
 import { shell_panels_new } from '../ui/shell_panels'
 import {
   tab_set_new,
-  tab_set_open,
-  tab_set_active
+  tab_set_open
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
@@ -19,20 +16,18 @@ import {
   editor_ux_snapshot,
   EditorUxState
 } from '../ux/probe'
-import {
-  editor_ux_insert_text,
-  editor_ux_insert_newline
-} from '../ux/edit_apply'
+import { editor_ux_insert_text } from '../ux/edit_apply'
+import { line_index_from_string } from '../document/line_index'
 
 fn main() -> i32 = do
-  const bounds = rect_new(0, 0, 800, 600)
+  const bounds = rect_new(0, 0, 320, 200)
   const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
   let mut tabs = tab_set_new()
   tabs = tab_set_open(tabs, "/proj/a.mlc", "")
 
   let mut state = editor_ux_state_new(
-    800,
-    600,
+    320,
+    200,
     panels,
     tabs,
     selection_collapsed(0)
@@ -52,19 +47,16 @@ fn main() -> i32 = do
     overflows: state.overflows
   }
 
-  state = editor_ux_insert_text(state, "  foo")
-  state = editor_ux_insert_newline(state)
-
-  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
-  if ux_check_expect(snapshot, TextEquals("  foo\n  ")).ok == 0 then
-    println("ux_fail enter indent text")
+  const source = "aaa\nbbb\nccc"
+  state = editor_ux_insert_text(state, source)
+  const line_index = line_index_from_string(source)
+  // caret at end of insert → line 2 col 3
+  const snapshot = editor_ux_snapshot(state, line_index)
+  if ux_check_expect(snapshot, CaretAt(2, 3)).ok == 0 then
+    println("ux_fail probe_reuses_frame_line_index caret")
     return 1
   end
-  if ux_check_expect(snapshot, CaretAt(1, 2)).ok == 0 then
-    println("ux_fail enter indent caret")
-    return 2
-  end
 
-  println("ux_ok enter_keeps_indent")
+  println("ux_ok probe_reuses_frame_line_index")
   0
 end

@@ -1,3 +1,4 @@
+import { line_index_from_document } from '../document/line_index'
 // TRACK_UX_HEADLESS STEP=13 — scenario: copy_paste_roundtrip (L7 inject).
 import { rect_new } from '../../gui/layout'
 import { ux_focus_editor } from '../../gui/ux/snapshot'
@@ -7,7 +8,11 @@ import {
   ux_check_expect
 } from '../../gui/ux/expect'
 import { shell_panels_new } from '../ui/shell_panels'
-import { tab_set_new, tab_set_open } from '../workspace/tabs'
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_active
+} from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import { clipboard_new, clipboard_get } from '../clipboard'
 import {
@@ -55,7 +60,7 @@ fn main() -> i32 = do
   state = editor_ux_insert_text(state, "hello")
   state = editor_ux_select_all(state)
 
-  let mut snapshot = editor_ux_snapshot(state)
+  let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("hello")).ok == 0 then
     return 1
   end
@@ -72,7 +77,7 @@ fn main() -> i32 = do
   let mut cut = editor_ux_cut(state, clipboard)
   state = cut.state
   clipboard = cut.clipboard
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("")).ok == 0 then
     println("ux_fail cut left text")
     return 4
@@ -84,7 +89,7 @@ fn main() -> i32 = do
   let mut pasted = editor_ux_paste(state, clipboard)
   state = pasted.state
   clipboard = pasted.clipboard
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("hello")).ok == 0 then
     println("ux_fail paste roundtrip")
     return 6
@@ -96,7 +101,7 @@ fn main() -> i32 = do
   // Second paste appends at caret (end after paste).
   pasted = editor_ux_paste(state, clipboard)
   state = pasted.state
-  snapshot = editor_ux_snapshot(state)
+  snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if ux_check_expect(snapshot, TextEquals("hellohello")).ok == 0 then
     println("ux_fail second paste")
     return 8
