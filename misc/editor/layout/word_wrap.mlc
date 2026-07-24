@@ -1,12 +1,23 @@
 // Soft word-wrap for monospaced editor rows (display columns).
+// Pixel-budget path (§52): sum shaped glyph advances vs viewport width.
 import {
   LineIndex,
   line_index_line_count,
   line_index_line_start,
+  utf8_codepoint_byte_length,
+  utf8_count_codepoints,
   utf8_count_display_columns,
   utf8_byte_offset_for_display_column
 } from '../document/line_index'
 import { Rect, rect_new } from '../../gui/layout'
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_advance_at
+} from '../../gui/text_shaping'
+
+extern fn string_byte_u8(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" blocking
 
 export type VisualRow = {
   doc_line: i32,
@@ -138,6 +149,332 @@ export fn visual_rows_for_line(
     })
   end
   rows
+end
+
+// Per-codepoint advance in pixels (shaped). Empty on shape failure → caller falls back.
+fn line_codepoint_advances_px(
+  text: string,
+  line_start: i32,
+  line_finish: i32,
+  font_path: string,
+  pixel_size: i32
+) -> [i32] = do
+  let mut advances: [i32] = []
+  if line_finish <= line_start then
+    return advances
+  end
+  const line_slice = text.byte_substring(line_start, line_finish - line_start)
+  let mut state = text_shaping_new()
+  const shaped = text_shaping_shape(state, font_path, pixel_size, line_slice)
+  if shaped.error_code != 0 then
+    return advances
+  end
+  const codepoint_count = utf8_count_codepoints(text, line_start, line_finish)
+  if shaped.glyph_count != codepoint_count || shaped.glyph_count < 1 then
+    // Ligature / cluster mismatch: shape each codepoint alone.
+    let mut byte_index = line_start
+    while byte_index < line_finish do
+      const lead = string_byte_u8(text, byte_index)
+      let mut step = utf8_codepoint_byte_length(lead)
+      if step < 1 then
+        step = 1
+      end
+      if byte_index + step > line_finish then
+        step = line_finish - byte_index
+      end
+      const piece = text.byte_substring(byte_index, step)
+      const piece_shaped = text_shaping_shape(state, font_path, pixel_size, piece)
+      state = piece_shaped.state
+      let mut width = 1
+      if piece_shaped.error_code == 0 && piece_shaped.glyph_count > 0 then
+        width = text_shaping_glyph_advance_at(0) / 64
+        if width < 1 then
+          width = 1
+        end
+      end
+      advances.push(width)
+      byte_index = byte_index + step
+    end
+    return advances
+  end
+  let mut glyph_index = 0
+  while glyph_index < shaped.glyph_count do
+    let mut width = text_shaping_glyph_advance_at(glyph_index) / 64
+    if width < 1 then
+      width = 1
+    end
+    advances.push(width)
+    glyph_index = glyph_index + 1
+  end
+  advances
+end
+
+fn codepoint_byte_ends(
+  text: string,
+  line_start: i32,
+  line_finish: i32
+) -> [i32] = do
+  let mut ends: [i32] = []
+  let mut byte_index = line_start
+  while byte_index < line_finish do
+    const lead = string_byte_u8(text, byte_index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if byte_index + step > line_finish then
+      step = line_finish - byte_index
+    end
+    byte_index = byte_index + step
+    ends.push(byte_index)
+  end
+  ends
+end
+
+export fn visual_rows_for_line_pixel_budget(
+  text: string,
+  line_index: LineIndex,
+  doc_line: i32,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32
+) -> [VisualRow] = do
+  let mut max_width = viewport_width_px
+  if max_width < 1 then
+    max_width = 1
+  end
+  const line_start = line_index_line_start(line_index, doc_line)
+  const line_finish = line_end_byte(text, line_index, doc_line)
+  if line_finish <= line_start then
+    let mut empty_rows: [VisualRow] = []
+    empty_rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: line_start,
+      byte_end: line_finish,
+      column_start: 0,
+      column_end: 0,
+      is_wrap_continue: 0
+    })
+    return empty_rows
+  end
+  const advances = line_codepoint_advances_px(
+    text, line_start, line_finish, font_path, pixel_size
+  )
+  if advances.length() == 0 then
+    // Shape unavailable — column fallback using mono cell from "M" via max_width/10 heuristic.
+    let mut cell = 8
+    if pixel_size > 0 then
+      cell = pixel_size * 7 / 11
+      if cell < 1 then
+        cell = 1
+      end
+    end
+    return visual_rows_for_line(
+      text, line_index, doc_line, wrap_max_columns(max_width, cell)
+    )
+  end
+  const byte_ends = codepoint_byte_ends(text, line_start, line_finish)
+  if byte_ends.length() != advances.length() then
+    let mut cell = 8
+    if pixel_size > 0 then
+      cell = pixel_size * 7 / 11
+      if cell < 1 then
+        cell = 1
+      end
+    end
+    return visual_rows_for_line(
+      text, line_index, doc_line, wrap_max_columns(max_width, cell)
+    )
+  end
+
+  let mut rows: [VisualRow] = []
+  let mut codepoint_start = 0
+  let mut byte_start = line_start
+  let mut column_start = 0
+  let mut continue_flag = 0
+  const codepoint_count = advances.length()
+  while codepoint_start < codepoint_count do
+    let mut width_sum = 0
+    let mut codepoint_end = codepoint_start
+    while codepoint_end < codepoint_count do
+      const next_width = width_sum + advances[codepoint_end]
+      if next_width > max_width && codepoint_end > codepoint_start then
+        break
+      end
+      width_sum = next_width
+      codepoint_end = codepoint_end + 1
+      if width_sum >= max_width then
+        break
+      end
+    end
+    if codepoint_end <= codepoint_start then
+      codepoint_end = codepoint_start + 1
+    end
+
+    // Soft break: prefer last space in the tentative row.
+    let mut break_codepoint = codepoint_end
+    let mut search = codepoint_end
+    while search > codepoint_start do
+      search = search - 1
+      const space_byte = byte_ends[search] - 1
+      if space_byte >= byte_start && text.byte_at(space_byte) == " " then
+        break_codepoint = search + 1
+        break
+      end
+    end
+    if break_codepoint <= codepoint_start then
+      break_codepoint = codepoint_end
+    end
+    if break_codepoint <= codepoint_start then
+      break_codepoint = codepoint_start + 1
+    end
+
+    const break_byte = byte_ends[break_codepoint - 1]
+    const break_column = column_start + utf8_count_display_columns(
+      text, byte_start, break_byte
+    )
+    rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: byte_start,
+      byte_end: break_byte,
+      column_start: column_start,
+      column_end: break_column,
+      is_wrap_continue: continue_flag
+    })
+    if break_byte >= line_finish then
+      return rows
+    end
+    byte_start = break_byte
+    column_start = break_column
+    codepoint_start = break_codepoint
+    continue_flag = 1
+  end
+  if rows.length() == 0 then
+    rows.push(VisualRow {
+      doc_line: doc_line,
+      byte_start: line_start,
+      byte_end: line_finish,
+      column_start: 0,
+      column_end: utf8_count_display_columns(text, line_start, line_finish),
+      is_wrap_continue: 0
+    })
+  end
+  rows
+end
+
+export fn document_visual_row_count_pixel_budget(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32
+) -> i32 = do
+  let mut total = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  while line < count do
+    const rows = visual_rows_for_line_pixel_budget(
+      text, line_index, line, viewport_width_px, font_path, pixel_size
+    )
+    total = total + rows.length()
+    line = line + 1
+  end
+  total
+end
+
+export fn collect_visible_visual_rows_pixel_budget(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  first_visual_row: i32,
+  max_rows: i32
+) -> [VisualRow] = do
+  let mut out: [VisualRow] = []
+  if max_rows <= 0 then
+    return out
+  end
+  let mut visual = 0
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  let mut first = first_visual_row
+  if first < 0 then
+    first = 0
+  end
+  while line < count && out.length() < max_rows do
+    const rows = visual_rows_for_line_pixel_budget(
+      text, line_index, line, viewport_width_px, font_path, pixel_size
+    )
+    let mut row_index = 0
+    while row_index < rows.length() && out.length() < max_rows do
+      if visual >= first then
+        out.push(rows[row_index])
+      end
+      visual = visual + 1
+      row_index = row_index + 1
+    end
+    line = line + 1
+  end
+  out
+end
+
+export fn visual_row_index_for_caret_pixel_budget(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  caret_line: i32,
+  caret_column: i32
+) -> i32 = do
+  let mut visual = 0
+  let mut line = 0
+  while line < caret_line do
+    const rows = visual_rows_for_line_pixel_budget(
+      text, line_index, line, viewport_width_px, font_path, pixel_size
+    )
+    visual = visual + rows.length()
+    line = line + 1
+  end
+  const rows = visual_rows_for_line_pixel_budget(
+    text, line_index, caret_line, viewport_width_px, font_path, pixel_size
+  )
+  let mut row_index = 0
+  while row_index < rows.length() do
+    const row = rows[row_index]
+    if caret_column >= row.column_start && caret_column <= row.column_end then
+      return visual + row_index
+    end
+    row_index = row_index + 1
+  end
+  if rows.length() > 0 then
+    return visual + rows.length() - 1
+  end
+  visual
+end
+
+// Sum shaped advances for a visual row byte range (gate helper).
+export fn visual_row_advance_width_px(
+  text: string,
+  byte_start: i32,
+  byte_end: i32,
+  font_path: string,
+  pixel_size: i32
+) -> i32 = do
+  if byte_end <= byte_start then
+    return 0
+  end
+  const advances = line_codepoint_advances_px(
+    text, byte_start, byte_end, font_path, pixel_size
+  )
+  let mut total = 0
+  let mut index = 0
+  while index < advances.length() do
+    total = total + advances[index]
+    index = index + 1
+  end
+  total
 end
 
 export fn document_visual_row_count(

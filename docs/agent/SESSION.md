@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 09:55 (Driver TRACK_EDITOR_WRAP_BUDGET_ADVANCE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+| started | 2026-07-24 09:44 |
+| elapsed | ~12 min |
+| done    | Pixel-budget wrap (`visual_rows_for_line_pixel_budget` + advance sum); wrap_cache pixel tick; demo_live wire; scenario `wrap_budget_advance_stable` |
+| verify  | `ux_ok wrap_budget_advance_stable`; `ux_ok wrap_count_cache_stable`; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_WRAP_BUDGET_ADVANCE |
+
 ### Turn 2026-07-24 09:48 (Driver TRACK_EDITOR_WRAP_BUDGET_ADVANCE STEP=1)
 
 | field   | value |

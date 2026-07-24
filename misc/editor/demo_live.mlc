@@ -231,13 +231,13 @@ import {
 } from './layout/gutter'
 import {
   wrap_max_columns,
-  collect_visible_visual_rows,
-  visual_row_index_for_caret,
+  collect_visible_visual_rows_pixel_budget,
+  visual_row_index_for_caret_pixel_budget,
   wrap_offset_at_point
 } from './layout/word_wrap'
 import {
-  wrap_count_cache_new,
-  wrap_count_cache_tick
+  wrap_count_cache_new_pixel,
+  wrap_count_cache_tick_pixel
 } from './layout/wrap_cache'
 import {
   editor_ux_multi_click_new,
@@ -747,8 +747,8 @@ fn main() -> i32 = do
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_drag = 0
-  let mut wrap_count_cache = wrap_count_cache_new(
-    "", line_index_from_string(""), 1
+  let mut wrap_count_cache = wrap_count_cache_new_pixel(
+    "", line_index_from_string(""), 1, font_path, zoom_font_size
   )
   let mut frame_cache = frame_snapshot_cache_new(document_from_string(""))
   let mut last_width = 0
@@ -971,8 +971,10 @@ fn main() -> i32 = do
     const content_clip = editor_ux_content_clip_rect(editor_rect, minimap_layout)
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
-    wrap_count_cache = wrap_count_cache_tick(
-      wrap_count_cache, draw_text, line_index, wrap_columns
+    const wrap_viewport_width = text_rect.width - 8
+    wrap_count_cache = wrap_count_cache_tick_pixel(
+      wrap_count_cache, draw_text, line_index,
+      wrap_viewport_width, font_path, zoom_font_size
     )
     const visual_row_count = wrap_count_cache.visual_row_count
     let mut wrapped_content_height = visual_row_count * metrics.line_height
@@ -989,8 +991,9 @@ fn main() -> i32 = do
     if visible_row_budget < 1 then
       visible_row_budget = 1
     end
-    let mut visual_rows = collect_visible_visual_rows(
-      draw_text, line_index, wrap_columns, first_visual_row, visible_row_budget
+    let mut visual_rows = collect_visible_visual_rows_pixel_budget(
+      draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
+      first_visual_row, visible_row_budget
     )
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_tree_browser_rows(panels.tree)
@@ -1068,8 +1071,8 @@ fn main() -> i32 = do
           app.ux.scroll_offset_x, scroll_offset_y,
           text_rect.height / metrics.line_height
         )
-        visual_rows = collect_visible_visual_rows(
-          draw_text, line_index, wrap_columns,
+        visual_rows = collect_visible_visual_rows_pixel_budget(
+          draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
           scroll_offset_y / metrics.line_height, visible_row_budget
         )
       end
@@ -1771,8 +1774,10 @@ fn main() -> i32 = do
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_ensure_caret_visible(app, metrics)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
-    wrap_count_cache = wrap_count_cache_tick(
-      wrap_count_cache, draw_text, line_index, wrap_columns_now
+    const wrap_viewport_width_now = text_rect.width - 8
+    wrap_count_cache = wrap_count_cache_tick_pixel(
+      wrap_count_cache, draw_text, line_index,
+      wrap_viewport_width_now, font_path, zoom_font_size
     )
     const visual_row_count_now = wrap_count_cache.visual_row_count
     let mut wrapped_content_height_now = visual_row_count_now * metrics.line_height
@@ -1784,8 +1789,8 @@ fn main() -> i32 = do
     )
     scroll_offset_y = app.ux.scroll_offset_y
     visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
-    visual_rows = collect_visible_visual_rows(
-      draw_text, line_index, wrap_columns_now,
+    visual_rows = collect_visible_visual_rows_pixel_budget(
+      draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
       scroll_offset_y / metrics.line_height, visible_row_budget
     )
 
@@ -2079,8 +2084,8 @@ fn main() -> i32 = do
       draw_text,
       selection_caret(selection)
     )
-    const caret_visual = visual_row_index_for_caret(
-      draw_text, line_index, wrap_columns_now,
+    const caret_visual = visual_row_index_for_caret_pixel_budget(
+      draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
       caret_position.line, caret_position.column
     )
     const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)

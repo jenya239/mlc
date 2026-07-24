@@ -1,0 +1,63 @@
+// TRACK_EDITOR_WRAP_BUDGET_ADVANCE STEP=2 —
+// Pixel-budget wrap: each visual row shaped width ≤ viewport_width_px.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  visual_rows_for_line,
+  visual_rows_for_line_pixel_budget,
+  visual_row_advance_width_px,
+  wrap_max_columns
+} from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail wrap_budget_advance_stable char_width")
+    return 1
+  end
+
+  // Mixed Cyrillic + Latin; long enough to wrap under a narrow budget.
+  const line =
+    "Привет VS Code Replace Hello Мир wrapping budget test line ABCDEF\n"
+  const line_index = line_index_from_string(line)
+  const viewport_width = char_width * 18
+  if viewport_width < 8 then
+    println("ux_fail wrap_budget_advance_stable viewport")
+    return 2
+  end
+
+  const rows = visual_rows_for_line_pixel_budget(
+    line, line_index, 0, viewport_width, font_path, pixel_size
+  )
+  if rows.length() < 2 then
+    println("ux_fail wrap_budget_advance_stable need_wrap")
+    return 3
+  end
+
+  let mut row_index = 0
+  while row_index < rows.length() do
+    const row = rows[row_index]
+    const width = visual_row_advance_width_px(
+      line, row.byte_start, row.byte_end, font_path, pixel_size
+    )
+    if width > viewport_width then
+      println("ux_fail wrap_budget_advance_stable overflow")
+      return 4
+    end
+    row_index = row_index + 1
+  end
+
+  // Column wrap of the same line must exist (regression: API still works).
+  const columns = wrap_max_columns(viewport_width, char_width)
+  const column_rows = visual_rows_for_line(line, line_index, 0, columns)
+  if column_rows.length() < 1 then
+    println("ux_fail wrap_budget_advance_stable column_fallback")
+    return 5
+  end
+
+  println("ux_ok wrap_budget_advance_stable")
+  0
+end
