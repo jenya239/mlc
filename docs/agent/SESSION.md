@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 03:35 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE |
+| started | 2026-07-25 03:30 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_syntax_highlight_cache_red.sh` + stable stub `not implemented`; gap = bare `highlight_range` each paint |
+| verify  | red EXIT=0 `ux_ok syntax_highlight_cache_red`; stable EXIT=1 `not implemented` |
+| result  | §77 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 03:30 (Planner plan-refresh → §77)
 
 | field   | value |

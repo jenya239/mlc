@@ -472,7 +472,7 @@ compiler/
 | **74** | Editor minimap syntax tags (§46 #35 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md) |
 | **75** | Editor minimap zoom-linked scale (§74 / #35 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_ZOOM_SCALE](archive/tracks/TRACK_EDITOR_MINIMAP_ZOOM_SCALE.md) |
 | **76** | Editor minimap strip width × font zoom (§75 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM](archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM.md) |
-| **77** | Editor syntax highlight span cache (§76 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE.md) |
+| **77** | Editor syntax highlight span cache (§76 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -852,7 +852,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_MINIMAP_WIDTH_ZOOM (§76, **closed** 2026-07-25: Critic OK; STEP=0–3;
       strip width × font zoom; `46a9c264`…`9403d8f0`;
       → [archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM.md](archive/tracks/TRACK_EDITOR_MINIMAP_WIDTH_ZOOM.md))**
-  → **EDITOR_SYNTAX_HIGHLIGHT_CACHE (§77, open STEP=1 next:
+  → **EDITOR_SYNTAX_HIGHLIGHT_CACHE (§77, open STEP=2 next:
       cache visible-range highlight spans; [TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE](agent/TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE.md))**
 ```
 

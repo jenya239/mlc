@@ -5,17 +5,18 @@ Residual of [TRACK_EDITOR_MINIMAP_WIDTH_ZOOM](../archive/tracks/TRACK_EDITOR_MIN
 (§76) / [TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](../archive/tracks/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md)
 (§74) / idle CPU chain (§51). Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert paint path re-runs `highlight_range` every frame with no span cache; stable stub `not implemented`.
+**STEP=2** — Cache helper + demo wire; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: cache visible-range highlight spans across paints |
+| 0 | 8fc5f83f | Decision: cache visible-range highlight spans across paints |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -33,7 +34,7 @@ Residual of [TRACK_EDITOR_MINIMAP_WIDTH_ZOOM](../archive/tracks/TRACK_EDITOR_MIN
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: no span cache | pending |
+| 1 | Red: no span cache | **done** |
 | 2 | Cache helper + demo wire; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
