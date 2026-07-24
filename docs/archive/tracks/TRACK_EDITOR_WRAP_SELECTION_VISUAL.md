@@ -12,8 +12,7 @@ Anti-false-done: `7c078e1e`…`33fcee28` (STEP=0–2); `selection_fill_visual_ro
 `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
 **reopen: none**.
 
-Honest residual → **§55** `TRACK_EDITOR_MULTI_SELECTION_VISUAL` (opened 2026-07-24):
-multi-cursor selection fills OOS here.
+Honest residual → **§55** `TRACK_EDITOR_MULTI_SELECTION_VISUAL` (**closed** 2026-07-24 Critic OK).
 `*_red` post-green fails (use stable only).
 
 | Gate | Result |
@@ -27,7 +26,7 @@ multi-cursor selection fills OOS here.
 
 ## Next step
 
-**closed** — Critic OK. Residual → §55 `TRACK_EDITOR_MULTI_SELECTION_VISUAL`.
+**closed** — Critic OK. Residual §55 closed 2026-07-24.
 
 ### STEPs done in git
 

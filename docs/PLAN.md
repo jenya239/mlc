@@ -450,7 +450,7 @@ compiler/
 | **52** | Editor wrap budget by glyph advance (#37 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE](archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md) |
 | **53** | Editor proportional hit-test / caret / selection (§52 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST](archive/tracks/TRACK_EDITOR_PROPORTIONAL_HIT_TEST.md) |
 | **54** | Editor selection highlight on visual wrap rows (§53 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md) |
-| **55** | Editor multi-cursor selection visual fills (§54 residual) | **active** — STEP=2 done → Critic STEP=3 | [TRACK_EDITOR_MULTI_SELECTION_VISUAL](agent/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md) |
+| **55** | Editor multi-cursor selection visual fills (§54 residual) | **closed** (2026-07-24) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -764,9 +764,11 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_WRAP_SELECTION_VISUAL (§54, **closed** 2026-07-24: Critic OK; STEP=0–3;
       visual-row selection fill; `7c078e1e`…`33fcee28`;
       → [archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md](archive/tracks/TRACK_EDITOR_WRAP_SELECTION_VISUAL.md))**
-  → **EDITOR_MULTI_SELECTION_VISUAL (§55, active: STEP=2 done → Critic STEP=3;
-      multi-range visual fills; `ad8b0d7e`…`298aa166`;
-      → [agent/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md](agent/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md))**
+  → **EDITOR_MULTI_SELECTION_VISUAL (§55, **closed** 2026-07-24: Critic OK; STEP=0–3;
+      multi-range visual fills; `c2223498`…`298aa166`;
+      → [archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md](archive/tracks/TRACK_EDITOR_MULTI_SELECTION_VISUAL.md))**
+  → **(idle 2026-07-24 after §55)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
+      LANG_AUTO_CYCLE gated; no Driver work until new authorization
 ```
 
 
