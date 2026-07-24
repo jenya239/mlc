@@ -469,7 +469,7 @@ compiler/
 | **71** | Editor scrollbar thumb hover lift (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER](archive/tracks/TRACK_EDITOR_SCROLLBAR_THUMB_HOVER.md) |
 | **72** | Editor context-menu item hover (§46 #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER](archive/tracks/TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER.md) |
 | **73** | Editor dirty-close button hover (§72 / #32 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER](archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER.md) |
-| **74** | Editor minimap syntax tags (§46 #35 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](agent/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md) |
+| **74** | Editor minimap syntax tags (§46 #35 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](agent/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -840,7 +840,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_DIRTY_CLOSE_BUTTON_HOVER (§73, **closed** 2026-07-25: Critic OK; STEP=0–3;
       discard/cancel chrome_hover; `e6d88360`…`b58523b3`;
       → [archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER.md](archive/tracks/TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER.md))**
-  → **EDITOR_MINIMAP_SYNTAX_TAGS (§74, open STEP=2 next:
+  → **EDITOR_MINIMAP_SYNTAX_TAGS (§74, open STEP=3 Critic next:
       minimap syntax glyphs; [TRACK_EDITOR_MINIMAP_SYNTAX_TAGS](agent/TRACK_EDITOR_MINIMAP_SYNTAX_TAGS.md))**
 ```
 

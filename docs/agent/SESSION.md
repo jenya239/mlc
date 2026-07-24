@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:35 (Driver TRACK_EDITOR_MINIMAP_SYNTAX_TAGS STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+| started | 2026-07-25 02:30 |
+| elapsed | ~5 min |
+| done    | Minimap rebuild → `highlight_mlc` + `append_syntax_colored_row`; green stable; demo_live compiles |
+| verify  | stable EXIT=0; `editor_minimap_cache_stable` EXIT=0; `demo_live_fs_compile_ok`; red EXIT=1 |
+| result  | §74 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+
 ### Turn 2026-07-25 02:30 (Driver TRACK_EDITOR_MINIMAP_SYNTAX_TAGS STEP=1)
 
 | field   | value |

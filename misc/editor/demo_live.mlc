@@ -220,7 +220,7 @@ import {
   edit_cut,
   edit_paste
 } from './document/clipboard_edit'
-import { HighlightSpan, highlight_range } from './syntax/highlighter'
+import { HighlightSpan, highlight_range, highlight_mlc } from './syntax/highlighter'
 import {
   viewport_metrics_new,
   visible_line_range
@@ -2554,17 +2554,35 @@ fn main() -> i32 = do
           minimap_cached_height != minimap_rect.height then
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size()
+        const minimap_spans = highlight_mlc(draw_text)
         let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
         if map_line_count < 1 then
           map_line_count = 1
         end
         while map_line < line_index_line_count(line_index) do
-          const map_text = line_text_at(draw_text, line_index, map_line)
+          const map_byte_start = line_index_line_start(line_index, map_line)
+          let mut map_byte_end = line_index.text_length
+          if map_line + 1 < line_index_line_count(line_index) then
+            map_byte_end = line_index_line_start(line_index, map_line + 1)
+          end
+          if map_byte_end > map_byte_start &&
+              draw_text.byte_at(map_byte_end - 1) == "\n" then
+            map_byte_end = map_byte_end - 1
+          end
           const pen_y =
             minimap_rect.y + (map_line * minimap_rect.height) / map_line_count + 2
-          minimap_lines = push_line(
-            minimap_lines, map_text, minimap_pixel, minimap_rect.x + 1, pen_y
+          minimap_lines = editor_ux_append_syntax_colored_row(
+            minimap_lines,
+            theme,
+            draw_text,
+            minimap_spans,
+            map_byte_start,
+            map_byte_end,
+            minimap_pixel,
+            minimap_rect.x + 1,
+            pen_y,
+            1
           )
           map_line = map_line + 1
         end
