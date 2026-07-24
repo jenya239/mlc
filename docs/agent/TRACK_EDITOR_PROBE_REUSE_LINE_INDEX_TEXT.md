@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §86.
 Residual of [TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md)
 (§85) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `editor_ux_snapshot` still calls `document_to_string`; stable stub `not implemented`.
+**STEP=2** — Use `line_index.text` for snapshot `document_text`; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: snapshot `document_text` from `line_index.text` |
+| 0 | `cdd07cdc` | Decision: snapshot `document_text` from `line_index.text` |
+| 1 | (this) | Red: ≥1 `document_to_string` in `probe.mlc`; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: probe still stringifies document | pending |
+| 1 | Red: probe still stringifies document | **done** |
 | 2 | Use `line_index.text`; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts document_to_string in probe.mlc; 2) stable stub; 3) docs -->
 <!-- STEP=2 sub-steps: 1) document_text = line_index.text; 2) drop import; 3) green stable -->
 
 ## Out of scope

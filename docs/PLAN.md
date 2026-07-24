@@ -481,7 +481,7 @@ compiler/
 | **83** | Editor goto-line reuses frame LineIndex (§82 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX.md) |
 | **84** | Editor overflow reuses frame LineIndex (§83 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX.md) |
 | **85** | Editor probe reuses frame LineIndex (§84 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md) |
-| **86** | Editor probe reuses LineIndex text (§85 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](agent/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md) |
+| **86** | Editor probe reuses LineIndex text (§85 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](agent/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -888,7 +888,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_PROBE_REUSE_FRAME_LINE_INDEX (§85, **closed** 2026-07-25: Critic OK; STEP=0–3;
       probe snapshot reuses frame LineIndex; `f866a137`…`121ebb52`;
       → [archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md](archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md))**
-  → **EDITOR_PROBE_REUSE_LINE_INDEX_TEXT (§86, open STEP=1 next:
+  → **EDITOR_PROBE_REUSE_LINE_INDEX_TEXT (§86, open STEP=2 next:
       snapshot document_text from line_index.text; [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](agent/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md))**
 ```
 
