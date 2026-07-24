@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:55 (Critic TRACK_EDITOR_WRAP_SELECTION_VISUAL)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | critique-audit |
+| track   | TRACK_EDITOR_WRAP_SELECTION_VISUAL |
+| started | 2026-07-24 10:55 |
+| elapsed | ~10 min |
+| done    | Close §54: re-ran stable ×2 + proportional + wrap_budget + demo + HEAD run_ux_gate (69); archive track; PLAN/CONTINUITY/DEVELOPMENT → Planner |
+| verify  | `ux_ok wrap_selection_visual_stable` ×2; proportional/wrap_budget; `demo_live_fs_compile_ok`; `[ux gate] all ok (69 scenarios)`; anti-false-done `7c078e1e`…`33fcee28`; REG skip |
+| result  | closed Critic OK; reopen none |
+| issues  | residual: multi-cursor fills OOS; `*_red` post-green |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty; select next or document idle) |
+
 ### Turn 2026-07-24 10:46 (Driver TRACK_EDITOR_WRAP_SELECTION_VISUAL STEP=2)
 
 | field   | value |
