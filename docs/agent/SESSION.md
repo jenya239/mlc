@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 01:50 (Driver TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+| started | 2026-07-25 01:45 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_context_menu_item_hover_red.sh` + stable stub `not implemented`; gap = flat muted item fills |
+| verify  | red EXIT=0 `ux_ok context_menu_item_hover_red`; stable EXIT=1 `not implemented` |
+| result  | §72 STEP=1 **done**; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER |
+
 ### Turn 2026-07-25 01:45 (Planner plan-refresh → §72)
 
 | field   | value |
