@@ -271,7 +271,11 @@ import {
   tab_strip_hit_close_index_from_widths
 } from './ux/tab_strip'
 import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
-import { editor_ux_content_scrollbar_thumb, text_pen_x_scrolled } from './ux/scroll'
+import {
+  editor_ux_content_scrollbar_thumb,
+  editor_ux_content_scrollbar_thumb_x,
+  text_pen_x_scrolled
+} from './ux/scroll'
 import {
   editor_ux_minimap_pixel_size,
   editor_ux_minimap_layout,
@@ -2161,6 +2165,23 @@ fn main() -> i32 = do
       solid = solid_renderer_rect(
         solid, width, height,
         content_thumb.x, content_thumb.y, content_thumb.width, content_thumb.height,
+        0.45, 0.48, 0.55, 1.0
+      )
+    end
+    // horizontal_scrollbar: bottom thumb when content wider than viewport
+    let mut horizontal_char_width = metrics.char_width
+    if horizontal_char_width <= 0 then
+      horizontal_char_width = 1
+    end
+    const horizontal_content_width =
+      editor_ux_max_line_columns_from_index(line_index) * horizontal_char_width
+    const content_thumb_x = editor_ux_content_scrollbar_thumb_x(
+      editor_hovered, text_rect, horizontal_content_width, app.ux.scroll_offset_x
+    )
+    if content_thumb_x.width > 0 then
+      solid = solid_renderer_rect(
+        solid, width, height,
+        content_thumb_x.x, content_thumb_x.y, content_thumb_x.width, content_thumb_x.height,
         0.45, 0.48, 0.55, 1.0
       )
     end

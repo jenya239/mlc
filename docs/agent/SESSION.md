@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 17:42 (Driver TRACK_EDITOR_HORIZONTAL_SCROLLBAR STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+| started | 2026-07-24 17:39 |
+| elapsed | ~4 min |
+| done    | `editor_ux_content_scrollbar_thumb_x` in scroll.mlc; demo_live hover draw; scenario + `run_ux_horizontal_scrollbar_stable.sh` green |
+| verify  | stable EXIT=0 `ux_ok horizontal_scrollbar_stable`; red EXIT=1 post-green; content_scrollbar_thumb ok; `demo_live_fs_compile_ok` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HORIZONTAL_SCROLLBAR |
+
 ### Turn 2026-07-24 17:38 (Driver TRACK_EDITOR_HORIZONTAL_SCROLLBAR STEP=1)
 
 | field   | value |

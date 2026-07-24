@@ -1,0 +1,50 @@
+// TRACK_EDITOR_HORIZONTAL_SCROLLBAR STEP=2 —
+// Bottom thumb when content_width > viewport; empty when fit or not hovered.
+import { rect_new } from '../../gui/layout'
+import { editor_ux_content_scrollbar_thumb_x } from '../ux/scroll'
+
+fn main() -> i32 = do
+  const text_rect = rect_new(100, 50, 400, 200)
+  const content_wide = 800
+  const scroll_x = 100
+
+  const overflow = editor_ux_content_scrollbar_thumb_x(
+    1, text_rect, content_wide, scroll_x
+  )
+  if overflow.width <= 0 then
+    println("ux_fail horizontal_scrollbar_stable overflow empty")
+    return 1
+  end
+  if overflow.width < 12 then
+    println("ux_fail horizontal_scrollbar_stable overflow short")
+    return 2
+  end
+  if overflow.x < text_rect.x ||
+      overflow.x + overflow.width > text_rect.x + text_rect.width then
+    println("ux_fail horizontal_scrollbar_stable overflow x")
+    return 3
+  end
+  if overflow.height != 5 then
+    println("ux_fail horizontal_scrollbar_stable overflow height")
+    return 4
+  end
+
+  const fits = editor_ux_content_scrollbar_thumb_x(
+    1, text_rect, 100, 0
+  )
+  if fits.width != 0 || fits.height != 0 then
+    println("ux_fail horizontal_scrollbar_stable fits not empty")
+    return 5
+  end
+
+  const idle = editor_ux_content_scrollbar_thumb_x(
+    0, text_rect, content_wide, scroll_x
+  )
+  if idle.width != 0 || idle.height != 0 then
+    println("ux_fail horizontal_scrollbar_stable idle not empty")
+    return 6
+  end
+
+  println("ux_ok horizontal_scrollbar_stable")
+  0
+end

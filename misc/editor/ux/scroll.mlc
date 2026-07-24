@@ -224,3 +224,35 @@ export fn editor_ux_content_scrollbar_thumb(
     scroll_y
   )
 end
+
+// TRACK_EDITOR_HORIZONTAL_SCROLLBAR — thumb on text_rect bottom edge when hovered.
+export fn editor_ux_content_scrollbar_thumb_x(
+  hovered: i32,
+  text_rect: Rect,
+  content_width: i32,
+  scroll_x: i32
+) -> Rect = do
+  if hovered == 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  const thumb_height = 5
+  const inset = 2
+  const track_width = text_rect.width
+  if content_width <= track_width || track_width <= 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  let mut thumb = track_width * track_width / content_width
+  if thumb < 12 then
+    thumb = 12
+  end
+  if thumb > track_width then
+    thumb = track_width
+  end
+  let mut max_scroll = content_width - track_width
+  if max_scroll < 1 then
+    max_scroll = 1
+  end
+  const thumb_x = text_rect.x + (track_width - thumb) * scroll_x / max_scroll
+  const thumb_y = text_rect.y + text_rect.height - thumb_height - inset
+  rect_new(thumb_x, thumb_y, thumb, thumb_height)
+end
