@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` STEP=1. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60 done; §61 STEP=0 done.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver** `TRACK_EDITOR_SCROLLBAR_THUMB_DRAG` STEP=2. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-24:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60 done; §61 STEP=1 done.
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
