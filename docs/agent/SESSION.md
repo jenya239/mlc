@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:05 (Planner plan-refresh → §73)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 02:00 |
+| elapsed | ~5 min |
+| done    | Opened §73 `TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER`: Decision — discard (danger) + cancel (accent) via `chrome_hover_draw_entry`; #32 residual after §72 |
+| verify  | discard/cancel still flat `theme.danger_*` / `theme.accent_*` without chrome_hover |
+| result  | §73 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER |
+
 ### Turn 2026-07-25 02:00 (Critic TRACK_EDITOR_CONTEXT_MENU_ITEM_HOVER)
 
 | field   | value |
