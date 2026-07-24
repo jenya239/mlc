@@ -1,0 +1,68 @@
+// TRACK_EDITOR_PROPORTIONAL_HIT_TEST STEP=2 —
+// Pixel hit/caret: advance sum ≠ mono cell on proportional font.
+import { line_index_from_string } from '../document/line_index'
+import {
+  byte_offset_at_pixel_x,
+  pixel_x_for_byte_offset,
+  visual_row_advance_width_px,
+  wrap_offset_at_point_pixel
+} from '../layout/word_wrap'
+import { editor_measure_mono_char_width } from '../ux/font_zoom'
+
+fn main() -> i32 = do
+  // Proportional (not Mono) so advances diverge from uniform cell.
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  const pixel_size = 13
+  const char_width = editor_measure_mono_char_width(font_path, pixel_size)
+  if char_width < 1 then
+    println("ux_fail proportional_hit_test_stable char_width")
+    return 1
+  end
+
+  // Wide W vs narrow i — advance sum of "WW" != 2 * char_width("M").
+  const line = "WWiiiiHello\n"
+  const line_index = line_index_from_string(line)
+  const prefix_end = 2
+  const advance_x = visual_row_advance_width_px(
+    line, 0, prefix_end, font_path, pixel_size
+  )
+  const mono_x = 2 * char_width
+  if advance_x == mono_x then
+    println("ux_fail proportional_hit_test_stable no_drift")
+    return 2
+  end
+  if advance_x < 1 then
+    println("ux_fail proportional_hit_test_stable zero_advance")
+    return 3
+  end
+
+  const caret_x = pixel_x_for_byte_offset(
+    line, 0, line.byte_size() - 1, prefix_end, font_path, pixel_size
+  )
+  if caret_x != advance_x then
+    println("ux_fail proportional_hit_test_stable caret_x")
+    return 4
+  end
+
+  const hit = byte_offset_at_pixel_x(
+    line, 0, line.byte_size() - 1, advance_x, font_path, pixel_size
+  )
+  if hit != prefix_end then
+    println("ux_fail proportional_hit_test_stable hit_byte")
+    return 5
+  end
+
+  // Full-line click path (no wrap): pixel hit at advance_x → prefix_end.
+  const pixel_hit = wrap_offset_at_point_pixel(
+    line, line_index, 4000, font_path, pixel_size,
+    0, 0, 0, 16, advance_x, 0
+  )
+  if pixel_hit != prefix_end then
+    println("ux_fail proportional_hit_test_stable wrap_pixel")
+    return 6
+  end
+
+  // Mono cell x for same caret byte differs (advance_x != mono_x already).
+  println("ux_ok proportional_hit_test_stable")
+  0
+end

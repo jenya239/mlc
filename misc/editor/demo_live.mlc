@@ -171,10 +171,12 @@ import {
 import { glfw_gl_context_wait_events_timeout } from './ui/gl_idle'
 import {
   LineIndex,
+  TextPosition,
   line_index_from_string,
   line_index_line_count,
   line_index_line_start,
   line_index_offset_to_position,
+  line_index_position_to_offset,
   line_index_matches_document
 } from './document/line_index'
 import {
@@ -233,7 +235,8 @@ import {
   wrap_max_columns,
   collect_visible_visual_rows_pixel_budget,
   visual_row_index_for_caret_pixel_budget,
-  wrap_offset_at_point
+  wrap_offset_at_point_pixel,
+  pixel_x_for_byte_offset
 } from './layout/word_wrap'
 import {
   wrap_count_cache_new_pixel,
@@ -1264,10 +1267,10 @@ fn main() -> i32 = do
       if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
         if dragging_tab_index < 0 then
           editor_focused = 1
-          const click_offset = wrap_offset_at_point(
-            draw_text, line_index, wrap_columns,
+          const click_offset = wrap_offset_at_point_pixel(
+            draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
             text_rect.x + 4, text_rect.y + 2, scroll_offset_y,
-            metrics.line_height, metrics.char_width,
+            metrics.line_height,
             input.mouse_x, input.mouse_y
           )
           if glfw_gl_mod_shift_down() != 0 then
@@ -2064,11 +2067,36 @@ fn main() -> i32 = do
           if highlight_line == end_position.line then
             col_end = end_position.column
           end
-          const highlight_width = (col_end - col_start) * metrics.char_width
+          const line_byte_start = line_index_line_start(line_index, highlight_line)
+          let mut line_byte_end = line_index.text_length
+          if highlight_line + 1 < line_index_line_count(line_index) then
+            line_byte_end = line_index_line_start(line_index, highlight_line + 1)
+          end
+          if line_byte_end > line_byte_start &&
+              draw_text.byte_at(line_byte_end - 1) == "\n" then
+            line_byte_end = line_byte_end - 1
+          end
+          const sel_byte_start = line_index_position_to_offset(
+            line_index, draw_text,
+            TextPosition { line: highlight_line, column: col_start }
+          )
+          const sel_byte_end = line_index_position_to_offset(
+            line_index, draw_text,
+            TextPosition { line: highlight_line, column: col_end }
+          )
+          const highlight_x0 = pixel_x_for_byte_offset(
+            draw_text, line_byte_start, line_byte_end, sel_byte_start,
+            font_path, zoom_font_size
+          )
+          const highlight_x1 = pixel_x_for_byte_offset(
+            draw_text, line_byte_start, line_byte_end, sel_byte_end,
+            font_path, zoom_font_size
+          )
+          const highlight_width = highlight_x1 - highlight_x0
           if highlight_width > 0 then
             solid = solid_renderer_rect(
               solid, width, height,
-              text_rect.x + 4 + col_start * metrics.char_width,
+              text_rect.x + 4 + highlight_x0,
               text_rect.y + 2 + row * metrics.line_height,
               highlight_width, metrics.line_height,
               theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
@@ -2101,8 +2129,11 @@ fn main() -> i32 = do
     last_caret_valid = 0
     if caret_row >= 0 && caret_row < visual_rows.length() then
       const caret_row_info = visual_rows[caret_row]
-      const caret_col = caret_position.column - caret_row_info.column_start
-      last_caret_x = text_rect.x + 4 + caret_col * metrics.char_width
+      const caret_byte = selection_caret(selection)
+      last_caret_x = text_rect.x + 4 + pixel_x_for_byte_offset(
+        draw_text, caret_row_info.byte_start, caret_row_info.byte_end,
+        caret_byte, font_path, zoom_font_size
+      )
       last_caret_y = text_rect.y + 2 + caret_row * metrics.line_height
       last_caret_w = 1
       last_caret_h = metrics.line_height - 2

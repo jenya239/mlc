@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:23 (Driver TRACK_EDITOR_PROPORTIONAL_HIT_TEST STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+| started | 2026-07-24 10:23 |
+| elapsed | ~12 min |
+| done    | `byte_offset_at_pixel_x`/`pixel_x_for_byte_offset`/`wrap_offset_at_point_pixel`; demo_live click/caret/selection wire; scenario `proportional_hit_test_stable` |
+| verify  | `ux_ok proportional_hit_test_stable`; `demo_live_fs_compile_ok`; `wrap_budget_advance_stable` + `wrap_count_cache_stable` |
+| result  | STEP=2 done → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PROPORTIONAL_HIT_TEST |
+
 ### Turn 2026-07-24 10:20 (Driver TRACK_EDITOR_PROPORTIONAL_HIT_TEST STEP=1)
 
 | field   | value |

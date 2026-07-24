@@ -4,11 +4,11 @@ Parent: [../PLAN.md](../PLAN.md) §53.
 Residual of [TRACK_EDITOR_WRAP_BUDGET_ADVANCE](../archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md)
 (§52 Decision OOS). Size **M**.
 
-## Status: **active** (2026-07-24) — STEP=1 done → Driver STEP=2
+## Status: **active** (2026-07-24) — STEP=2 done → Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Implement advance-sum hit/caret/selection; green stable.
+**STEP=3** — Critic: stable + full `run_ux_gate`.
 
 ## Decision (STEP=0) — **frozen** 2026-07-24
 
@@ -27,7 +27,7 @@ Residual of [TRACK_EDITOR_WRAP_BUDGET_ADVANCE](../archive/tracks/TRACK_EDITOR_WR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: no proportional hit-test script | **done** |
-| 2 | Implement advance-sum hit/caret/selection; green | open |
+| 2 | Implement advance-sum hit/caret/selection; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | open |
 
 <!-- STEP=1: red proves stable script missing or documents gap -->
