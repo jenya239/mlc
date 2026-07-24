@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:25 (Driver TRACK_EDITOR_ACTIVE_TAB_TINT STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_ACTIVE_TAB_TINT |
+| started | 2026-07-25 00:20 |
+| elapsed | ~5 min |
+| done    | Active tab fill base → `theme.selection_*`; inactive keeps `theme.panel_*`; `[title]` kept; stable green |
+| verify  | `ux_ok active_tab_tint_stable`; red EXIT=1; `demo_live_fs_compile_ok` |
+| result  | STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (`*_red` post-green by design) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_ACTIVE_TAB_TINT |
+
 ### Turn 2026-07-25 00:20 (Driver TRACK_EDITOR_ACTIVE_TAB_TINT STEP=1)
 
 | field   | value |

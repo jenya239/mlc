@@ -1943,8 +1943,16 @@ fn main() -> i32 = do
         tab_strip, tab_widths, hover_tab_index
       )
       const tab_slot = rect_new(tab_ux.x, tab_ux.y, tab_ux.width, tab_ux.height)
+      let mut tab_base_red = theme.panel_red
+      let mut tab_base_green = theme.panel_green
+      let mut tab_base_blue = theme.panel_blue
+      if hover_tab_index == tabs.active_index then
+        tab_base_red = theme.selection_red
+        tab_base_green = theme.selection_green
+        tab_base_blue = theme.selection_blue
+      end
       const tab_fill = editor_ux_chrome_hover_draw_entry(
-        input, tab_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+        input, tab_slot, tab_base_red, tab_base_green, tab_base_blue
       )
       solid = solid_renderer_rect(
         solid, width, height,
