@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX` (§81).
-**`TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX` (§81)** **open** — STEP=0 Decision; STEP=1 red next.
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX` (§81).
+**`TRACK_EDITOR_SCROLL_REUSE_FRAME_LINE_INDEX` (§81)** **open** — STEP=1 red done; STEP=2 green next.
 **`TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX` (§80)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE` (§79)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE` (§78)** **closed** 2026-07-25 (Critic OK). Archived.

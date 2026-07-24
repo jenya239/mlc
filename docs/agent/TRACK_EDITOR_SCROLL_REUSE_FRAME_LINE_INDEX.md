@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §81.
 Residual of [TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX.md)
 (§80) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert scroll helpers still call `line_index_from_document`; stable stub `not implemented`.
+**STEP=2** — Pass `LineIndex` into scroll helpers; green `ux_ok scroll_reuses_frame_line_index`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: scroll path reuses frame `LineIndex` |
+| 0 | `bbdcccf5` | Decision: scroll path reuses frame `LineIndex` |
+| 1 | (this) | Red harness + stable stub `not implemented` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_PAINT_REUSE_FRAME_LINE_INDEX](../archive/tracks/TRACK_
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: scroll still re-stringifies | pending |
+| 1 | Red: scroll still re-stringifies | **done** |
 | 2 | Pass frame LineIndex; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) scripts/run_ux_scroll_reuses_frame_line_index_red.sh asserts three helpers still call line_index_from_document; 2) stable stub exit 1 not implemented; 3) update TRACK/PLAN/SESSION -->
 <!-- STEP=2 sub-steps: 1) add LineIndex param to clamp_scroll_y/caret_in_viewport/ensure_caret_visible; 2) wire app/state + goto_line + drag_autoscroll + scenarios; 3) green stable + related scroll scenarios -->
 
 ## Out of scope
