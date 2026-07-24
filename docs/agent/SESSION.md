@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 19:00 (Planner plan-refresh → §67)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 18:55 |
+| elapsed | ~5 min |
+| done    | Opened §67 `TRACK_EDITOR_DISCARD_DANGER_THEME`: Decision freeze — Theme.danger_* + discard wire; residual of §66 honest OOS |
+| verify  | bare `0.55, 0.22, 0.22` still in `demo_live` L2303; PLAN/CONTINUITY/DEVELOPMENT/TRACK updated |
+| result  | §67 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DISCARD_DANGER_THEME |
+
 ### Turn 2026-07-24 18:55 (Critic TRACK_EDITOR_CHROME_HOVER_DEFAULT_THEME)
 
 | field   | value |
