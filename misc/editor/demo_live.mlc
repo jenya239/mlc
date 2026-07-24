@@ -1983,23 +1983,32 @@ fn main() -> i32 = do
       tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height,
       theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
     )
+    const breadcrumb_fill = editor_ux_chrome_hover_draw_entry(
+      input, breadcrumb_rect, theme.panel_red, theme.panel_green, theme.panel_blue
+    )
     solid = solid_renderer_rect(
       solid, width, height,
-      breadcrumb_rect.x, breadcrumb_rect.y, breadcrumb_rect.width, breadcrumb_rect.height,
-      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+      breadcrumb_fill.x, breadcrumb_fill.y, breadcrumb_fill.width, breadcrumb_fill.height,
+      breadcrumb_fill.red, breadcrumb_fill.green, breadcrumb_fill.blue, 1.0
     )
     if folder_nav_can_back(folder_nav) != 0 then
+      const nav_back_fill = editor_ux_chrome_hover_draw_entry(
+        input, nav_back_rect, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
-        nav_back_rect.x, nav_back_rect.y, nav_back_rect.width, nav_back_rect.height,
-        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+        nav_back_fill.x, nav_back_fill.y, nav_back_fill.width, nav_back_fill.height,
+        nav_back_fill.red, nav_back_fill.green, nav_back_fill.blue, 1.0
       )
     end
     if folder_nav_can_forward(folder_nav) != 0 then
+      const nav_forward_fill = editor_ux_chrome_hover_draw_entry(
+        input, nav_forward_rect, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
       solid = solid_renderer_rect(
         solid, width, height,
-        nav_forward_rect.x, nav_forward_rect.y, nav_forward_rect.width, nav_forward_rect.height,
-        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
+        nav_forward_fill.x, nav_forward_fill.y, nav_forward_fill.width, nav_forward_fill.height,
+        nav_forward_fill.red, nav_forward_fill.green, nav_forward_fill.blue, 1.0
       )
     end
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)

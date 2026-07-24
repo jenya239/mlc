@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §69.
 Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHROME_HOVER_STATE.md)
 (§46 #32). Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Wire `chrome_hover_draw_entry` for nav/crumb; green stable.
+**STEP=3** — Critic: stable ×2 + overlay + demo_live compile + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `0d14ad1c` | Decision: nav/crumb hover via chrome_hover |
-| 1 | (this) | Red/stable stub |
+| 1 | `d4f6cb7c` | Red/stable stub |
+| 2 | (this) | chrome_hover wire + L0 green |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,7 +35,7 @@ Residual of [TRACK_EDITOR_CHROME_HOVER_STATE](../archive/tracks/TRACK_EDITOR_CHR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: flat nav/crumb fills | **done** |
-| 2 | Wire chrome_hover; green | pending |
+| 2 | Wire chrome_hover; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
 ## Out of scope

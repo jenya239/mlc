@@ -41,12 +41,12 @@ if ! grep -A12 'editor_ux_context_menu_item_rect' "$DEMO" | grep -q 'theme.muted
   echo "[ux overlay_theme_tint_stable] FAIL: context-menu item missing theme.muted_" >&2
   exit 1
 fi
-if ! grep -A6 'nav_back_rect.x, nav_back_rect.y' "$DEMO" | grep -q 'theme.panel_red'; then
-  echo "[ux overlay_theme_tint_stable] FAIL: nav back missing theme.panel_" >&2
+if ! grep -q 'input, nav_back_rect, theme.panel_red' "$DEMO"; then
+  echo "[ux overlay_theme_tint_stable] FAIL: nav back missing theme.panel_ via chrome_hover" >&2
   exit 1
 fi
-if ! grep -A6 'nav_forward_rect.x, nav_forward_rect.y' "$DEMO" | grep -q 'theme.panel_red'; then
-  echo "[ux overlay_theme_tint_stable] FAIL: nav forward missing theme.panel_" >&2
+if ! grep -q 'input, nav_forward_rect, theme.panel_red' "$DEMO"; then
+  echo "[ux overlay_theme_tint_stable] FAIL: nav forward missing theme.panel_ via chrome_hover" >&2
   exit 1
 fi
 

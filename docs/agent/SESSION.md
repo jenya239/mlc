@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 00:45 (Driver TRACK_EDITOR_NAV_CRUMB_HOVER STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_NAV_CRUMB_HOVER |
+| started | 2026-07-25 00:40 |
+| elapsed | ~5 min |
+| done    | breadcrumb/nav_back/nav_forward → `chrome_hover_draw_entry`; overlay stable updated; L0 green |
+| verify  | `ux_ok nav_crumb_hover_stable`; `ux_ok overlay_theme_tint_stable`; red EXIT=1; `demo_live_fs_compile_ok` |
+| result  | STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (`*_red` post-green by design) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_NAV_CRUMB_HOVER |
+
 ### Turn 2026-07-25 00:40 (Driver TRACK_EDITOR_NAV_CRUMB_HOVER STEP=1)
 
 | field   | value |
