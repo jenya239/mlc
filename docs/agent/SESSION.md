@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 10:16 (Planner PLAN — idle reconfirm)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-24 10:16 |
+| elapsed | ~3 min |
+| done    | Reconfirm idle after §52: agent TRACK_* = 5 gated/done; no ungated Driver TRACK. Known residual (proportional caret/selection/hit-test mono cell) stays deferred — §52 Decision OOS, needs user auth. Gated unchanged: SCRIPT_VM, MIR Epic5, LANG_AUTO_CYCLE |
+| verify  | `ls docs/agent/TRACK_*.md` → 5; PLAN §48–52 closed; `wrap_offset_at_point` still `char_width` cell; SESSION ~379 lines |
+| result  | idle; no Driver work |
+| issues  | none |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN (idle: authorized queue empty; no Driver until user authorizes gated item or residual) |
+
 ### Turn 2026-07-24 10:05 (Critic TRACK_EDITOR_WRAP_BUDGET_ADVANCE)
 
 | field   | value |

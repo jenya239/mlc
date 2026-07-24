@@ -755,8 +755,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_WRAP_BUDGET_ADVANCE (§52, **closed** 2026-07-24: Critic OK; STEP=0–3;
       pixel-budget wrap via shaped advances; `717a690d`…`af121425`;
       → [archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md](archive/tracks/TRACK_EDITOR_WRAP_BUDGET_ADVANCE.md))**
-  → **(idle 2026-07-24 after §52)** authorized queue empty — SCRIPT_VM / MIR Epic 5 /
-      LANG_AUTO_CYCLE gated; no Driver work until new authorization
+  → **(idle 2026-07-24 after §52, reconfirmed ×1)** authorized queue empty — SCRIPT_VM /
+      MIR Epic 5 / LANG_AUTO_CYCLE gated; §52 residual (proportional hit-test) deferred
+      (needs user auth); no Driver work until new authorization
 ```
 
 

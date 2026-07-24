@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Planner `PLAN` (idle after §52; authorized queue empty).
+**Queue head:** Planner `PLAN` (idle after §52, reconfirmed; authorized queue empty).
 **`TRACK_EDITOR_WRAP_BUDGET_ADVANCE` (§52)** **closed** 2026-07-24 (Critic OK). Archived.
 **`TRACK_EDITOR_IDLE_CPU_BUDGET` (§51)** **closed** 2026-07-22 (Critic OK). Archived.
 **`TRACK_EDITOR_IDLE_CARET_BLINK` (§50)** **closed** 2026-07-22 (Critic OK). Archived.
