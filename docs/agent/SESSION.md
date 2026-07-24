@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 02:25 (Planner plan-refresh → §74)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 02:20 |
+| elapsed | ~5 min |
+| done    | Opened §74 `TRACK_EDITOR_MINIMAP_SYNTAX_TAGS`: Decision — minimap rebuild via `append_syntax_colored_row` + full-buffer highlight; #35 residual after §73 |
+| verify  | minimap still uniform `theme.text_*` / bare `push_line` |
+| result  | §74 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_MINIMAP_SYNTAX_TAGS |
+
 ### Turn 2026-07-25 02:20 (Critic TRACK_EDITOR_DIRTY_CLOSE_BUTTON_HOVER)
 
 | field   | value |
