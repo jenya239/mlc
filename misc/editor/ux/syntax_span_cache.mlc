@@ -1,0 +1,43 @@
+// TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=2 —
+// Cache visible-range highlight_range across paints (key = text + range).
+import {
+  HighlightSpan,
+  highlight_range
+} from '../syntax/highlighter'
+
+export type SyntaxSpanCacheState = {
+  text: string,
+  range_start: i32,
+  range_end: i32,
+  spans: [HighlightSpan],
+  rebuild_count: i32
+}
+
+export fn editor_ux_syntax_span_cache_new() -> SyntaxSpanCacheState =
+  SyntaxSpanCacheState {
+    text: "",
+    range_start: 0 - 1,
+    range_end: 0 - 1,
+    spans: [],
+    rebuild_count: 0
+  }
+
+export fn editor_ux_syntax_span_cache_tick(
+  state: SyntaxSpanCacheState,
+  text: string,
+  range_start: i32,
+  range_end: i32
+) -> SyntaxSpanCacheState = do
+  if state.text == text &&
+      state.range_start == range_start &&
+      state.range_end == range_end then
+    return state
+  end
+  SyntaxSpanCacheState {
+    text: text,
+    range_start: range_start,
+    range_end: range_end,
+    spans: highlight_range(text, range_start, range_end),
+    rebuild_count: state.rebuild_count + 1
+  }
+end

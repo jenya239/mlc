@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 03:45 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE |
+| started | 2026-07-25 03:35 |
+| elapsed | ~10 min |
+| done    | `ux/syntax_span_cache.mlc` + demo tick wire; L2 scenario green; demo_live compiles |
+| verify  | stable EXIT=0; red EXIT=1; cache/syntax EXIT=0; `demo_live_fs_compile_ok` |
+| result  | §77 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE |
+
 ### Turn 2026-07-25 03:35 (Driver TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=1)
 
 | field   | value |

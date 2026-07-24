@@ -220,7 +220,11 @@ import {
   edit_cut,
   edit_paste
 } from './document/clipboard_edit'
-import { HighlightSpan, highlight_range, highlight_mlc } from './syntax/highlighter'
+import { HighlightSpan, highlight_mlc } from './syntax/highlighter'
+import {
+  editor_ux_syntax_span_cache_new,
+  editor_ux_syntax_span_cache_tick
+} from './ux/syntax_span_cache'
 import {
   viewport_metrics_new,
   visible_line_range
@@ -767,6 +771,7 @@ fn main() -> i32 = do
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
+  let mut syntax_span_cache = editor_ux_syntax_span_cache_new()
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut wrap_count_cache = wrap_count_cache_new_pixel(
@@ -2090,6 +2095,7 @@ fn main() -> i32 = do
     editor_gl_scissor_enable_rect(height, content_clip)
 
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
+    // Span cache: same text+visible range → reuse (no per-paint rehighlight).
     let mut syntax_spans: [HighlightSpan] = []
     if visible.first_line <= visible.last_line then
       const range_start = line_index_line_start(line_index, visible.first_line)
@@ -2097,7 +2103,10 @@ fn main() -> i32 = do
       if visible.last_line + 1 < line_index_line_count(line_index) then
         range_end = line_index_line_start(line_index, visible.last_line + 1)
       end
-      syntax_spans = highlight_range(draw_text, range_start, range_end)
+      syntax_span_cache = editor_ux_syntax_span_cache_tick(
+        syntax_span_cache, draw_text, range_start, range_end
+      )
+      syntax_spans = syntax_span_cache.spans
     end
 
     // Current-line band under find/selection (Decision: panel tint ~0.55).
