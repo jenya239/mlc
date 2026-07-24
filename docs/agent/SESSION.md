@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-24 11:31 (Driver TRACK_EDITOR_MULTI_CARET_DRAW STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_MULTI_CARET_DRAW |
+| started | 2026-07-24 11:31 |
+| elapsed | ~3 min |
+| done    | Red harness: `run_ux_multi_caret_draw_red.sh` + failing stable stub; proves primary-only `selection_caret(selection)` / `last_caret_*`; archived older SESSION turns (≤2026-07-22) → SESSION_HISTORY |
+| verify  | `ux_ok multi_caret_draw_red` EXIT=0; stable EXIT=1 (`not implemented`); SESSION ~348+15 lines |
+| result  | STEP=1 done → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_MULTI_CARET_DRAW |
+
 ### Turn 2026-07-24 11:27 (Planner PLAN → §56)
 
 | field   | value |
