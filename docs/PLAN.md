@@ -482,7 +482,7 @@ compiler/
 | **84** | Editor overflow reuses frame LineIndex (§83 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX.md) |
 | **85** | Editor probe reuses frame LineIndex (§84 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md) |
 | **86** | Editor probe reuses LineIndex text (§85 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md) |
-| **87** | Editor drop-file opens without stringify (§86 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](agent/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md) |
+| **87** | Editor drop-file opens without stringify (§86 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -892,8 +892,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_PROBE_REUSE_LINE_INDEX_TEXT (§86, **closed** 2026-07-25: Critic OK; STEP=0–3;
       snapshot document_text from line_index.text; `cdd07cdc`…`6740640a`;
       → [archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md](archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md))**
-  → **EDITOR_DROP_FILE_NO_STRINGIFY (§87, open STEP=3 Critic next:
-      open dropped path without document_to_string; [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](agent/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md))**
+  → **EDITOR_DROP_FILE_NO_STRINGIFY (§87, **closed** 2026-07-25: Critic OK; STEP=0–3;
+      open dropped path without document_to_string; `cca9e565`…`cd5a0a61`;
+      → [archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md](archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md))**
 ```
 
 

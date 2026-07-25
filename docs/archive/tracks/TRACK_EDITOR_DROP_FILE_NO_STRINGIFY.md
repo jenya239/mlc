@@ -1,22 +1,43 @@
 # Track: Editor drop-file opens without stringify
 
-Parent: [../PLAN.md](../PLAN.md) §87.
-Residual of [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](../archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md)
+Parent: [../../PLAN.md](../../PLAN.md) §87.
+Residual of [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md)
 (§86) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `drop_file_no_stringify_stable` ×2 +
+`drop_file_opens_tab` + `large_file_no_full_stringify` + `demo_live` compile +
+HEAD `run_ux_gate`.
+Anti-false-done: `cca9e565`…`cd5a0a61` (STEP=0–2); `tab_set_open_buffer` in
+`ux/drop_file.mlc` (no `document_to_string`); production `misc/editor/ux/**` has
+zero `document_to_string`; `misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); `frame_snapshot` /
+edit/save/clipboard stringifies + incremental/diff lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_drop_file_no_stringify_stable.sh` | `ux_ok drop_file_no_stringify` EXIT=0 (×2) |
+| `run_ux_drop_file_opens_tab.sh` | `ux_ok drop_file_opens_tab` EXIT=0 |
+| `run_ux_large_file_no_full_stringify.sh` | `ux_ok large_file_no_full_stringify` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (102 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable×2 + related + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `cca9e565` | Decision: open dropped path without `document_to_string` |
-| 1 | `f41c931e` | Red: ≥1 `document_to_string` in `drop_file.mlc`; stable stub |
-| 2 | (this) | `tab_set_open_buffer`; drop stringify; green stable |
+| 1 | `f41c931e` | Red harness + stable stub `not implemented` |
+| 2 | `cd5a0a61` | `tab_set_open_buffer`; drop stringify; green |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +57,7 @@ Residual of [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](../archive/tracks/TRACK_E
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: drop_file still stringifies | **done** |
 | 2 | Open without stringify; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** |
 
 ## Out of scope
 

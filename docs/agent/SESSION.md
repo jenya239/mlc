@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:35 (Critic TRACK_EDITOR_DROP_FILE_NO_STRINGIFY)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_DROP_FILE_NO_STRINGIFY |
+| started | 2026-07-25 13:40 |
+| elapsed | ~55 min |
+| done    | Critic OK: stable×2 + related + demo_live + `run_ux_gate` 102; archive §87 |
+| verify  | `drop_file_no_stringify` EXIT=0 ×2; opens_tab/large EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (102 scenarios)` |
+| result  | §87 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; frame_snapshot/edit stringify + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 13:35 (Driver TRACK_EDITOR_DROP_FILE_NO_STRINGIFY STEP=2)
 
 | field   | value |
