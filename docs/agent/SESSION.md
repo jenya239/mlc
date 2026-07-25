@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:25 (Planner plan-refresh → §90)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 16:20 |
+| elapsed | ~5 min |
+| done    | Opened §90 `TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY`: Decision — disk opens via `tab_set_open_buffer`; §89 residual |
+| verify  | `try_open_path` / tree_open still use `tab_set_open(…, text_for_path(…))` |
+| result  | §90 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+
 ### Turn 2026-07-25 16:15 (Critic TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY)
 
 | field   | value |
