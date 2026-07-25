@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:50 (Driver TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+| started | 2026-07-25 15:45 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_demo_save_no_double_stringify_red.sh` + stable stub `not implemented`; gap = 2× `document_to_string` in save_demo_session |
+| verify  | red EXIT=0 `ux_ok demo_save_no_double_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §89 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+
 ### Turn 2026-07-25 15:40 (Planner plan-refresh → §89)
 
 | field   | value |
