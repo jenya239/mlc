@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_cache slice **closed** (Critic OK); next Decision `shared_span_cache`
+## Status: **open** — §97b shared_span_cache Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -124,7 +124,28 @@ own separate locals can silently diverge from it.
 
 #### Next extract — `shared_span_cache` consolidation
 
-*(Decision STEP=0 pending — fold `shared_span_cache` into `EditorFrameLayout` / layout tick API; no algo change; gate: red→green→Critic + §97a perf smoke.)*
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | After snapshot extract, `demo_live` still keeps `shared_span_cache` as a **bare local** (`editor_ux_syntax_span_cache_new` + one paint-path `editor_ux_syntax_span_cache_tick`, spans also read by minimap). Not owned by `EditorFrameLayout` → layout object is incomplete; paint/minimap can diverge from a future multi-site tick the same way snapshot did |
+| Strategy (v1) | Extend `app/frame_layout.mlc`: `EditorFrameLayout` owns `SyntaxSpanCacheState` (`span_cache`); add `frame_layout_tick_spans(layout, text, range_start, range_end)` (thin wrap of `editor_ux_syntax_span_cache_tick`) returning updated layout; `demo_live` drops the bare local — init via layout ctor/`frame_layout_new_pixel`, tick via layout API, paint/minimap read `frame_layout.span_cache.spans`. Preserve perf-smoke skip (`if !perf_enabled` around tick). **No algorithm change** to highlighting. Do **not** touch `minimap_cache` / dual wrap ticks / §97c |
+| Primary gate | Red: direct `editor_ux_syntax_span_cache_tick(` in `demo_live` / no `frame_layout_tick_spans`. Green: demo uses layout span API; zero direct tick in `demo_live`; compile + Critic: stable×2 + `shared_syntax_span_cache_stable` + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/app/frame_layout.mlc`; `demo_live.mlc`; red/stable scripts |
+| REG | no |
+| Out of scope | highlight algorithm; minimap cache extract; unified `EditorUxState` (§97c); command bus |
+
+#### Steps (§97b — slice: spans → `frame_layout`)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: bare span tick in `demo_live` / no `frame_layout_tick_spans` | pending |
+| 2 | Green: own `span_cache` on `EditorFrameLayout`; wire `demo_live` | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — editor_ux_syntax_span_cache_tick( in demo_live; no frame_layout_tick_spans; stable stub -->
+<!-- STEP=2: span_cache on EditorFrameLayout; 0× editor_ux_syntax_span_cache_tick in demo_live -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
