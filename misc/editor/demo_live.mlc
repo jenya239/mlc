@@ -7,18 +7,13 @@ import {
   glfw_gl_context_should_close,
   glfw_gl_context_swap_poll,
   glfw_gl_context_end,
-  glfw_gl_window_width,
-  glfw_gl_window_height,
   glfw_gl_window_content_scale_y,
-  glfw_gl_take_scroll_y,
   glfw_gl_cursor_set,
   glfw_gl_mod_ctrl_down,
   glfw_gl_mod_shift_down,
   glfw_gl_mod_alt_down,
-  glfw_gl_take_binding_key,
   glfw_gl_take_drop_path
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
-import { gui_input_poll } from '../gui/input'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
 import { editor_ux_chrome_hover_draw_entry } from './ux/chrome_hover'
 import {
@@ -246,6 +241,7 @@ import {
   frame_layout_tick_spans,
   frame_layout_tick_minimap
 } from './app/frame_layout'
+import { frame_input_poll } from './app/frame_input'
 import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
@@ -835,7 +831,14 @@ fn main() -> i32 = do
       i32_to_f64(zoom_font_size) * glfw_gl_window_content_scale_y()
     )
 
-    const input = gui_input_poll()
+    const frame_in = frame_input_poll(
+      last_width, last_height,
+      last_mouse_x, last_mouse_y, last_mouse_down, last_mouse_right_down,
+      last_backspace, last_enter,
+      editor_ux_context_menu_is_visible(context_menu),
+      dirty_close_overlay_is_visible(overlay)
+    )
+    const input = frame_in.input
     if input.escape != 0 then
       if editor_ux_context_menu_is_visible(context_menu) then
         context_menu = editor_ux_context_menu_dismiss(context_menu)
@@ -846,44 +849,12 @@ fn main() -> i32 = do
 
     let mut toolbar_tool = -1
 
-    const width = glfw_gl_window_width()
-    const height = glfw_gl_window_height()
-    const pending_scroll_y = glfw_gl_take_scroll_y()
-    let mut pending_binding_key = glfw_gl_take_binding_key()
-    let mut pending_drop_path = glfw_gl_take_drop_path()
-
-    let mut content_dirty = 0
-    if width != last_width || height != last_height then
-      content_dirty = 1
-    end
-    if input.mouse_x != last_mouse_x || input.mouse_y != last_mouse_y then
-      content_dirty = 1
-    end
-    if input.mouse_down != last_mouse_down ||
-        input.mouse_right_down != last_mouse_right_down then
-      content_dirty = 1
-    end
-    if input.backspace != last_backspace || input.enter != last_enter then
-      content_dirty = 1
-    end
-    if input.text_buffer.byte_size() > 0 then
-      content_dirty = 1
-    end
-    if pending_scroll_y != 0.0 then
-      content_dirty = 1
-    end
-    if pending_binding_key.byte_size() > 0 then
-      content_dirty = 1
-    end
-    if pending_drop_path.byte_size() > 0 then
-      content_dirty = 1
-    end
-    if editor_ux_context_menu_is_visible(context_menu) then
-      content_dirty = 1
-    end
-    if dirty_close_overlay_is_visible(overlay) then
-      content_dirty = 1
-    end
+    const width = frame_in.width
+    const height = frame_in.height
+    const pending_scroll_y = frame_in.pending_scroll_y
+    let mut pending_binding_key = frame_in.pending_binding_key
+    let mut pending_drop_path = frame_in.pending_drop_path
+    let mut content_dirty = frame_in.content_dirty
 
     const content_top = header_height() + tab_bar_height() + toolbar_height()
     const content_height = height - content_top - status_height()

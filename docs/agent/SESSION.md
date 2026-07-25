@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:51 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+| started | 2026-07-25 14:48 |
+| elapsed | ~3 min |
+| done    | `app/frame_input.mlc` (`EditorFrameInput` + `frame_input_poll`); `demo_live` 0× `gui_input_poll` / take_scroll/binding; tabs dirty residual after `ensure_tabs`; green stable |
+| verify  | stable EXIT=0 `ux_ok frame_input` + compile; red EXIT=1; §97a perf smoke EXIT=0 frames=30 |
+| result  | §97b frame_input STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+
 ### Turn 2026-07-25 14:47 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=1)
 
 | field   | value |

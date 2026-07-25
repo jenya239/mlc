@@ -1,0 +1,83 @@
+// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — poll → intent snapshot (no paint).
+import {
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_take_scroll_y,
+  glfw_gl_take_binding_key,
+  glfw_gl_take_drop_path
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  GuiInput,
+  gui_input_poll
+} from '../../gui/input'
+
+export type EditorFrameInput = {
+  input: GuiInput,
+  width: i32,
+  height: i32,
+  pending_scroll_y: f64,
+  pending_binding_key: string,
+  pending_drop_path: string,
+  content_dirty: i32
+}
+
+export fn frame_input_poll(
+  last_width: i32,
+  last_height: i32,
+  last_mouse_x: i32,
+  last_mouse_y: i32,
+  last_mouse_down: i32,
+  last_mouse_right_down: i32,
+  last_backspace: i32,
+  last_enter: i32,
+  context_menu_visible: bool,
+  overlay_visible: bool
+) -> EditorFrameInput = do
+  const input = gui_input_poll()
+  const width = glfw_gl_window_width()
+  const height = glfw_gl_window_height()
+  const pending_scroll_y = glfw_gl_take_scroll_y()
+  const pending_binding_key = glfw_gl_take_binding_key()
+  const pending_drop_path = glfw_gl_take_drop_path()
+  let mut content_dirty = 0
+  if width != last_width || height != last_height then
+    content_dirty = 1
+  end
+  if input.mouse_x != last_mouse_x || input.mouse_y != last_mouse_y then
+    content_dirty = 1
+  end
+  if input.mouse_down != last_mouse_down ||
+      input.mouse_right_down != last_mouse_right_down then
+    content_dirty = 1
+  end
+  if input.backspace != last_backspace || input.enter != last_enter then
+    content_dirty = 1
+  end
+  if input.text_buffer.byte_size() > 0 then
+    content_dirty = 1
+  end
+  if pending_scroll_y != 0.0 then
+    content_dirty = 1
+  end
+  if pending_binding_key.byte_size() > 0 then
+    content_dirty = 1
+  end
+  if pending_drop_path.byte_size() > 0 then
+    content_dirty = 1
+  end
+  if context_menu_visible then
+    content_dirty = 1
+  end
+  if overlay_visible then
+    content_dirty = 1
+  end
+  EditorFrameInput {
+    input: input,
+    width: width,
+    height: height,
+    pending_scroll_y: pending_scroll_y,
+    pending_binding_key: pending_binding_key,
+    pending_drop_path: pending_drop_path,
+    content_dirty: content_dirty
+  }
+end
