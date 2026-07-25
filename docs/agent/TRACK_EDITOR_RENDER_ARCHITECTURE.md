@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b shared_span_cache slice **closed** (Critic OK); next Decision `minimap_cache`
+## Status: **open** — §97b minimap_cache Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -150,7 +150,28 @@ own separate locals can silently diverge from it.
 
 #### Next extract — `minimap_cache` consolidation
 
-*(Decision STEP=0 pending — fold `minimap_cache` into `EditorFrameLayout` / layout tick API; no algo change; gate: red→green→Critic + §97a perf smoke.)*
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | After span extract, `demo_live` still keeps `minimap_cache` (`MinimapCacheState`) as a **bare local** + one paint-path `editor_ux_minimap_cache_tick`. Not owned by `EditorFrameLayout` → layout object still incomplete; rebuild bookkeeping (`minimap_lines` / height/font locals) sits beside it |
+| Strategy (v1) | Extend `app/frame_layout.mlc`: `EditorFrameLayout` owns `MinimapCacheState` (`minimap_cache`); add `frame_layout_tick_minimap(layout, text)` (thin wrap of `editor_ux_minimap_cache_tick`) returning updated layout; `demo_live` drops the bare local — init via `frame_layout_new_pixel`, tick via layout API, read `frame_layout.minimap_cache`. Preserve perf-smoke skip (`if minimap_enabled != 0 && !perf_enabled`). **Do not** move `minimap_lines` / `minimap_cached_height` / `minimap_cached_font_size` into layout this slice (glyph rebuild locals stay in `demo_live`). **No algorithm change**. Do **not** collapse dual wrap ticks / §97c |
+| Primary gate | Red: direct `editor_ux_minimap_cache_tick(` in `demo_live` / no `frame_layout_tick_minimap`. Green: demo uses layout minimap API; zero direct tick in `demo_live`; compile + Critic: stable×2 + related minimap harnesses + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/app/frame_layout.mlc`; `demo_live.mlc`; red/stable scripts; related UX harness retarget if needed |
+| REG | no |
+| Out of scope | minimap glyph rebuild locals; dual wrap ticks; unified `EditorUxState` (§97c); command bus |
+
+#### Steps (§97b — slice: minimap → `frame_layout`)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: bare minimap tick in `demo_live` / no `frame_layout_tick_minimap` | pending |
+| 2 | Green: own `minimap_cache` on `EditorFrameLayout`; wire `demo_live` | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — editor_ux_minimap_cache_tick( in demo_live; no frame_layout_tick_minimap; stable stub -->
+<!-- STEP=2: minimap_cache on EditorFrameLayout; 0× editor_ux_minimap_cache_tick in demo_live -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
