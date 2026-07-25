@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:35 (Driver TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+| started | 2026-07-25 16:30 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_demo_open_path_no_stringify_red.sh` + stable stub `not implemented`; gap = 2× `tab_set_open(…, text_for_path(…))` |
+| verify  | red EXIT=0 `ux_ok demo_open_path_no_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §90 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+
 ### Turn 2026-07-25 16:25 (Planner plan-refresh → §90)
 
 | field   | value |
