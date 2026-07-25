@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:00 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap) |
+| started | 2026-07-25 14:58 |
+| elapsed | ~2 min |
+| done    | Critic OK: dual_wrap stable×2 + wrap/wrap_count/frame_input related + §97a perf smoke + `run_ux_gate`×2 (107); dual-wrap slice closed; §97b extracts done |
+| verify  | `ux_ok frame_layout_dual_wrap` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b dual-wrap **closed**; §97b done; queue → Decision §97c |
+| issues  | honest: glyph rebuild locals still in demo; early wrap may be one-frame stale on resize; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c Decision) |
+
 ### Turn 2026-07-25 14:57 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=2)
 
 | field   | value |

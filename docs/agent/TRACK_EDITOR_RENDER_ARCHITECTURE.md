@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b dual-wrap STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97b dual-wrap slice **closed** (Critic OK); §97b extracts done; next Decision §97c
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -220,12 +220,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: ≥2 `frame_layout_tick_pixel(` in `demo_live` | **done** (`run_editor_frame_layout_dual_wrap_red.sh`) |
 | 2 | Green: one late tick only; early reuses layout fields | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — ≥2 frame_layout_tick_pixel(; stable stub -->
 <!-- STEP=2: exactly 1 tick site; early uses layout.visual_row_count / wrapped_content_height -->
+<!-- STEP=3: Critic — dual_wrap stable×2 + wrap/frame_input related + perf smoke + run_ux_gate×2 (107); §97b extracts closed; next = §97c -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
+
+*(Decision STEP=0 pending — unify live loop onto one `EditorUxState`/`EditorAppState` per frame; derive paint from it; fold §96 wheel-hover regression. Gate: red→green→Critic + §97a perf smoke.)*
 
 Once §97b's phase boundaries exist: make the live loop actually construct
 and mutate **one** `EditorUxState`/`EditorAppState` per frame (not the
