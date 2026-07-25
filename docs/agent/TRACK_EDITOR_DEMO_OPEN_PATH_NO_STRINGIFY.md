@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §90.
 Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](../archive/tracks/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md)
 (§89) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — `tab_set_open_buffer` for disk; green stable.
+**STEP=3** — Critic: stable + demo_live + `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `a7a0c9ac` | Decision: disk opens via `tab_set_open_buffer` |
-| 1 | (this) | Red: ≥2 `tab_set_open(…, text_for_path(…))`; stable stub |
+| 1 | `cb562cb4` | Red: ≥2 `tab_set_open(…, text_for_path(…))`; stable stub |
+| 2 | (this) | `try_open_path` + tree via `open_path_into_tabs`; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,10 @@ Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](../archive/tracks/TRACK
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: disk opens still stringify | **done** |
-| 2 | `tab_set_open_buffer` for disk; green | pending |
+| 2 | `tab_set_open_buffer` for disk; green | **done** |
 | 3 | Critic: stable + demo_live + `run_ux_gate` | pending |
 
-<!-- STEP=2 sub-steps: 1) try_open_path + tree_open disk path; 2) green stable; 3) demo compile -->
+<!-- STEP=2: try_open_path disk via open_buffer; tree_open → open_path_into_tabs; virtual /demo keeps text_for_path -->
 
 ## Out of scope
 

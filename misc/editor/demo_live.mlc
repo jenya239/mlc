@@ -106,6 +106,7 @@ import {
   TabSet,
   tab_set_new,
   tab_set_open,
+  tab_set_open_buffer,
   tab_set_has_active,
   tab_set_active,
   tab_set_set_active,
@@ -160,6 +161,8 @@ import {
 import {
   open_buffer_set_document,
   open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_has_error,
   open_buffer_save
 } from './document/save'
 import {
@@ -640,9 +643,21 @@ end
 
 fn try_open_path(tabs: TabSet, path: string) -> TabSet = do
   if file_exists(path) && is_regular_file(path) then
-    return tab_set_open(tabs, path, text_for_path(path))
+    const buffer = open_buffer_from_path(path)
+    if open_buffer_has_error(buffer) then
+      return tabs
+    end
+    return tab_set_open_buffer(tabs, path, buffer)
   end
   tabs
+end
+
+// Virtual /demo samples keep text_for_path; disk uses open_buffer.
+fn open_path_into_tabs(tabs: TabSet, path: string) -> TabSet = do
+  if file_exists(path) && is_regular_file(path) then
+    return try_open_path(tabs, path)
+  end
+  tab_set_open(tabs, path, text_for_path(path))
 end
 
 // Disk root + empty session used to leave zero tabs → first frame break.
@@ -1434,7 +1449,7 @@ fn main() -> i32 = do
             end
           else if action == folder_click_open_file() then
             const open_path = folder_click.path
-            tabs = tab_set_open(tabs, open_path, text_for_path(open_path))
+            tabs = open_path_into_tabs(tabs, open_path)
             active = tab_set_active(tabs)
             document = active.buffer.document
             frame_cache = frame_snapshot_cache_tick(frame_cache, document, 1)

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 17:05 (Driver TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+| started | 2026-07-25 16:50 |
+| elapsed | ~15 min |
+| done    | Disk opens: `try_open_path` → `open_buffer_from_path` + `tab_set_open_buffer`; tree via `open_path_into_tabs`; virtual `/demo/` keeps `text_for_path`; green stable |
+| verify  | stable EXIT=0 `ux_ok demo_open_path_no_stringify`; red EXIT=1; drop_file/session_restore stables EXIT=0; `demo_live_fs_compile_ok` |
+| result  | §90 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+
 ### Turn 2026-07-25 16:35 (Driver TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY STEP=1)
 
 | field   | value |
