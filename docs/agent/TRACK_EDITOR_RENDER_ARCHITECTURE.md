@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_input slice **closed** (Critic OK); next Decision dual-wrap
+## Status: **open** — §97b dual-wrap Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -202,7 +202,28 @@ own separate locals can silently diverge from it.
 
 #### Next extract — dual `frame_layout_tick_pixel` collapse
 
-*(Decision STEP=0 pending — collapse early/late wrap ticks in `demo_live` to one per frame; gate: red→green→Critic + §97a perf smoke. Then §97c.)*
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | After all cache/input extracts, `demo_live` still calls `frame_layout_tick_pixel` **twice** per frame: early (~input/scroll/`visual_rows`) and late (post-edit, pre-paint). Duplicate wrap work on the hot path; original §97b wrap Decision required **once** per paint |
+| Strategy (v1) | **Collapse to one late tick.** Keep the post-input / pre-paint `frame_layout_tick_pixel` (authoritative for paint + edit-changed `draw_text`). Remove the early tick; early scroll/clamp/`visual_rows` reuse `frame_layout.visual_row_count` / `wrapped_content_height` already on the layout object (from prior frame late tick / ctor). **No algorithm change** inside `frame_layout_tick_pixel`. Honest residual: early input on the same frame as a resize may briefly use previous wrap metrics until the late tick (paint still correct same frame). Do **not** start §97c here |
+| Primary gate | Red: ≥2 `frame_layout_tick_pixel(` in `demo_live`. Green: exactly **1** call site; compile + Critic: stable×2 + wrap/layout related + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/demo_live.mlc`; red/stable scripts |
+| REG | no |
+| Out of scope | wrap algorithm; §97c unified live state; glyph rebuild locals; command bus |
+
+#### Steps (§97b — slice: dual-wrap collapse)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: ≥2 `frame_layout_tick_pixel(` in `demo_live` | pending |
+| 2 | Green: one late tick only; early reuses layout fields | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — ≥2 frame_layout_tick_pixel(; stable stub -->
+<!-- STEP=2: exactly 1 tick site; early uses layout.visual_row_count / wrapped_content_height -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 

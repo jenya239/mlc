@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:54 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap) |
+| started | 2026-07-25 14:54 |
+| elapsed | ~5 min |
+| done    | Froze Decision: keep one late `frame_layout_tick_pixel` (pre-paint); remove early tick; early path reuses layout wrap fields; OOS §97c/algo |
+| verify  | gap: 2× `frame_layout_tick_pixel(` in `demo_live` |
+| result  | §97b dual-wrap STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap) |
+
 ### Turn 2026-07-25 14:53 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=3)
 
 | field   | value |
