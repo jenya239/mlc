@@ -1,0 +1,78 @@
+// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — wrap count owned by one layout object.
+import {
+  LineIndex,
+  line_index_line_count
+} from '../document/line_index'
+import {
+  DocumentWrapCountCache,
+  wrap_count_cache_new_pixel,
+  wrap_count_cache_tick_pixel
+} from '../layout/wrap_cache'
+
+export type EditorFrameLayout = {
+  wrap_count_cache: DocumentWrapCountCache,
+  visual_row_count: i32,
+  wrapped_content_height: i32
+}
+
+fn frame_layout_from_cache(
+  cache: DocumentWrapCountCache,
+  line_height: i32
+) -> EditorFrameLayout = do
+  let mut height = cache.visual_row_count * line_height
+  if height < 0 then
+    height = 0
+  end
+  EditorFrameLayout {
+    wrap_count_cache: cache,
+    visual_row_count: cache.visual_row_count,
+    wrapped_content_height: height
+  }
+end
+
+export fn frame_layout_new_pixel(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  line_height: i32
+) -> EditorFrameLayout =
+  frame_layout_from_cache(
+    wrap_count_cache_new_pixel(
+      text, line_index, viewport_width_px, font_path, pixel_size
+    ),
+    line_height
+  )
+
+// skip_full_pixel_wrap=1: use line_count (perf smoke / avoid O(n) HarfBuzz).
+export fn frame_layout_tick_pixel(
+  layout: EditorFrameLayout,
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  line_height: i32,
+  skip_full_pixel_wrap: i32
+) -> EditorFrameLayout = do
+  if skip_full_pixel_wrap != 0 then
+    const count = line_index_line_count(line_index)
+    let mut height = count * line_height
+    if height < 0 then
+      height = 0
+    end
+    return EditorFrameLayout {
+      wrap_count_cache: layout.wrap_count_cache,
+      visual_row_count: count,
+      wrapped_content_height: height
+    }
+  end
+  frame_layout_from_cache(
+    wrap_count_cache_tick_pixel(
+      layout.wrap_count_cache, text, line_index,
+      viewport_width_px, font_path, pixel_size
+    ),
+    line_height
+  )
+end

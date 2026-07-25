@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:30 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b EDITOR_FRAME_SPLIT) |
+| started | 2026-07-25 14:20 |
+| elapsed | ~10 min |
+| done    | Added `app/frame_layout.mlc` (`EditorFrameLayout` + `frame_layout_tick_pixel`); `demo_live` uses it (0× `wrap_count_cache_tick_pixel`); green stable |
+| verify  | stable EXIT=0 `ux_ok frame_layout_wrap` + `demo_live_fs_compile_ok`; red EXIT=1 post-green; §97a perf smoke EXIT=0 `ux_ok demo_live_perf` |
+| result  | §97b STEP=2 **done**; next Critic STEP=3 |
+| issues  | none (honest: still two `frame_layout_tick_pixel` call sites early/late in loop — API consolidated, not yet single tick) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b) |
+
 ### Turn 2026-07-25 14:20 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=1)
 
 | field   | value |

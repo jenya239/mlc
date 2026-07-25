@@ -249,9 +249,9 @@ import {
   selection_fill_visual_rows
 } from './layout/word_wrap'
 import {
-  wrap_count_cache_new_pixel,
-  wrap_count_cache_tick_pixel
-} from './layout/wrap_cache'
+  frame_layout_new_pixel,
+  frame_layout_tick_pixel
+} from './app/frame_layout'
 import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
@@ -805,8 +805,8 @@ fn main() -> i32 = do
   let mut shared_span_cache = editor_ux_syntax_span_cache_new()
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
-  let mut wrap_count_cache = wrap_count_cache_new_pixel(
-    "", line_index_from_string(""), 1, font_path, zoom_font_size
+  let mut frame_layout = frame_layout_new_pixel(
+    "", line_index_from_string(""), 1, font_path, zoom_font_size, metrics.line_height
   )
   let mut frame_cache = frame_snapshot_cache_new(document_from_string(""))
   let mut last_width = 0
@@ -1044,21 +1044,17 @@ fn main() -> i32 = do
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width = text_rect.width - 8
-    let mut visual_row_count = 0
+    let mut skip_full_pixel_wrap = 0
     if perf_enabled then
-      // Full-document pixel wrap count is O(n) HarfBuzz — skip under perf smoke.
-      visual_row_count = line_index_line_count(line_index)
-    else
-      wrap_count_cache = wrap_count_cache_tick_pixel(
-        wrap_count_cache, draw_text, line_index,
-        wrap_viewport_width, font_path, zoom_font_size
-      )
-      visual_row_count = wrap_count_cache.visual_row_count
+      skip_full_pixel_wrap = 1
     end
-    let mut wrapped_content_height = visual_row_count * metrics.line_height
-    if wrapped_content_height < 0 then
-      wrapped_content_height = 0
-    end
+    frame_layout = frame_layout_tick_pixel(
+      frame_layout, draw_text, line_index,
+      wrap_viewport_width, font_path, zoom_font_size, metrics.line_height,
+      skip_full_pixel_wrap
+    )
+    const visual_row_count = frame_layout.visual_row_count
+    let mut wrapped_content_height = frame_layout.wrapped_content_height
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height, text_rect.height
@@ -1942,20 +1938,17 @@ fn main() -> i32 = do
     if perf_enabled then
       perf_layout_t0 = editor_perf_now_us()
     end
-    let mut visual_row_count_now = 0
+    let mut skip_full_pixel_wrap_now = 0
     if perf_enabled then
-      visual_row_count_now = line_index_line_count(line_index)
-    else
-      wrap_count_cache = wrap_count_cache_tick_pixel(
-        wrap_count_cache, draw_text, line_index,
-        wrap_viewport_width_now, font_path, zoom_font_size
-      )
-      visual_row_count_now = wrap_count_cache.visual_row_count
+      skip_full_pixel_wrap_now = 1
     end
-    let mut wrapped_content_height_now = visual_row_count_now * metrics.line_height
-    if wrapped_content_height_now < 0 then
-      wrapped_content_height_now = 0
-    end
+    frame_layout = frame_layout_tick_pixel(
+      frame_layout, draw_text, line_index,
+      wrap_viewport_width_now, font_path, zoom_font_size, metrics.line_height,
+      skip_full_pixel_wrap_now
+    )
+    const visual_row_count_now = frame_layout.visual_row_count
+    let mut wrapped_content_height_now = frame_layout.wrapped_content_height
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height_now, text_rect.height
     )
