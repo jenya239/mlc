@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:49 (Planner plan-refresh → §99)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 15:49 |
+| elapsed | ~4 min |
+| done    | Opened §99 `TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY`: Decision — word-delete via document byte peeks + `is_word_char`; §98 residual |
+| verify  | `edit_delete_word_*` still call `document_to_string` (edit.mlc:384,409) |
+| result  | §99 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:40 (Critic TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=3)
 
 | field   | value |
