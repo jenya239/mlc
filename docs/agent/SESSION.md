@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:57 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap) |
+| started | 2026-07-25 14:56 |
+| elapsed | ~2 min |
+| done    | Removed early `frame_layout_tick_pixel`; early path reuses layout wrap fields; exactly 1 late tick; green stable |
+| verify  | stable EXIT=0 `ux_ok frame_layout_dual_wrap` ticks=1; red EXIT=1; §97a perf smoke EXIT=0 frames=30 |
+| result  | §97b dual-wrap STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap) |
+
 ### Turn 2026-07-25 14:55 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=1)
 
 | field   | value |

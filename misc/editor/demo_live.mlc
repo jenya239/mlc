@@ -1005,15 +1005,7 @@ fn main() -> i32 = do
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width = text_rect.width - 8
-    let mut skip_full_pixel_wrap = 0
-    if perf_enabled then
-      skip_full_pixel_wrap = 1
-    end
-    frame_layout = frame_layout_tick_pixel(
-      frame_layout, draw_text, line_index,
-      wrap_viewport_width, font_path, zoom_font_size, metrics.line_height,
-      skip_full_pixel_wrap
-    )
+    // Early path reuses prior-frame wrap metrics on frame_layout (late tick is sole retick).
     const visual_row_count = frame_layout.visual_row_count
     let mut wrapped_content_height = frame_layout.wrapped_content_height
     app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
