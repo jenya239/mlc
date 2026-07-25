@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 17:50 (Driver TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY |
+| started | 2026-07-25 17:45 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_tree_click_no_stringify_red.sh` + stable stub `not implemented`; gap = `open_text` + `tab_set_open` in tree_hit |
+| verify  | red EXIT=0 `ux_ok tree_click_no_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §91 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY |
+
 ### Turn 2026-07-25 17:35 (Planner plan-refresh → §91)
 
 | field   | value |
