@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:25 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:23 |
+| elapsed | ~2 min |
+| done    | Critic OK: wheel_hover stable×2 + wheel/unpack related + §97a perf + `run_ux_gate`×2 (108); §96 add-on closed; §97 P0 closed |
+| verify  | `ux_ok wheel_hover_focus_independent` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (108 scenarios)` ×2 |
+| result  | §97c §96 **closed**; §97 **closed**; queue → §93 STEP=1 |
+| issues  | honest: `*_red` obsolete post-green; glyph rebuild locals still in demo (later fold, not queued) |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:22 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=2)
 
 | field   | value |

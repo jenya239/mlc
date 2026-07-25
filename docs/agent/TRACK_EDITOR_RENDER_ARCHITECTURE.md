@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97c §96 STEP=2 **done**; next Critic STEP=3
+## Status: **closed** 2026-07-25 — P0 §97a/§97b/§97c(+§96) Critic OK; residual later folds not queued
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -285,10 +285,11 @@ Fold superseded PLAN §96 here: cheap L0 scenario that wheel-scroll follows hove
 | 0 | Decision freeze | **done** |
 | 1 | Red: no protective harness / stable stub | **done** (`run_ux_wheel_hover_focus_independent_red.sh`) |
 | 2 | Green: L0 harness locks hover gates, zero `editor_focused` in wheel block | **done** (`run_ux_wheel_hover_focus_independent_stable.sh`) |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — demo hover-only already; stable stub not implemented -->
 <!-- STEP=2: L0 grep wheel block; ux_ok wheel_hover_focus_independent -->
+<!-- STEP=3: Critic OK — stable×2 + wheel related + unpack + perf + ux_gate×2 (108); §97 P0 closed; next = §93 -->
 
 ## Verification discipline for every sub-track
 

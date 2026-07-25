@@ -41,9 +41,9 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic STEP=3 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97c (§96 wheel-hover L0).
-**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — §96 STEP=2 done; Critic STEP=3 next (then §93).
-**`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **open** — deferred until §97 sub-tracks resolve.
+**Queue head:** Driver STEP=1 `TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` §93 (red).
+**`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **open** — STEP=0 done; STEP=1 red next.
+**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **closed** 2026-07-25 (Critic OK). P0 §97a/b/c+§96 done.
 **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (§94) / `DRAG_SELECTION` (§95) / `WHEEL_HOVER` (§96)** **superseded by §97**.
 **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY` (§91)** **closed** 2026-07-25 (Critic OK). Archived.

@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §96. **Superseded by §97** — executed as
 [TRACK_EDITOR_RENDER_ARCHITECTURE](TRACK_EDITOR_RENDER_ARCHITECTURE.md)
 (§96 wheel-hover Decision frozen 2026-07-25). Do not reopen numbered STEPs here.
 
-## Status: **superseded by §97c add-on**
+## Status: **closed** via §97c add-on (Critic OK 2026-07-25)
 
 ## Code-read finding (2026-07-25, no fix expected)
 
