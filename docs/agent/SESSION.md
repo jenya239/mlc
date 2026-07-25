@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 20:30 (Planner plan-refresh → §93)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 20:20 |
+| elapsed | ~10 min |
+| done    | Opened §93 `TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY`: Decision — autoclose via `document_byte_slice`; §92 residual |
+| verify  | `edit_insert_text_autoclose` still calls `document_to_string` (wrap + caret peek) |
+| result  | §93 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 20:15 (Critic TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY)
 
 | field   | value |
