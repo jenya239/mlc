@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §100.
 Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md)
 (§99) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `edit_toggle_line_comment` still calls `document_to_string` / `document_from_string`; stable stub `not implemented`.
+**STEP=2** — Green: slice + local replace; zero `document_to_string`/`document_from_string` in `edit_toggle_line_comment`; stable prints `ux_ok comment_toggle_no_full_stringify`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: comment toggle via slice + local replace |
+| 0 | `77e4d402` | Decision: comment toggle via slice + local replace |
+| 1 | (this) | Red: still flatten+rebuild; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: comment toggle still full-flattens | pending |
+| 1 | Red: comment toggle still full-flattens | **done** |
 | 2 | Slice + local replace; green | pending |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
-<!-- STEP=1: red — document_to_string + document_from_string in edit_toggle_line_comment; stable stub -->
 <!-- STEP=2: line-span scan + document_byte_slice + delete/insert; green; toggle_line_comment -->
 
 ## Out of scope

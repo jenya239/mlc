@@ -495,7 +495,7 @@ compiler/
 | **97** (priority override, 2026-07-25, user: "тормозит всё адски, скроллы нормально не работают... системный подход к быстрому рендерингу... clean architecture на максималках") | **Editor render architecture** — execute the P0 backlog from the 2026-07-15 architecture review (`mlc-support/responses/gui_editor_architecture_20260715_105621.md`) that was never actioned: items #6/#7/#10 (`EDITOR_FRAME_SPLIT`, `EDITOR_UX_PROBE_FROM_LIVE_STATE`, `EDITOR_REAL_PERF_HARNESS`). Root cause confirmed 2026-07-25: `demo_live.mlc` is 2684 lines, calls `frame_snapshot_cache_tick` from **25 separate scattered call sites** (every edit branch threads it by hand) plus 4 more independently-threaded ad-hoc caches (`wrap_count_cache`/`shared_span_cache`/`minimap_cache`), no single frame-level dirty/state model — this is *why* narrow patches (§48-§96, ~50 tracks) kept surfacing new symptoms in the same area instead of converging. Sub-tracks below, in this order (perf baseline before refactor, per project's own "measure first" discipline) | **closed** 2026-07-25 (Critic OK) — P0 §97a/b/c+§96; residual later folds not queued | [agent/TRACK_EDITOR_RENDER_ARCHITECTURE](agent/TRACK_EDITOR_RENDER_ARCHITECTURE.md) |
 | **98** | Editor newline auto-indent without full stringify (§93 / #1d residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY.md) |
 | **99** | Editor word-delete without full stringify (§98 / #1d residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md) |
-| **100** | Editor comment toggle without full stringify (§99 / #1d residual) | **open** STEP=0 done; STEP=1 red next | [agent/TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY.md) |
+| **100** | Editor comment toggle without full stringify (§99 / #1d residual) | **open** STEP=1 done; STEP=2 green next | [agent/TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -932,6 +932,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_WORD_DELETE_NO_FULL_STRINGIFY (§99, **closed** 2026-07-25: Critic OK; STEP=0–3;
       word_boundary_*_document; `fc00e47b`…`741ec105`;
       → [archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md))**
+  → **EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY (§100, open STEP=2 next:
+      red harness landed; green = slice + local replace; [TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY.md))**
 ```
 
 

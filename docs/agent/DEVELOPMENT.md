@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` §100 (red).
-**`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **open** — STEP=0 done; STEP=1 red next.
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` §100 (green).
+**`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **open** — STEP=1 done; STEP=2 green next.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **closed** 2026-07-25 (Critic OK). Archived.
