@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:01 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c EDITOR_UX_PROBE_FROM_LIVE_STATE) |
+| started | 2026-07-25 15:01 |
+| elapsed | ~5 min |
+| done    | Froze Decision: first slice kill loop-head `app` unpack (tabs/selection/history/…); mutate via `app`/`editor_app_*`; keep frame_layout/frame_input; §96 add-on after Critic; OOS draw-op/SceneNode |
+| verify  | gap: ≥8 `let mut … = app.` unpacks at while head in `demo_live` |
+| result  | §97c STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c) |
+
 ### Turn 2026-07-25 15:00 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b dual-wrap STEP=3)
 
 | field   | value |

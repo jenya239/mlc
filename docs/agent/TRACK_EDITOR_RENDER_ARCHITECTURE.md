@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b dual-wrap slice **closed** (Critic OK); §97b extracts done; next Decision §97c
+## Status: **open** — §97c Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -228,8 +228,6 @@ own separate locals can silently diverge from it.
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
-*(Decision STEP=0 pending — unify live loop onto one `EditorUxState`/`EditorAppState` per frame; derive paint from it; fold §96 wheel-hover regression. Gate: red→green→Critic + §97a perf smoke.)*
-
 Once §97b's phase boundaries exist: make the live loop actually construct
 and mutate **one** `EditorUxState`/`EditorAppState` per frame (not the
 current scattered locals), and derive every paint call from it, the same
@@ -238,6 +236,29 @@ struct the `ux_scenarios/*` fixtures already exercise. This closes the
 than by patching each symptom found so far. Fold in §96's cheap
 focus-independent-wheel-scroll regression scenario here as a quick add-on
 once the unified state exists.
+
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | `demo_live` already owns `EditorAppState app`, but every frame **unpacks** it into parallel mut locals (`tabs`, `selection`, `history`, `clipboard`, `overlay`, `editor_focused`, `scroll_offset_y`, edge flags, …) then `editor_app_sync_shell`s back. Two sources of truth → paint/input can diverge (the §94/§95/§96 class). `ux_scenarios` already exercise `EditorUxState`; live loop does not stay on that struct |
+| Strategy (v1) | **Incremental, no big-bang.** First slice: eliminate the loop-head unpack of shell fields listed above — mutate/`read` via `app` / `app.ux` (and existing `editor_app_*` helpers) only; keep `frame_layout` + `frame_input` as-is. Do **not** rewrite paint into a draw-op list this slice. After Critic of this slice: add §96 focus-independent wheel-scroll regression scenario (cheap L0/L2). Later slices (separate Decisions): fold remaining frame-only locals (minimap glyph rebuild, chrome hover caches) and optional paint-from-`editor_ux_snapshot` |
+| Primary gate | Red: ≥8 `let mut … = app.` unpack lines at live-loop head. Green: zero unpack of `tabs`/`selection`/`history`/`clipboard`/`overlay`/`editor_focused`/`scroll_offset_y`/`mouse_was_down`/`backspace_was_down`/`enter_was_down`/`selecting_text`/`frame_index`/`last_command` from `app` at loop head; compile + Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/demo_live.mlc`; red/stable scripts; optional tiny helpers in `app/state.mlc` if needed |
+| REG | no |
+| Out of scope | draw-op list / SceneNode chrome; wrap/span algorithms; SCRIPT_VM; full §96 until post-Critic add-on STEP |
+
+#### Steps (§97c — slice: kill app unpack)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: loop-head still unpacks `app` into many mut locals | pending |
+| 2 | Green: live loop mutates `app` without those unpacks | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — ≥8 let mut = app. at while head; stable stub -->
+<!-- STEP=2: 0 unpack of listed shell fields at loop head -->
 
 ## Verification discipline for every sub-track
 
