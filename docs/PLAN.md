@@ -483,7 +483,7 @@ compiler/
 | **85** | Editor probe reuses frame LineIndex (§84 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX](archive/tracks/TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX.md) |
 | **86** | Editor probe reuses LineIndex text (§85 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md) |
 | **87** | Editor drop-file opens without stringify (§86 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md) |
-| **88** | Editor session restore opens without stringify (§87 residual) | **open** STEP=3 Critic next | [agent/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](agent/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md) |
+| **88** | Editor session restore opens without stringify (§87 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -896,8 +896,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_DROP_FILE_NO_STRINGIFY (§87, **closed** 2026-07-25: Critic OK; STEP=0–3;
       open dropped path without document_to_string; `cca9e565`…`cd5a0a61`;
       → [archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md](archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md))**
-  → **EDITOR_SESSION_RESTORE_NO_STRINGIFY (§88, open STEP=3 Critic next:
-      restore tabs via tab_set_open_buffer; [TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](agent/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md))**
+  → **EDITOR_SESSION_RESTORE_NO_STRINGIFY (§88, **closed** 2026-07-25: Critic OK; STEP=0–3;
+      restore tabs via tab_set_open_buffer; `9013de25`…`4f95fc34`;
+      → [archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md](archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md))**
 ```
 
 

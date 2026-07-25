@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:30 (Critic TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+| started | 2026-07-25 15:15 |
+| elapsed | ~15 min |
+| done    | Critic OK: stable×2 + related + demo_live + `run_ux_gate` 103; archive §88 |
+| verify  | `session_restore_no_stringify` EXIT=0 ×2; session_unit/caret EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (103 scenarios)` |
+| result  | §88 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; frame_snapshot/edit/demo dump/tree_hit + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 15:10 (Driver TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY STEP=2)
 
 | field   | value |

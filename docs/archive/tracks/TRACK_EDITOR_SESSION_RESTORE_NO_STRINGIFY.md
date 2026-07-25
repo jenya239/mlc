@@ -1,22 +1,42 @@
 # Track: Editor session restore opens without stringify
 
-Parent: [../PLAN.md](../PLAN.md) §88.
-Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md)
+Parent: [../../PLAN.md](../../PLAN.md) §88.
+Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md)
 (§87) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `session_restore_no_stringify_stable` ×2 +
+`session_unit` + `session_restore_caret` + `demo_live` compile + HEAD `run_ux_gate`.
+Anti-false-done: `9013de25`…`4f95fc34` (STEP=0–2); `tab_set_open_buffer` in
+`workspace_session_restore_tabs` (no `document_to_string` in `session.mlc`);
+`misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); `frame_snapshot` /
+edit/save/clipboard/demo_live dump/tree_hit stringifies + incremental lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_session_restore_no_stringify_stable.sh` | `ux_ok session_restore_no_stringify` EXIT=0 (×2) |
+| `run_editor_session_unit.sh` | `session_unit ok` EXIT=0 |
+| `run_ux_session_restore_caret.sh` | `ux_ok session_restore_caret` EXIT=0 |
+| `run_editor_demo_live_fs_compile.sh` | `demo_live_fs_compile_ok` EXIT=0 |
+| HEAD `run_ux_gate.sh` (103 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable×2 + related + full `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `9013de25` | Decision: restore tabs via `tab_set_open_buffer` |
-| 1 | `66b06761` | Red: ≥1 `document_to_string` in `session.mlc`; stable stub |
-| 2 | (this) | `tab_set_open_buffer` in restore; green stable |
+| 1 | `66b06761` | Red harness + stable stub `not implemented` |
+| 2 | `4f95fc34` | `tab_set_open_buffer` in restore; green |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +56,7 @@ Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: session restore still stringifies | **done** |
 | 2 | `tab_set_open_buffer` in restore; green | **done** |
-| 3 | Critic: stable + full `run_ux_gate` | pending |
+| 3 | Critic: stable + full `run_ux_gate` | **done** |
 
 ## Out of scope
 
