@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 18:05 (Driver TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY |
+| started | 2026-07-25 17:55 |
+| elapsed | ~10 min |
+| done    | `editor_ux_click_tree` → `OpenBuffer` + `tab_set_open_buffer`; scenario via `open_buffer_from_text`; green stable |
+| verify  | stable EXIT=0 `ux_ok tree_click_no_stringify`; red EXIT=1; `tree_click_opens_tab` + `demo_live_fs_compile_ok` |
+| result  | §91 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY |
+
 ### Turn 2026-07-25 17:50 (Driver TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY STEP=1)
 
 | field   | value |
