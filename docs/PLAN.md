@@ -488,6 +488,7 @@ compiler/
 | **90** | Editor demo open-path without stringify (§89 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md) |
 | **91** | Editor tree-click opens without stringify (§90 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md) |
 | **92** | Editor clipboard slice without full stringify (§91 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md) |
+| **93** | Editor edit autoclose without full stringify (§92 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
