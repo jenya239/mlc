@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:06 (Planner plan-refresh → §100)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 16:06 |
+| elapsed | ~4 min |
+| done    | Opened §100 `TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY`: Decision — slice + local replace; last `edit.mlc` flatten |
+| verify  | `edit_toggle_line_comment` still `document_to_string` + `document_from_string` (edit.mlc:261,323) |
+| result  | §100 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:53 (Critic TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=3)
 
 | field   | value |
