@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:26 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_cache STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache→frame_layout) |
+| started | 2026-07-25 14:24 |
+| elapsed | ~2 min |
+| done    | Critic OK: snapshot stable×2 + wrap/idle related + §97a perf smoke + `run_ux_gate`×2 (107); frame_cache slice closed |
+| verify  | `ux_ok frame_layout_snapshot` ×2; `ux_ok frame_layout_wrap`; `ux_ok idle_frame_snapshot_stable`; `ux_ok demo_live_perf` frames=30; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b frame_cache slice **closed**; queue → Decision for `shared_span_cache` |
+| issues  | honest: dual `frame_layout_tick_pixel` early/late; span/minimap still bare locals; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b shared_span_cache Decision) |
+
 ### Turn 2026-07-25 14:35 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_cache STEP=2)
 
 | field   | value |

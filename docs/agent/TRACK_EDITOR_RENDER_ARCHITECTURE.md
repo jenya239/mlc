@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_cache STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97b frame_cache slice **closed** (Critic OK); next Decision `shared_span_cache`
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -116,10 +116,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: many inline `frame_snapshot_cache_tick` / no snapshot API on layout | **done** (`run_editor_frame_layout_snapshot_red.sh`) |
 | 2 | Green: own cache on `EditorFrameLayout`; wire all demo_live sites | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — ≥10 frame_snapshot_cache_tick(; no frame_layout_tick_snapshot; stable stub -->
 <!-- STEP=2: snapshot_cache on EditorFrameLayout; 0× frame_snapshot_cache_tick in demo_live -->
+<!-- STEP=3: Critic — snapshot stable×2 + wrap/idle related + perf smoke + run_ux_gate×2 (107); slice closed; residual: dual frame_layout_tick early/late; span/minimap still bare locals; next extract = shared_span_cache -->
+
+#### Next extract — `shared_span_cache` consolidation
+
+*(Decision STEP=0 pending — fold `shared_span_cache` into `EditorFrameLayout` / layout tick API; no algo change; gate: red→green→Critic + §97a perf smoke.)*
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
