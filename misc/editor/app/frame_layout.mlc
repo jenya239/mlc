@@ -1,8 +1,16 @@
-// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — wrap count owned by one layout object.
+// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — wrap + document snapshot owned by one layout object.
 import {
   LineIndex,
   line_index_line_count
 } from '../document/line_index'
+import {
+  TextDocument
+} from '../document/piece_table'
+import {
+  DocumentFrameSnapshotCache,
+  frame_snapshot_cache_new,
+  frame_snapshot_cache_tick
+} from '../document/frame_snapshot_cache'
 import {
   DocumentWrapCountCache,
   wrap_count_cache_new_pixel,
@@ -12,10 +20,12 @@ import {
 export type EditorFrameLayout = {
   wrap_count_cache: DocumentWrapCountCache,
   visual_row_count: i32,
-  wrapped_content_height: i32
+  wrapped_content_height: i32,
+  snapshot_cache: DocumentFrameSnapshotCache
 }
 
-fn frame_layout_from_cache(
+fn frame_layout_with_wrap(
+  layout: EditorFrameLayout,
   cache: DocumentWrapCountCache,
   line_height: i32
 ) -> EditorFrameLayout = do
@@ -26,24 +36,34 @@ fn frame_layout_from_cache(
   EditorFrameLayout {
     wrap_count_cache: cache,
     visual_row_count: cache.visual_row_count,
-    wrapped_content_height: height
+    wrapped_content_height: height,
+    snapshot_cache: layout.snapshot_cache
   }
 end
 
 export fn frame_layout_new_pixel(
+  document: TextDocument,
   text: string,
   line_index: LineIndex,
   viewport_width_px: i32,
   font_path: string,
   pixel_size: i32,
   line_height: i32
-) -> EditorFrameLayout =
-  frame_layout_from_cache(
-    wrap_count_cache_new_pixel(
-      text, line_index, viewport_width_px, font_path, pixel_size
-    ),
-    line_height
+) -> EditorFrameLayout = do
+  const cache = wrap_count_cache_new_pixel(
+    text, line_index, viewport_width_px, font_path, pixel_size
   )
+  let mut height = cache.visual_row_count * line_height
+  if height < 0 then
+    height = 0
+  end
+  EditorFrameLayout {
+    wrap_count_cache: cache,
+    visual_row_count: cache.visual_row_count,
+    wrapped_content_height: height,
+    snapshot_cache: frame_snapshot_cache_new(document)
+  }
+end
 
 // skip_full_pixel_wrap=1: use line_count (perf smoke / avoid O(n) HarfBuzz).
 export fn frame_layout_tick_pixel(
@@ -65,10 +85,12 @@ export fn frame_layout_tick_pixel(
     return EditorFrameLayout {
       wrap_count_cache: layout.wrap_count_cache,
       visual_row_count: count,
-      wrapped_content_height: height
+      wrapped_content_height: height,
+      snapshot_cache: layout.snapshot_cache
     }
   end
-  frame_layout_from_cache(
+  frame_layout_with_wrap(
+    layout,
     wrap_count_cache_tick_pixel(
       layout.wrap_count_cache, text, line_index,
       viewport_width_px, font_path, pixel_size
@@ -76,3 +98,17 @@ export fn frame_layout_tick_pixel(
     line_height
   )
 end
+
+export fn frame_layout_tick_snapshot(
+  layout: EditorFrameLayout,
+  document: TextDocument,
+  dirty: i32
+) -> EditorFrameLayout =
+  EditorFrameLayout {
+    wrap_count_cache: layout.wrap_count_cache,
+    visual_row_count: layout.visual_row_count,
+    wrapped_content_height: layout.wrapped_content_height,
+    snapshot_cache: frame_snapshot_cache_tick(
+      layout.snapshot_cache, document, dirty
+    )
+  }

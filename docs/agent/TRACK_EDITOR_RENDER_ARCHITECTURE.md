@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_cache STEP=1 red **done**; next Driver STEP=2 (green)
+## Status: **open** — §97b frame_cache STEP=2 green **done**; next Critic STEP=3
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -115,11 +115,11 @@ own separate locals can silently diverge from it.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: many inline `frame_snapshot_cache_tick` / no snapshot API on layout | **done** (`run_editor_frame_layout_snapshot_red.sh`) |
-| 2 | Green: own cache on `EditorFrameLayout`; wire all demo_live sites | pending |
+| 2 | Green: own cache on `EditorFrameLayout`; wire all demo_live sites | **done** |
 | 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
 
 <!-- STEP=1: red — ≥10 frame_snapshot_cache_tick(; no frame_layout_tick_snapshot; stable stub -->
-<!-- STEP=2: extend EditorFrameLayout; zero direct ticks in demo_live -->
+<!-- STEP=2: snapshot_cache on EditorFrameLayout; 0× frame_snapshot_cache_tick in demo_live -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
