@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:26 (Driver TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:26 |
+| elapsed | ~2 min |
+| done    | Red harness `run_ux_edit_autoclose_no_full_stringify_red.sh` + stable stub; gap = ≥2 `document_to_string` in `edit_insert_text_autoclose` |
+| verify  | red EXIT=0 `ux_ok edit_autoclose_no_full_stringify_red` flattens=2; stable EXIT=1 `not implemented` |
+| result  | §93 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:25 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=3)
 
 | field   | value |

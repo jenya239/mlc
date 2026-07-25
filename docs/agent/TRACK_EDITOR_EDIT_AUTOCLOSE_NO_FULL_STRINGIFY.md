@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §93.
 Residual of [TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md)
 (§92) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 **done**; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `edit_insert_text_autoclose` still calls `document_to_string`; stable stub `not implemented`.
+**STEP=2** — `document_byte_slice` in autoclose; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: autoclose via `document_byte_slice` |
+| 0 | (prior) | Decision: autoclose via `document_byte_slice` |
+| 1 | (this) | Red: ≥2 `document_to_string` in autoclose; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,11 @@ Residual of [TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](../archive/tracks/T
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: autoclose still full-flattens | pending |
+| 1 | Red: autoclose still full-flattens | **done** (`run_ux_edit_autoclose_no_full_stringify_red.sh`) |
 | 2 | `document_byte_slice` in autoclose; green | pending |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts document_to_string in edit_insert_text_autoclose; 2) stable stub; 3) docs -->
+<!-- STEP=1: red — ≥2 document_to_string(document) in edit_insert_text_autoclose; stable stub -->
 <!-- STEP=2 sub-steps: 1) replace wrap+peek with document_byte_slice; 2) green stable; 3) typing_paren scenario -->
 
 ## Out of scope
