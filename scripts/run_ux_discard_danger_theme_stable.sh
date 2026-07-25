@@ -25,7 +25,7 @@ if ! grep -q 'danger_red' "$THEME"; then
   exit 1
 fi
 
-if ! grep -A12 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
+if ! grep -A12 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
   echo "[ux discard_danger_theme_stable] FAIL: discard missing theme.danger_" >&2
   exit 1
 fi

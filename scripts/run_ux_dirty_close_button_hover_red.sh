@@ -11,21 +11,21 @@ if [ ! -f "$DEMO" ]; then
   exit 1
 fi
 
-if ! grep -q 'dirty_close_overlay_is_visible(overlay) then' "$DEMO"; then
+if ! grep -q 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO"; then
   echo "[ux dirty_close_button_hover_red] FAIL: missing dirty-close draw" >&2
   exit 1
 fi
 
 # Gap: discard/cancel paint flat theme colors without chrome_hover.
-if ! grep -A16 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
+if ! grep -A16 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
   echo "[ux dirty_close_button_hover_red] FAIL: missing flat danger discard fill" >&2
   exit 1
 fi
-if ! grep -A16 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.accent_red'; then
+if ! grep -A16 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.accent_red'; then
   echo "[ux dirty_close_button_hover_red] FAIL: missing flat accent cancel fill" >&2
   exit 1
 fi
-if grep -A16 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'editor_ux_chrome_hover_draw_entry'; then
+if grep -A16 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'editor_ux_chrome_hover_draw_entry'; then
   echo "[ux dirty_close_button_hover_red] FAIL: dirty-close buttons already use chrome_hover (expected gap)" >&2
   exit 1
 fi

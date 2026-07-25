@@ -28,7 +28,7 @@ if ! grep -q '0.55, 0.22, 0.22' "$DEMO"; then
 fi
 
 # Draw block must not already use theme.danger_*.
-if grep -A12 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.danger_'; then
+if grep -A12 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.danger_'; then
   echo "[ux discard_danger_theme_red] FAIL: discard already uses theme.danger_ (expected gap)" >&2
   exit 1
 fi

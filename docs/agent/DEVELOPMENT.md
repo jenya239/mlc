@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_EDITOR_RENDER_ARCHITECTURE` §97c (retarget UX harness greps after unpack).
-**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — Critic STEP=3 NOT OK; retarget then re-Critic.
+**Queue head:** Critic STEP=3 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97c (kill app unpack).
+**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — STEP=2b harness retarget done; Critic STEP=3 next.
 **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **open** — deferred until §97 sub-tracks resolve.
 **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (§94) / `DRAG_SELECTION` (§95) / `WHEEL_HOVER` (§96)** **superseded by §97**.
 **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **closed** 2026-07-25 (Critic OK). Archived.

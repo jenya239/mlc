@@ -11,8 +11,8 @@ if [ ! -f "$DEMO" ]; then
   exit 1
 fi
 
-# Gap: caret draw uses primary selection_caret(selection) / last_caret_*.
-if ! grep -q 'selection_caret(selection)' "$DEMO"; then
+# Gap: caret draw uses primary selection_caret(app.ux.selection) / last_caret_*.
+if ! grep -q 'selection_caret(app.ux.selection)' "$DEMO"; then
   echo "[ux multi_caret_draw_red] FAIL: demo_live missing primary selection_caret" >&2
   exit 1
 fi
@@ -25,7 +25,7 @@ if grep -qE 'multi_caret_draw|caret_byte = selection_caret\(multi|while multi_in
   echo "[ux multi_caret_draw_red] FAIL: demo_live already has multi caret draw (expected gap)" >&2
   exit 1
 fi
-if grep -A30 'const caret_byte = selection_caret(selection)' "$DEMO" | grep -q 'multi_selection_count'; then
+if grep -A30 'const caret_byte = selection_caret(app.ux.selection)' "$DEMO" | grep -q 'multi_selection_count'; then
   echo "[ux multi_caret_draw_red] FAIL: caret already walks multi (expected gap)" >&2
   exit 1
 fi

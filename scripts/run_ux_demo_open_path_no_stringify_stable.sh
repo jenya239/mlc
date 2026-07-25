@@ -26,7 +26,7 @@ if ! grep -q 'fn open_path_into_tabs(' "$DEMO"; then
   echo "[ux demo_open_path_no_stringify_stable] FAIL: missing open_path_into_tabs" >&2
   exit 1
 fi
-if ! grep -q 'open_path_into_tabs(tabs, open_path)' "$DEMO"; then
+if ! grep -q 'open_path_into_tabs(app.ux.tabs, open_path)' "$DEMO"; then
   echo "[ux demo_open_path_no_stringify_stable] FAIL: tree_open must call open_path_into_tabs" >&2
   exit 1
 fi

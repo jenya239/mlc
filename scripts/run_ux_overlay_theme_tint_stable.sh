@@ -29,7 +29,7 @@ if grep -q '0.22, 0.24, 0.30' "$DEMO"; then
 fi
 
 # Draw sites use theme.panel_* / theme.muted_*.
-if ! grep -A8 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.panel_red'; then
+if ! grep -A8 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.panel_red'; then
   echo "[ux overlay_theme_tint_stable] FAIL: dirty-close missing theme.panel_" >&2
   exit 1
 fi
@@ -51,7 +51,7 @@ if ! grep -q 'input, nav_forward_rect, theme.panel_red' "$DEMO"; then
 fi
 
 # Discard danger follows Theme (§67).
-if ! grep -A12 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
+if ! grep -A12 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.danger_red'; then
   echo "[ux overlay_theme_tint_stable] FAIL: discard missing theme.danger_" >&2
   exit 1
 fi

@@ -37,7 +37,7 @@ if ! grep -A2 'editor_ux_trailing_ws_draw_report(' "$DEMO" | grep -q 'line_index
   echo "[ux paint_reuses_frame_line_index_stable] FAIL: demo trailing_ws not passing line_index" >&2
   exit 1
 fi
-if ! grep -q 'active.buffer, selection_caret(selection), line_index' "$DEMO"; then
+if ! grep -q 'active.buffer, selection_caret(app.ux.selection), line_index' "$DEMO"; then
   echo "[ux paint_reuses_frame_line_index_stable] FAIL: demo status_bar not passing line_index" >&2
   exit 1
 fi

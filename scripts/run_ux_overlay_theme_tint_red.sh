@@ -44,7 +44,7 @@ if [ "$nav_count" -lt 2 ]; then
 fi
 
 # Those blocks must not already use theme.panel_*.
-if grep -A8 'dirty_close_overlay_is_visible(overlay) then' "$DEMO" | grep -q 'theme.panel_'; then
+if grep -A8 'dirty_close_overlay_is_visible(app.overlay) then' "$DEMO" | grep -q 'theme.panel_'; then
   echo "[ux overlay_theme_tint_red] FAIL: dirty-close already uses theme.panel_ (expected gap)" >&2
   exit 1
 fi
