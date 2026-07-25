@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:47 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+| started | 2026-07-25 14:47 |
+| elapsed | ~5 min |
+| done    | Red harness `run_editor_frame_input_red.sh` + stable stub (`not implemented`); gap = no `frame_input.mlc`, bare `gui_input_poll` + take_* in `demo_live` |
+| verify  | red EXIT=0 `ux_ok frame_input_red`; stable EXIT=1 `not implemented` |
+| result  | §97b frame_input STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+
 ### Turn 2026-07-25 14:46 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=0)
 
 | field   | value |

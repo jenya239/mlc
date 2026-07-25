@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_input Decision **done**; next Driver STEP=1 (red)
+## Status: **open** — §97b frame_input STEP=1 red **done**; next Driver STEP=2
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -192,7 +192,7 @@ own separate locals can silently diverge from it.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: bare `gui_input_poll` in `demo_live` / no `frame_input.mlc` | pending |
+| 1 | Red: bare `gui_input_poll` in `demo_live` / no `frame_input.mlc` | **done** (`run_editor_frame_input_red.sh`) |
 | 2 | Green: extract poll+dirty into `app/frame_input.mlc`; wire `demo_live` | pending |
 | 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
 
