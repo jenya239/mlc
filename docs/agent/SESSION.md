@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:40 (Planner plan-refresh → §89)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 15:35 |
+| elapsed | ~5 min |
+| done    | Opened §89 `TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY`: Decision — one flatten per tab in `save_demo_session`; §88 residual |
+| verify  | `save_demo_session` calls `document_to_string` twice per tab |
+| result  | §89 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+
 ### Turn 2026-07-25 15:30 (Critic TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY)
 
 | field   | value |
