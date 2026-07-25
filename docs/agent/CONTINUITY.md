@@ -126,7 +126,7 @@ INSTRUCTIONS_REV=2026-07-25-render-architecture-priority
 | **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (PLAN §94)** | **superseded by §97** — do not resume, closed by the §97c architectural fix instead |
 | **`TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP` (PLAN §95)** | **superseded by §97** — do not resume |
 | **`TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` (PLAN §96)** | **superseded by §97** — its regression scenario is folded into §97c |
-| **`TRACK_EDITOR_RENDER_ARCHITECTURE` (PLAN §97)** | **open** — §97a STEP=0 Decision done; STEP=1 red next. Priority override. Sub-tracks §97a→§97b→§97c |
+| **`TRACK_EDITOR_RENDER_ARCHITECTURE` (PLAN §97)** | **open** — §97a STEP=1 red done; STEP=2 green next. Priority override. Sub-tracks §97a→§97b→§97c |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
 | **Authorized queue** | **§97a** Driver STEP=1 — then §97b/§97c; §93 after; SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
