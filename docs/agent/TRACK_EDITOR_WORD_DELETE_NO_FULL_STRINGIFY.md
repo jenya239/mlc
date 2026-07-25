@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §99.
 Residual of [TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY.md)
 (§98) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Green: document-aware word boundary peeks; zero `document_to_string` in both word-delete fns; stable prints `ux_ok word_delete_no_full_stringify`.
+**STEP=3** — Critic: stable×2 + word_boundary/edit/ctrl_backspace + `run_ux_gate`×2.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `fc00e47b` | Decision: word-delete via document byte peeks |
-| 1 | (this) | Red: both word-delete fns still flatten; stable stub |
+| 1 | `e1da7834` | Red: both word-delete fns still flatten; stable stub |
+| 2 | (this) | Green: `word_boundary_*_document` + wire |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY](../archive/tracks/TR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: word-delete still full-flattens | **done** |
-| 2 | Document peeks; green | pending |
+| 2 | Document peeks; green | **done** |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
-
-<!-- STEP=2: document-aware boundary + wire; green; word_boundary_unit / edit_unit -->
 
 ## Out of scope
 

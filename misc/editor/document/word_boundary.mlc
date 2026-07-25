@@ -1,5 +1,11 @@
 // TRACK_EDITOR_WORD_BOUNDARIES STEP=2 — ASCII word edges (letter/digit/_).
 // Non-ASCII bytes treated as separators (honest residual → #28).
+// TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY — document peeks (no full flatten).
+import {
+  TextDocument,
+  document_byte_length,
+  document_byte_slice
+} from './piece_table'
 
 export fn is_word_char(ch: string) -> bool = do
   if ch >= "a" && ch <= "z" then
@@ -13,6 +19,9 @@ export fn is_word_char(ch: string) -> bool = do
   end
   ch == "_"
 end
+
+fn document_byte_at(document: TextDocument, offset: i32) -> string =
+  document_byte_slice(document, offset, offset + 1)
 
 // Next word-end edge at or after `offset` (Ctrl+Right).
 export fn word_boundary_next(text: string, offset: i32) -> i32 = do
@@ -56,6 +65,53 @@ export fn word_boundary_prev(text: string, offset: i32) -> i32 = do
     index = index - 1
   end
   while index > 0 && is_word_char(text.byte_at(index - 1)) do
+    index = index - 1
+  end
+  index
+end
+
+// Document-aware next word-end (no full flatten).
+export fn word_boundary_next_document(document: TextDocument, offset: i32) -> i32 = do
+  const length = document_byte_length(document)
+  let mut index = offset
+  if index < 0 then
+    index = 0
+  end
+  if index >= length then
+    return length
+  end
+  if is_word_char(document_byte_at(document, index)) then
+    while index < length && is_word_char(document_byte_at(document, index)) do
+      index = index + 1
+    end
+    return index
+  end
+  while index < length && !is_word_char(document_byte_at(document, index)) do
+    index = index + 1
+  end
+  while index < length && is_word_char(document_byte_at(document, index)) do
+    index = index + 1
+  end
+  index
+end
+
+// Document-aware previous word-start (no full flatten).
+export fn word_boundary_prev_document(document: TextDocument, offset: i32) -> i32 = do
+  const length = document_byte_length(document)
+  let mut index = offset
+  if index < 0 then
+    return 0
+  end
+  if index > length then
+    index = length
+  end
+  if index <= 0 then
+    return 0
+  end
+  while index > 0 && !is_word_char(document_byte_at(document, index - 1)) do
+    index = index - 1
+  end
+  while index > 0 && is_word_char(document_byte_at(document, index - 1)) do
     index = index - 1
   end
   index

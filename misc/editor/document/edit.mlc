@@ -18,8 +18,8 @@ import {
   selection_clamp
 } from './selection'
 import {
-  word_boundary_next,
-  word_boundary_prev
+  word_boundary_next_document,
+  word_boundary_prev_document
 } from './word_boundary'
 import {
   LineIndex,
@@ -381,8 +381,7 @@ export fn edit_delete_word_backward(
   if caret <= 0 then
     return EditResult { document: document, selection: selection_collapsed(0) }
   end
-  const text = document_to_string(document)
-  const range_start = word_boundary_prev(text, caret)
+  const range_start = word_boundary_prev_document(document, caret)
   const next_document = document_delete(document, range_start, caret)
   EditResult {
     document: next_document,
@@ -406,8 +405,7 @@ export fn edit_delete_word_forward(
       selection: selection_collapsed(length)
     }
   end
-  const text = document_to_string(document)
-  const range_end = word_boundary_next(text, caret)
+  const range_end = word_boundary_next_document(document, caret)
   const next_document = document_delete(document, caret, range_end)
   EditResult {
     document: next_document,

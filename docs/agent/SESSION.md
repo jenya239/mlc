@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:51 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:51 |
+| elapsed | ~5 min |
+| done    | Green: `word_boundary_*_document` via `document_byte_slice`; wired both word-delete fns |
+| verify  | `ux_ok word_delete_no_full_stringify`; word_boundary_unit; edit_unit; ctrl_backspace |
+| result  | §99 STEP=2 done; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:50 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |
