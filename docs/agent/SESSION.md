@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:15 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b EDITOR_FRAME_SPLIT) |
+| started | 2026-07-25 14:10 |
+| elapsed | ~5 min |
+| done    | Froze §97b Decision: first slice extract wrap_count dual sites → `app/frame_layout.mlc` (`EditorFrameLayout`); later caches one-at-a-time; gates = ux_gate×2 + §97a perf smoke; OOS §97c/algorithms/command-bus |
+| verify  | Decision table frozen in TRACK; wrap still dual-inline in `demo_live` (gap for STEP=1) |
+| result  | §97b STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b) |
+
 ### Turn 2026-07-25 14:10 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97a)
 
 | field   | value |

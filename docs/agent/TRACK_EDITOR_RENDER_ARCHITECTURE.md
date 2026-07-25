@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97a **closed** (Critic OK); next Driver §97b STEP=0 Decision
+## Status: **open** — §97b STEP=0 Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -72,19 +72,28 @@ own separate locals can silently diverge from it.
 
 ### §97b `EDITOR_FRAME_SPLIT`
 
-#### Decision (STEP=0) — pending
+#### Decision (STEP=0) — **frozen** 2026-07-25
 
-Extract `demo_live.mlc::main()`'s tangled phases into named modules under
-`misc/editor/app/`: `frame_input.mlc` (poll input → intent, no side
-effects), `frame_layout.mlc` (**one** consolidated, memoized `LayoutPlan`
-replacing the 5 scattered ad-hoc caches above — single `content_dirty` in,
-single struct out, every sub-field independently unit-testable), and the
-existing draw calls routed through it. Proceed file-by-file: extract one
-cache/computation into `frame_layout.mlc` at a time, verify `run_ux_gate.sh`
-×2 stays green and §97a's perf smoke shows no regression, before moving to
-the next one. Do not attempt to also fix `EDITOR_COMMAND_BUS_WIRE` (review
-item #5, toolbar-vs-keyboard dual dispatch) in this sub-track — separate
-concern, separate track if picked up later.
+| Item | Choice |
+|------|--------|
+| Problem | `demo_live.mlc` god-loop: layout/cache work is duplicated and threaded by hand (`wrap_count_cache_tick_pixel` at **two** full-paint sites; `frame_snapshot_cache_tick` from **25** edit branches; plus independent `shared_span_cache` / `minimap_cache` / `frame_cache`). No single memoized layout object → §97a can measure lag but cannot refactor safely without regressions |
+| Strategy (v1) | **Incremental extract, no big-bang.** (1) First green slice: add `misc/editor/app/frame_layout.mlc` with a small `EditorFrameLayout` (owns `wrap_count_cache` + derived `visual_row_count` / wrapped content height) and `frame_layout_tick_*` API; `demo_live` calls it **once** per full paint instead of two inline wrap ticks. Red harness proves dual inline sites / missing module. (2) Later slices in this sub-track (after first Critic, as STEP=4+ or a follow-on Decision row): fold one more cache at a time into the same layout module (`frame_cache` snapshot tick consolidation, then `shared_span_cache`, then `minimap_cache`), then extract `frame_input.mlc` (poll → intent, no paint). Each slice gates on `run_ux_gate.sh` ×2 + §97a `run_editor_demo_live_perf_smoke.sh` (must stay green; order-of-magnitude `total_us` blowup = blocker). (3) Do **not** unify live locals onto one `EditorUxState` here (§97c); do **not** change wrap/syntax/minimap **algorithms** beyond relocation; do **not** wire `EDITOR_COMMAND_BUS_WIRE` (review #5) |
+| Primary gate | Red: no `app/frame_layout.mlc` / wrap still dual-inline in `demo_live`. Green: `demo_live` uses `frame_layout_*` for wrap; unit/scenario + `demo_live` compile; Critic: stable×2 + related + `run_ux_gate` + §97a perf smoke |
+| Module touch | `misc/editor/app/frame_layout.mlc` (new); `demo_live.mlc`; red/stable scripts under `scripts/`; optional `ux_scenarios/` |
+| REG | no |
+| Out of scope | §97c unified live state; cache algorithm rewrites; SceneNode chrome migration; SCRIPT_VM; MIR Epic 5; command-bus dual dispatch |
+
+#### Steps (§97b — first slice: wrap → `frame_layout`)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: wrap still dual-inline / no `frame_layout.mlc` | pending |
+| 2 | Green: extract wrap into `app/frame_layout.mlc`; wire `demo_live` | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate` + §97a perf smoke | pending |
+
+<!-- STEP=1: red harness — grep dual wrap_count_cache_tick_pixel; missing frame_layout -->
+<!-- STEP=2: EditorFrameLayout + tick; demo_live single call site; perf smoke still green -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
