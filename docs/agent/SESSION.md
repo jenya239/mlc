@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 17:35 (Planner plan-refresh → §91)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 17:30 |
+| elapsed | ~5 min |
+| done    | Opened §91 `TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY`: Decision — tree click via `tab_set_open_buffer`; §90 residual |
+| verify  | `editor_ux_click_tree` still takes `open_text: string` + `tab_set_open` |
+| result  | §91 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY |
+
 ### Turn 2026-07-25 17:20 (Critic TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY)
 
 | field   | value |
