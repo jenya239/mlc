@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:35 (Planner plan-refresh → §98)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 15:35 |
+| elapsed | ~5 min |
+| done    | Opened §98 `TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY`: Decision — newline indent via line-start scan + `document_byte_slice`; §93 residual |
+| verify  | `edit_insert_newline` still calls `document_to_string(working)` |
+| result  | §98 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:34 (Critic TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=3)
 
 | field   | value |
