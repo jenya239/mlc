@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 13:10 (Planner plan-refresh → §87)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 13:05 |
+| elapsed | ~5 min |
+| done    | Opened §87 `TRACK_EDITOR_DROP_FILE_NO_STRINGIFY`: Decision — open dropped path without `document_to_string`; §86 residual |
+| verify  | `ux/drop_file.mlc` still calls `document_to_string` for `tab_set_open` |
+| result  | §87 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_DROP_FILE_NO_STRINGIFY |
+
 ### Turn 2026-07-25 12:55 (Critic TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT)
 
 | field   | value |
