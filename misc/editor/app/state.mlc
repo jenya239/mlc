@@ -184,6 +184,76 @@ export fn editor_app_commit_session(
     frame_index: app.frame_index
   }
 
+// Thin single-field updates for live loop (no loop-head unpack / dual SoT).
+export fn editor_app_set_tabs(app: EditorAppState, tabs: TabSet) -> EditorAppState =
+  EditorAppState {
+    ...app,
+    ux: EditorUxState { ...app.ux, tabs: tabs }
+  }
+
+export fn editor_app_set_selection(
+  app: EditorAppState,
+  selection: EditorSelection
+) -> EditorAppState =
+  EditorAppState {
+    ...app,
+    ux: EditorUxState { ...app.ux, selection: selection }
+  }
+
+export fn editor_app_set_history(
+  app: EditorAppState,
+  history: EditorHistory
+) -> EditorAppState =
+  EditorAppState { ...app, history: history }
+
+export fn editor_app_set_clipboard(
+  app: EditorAppState,
+  clipboard: Clipboard
+) -> EditorAppState =
+  EditorAppState { ...app, clipboard: clipboard }
+
+export fn editor_app_set_overlay(
+  app: EditorAppState,
+  overlay: DirtyCloseOverlay
+) -> EditorAppState =
+  EditorAppState { ...app, overlay: overlay }
+
+export fn editor_app_set_editor_focused(
+  app: EditorAppState,
+  editor_focused: i32
+) -> EditorAppState =
+  EditorAppState { ...app, editor_focused: editor_focused }
+
+export fn editor_app_set_last_command(
+  app: EditorAppState,
+  last_command: string
+) -> EditorAppState =
+  EditorAppState { ...app, last_command: last_command }
+
+export fn editor_app_set_mouse_was_down(
+  app: EditorAppState,
+  mouse_was_down: i32
+) -> EditorAppState =
+  EditorAppState { ...app, mouse_was_down: mouse_was_down }
+
+export fn editor_app_set_backspace_was_down(
+  app: EditorAppState,
+  backspace_was_down: i32
+) -> EditorAppState =
+  EditorAppState { ...app, backspace_was_down: backspace_was_down }
+
+export fn editor_app_set_enter_was_down(
+  app: EditorAppState,
+  enter_was_down: i32
+) -> EditorAppState =
+  EditorAppState { ...app, enter_was_down: enter_was_down }
+
+export fn editor_app_set_selecting_text(
+  app: EditorAppState,
+  selecting_text: i32
+) -> EditorAppState =
+  EditorAppState { ...app, selecting_text: selecting_text }
+
 export fn editor_app_wheel_scroll(
   app: EditorAppState,
   metrics: EditorTextMetrics,

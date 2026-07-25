@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97c STEP=1 **done**; next Driver STEP=2 (green)
+## Status: **open** — §97c STEP=2 **done**; next Critic STEP=3
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -254,11 +254,11 @@ once the unified state exists.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: loop-head still unpacks `app` into many mut locals | **done** (`run_editor_app_unpack_red.sh`) |
-| 2 | Green: live loop mutates `app` without those unpacks | pending |
+| 2 | Green: live loop mutates `app` without those unpacks | **done** (`run_editor_app_unpack_stable.sh`) |
 | 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
 
 <!-- STEP=1: red — ≥8 let mut = app. at while head (13); stable stub not implemented -->
-<!-- STEP=2: 0 unpack of listed shell fields at loop head -->
+<!-- STEP=2: 0 unpack; editor_app_set_* + app.ux.*/app.* reads; compile + perf smoke -->
 
 ## Verification discipline for every sub-track
 

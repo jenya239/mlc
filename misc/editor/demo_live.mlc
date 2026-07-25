@@ -358,6 +358,17 @@ import {
   editor_app_clamp_scroll_to_content,
   editor_app_set_scroll_y,
   editor_app_set_scroll_x,
+  editor_app_set_tabs,
+  editor_app_set_selection,
+  editor_app_set_history,
+  editor_app_set_clipboard,
+  editor_app_set_overlay,
+  editor_app_set_editor_focused,
+  editor_app_set_last_command,
+  editor_app_set_mouse_was_down,
+  editor_app_set_backspace_was_down,
+  editor_app_set_enter_was_down,
+  editor_app_set_selecting_text,
   editor_app_insert_text,
   editor_app_insert_text_with_multi,
   editor_app_toggle_line_comment,
@@ -814,19 +825,6 @@ fn main() -> i32 = do
   let mut last_caret_rects: [CaretOverlayRect] = caret_overlay_empty()
 
   while glfw_gl_context_should_close() == 0 do
-    let mut tabs = app.ux.tabs
-    let mut selection = app.ux.selection
-    let mut history = app.history
-    let mut clipboard = app.clipboard
-    let mut overlay = app.overlay
-    let mut editor_focused = app.editor_focused
-    let mut last_command = app.last_command
-    let mut mouse_was_down = app.mouse_was_down
-    let mut backspace_was_down = app.backspace_was_down
-    let mut enter_was_down = app.enter_was_down
-    let mut selecting_text = app.selecting_text
-    let mut scroll_offset_y = app.ux.scroll_offset_y
-    let mut frame_index = app.frame_index
     const scaled_font_size = f64_to_i32(
       i32_to_f64(zoom_font_size) * glfw_gl_window_content_scale_y()
     )
@@ -836,13 +834,13 @@ fn main() -> i32 = do
       last_mouse_x, last_mouse_y, last_mouse_down, last_mouse_right_down,
       last_backspace, last_enter,
       editor_ux_context_menu_is_visible(context_menu),
-      dirty_close_overlay_is_visible(overlay)
+      dirty_close_overlay_is_visible(app.overlay)
     )
     const input = frame_in.input
     if input.escape != 0 then
       if editor_ux_context_menu_is_visible(context_menu) then
         context_menu = editor_ux_context_menu_dismiss(context_menu)
-      else if !dirty_close_overlay_is_visible(overlay) then
+      else if !dirty_close_overlay_is_visible(app.overlay) then
         break
       end
     end
@@ -865,11 +863,11 @@ fn main() -> i32 = do
     const toolbar_y = header_height() + tab_bar_height()
     const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
 
-    tabs = ensure_tabs(tabs, panels)
-    if tabs.active_index != last_active_index then
+    app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
+    if app.ux.tabs.active_index != last_active_index then
       content_dirty = 1
     end
-    let mut active = tab_set_active(tabs)
+    let mut active = tab_set_active(app.ux.tabs)
     let mut document = active.buffer.document
     frame_layout = frame_layout_tick_snapshot(frame_layout, document, content_dirty)
     let mut frame = frame_layout.snapshot_cache.snapshot
@@ -877,7 +875,6 @@ fn main() -> i32 = do
     let mut draw_text = frame.text
     if perf_enabled then
       app = editor_app_wheel_scroll(app, metrics, 3, line_index)
-      scroll_offset_y = app.ux.scroll_offset_y
     end
 
     last_mouse_x = input.mouse_x
@@ -897,7 +894,7 @@ fn main() -> i32 = do
       if paint_dirty == 0 then
         continue
       end
-      // Paint-only blink: overlay carets without clearing / reshaping the frame.
+      // Paint-only blink: app.overlay carets without clearing / reshaping the frame.
       // idle_multi_caret_overlay: all cached last_caret_rects
       if caret_overlay_count(last_caret_rects) > 0 then
         const blink_on = caret_blink_visible(clock_ms, caret_blink_period_ms())
@@ -940,7 +937,7 @@ fn main() -> i32 = do
 
     last_width = width
     last_height = height
-    last_active_index = tabs.active_index
+    last_active_index = app.ux.tabs.active_index
     let mut perf_frame_t0 = 0
     let mut perf_layout_us = 0
     let mut perf_draw_t0 = 0
@@ -948,27 +945,27 @@ fn main() -> i32 = do
       perf_frame_t0 = editor_perf_now_us()
     end
 
-    // TRACK_EDITOR_DROP_FILE STEP=3 — drain OS drop queue → open/activate tabs
+    // TRACK_EDITOR_DROP_FILE STEP=3 — drain OS drop queue → open/activate app.ux.tabs
     let mut drop_path = pending_drop_path
     while drop_path.byte_size() > 0 do
-      const before_count = tab_set_count(tabs)
-      const before_active = tabs.active_index
+      const before_count = tab_set_count(app.ux.tabs)
+      const before_active = app.ux.tabs.active_index
       const drop_state = editor_ux_open_dropped_path(
-        editor_ux_state_new(width, height, panels, tabs, selection),
+        editor_ux_state_new(width, height, panels, app.ux.tabs, app.ux.selection),
         drop_path
       )
-      tabs = drop_state.tabs
-      selection = drop_state.selection
-      if tab_set_count(tabs) != before_count || tabs.active_index != before_active then
-        active = tab_set_active(tabs)
+      app = editor_app_set_tabs(app, drop_state.tabs)
+      app = editor_app_set_selection(app, drop_state.selection)
+      if tab_set_count(app.ux.tabs) != before_count || app.ux.tabs.active_index != before_active then
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
-        history = history_new()
-        multi = multi_selection_from_single(selection)
-        last_command = "drop_open"
+        app = editor_app_set_history(app, history_new())
+        multi = multi_selection_from_single(app.ux.selection)
+        app = editor_app_set_last_command(app, "drop_open")
       end
       drop_path = glfw_gl_take_drop_path()
     end
@@ -976,8 +973,8 @@ fn main() -> i32 = do
     // Classic tab-strip layout: shared by hit-test and draw this frame.
     let mut tab_display_titles: [string] = []
     let mut tab_title_index = 0
-    while tab_title_index < tab_set_count(tabs) do
-      const layout_tab = tabs.tabs[tab_title_index]
+    while tab_title_index < tab_set_count(app.ux.tabs) do
+      const layout_tab = app.ux.tabs.tabs[tab_title_index]
       let mut layout_title = layout_tab.name
       if tab_is_dirty(layout_tab) then
         layout_title = layout_title + "*"
@@ -1008,12 +1005,11 @@ fn main() -> i32 = do
     // Early path reuses prior-frame wrap metrics on frame_layout (late tick is sole retick).
     const visual_row_count = frame_layout.visual_row_count
     let mut wrapped_content_height = frame_layout.wrapped_content_height
-    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height, text_rect.height
     )
-    scroll_offset_y = app.ux.scroll_offset_y
-    const first_visual_row = scroll_offset_y / metrics.line_height
+    const first_visual_row = app.ux.scroll_offset_y / metrics.line_height
     let mut visible_row_budget = text_rect.height / metrics.line_height + 3
     if visible_row_budget < 1 then
       visible_row_budget = 1
@@ -1039,7 +1035,7 @@ fn main() -> i32 = do
     const tree_hovered =
       point_in_rect(point_new(input.mouse_x, input.mouse_y), tree_rect) != 0
 
-    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
     glfw_gl_cursor_set(
       editor_ux_cursor_shape_at(app.ux, input.mouse_x, input.mouse_y)
     )
@@ -1047,11 +1043,11 @@ fn main() -> i32 = do
     const viewport = viewport_metrics_new(
       metrics.line_height, text_rect.height, text_rect.width, 1
     )
-    let mut visible = visible_line_range(line_count, scroll_offset_y, viewport)
+    let mut visible = visible_line_range(line_count, app.ux.scroll_offset_y, viewport)
     let mut view_metrics = editor_view_metrics_new(
       metrics.line_height, metrics.char_width,
       text_rect.x + 4, text_rect.y + 2,
-      app.ux.scroll_offset_x, scroll_offset_y,
+      app.ux.scroll_offset_x, app.ux.scroll_offset_y,
       text_rect.height / metrics.line_height
     )
 
@@ -1067,7 +1063,7 @@ fn main() -> i32 = do
         const zoomed = editor_ux_font_zoom(zoom_font_size, scroll_ticks)
         zoom_font_size = zoomed.font_size
         metrics = zoomed.metrics
-        last_command = "font_zoom"
+        app = editor_app_set_last_command(app, "font_zoom")
       else if glfw_gl_mod_shift_down() != 0 then
         let mut char_width = metrics.char_width
         if char_width <= 0 then
@@ -1078,11 +1074,11 @@ fn main() -> i32 = do
         app = editor_app_wheel_scroll_horizontal(
           app, metrics, scroll_ticks, content_width, text_rect.width
         )
-        last_command = "scroll_x"
+        app = editor_app_set_last_command(app, "scroll_x")
         view_metrics = editor_view_metrics_new(
           metrics.line_height, metrics.char_width,
           text_rect.x + 4, text_rect.y + 2,
-          app.ux.scroll_offset_x, scroll_offset_y,
+          app.ux.scroll_offset_x, app.ux.scroll_offset_y,
           text_rect.height / metrics.line_height
         )
       else
@@ -1090,106 +1086,105 @@ fn main() -> i32 = do
         app = editor_app_clamp_scroll_to_content(
           app, wrapped_content_height, text_rect.height
         )
-        scroll_offset_y = app.ux.scroll_offset_y
-        visible = visible_line_range(line_count, scroll_offset_y, viewport)
+        visible = visible_line_range(line_count, app.ux.scroll_offset_y, viewport)
         view_metrics = editor_view_metrics_new(
           metrics.line_height, metrics.char_width,
           text_rect.x + 4, text_rect.y + 2,
-          app.ux.scroll_offset_x, scroll_offset_y,
+          app.ux.scroll_offset_x, app.ux.scroll_offset_y,
           text_rect.height / metrics.line_height
         )
         visual_rows = collect_visible_visual_rows_pixel_budget(
           draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-          scroll_offset_y / metrics.line_height, visible_row_budget
+          app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
         )
       end
     end
 
-    if dirty_close_overlay_is_visible(overlay) then
-      if input.mouse_down != 0 && mouse_was_down == 0 then
-        const before_visible = dirty_close_overlay_is_visible(overlay)
-        const before_count = tab_set_count(tabs)
+    if dirty_close_overlay_is_visible(app.overlay) then
+      if input.mouse_down != 0 && app.mouse_was_down == 0 then
+        const before_visible = dirty_close_overlay_is_visible(app.overlay)
+        const before_count = tab_set_count(app.ux.tabs)
         const outcome = dirty_close_overlay_click(
-          tabs, overlay, input.mouse_x, input.mouse_y, width, height
+          app.ux.tabs, app.overlay, input.mouse_x, input.mouse_y, width, height
         )
-        tabs = outcome.tabs
-        overlay = outcome.overlay
-        if before_visible && !dirty_close_overlay_is_visible(overlay) then
-          if tab_set_count(tabs) < before_count then
-            if tab_set_has_active(tabs) then
-              active = tab_set_active(tabs)
+        app = editor_app_set_tabs(app, outcome.tabs)
+        app = editor_app_set_overlay(app, outcome.overlay)
+        if before_visible && !dirty_close_overlay_is_visible(app.overlay) then
+          if tab_set_count(app.ux.tabs) < before_count then
+            if tab_set_has_active(app.ux.tabs) then
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
               line_index = frame.line_index
               draw_text = frame.text
-              selection = selection_collapsed(0)
-              history = history_new()
+              app = editor_app_set_selection(app, selection_collapsed(0))
+              app = editor_app_set_history(app, history_new())
             end
-            last_command = "close_discard"
+            app = editor_app_set_last_command(app, "close_discard")
           else
-            last_command = "close_cancel"
+            app = editor_app_set_last_command(app, "close_cancel")
           end
         end
       end
-      mouse_was_down = input.mouse_down
+      app = editor_app_set_mouse_was_down(app, input.mouse_down)
       mouse_right_was_down = input.mouse_right_down
     else if editor_ux_context_menu_is_visible(context_menu) then
-      if input.mouse_down != 0 && mouse_was_down == 0 then
+      if input.mouse_down != 0 && app.mouse_was_down == 0 then
         const menu_click = editor_ux_context_menu_click(
           context_menu, input.mouse_x, input.mouse_y
         )
         context_menu = menu_click.menu
         if context_menu_action_is_copy(menu_click.action) then
-          if !selection_is_empty(selection) then
-            clipboard = edit_copy(document, selection, clipboard)
-            clipboard_push_to_os(clipboard)
-            last_command = "context_copy"
+          if !selection_is_empty(app.ux.selection) then
+            app = editor_app_set_clipboard(app, edit_copy(document, app.ux.selection, app.clipboard))
+            clipboard_push_to_os(app.clipboard)
+            app = editor_app_set_last_command(app, "context_copy")
           end
         else if context_menu_action_is_cut(menu_click.action) then
-          if !selection_is_empty(selection) then
-            history = history_push_before_edit(history, document, selection)
-            const cut_result = edit_cut(document, selection, clipboard)
-            tabs = apply_edit(tabs, cut_result.document)
-            active = tab_set_active(tabs)
+          if !selection_is_empty(app.ux.selection) then
+            app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const cut_result = edit_cut(document, app.ux.selection, app.clipboard)
+            app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, cut_result.document))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = cut_result.selection
-            multi = multi_selection_from_single(selection)
-            clipboard = cut_result.clipboard
-            clipboard_push_to_os(clipboard)
-            last_command = "context_cut"
+            app = editor_app_set_selection(app, cut_result.selection)
+            multi = multi_selection_from_single(app.ux.selection)
+            app = editor_app_set_clipboard(app, cut_result.clipboard)
+            clipboard_push_to_os(app.clipboard)
+            app = editor_app_set_last_command(app, "context_cut")
           end
         else if context_menu_action_is_paste(menu_click.action) then
-          clipboard = clipboard_pull_from_os(clipboard)
-          history = history_push_before_edit(history, document, selection)
-          const paste_result = edit_paste(document, selection, clipboard)
-          tabs = apply_edit(tabs, paste_result.document)
-          active = tab_set_active(tabs)
+          app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
+          app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+          const paste_result = edit_paste(document, app.ux.selection, app.clipboard)
+          app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, paste_result.document))
+          active = tab_set_active(app.ux.tabs)
           document = active.buffer.document
           frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
           frame = frame_layout.snapshot_cache.snapshot
           line_index = frame.line_index
           draw_text = frame.text
-          selection = paste_result.selection
-          multi = multi_selection_from_single(selection)
-          last_command = "context_paste"
+          app = editor_app_set_selection(app, paste_result.selection)
+          multi = multi_selection_from_single(app.ux.selection)
+          app = editor_app_set_last_command(app, "context_paste")
         end
       end
-      mouse_was_down = input.mouse_down
+      app = editor_app_set_mouse_was_down(app, input.mouse_down)
       mouse_right_was_down = input.mouse_right_down
     else if input.mouse_right_down != 0 && mouse_right_was_down == 0 &&
         point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
-      editor_focused = 1
+      app = editor_app_set_editor_focused(app, 1)
       context_menu = editor_ux_context_menu_open_at(
         context_menu, input.mouse_x, input.mouse_y
       )
-      last_command = "context_menu"
+      app = editor_app_set_last_command(app, "context_menu")
       mouse_right_was_down = input.mouse_right_down
-    else if input.mouse_down != 0 && mouse_was_down == 0 then
+    else if input.mouse_down != 0 && app.mouse_was_down == 0 then
       let mut handled = 0
       let mut tool = 0
       while tool < 10 do
@@ -1206,23 +1201,23 @@ fn main() -> i32 = do
       ) != 0 then
         const loaded = load_demo_session()
         if tab_set_count(loaded) > 0 then
-          tabs = loaded
-          active = tab_set_active(tabs)
+          app = editor_app_set_tabs(app, loaded)
+          active = tab_set_active(app.ux.tabs)
           document = active.buffer.document
           frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
           frame = frame_layout.snapshot_cache.snapshot
           line_index = frame.line_index
           draw_text = frame.text
-          const loaded_view = load_demo_session_view(tabs)
-          selection = selection_collapsed(loaded_view.caret)
-          scroll_offset_y = loaded_view.scroll_offset_y
-          app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+          const loaded_view = load_demo_session_view(app.ux.tabs)
+          app = editor_app_set_selection(app, selection_collapsed(loaded_view.caret))
+          app = editor_app_set_scroll_y(app, loaded_view.scroll_offset_y)
+          app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
           app = editor_app_set_scroll_y(app, loaded_view.scroll_offset_y)
           app = editor_app_set_scroll_x(app, loaded_view.scroll_offset_x)
-          history = history_new()
-          last_command = "session_load"
+          app = editor_app_set_history(app, history_new())
+          app = editor_app_set_last_command(app, "session_load")
         else
-          last_command = "session_load_empty"
+          app = editor_app_set_last_command(app, "session_load_empty")
         end
         handled = 1
       end
@@ -1230,16 +1225,16 @@ fn main() -> i32 = do
       if handled == 0 && shell_panels_divider_hit(panels, input.mouse_x, input.mouse_y) != 0 then
         if dragging_tab_index < 0 then
           panels = shell_panels_begin_drag(panels, input.mouse_x)
-          selecting_text = 0
+          app = editor_app_set_selecting_text(app, 0)
           handled = 1
         end
       end
 
       if handled == 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         app = editor_app_commit_session(
-          app, history, clipboard, overlay, editor_focused, last_command,
-          mouse_was_down, backspace_was_down, enter_was_down, selecting_text
+          app, app.history, app.clipboard, app.overlay, app.editor_focused, app.last_command,
+          app.mouse_was_down, app.backspace_was_down, app.enter_was_down, app.selecting_text
         )
         const close_hit = tab_strip_hit_close_index_from_widths(
           tab_strip, tab_widths, input.mouse_x, input.mouse_y
@@ -1249,14 +1244,8 @@ fn main() -> i32 = do
         )
         if tab_click.handled != 0 then
           app = tab_click.app
-          tabs = app.ux.tabs
-          selection = app.ux.selection
-          history = app.history
-          clipboard = app.clipboard
-          overlay = app.overlay
-          last_command = app.last_command
-          if tab_set_has_active(tabs) then
-            active = tab_set_active(tabs)
+          if tab_set_has_active(app.ux.tabs) then
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
@@ -1281,11 +1270,11 @@ fn main() -> i32 = do
           input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
         )
         app = editor_app_set_scroll_y(app, mapped)
-        scroll_offset_y = mapped
+        app = editor_app_set_scroll_y(app, mapped)
         minimap_drag = 1
         scrollbar_drag = 0
-        selecting_text = 0
-        last_command = "minimap_scroll"
+        app = editor_app_set_selecting_text(app, 0)
+        app = editor_app_set_last_command(app, "minimap_scroll")
         handled = 1
       end
 
@@ -1297,11 +1286,11 @@ fn main() -> i32 = do
             input.mouse_y, text_rect, wrapped_content_height, text_rect.height
           )
           app = editor_app_set_scroll_y(app, mapped_y)
-          scroll_offset_y = mapped_y
+          app = editor_app_set_scroll_y(app, mapped_y)
           scrollbar_drag = 1
           minimap_drag = 0
-          selecting_text = 0
-          last_command = "scrollbar_thumb_drag"
+          app = editor_app_set_selecting_text(app, 0)
+          app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
           handled = 1
         end
       end
@@ -1320,41 +1309,41 @@ fn main() -> i32 = do
           app = editor_app_set_scroll_x(app, mapped_x)
           scrollbar_drag = 2
           minimap_drag = 0
-          selecting_text = 0
-          last_command = "scrollbar_thumb_drag"
+          app = editor_app_set_selecting_text(app, 0)
+          app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
           handled = 1
         end
       end
 
       if handled == 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), text_rect) != 0 then
         if dragging_tab_index < 0 then
-          editor_focused = 1
+          app = editor_app_set_editor_focused(app, 1)
           const click_offset = wrap_offset_at_point_pixel(
             draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-            text_rect.x + 4, text_rect.y + 2, scroll_offset_y, app.ux.scroll_offset_x,
+            text_rect.x + 4, text_rect.y + 2, app.ux.scroll_offset_y, app.ux.scroll_offset_x,
             metrics.line_height,
             input.mouse_x, input.mouse_y
           )
           if glfw_gl_mod_shift_down() != 0 then
-            selection = editor_ux_shift_click_extend(
-              line_index, selection, click_offset, 1
-            )
-            multi = multi_selection_from_single(selection)
+            app = editor_app_set_selection(app, editor_ux_shift_click_extend(
+              line_index, app.ux.selection, click_offset, 1
+            ))
+            multi = multi_selection_from_single(app.ux.selection)
           else if glfw_gl_mod_ctrl_down() != 0 then
             multi = editor_ux_add_cursor(multi, click_offset)
-            selection = multi_selection_primary(multi)
+            app = editor_app_set_selection(app, multi_selection_primary(multi))
           else
-            const click_clock_ms = frame_index * 16
+            const click_clock_ms = app.frame_index * 16
             const multi_result = editor_ux_apply_multi_click(
               line_index, multi_click, click_offset, click_clock_ms
             )
             multi_click = multi_result.state
-            selection = selection_clamp(
+            app = editor_app_set_selection(app, selection_clamp(
               multi_result.selection, line_index.text_length
-            )
-            multi = multi_selection_from_single(selection)
+            ))
+            multi = multi_selection_from_single(app.ux.selection)
           end
-          selecting_text = 1
+          app = editor_app_set_selecting_text(app, 1)
           minimap_drag = 0
           scrollbar_drag = 0
           handled = 1
@@ -1370,8 +1359,8 @@ fn main() -> i32 = do
           )
           scrollbar_drag = 3
           minimap_drag = 0
-          selecting_text = 0
-          last_command = "folder_scrollbar_thumb_drag"
+          app = editor_app_set_selecting_text(app, 0)
+          app = editor_app_set_last_command(app, "folder_scrollbar_thumb_drag")
           handled = 1
         end
       end
@@ -1387,18 +1376,18 @@ fn main() -> i32 = do
           folder_nav,
           last_tree_click_path,
           last_tree_click_frame,
-          frame_index,
+          app.frame_index,
           input.mouse_x,
           input.mouse_y
         )
         if folder_click.handled != 0 then
-          editor_focused = 0
+          app = editor_app_set_editor_focused(app, 0)
           folder_nav = folder_click.folder_nav
           tree_scroll_y = folder_click.tree_scroll_y
           last_tree_click_path = folder_click.last_tree_click_path
           last_tree_click_frame = folder_click.last_tree_click_frame
           if folder_click.last_command.byte_size() > 0 then
-            last_command = folder_click.last_command
+            app = editor_app_set_last_command(app, folder_click.last_command)
           end
           const action = folder_click.action
           if action == folder_click_nav_back() ||
@@ -1429,83 +1418,77 @@ fn main() -> i32 = do
             end
           else if action == folder_click_open_file() then
             const open_path = folder_click.path
-            tabs = open_path_into_tabs(tabs, open_path)
-            active = tab_set_active(tabs)
+            app = editor_app_set_tabs(app, open_path_into_tabs(app.ux.tabs, open_path))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = selection_collapsed(0)
-            history = history_new()
+            app = editor_app_set_selection(app, selection_collapsed(0))
+            app = editor_app_set_history(app, history_new())
           end
-          selecting_text = 0
+          app = editor_app_set_selecting_text(app, 0)
           handled = 1
         end
       end
     end
 
-    if !dirty_close_overlay_is_visible(overlay) then
+    if !dirty_close_overlay_is_visible(app.overlay) then
       let mut binding_key = ""
       if toolbar_tool < 0 then
         binding_key = pending_binding_key
         pending_binding_key = ""
       end
-      if editor_focused != 0 && editor_ux_is_nav_key(binding_key) then
+      if app.editor_focused != 0 && editor_ux_is_nav_key(binding_key) then
         if glfw_gl_mod_ctrl_down() != 0 &&
             (binding_key == "left" || binding_key == "right") then
-          selection = editor_ux_apply_word_nav_key(
+          app = editor_app_set_selection(app, editor_ux_apply_word_nav_key(
             line_index,
-            selection,
+            app.ux.selection,
             binding_key,
             glfw_gl_mod_shift_down()
-          )
-          last_command = "nav_word_" + binding_key
+          ))
+          app = editor_app_set_last_command(app, "nav_word_" + binding_key)
         else
-          selection = editor_ux_apply_nav_key(
+          app = editor_app_set_selection(app, editor_ux_apply_nav_key(
             line_index,
-            selection,
+            app.ux.selection,
             view_metrics,
             binding_key,
             glfw_gl_mod_shift_down()
-          )
-          last_command = "nav_" + binding_key
+          ))
+          app = editor_app_set_last_command(app, "nav_" + binding_key)
         end
-        multi = multi_selection_from_single(selection)
+        multi = multi_selection_from_single(app.ux.selection)
         binding_key = ""
       end
-      if editor_focused != 0 && binding_key == "delete" &&
+      if app.editor_focused != 0 && binding_key == "delete" &&
           glfw_gl_mod_ctrl_down() != 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         app = editor_app_delete_word_forward(app)
-        tabs = app.ux.tabs
-        selection = app.ux.selection
-        multi = multi_selection_from_single(selection)
-        history = app.history
-        active = tab_set_active(tabs)
+        multi = multi_selection_from_single(app.ux.selection)
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
-        last_command = "delete_word_forward"
+        app = editor_app_set_last_command(app, "delete_word_forward")
         binding_key = ""
       end
-      if editor_focused != 0 && binding_key == "tab" &&
+      if app.editor_focused != 0 && binding_key == "tab" &&
           glfw_gl_mod_ctrl_down() == 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         if glfw_gl_mod_shift_down() != 0 then
           app = editor_app_outdent_lines(app, indent_config)
-          last_command = "outdent"
+          app = editor_app_set_last_command(app, "outdent")
         else
           app = editor_app_indent_tab(app, indent_config)
-          last_command = "indent"
+          app = editor_app_set_last_command(app, "indent")
         end
-        tabs = app.ux.tabs
-        selection = app.ux.selection
-        multi = multi_selection_from_single(selection)
-        history = app.history
-        active = tab_set_active(tabs)
+        multi = multi_selection_from_single(app.ux.selection)
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
@@ -1516,122 +1499,120 @@ fn main() -> i32 = do
       const dispatch_command = editor_app_frame_command_from_inputs(
         toolbar_tool,
         command_bindings,
-        editor_focused,
+        app.editor_focused,
         glfw_gl_mod_ctrl_down(),
         glfw_gl_mod_shift_down(),
         glfw_gl_mod_alt_down(),
         binding_key
       )
       if command_id_tag(dispatch_command) != "none" then
-        last_command = command_id_tag(dispatch_command)
+        app = editor_app_set_last_command(app, command_id_tag(dispatch_command))
         match dispatch_command
         | CmdPrevTab => do
-            tabs = tab_set_activate_prev(tabs)
-            active = tab_set_active(tabs)
+            app = editor_app_set_tabs(app, tab_set_activate_prev(app.ux.tabs))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = selection_collapsed(0)
-            history = history_new()
+            app = editor_app_set_selection(app, selection_collapsed(0))
+            app = editor_app_set_history(app, history_new())
           end
         | CmdNextTab => do
-            tabs = tab_set_activate_next(tabs)
-            active = tab_set_active(tabs)
+            app = editor_app_set_tabs(app, tab_set_activate_next(app.ux.tabs))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = selection_collapsed(0)
-            history = history_new()
+            app = editor_app_set_selection(app, selection_collapsed(0))
+            app = editor_app_set_history(app, history_new())
           end
         | CmdCloseTab => do
-            const close_outcome = tab_set_request_close(tabs, tabs.active_index)
-            tabs = close_outcome.tabs
-            overlay = close_outcome.overlay
-            if !dirty_close_overlay_is_visible(overlay) && tab_set_has_active(tabs) then
-              active = tab_set_active(tabs)
+            const close_outcome = tab_set_request_close(app.ux.tabs, app.ux.tabs.active_index)
+            app = editor_app_set_tabs(app, close_outcome.tabs)
+            app = editor_app_set_overlay(app, close_outcome.overlay)
+            if !dirty_close_overlay_is_visible(app.overlay) && tab_set_has_active(app.ux.tabs) then
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
               line_index = frame.line_index
               draw_text = frame.text
-              selection = selection_collapsed(0)
-              history = history_new()
+              app = editor_app_set_selection(app, selection_collapsed(0))
+              app = editor_app_set_history(app, history_new())
             end
           end
         | CmdUndo => do
-            const undo_result = history_undo(history, document, selection)
+            const undo_result = history_undo(app.history, document, app.ux.selection)
             if undo_result.applied != 0 then
-              history = undo_result.history
-              tabs = apply_edit(tabs, undo_result.document)
-              active = tab_set_active(tabs)
+              app = editor_app_set_history(app, undo_result.history)
+              app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, undo_result.document))
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
               line_index = frame.line_index
               draw_text = frame.text
-              selection = undo_result.selection
+              app = editor_app_set_selection(app, undo_result.selection)
             end
           end
         | CmdRedo => do
-            const redo_result = history_redo(history, document, selection)
+            const redo_result = history_redo(app.history, document, app.ux.selection)
             if redo_result.applied != 0 then
-              history = redo_result.history
-              tabs = apply_edit(tabs, redo_result.document)
-              active = tab_set_active(tabs)
+              app = editor_app_set_history(app, redo_result.history)
+              app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, redo_result.document))
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
               line_index = frame.line_index
               draw_text = frame.text
-              selection = redo_result.selection
+              app = editor_app_set_selection(app, redo_result.selection)
             end
           end
         | CmdSelectAll => do
-            selection = edit_select_all(document)
+            app = editor_app_set_selection(app, edit_select_all(document))
           end
         | CmdFind => do
             const find_applied = find_session_seed_from_selection(
-              find_session, draw_text, selection
+              find_session, draw_text, app.ux.selection
             )
             find_session = find_applied.session
-            selection = find_applied.selection
+            app = editor_app_set_selection(app, find_applied.selection)
           end
         | CmdFindNext => do
-            const find_next_applied = find_session_next(find_session, selection)
+            const find_next_applied = find_session_next(find_session, app.ux.selection)
             find_session = find_next_applied.session
-            selection = find_next_applied.selection
+            app = editor_app_set_selection(app, find_next_applied.selection)
           end
         | CmdFindPrev => do
-            const find_prev_applied = find_session_prev(find_session, selection)
+            const find_prev_applied = find_session_prev(find_session, app.ux.selection)
             find_session = find_prev_applied.session
-            selection = find_prev_applied.selection
+            app = editor_app_set_selection(app, find_prev_applied.selection)
           end
         | CmdGotoLine => do
-            app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+            app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
             app = editor_app_goto_line_from_selection(app, metrics, line_index)
-            selection = app.ux.selection
-            scroll_offset_y = app.ux.scroll_offset_y
           end
         | CmdReplaceOne => do
-            clipboard = clipboard_pull_from_os(clipboard)
-            if !clipboard_is_empty(clipboard) then
+            app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
+            if !clipboard_is_empty(app.clipboard) then
               find_session = find_session_set_replacement(
-                find_session, clipboard_get(clipboard)
+                find_session, clipboard_get(app.clipboard)
               )
             end
             const replace_one_result = find_replace_one(
-              find_session, draw_text, selection
+              find_session, draw_text, app.ux.selection
             )
             if replace_one_result.text != draw_text then
-              history = history_push_before_edit(history, document, selection)
-              tabs = apply_edit(
-                tabs, document_from_string(replace_one_result.text)
-              )
-              active = tab_set_active(tabs)
+              app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+              app = editor_app_set_tabs(app, apply_edit(
+                app.ux.tabs, document_from_string(replace_one_result.text)
+              ))
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
@@ -1639,24 +1620,24 @@ fn main() -> i32 = do
               draw_text = frame.text
             end
             find_session = replace_one_result.session
-            selection = replace_one_result.selection
+            app = editor_app_set_selection(app, replace_one_result.selection)
           end
         | CmdReplaceAll => do
-            clipboard = clipboard_pull_from_os(clipboard)
-            if !clipboard_is_empty(clipboard) then
+            app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
+            if !clipboard_is_empty(app.clipboard) then
               find_session = find_session_set_replacement(
-                find_session, clipboard_get(clipboard)
+                find_session, clipboard_get(app.clipboard)
               )
             end
             const replace_all_result = find_replace_all(
-              find_session, draw_text, selection
+              find_session, draw_text, app.ux.selection
             )
             if replace_all_result.text != draw_text then
-              history = history_push_before_edit(history, document, selection)
-              tabs = apply_edit(
-                tabs, document_from_string(replace_all_result.text)
-              )
-              active = tab_set_active(tabs)
+              app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+              app = editor_app_set_tabs(app, apply_edit(
+                app.ux.tabs, document_from_string(replace_all_result.text)
+              ))
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
@@ -1664,17 +1645,14 @@ fn main() -> i32 = do
               draw_text = frame.text
             end
             find_session = replace_all_result.session
-            selection = replace_all_result.selection
+            app = editor_app_set_selection(app, replace_all_result.selection)
           end
         | CmdToggleLineComment => do
-            app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+            app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
             const comment_language = status_bar_language_from_path(active.path)
             app = editor_app_toggle_line_comment(app, comment_language)
-            tabs = app.ux.tabs
-            selection = app.ux.selection
-            multi = multi_selection_from_single(selection)
-            history = app.history
-            active = tab_set_active(tabs)
+            multi = multi_selection_from_single(app.ux.selection)
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
@@ -1682,56 +1660,55 @@ fn main() -> i32 = do
             draw_text = frame.text
           end
         | CmdCopy => do
-            clipboard = edit_copy(document, selection, clipboard)
-            clipboard_push_to_os(clipboard)
+            app = editor_app_set_clipboard(app, edit_copy(document, app.ux.selection, app.clipboard))
+            clipboard_push_to_os(app.clipboard)
           end
         | CmdCut => do
-            history = history_push_before_edit(history, document, selection)
-            const cut_result = edit_cut(document, selection, clipboard)
-            tabs = apply_edit(tabs, cut_result.document)
-            active = tab_set_active(tabs)
+            app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const cut_result = edit_cut(document, app.ux.selection, app.clipboard)
+            app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, cut_result.document))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = cut_result.selection
-            clipboard = cut_result.clipboard
-            clipboard_push_to_os(clipboard)
+            app = editor_app_set_selection(app, cut_result.selection)
+            app = editor_app_set_clipboard(app, cut_result.clipboard)
+            clipboard_push_to_os(app.clipboard)
           end
         | CmdPaste => do
-            clipboard = clipboard_pull_from_os(clipboard)
-            history = history_push_before_edit(history, document, selection)
-            const paste_result = edit_paste(document, selection, clipboard)
-            tabs = apply_edit(tabs, paste_result.document)
-            active = tab_set_active(tabs)
+            app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
+            app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const paste_result = edit_paste(document, app.ux.selection, app.clipboard)
+            app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, paste_result.document))
+            active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
             frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
-            selection = paste_result.selection
+            app = editor_app_set_selection(app, paste_result.selection)
           end
         | CmdSave => do
             if save_demo_session(
-              tabs,
-              selection_caret(selection),
-              scroll_offset_y,
+              app.ux.tabs,
+              selection_caret(app.ux.selection),
+              app.ux.scroll_offset_y,
               app.ux.scroll_offset_x
             ) != 0 then
-              last_command = "session_save"
+              app = editor_app_set_last_command(app, "session_save")
             else
-              last_command = "session_save_fail"
+              app = editor_app_set_last_command(app, "session_save_fail")
             end
           end
         | CmdNone => do
-            last_command = last_command
           end
         end
       end
     end
 
-    if !dirty_close_overlay_is_visible(overlay) then
+    if !dirty_close_overlay_is_visible(app.overlay) then
       if input.mouse_down != 0 && panels.dragging != 0 then
         panels = shell_panels_drag_to(panels, input.mouse_x)
       end
@@ -1741,8 +1718,8 @@ fn main() -> i32 = do
           input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
         )
         app = editor_app_set_scroll_y(app, mapped_drag)
-        scroll_offset_y = mapped_drag
-        last_command = "minimap_scroll"
+        app = editor_app_set_scroll_y(app, mapped_drag)
+        app = editor_app_set_last_command(app, "minimap_scroll")
       end
       if input.mouse_down != 0 && scrollbar_drag == 1 &&
           panels.dragging == 0 && minimap_drag == 0 then
@@ -1750,8 +1727,8 @@ fn main() -> i32 = do
           input.mouse_y, text_rect, wrapped_content_height, text_rect.height
         )
         app = editor_app_set_scroll_y(app, mapped_sb_y)
-        scroll_offset_y = mapped_sb_y
-        last_command = "scrollbar_thumb_drag"
+        app = editor_app_set_scroll_y(app, mapped_sb_y)
+        app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
       end
       if input.mouse_down != 0 && scrollbar_drag == 2 &&
           panels.dragging == 0 && minimap_drag == 0 then
@@ -1765,56 +1742,54 @@ fn main() -> i32 = do
           input.mouse_x, text_rect, drag_content_width_move, text_rect.width
         )
         app = editor_app_set_scroll_x(app, mapped_sb_x)
-        last_command = "scrollbar_thumb_drag"
+        app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
       end
       if input.mouse_down != 0 && scrollbar_drag == 3 &&
           panels.dragging == 0 && minimap_drag == 0 then
         tree_scroll_y = folder_scrollbar_scroll_at_y(
           input.mouse_y, tree_list_rect, folder_rows.length()
         )
-        last_command = "folder_scrollbar_thumb_drag"
+        app = editor_app_set_last_command(app, "folder_scrollbar_thumb_drag")
       end
-      if input.mouse_down != 0 && selecting_text != 0 &&
+      if input.mouse_down != 0 && app.selecting_text != 0 &&
           panels.dragging == 0 && dragging_tab_index < 0 &&
           minimap_drag == 0 && scrollbar_drag == 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
-        app = editor_app_set_scroll_y(app, scroll_offset_y)
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
+        app = editor_app_set_scroll_y(app, app.ux.scroll_offset_y)
         app = editor_app_drag_text_autoscroll(
           app, metrics, input.mouse_x, input.mouse_y, line_index
         )
-        selection = app.ux.selection
-        scroll_offset_y = app.ux.scroll_offset_y
       end
-      if input.mouse_down == 0 && mouse_was_down != 0 then
+      if input.mouse_down == 0 && app.mouse_was_down != 0 then
         panels = shell_panels_end_drag(panels)
         if dragging_tab_index >= 0 then
           const drop_hit = tab_strip_hit_index_from_widths(
             tab_strip, tab_widths, input.mouse_x, input.mouse_y
           )
           if drop_hit >= 0 && drop_hit != dragging_tab_index then
-            tabs = tab_set_move(tabs, dragging_tab_index, drop_hit)
-            if tab_set_has_active(tabs) then
-              active = tab_set_active(tabs)
+            app = editor_app_set_tabs(app, tab_set_move(app.ux.tabs, dragging_tab_index, drop_hit))
+            if tab_set_has_active(app.ux.tabs) then
+              active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
               frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
               frame = frame_layout.snapshot_cache.snapshot
               line_index = frame.line_index
               draw_text = frame.text
-              selection = selection_collapsed(0)
+              app = editor_app_set_selection(app, selection_collapsed(0))
             end
-            last_command = "reorder_tab"
+            app = editor_app_set_last_command(app, "reorder_tab")
           end
           dragging_tab_index = 0 - 1
         end
-        selecting_text = 0
+        app = editor_app_set_selecting_text(app, 0)
         minimap_drag = 0
         scrollbar_drag = 0
       end
-      mouse_was_down = input.mouse_down
+      app = editor_app_set_mouse_was_down(app, input.mouse_down)
       mouse_right_was_down = input.mouse_right_down
 
       if input.text_buffer.length() > 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         if multi_selection_count(multi) > 1 then
           const multi_insert = editor_app_insert_text_with_multi(
             app, multi, input.text_buffer
@@ -1825,57 +1800,48 @@ fn main() -> i32 = do
           app = editor_app_insert_text(app, input.text_buffer)
           multi = multi_selection_from_single(app.ux.selection)
         end
-        tabs = app.ux.tabs
-        selection = app.ux.selection
-        history = app.history
-        active = tab_set_active(tabs)
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
       end
-      if input.enter != 0 && enter_was_down == 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+      if input.enter != 0 && app.enter_was_down == 0 then
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         app = editor_app_insert_newline(app)
-        tabs = app.ux.tabs
-        selection = app.ux.selection
-        multi = multi_selection_from_single(selection)
-        history = app.history
-        active = tab_set_active(tabs)
+        multi = multi_selection_from_single(app.ux.selection)
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
       end
-      if input.backspace != 0 && backspace_was_down == 0 then
-        app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+      if input.backspace != 0 && app.backspace_was_down == 0 then
+        app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         if glfw_gl_mod_ctrl_down() != 0 then
           app = editor_app_delete_word_backward(app)
-          last_command = "delete_word_backward"
+          app = editor_app_set_last_command(app, "delete_word_backward")
         else
           app = editor_app_backspace(app)
         end
-        tabs = app.ux.tabs
-        selection = app.ux.selection
-        multi = multi_selection_from_single(selection)
-        history = app.history
-        active = tab_set_active(tabs)
+        multi = multi_selection_from_single(app.ux.selection)
+        active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
         frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
       end
-      enter_was_down = input.enter
-      backspace_was_down = input.backspace
+      app = editor_app_set_enter_was_down(app, input.enter)
+      app = editor_app_set_backspace_was_down(app, input.backspace)
     else
-      mouse_was_down = input.mouse_down
+      app = editor_app_set_mouse_was_down(app, input.mouse_down)
     end
 
-    tabs = ensure_tabs(tabs, panels)
-    active = tab_set_active(tabs)
+    app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
+    active = tab_set_active(app.ux.tabs)
     document = active.buffer.document
     if !line_index_matches_document(frame.line_index, document) then
       frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
@@ -1883,7 +1849,7 @@ fn main() -> i32 = do
     end
     line_index = frame.line_index
     draw_text = frame.text
-    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
     app = editor_app_ensure_caret_visible(app, metrics, line_index)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
@@ -1905,21 +1871,20 @@ fn main() -> i32 = do
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height_now, text_rect.height
     )
-    scroll_offset_y = app.ux.scroll_offset_y
-    visible = visible_line_range(line_index_line_count(line_index), scroll_offset_y, viewport)
+    visible = visible_line_range(line_index_line_count(line_index), app.ux.scroll_offset_y, viewport)
     visual_rows = collect_visible_visual_rows_pixel_budget(
       draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
-      scroll_offset_y / metrics.line_height, visible_row_budget
+      app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
     )
     if perf_enabled then
       perf_layout_us = editor_perf_now_us() - perf_layout_t0
     end
 
-    // Refresh classic tab layout after input may have changed tabs.
+    // Refresh classic tab layout after input may have changed app.ux.tabs.
     tab_display_titles = []
     tab_title_index = 0
-    while tab_title_index < tab_set_count(tabs) do
-      const hover_layout_tab = tabs.tabs[tab_title_index]
+    while tab_title_index < tab_set_count(app.ux.tabs) do
+      const hover_layout_tab = app.ux.tabs.tabs[tab_title_index]
       let mut hover_layout_title = hover_layout_tab.name
       if tab_is_dirty(hover_layout_tab) then
         hover_layout_title = hover_layout_title + "*"
@@ -1956,7 +1921,7 @@ fn main() -> i32 = do
       let mut tab_base_red = theme.panel_red
       let mut tab_base_green = theme.panel_green
       let mut tab_base_blue = theme.panel_blue
-      if hover_tab_index == tabs.active_index then
+      if hover_tab_index == app.ux.tabs.active_index then
         tab_base_red = theme.selection_red
         tab_base_green = theme.selection_green
         tab_base_blue = theme.selection_blue
@@ -2102,7 +2067,7 @@ fn main() -> i32 = do
     solid = solid_renderer_begin(solid)
     editor_gl_scissor_enable_rect(height, content_clip)
 
-    // Glyph colors carry Solarized tags; selection highlight rects stay below.
+    // Glyph colors carry Solarized tags; app.ux.selection highlight rects stay below.
     // One full-buffer span cache for paint + minimap (scroll does not re-lex).
     // Perf smoke: skip O(n) full-buffer lex + minimap rebuild on 100k fixtures.
     let mut syntax_spans = frame_layout.span_cache.spans
@@ -2113,7 +2078,7 @@ fn main() -> i32 = do
       syntax_spans = frame_layout.span_cache.spans
     end
 
-    // Current-line band under find/selection (Decision: panel tint ~0.55).
+    // Current-line band under find/app.ux.selection (Decision: panel tint ~0.55).
     const current_line_metrics = EditorTextMetrics {
       line_height: metrics.line_height,
       char_width: metrics.char_width
@@ -2135,7 +2100,7 @@ fn main() -> i32 = do
       current_line_index = current_line_index + 1
     end
 
-    // Trailing whitespace runs (Decision: muted selection tint).
+    // Trailing whitespace runs (Decision: muted app.ux.selection tint).
     const trailing_ws_report = editor_ux_trailing_ws_draw_report(
       app.ux, current_line_metrics, line_index
     )
@@ -2222,7 +2187,7 @@ fn main() -> i32 = do
       multi_index = multi_index + 1
     end
 
-    // multi_caret_draw: one caret per multi selection range
+    // multi_caret_draw: one caret per multi app.ux.selection range
     // idle_multi_caret_overlay: refill last_caret_rects for paint-only blink
     const blink_on = caret_blink_visible(
       clock_ms,
@@ -2248,7 +2213,7 @@ fn main() -> i32 = do
         draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
         caret_position.line, caret_position.column
       )
-      const caret_row = caret_visual - (scroll_offset_y / metrics.line_height)
+      const caret_row = caret_visual - (app.ux.scroll_offset_y / metrics.line_height)
       if caret_row >= 0 && caret_row < visual_rows.length() then
         const caret_row_info = visual_rows[caret_row]
         const caret_x = text_pen_x + pixel_x_for_byte_offset(
@@ -2282,7 +2247,7 @@ fn main() -> i32 = do
     const editor_hovered =
       point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)
     const content_thumb = editor_ux_content_scrollbar_thumb(
-      editor_hovered, text_rect, wrapped_content_height_now, scroll_offset_y
+      editor_hovered, text_rect, wrapped_content_height_now, app.ux.scroll_offset_y
     )
     if content_thumb.width > 0 then
       const content_thumb_slot = rect_new(
@@ -2323,7 +2288,7 @@ fn main() -> i32 = do
     if minimap_enabled != 0 then
       editor_gl_scissor_enable_rect(height, minimap_rect)
       const minimap_indicator = editor_ux_minimap_viewport_indicator(
-        minimap_rect, wrapped_content_height_now, text_rect.height, scroll_offset_y
+        minimap_rect, wrapped_content_height_now, text_rect.height, app.ux.scroll_offset_y
       )
       if minimap_indicator.width > 0 then
         solid = solid_renderer_rect(
@@ -2335,7 +2300,7 @@ fn main() -> i32 = do
       end
     end
 
-    if dirty_close_overlay_is_visible(overlay) then
+    if dirty_close_overlay_is_visible(app.overlay) then
       editor_gl_scissor_disable()
       solid = solid_renderer_rect(
         solid, width, height, width / 2 - 180, height / 2 - 70, 360, 140,
@@ -2398,14 +2363,14 @@ fn main() -> i32 = do
     let mut chrome_lines: [StaticTextLine] = []
     chrome_lines = push_line(
       chrome_lines,
-      "mlc-editor MVP  SessSave/Load  cmd=" + last_command,
+      "mlc-editor MVP  SessSave/Load  cmd=" + app.last_command,
       13, 12, 20
     )
 
     tab_display_titles = []
     tab_title_index = 0
-    while tab_title_index < tab_set_count(tabs) do
-      const draw_tab = tabs.tabs[tab_title_index]
+    while tab_title_index < tab_set_count(app.ux.tabs) do
+      const draw_tab = app.ux.tabs.tabs[tab_title_index]
       let mut draw_title = draw_tab.name
       if tab_is_dirty(draw_tab) then
         draw_title = draw_title + "*"
@@ -2418,7 +2383,7 @@ fn main() -> i32 = do
     )
 
     let mut tab_index = 0
-    while tab_index < tab_set_count(tabs) do
+    while tab_index < tab_set_count(app.ux.tabs) do
       const title = tab_display_titles[tab_index]
       const title_rect = tab_strip_title_rect_from_widths(
         tab_strip, tab_widths, tab_index
@@ -2519,14 +2484,14 @@ fn main() -> i32 = do
 
     const status = status_bar_format(
       status_bar_from_buffer(
-        active.buffer, selection_caret(selection), line_index
+        active.buffer, selection_caret(app.ux.selection), line_index
       )
     )
     chrome_lines = push_line(chrome_lines, status, 12, 12, height - 8)
 
-    if dirty_close_overlay_is_visible(overlay) then
+    if dirty_close_overlay_is_visible(app.overlay) then
       chrome_lines = push_line(
-        chrome_lines, "Close dirty tab? " + overlay.name, 15,
+        chrome_lines, "Close dirty tab? " + app.overlay.name, 15,
         width / 2 - 140, height / 2 - 30
       )
       chrome_lines = push_line(
@@ -2677,10 +2642,10 @@ fn main() -> i32 = do
 
     glfw_gl_context_swap_poll()
     app = editor_app_commit_session(
-      app, history, clipboard, overlay, editor_focused, last_command,
-      mouse_was_down, backspace_was_down, enter_was_down, selecting_text
+      app, app.history, app.clipboard, app.overlay, app.editor_focused, app.last_command,
+      app.mouse_was_down, app.backspace_was_down, app.enter_was_down, app.selecting_text
     )
-    app = editor_app_sync_shell(app, width, height, panels, tabs, selection)
+    app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
     app = editor_app_bump_frame(app)
   end
 

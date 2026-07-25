@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:08 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c EDITOR_UX_PROBE_FROM_LIVE_STATE) |
+| started | 2026-07-25 15:03 |
+| elapsed | ~5 min |
+| done    | Kill loop-head `app` unpack; mutate via `editor_app_set_*` + `app`/`app.ux` reads; green stable |
+| verify  | stable EXIT=0 `ux_ok editor_app_unpack`; red EXIT=1; `demo_live_fs_compile_ok`; §97a perf `ux_ok demo_live_perf` frames=30 |
+| result  | §97c STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c) |
+
 ### Turn 2026-07-25 15:02 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=1)
 
 | field   | value |
