@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:38 (Driver TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:38 |
+| elapsed | ~5 min |
+| done    | Green: `document_line_start_before` + `document_byte_slice` indent; zero `document_to_string` in newline path |
+| verify  | `ux_ok newline_indent_no_full_stringify`; edit_unit ok; `ux_ok newline_caret_and_spaces` |
+| result  | §98 STEP=2 done; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:37 (Driver TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |

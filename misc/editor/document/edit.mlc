@@ -158,6 +158,19 @@ export fn edit_insert_text_autoclose(
   edit_insert_text(document, selection, text)
 end
 
+// Byte offset of current line start (after previous '\n', or 0).
+fn document_line_start_before(document: TextDocument, offset: i32) -> i32 = do
+  let mut index = offset
+  while index > 0 do
+    const previous = index - 1
+    if document_byte_slice(document, previous, index) == "\n" then
+      return index
+    end
+    index = previous
+  end
+  0
+end
+
 export fn edit_insert_newline(
   document: TextDocument,
   selection: EditorSelection
@@ -169,11 +182,9 @@ export fn edit_insert_newline(
     working = cleared.document
     caret = selection_start(cleared.selection)
   end
-  const text = document_to_string(working)
-  const line_index = line_index_from_string(text)
-  const position = line_index_offset_to_position(line_index, text, caret)
-  const line_start = line_index_line_start(line_index, position.line)
-  const indent = leading_indent_of_line(text, line_start)
+  const line_start = document_line_start_before(working, caret)
+  const prefix = document_byte_slice(working, line_start, caret)
+  const indent = leading_indent_of_line(prefix, 0)
   edit_insert_text(working, selection_collapsed(caret), "\n" + indent)
 end
 
