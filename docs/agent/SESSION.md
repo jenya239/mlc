@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:25 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_cache STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache→frame_layout) |
+| started | 2026-07-25 14:20 |
+| elapsed | ~5 min |
+| done    | Froze Decision: extend `EditorFrameLayout` with `DocumentFrameSnapshotCache` + `frame_layout_tick_snapshot`; replace ~25 direct `frame_snapshot_cache_tick` in `demo_live`; no algo change; OOS span/minimap/§97c |
+| verify  | `grep -c frame_snapshot_cache_tick demo_live` = 26 (import+calls); gap for STEP=1 |
+| result  | §97b frame_cache STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache) |
+
 ### Turn 2026-07-25 14:20 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b)
 
 | field   | value |

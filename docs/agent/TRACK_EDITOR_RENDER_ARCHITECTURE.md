@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b wrap→`frame_layout` **closed** (Critic OK); next Driver STEP=0 Decision (next extract)
+## Status: **open** — §97b frame_cache Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -96,9 +96,30 @@ own separate locals can silently diverge from it.
 <!-- STEP=2: EditorFrameLayout + tick; demo_live uses frame_layout_tick_pixel; zero wrap_count_cache_tick_pixel in demo_live -->
 <!-- STEP=3: Critic — stable×2 + wrap_count_cache_stable + perf smoke + run_ux_gate×2 (107); first slice closed; residual: dual frame_layout_tick early/late; next extract = frame_cache -->
 
-#### Next extract (pending Decision)
+#### Next extract — `frame_cache` / snapshot tick consolidation
 
-Fold `frame_cache` / `frame_snapshot_cache_tick` consolidation into `frame_layout` (or sibling app module) — freeze as STEP=0 before red.
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | After wrap extract, `demo_live` still calls `frame_snapshot_cache_tick` from **~25** scattered edit/input branches (plus the per-frame dirty tick). Miss one → stale `frame`/`line_index`/`draw_text`. Snapshot cache is still a bare local, not part of `EditorFrameLayout` |
+| Strategy (v1) | Extend `app/frame_layout.mlc`: `EditorFrameLayout` owns `DocumentFrameSnapshotCache` alongside wrap fields; add `frame_layout_tick_snapshot(layout, document, dirty)` (thin wrap of `frame_snapshot_cache_tick`) returning updated layout; `demo_live` replaces every direct `frame_snapshot_cache_tick(...)` + `frame = frame_cache.snapshot` with that API (and reads snapshot from layout). **No algorithm change** to snapshotting. Do **not** collapse the early/late wrap ticks in this slice. Do **not** touch `shared_span_cache` / `minimap_cache` / §97c |
+| Primary gate | Red: ≥10 direct `frame_snapshot_cache_tick(` in `demo_live` / no `frame_layout_tick_snapshot`. Green: demo uses `frame_layout_tick_snapshot`; direct tick count = 0 in `demo_live`; compile + Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/app/frame_layout.mlc`; `demo_live.mlc`; red/stable scripts |
+| REG | no |
+| Out of scope | wrap algorithm; span/minimap caches; unified `EditorUxState` (§97c); command bus |
+
+#### Steps (§97b — slice: snapshot → `frame_layout`)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: many inline `frame_snapshot_cache_tick` / no snapshot API on layout | pending |
+| 2 | Green: own cache on `EditorFrameLayout`; wire all demo_live sites | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — grep -c frame_snapshot_cache_tick( ≥10; missing frame_layout_tick_snapshot -->
+<!-- STEP=2: extend EditorFrameLayout; zero direct ticks in demo_live -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
