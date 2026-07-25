@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b STEP=0 Decision **done**; next Driver STEP=1 (red)
+## Status: **open** — §97b STEP=1 red **done**; next Driver STEP=2 (green)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -88,11 +88,11 @@ own separate locals can silently diverge from it.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: wrap still dual-inline / no `frame_layout.mlc` | pending |
+| 1 | Red: wrap still dual-inline / no `frame_layout.mlc` | **done** (`run_editor_frame_layout_wrap_red.sh`) |
 | 2 | Green: extract wrap into `app/frame_layout.mlc`; wire `demo_live` | pending |
 | 3 | Critic: stable×2 + related + `run_ux_gate` + §97a perf smoke | pending |
 
-<!-- STEP=1: red harness — grep dual wrap_count_cache_tick_pixel; missing frame_layout -->
+<!-- STEP=1: red — no frame_layout.mlc; ≥2 wrap_count_cache_tick_pixel(; stable stub not implemented -->
 <!-- STEP=2: EditorFrameLayout + tick; demo_live single call site; perf smoke still green -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`

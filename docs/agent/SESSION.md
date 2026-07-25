@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:20 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b EDITOR_FRAME_SPLIT) |
+| started | 2026-07-25 14:15 |
+| elapsed | ~5 min |
+| done    | Red harness `run_editor_frame_layout_wrap_red.sh` + stable stub `run_editor_frame_layout_wrap_stable.sh` (`not implemented`); gap = no `app/frame_layout.mlc`, ≥2 inline `wrap_count_cache_tick_pixel(` in `demo_live` |
+| verify  | red EXIT=0 `ux_ok frame_layout_wrap_red`; stable EXIT=1 `not implemented` |
+| result  | §97b STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b) |
+
 ### Turn 2026-07-25 14:15 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=0)
 
 | field   | value |
