@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §91.
 Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md)
 (§90) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — `tab_set_open_buffer` in `editor_ux_click_tree`; green stable.
+**STEP=3** — Critic: stable + related + `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `3c4cbf99` | Decision: tree click via `tab_set_open_buffer` |
-| 1 | (this) | Red: `open_text` + `tab_set_open`; stable stub |
+| 1 | `53314c77` | Red: `open_text` + `tab_set_open`; stable stub |
+| 2 | (this) | `OpenBuffer` + `tab_set_open_buffer`; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,10 @@ Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](../archive/tracks/TRACK_E
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: tree click still stringifies | **done** |
-| 2 | `tab_set_open_buffer` in click_tree; green | pending |
+| 2 | `tab_set_open_buffer` in click_tree; green | **done** |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
-<!-- STEP=2 sub-steps: 1) signature → OpenBuffer + tab_set_open_buffer; 2) update scenario; 3) green stable -->
+<!-- STEP=2: signature OpenBuffer + tab_set_open_buffer; scenario open_buffer_from_text -->
 
 ## Out of scope
 

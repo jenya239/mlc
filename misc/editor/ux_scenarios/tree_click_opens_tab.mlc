@@ -22,6 +22,7 @@ import {
   tab_set_new,
   tab_set_active
 } from '../workspace/tabs'
+import { open_buffer_from_text } from '../document/save'
 import { selection_collapsed } from '../document/selection'
 import {
   editor_ux_state_new,
@@ -91,7 +92,7 @@ fn main() -> i32 = do
     row_height,
     readme_rect.x + 4,
     readme_rect.y + 4,
-    "readme-body"
+    open_buffer_from_text("/proj/README.md", "readme-body")
   )
 
   let mut snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
@@ -115,7 +116,7 @@ fn main() -> i32 = do
     row_height,
     main_rect.x + 4,
     main_rect.y + 4,
-    "main-body"
+    open_buffer_from_text("/proj/main.mlc", "main-body")
   )
   snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if snapshot.tabs.length() != 2 then
@@ -138,7 +139,7 @@ fn main() -> i32 = do
     row_height,
     root_rect.x + 4,
     root_rect.y + 4,
-    "ignored"
+    open_buffer_from_text("/proj", "ignored")
   )
   snapshot = editor_ux_snapshot(state, line_index_from_document(tab_set_active(state.tabs).buffer.document))
   if snapshot.tabs.length() != tabs_before then

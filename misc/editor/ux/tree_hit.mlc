@@ -6,7 +6,8 @@ import {
 } from '../../gui/ux/snapshot'
 import { ux_rect_contains_point } from '../../gui/ux/expect'
 import { FileTree } from '../workspace/file_tree'
-import { tab_set_open } from '../workspace/tabs'
+import { tab_set_open_buffer } from '../workspace/tabs'
+import { OpenBuffer } from '../document/save'
 import { selection_collapsed } from '../document/selection'
 import {
   ShellPanels,
@@ -140,12 +141,13 @@ export fn shell_panels_set_tree(panels: ShellPanels, tree: FileTree) -> ShellPan
   }
 
 // Click file row → open/activate tab. Directory / miss → tabs unchanged.
+// TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY — open via OpenBuffer (no string flatten).
 export fn editor_ux_click_tree(
   state: EditorUxState,
   row_height: i32,
   point_x: i32,
   point_y: i32,
-  open_text: string
+  open_buffer: OpenBuffer
 ) -> EditorUxState = do
   const tree_rect = shell_panels_tree_rect(state.panels)
   const bounds = ux_rect_new(
@@ -186,7 +188,7 @@ export fn editor_ux_click_tree(
     window_height: state.window_height,
     focus: ux_focus_tree(),
     panels: state.panels,
-    tabs: tab_set_open(state.tabs, node.path, open_text),
+    tabs: tab_set_open_buffer(state.tabs, node.path, open_buffer),
     selection: selection_collapsed(0),
     scroll_offset_x: state.scroll_offset_x,
     scroll_offset_y: state.scroll_offset_y,
