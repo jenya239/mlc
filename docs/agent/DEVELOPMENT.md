@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic STEP=3 `TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (§86).
-**`TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (§86)** **open** — STEP=2 green done; Critic STEP=3 next.
+**Queue head:** Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty after §86).
+**`TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (§86)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX` (§85)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX` (§84)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_GOTO_LINE_REUSE_FRAME_LINE_INDEX` (§83)** **closed** 2026-07-25 (Critic OK). Archived.

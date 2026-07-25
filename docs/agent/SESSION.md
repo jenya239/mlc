@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 12:55 (Critic TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT |
+| started | 2026-07-25 12:10 |
+| elapsed | ~45 min |
+| done    | Critic OK: stable×2 + related + demo_live + `run_ux_gate` 101; archive §86 |
+| verify  | `probe_reuses_line_index_text` EXIT=0 ×2; frame/unit/large EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (101 scenarios)` |
+| result  | §86 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; drop_file stringify + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 12:05 (Driver TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT STEP=2)
 
 | field   | value |
