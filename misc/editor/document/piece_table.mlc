@@ -55,6 +55,53 @@ export fn document_to_string(doc: TextDocument) -> string = do
   out
 end
 
+// TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY — range without full flatten.
+export fn document_byte_slice(
+  doc: TextDocument,
+  byte_start: i32,
+  byte_end: i32
+) -> string = do
+  let mut start = byte_start
+  let mut finish = byte_end
+  const total = document_byte_length(doc)
+  if start < 0 then
+    start = 0
+  end
+  if finish < start then
+    finish = start
+  end
+  if start > total then
+    start = total
+  end
+  if finish > total then
+    finish = total
+  end
+  if start == finish then
+    return ""
+  end
+  let mut out = ""
+  let mut cursor = 0
+  let mut index = 0
+  while index < doc.pieces.length() do
+    const piece = doc.pieces[index]
+    const piece_start = cursor
+    const piece_end = cursor + piece.length
+    if piece_end > start && piece_start < finish then
+      const overlap_start = if piece_start > start then piece_start else start
+      const overlap_end = if piece_end < finish then piece_end else finish
+      const local_start = piece.start + (overlap_start - piece_start)
+      const local_length = overlap_end - overlap_start
+      out = out + buffer_slice(doc, piece.source, local_start, local_length)
+    end
+    cursor = piece_end
+    if cursor >= finish then
+      return out
+    end
+    index = index + 1
+  end
+  out
+end
+
 export fn document_original_length(doc: TextDocument) -> i32 =
   doc.original.length()
 

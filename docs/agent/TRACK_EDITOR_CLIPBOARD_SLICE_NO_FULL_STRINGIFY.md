@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §92.
 Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md)
 (§91) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — `document_byte_slice` + wire clipboard; green stable.
+**STEP=3** — Critic: stable + related + `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `eb759388` | Decision: piece-range slice for clipboard copy/cut |
-| 1 | (this) | Red: `document_to_string` in slice; stable stub |
+| 1 | `dc0ac679` | Red: `document_to_string` in slice; stable stub |
+| 2 | (this) | `document_byte_slice` + clipboard wire; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,10 @@ Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](../archive/tracks/TRACK_EDITO
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: clipboard slice still full-flattens | **done** |
-| 2 | `document_byte_slice` + wire clipboard; green | pending |
+| 2 | `document_byte_slice` + wire clipboard; green | **done** |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
-<!-- STEP=2 sub-steps: 1) piece_table document_byte_slice; 2) clipboard_edit use it; 3) green stable + clipboard unit -->
+<!-- STEP=2: document_byte_slice walks pieces; clipboard_edit uses it -->
 
 ## Out of scope
 

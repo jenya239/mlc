@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 19:15 (Driver TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 19:00 |
+| elapsed | ~15 min |
+| done    | `document_byte_slice` on piece_table; clipboard_edit uses it (no `document_to_string`); green stable |
+| verify  | stable EXIT=0 `ux_ok clipboard_slice_no_full_stringify`; red EXIT=1; clipboard_unit + copy_paste EXIT=0 |
+| result  | §92 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 18:55 (Driver TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |

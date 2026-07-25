@@ -1,7 +1,8 @@
 // TRACK_EDITOR_MVP STEP=17 — Ctrl+A / C / X / V against document + selection.
+// TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY — slice via piece range.
 import {
   TextDocument,
-  document_to_string,
+  document_byte_slice,
   document_byte_length
 } from './piece_table'
 import {
@@ -25,25 +26,8 @@ fn document_slice(
   document: TextDocument,
   byte_start: i32,
   byte_end: i32
-) -> string = do
-  let mut start = byte_start
-  let mut finish = byte_end
-  const total = document_byte_length(document)
-  if start < 0 then
-    start = 0
-  end
-  if finish < start then
-    finish = start
-  end
-  if start > total then
-    start = total
-  end
-  if finish > total then
-    finish = total
-  end
-  const full = document_to_string(document)
-  full.substring(start, finish - start)
-end
+) -> string =
+  document_byte_slice(document, byte_start, byte_end)
 
 export fn edit_select_all(document: TextDocument) -> EditorSelection =
   selection_select_all(document_byte_length(document))
