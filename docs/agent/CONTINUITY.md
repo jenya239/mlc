@@ -124,6 +124,7 @@ INSTRUCTIONS_REV=2026-07-25-render-architecture-priority
 | **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (PLAN §92)** | **closed** 2026-07-25 (Critic OK). Archived. Piece-range clipboard slice. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (PLAN §93)** | **closed** 2026-07-25 (Critic OK). Archived. Autoclose via `document_byte_slice`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (PLAN §98)** | **closed** 2026-07-25 (Critic OK). Archived. Newline indent via `document_byte_slice`. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (PLAN §99)** | **open** STEP=0 done; STEP=1 red next. Word-delete without full stringify (§98 residual). Size S |
 | **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (PLAN §94)** | **superseded by §97** — do not resume, closed by the §97c architectural fix instead |
 | **`TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP` (PLAN §95)** | **superseded by §97** — do not resume |
 | **`TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` (PLAN §96)** | **superseded by §97** — L0 folded into §97c; Critic OK 2026-07-25 |
