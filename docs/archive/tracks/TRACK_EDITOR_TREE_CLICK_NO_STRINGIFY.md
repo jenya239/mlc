@@ -1,14 +1,33 @@
 # Track: Editor tree-click opens without stringify
 
-Parent: [../PLAN.md](../PLAN.md) §91.
-Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md)
+Parent: [../../PLAN.md](../../PLAN.md) §91.
+Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md)
 (§90) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `tree_click_no_stringify_stable` ×2
+(includes `tree_click` + `demo_live` compile) + related open-path stable + HEAD
+`run_ux_gate`.
+Anti-false-done: `3c4cbf99`…`b298e29d` (STEP=0–2); `editor_ux_click_tree`
+takes `OpenBuffer` + `tab_set_open_buffer`; scenario via `open_buffer_from_text`;
+`misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); `frame_snapshot` /
+edit/clipboard stringifies + incremental lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_tree_click_no_stringify_stable.sh` | `ux_ok tree_click_no_stringify` + `demo_live_fs_compile_ok` EXIT=0 (×2) |
+| `run_ux_tree_click.sh` | `ux_ok tree_click_opens_tab` EXIT=0 |
+| `run_ux_demo_open_path_no_stringify_stable.sh` | EXIT=0 |
+| HEAD `run_ux_gate.sh` (106 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable + related + `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +35,8 @@ Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](../archive/tracks/TRACK_E
 |------|-----------------|-------|
 | 0 | `3c4cbf99` | Decision: tree click via `tab_set_open_buffer` |
 | 1 | `53314c77` | Red: `open_text` + `tab_set_open`; stable stub |
-| 2 | (this) | `OpenBuffer` + `tab_set_open_buffer`; green stable |
+| 2 | `b298e29d` | `OpenBuffer` + `tab_set_open_buffer`; green stable |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,9 +56,7 @@ Residual of [TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](../archive/tracks/TRACK_E
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: tree click still stringifies | **done** |
 | 2 | `tab_set_open_buffer` in click_tree; green | **done** |
-| 3 | Critic: stable + related + `run_ux_gate` | pending |
-
-<!-- STEP=2: signature OpenBuffer + tab_set_open_buffer; scenario open_buffer_from_text -->
+| 3 | Critic: stable + related + `run_ux_gate` | **done** |
 
 ## Out of scope
 
