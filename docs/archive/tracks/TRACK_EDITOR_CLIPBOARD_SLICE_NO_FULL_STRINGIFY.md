@@ -1,14 +1,32 @@
 # Track: Editor clipboard slice without full stringify
 
-Parent: [../PLAN.md](../PLAN.md) §92.
-Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md)
+Parent: [../../PLAN.md](../../PLAN.md) §92.
+Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md)
 (§91) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `clipboard_slice_no_full_stringify_stable` ×2
+(+ clipboard_unit + copy_paste) + HEAD `run_ux_gate`.
+Anti-false-done: `eb759388`…`79e1a78c` (STEP=0–2); `document_byte_slice` on
+`piece_table`; `clipboard_edit` has zero `document_to_string`;
+`misc/editor/**` + scripts → REG skip; no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); `frame_snapshot`
+single flatten / `edit.mlc` flattens / save stringify + incremental lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_clipboard_slice_no_full_stringify_stable.sh` | `ux_ok clipboard_slice_no_full_stringify` EXIT=0 (×2) |
+| `run_editor_clipboard_unit.sh` | EXIT=0 |
+| `run_ux_copy_paste.sh` | EXIT=0 |
+| HEAD `run_ux_gate.sh` (107 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable + related + `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +34,8 @@ Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](../archive/tracks/TRACK_EDITO
 |------|-----------------|-------|
 | 0 | `eb759388` | Decision: piece-range slice for clipboard copy/cut |
 | 1 | `dc0ac679` | Red: `document_to_string` in slice; stable stub |
-| 2 | (this) | `document_byte_slice` + clipboard wire; green stable |
+| 2 | `79e1a78c` | `document_byte_slice` + clipboard wire; green stable |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,9 +55,7 @@ Residual of [TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](../archive/tracks/TRACK_EDITO
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: clipboard slice still full-flattens | **done** |
 | 2 | `document_byte_slice` + wire clipboard; green | **done** |
-| 3 | Critic: stable + related + `run_ux_gate` | pending |
-
-<!-- STEP=2: document_byte_slice walks pieces; clipboard_edit uses it -->
+| 3 | Critic: stable + related + `run_ux_gate` | **done** |
 
 ## Out of scope
 
