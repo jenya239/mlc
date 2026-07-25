@@ -1,4 +1,4 @@
-// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — wrap + snapshot + spans owned by one layout object.
+// TRACK_EDITOR_RENDER_ARCHITECTURE §97b — wrap + snapshot + spans + minimap owned by one layout object.
 import {
   LineIndex,
   line_index_line_count
@@ -21,13 +21,19 @@ import {
   editor_ux_syntax_span_cache_new,
   editor_ux_syntax_span_cache_tick
 } from '../ux/syntax_span_cache'
+import {
+  MinimapCacheState,
+  editor_ux_minimap_cache_new,
+  editor_ux_minimap_cache_tick
+} from '../ux/minimap'
 
 export type EditorFrameLayout = {
   wrap_count_cache: DocumentWrapCountCache,
   visual_row_count: i32,
   wrapped_content_height: i32,
   snapshot_cache: DocumentFrameSnapshotCache,
-  span_cache: SyntaxSpanCacheState
+  span_cache: SyntaxSpanCacheState,
+  minimap_cache: MinimapCacheState
 }
 
 fn frame_layout_with_wrap(
@@ -44,7 +50,8 @@ fn frame_layout_with_wrap(
     visual_row_count: cache.visual_row_count,
     wrapped_content_height: height,
     snapshot_cache: layout.snapshot_cache,
-    span_cache: layout.span_cache
+    span_cache: layout.span_cache,
+    minimap_cache: layout.minimap_cache
   }
 end
 
@@ -69,7 +76,8 @@ export fn frame_layout_new_pixel(
     visual_row_count: cache.visual_row_count,
     wrapped_content_height: height,
     snapshot_cache: frame_snapshot_cache_new(document),
-    span_cache: editor_ux_syntax_span_cache_new()
+    span_cache: editor_ux_syntax_span_cache_new(),
+    minimap_cache: editor_ux_minimap_cache_new("")
   }
 end
 
@@ -95,7 +103,8 @@ export fn frame_layout_tick_pixel(
       visual_row_count: count,
       wrapped_content_height: height,
       snapshot_cache: layout.snapshot_cache,
-      span_cache: layout.span_cache
+      span_cache: layout.span_cache,
+      minimap_cache: layout.minimap_cache
     }
   end
   frame_layout_with_wrap(
@@ -120,7 +129,8 @@ export fn frame_layout_tick_snapshot(
     snapshot_cache: frame_snapshot_cache_tick(
       layout.snapshot_cache, document, dirty
     ),
-    span_cache: layout.span_cache
+    span_cache: layout.span_cache,
+    minimap_cache: layout.minimap_cache
   }
 
 export fn frame_layout_tick_spans(
@@ -136,5 +146,19 @@ export fn frame_layout_tick_spans(
     snapshot_cache: layout.snapshot_cache,
     span_cache: editor_ux_syntax_span_cache_tick(
       layout.span_cache, text, range_start, range_end
-    )
+    ),
+    minimap_cache: layout.minimap_cache
+  }
+
+export fn frame_layout_tick_minimap(
+  layout: EditorFrameLayout,
+  text: string
+) -> EditorFrameLayout =
+  EditorFrameLayout {
+    wrap_count_cache: layout.wrap_count_cache,
+    visual_row_count: layout.visual_row_count,
+    wrapped_content_height: layout.wrapped_content_height,
+    snapshot_cache: layout.snapshot_cache,
+    span_cache: layout.span_cache,
+    minimap_cache: editor_ux_minimap_cache_tick(layout.minimap_cache, text)
   }

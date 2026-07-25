@@ -10,18 +10,18 @@ if [ ! -f "$DEMO" ]; then
   exit 1
 fi
 
-if ! grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -q 'editor_ux_append_syntax_colored_row'; then
+if ! grep -A40 'frame_layout_tick_minimap' "$DEMO" | grep -q 'editor_ux_append_syntax_colored_row'; then
   echo "[ux minimap_syntax_tags_stable] FAIL: minimap missing append_syntax_colored_row" >&2
   exit 1
 fi
 
-if ! grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -qE 'highlight_mlc|minimap_span_cache|shared_span_cache|frame_layout.span_cache'; then
+if ! grep -A40 'frame_layout_tick_minimap' "$DEMO" | grep -qE 'highlight_mlc|minimap_span_cache|shared_span_cache|frame_layout.span_cache'; then
   echo "[ux minimap_syntax_tags_stable] FAIL: minimap missing full-buffer highlight spans" >&2
   exit 1
 fi
 
 # Bare push_line for map text must be gone from rebuild.
-if grep -A40 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -q 'push_line('; then
+if grep -A40 'frame_layout_tick_minimap' "$DEMO" | grep -q 'push_line('; then
   echo "[ux minimap_syntax_tags_stable] FAIL: minimap rebuild still uses bare push_line" >&2
   exit 1
 fi

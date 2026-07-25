@@ -20,7 +20,7 @@ if ! grep -q 'export fn editor_ux_minimap_pixel_size_for_font' "$MINIMAP"; then
   exit 1
 fi
 
-if ! grep -A45 'minimap_cache = editor_ux_minimap_cache_tick' "$DEMO" | grep -q 'editor_ux_minimap_pixel_size_for_font(zoom_font_size)'; then
+if ! grep -A45 'frame_layout_tick_minimap' "$DEMO" | grep -q 'editor_ux_minimap_pixel_size_for_font(zoom_font_size)'; then
   echo "[ux minimap_zoom_scale_stable] FAIL: demo rebuild missing for_font(zoom_font_size)" >&2
   exit 1
 fi

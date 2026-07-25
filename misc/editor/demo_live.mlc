@@ -243,7 +243,8 @@ import {
   frame_layout_new_pixel,
   frame_layout_tick_pixel,
   frame_layout_tick_snapshot,
-  frame_layout_tick_spans
+  frame_layout_tick_spans,
+  frame_layout_tick_minimap
 } from './app/frame_layout'
 import {
   editor_ux_multi_click_new,
@@ -288,8 +289,6 @@ import {
   editor_ux_minimap_pixel_size_for_font,
   editor_ux_minimap_layout_for_font,
   editor_ux_content_clip_rect,
-  editor_ux_minimap_cache_new,
-  editor_ux_minimap_cache_tick,
   editor_ux_minimap_viewport_indicator,
   editor_ux_minimap_scroll_at_y
 } from './ux/minimap'
@@ -791,7 +790,6 @@ fn main() -> i32 = do
   let mut context_menu = editor_ux_context_menu_hidden()
   let mut mouse_right_was_down = 0
   let mut indent_config = editor_indent_config_default()
-  let mut minimap_cache = editor_ux_minimap_cache_new("")
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
@@ -2603,9 +2601,9 @@ fn main() -> i32 = do
     end
 
     if minimap_enabled != 0 && !perf_enabled then
-      const prev_rebuild = minimap_cache.rebuild_count
-      minimap_cache = editor_ux_minimap_cache_tick(minimap_cache, draw_text)
-      if minimap_cache.rebuild_count != prev_rebuild ||
+      const prev_rebuild = frame_layout.minimap_cache.rebuild_count
+      frame_layout = frame_layout_tick_minimap(frame_layout, draw_text)
+      if frame_layout.minimap_cache.rebuild_count != prev_rebuild ||
           minimap_cached_height != minimap_rect.height ||
           minimap_cached_font_size != zoom_font_size then
         minimap_lines = []

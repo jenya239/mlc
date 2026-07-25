@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b minimap_cache STEP=1 red **done**; next Driver STEP=2
+## Status: **open** — §97b minimap_cache STEP=2 green **done**; next Critic STEP=3
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -167,7 +167,7 @@ own separate locals can silently diverge from it.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: bare minimap tick in `demo_live` / no `frame_layout_tick_minimap` | **done** (`run_editor_frame_layout_minimap_red.sh`) |
-| 2 | Green: own `minimap_cache` on `EditorFrameLayout`; wire `demo_live` | pending |
+| 2 | Green: own `minimap_cache` on `EditorFrameLayout`; wire `demo_live` | **done** |
 | 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
 
 <!-- STEP=1: red — editor_ux_minimap_cache_tick( in demo_live; no frame_layout_tick_minimap; stable stub -->
