@@ -1,7 +1,7 @@
 // Interactive editor preview — live polish + real/mock file tree.
 // Folder panel: breadcrumbs + back/forward; root = MLC_EDITOR_ROOT | argv[0] | "."; mock /demo if missing.
 // Run: MLC_GLFW_VISIBLE=1 scripts/run_editor_live_demo.sh
-import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { get_or, has } from '../../lib/mlc/common/stdlib/env/env.mlc'
 import {
   glfw_gl_context_begin,
   glfw_gl_context_should_close,
@@ -351,6 +351,12 @@ import {
   editor_app_toolbar_button_rect
 } from './app/chrome'
 import { editor_app_frame_command_from_inputs } from './app/frame_command'
+import {
+  editor_perf_new,
+  editor_perf_now_us,
+  editor_perf_accumulate_frame,
+  editor_perf_format_demo_live
+} from './ui/perf'
 import {
   EditorAppState,
   editor_app_state_new,
@@ -760,6 +766,15 @@ fn main() -> i32 = do
   let mut folder_nav = folder_nav_new(folder_current_path(panels.tree))
 
   let mut tabs = ensure_tabs(load_demo_session(), panels)
+  const perf_enabled = has("MLC_EDITOR_PERF")
+  let mut perf_counters = editor_perf_new()
+  const perf_frame_limit = 30
+  if perf_enabled then
+    const perf_open = get_or("MLC_EDITOR_PERF_OPEN", "")
+    if perf_open.byte_size() > 0 then
+      tabs = try_open_path(tabs, perf_open)
+    end
+  end
   const startup_view = load_demo_session_view(tabs)
   if tab_set_has_active(tabs) then
     println("[mlc-editor] open " + tab_set_active(tabs).path)
@@ -899,6 +914,10 @@ fn main() -> i32 = do
     let mut frame = frame_cache.snapshot
     let mut line_index = frame.line_index
     let mut draw_text = frame.text
+    if perf_enabled then
+      app = editor_app_wheel_scroll(app, metrics, 3, line_index)
+      scroll_offset_y = app.ux.scroll_offset_y
+    end
 
     last_mouse_x = input.mouse_x
     last_mouse_y = input.mouse_y
@@ -908,7 +927,7 @@ fn main() -> i32 = do
     last_enter = input.enter
 
     let mut paint_dirty = 0
-    if content_dirty == 0 then
+    if content_dirty == 0 && !perf_enabled then
       glfw_gl_context_wait_events_timeout(0.05)
       clock_ms = clock_ms + caret_blink_idle_wait_ms()
       paint_dirty = caret_blink_paint_dirty(
@@ -961,6 +980,12 @@ fn main() -> i32 = do
     last_width = width
     last_height = height
     last_active_index = tabs.active_index
+    let mut perf_frame_t0 = 0
+    let mut perf_layout_us = 0
+    let mut perf_draw_t0 = 0
+    if perf_enabled then
+      perf_frame_t0 = editor_perf_now_us()
+    end
 
     // TRACK_EDITOR_DROP_FILE STEP=3 — drain OS drop queue → open/activate tabs
     let mut drop_path = pending_drop_path
@@ -1019,11 +1044,17 @@ fn main() -> i32 = do
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width = text_rect.width - 8
-    wrap_count_cache = wrap_count_cache_tick_pixel(
-      wrap_count_cache, draw_text, line_index,
-      wrap_viewport_width, font_path, zoom_font_size
-    )
-    const visual_row_count = wrap_count_cache.visual_row_count
+    let mut visual_row_count = 0
+    if perf_enabled then
+      // Full-document pixel wrap count is O(n) HarfBuzz — skip under perf smoke.
+      visual_row_count = line_index_line_count(line_index)
+    else
+      wrap_count_cache = wrap_count_cache_tick_pixel(
+        wrap_count_cache, draw_text, line_index,
+        wrap_viewport_width, font_path, zoom_font_size
+      )
+      visual_row_count = wrap_count_cache.visual_row_count
+    end
     let mut wrapped_content_height = visual_row_count * metrics.line_height
     if wrapped_content_height < 0 then
       wrapped_content_height = 0
@@ -1907,11 +1938,20 @@ fn main() -> i32 = do
     app = editor_app_ensure_caret_visible(app, metrics, line_index)
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
-    wrap_count_cache = wrap_count_cache_tick_pixel(
-      wrap_count_cache, draw_text, line_index,
-      wrap_viewport_width_now, font_path, zoom_font_size
-    )
-    const visual_row_count_now = wrap_count_cache.visual_row_count
+    let mut perf_layout_t0 = 0
+    if perf_enabled then
+      perf_layout_t0 = editor_perf_now_us()
+    end
+    let mut visual_row_count_now = 0
+    if perf_enabled then
+      visual_row_count_now = line_index_line_count(line_index)
+    else
+      wrap_count_cache = wrap_count_cache_tick_pixel(
+        wrap_count_cache, draw_text, line_index,
+        wrap_viewport_width_now, font_path, zoom_font_size
+      )
+      visual_row_count_now = wrap_count_cache.visual_row_count
+    end
     let mut wrapped_content_height_now = visual_row_count_now * metrics.line_height
     if wrapped_content_height_now < 0 then
       wrapped_content_height_now = 0
@@ -1925,6 +1965,9 @@ fn main() -> i32 = do
       draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
       scroll_offset_y / metrics.line_height, visible_row_budget
     )
+    if perf_enabled then
+      perf_layout_us = editor_perf_now_us() - perf_layout_t0
+    end
 
     // Refresh classic tab layout after input may have changed tabs.
     tab_display_titles = []
@@ -1942,6 +1985,9 @@ fn main() -> i32 = do
       tab_strip.width, tab_display_titles, metrics.char_width
     )
 
+    if perf_enabled then
+      perf_draw_t0 = editor_perf_now_us()
+    end
     solid = solid_renderer_begin(solid)
     solid = solid_renderer_rect(
       solid, width, height, 0, 0, width, height,
@@ -2112,10 +2158,14 @@ fn main() -> i32 = do
 
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
     // One full-buffer span cache for paint + minimap (scroll does not re-lex).
-    shared_span_cache = editor_ux_syntax_span_cache_tick(
-      shared_span_cache, draw_text, 0, draw_text.byte_size()
-    )
-    const syntax_spans = shared_span_cache.spans
+    // Perf smoke: skip O(n) full-buffer lex + minimap rebuild on 100k fixtures.
+    let mut syntax_spans = shared_span_cache.spans
+    if !perf_enabled then
+      shared_span_cache = editor_ux_syntax_span_cache_tick(
+        shared_span_cache, draw_text, 0, draw_text.byte_size()
+      )
+      syntax_spans = shared_span_cache.spans
+    end
 
     // Current-line band under find/selection (Decision: panel tint ~0.55).
     const current_line_metrics = EditorTextMetrics {
@@ -2567,7 +2617,7 @@ fn main() -> i32 = do
       return tree_drawn.error_code
     end
 
-    if minimap_enabled != 0 then
+    if minimap_enabled != 0 && !perf_enabled then
       const prev_rebuild = minimap_cache.rebuild_count
       minimap_cache = editor_ux_minimap_cache_tick(minimap_cache, draw_text)
       if minimap_cache.rebuild_count != prev_rebuild ||
@@ -2665,6 +2715,18 @@ fn main() -> i32 = do
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
       return editor_drawn.error_code
+    end
+
+    if perf_enabled then
+      const perf_draw_us = editor_perf_now_us() - perf_draw_t0
+      const perf_total_us = editor_perf_now_us() - perf_frame_t0
+      perf_counters = editor_perf_accumulate_frame(
+        perf_counters, perf_layout_us, perf_draw_us, perf_total_us
+      )
+      if perf_counters.frames >= perf_frame_limit then
+        println(editor_perf_format_demo_live(perf_counters))
+        break
+      end
     end
 
     glfw_gl_context_swap_poll()

@@ -9,6 +9,11 @@ namespace mlc::profile {
 // Monotonic wall clock (nanoseconds since arbitrary epoch).
 int64_t monotonic_nanos() noexcept;
 
+// Same clock in microseconds, narrowed to int32 (fine for short editor smokes).
+inline int32_t monotonic_micros_i32() noexcept {
+  return static_cast<int32_t>(monotonic_nanos() / 1000);
+}
+
 // Resident set size from /proc/self/status (KiB), or 0 if unavailable.
 int64_t current_rss_kib() noexcept;
 

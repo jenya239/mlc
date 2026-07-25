@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 13:15 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97a EDITOR_REAL_PERF_HARNESS) |
+| started | 2026-07-25 12:45 |
+| elapsed | ~30 min |
+| done    | Green: `ui/perf.mlc` wall-clock via `monotonic_micros_i32`; `demo_live` `MLC_EDITOR_PERF` (open 100k, scroll, layout/draw timers, exit after 30); smoke `run_editor_demo_live_perf_smoke.sh`; under perf skip full-doc pixel-wrap/syntax/minimap |
+| verify  | smoke EXIT=0 `ux_ok demo_live_perf`; line `demo_live_perf frames=30 … total_us>0` |
+| result  | §97a STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97a) |
+
 ### Turn 2026-07-25 12:40 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=1)
 
 | field   | value |

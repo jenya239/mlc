@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97a STEP=1 red **done**; next Driver STEP=2 (green)
+## Status: **open** — §97a STEP=2 green **done**; next Critic STEP=3
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -63,11 +63,11 @@ own separate locals can silently diverge from it.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: demo_live still has no real perf smoke / zero-only path | **done** (`run_editor_demo_live_perf_red.sh`) |
-| 2 | Wire timers + 100k scroll smoke; green | pending |
+| 2 | Wire timers + 100k scroll smoke; green | **done** |
 | 3 | Critic: stable×2 + related + `run_ux_gate` | pending |
 
 <!-- STEP=1: red asserts demo_live lacks MLC_EDITOR_PERF real timings; stable stub; old main.mlc stub remains zeros -->
-<!-- STEP=2: Profile/monotonic nanos in demo_live phases; run_editor_demo_live_perf_smoke.sh; assert non-zero -->
+<!-- STEP=2: Profile/monotonic micros in demo_live phases; run_editor_demo_live_perf_smoke.sh; assert non-zero; under MLC_EDITOR_PERF skip full-doc pixel-wrap/syntax/minimap (100k hang) -->
 
 ### §97b `EDITOR_FRAME_SPLIT`
 
