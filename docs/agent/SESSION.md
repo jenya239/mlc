@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:21 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:21 |
+| elapsed | ~2 min |
+| done    | Red harness `run_ux_wheel_hover_focus_independent_red.sh` + stable stub (`not implemented`); gap = missing green L0 (demo already hover-only) |
+| verify  | red EXIT=0 `ux_ok wheel_hover_focus_independent_red`; stable EXIT=1 `not implemented` |
+| result  | §97c §96 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+
 ### Turn 2026-07-25 15:20 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=0)
 
 | field   | value |
