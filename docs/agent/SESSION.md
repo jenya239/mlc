@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:00 (Driver TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+| started | 2026-07-25 15:55 |
+| elapsed | ~5 min |
+| done    | Bind `text = document_to_string(...)` once in `save_demo_session`; reuse for dump + open; green stable |
+| verify  | stable EXIT=0 `ux_ok demo_save_no_double_stringify`; `demo_live_fs_compile_ok` |
+| result  | §89 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+
 ### Turn 2026-07-25 15:50 (Driver TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY STEP=1)
 
 | field   | value |
