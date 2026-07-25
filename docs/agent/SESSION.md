@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:45 (Planner plan-refresh → §88)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 14:40 |
+| elapsed | ~5 min |
+| done    | Opened §88 `TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY`: Decision — restore tabs via `tab_set_open_buffer`; §87 residual |
+| verify  | `workspace_session_restore_tabs` still calls `document_to_string` for `tab_set_open` |
+| result  | §88 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+
 ### Turn 2026-07-25 14:35 (Critic TRACK_EDITOR_DROP_FILE_NO_STRINGIFY)
 
 | field   | value |
