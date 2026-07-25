@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic STEP=3 `TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY` (§89).
-**`TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY` (§89)** **open** — STEP=2 green done; Critic STEP=3 next.
+**Queue head:** Planner STEP=plan-refresh TRACK=PLAN (authorized queue empty after §89).
+**`TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY` (§89)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY` (§88)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_DROP_FILE_NO_STRINGIFY` (§87)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (§86)** **closed** 2026-07-25 (Critic OK). Archived.

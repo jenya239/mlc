@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:15 (Critic TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY |
+| started | 2026-07-25 16:05 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 (incl. demo_live) + `run_ux_gate` 104; archive §89 |
+| verify  | `demo_save_no_double_stringify` EXIT=0 ×2; `[ux gate] all ok (104 scenarios)` |
+| result  | §89 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; frame_snapshot/edit/clipboard/tree_hit + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 16:00 (Driver TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY STEP=2)
 
 | field   | value |
