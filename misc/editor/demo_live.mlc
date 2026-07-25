@@ -220,10 +220,6 @@ import {
 } from './document/clipboard_edit'
 import { HighlightSpan } from './syntax/highlighter'
 import {
-  editor_ux_syntax_span_cache_new,
-  editor_ux_syntax_span_cache_tick
-} from './ux/syntax_span_cache'
-import {
   viewport_metrics_new,
   visible_line_range
 } from './layout/visible_range'
@@ -246,7 +242,8 @@ import {
 import {
   frame_layout_new_pixel,
   frame_layout_tick_pixel,
-  frame_layout_tick_snapshot
+  frame_layout_tick_snapshot,
+  frame_layout_tick_spans
 } from './app/frame_layout'
 import {
   editor_ux_multi_click_new,
@@ -798,7 +795,6 @@ fn main() -> i32 = do
   let mut minimap_lines: [StaticTextLine] = []
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
-  let mut shared_span_cache = editor_ux_syntax_span_cache_new()
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut frame_layout = frame_layout_new_pixel(
@@ -2148,12 +2144,12 @@ fn main() -> i32 = do
     // Glyph colors carry Solarized tags; selection highlight rects stay below.
     // One full-buffer span cache for paint + minimap (scroll does not re-lex).
     // Perf smoke: skip O(n) full-buffer lex + minimap rebuild on 100k fixtures.
-    let mut syntax_spans = shared_span_cache.spans
+    let mut syntax_spans = frame_layout.span_cache.spans
     if !perf_enabled then
-      shared_span_cache = editor_ux_syntax_span_cache_tick(
-        shared_span_cache, draw_text, 0, draw_text.byte_size()
+      frame_layout = frame_layout_tick_spans(
+        frame_layout, draw_text, 0, draw_text.byte_size()
       )
-      syntax_spans = shared_span_cache.spans
+      syntax_spans = frame_layout.span_cache.spans
     end
 
     // Current-line band under find/selection (Decision: panel tint ~0.55).
@@ -2614,7 +2610,7 @@ fn main() -> i32 = do
           minimap_cached_font_size != zoom_font_size then
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
-        const minimap_spans = shared_span_cache.spans
+        const minimap_spans = frame_layout.span_cache.spans
         let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
         if map_line_count < 1 then

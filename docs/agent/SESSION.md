@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:32 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b shared_span_cache STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b shared_span_cache→frame_layout) |
+| started | 2026-07-25 14:29 |
+| elapsed | ~3 min |
+| done    | `EditorFrameLayout.span_cache` + `frame_layout_tick_spans`; `demo_live` 0× bare `shared_span_cache` / 0× direct span tick; green stable |
+| verify  | stable EXIT=0 `ux_ok frame_layout_spans` + `demo_live_fs_compile_ok`; red EXIT=1; §97a perf smoke EXIT=0 frames=30 |
+| result  | §97b shared_span_cache STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b shared_span_cache) |
+
 ### Turn 2026-07-25 14:28 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b shared_span_cache STEP=1)
 
 | field   | value |
