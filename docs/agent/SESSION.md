@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:50 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:50 |
+| elapsed | ~3 min |
+| done    | Red harness: both `edit_delete_word_*` still `document_to_string`; stable stub `not implemented` |
+| verify  | `ux_ok word_delete_no_full_stringify_red`; stable EXIT=1 |
+| result  | §99 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:49 (Planner plan-refresh → §99)
 
 | field   | value |
