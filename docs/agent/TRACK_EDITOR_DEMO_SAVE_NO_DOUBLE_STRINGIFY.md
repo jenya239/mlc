@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §89.
 Residual of [TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md)
 (§88) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `save_demo_session` still calls `document_to_string` twice per tab; stable stub `not implemented`.
+**STEP=2** — Single flatten (or open_buffer); green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: one flatten per tab in demo save |
+| 0 | `aaa6a995` | Decision: one flatten per tab in demo save |
+| 1 | (this) | Red: ≥2 `document_to_string(tab.buffer.document)`; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](../archive/tracks/TRACK_
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: demo save double-stringifies | pending |
+| 1 | Red: demo save double-stringifies | **done** |
 | 2 | Single flatten (or open_buffer); green | pending |
 | 3 | Critic: stable + demo_live + `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts ≥2 document_to_string in save_demo_session; 2) stable stub; 3) docs -->
 <!-- STEP=2 sub-steps: 1) bind text once or tab_set_open_buffer; 2) green stable; 3) demo_live compile -->
 
 ## Out of scope

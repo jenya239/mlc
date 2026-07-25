@@ -484,7 +484,7 @@ compiler/
 | **86** | Editor probe reuses LineIndex text (§85 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md) |
 | **87** | Editor drop-file opens without stringify (§86 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md) |
 | **88** | Editor session restore opens without stringify (§87 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md) |
-| **89** | Editor demo save avoids double stringify (§88 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](agent/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md) |
+| **89** | Editor demo save avoids double stringify (§88 residual) | **open** STEP=2 next | [agent/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](agent/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
