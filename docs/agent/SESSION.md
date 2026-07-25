@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:20 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:20 |
+| elapsed | ~5 min |
+| done    | Froze Decision: protective L0 harness on `demo_live` wheel block — hover gates, zero `editor_focused`; no demo logic change; OOS glfw scenario |
+| verify  | gap: no `run_ux_wheel_hover_focus_independent_*.sh`; wheel block ~1054–1085 has no `editor_focused` |
+| result  | §97c §96 STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+
 ### Turn 2026-07-25 15:19 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=3)
 
 | field   | value |

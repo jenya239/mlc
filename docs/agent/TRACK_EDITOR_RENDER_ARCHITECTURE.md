@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97c unpack slice **closed**; next Decision §96 add-on
+## Status: **open** — §97c §96 add-on Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -265,7 +265,30 @@ once the unified state exists.
 
 #### Next add-on — §96 `EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` regression
 
-Fold superseded PLAN §96 here: cheap L0/L2 scenario that wheel-scroll follows hover, not `editor_focused`. Decision STEP=0 next.
+Fold superseded PLAN §96 here: cheap L0 scenario that wheel-scroll follows hover, not `editor_focused`.
+
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | Content/tree wheel gates in `demo_live` already key off hover (`tree_hovered` / `point_in_rect(... editor_rect)`), not `app.editor_focused` — verified ~1054–1085. No regression locks that invariant; a future "must focus before scroll" patch would silently regress the user report folded from §96 |
+| Strategy (v1) | **Protective L0 only (no behavior change).** New red/stable scripts: extract the live wheel block (`const scroll_ticks = …` through the editor `editor_app_wheel_scroll` / clamp branch) and assert (1) tree gate uses `tree_hovered`, (2) editor gate uses `point_in_rect(... editor_rect)`, (3) that block contains **zero** `editor_focused`. Model `editor_ux_wheel_scroll` / `editor_app_wheel_scroll` take no focus param — do **not** add a headless glfw demo scenario this slice. Do **not** change `demo_live` scroll logic |
+| Primary gate | Red: no green wheel-hover-focus harness (stub / missing). Green: `ux_ok wheel_hover_focus_independent`; Critic: stable×2 + related wheel + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | new `scripts/run_ux_wheel_hover_focus_independent_{red,stable}.sh` only (auto-picked by `run_ux_gate.sh`) |
+| REG | no |
+| Out of scope | glfw offscreen demo; changing wheel/scroll algorithms; glyph rebuild locals; further §97c state folds |
+
+#### Steps (§97c — slice: §96 wheel-hover focus-independent)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: no protective harness / stable stub | pending |
+| 2 | Green: L0 harness locks hover gates, zero `editor_focused` in wheel block | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — missing stable green marker / not implemented stub -->
+<!-- STEP=2: L0 grep wheel block -->
 
 ## Verification discipline for every sub-track
 
