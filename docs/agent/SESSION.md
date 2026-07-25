@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 12:40 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97a EDITOR_REAL_PERF_HARNESS) |
+| started | 2026-07-25 12:30 |
+| elapsed | ~10 min |
+| done    | Red harness `run_editor_demo_live_perf_red.sh` + smoke stub `run_editor_demo_live_perf_smoke.sh` (`not implemented`); gap = `demo_live` has no `MLC_EDITOR_PERF`/`Profile`/`editor_perf`; historical `main.mlc` stub still zeros |
+| verify  | red EXIT=0 `ux_ok demo_live_perf_red`; smoke EXIT=1 `not implemented` |
+| result  | §97a STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97a) |
+
 ### Turn 2026-07-25 12:25 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=0)
 
 | field   | value |
