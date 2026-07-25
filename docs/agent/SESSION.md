@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:46 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+| started | 2026-07-25 14:45 |
+| elapsed | ~5 min |
+| done    | Froze Decision: new `app/frame_input.mlc` with `EditorFrameInput` + `frame_input_poll` (gui_input_poll + take_* + content_dirty); replace inline poll block in `demo_live`; OOS dual-wrap/dispatch/§97c |
+| verify  | gap: 1× `gui_input_poll(` in `demo_live`; no `app/frame_input.mlc` |
+| result  | §97b frame_input STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+
 ### Turn 2026-07-25 14:45 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b minimap_cache STEP=3)
 
 | field   | value |

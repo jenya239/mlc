@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b minimap_cache slice **closed** (Critic OK); next Decision `frame_input`
+## Status: **open** — §97b frame_input Decision **done**; next Driver STEP=1 (red)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -176,7 +176,28 @@ own separate locals can silently diverge from it.
 
 #### Next extract — `frame_input` (poll → intent)
 
-*(Decision STEP=0 pending — extract `misc/editor/app/frame_input.mlc` (poll → intent, no paint); optional dual wrap-tick collapse; gate: red→green→Critic + §97a perf smoke. Then §97c.)*
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | Cache extracts done, but `demo_live` still **inline-polls** (`gui_input_poll` + `glfw_gl_take_scroll_y` / `take_binding_key` / `take_drop_path`) and aggregates `content_dirty` from `last_*` edge locals before any paint. `frame_command.mlc` only resolves CommandId — no poll→snapshot module. God-loop residual blocks §97c |
+| Strategy (v1) | **Thin extract, no behavior change.** Add `misc/editor/app/frame_input.mlc`: `EditorFrameInput` (polled `GuiInput` + pending scroll/binding/drop + `content_dirty`) and `frame_input_poll(last_width, last_height, width, height, last_mouse_*, last_backspace, last_enter, context_menu_visible, overlay_visible, tabs_active_changed)` that (1) calls `gui_input_poll` + glfw take_* helpers, (2) computes `content_dirty` the same way demo does today. `demo_live` replaces the inline block with one call and reads fields. **Do not** move edit/dispatch branches, paint, or `editor_app_frame_command_from_inputs`. **Do not** collapse dual `frame_layout_tick_pixel` this slice (residual). **Do not** unify onto `EditorUxState` (§97c) |
+| Primary gate | Red: no `app/frame_input.mlc` / demo still has bare `gui_input_poll(`. Green: demo uses `frame_input_poll`; zero direct `gui_input_poll(` in `demo_live`; compile + Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke |
+| Module touch | `misc/editor/app/frame_input.mlc` (new); `demo_live.mlc`; red/stable scripts |
+| REG | no |
+| Out of scope | dual wrap-tick collapse; glyph rebuild locals; command dispatch extract; §97c unified live state; algorithm changes |
+
+#### Steps (§97b — slice: poll → `frame_input`)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: bare `gui_input_poll` in `demo_live` / no `frame_input.mlc` | pending |
+| 2 | Green: extract poll+dirty into `app/frame_input.mlc`; wire `demo_live` | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+
+<!-- STEP=1: red — no frame_input.mlc; gui_input_poll( in demo_live; stable stub -->
+<!-- STEP=2: EditorFrameInput + frame_input_poll; 0× gui_input_poll in demo_live -->
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 
