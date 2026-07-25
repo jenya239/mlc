@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b dual-wrap Decision **done**; next Driver STEP=1 (red)
+## Status: **open** — §97b dual-wrap STEP=1 red **done**; next Driver STEP=2
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -218,7 +218,7 @@ own separate locals can silently diverge from it.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: ≥2 `frame_layout_tick_pixel(` in `demo_live` | pending |
+| 1 | Red: ≥2 `frame_layout_tick_pixel(` in `demo_live` | **done** (`run_editor_frame_layout_dual_wrap_red.sh`) |
 | 2 | Green: one late tick only; early reuses layout fields | pending |
 | 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
 
