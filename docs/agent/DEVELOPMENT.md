@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97b (`minimap_cache` red).
-**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — minimap_cache Decision done; STEP=1 red next (then green/Critic → dual-wrap / §97c; §93 after).
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97b (`minimap_cache` green).
+**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — minimap_cache STEP=1 red done; STEP=2 next (then Critic → dual-wrap / §97c; §93 after).
 **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **open** — deferred until §97 sub-tracks resolve.
 **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (§94) / `DRAG_SELECTION` (§95) / `WHEEL_HOVER` (§96)** **superseded by §97**.
 **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **closed** 2026-07-25 (Critic OK). Archived.
