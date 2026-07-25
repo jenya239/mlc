@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_DROP_FILE_NO_STRINGIFY` (§87).
-**`TRACK_EDITOR_DROP_FILE_NO_STRINGIFY` (§87)** **open** — STEP=0 Decision done; STEP=1 red next.
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_DROP_FILE_NO_STRINGIFY` (§87).
+**`TRACK_EDITOR_DROP_FILE_NO_STRINGIFY` (§87)** **open** — STEP=1 red done; STEP=2 green next.
 **`TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT` (§86)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_PROBE_REUSE_FRAME_LINE_INDEX` (§85)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_OVERFLOW_REUSE_FRAME_LINE_INDEX` (§84)** **closed** 2026-07-25 (Critic OK). Archived.

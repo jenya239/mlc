@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 13:20 (Driver TRACK_EDITOR_DROP_FILE_NO_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_DROP_FILE_NO_STRINGIFY |
+| started | 2026-07-25 13:15 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_drop_file_no_stringify_red.sh` + stable stub `not implemented`; gap = `document_to_string` in drop_file.mlc |
+| verify  | red EXIT=0 `ux_ok drop_file_no_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §87 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_DROP_FILE_NO_STRINGIFY |
+
 ### Turn 2026-07-25 13:10 (Planner plan-refresh → §87)
 
 | field   | value |
