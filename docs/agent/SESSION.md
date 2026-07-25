@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:37 (Driver TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:37 |
+| elapsed | ~3 min |
+| done    | Red harness: `edit_insert_newline` still `document_to_string`; stable stub `not implemented` |
+| verify  | `ux_ok newline_indent_no_full_stringify_red`; stable EXIT=1 |
+| result  | §98 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:35 (Planner plan-refresh → §98)
 
 | field   | value |

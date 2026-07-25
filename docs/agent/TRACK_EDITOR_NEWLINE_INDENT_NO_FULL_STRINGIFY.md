@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §98.
 Residual of [TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md)
 (§93) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `edit_insert_newline` still calls `document_to_string`; stable stub `not implemented`.
+**STEP=2** — Green: line-start scan + `document_byte_slice` indent; zero `document_to_string` in `edit_insert_newline`; stable prints `ux_ok newline_indent_no_full_stringify`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: newline indent via slice / line-start scan |
+| 0 | `fbcc9570` | Decision: newline indent via slice / line-start scan |
+| 1 | (this) | Red: `edit_insert_newline` still flattens; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](../archive/tracks/TR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: newline still full-flattens | pending |
+| 1 | Red: newline still full-flattens | **done** |
 | 2 | Slice/scan indent; green | pending |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
-<!-- STEP=1: red — document_to_string in edit_insert_newline; stable stub -->
 <!-- STEP=2: line-start scan + document_byte_slice indent; green; newline_caret / edit_unit -->
 
 ## Out of scope
