@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97c STEP=2b **done** (harness retarget); next Critic STEP=3
+## Status: **open** — §97c unpack slice **closed**; next Decision §96 add-on
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -256,12 +256,16 @@ once the unified state exists.
 | 1 | Red: loop-head still unpacks `app` into many mut locals | **done** (`run_editor_app_unpack_red.sh`) |
 | 2 | Green: live loop mutates `app` without those unpacks | **done** (`run_editor_app_unpack_stable.sh`) |
 | 2b | Retarget UX harness greps for `app.ux.tabs` / `app.overlay` / `app.ux.selection` | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending (re-run after 2b) |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — ≥8 let mut = app. at while head (13); stable stub not implemented -->
 <!-- STEP=2: 0 unpack; editor_app_set_* + app.ux.*/app.* reads; compile + perf smoke -->
 <!-- STEP=2b: retarget demo_open_path / dirty_close / discard_danger / overlay_theme / paint_reuses greps; ux_gate 107 ok -->
-<!-- STEP=3: Critic — re-run after 2b -->
+<!-- STEP=3: Critic OK — unpack stable×2 + layout related + perf + ux_gate×2 (107); next = §96 wheel-hover add-on Decision -->
+
+#### Next add-on — §96 `EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` regression
+
+Fold superseded PLAN §96 here: cheap L0/L2 scenario that wheel-scroll follows hover, not `editor_focused`. Decision STEP=0 next.
 
 ## Verification discipline for every sub-track
 

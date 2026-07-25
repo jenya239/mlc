@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:19 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c EDITOR_UX_PROBE_FROM_LIVE_STATE) |
+| started | 2026-07-25 15:17 |
+| elapsed | ~2 min |
+| done    | Critic OK: unpack stable×2 + dual_wrap/frame_input/layout related + §97a perf + `run_ux_gate`×2 (107); unpack slice closed |
+| verify  | `ux_ok editor_app_unpack` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97c unpack **closed**; queue §96 add-on Decision |
+| issues  | honest: `*_red` obsolete post-green; glyph rebuild locals still in demo; §96 scenario still pending |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 add-on Decision) |
+
 ### Turn 2026-07-25 15:14 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=2b)
 
 | field   | value |
