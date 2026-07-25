@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:10 (Driver TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+| started | 2026-07-25 15:00 |
+| elapsed | ~10 min |
+| done    | `tab_set_open_buffer` in `workspace_session_restore_tabs`; drop `document_to_string`; scenario + green stable |
+| verify  | stable EXIT=0 `ux_ok session_restore_no_stringify`; session_unit + session_restore_caret EXIT=0 |
+| result  | §88 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+
 ### Turn 2026-07-25 14:55 (Driver TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY STEP=1)
 
 | field   | value |

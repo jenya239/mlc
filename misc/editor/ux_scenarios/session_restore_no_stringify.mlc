@@ -1,0 +1,63 @@
+// TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY STEP=2 — L2: restore without document_to_string.
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_set_active,
+  tab_set_count,
+  tab_set_active
+} from '../workspace/tabs'
+import {
+  open_buffer_from_text,
+  open_buffer_save,
+  open_buffer_has_error
+} from '../document/save'
+import { document_to_string } from '../document/piece_table'
+import {
+  workspace_session_from_tabs,
+  workspace_session_restore_tabs
+} from '../workspace/session'
+
+fn main() -> i32 = do
+  const root = ".tmp/editor_fixture"
+  const path_a = ".tmp/editor_fixture/session_no_stringify_a.mlc"
+  const path_b = ".tmp/editor_fixture/session_no_stringify_b.mlc"
+  const payload_a = "restore-a\n"
+  const payload_b = "restore-b\n"
+
+  let mut seed = open_buffer_from_text(path_a, payload_a)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail session_restore_no_stringify seed_a")
+    return 1
+  end
+  seed = open_buffer_from_text(path_b, payload_b)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail session_restore_no_stringify seed_b")
+    return 2
+  end
+
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, path_a, payload_a)
+  tabs = tab_set_open(tabs, path_b, payload_b)
+  tabs = tab_set_set_active(tabs, 1)
+
+  const session = workspace_session_from_tabs(root, tabs)
+  tabs = workspace_session_restore_tabs(session)
+
+  if tab_set_count(tabs) != 2 then
+    println("ux_fail session_restore_no_stringify count")
+    return 3
+  end
+  if tab_set_active(tabs).path != path_b then
+    println("ux_fail session_restore_no_stringify active")
+    return 4
+  end
+  if document_to_string(tab_set_active(tabs).buffer.document) != payload_b then
+    println("ux_fail session_restore_no_stringify text")
+    return 5
+  end
+
+  println("ux_ok session_restore_no_stringify")
+  0
+end

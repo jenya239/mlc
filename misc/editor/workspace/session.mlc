@@ -2,13 +2,12 @@
 import {
   TabSet,
   tab_set_new,
-  tab_set_open,
+  tab_set_open_buffer,
   tab_set_set_active,
   tab_set_count,
   tab_set_active
 } from './tabs'
 import {
-  document_to_string,
   document_byte_length
 } from '../document/piece_table'
 import {
@@ -387,7 +386,7 @@ export fn workspace_session_restore_tabs(
   while index < session.paths.length() do
     const path = session.paths[index]
     const buffer = open_buffer_from_path(path)
-    tabs = tab_set_open(tabs, path, document_to_string(buffer.document))
+    tabs = tab_set_open_buffer(tabs, path, buffer)
     index = index + 1
   end
   if tab_set_count(tabs) == 0 then

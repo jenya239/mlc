@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §88.
 Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md)
 (§87) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — `tab_set_open_buffer` in restore; green stable.
+**STEP=3** — Critic: stable×2 + related + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `9013de25` | Decision: restore tabs via `tab_set_open_buffer` |
-| 1 | (this) | Red: ≥1 `document_to_string` in `session.mlc`; stable stub |
+| 1 | `66b06761` | Red: ≥1 `document_to_string` in `session.mlc`; stable stub |
+| 2 | (this) | `tab_set_open_buffer` in restore; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: session restore still stringifies | **done** |
-| 2 | `tab_set_open_buffer` in restore; green | pending |
+| 2 | `tab_set_open_buffer` in restore; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
-
-<!-- STEP=2 sub-steps: 1) tab_set_open_buffer in restore_tabs; 2) drop import if unused; 3) green stable -->
 
 ## Out of scope
 
