@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:30 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_cache STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache→frame_layout) |
+| started | 2026-07-25 14:25 |
+| elapsed | ~5 min |
+| done    | Red harness `run_editor_frame_layout_snapshot_red.sh` + stable stub (`not implemented`); gap = no `frame_layout_tick_snapshot`, 25× `frame_snapshot_cache_tick(` in `demo_live` |
+| verify  | red EXIT=0 `ux_ok frame_layout_snapshot_red`; stable EXIT=1 `not implemented` |
+| result  | §97b frame_cache STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache) |
+
 ### Turn 2026-07-25 14:25 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_cache STEP=0)
 
 | field   | value |
