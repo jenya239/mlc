@@ -606,8 +606,9 @@ fn save_demo_session(
   let mut index = 0
   while index < tab_set_count(tabs) do
     const tab = tabs.tabs[index]
-    const out_path = dump_tab_file(tab.path, document_to_string(tab.buffer.document))
-    saved = tab_set_open(saved, out_path, document_to_string(tab.buffer.document))
+    const text = document_to_string(tab.buffer.document)
+    const out_path = dump_tab_file(tab.path, text)
+    saved = tab_set_open(saved, out_path, text)
     index = index + 1
   end
   if tab_set_count(saved) == 0 then

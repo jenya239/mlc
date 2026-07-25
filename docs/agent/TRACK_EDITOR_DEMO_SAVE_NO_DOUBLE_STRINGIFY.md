@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §89.
 Residual of [TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY.md)
 (§88) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Single flatten (or open_buffer); green stable.
+**STEP=3** — Critic: stable×2 + demo_live + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `aaa6a995` | Decision: one flatten per tab in demo save |
-| 1 | (this) | Red: ≥2 `document_to_string(tab.buffer.document)`; stable stub |
+| 1 | `a1ca5785` | Red: ≥2 `document_to_string(tab.buffer.document)`; stable stub |
+| 2 | (this) | Bind `text` once; green stable + demo compile |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY](../archive/tracks/TRACK_
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: demo save double-stringifies | **done** |
-| 2 | Single flatten (or open_buffer); green | pending |
+| 2 | Single flatten (or open_buffer); green | **done** |
 | 3 | Critic: stable + demo_live + `run_ux_gate` | pending |
-
-<!-- STEP=2 sub-steps: 1) bind text once or tab_set_open_buffer; 2) green stable; 3) demo_live compile -->
 
 ## Out of scope
 
