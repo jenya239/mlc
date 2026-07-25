@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:55 (Driver TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+| started | 2026-07-25 14:50 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_session_restore_no_stringify_red.sh` + stable stub `not implemented`; gap = `document_to_string` in session restore |
+| verify  | red EXIT=0 `ux_ok session_restore_no_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §88 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_SESSION_RESTORE_NO_STRINGIFY |
+
 ### Turn 2026-07-25 14:45 (Planner plan-refresh → §88)
 
 | field   | value |

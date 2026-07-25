@@ -4,17 +4,18 @@ Parent: [../PLAN.md](../PLAN.md) §88.
 Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR_DROP_FILE_NO_STRINGIFY.md)
 (§87) / #1d. Size **S**.
 
-## Status: **open** — STEP=0 done; next Driver STEP=1
+## Status: **open** — STEP=1 done; next Driver STEP=2
 
 ## Next step
 
-**STEP=1** — Red: assert `workspace_session_restore_tabs` still calls `document_to_string`; stable stub `not implemented`.
+**STEP=2** — `tab_set_open_buffer` in restore; green stable.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
-| 0 | (this) | Decision: restore tabs via `tab_set_open_buffer` |
+| 0 | `9013de25` | Decision: restore tabs via `tab_set_open_buffer` |
+| 1 | (this) | Red: ≥1 `document_to_string` in `session.mlc`; stable stub |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -32,11 +33,10 @@ Residual of [TRACK_EDITOR_DROP_FILE_NO_STRINGIFY](../archive/tracks/TRACK_EDITOR
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
-| 1 | Red: session restore still stringifies | pending |
+| 1 | Red: session restore still stringifies | **done** |
 | 2 | `tab_set_open_buffer` in restore; green | pending |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
 
-<!-- STEP=1 sub-steps: 1) red asserts document_to_string in session restore; 2) stable stub; 3) docs -->
 <!-- STEP=2 sub-steps: 1) tab_set_open_buffer in restore_tabs; 2) drop import if unused; 3) green stable -->
 
 ## Out of scope
