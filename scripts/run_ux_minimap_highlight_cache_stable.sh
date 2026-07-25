@@ -14,16 +14,16 @@ if [ ! -x "$MLCC" ]; then
   echo "[ux minimap_highlight_cache_stable] FAIL: mlcc not found at $MLCC" >&2
   exit 1
 fi
-if ! grep -qE 'minimap_span_cache|shared_span_cache' "$DEMO"; then
-  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing minimap/shared span cache" >&2
+if ! grep -q 'frame_layout.span_cache.spans' "$DEMO"; then
+  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing layout span_cache for minimap" >&2
   exit 1
 fi
 if grep -q 'const minimap_spans = highlight_mlc(draw_text)' "$DEMO"; then
   echo "[ux minimap_highlight_cache_stable] FAIL: demo still bare highlight_mlc(draw_text)" >&2
   exit 1
 fi
-if ! grep -q 'editor_ux_syntax_span_cache_tick' "$DEMO"; then
-  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing span cache tick" >&2
+if ! grep -q 'frame_layout_tick_spans(' "$DEMO"; then
+  echo "[ux minimap_highlight_cache_stable] FAIL: demo missing frame_layout_tick_spans(" >&2
   exit 1
 fi
 

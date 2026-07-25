@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE — L2 + demo wire for one full-buffer cache.
+# TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE — L2 + demo wire (via EditorFrameLayout §97b).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,8 +14,12 @@ if [ ! -x "$MLCC" ]; then
   echo "[ux shared_syntax_span_cache_stable] FAIL: mlcc not found at $MLCC" >&2
   exit 1
 fi
-if ! grep -q 'let mut shared_span_cache = editor_ux_syntax_span_cache_new()' "$DEMO"; then
-  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing shared_span_cache" >&2
+if ! grep -q 'frame_layout_tick_spans(' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing frame_layout_tick_spans(" >&2
+  exit 1
+fi
+if grep -q 'let mut shared_span_cache = editor_ux_syntax_span_cache_new()' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: demo still has bare shared_span_cache" >&2
   exit 1
 fi
 if grep -q 'let mut syntax_span_cache = editor_ux_syntax_span_cache_new()' "$DEMO"; then
@@ -30,12 +34,12 @@ if grep -q 'syntax_span_cache, draw_text, range_start, range_end' "$DEMO"; then
   echo "[ux shared_syntax_span_cache_stable] FAIL: demo still visible-range ticks" >&2
   exit 1
 fi
-if ! grep -q 'shared_span_cache, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
-  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing full-buffer shared tick" >&2
+if ! grep -q 'frame_layout, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing full-buffer span tick via layout" >&2
   exit 1
 fi
-if ! grep -q 'const minimap_spans = shared_span_cache.spans' "$DEMO"; then
-  echo "[ux shared_syntax_span_cache_stable] FAIL: minimap not reading shared spans" >&2
+if ! grep -q 'const minimap_spans = frame_layout.span_cache.spans' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: minimap not reading layout span_cache" >&2
   exit 1
 fi
 

@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:35 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b shared_span_cache STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b shared_span_cache→frame_layout) |
+| started | 2026-07-25 14:32 |
+| elapsed | ~4 min |
+| done    | Critic OK: spans stable×2 + related (shared/minimap/syntax harness retarget to layout) + §97a perf smoke + `run_ux_gate`×2 (107); shared_span_cache slice closed |
+| verify  | `ux_ok frame_layout_spans` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b shared_span_cache slice **closed**; queue → Decision for `minimap_cache` |
+| issues  | honest: dual `frame_layout_tick_pixel` early/late; `minimap_cache` still bare local; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b minimap_cache Decision) |
+
 ### Turn 2026-07-25 14:32 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b shared_span_cache STEP=2)
 
 | field   | value |

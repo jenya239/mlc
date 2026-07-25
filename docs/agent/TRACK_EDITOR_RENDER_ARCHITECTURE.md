@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b shared_span_cache STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97b shared_span_cache slice **closed** (Critic OK); next Decision `minimap_cache`
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -142,10 +142,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: bare span tick in `demo_live` / no `frame_layout_tick_spans` | **done** (`run_editor_frame_layout_spans_red.sh`) |
 | 2 | Green: own `span_cache` on `EditorFrameLayout`; wire `demo_live` | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — editor_ux_syntax_span_cache_tick( in demo_live; no frame_layout_tick_spans; stable stub -->
 <!-- STEP=2: span_cache on EditorFrameLayout; 0× editor_ux_syntax_span_cache_tick in demo_live -->
+<!-- STEP=3: Critic — spans stable×2 + related harness retarget + perf smoke + run_ux_gate×2 (107); slice closed; residual: dual frame_layout_tick early/late; minimap_cache still bare local; next extract = minimap_cache -->
+
+#### Next extract — `minimap_cache` consolidation
+
+*(Decision STEP=0 pending — fold `minimap_cache` into `EditorFrameLayout` / layout tick API; no algo change; gate: red→green→Critic + §97a perf smoke.)*
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 

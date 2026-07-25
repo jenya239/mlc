@@ -23,8 +23,8 @@ if ! grep -q 'export fn editor_ux_syntax_span_cache_tick' "$CACHE_MOD"; then
   echo "[ux syntax_highlight_cache_stable] FAIL: missing cache tick helper" >&2
   exit 1
 fi
-if ! grep -q 'editor_ux_syntax_span_cache_tick' "$DEMO"; then
-  echo "[ux syntax_highlight_cache_stable] FAIL: demo missing span cache tick" >&2
+if ! grep -q 'frame_layout_tick_spans(' "$DEMO"; then
+  echo "[ux syntax_highlight_cache_stable] FAIL: demo missing frame_layout_tick_spans(" >&2
   exit 1
 fi
 if grep -q 'syntax_spans = highlight_range(draw_text, range_start, range_end)' "$DEMO"; then
