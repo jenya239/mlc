@@ -488,7 +488,7 @@ compiler/
 | **90** | Editor demo open-path without stringify (§89 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md) |
 | **91** | Editor tree-click opens without stringify (§90 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md) |
 | **92** | Editor clipboard slice without full stringify (§91 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md) |
-| **93** | Editor edit autoclose without full stringify (§92 residual) | **open** STEP=2 done; Critic STEP=3 next | [agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md) |
+| **93** | Editor edit autoclose without full stringify (§92 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md) |
 | **94** | **superseded by §97** (2026-07-25) — root cause is the architectural gap §97 fixes directly (no single live `EditorAppState`/draw-op list), not an isolated bug worth patching separately | superseded | [agent/TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP](agent/TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP.md) |
 | **95** | **superseded by §97** (2026-07-25) — same root cause as §94 | superseded | [agent/TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP](agent/TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP.md) |
 | **96** | **superseded by §97** (2026-07-25) — folded into §97's real-state/real-perf work; still a valid cheap regression scenario, pick up as part of §97c | superseded | [agent/TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT](agent/TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT.md) |
@@ -920,8 +920,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY (§92, **closed** 2026-07-25: Critic OK; STEP=0–3;
       piece-range document_byte_slice for clipboard; `eb759388`…`79e1a78c`;
       → [archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md))**
-  → **EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY (§93, open STEP=1 next:
-      autoclose via document_byte_slice; [TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md))**
+  → **EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY (§93, **closed** 2026-07-25: Critic OK; STEP=0–3;
+      autoclose via document_byte_slice; `0d3dd8a8`…`3bf241e4`;
+      → [archive/tracks/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md))**
 ```
 
 
