@@ -2,6 +2,34 @@
 
 ## Entries
 
+### Turn 2026-07-25 12:25 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97a EDITOR_REAL_PERF_HARNESS) |
+| started | 2026-07-25 12:20 |
+| elapsed | ~5 min |
+| done    | Froze §97a Decision: real wall-clock timers in `demo_live` under `MLC_EDITOR_PERF`; headless ≥100k-line scroll smoke via `glfw_gl_input_test_*`; extend `ui/perf.mlc`; leave dead `main.mlc` stub smoke as historical |
+| verify  | `run_editor_perf_smoke.sh` still targets `main.mlc` zero counters; `demo_live.mlc` has no `Profile`/`MLC_EDITOR_PERF` |
+| result  | §97a STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97a) |
+
+### Turn 2026-07-25 (interactive session, Planner-style — §94/§95/§96 superseded by §97 architecture track)
+
+| field   | value |
+|---------|-------|
+| role    | Planner (interactive, not queue) |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 |
+| elapsed | n/a (interactive) |
+| done    | User rejected an offered Plan-mode switch and restated the request directly: "тормозит всё адски, скроллы нормально не работают и это не из-за фоновых процессов... системный подход к рендерингу... clean architecture на максималках". Investigated by measuring, not guessing: `demo_live.mlc` is 2684 lines; `frame_snapshot_cache_tick` is called from **25 separate scattered sites** across the file (every edit branch threads it by hand) plus 4 more independently-threaded ad-hoc caches (`wrap_count_cache`/`shared_span_cache`/`minimap_cache`/`frame_cache`) — no single frame-state model. Found this exact disease was already diagnosed 2026-07-15 in `mlc-support/responses/gui_editor_architecture_20260715_105621.md` (P0 items #6 `EDITOR_FRAME_SPLIT`, #7 `EDITOR_UX_PROBE_FROM_LIVE_STATE`, #10 `EDITOR_REAL_PERF_HARNESS`) but never opened as tracks — confirmed via `grep`/`find` that none of the 10 P0 track names from that review exist anywhere in `docs/`. Cross-checked which P0 items *were* incidentally done under other track names during the intervening ~50 tracks: `gl_scissor`, `glfwSetCursor`/`glfw_gl_cursor_set`, OS clipboard (`glfwGetClipboardString`/`SetClipboardString`), and per-glyph `u_color` uniform are all present now; `command_bus_resolve` is still not wired into `demo_live.mlc`, and critically neither is the frame-split/unified-state/real-perf trio — those three are exactly what's needed for "systemic" rendering/scroll work. Superseded §94/§95/§96 (their root cause is precisely this gap) and opened §97 `TRACK_EDITOR_RENDER_ARCHITECTURE` as an umbrella with three ordered, individually-gated sub-tracks (§97a perf harness first for an honest baseline, §97b frame split, §97c unify live state), explicitly carrying forward the 2026-07-15 review's own non-goal against a big-bang rewrite. Bumped `INSTRUCTIONS_REV=2026-07-25-render-architecture-priority`, updated `CONTINUITY.md` queue head and hard-limit table |
+| verify  | Re-read the review response in full; grepped current `demo_live.mlc`/runtime/stdlib for each P0 binding to confirm done-vs-not-done status before writing the umbrella track, rather than assuming from memory |
+| next    | Driver: §97a Decision — real per-frame wall-clock instrumentation in `demo_live.mlc` (not the dead `main.mlc` `MLC_EDITOR_PERF` stub) + headless 100k-line scroll-frame-timing smoke, establish honest baseline before touching any rendering code |
+
 ### Turn 2026-07-25 (interactive session, Planner-style priority insert — §94/§95/§96)
 
 | field   | value |

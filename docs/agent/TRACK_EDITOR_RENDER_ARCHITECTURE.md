@@ -1,0 +1,104 @@
+# Track: Editor render architecture — execute the 2026-07-15 review's P0 backlog
+
+Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормозит всё
+адски, скроллы нормально не работают и это не из-за фоновых процессов. нужен
+системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
+тестируемая архитектура. clean architecture на максималках."
+
+## Status: **open** — §97a STEP=0 Decision **done**; next Driver STEP=1 (red)
+
+## Why this track exists (root cause, not a new finding)
+
+[`mlc-support/responses/gui_editor_architecture_20260715_105621.md`](../../../mlc-support/responses/gui_editor_architecture_20260715_105621.md)
+(2026-07-15 architecture review, executive verdict) already diagnosed this
+exact disease ten days before this track: `demo_live.mlc` is a god-loop that
+duplicates `ux/*` logic instead of reusing it, with no single source of
+truth for frame state. Its P0 roadmap items **#6 `EDITOR_FRAME_SPLIT`**, **#7
+`EDITOR_UX_PROBE_FROM_LIVE_STATE`**, **#10 `EDITOR_REAL_PERF_HARNESS`** were
+never opened as tracks. Instead, `PLAN.md` §48-§96 (~50 tracks) spent ten
+days patching individual symptoms in the same file (wrap caching, minimap
+clipping, idle CPU, hover tint, drag-selection, scrollbar-on-hover, stringify
+sweeps) one at a time — each real and correctly fixed in isolation, but the
+pattern of "one narrow fix → next narrow symptom in the same 2684-line file"
+is exactly what an unaddressed architecture gap looks like.
+
+Confirmed 2026-07-25 (`grep -c` on `demo_live.mlc`): 2684 lines; `frame_snapshot_cache_tick`
+called from **25 separate scattered sites** (every edit-handling branch
+threads it by hand — miss one and that branch silently paints a stale
+frame); 4 more independently-threaded ad-hoc caches
+(`wrap_count_cache`/`shared_span_cache`/`minimap_cache`/`frame_cache`), no
+single per-frame "what changed, what needs recompute" model. This is the
+mechanism behind the class of bug in the (now superseded) §94/§95/§96: model
+tests pass against an isolated `EditorUxState` fixture while the live loop's
+own separate locals can silently diverge from it.
+
+## Non-goals (from the review's own §7, still binding)
+
+- **No big-bang rewrite.** Extract one phase at a time behind a pixel/L2
+  regression gate (`run_ux_gate.sh` ×2, per `GUI_UX_TESTING.md` standing
+  discipline point 5), not a single giant `demo_live.mlc` rewrite commit.
+- No second UI toolkit, no migrating chrome onto `SceneNode` (that is the
+  review's item #8, a separate explicit Decision, out of scope here unless
+  a later sub-track deliberately opens it).
+- No `mlc-script`/VM involvement — unrelated.
+
+## Sub-tracks, in order
+
+### §97a `EDITOR_REAL_PERF_HARNESS` (do first — measure before refactoring)
+
+#### Decision (STEP=0) — **frozen** 2026-07-25
+
+| Item | Choice |
+|------|--------|
+| Problem | Existing `MLC_EDITOR_PERF` / `scripts/run_editor_perf_smoke.sh` targets dead `misc/editor/main.mlc` and asserts **zero** `layout_us`/`shaping_us`/`draw_us`. `demo_live.mlc` (the real editor) has no wall-clock frame instrumentation and no headless 100k-line scroll timing smoke — so "scroll lags" stays unmeasured guesswork before any §97b/§97c refactor |
+| Strategy (v1) | (1) Wire real timers into **`demo_live.mlc`** under `MLC_EDITOR_PERF=1`: wall clock via existing `Profile` / `mlc::profile::monotonic_nanos` (same runtime as `Profile.scope_*` already used in `frame_snapshot_cache.mlc`); accumulate per-frame µs for at least **layout/wrap**, **syntax/highlight** (if on hot path), **draw**, plus **total frame**. Reuse/extend `ui/perf.mlc` counters so printed line is non-zero on a real frame. (2) Headless smoke script (new `scripts/run_editor_demo_live_perf_smoke.sh`): `MLC_GLFW_VISIBLE=0`, open/create **≥100k-line** fixture, drive **N≥30** synthetic scroll frames via `glfw_gl_input_test_*`, print aggregated ms/frame (or µs) line, assert `frames≥N` and **at least one phase / total_us > 0**. Leave old `main.mlc` stub smoke as-is (historical). Out of scope for §97a: extracting modules (§97b), unifying `EditorUxState` (§97c), changing cache algorithms |
+| Primary gate | Red: no green demo_live perf smoke (stub-only or missing). Green: `ux_ok` / `[mlc-editor] demo_live_perf …` with real non-zero timings on 100k-line scroll; `demo_live` compile stays green |
+| Module touch | `demo_live.mlc`; `ui/perf.mlc` (extend); new smoke script; optional tiny fixture generator under `misc/editor/` or `tmp/` |
+| REG | no |
+| Out of scope | §97b frame split; §97c unified live state; cache algorithm changes; SCRIPT_VM; MIR Epic 5 |
+
+#### Steps (§97a)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: demo_live still has no real perf smoke / zero-only path | pending |
+| 2 | Wire timers + 100k scroll smoke; green | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate` | pending |
+
+<!-- STEP=1: red asserts demo_live lacks MLC_EDITOR_PERF real timings; stable stub; old main.mlc stub remains zeros -->
+<!-- STEP=2: Profile/monotonic nanos in demo_live phases; run_editor_demo_live_perf_smoke.sh; assert non-zero -->
+
+### §97b `EDITOR_FRAME_SPLIT`
+
+Extract `demo_live.mlc::main()`'s tangled phases into named modules under
+`misc/editor/app/`: `frame_input.mlc` (poll input → intent, no side
+effects), `frame_layout.mlc` (**one** consolidated, memoized `LayoutPlan`
+replacing the 5 scattered ad-hoc caches above — single `content_dirty` in,
+single struct out, every sub-field independently unit-testable), and the
+existing draw calls routed through it. Proceed file-by-file: extract one
+cache/computation into `frame_layout.mlc` at a time, verify `run_ux_gate.sh`
+×2 stays green and §97a's perf smoke shows no regression, before moving to
+the next one. Do not attempt to also fix `EDITOR_COMMAND_BUS_WIRE` (review
+item #5, toolbar-vs-keyboard dual dispatch) in this sub-track — separate
+concern, separate track if picked up later.
+
+### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
+
+Once §97b's phase boundaries exist: make the live loop actually construct
+and mutate **one** `EditorUxState`/`EditorAppState` per frame (not the
+current scattered locals), and derive every paint call from it, the same
+struct the `ux_scenarios/*` fixtures already exercise. This closes the
+§94/§95/§96 class of bug by construction (one state, one paint path) rather
+than by patching each symptom found so far. Fold in §96's cheap
+focus-independent-wheel-scroll regression scenario here as a quick add-on
+once the unified state exists.
+
+## Verification discipline for every sub-track
+
+Same as every other `compiler/**`/`misc/editor/**` track in this repo:
+scenario-first (red before green), `run_ux_gate.sh` twice back-to-back
+before Critic close, `dev_gate_fast.sh` green, no STEP marked `done` without
+a matching commit. §97a's perf smoke additionally becomes a permanent
+regression gate for §97b/§97c — if either step regresses the measured
+ms/frame on the 100k-line fixture, that is a blocker, not a nitpick.
