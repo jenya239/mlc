@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 16:07 (Driver TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 16:07 |
+| elapsed | ~3 min |
+| done    | Red harness: `edit_toggle_line_comment` still `document_to_string` + `document_from_string`; stable stub |
+| verify  | `ux_ok comment_toggle_no_full_stringify_red`; stable EXIT=1 |
+| result  | §100 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 16:06 (Planner plan-refresh → §100)
 
 | field   | value |
