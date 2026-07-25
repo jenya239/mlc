@@ -2,6 +2,36 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:45 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b minimap_cache STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b minimap_cache→frame_layout) |
+| started | 2026-07-25 14:42 |
+| elapsed | ~3 min |
+| done    | Critic OK: minimap stable×2 + related (tags/zoom/spans/snapshot) + §97a perf smoke + `run_ux_gate`×2 (107); minimap_cache slice closed; cache extracts done |
+| verify  | `ux_ok frame_layout_minimap` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b minimap_cache slice **closed**; queue → Decision for `frame_input` |
+| issues  | honest: dual `frame_layout_tick_pixel` early/late; glyph rebuild locals still in demo; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input Decision) |
+
+### Turn 2026-07-25 14:41 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b minimap_cache STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b minimap_cache→frame_layout) |
+| started | 2026-07-25 14:39 |
+| elapsed | ~2 min |
+| done    | `EditorFrameLayout.minimap_cache` + `frame_layout_tick_minimap`; `demo_live` 0× bare `minimap_cache` / 0× direct tick; related harness retarget; green stable |
+| verify  | stable EXIT=0 `ux_ok frame_layout_minimap`; red EXIT=1; related tags/zoom EXIT=0; §97a perf smoke EXIT=0 frames=30 |
+| result  | §97b minimap_cache STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b minimap_cache) |
+
 ### Turn 2026-07-25 14:37 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b minimap_cache STEP=1)
 
 | field   | value |
