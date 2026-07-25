@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic STEP=3 `TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` §99.
-**`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **open** — STEP=2 done; Critic STEP=3 next.
+**Queue head:** Planner `STEP=plan-refresh` (no open editor pending after §99).
+**`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **closed** 2026-07-25 (Critic OK). P0 §97a/b/c+§96 done.

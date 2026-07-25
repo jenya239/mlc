@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:53 (Critic TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:53 |
+| elapsed | ~12 min |
+| done    | Critic OK: word-delete stable×2 + related + `run_ux_gate`×2 (111); track archived |
+| verify  | `ux_ok word_delete_no_full_stringify` ×2; related EXIT=0; `[ux gate] all ok (111 scenarios)` ×2 |
+| result  | §99 **closed**; queue → Planner plan-refresh |
+| issues  | honest: `*_red` obsolete; comment toggle / frame_snapshot / save / word-nav `line_index.text` still OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 15:51 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=2)
 
 | field   | value |
