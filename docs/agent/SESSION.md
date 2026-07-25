@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:10 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97a)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97a EDITOR_REAL_PERF_HARNESS) |
+| started | 2026-07-25 13:15 |
+| elapsed | ~55 min |
+| done    | Critic OK: demo_live_perf smoke×2 + historical `main.mlc` stub + `demo_live_fs_compile` + `run_ux_gate` 107; §97a closed |
+| verify  | smoke EXIT=0 ×2 `ux_ok demo_live_perf`; stub ok; `demo_live_fs_compile_ok`; `[ux gate] all ok (107 scenarios)` |
+| result  | §97a **closed**; queue → §97b Decision STEP=0 |
+| issues  | honest: `*_red` obsolete post-green; perf path skips full-doc pixel-wrap/syntax/minimap; scroll via `editor_app_wheel_scroll` (no glfw scroll inject) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b EDITOR_FRAME_SPLIT) |
+
 ### Turn 2026-07-25 13:15 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97a STEP=2)
 
 | field   | value |

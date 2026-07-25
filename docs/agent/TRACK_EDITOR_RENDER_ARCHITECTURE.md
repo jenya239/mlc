@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97a STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97a **closed** (Critic OK); next Driver §97b STEP=0 Decision
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -64,12 +64,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: demo_live still has no real perf smoke / zero-only path | **done** (`run_editor_demo_live_perf_red.sh`) |
 | 2 | Wire timers + 100k scroll smoke; green | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate` | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate` | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red asserts demo_live lacks MLC_EDITOR_PERF real timings; stable stub; old main.mlc stub remains zeros -->
 <!-- STEP=2: Profile/monotonic micros in demo_live phases; run_editor_demo_live_perf_smoke.sh; assert non-zero; under MLC_EDITOR_PERF skip full-doc pixel-wrap/syntax/minimap (100k hang) -->
+<!-- STEP=3: Critic — smoke×2 + historical main.mlc stub + demo_live_fs_compile + run_ux_gate 107; §97a closed; residual: red harness obsolete post-green; scroll drive via editor_app_wheel_scroll (no glfw scroll inject) -->
 
 ### §97b `EDITOR_FRAME_SPLIT`
+
+#### Decision (STEP=0) — pending
 
 Extract `demo_live.mlc::main()`'s tangled phases into named modules under
 `misc/editor/app/`: `frame_input.mlc` (poll input → intent, no side
