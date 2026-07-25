@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 17:20 (Critic TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY |
+| started | 2026-07-25 17:10 |
+| elapsed | ~10 min |
+| done    | Critic OK: stable×2 + drop/session related + demo_live + `run_ux_gate` 105; archive §90 |
+| verify  | `demo_open_path_no_stringify` EXIT=0 ×2; drop/session EXIT=0; `demo_live_fs_compile_ok`; `[ux gate] all ok (105 scenarios)` |
+| result  | §90 **closed**; authorized queue empty |
+| issues  | none (honest: `*_red` post-green; tree_hit/frame_snapshot/edit/clipboard + incremental lexer OOS) |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
 ### Turn 2026-07-25 17:05 (Driver TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY STEP=2)
 
 | field   | value |

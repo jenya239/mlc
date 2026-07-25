@@ -1,14 +1,32 @@
 # Track: Editor demo open-path without stringify
 
-Parent: [../PLAN.md](../PLAN.md) §90.
-Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](../archive/tracks/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md)
+Parent: [../../PLAN.md](../../PLAN.md) §90.
+Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md)
 (§89) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
+## Status: **closed** (2026-07-25) — Critic OK
+
+**Critic 2026-07-25 (STEP=3):** Re-ran `demo_open_path_no_stringify_stable` ×2
+(includes `demo_live` compile) + drop_file/session_restore stables + HEAD `run_ux_gate`.
+Anti-false-done: `a7a0c9ac`…`24002446` (STEP=0–2); `try_open_path` uses
+`open_buffer_from_path` + `tab_set_open_buffer`; tree via `open_path_into_tabs`;
+virtual `/demo/` keeps `text_for_path`; `misc/editor/**` + scripts → REG skip;
+no `compiler/`/`lib/mlc/`.
+**reopen: none**.
+
+Honest residual: `*_red` post-green fails (use stable only); tree_hit `open_text`
+API / frame_snapshot / edit/clipboard / incremental lexer still OOS.
+
+| Gate | Result |
+|------|--------|
+| `run_ux_demo_open_path_no_stringify_stable.sh` | `ux_ok demo_open_path_no_stringify` + `demo_live_fs_compile_ok` EXIT=0 (×2) |
+| drop_file / session_restore stables | EXIT=0 |
+| HEAD `run_ux_gate.sh` (105 scenarios) | `[ux gate] all ok` EXIT=0 |
+| REG / self-host | N/A (editor + scripts) |
 
 ## Next step
 
-**STEP=3** — Critic: stable + demo_live + `run_ux_gate`.
+**closed** — Critic OK. Authorized queue empty → Planner.
 
 ### STEPs done in git
 
@@ -16,7 +34,8 @@ Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](../archive/tracks/TRACK
 |------|-----------------|-------|
 | 0 | `a7a0c9ac` | Decision: disk opens via `tab_set_open_buffer` |
 | 1 | `cb562cb4` | Red: ≥2 `tab_set_open(…, text_for_path(…))`; stable stub |
-| 2 | (this) | `try_open_path` + tree via `open_path_into_tabs`; green stable |
+| 2 | `24002446` | `try_open_path` + tree via `open_path_into_tabs`; green stable |
+| 3 | (this) | Critic OK; archive |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,9 +55,7 @@ Residual of [TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](../archive/tracks/TRACK
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: disk opens still stringify | **done** |
 | 2 | `tab_set_open_buffer` for disk; green | **done** |
-| 3 | Critic: stable + demo_live + `run_ux_gate` | pending |
-
-<!-- STEP=2: try_open_path disk via open_buffer; tree_open → open_path_into_tabs; virtual /demo keeps text_for_path -->
+| 3 | Critic: stable + demo_live + `run_ux_gate` | **done** |
 
 ## Out of scope
 
