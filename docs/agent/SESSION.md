@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:22 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:22 |
+| elapsed | ~2 min |
+| done    | Green L0 stable: wheel block has `tree_hovered` + `editor_rect` hover gates, zero `editor_focused` |
+| verify  | stable EXIT=0 `ux_ok wheel_hover_focus_independent`; red EXIT=1 |
+| result  | §97c §96 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+
 ### Turn 2026-07-25 15:21 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=1)
 
 | field   | value |
