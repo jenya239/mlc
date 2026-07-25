@@ -489,6 +489,9 @@ compiler/
 | **91** | Editor tree-click opens without stringify (§90 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md) |
 | **92** | Editor clipboard slice without full stringify (§91 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md) |
 | **93** | Editor edit autoclose without full stringify (§92 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md) |
+| **94** (priority override, 2026-07-25, user report "не хватает нормального ховера") | Editor hover→paint wiring gap: scrollbar thumbs (content/tree/horizontal) never visibly appear on real hover in the compiled binary, despite the L1 model test (`content_scrollbar_thumb_on_hover`) passing with a hardcoded `hovered=1` | **open** STEP=0 next | [agent/TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP](agent/TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP.md) |
+| **95** (same report) | Editor drag-selection paint gap: no visible selection highlight during a multi-line click-drag in the compiled binary, despite caret tracking the drag correctly and L1 selection scenarios passing | **open** STEP=0 next (after §94) | [agent/TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP](agent/TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP.md) |
+| **96** (same report — protective regression test only, behavior already correct by code read) | Editor wheel-scroll-on-hover is already independent of `editor_focused` in `demo_live.mlc` (gated only on `point_in_rect`) — add an explicit scenario locking this in, no user-visible fix expected | **open** STEP=0 next (after §95) | [agent/TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT](agent/TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -916,6 +919,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY (§92, **closed** 2026-07-25: Critic OK; STEP=0–3;
       piece-range document_byte_slice for clipboard; `eb759388`…`79e1a78c`;
       → [archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md](archive/tracks/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md))**
+  → **EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY (§93, open STEP=1 next:
+      autoclose via document_byte_slice; [TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY.md))**
 ```
 
 

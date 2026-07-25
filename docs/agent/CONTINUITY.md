@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-07-22-idle-cpu-priority` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-07-25-hover-paint-priority` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
+INSTRUCTIONS_REV=2026-07-25-hover-paint-priority
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -35,7 +35,7 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 
 Перед работой: `git status` + `git log --oneline -15`. Чужой uncommitted diff (`compiler/out/**`, SCRIPT_VM design-only, `.tmp/**`, `lib/mlc/**/capture_analyzer.rb`, `CLAUDE.md`, `README.md`, `docs/reddit-update-post-2026-07*.md` — interactive-session WIP, не трек) — не трогать; коммитить только свои файлы explicit `git add` списком. Не повторять эту заметку в `issues` каждый turn — она уже здесь.
 
-**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Queue head: **Driver STEP=1 `TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)**. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-25:** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61/#62/#63/#64/#65/#66/#67/#68/#69/#70/#71/#72/#73/#74/#75/#76/#77/#78/#79/#80/#81/#82/#83/#84/#85/#86/#87/#88/#89/#90/#91/#92 done; §93 open STEP=0 done.
+**`test_gate=fail` → `ROLE=Driver STEP=test-fix` before TRACK feature STEPs** (rotation table). Tier A (`dev_gate_fast`) green as of 2026-07-17 test-fix Decision. Priority override `#36` **closed** 2026-07-20. **Override 2026-07-25 (a):** §46/#47/#48/#49/#50/#51/#52/#53/#54/#55/#56/#57/#58/#59/#60/#61/#62/#63/#64/#65/#66/#67/#68/#69/#70/#71/#72/#73/#74/#75/#76/#77/#78/#79/#80/#81/#82/#83/#84/#85/#86/#87/#88/#89/#90/#91/#92 done; §93 open STEP=0 done. **Override 2026-07-25 (b), inserted ahead of §93 remainder — user report "не хватает нормального ховера... скролбары должны появляться по ховеру... колесо мыши должно работать по ховеру параллельно фокусу":** Queue head is now **Decision STEP=0 `TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (§94)**, then §95, then §96, then resume §93 STEP=1. All three new tracks are evidence-gathering-first (STEP=1 must build a deterministic headless/offscreen repro via `glfw_gl_input_test_*` + `glReadPixels` before any code fix — see each TRACK file for why: an interactive-session live-click probe found no visible scrollbar/selection paint, but the probe technique itself has real reliability confounds in this sandbox's X11/WM and must not be trusted as a confirmed root cause on its own).
 
 Любой новый трек с `compiler/` — self-host diff + Tier B на каждом STEP (не только `--check-only`). После правок `lib/mlc/` — `scripts/regression_gate.sh` перед Critic close. Анти-false-done / анти-stale-docs — как в CONTINUITY.md.
 
@@ -122,9 +122,13 @@ INSTRUCTIONS_REV=2026-07-22-idle-cpu-priority
 | **`TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY` (PLAN §90)** | **closed** 2026-07-25 (Critic OK). Archived. Disk opens via `tab_set_open_buffer`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY` (PLAN §91)** | **closed** 2026-07-25 (Critic OK). Archived. Tree click via `tab_set_open_buffer`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (PLAN §92)** | **closed** 2026-07-25 (Critic OK). Archived. Piece-range clipboard slice. Do not reopen numbered STEPs |
+| **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (PLAN §93)** | **open** STEP=1 next (after §94/§95/§96 override resolve). Autoclose via `document_byte_slice` (§92 residual). Size S |
+| **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (PLAN §94)** | **open** STEP=0 next — priority override, queue head. Evidence-first: headless repro required before any fix, see TRACK file |
+| **`TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP` (PLAN §95)** | **open** STEP=0 next, after §94 closes. Evidence-first, same technique as §94 |
+| **`TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` (PLAN §96)** | **open** STEP=0 next, after §95 closes. Protective regression scenario only — code already correct by read |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **empty** → Planner plan-refresh — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
+| **Authorized queue** | **§93** Driver STEP=1 — SCRIPT_VM / MIR Epic 5 / LANG_AUTO_CYCLE still gated |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |

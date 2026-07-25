@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 (interactive session, Planner-style priority insert — §94/§95/§96)
+
+| field   | value |
+|---------|-------|
+| role    | Planner (interactive, not queue) |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 |
+| elapsed | n/a (interactive) |
+| done    | User report ("не хватает нормального ховера... скролбары должны появляться по ховеру... колесо мыши должно работать по ховеру параллельно фокусу") investigated: built+ran live binary on a real X display, drove mouse via `xdotool`, screenshotted. No scrollbar-thumb pixels appeared at any tested hover position; no selection-highlight pixels during a multi-line click-drag; caret position did visibly track clicks/drags in the same runs (input delivery not fully broken). Code read found no obvious gating bug — existing gate scenario `content_scrollbar_thumb_on_hover` only tests the isolated model fn with hardcoded `hovered=1`, never the real per-frame `demo_live.mlc` wiring (same class of gap the 2026-07-17 Opus review flagged). Wheel-scroll-on-hover independent of focus: already correct by code read (`point_in_rect`, no `editor_focused` check), added as a protective-only track. Opened §94/§95/§96 (`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP`, `TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP`, `TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT`), inserted ahead of §93 remainder in `CONTINUITY.md` queue head, bumped `INSTRUCTIONS_REV=2026-07-25-hover-paint-priority` |
+| verify  | `run_ux_gate.sh` re-run 3× standalone (isolated from host load) after the earlier full-gate run showed `idle_cpu_budget_stable` flake at 46-95%: 0%/1%/46% — confirmed host-load noise (Cursor/Firefox/nicotine on this desktop), not a code regression; no other scenario failed |
+| result  | §94/§95/§96 **open** STEP=0 (Decision) next each, in that order; §93 still open behind them |
+| issues  | Live-click probe via `xdotool` has real confounds in this sandbox (relative-vs-absolute window coordinate mapping was inconsistent between attempts; one absolute-coordinate attempt produced zero visible response where a relative-coordinate attempt on the same window did respond) — documented explicitly in both new TRACK files as **not** a confirmed root cause; each track's STEP=1 mandates a deterministic offscreen repro (`glfw_gl_input_test_*` + `glReadPixels`) before any fix, so a Driver picking this up does not skip straight to guessing a code change |
+| next    | ROLE=Planner STEP=0 (Decision) TRACK=TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP — queue resumes normal rotation after this |
+
 ### Turn 2026-07-25 20:30 (Planner plan-refresh → §93)
 
 | field   | value |
