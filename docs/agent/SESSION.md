@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:27 (Driver TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:27 |
+| elapsed | ~2 min |
+| done    | Autoclose wrap+peek via `document_byte_slice`; green stable |
+| verify  | stable EXIT=0 `ux_ok edit_autoclose_no_full_stringify`; red EXIT=1; typing_paren + edit_unit EXIT=0 |
+| result  | §93 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 15:26 (Driver TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |

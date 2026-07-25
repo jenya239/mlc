@@ -122,7 +122,7 @@ INSTRUCTIONS_REV=2026-07-25-render-architecture-priority
 | **`TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY` (PLAN §90)** | **closed** 2026-07-25 (Critic OK). Archived. Disk opens via `tab_set_open_buffer`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY` (PLAN §91)** | **closed** 2026-07-25 (Critic OK). Archived. Tree click via `tab_set_open_buffer`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (PLAN §92)** | **closed** 2026-07-25 (Critic OK). Archived. Piece-range clipboard slice. Do not reopen numbered STEPs |
-| **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (PLAN §93)** | **open** STEP=1 done; STEP=2 green next. Autoclose via `document_byte_slice` (§92 residual). Size S |
+| **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (PLAN §93)** | **open** STEP=2 done; Critic STEP=3 next. Autoclose via `document_byte_slice` (§92 residual). Size S |
 | **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (PLAN §94)** | **superseded by §97** — do not resume, closed by the §97c architectural fix instead |
 | **`TRACK_EDITOR_DRAG_SELECTION_PAINT_GAP` (PLAN §95)** | **superseded by §97** — do not resume |
 | **`TRACK_EDITOR_WHEEL_HOVER_FOCUS_INDEPENDENT` (PLAN §96)** | **superseded by §97** — L0 folded into §97c; Critic OK 2026-07-25 |
