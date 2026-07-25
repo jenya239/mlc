@@ -83,6 +83,28 @@ export fn tab_set_open(
   }
 end
 
+// TRACK_EDITOR_DROP_FILE_NO_STRINGIFY — open with already-loaded buffer (no flatten).
+export fn tab_set_open_buffer(
+  tabs: TabSet,
+  path: string,
+  buffer: OpenBuffer
+) -> TabSet = do
+  const existing = find_path_index(tabs, path)
+  if existing >= 0 then
+    return TabSet { tabs: tabs.tabs, active_index: existing }
+  end
+  let mut next_tabs = tabs.tabs
+  next_tabs.push(EditorTab {
+    path: path,
+    name: tab_display_name(path),
+    buffer: buffer
+  })
+  TabSet {
+    tabs: next_tabs,
+    active_index: next_tabs.length() - 1
+  }
+end
+
 export fn tab_set_set_active(tabs: TabSet, index: i32) -> TabSet = do
   if index < 0 || index >= tabs.tabs.length() then
     return tabs

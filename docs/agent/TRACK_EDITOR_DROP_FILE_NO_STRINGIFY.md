@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §87.
 Residual of [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](../archive/tracks/TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT.md)
 (§86) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Open without stringify; green stable.
+**STEP=3** — Critic: stable×2 + related + full `run_ux_gate`.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `cca9e565` | Decision: open dropped path without `document_to_string` |
-| 1 | (this) | Red: ≥1 `document_to_string` in `drop_file.mlc`; stable stub |
+| 1 | `f41c931e` | Red: ≥1 `document_to_string` in `drop_file.mlc`; stable stub |
+| 2 | (this) | `tab_set_open_buffer`; drop stringify; green stable |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,10 +35,8 @@ Residual of [TRACK_EDITOR_PROBE_REUSE_LINE_INDEX_TEXT](../archive/tracks/TRACK_E
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: drop_file still stringifies | **done** |
-| 2 | Open without stringify; green | pending |
+| 2 | Open without stringify; green | **done** |
 | 3 | Critic: stable + full `run_ux_gate` | pending |
-
-<!-- STEP=2 sub-steps: 1) tab_set_open_buffer or empty+update; 2) drop import; 3) green stable -->
 
 ## Out of scope
 
