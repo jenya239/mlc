@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:12 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c EDITOR_UX_PROBE_FROM_LIVE_STATE) |
+| started | 2026-07-25 15:10 |
+| elapsed | ~2 min |
+| done    | Critic NOT OK: unpack stable×2 + dual_wrap/frame_input/layout related + §97a perf OK; `run_ux_gate` FAIL (stale greps) |
+| verify  | `ux_ok editor_app_unpack` ×2; related EXIT=0; `ux_ok demo_live_perf`; gate FAIL: `demo_open_path_no_stringify` / `dirty_close_button_hover` / `discard_danger_theme` (+ `overlay_theme_tint` same class) |
+| result  | §97c Critic STEP=3 **NOT OK**; queue Driver retarget |
+| issues  | harnesses still match `open_path_into_tabs(tabs, …)` / `dirty_close_overlay_is_visible(overlay)`; live code uses `app.ux.tabs` / `app.overlay` |
+| next    | ROLE=Driver STEP=2b TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c harness retarget) |
+
 ### Turn 2026-07-25 15:08 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=2)
 
 | field   | value |
