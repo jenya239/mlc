@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 18:40 (Planner plan-refresh → §92)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 18:35 |
+| elapsed | ~5 min |
+| done    | Opened §92 `TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY`: Decision — piece-range `document_byte_slice` for clipboard; §91 residual |
+| verify  | `clipboard_edit` `document_slice` still calls `document_to_string` |
+| result  | §92 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 18:25 (Critic TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY)
 
 | field   | value |

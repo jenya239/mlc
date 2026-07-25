@@ -487,6 +487,7 @@ compiler/
 | **89** | Editor demo save avoids double stringify (§88 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY](archive/tracks/TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY.md) |
 | **90** | Editor demo open-path without stringify (§89 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY.md) |
 | **91** | Editor tree-click opens without stringify (§90 residual) | **closed** (2026-07-25) Critic OK; STEP=0–3 | [archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY](archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md) |
+| **92** | Editor clipboard slice without full stringify (§91 residual) | **open** STEP=1 next | [agent/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md) |
 | — | MLC Script VM (embeddable dynamic profile) | **design-only, NOT authorized** | [MLC_SCRIPT_VM.md](MLC_SCRIPT_VM.md) + [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
@@ -911,6 +912,8 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **EDITOR_TREE_CLICK_NO_STRINGIFY (§91, **closed** 2026-07-25: Critic OK; STEP=0–3;
       tree click via tab_set_open_buffer; `3c4cbf99`…`b298e29d`;
       → [archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md](archive/tracks/TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY.md))**
+  → **EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY (§92, open STEP=1 next:
+      piece-range clipboard slice; [TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY](agent/TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY.md))**
 ```
 
 
