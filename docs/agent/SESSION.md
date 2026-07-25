@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 18:55 (Driver TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 18:50 |
+| elapsed | ~5 min |
+| done    | Red harness `run_ux_clipboard_slice_no_full_stringify_red.sh` + stable stub `not implemented`; gap = `document_to_string` in clipboard `document_slice` |
+| verify  | red EXIT=0 `ux_ok clipboard_slice_no_full_stringify_red`; stable EXIT=1 `not implemented` |
+| result  | §92 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY |
+
 ### Turn 2026-07-25 18:40 (Planner plan-refresh → §92)
 
 | field   | value |

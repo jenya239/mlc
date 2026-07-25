@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=1 `TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92).
-**`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **open** — STEP=0 Decision done; STEP=1 red next.
+**Queue head:** Driver STEP=2 `TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92).
+**`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **open** — STEP=1 red done; STEP=2 green next.
 **`TRACK_EDITOR_TREE_CLICK_NO_STRINGIFY` (§91)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_DEMO_OPEN_PATH_NO_STRINGIFY` (§90)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_DEMO_SAVE_NO_DOUBLE_STRINGIFY` (§89)** **closed** 2026-07-25 (Critic OK). Archived.
