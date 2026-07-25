@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 15:02 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c EDITOR_UX_PROBE_FROM_LIVE_STATE) |
+| started | 2026-07-25 15:02 |
+| elapsed | ~2 min |
+| done    | Red harness `run_editor_app_unpack_red.sh` + stable stub (`not implemented`); gap = ≥8 `let mut = app.` at while head (13) |
+| verify  | red EXIT=0 `ux_ok editor_app_unpack_red` unpacks=13; stable EXIT=1 `not implemented` |
+| result  | §97c STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c) |
+
 ### Turn 2026-07-25 15:01 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c STEP=0)
 
 | field   | value |
