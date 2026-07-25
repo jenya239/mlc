@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b frame_input STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97b frame_input slice **closed** (Critic OK); next Decision dual-wrap
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -194,10 +194,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: bare `gui_input_poll` in `demo_live` / no `frame_input.mlc` | **done** (`run_editor_frame_input_red.sh`) |
 | 2 | Green: extract poll+dirty into `app/frame_input.mlc`; wire `demo_live` | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate`×2 + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — no frame_input.mlc; gui_input_poll( in demo_live; stable stub -->
 <!-- STEP=2: EditorFrameInput + frame_input_poll; 0× gui_input_poll in demo_live -->
+<!-- STEP=3: Critic — frame_input stable×2 + layout related + perf smoke + run_ux_gate×2 (107); slice closed; residual: dual frame_layout_tick_pixel early/late; next = dual-wrap collapse then §97c -->
+
+#### Next extract — dual `frame_layout_tick_pixel` collapse
+
+*(Decision STEP=0 pending — collapse early/late wrap ticks in `demo_live` to one per frame; gate: red→green→Critic + §97a perf smoke. Then §97c.)*
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 

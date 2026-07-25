@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:53 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_input) |
+| started | 2026-07-25 14:51 |
+| elapsed | ~2 min |
+| done    | Critic OK: frame_input stable×2 + layout related (minimap/spans/snapshot/wrap) + §97a perf smoke + `run_ux_gate`×2 (107); frame_input slice closed |
+| verify  | `ux_ok frame_input` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b frame_input slice **closed**; queue → Decision for dual-wrap |
+| issues  | honest: dual `frame_layout_tick_pixel` early/late (2×); glyph rebuild locals; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b dual-wrap Decision) |
+
 ### Turn 2026-07-25 14:51 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b frame_input STEP=2)
 
 | field   | value |
