@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §97. User directive (2026-07-25): "тормо�
 системный подход к быстрому рендерингу, скроллам и т. п. Максимально сильная,
 тестируемая архитектура. clean architecture на максималках."
 
-## Status: **open** — §97b STEP=2 green **done**; next Critic STEP=3
+## Status: **open** — §97b wrap→`frame_layout` **closed** (Critic OK); next Driver STEP=0 Decision (next extract)
 
 ## Why this track exists (root cause, not a new finding)
 
@@ -90,10 +90,15 @@ own separate locals can silently diverge from it.
 | 0 | Decision freeze | **done** |
 | 1 | Red: wrap still dual-inline / no `frame_layout.mlc` | **done** (`run_editor_frame_layout_wrap_red.sh`) |
 | 2 | Green: extract wrap into `app/frame_layout.mlc`; wire `demo_live` | **done** |
-| 3 | Critic: stable×2 + related + `run_ux_gate` + §97a perf smoke | pending |
+| 3 | Critic: stable×2 + related + `run_ux_gate` + §97a perf smoke | **done** (Critic OK 2026-07-25) |
 
 <!-- STEP=1: red — no frame_layout.mlc; ≥2 wrap_count_cache_tick_pixel(; stable stub not implemented -->
 <!-- STEP=2: EditorFrameLayout + tick; demo_live uses frame_layout_tick_pixel; zero wrap_count_cache_tick_pixel in demo_live -->
+<!-- STEP=3: Critic — stable×2 + wrap_count_cache_stable + perf smoke + run_ux_gate×2 (107); first slice closed; residual: dual frame_layout_tick early/late; next extract = frame_cache -->
+
+#### Next extract (pending Decision)
+
+Fold `frame_cache` / `frame_snapshot_cache_tick` consolidation into `frame_layout` (or sibling app module) — freeze as STEP=0 before red.
 
 ### §97c `EDITOR_UX_PROBE_FROM_LIVE_STATE`
 

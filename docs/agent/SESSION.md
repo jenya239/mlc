@@ -2,6 +2,21 @@
 
 ## Entries
 
+### Turn 2026-07-25 14:20 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97b)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97b wrap→frame_layout) |
+| started | 2026-07-25 14:15 |
+| elapsed | ~5 min |
+| done    | Critic OK: frame_layout_wrap stable×2 + wrap_count_cache_stable + §97a perf smoke + `run_ux_gate`×2 (107); first slice closed |
+| verify  | stable EXIT=0 ×2; `ux_ok wrap_count_cache_stable`; `ux_ok demo_live_perf`; `[ux gate] all ok (107 scenarios)` ×2 |
+| result  | §97b wrap slice **closed**; queue → Decision for frame_cache extract |
+| issues  | honest: dual `frame_layout_tick_pixel` early/late remains; `*_red` obsolete post-green |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b frame_cache Decision) |
+
 ### Turn 2026-07-25 14:30 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97b STEP=2)
 
 | field   | value |

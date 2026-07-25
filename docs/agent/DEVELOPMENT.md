@@ -41,8 +41,8 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic STEP=3 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97b `EDITOR_FRAME_SPLIT`.
-**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — §97b STEP=2 green done; Critic STEP=3 next (then further extracts / §97c; §93 after).
+**Queue head:** Driver STEP=0 `TRACK_EDITOR_RENDER_ARCHITECTURE` §97b Decision (frame_cache → layout).
+**`TRACK_EDITOR_RENDER_ARCHITECTURE` (§97)** **open** — §97b wrap→`frame_layout` Critic OK; next extract Decision (then §97c; §93 after).
 **`TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY` (§93)** **open** — deferred until §97 sub-tracks resolve.
 **`TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP` (§94) / `DRAG_SELECTION` (§95) / `WHEEL_HOVER` (§96)** **superseded by §97**.
 **`TRACK_EDITOR_CLIPBOARD_SLICE_NO_FULL_STRINGIFY` (§92)** **closed** 2026-07-25 (Critic OK). Archived.
