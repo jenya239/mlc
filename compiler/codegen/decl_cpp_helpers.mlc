@@ -1,0 +1,30 @@
+// Pure-leaf CppDeclaration-list helpers shared across decl_cpp.mlc's
+// type/trait/fn/FFI/extend/decl-segment groups (§104-13 slice 1).
+
+import { CppDeclaration, CppDeclarationEmpty, CppDeclarationSequence } from '../cpp_ir/cpp_ast'
+
+export fn empty_cpp_declaration() -> Shared<CppDeclaration> =
+  Shared.new(CppDeclarationEmpty)
+
+export fn empty_cpp_declarations() -> [Shared<CppDeclaration>] = do
+  const empty: [Shared<CppDeclaration>] = []
+  empty
+end
+
+export fn append_cpp_declarations(output: [Shared<CppDeclaration>], declarations: [Shared<CppDeclaration>]) -> [Shared<CppDeclaration>] = do
+  let mut index = 0
+  while index < declarations.length() do
+    output.push(declarations[index])
+    index = index + 1
+  end
+  output
+end
+
+export fn cpp_decl_from_native_declarations(declarations: [Shared<CppDeclaration>]) -> Shared<CppDeclaration> =
+  if declarations.length() == 0 then
+    empty_cpp_declaration()
+  else if declarations.length() == 1 then
+    declarations[0]
+  else
+    Shared.new(CppDeclarationSequence(declarations))
+  end

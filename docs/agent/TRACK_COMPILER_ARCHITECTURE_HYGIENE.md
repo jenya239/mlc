@@ -352,8 +352,12 @@ file's own glue layer, not extracted). Slice order and count for groups
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`decl_cpp_helpers.mlc` absent, 4 items at the documented lines, file at baseline 1666 lines) | **done** — `test -f` negative; all 4 helpers confirmed at lines 26/1536/1541/1550, no drift; `decl_cpp.mlc` confirmed at baseline 1666 lines |
-| 2 | Green: create `decl_cpp_helpers.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `decl_cpp_helpers.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** — see verification below |
 | 3 | Critic: full re-audit | pending |
+
+#### Green result (STEP=2, 2026-07-28)
+
+`decl_cpp_helpers.mlc` created (30 lines): all 4 items moved wholesale + exported. `decl_cpp.mlc`: 1666 → 1641 lines (gained 1 import line, dropped the now-unused `CppDeclarationEmpty`/`CppDeclarationSequence` imports since only the new module constructs them directly). Bootstrap diff (`mlcc -o p0` pre-change, `mlcc -o p1` post-change, same pre-existing `mlcc` binary) scoped to exactly 4 files: `decl_cpp.cpp/.hpp` (shrink) + `decl_cpp_helpers.cpp/.hpp` (new) — zero other files touched (confirms the Decision's "zero external importers" claim). Unlike the `transform.mlc` slices, mlcc emits a plain `using namespace decl_cpp_helpers;` at the top of `decl_cpp.cpp` rather than qualifying each of the ~90 call sites — read the full non-`#line` diff anyway: every changed line is either that `using namespace`/`#include` pair, a removed function body, or (at exactly the call sites mlcc chose to qualify explicitly rather than rely on the `using namespace`) a `decl_cpp_helpers::` prefix insertion — zero logic changes. `rake test_compiler_mlc` (`TMPDIR` unset): exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host diff (`build_bin.sh`, in-repo `TMPDIR`, host disk 99%): IDENTICAL. All `.tmp/s104-13-slice1/**` build artifacts cleaned up after.
 
 ## Verification discipline
 

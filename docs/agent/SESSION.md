@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-1 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Green for §104-13 slice 1: created `compiler/codegen/decl_cpp_helpers.mlc` (30 lines). Moved wholesale + exported all 4 items from the frozen Decision: `empty_cpp_declaration`, `empty_cpp_declarations`, `append_cpp_declarations`, `cpp_decl_from_native_declarations`. `decl_cpp.mlc` gained 1 import line for these 4 names, dropped now-unused `CppDeclarationEmpty`/`CppDeclarationSequence` imports (only the new module constructs them directly now). `decl_cpp.mlc` shrank 1666 → 1641 lines |
+| verify  | Fresh `mlcc` translation of `compiler/main.mlc` succeeded (0 errors); confirmed `decl_cpp_helpers.cpp/.hpp` created. Built pre-change baseline `p0` and post-change `p1`; `diff -rq p0 p1` scoped to exactly `decl_cpp.cpp/.hpp` (shrink) + the 2 new files — zero other files touched (confirms zero external importers, matches Decision). Full non-`#line` content diff of `decl_cpp.cpp` read line-by-line: every change is either the new `#include`/`using namespace decl_cpp_helpers;` pair, a removed function body, or a `decl_cpp_helpers::` prefix insertion at call sites mlcc chose to qualify explicitly — zero logic changes. Full `rake test_compiler_mlc` (`TMPDIR` unset): exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host: built via `compiler/build_bin.sh` with in-repo `TMPDIR` (host disk 99%), ran `mlcc2` on `compiler/main.mlc`, `diff -r p1 p2 --exclude=obj` → IDENTICAL. Cleaned up all `.tmp/s104-13-slice1/**` build artifacts after |
+| result  | §104-13 slice-1 green; `compiler/out/mlcc` rebuilt fresh by the rake run (excluded path, not committed) |
+| issues  | none |
+| next    | ROLE=Critic TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 1 — full re-audit: independent function-set diff, independent mlcc translation spot-check + stray-reference grep, independent `rake test_compiler_mlc` rerun; close slice 1 if clean) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-1 red)
 
 | field   | value |
