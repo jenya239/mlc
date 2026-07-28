@@ -1,0 +1,111 @@
+// Trait declaration codegen (`concept ... requires`), split out of
+// decl_cpp.mlc (§104-13 slice 3). Zero circular dependency: pure leaf
+// on top of ./decl/type_gen, ./decl/decl_extend, ./cpp_naming,
+// ./context, and decl_cpp_helpers.
+
+import { param_name } from '../frontend/ast'
+import { SemanticDeclaration, SemanticDeclarationFn } from '../ir/semantic_ir'
+import { CppDeclaration, CppFnProto, CppConceptRequires } from '../cpp_ir/cpp_ast'
+import { CodegenContext, trait_has_associated_types } from './context'
+import { extract_method_name, trait_dispatch_name, concept_declval_arguments_for_params } from './decl/decl_extend'
+import { sem_type_to_cpp, concept_requires_expression_method_returns_convertible } from './decl/type_gen'
+import { cpp_safe } from './cpp_naming'
+import { empty_cpp_declaration, empty_cpp_declarations, is_semantic_declaration_fn } from './decl_cpp_helpers'
+
+fn trait_template_header(type_params: [string]) -> string =
+  if type_params.length() > 0 then
+    'template<typename ' + type_params[0] + ', typename Self>\n'
+  else
+    'template<typename Self>\n'
+  end
+
+fn trait_requires_expression_for_method(
+  trait_context: CodegenContext,
+  trait_name: string,
+  method: Shared<SemanticDeclaration>
+) -> string =
+  match method {
+    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _, _) =>
+      concept_requires_expression_method_returns_convertible(
+        cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
+        concept_declval_arguments_for_params(trait_context, params),
+        sem_type_to_cpp(trait_context, return_type)),
+    _ => ''
+  }
+
+fn trait_requires_expressions_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>]
+) -> [string] = do
+  const trait_context = context.for_type_body(trait_name)
+  let expressions: [string] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    const expression = trait_requires_expression_for_method(trait_context, trait_name, methods[method_index])
+    if expression.length() > 0 then expressions.push(expression) end
+    method_index = method_index + 1
+  end
+  expressions
+end
+
+fn trait_concept_dispatch_forward_proto_cpp(
+  trait_name: string,
+  mangled: string,
+  return_type_cpp: string
+) -> Shared<CppDeclaration> =
+  Shared.new(CppFnProto(
+    'template<typename Self>\n',
+    return_type_cpp,
+    cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
+    ['const Self& self']))
+
+fn trait_skips_concept_dispatch_forward_protos(trait_name: string) -> bool =
+  trait_name == 'ExprVisitor' || trait_name == 'CompilerPass'
+
+fn trait_concept_dispatch_forward_protos_body(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>]
+) -> [Shared<CppDeclaration>] = do
+  const trait_context = context.for_type_body(trait_name)
+  let mut forward_protos: [Shared<CppDeclaration>] = []
+  let mut method_index = 0
+  while method_index < methods.length() do
+    if is_semantic_declaration_fn(methods[method_index]) then
+      match methods[method_index] {
+        SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
+          if parameters.length() > 0 && param_name(parameters[0]) == 'self' then
+            forward_protos.push(trait_concept_dispatch_forward_proto_cpp(
+              trait_name,
+              mangled,
+              sem_type_to_cpp(trait_context, return_type)))
+          end,
+        _ => ()
+      }
+    end
+    method_index = method_index + 1
+  end
+  forward_protos
+end
+
+export fn trait_concept_dispatch_forward_protos_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  methods: [Shared<SemanticDeclaration>]
+) -> [Shared<CppDeclaration>] =
+  if trait_skips_concept_dispatch_forward_protos(trait_name) then empty_cpp_declarations()
+  else trait_concept_dispatch_forward_protos_body(context, trait_name, methods)
+
+export fn gen_trait_decl_cpp(
+  context: CodegenContext,
+  trait_name: string,
+  type_params: [string],
+  methods: [Shared<SemanticDeclaration>]
+) -> Shared<CppDeclaration> =
+  if trait_has_associated_types(context, trait_name) then empty_cpp_declaration()
+  else Shared.new(CppConceptRequires(
+    trait_template_header(type_params),
+    cpp_safe(trait_name),
+    'Self',
+    trait_requires_expressions_cpp(context, trait_name, methods)))

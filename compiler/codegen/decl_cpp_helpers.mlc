@@ -2,6 +2,13 @@
 // type/trait/fn/FFI/extend/decl-segment groups (§104-13 slice 1).
 
 import { CppDeclaration, CppDeclarationEmpty, CppDeclarationSequence } from '../cpp_ir/cpp_ast'
+import { SemanticDeclaration, SemanticDeclarationFn } from '../ir/semantic_ir'
+
+export fn is_semantic_declaration_fn(method: Shared<SemanticDeclaration>) -> bool =
+  match method {
+    SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) => true,
+    _ => false
+  }
 
 export fn empty_cpp_declaration() -> Shared<CppDeclaration> =
   Shared.new(CppDeclarationEmpty)

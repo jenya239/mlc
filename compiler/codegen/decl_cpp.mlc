@@ -1,21 +1,22 @@
 // CppDeclaration dual path for declaration codegen (Phase 2 step 17).
 
-import { Param, TypeVariant, param_name } from '../frontend/ast'
+import { Param, TypeVariant } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExternType, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, trait_base_name } from '../checker/registry'
-import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppTypePtr, CppUnary, CppConceptRequires, CppUsing, CppStaticAssert, CppClassDeclaration, CppClassDefinition, CppClassMemberFunctionDef, CppFunctionPrototype, CppParam, CppFnModifiers, CppIdent } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppTypePtr, CppUnary, CppUsing, CppStaticAssert, CppClassDeclaration, CppClassDefinition, CppClassMemberFunctionDef, CppFunctionPrototype, CppParam, CppFnModifiers, CppIdent } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
 import { CodegenContext, trait_has_associated_types } from './context'
 import { compute_fn_body_context, exported_type_names_from_decls, prototype_context_for_function } from './decl/decl'
-import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, trait_dispatch_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
+import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, gen_extend_wrapper_protos } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
-import { sem_type_to_cpp, template_prefix, requires_clause, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp, concept_requires_expression_method_returns_convertible } from './decl/type_gen'
+import { sem_type_to_cpp, template_prefix, requires_clause, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp } from './decl/type_gen'
 import { gen_trait_struct_cpp } from './decl/trait_struct_cpp'
 import { gen_return_body_cpp } from './stmt/return_body'
 import { cpp_safe } from './cpp_naming'
-import { empty_cpp_declaration, empty_cpp_declarations, append_cpp_declarations, cpp_decl_from_native_declarations } from './decl_cpp_helpers'
+import { empty_cpp_declaration, empty_cpp_declarations, append_cpp_declarations, cpp_decl_from_native_declarations, is_semantic_declaration_fn } from './decl_cpp_helpers'
 import { gen_type_decl_fwd_cpp, gen_type_decl_body_cpp } from './decl_cpp_type'
+import { gen_trait_decl_cpp, trait_concept_dispatch_forward_protos_cpp } from './decl_cpp_trait'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   type_fwds: [Shared<CppDeclaration>],
@@ -54,104 +55,6 @@ fn function_parameter_def_items(
 
 export fn main_program_parameter_items_cpp() -> [string] =
   ['int argc', 'char** argv']
-
-fn trait_template_header(type_params: [string]) -> string =
-  if type_params.length() > 0 then
-    'template<typename ' + type_params[0] + ', typename Self>\n'
-  else
-    'template<typename Self>\n'
-  end
-
-fn trait_requires_expression_for_method(
-  trait_context: CodegenContext,
-  trait_name: string,
-  method: Shared<SemanticDeclaration>
-) -> string =
-  match method {
-    SemanticDeclarationFn(mangled, _, _, params, return_type, _, _, _, _) =>
-      concept_requires_expression_method_returns_convertible(
-        cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
-        concept_declval_arguments_for_params(trait_context, params),
-        sem_type_to_cpp(trait_context, return_type)),
-    _ => ''
-  }
-
-fn trait_requires_expressions_cpp(
-  context: CodegenContext,
-  trait_name: string,
-  methods: [Shared<SemanticDeclaration>]
-) -> [string] = do
-  const trait_context = context.for_type_body(trait_name)
-  let expressions: [string] = []
-  let mut method_index = 0
-  while method_index < methods.length() do
-    const expression = trait_requires_expression_for_method(trait_context, trait_name, methods[method_index])
-    if expression.length() > 0 then expressions.push(expression) end
-    method_index = method_index + 1
-  end
-  expressions
-end
-
-fn trait_concept_dispatch_forward_proto_cpp(
-  trait_name: string,
-  mangled: string,
-  return_type_cpp: string
-) -> Shared<CppDeclaration> =
-  Shared.new(CppFnProto(
-    'template<typename Self>\n',
-    return_type_cpp,
-    cpp_safe(trait_dispatch_name(trait_name, extract_method_name(mangled, trait_name))),
-    ['const Self& self']))
-
-fn trait_skips_concept_dispatch_forward_protos(trait_name: string) -> bool =
-  trait_name == 'ExprVisitor' || trait_name == 'CompilerPass'
-
-fn trait_concept_dispatch_forward_protos_body(
-  context: CodegenContext,
-  trait_name: string,
-  methods: [Shared<SemanticDeclaration>]
-) -> [Shared<CppDeclaration>] = do
-  const trait_context = context.for_type_body(trait_name)
-  let mut forward_protos: [Shared<CppDeclaration>] = []
-  let mut method_index = 0
-  while method_index < methods.length() do
-    if is_semantic_declaration_fn(methods[method_index]) then
-      match methods[method_index] {
-        SemanticDeclarationFn(mangled, _, _, parameters, return_type, _, _, _, _) =>
-          if parameters.length() > 0 && param_name(parameters[0]) == 'self' then
-            forward_protos.push(trait_concept_dispatch_forward_proto_cpp(
-              trait_name,
-              mangled,
-              sem_type_to_cpp(trait_context, return_type)))
-          end,
-        _ => ()
-      }
-    end
-    method_index = method_index + 1
-  end
-  forward_protos
-end
-
-fn trait_concept_dispatch_forward_protos_cpp(
-  context: CodegenContext,
-  trait_name: string,
-  methods: [Shared<SemanticDeclaration>]
-) -> [Shared<CppDeclaration>] =
-  if trait_skips_concept_dispatch_forward_protos(trait_name) then empty_cpp_declarations()
-  else trait_concept_dispatch_forward_protos_body(context, trait_name, methods)
-
-export fn gen_trait_decl_cpp(
-  context: CodegenContext,
-  trait_name: string,
-  type_params: [string],
-  methods: [Shared<SemanticDeclaration>]
-) -> Shared<CppDeclaration> =
-  if trait_has_associated_types(context, trait_name) then empty_cpp_declaration()
-  else Shared.new(CppConceptRequires(
-    trait_template_header(type_params),
-    cpp_safe(trait_name),
-    'Self',
-    trait_requires_expressions_cpp(context, trait_name, methods)))
 
 fn main_set_args_vector_argument_cpp() -> Shared<CppExpression> =
   Shared.new(CppCall(
@@ -382,12 +285,6 @@ extend CodegenContext {
       SemanticDeclarationExported(inner_declaration) => self.gen_proto_cpp(sdecl_inner(inner_declaration))
     }
 }
-
-fn is_semantic_declaration_fn(method: Shared<SemanticDeclaration>) -> bool =
-  match method {
-    SemanticDeclarationFn(_, _, _, _, _, _, _, _, _) => true,
-    _ => false
-  }
 
 fn semantic_expression_is_extern(expression: Shared<SemanticExpression>) -> bool =
   match expression {

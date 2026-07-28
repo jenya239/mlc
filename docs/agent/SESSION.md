@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-3 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Extracted §104-13 slice 3: relocated `is_semantic_declaration_fn` (4 lines) into `decl_cpp_helpers.mlc` (exported, now 37 lines). Created `compiler/codegen/decl_cpp_trait.mlc` (111 lines) with the 8 trait-decl codegen items moved wholesale from `decl_cpp.mlc` (`trait_template_header`, `trait_requires_expression_for_method`, `trait_requires_expressions_cpp`, `trait_concept_dispatch_forward_proto_cpp`, `trait_skips_concept_dispatch_forward_protos`, `trait_concept_dispatch_forward_protos_body`, `trait_concept_dispatch_forward_protos_cpp` [export], `gen_trait_decl_cpp` [export]) — no injection needed, matching the frozen Decision. `decl_cpp.mlc` (1360 lines, down from 1463) gained `import { gen_trait_decl_cpp, trait_concept_dispatch_forward_protos_cpp } from './decl_cpp_trait'` and `is_semantic_declaration_fn` from `./decl_cpp_helpers`; dropped now-unused `trait_dispatch_name`/`concept_declval_arguments_for_params`/`concept_requires_expression_method_returns_convertible`/`param_name`/`CppConceptRequires` imports |
+| verify  | Bootstrap diff (split-scoped): fresh `mlcc -o p0` (pre-change) vs `mlcc -o p1` (post-change) — `diff -rq` touched exactly `decl_cpp.cpp/.hpp` (shrink) + `decl_cpp_helpers.cpp/.hpp` (grows by 1 function, additive only) + 2 new files `decl_cpp_trait.cpp/.hpp`; zero other generated files changed. Non-`#line` diff confirmed: removed function bodies, `decl_cpp_trait::` prefix at the 2 documented external call sites, `decl_cpp_helpers::` prefix at the 3 other `is_semantic_declaration_fn` call sites remaining in `decl_cpp.mlc` — zero logic changes. `bundle exec rake test_compiler_mlc`: exit 0, phase 10/10 arch lint `failures=0`. mlcc2 self-host: built `mlcc2` from `p1` via `compiler/build_bin.sh` (`MLC_CXX=g++`, in-repo `TMPDIR`), ran `mlcc2 -o p2 compiler/main.mlc`, `diff -r p1 p2 --exclude=obj` — **IDENTICAL**. `compiler/build.sh` confirmed `compiler/out/mlcc` up to date |
+| result  | §104-13 slice 3 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 3 close) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-3 red)
 
 | field   | value |
