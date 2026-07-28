@@ -8,10 +8,10 @@ render) and §102/§103 (new feature epics).
 ## Status: **open** — §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
-slice 2 Decision frozen** same day (`transform_context.mlc` — prerequisite
+slice 2 red confirmed** same day (`transform_context.mlc` — prerequisite
 leaf-module extraction for slice 3's `transform_call_args.mlc`; slices
 renumbered, see §104-12 section below), **queue head is now §104-12 slice 2
-STEP=1 (red)** (priority override 2026-07-28, user: "это должно быть
+STEP=2 (green)** (priority override 2026-07-28, user: "это должно быть
 приоритетом сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays
 queued after §103, Wave 3 stays gated)
 
@@ -182,7 +182,7 @@ change. No false-done found. Queue head → slice 2.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries | pending |
+| 1 | Red: confirm current boundaries | **done** — `find compiler/checker/transform -iname transform_context.mlc` empty (module absent); `transform.mlc` still 1505 lines (unchanged since slice 1); all 6 items (`TransformContext`/`TransformStmtsResult` types + 4 constructors) confirmed at the exact documented lines (429/435/438/441/448/460) |
 | 2 | Green: create `transform_context.mlc`, wire `transform.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
 | 3 | Critic: full re-audit | pending |
 

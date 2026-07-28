@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-2 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Confirmed the red state for §104-12 slice 2 (`transform_context.mlc` extraction), no drift since the STEP=0 Decision: `find compiler/checker/transform -iname transform_context.mlc` → empty (module absent); `transform.mlc` still 1505 lines (unchanged since slice 1 closed); grep re-confirms all 6 items to move (`TransformContext` type, `TransformStmtsResult` type, `transform_context_new`, `empty_transform_context`, `transform_context_with_env`, `transform_context_with_lambda_parameter_types`) still present at the exact lines recorded in the Decision (429/435/438/441/448/460). Baseline `compiler/out/tests/run_tests` timestamp (2026-07-09, unchanged since before slice 1) recorded for later before/after comparison. Updated `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` Steps table |
+| verify  | `find`/grep line-number re-check (0 drift from Decision); no code changed this turn |
+| result  | §104-12 slice-2 STEP=1 (red) confirmed; ready for STEP=2 (green: create module) |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 2 — green: create `compiler/checker/transform/transform_context.mlc`, wire `transform.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-2 Decision)
 
 | field   | value |
