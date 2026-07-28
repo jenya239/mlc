@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-2 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of STEP=2's claims. (1) Function/type-set diff: pre-split `transform.mlc` vs current `transform.mlc`+`transform_context.mlc` combined — identical 52 names, zero lost/duplicated, only the 2 documented `export` additions. (2) Independent translation from scratch: `compiler/out/mlcc -o ... compiler/main.mlc` → 337 files; confirmed `transform_context.cpp`/`.hpp` exist and every reference to the moved symbols in the 5 direct-caller files is qualified `transform_context::`, zero stray `transform::` leftovers. (3) Independent full `rake test_compiler_mlc` rerun (all 10 phases, clean shell): first attempt hit 2 unit failures + a fuzz-smoke `mktemp` error, traced to a stale `TMPDIR` env var left exported in this shell from the prior turn's mlcc2 build, pointing at a directory this Critic pass had already deleted during cleanup — not a code regression. Unset `TMPDIR`, reran clean → **1471 passed, 0 failed**, all 10 phases `ok`, `arch lint failures=0`, `transform.mlc` shown at 1468 lines. Did not re-run the mlcc2 self-host g++ build a third time (witnessed directly during STEP=2 in this same continuous session, no source change since) |
+| verify  | function/type-set diff empty except documented `export` deltas; mlcc-translated output inspection shows zero stray `transform::` references to moved symbols; independent `rake test_compiler_mlc` rerun 1471/0 after eliminating a stale-env-var false alarm; `git status` clean against the untouched-paths list |
+| result  | §104-12 slice-2 **closed** — Decision/red/green/Critic all done, doc matches code, no false-done risk found. Queue head moves to **slice 3** (`transform_call_args.mlc`, needs a fresh Decision for the 3-parameter injection pattern: `transform_expr_fn`/`transform_exprs_fn`/`transform_expr_lambda_with_param_types_fn`) |
+| issues  | none in the code; the stale-`TMPDIR` false alarm is a session-hygiene note for future turns (unset build-related env vars before relying on them across turns), not a track issue |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 3 — `transform_call_args.mlc` Decision: 3-parameter injection pattern, matching `infer_expr_fn`/multi-callback precedent at `infer_isolate_method.mlc:77`) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-2 green)
 
 | field   | value |
