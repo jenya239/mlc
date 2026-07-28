@@ -1,21 +1,21 @@
 // CppDeclaration dual path for declaration codegen (Phase 2 step 17).
 
-import { Param, TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord, param_name } from '../frontend/ast'
+import { Param, TypeVariant, param_name } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExternType, SemanticDeclarationAssocBind, SemanticExpressionExtern, sdecl_inner, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, trait_base_name } from '../checker/registry'
-import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppTypePtr, CppUnary, CppStruct, CppVariant, CppVariantArm, CppField, CppConceptRequires, CppUsing, CppStaticAssert, CppClassDeclaration, CppClassDefinition, CppClassMemberFunctionDef, CppFunctionPrototype, CppParam, CppFnModifiers, CppIdent } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary, CppCast, CppCastStatic, CppTypeName, CppTypePtr, CppUnary, CppConceptRequires, CppUsing, CppStaticAssert, CppClassDeclaration, CppClassDefinition, CppClassMemberFunctionDef, CppFunctionPrototype, CppParam, CppFnModifiers, CppIdent } from '../cpp_ir/cpp_ast'
 import {print_decl} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
-import { CodegenContext, StructUsingEntry, trait_has_associated_types } from './context'
+import { CodegenContext, trait_has_associated_types } from './context'
 import { compute_fn_body_context, exported_type_names_from_decls, prototype_context_for_function } from './decl/decl'
 import { gen_parameter_proto_items, gen_parameter_def_items, extract_method_name, trait_dispatch_name, gen_extend_wrapper_protos, concept_declval_arguments_for_params } from './decl/decl_extend'
 import { list_contains } from './decl/decl_index'
-import { sem_type_to_cpp, template_prefix, requires_clause, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp, concept_requires_expression_method_returns_convertible } from './decl/type_gen'
-import { gen_derive_methods_cpp } from './decl/derive_methods_cpp'
+import { sem_type_to_cpp, template_prefix, requires_clause, gen_type_decl_fwd_only, type_to_cpp, gen_type_decl_body_only, type_name_to_cpp, concept_requires_expression_method_returns_convertible } from './decl/type_gen'
 import { gen_trait_struct_cpp } from './decl/trait_struct_cpp'
 import { gen_return_body_cpp } from './stmt/return_body'
 import { cpp_safe } from './cpp_naming'
 import { empty_cpp_declaration, empty_cpp_declarations, append_cpp_declarations, cpp_decl_from_native_declarations } from './decl_cpp_helpers'
+import { gen_type_decl_fwd_cpp, gen_type_decl_body_cpp } from './decl_cpp_type'
 
 export type DeclPartsBundleCpp = DeclPartsBundleCpp {
   type_fwds: [Shared<CppDeclaration>],
@@ -54,184 +54,6 @@ fn function_parameter_def_items(
 
 export fn main_program_parameter_items_cpp() -> [string] =
   ['int argc', 'char** argv']
-
-fn variant_forward_struct_cpp(
-  context: CodegenContext,
-  type_params: [string],
-  phantom: [string],
-  variant: Shared<TypeVariant>
-) -> Shared<CppDeclaration> = do
-  const variant_name = context.resolve(variant_ctor_name(variant))
-  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
-  Shared.new(CppStruct(template_prefix(used), variant_name, [], true))
-end
-
-fn variant_alias_arm_cpp(
-  context: CodegenContext,
-  type_params: [string],
-  phantom: [string],
-  variant: Shared<TypeVariant>
-) -> Shared<CppVariantArm> = do
-  const variant_name = context.resolve(variant_ctor_name(variant))
-  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
-  const type_argument_suffix = if used.length() > 0 then `<${used.join(', ')}>` else '' end
-  Shared.new(CppVariantArm { name: variant_name + type_argument_suffix, types: [] })
-end
-
-fn append_type_forward_declarations(
-  output: [Shared<CppDeclaration>],
-  context: CodegenContext,
-  type_name: string,
-  type_params: [string],
-  variants: [Shared<TypeVariant>]
-) -> [Shared<CppDeclaration>] = do
-  const phantom = type_phantom_params_for_variants(type_params, variants)
-  let mut result = output
-  let mut variant_index = 0
-  while variant_index < variants.length() do
-    result.push(variant_forward_struct_cpp(context, type_params, phantom, variants[variant_index]))
-    variant_index = variant_index + 1
-  end
-  let mut alias_arms: [Shared<CppVariantArm>] = []
-  variant_index = 0
-  while variant_index < variants.length() do
-    alias_arms.push(variant_alias_arm_cpp(context, type_params, phantom, variants[variant_index]))
-    variant_index = variant_index + 1
-  end
-  result.push(Shared.new(CppVariant(
-    template_prefix(type_params),
-    context.resolve(type_name),
-    alias_arms)))
-  result
-end
-
-export fn gen_type_decl_fwd_cpp(
-  context: CodegenContext,
-  type_name: string,
-  type_params: [string],
-  variants: [Shared<TypeVariant>]
-) -> [Shared<CppDeclaration>] =
-  if variants.length() == 1 then
-    []
-  else
-    append_type_forward_declarations([], context, type_name, type_params, variants)
-  end
-
-fn record_field_cpp(context: CodegenContext, field_definition: Shared<FieldDef>) -> Shared<CppField> =
-  Shared.new(CppField {
-    type_value: type_to_cpp(context, field_definition.type_value),
-    name: cpp_safe(field_definition.name)
-  })
-
-fn record_fields_cpp(context: CodegenContext, field_definitions: [Shared<FieldDef>]) -> [Shared<CppField>] =
-  field_definitions.map(field_definition => record_field_cpp(context, field_definition))
-
-fn tuple_fields_cpp(context: CodegenContext, field_types: [Shared<TypeExpr>]) -> [Shared<CppField>] = do
-  let mut fields: [Shared<CppField>] = []
-  let mut field_index = 0
-  while field_index < field_types.length() do
-    fields.push(Shared.new(CppField {
-      type_value: type_to_cpp(context, field_types[field_index]),
-      name: 'field' + field_index.to_string()
-    }))
-    field_index = field_index + 1
-  end
-  fields
-end
-
-fn variant_body_struct_cpp(
-  context: CodegenContext,
-  type_params: [string],
-  phantom: [string],
-  variant: Shared<TypeVariant>
-) -> Shared<CppDeclaration> = do
-  const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
-  const prefix = template_prefix(used)
-  match variant {
-    VarUnit(name, _) =>
-      Shared.new(CppStruct(prefix, context.resolve(name), [], false)),
-    VarTuple(name, field_types, _) =>
-      Shared.new(CppStruct(prefix, context.resolve(name), tuple_fields_cpp(context, field_types), false)),
-    VarRecord(name, field_definitions, _) =>
-      Shared.new(CppStruct(prefix, context.resolve(name), record_fields_cpp(context, field_definitions), false))
-  }
-end
-
-fn cpp_using_from_struct_using_entry(entry: StructUsingEntry) -> Shared<CppDeclaration> =
-  Shared.new(CppUsing(entry.alias, entry.type_cpp))
-
-fn struct_using_declarations_cpp(context: CodegenContext, type_name: string) -> [Shared<CppDeclaration>] = do
-  const using_entries = context.struct_using_entries.get(type_name)
-  let mut declarations: [Shared<CppDeclaration>] = []
-  let mut entry_index = 0
-  while entry_index < using_entries.length() do
-    declarations.push(cpp_using_from_struct_using_entry(using_entries[entry_index]))
-    entry_index = entry_index + 1
-  end
-  declarations
-end
-
-fn single_variant_body_struct_cpp(
-  context: CodegenContext,
-  type_name: string,
-  type_params: [string],
-  variant: Shared<TypeVariant>
-) -> Shared<CppDeclaration> = do
-  const prefix = template_prefix(type_params)
-  const resolved_name = context.resolve(type_name)
-  match variant {
-    VarUnit(_, _) =>
-      Shared.new(CppStruct(prefix, resolved_name, [], false)),
-    VarTuple(_, field_types, _) =>
-      Shared.new(CppStruct(prefix, resolved_name, tuple_fields_cpp(context, field_types), false)),
-    VarRecord(_, field_definitions, _) =>
-      Shared.new(CppStruct(prefix, resolved_name, record_fields_cpp(context, field_definitions), false))
-  }
-end
-
-fn append_type_body_struct_declarations(
-  output: [Shared<CppDeclaration>],
-  context: CodegenContext,
-  type_name: string,
-  type_params: [string],
-  variants: [Shared<TypeVariant>]
-) -> [Shared<CppDeclaration>] =
-  if variants.length() == 1 then
-    do
-      let mut result = output
-      result.push(single_variant_body_struct_cpp(context, type_name, type_params, variants[0]))
-      if context.struct_using_entries.has(type_name) then
-        result = append_cpp_declarations(result, struct_using_declarations_cpp(context, type_name))
-      end
-      result
-    end
-  else do
-    const phantom = type_phantom_params_for_variants(type_params, variants)
-    let mut result = output
-    let mut variant_index = 0
-    while variant_index < variants.length() do
-      result.push(variant_body_struct_cpp(context, type_params, phantom, variants[variant_index]))
-      variant_index = variant_index + 1
-    end
-    result
-  end
-
-export fn gen_type_decl_body_cpp(
-  context: CodegenContext,
-  type_name: string,
-  type_params: [string],
-  variants: [Shared<TypeVariant>],
-  derive_traits: [string]
-) -> [Shared<CppDeclaration>] = do
-  let mut result = append_type_body_struct_declarations([], context, type_name, type_params, variants)
-  const derive_declarations = gen_derive_methods_cpp(type_name, variants, derive_traits)
-  let mut derive_index = 0
-  while derive_index < derive_declarations.length() do
-    result.push(derive_declarations[derive_index])
-    derive_index = derive_index + 1
-  end
-  result
-end
 
 fn trait_template_header(type_params: [string]) -> string =
   if type_params.length() > 0 then

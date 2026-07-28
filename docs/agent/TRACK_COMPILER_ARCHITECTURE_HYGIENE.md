@@ -382,8 +382,10 @@ Independent function/type-set diff: old `decl_cpp.mlc` (`git show 9a7272df:...`,
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`decl_cpp_type.mlc` absent, 13 items at the documented lines, file at baseline 1641 lines) | **done** — `test -f` negative; all 13 items confirmed at lines 58/69/81/108/120/126/129/142/160/163/174/192/219, no drift; `decl_cpp.mlc` confirmed at baseline 1641 lines |
-| 2 | Green: create `decl_cpp_type.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `decl_cpp_type.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
 | 3 | Critic: full re-audit | pending |
+
+**Green (2026-07-28):** `decl_cpp_type.mlc` created (190 lines): 13 items moved wholesale + 2 exported (`gen_type_decl_fwd_cpp`, `gen_type_decl_body_cpp`). `decl_cpp.mlc`: 1641 → 1463 lines (gained 1 import line, dropped now-unused `variant_ctor_name`/`union_string_lists`/`type_phantom_params_for_variants`/`gen_derive_methods_cpp` imports and `VarUnit`/`VarTuple`/`VarRecord`/`FieldDef`/`TypeExpr`/`CppStruct`/`CppVariant`/`CppVariantArm`/`CppField`/`StructUsingEntry`). Bootstrap diff (`mlcc -o p0` pre-change, `mlcc -o p1` post-change): scoped to exactly `decl_cpp.cpp/.hpp` (shrink) + `decl_cpp_type.cpp/.hpp` (new) — zero other files touched. Non-`#line` diff of `decl_cpp.cpp`/`.hpp`: every changed line is either the `#include`/`using namespace` swap (`derive_methods_cpp` → `decl_cpp_type`, since the only remaining direct call into `derive_methods_cpp` moved with the group), a removed function body, or a `decl_cpp_type::` prefix insertion at exactly the 4 documented call sites — zero logic changes. `rake test_compiler_mlc` (`TMPDIR` unset): exit_code=0, phase 10/10 arch lint `failures=0`. mlcc2 self-host diff (`build_bin.sh`, `MLC_CXX=g++`, in-repo `TMPDIR`): built `mlcc2` from `p1`, ran on `compiler/main.mlc` → `p2`, `diff -r p1 p2 --exclude=obj` IDENTICAL. `compiler/build.sh` confirmed `compiler/out/mlcc` up to date. All `.tmp/s104-13-slice2/**` build artifacts cleaned up after.
 
 ## Verification discipline
 

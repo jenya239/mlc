@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-2 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Extracted §104-13 slice 2: created `compiler/codegen/decl_cpp_type.mlc` (190 lines) with the 13 type/variant struct codegen items moved wholesale from `decl_cpp.mlc` (`variant_forward_struct_cpp`, `variant_alias_arm_cpp`, `append_type_forward_declarations`, `gen_type_decl_fwd_cpp` [export], `record_field_cpp`, `record_fields_cpp`, `tuple_fields_cpp`, `variant_body_struct_cpp`, `cpp_using_from_struct_using_entry`, `struct_using_declarations_cpp`, `single_variant_body_struct_cpp`, `append_type_body_struct_declarations`, `gen_type_decl_body_cpp` [export]) — zero injection needed, matching the frozen Decision. `decl_cpp.mlc` (1463 lines, down from 1641) gained `import { gen_type_decl_fwd_cpp, gen_type_decl_body_cpp } from './decl_cpp_type'` and dropped the now-unused `variant_ctor_name`/`union_string_lists`/`type_phantom_params_for_variants`/`gen_derive_methods_cpp` imports plus `VarUnit`/`VarTuple`/`VarRecord`/`FieldDef`/`TypeExpr`/`CppStruct`/`CppVariant`/`CppVariantArm`/`CppField`/`StructUsingEntry` (all now sourced only inside `decl_cpp_type.mlc`) |
+| verify  | Bootstrap diff (split-scoped): fresh `mlcc -o p0 compiler/main.mlc` (pre-change) vs `mlcc -o p1 compiler/main.mlc` (post-change) — `diff -rq` touched exactly `decl_cpp.cpp`/`.hpp` (relocation + `decl_cpp_type::` prefix at the 4 call sites, zero logic change) plus 2 new files `decl_cpp_type.cpp`/`.hpp`; zero other generated files changed. `bundle exec rake test_compiler_mlc`: exit 0, phase 10/10 arch lint `failures=0` (13 pre-existing allowlisted-size warnings unchanged). mlcc2 self-host: built `mlcc2` from `p1` via `compiler/build_bin.sh` (`MLC_CXX=g++`, in-repo `TMPDIR`), ran `mlcc2 -o p2 compiler/main.mlc`, `diff -r p1 p2 --exclude=obj` — **IDENTICAL**. `compiler/build.sh` confirmed `compiler/out/mlcc` up to date |
+| result  | §104-13 slice 2 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 2 close) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-2 red)
 
 | field   | value |
