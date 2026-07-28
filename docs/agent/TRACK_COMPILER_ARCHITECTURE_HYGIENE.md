@@ -438,7 +438,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` + old `decl_cpp_helpers.m
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`decl_cpp_fn.mlc` absent, 18 items at the documented lines, file at baseline 1360 lines) | **done** — `test -f` negative; all 18 items confirmed at lines 34/45/56/59/72/78/88/91/94/97/100/110/132/144/179/189/200/211, no drift; `decl_cpp.mlc` confirmed at baseline 1360 lines |
-| 2 | Green: create `decl_cpp_fn.mlc`, wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `decl_cpp_fn.mlc`, wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** — `decl_cpp_fn.mlc` created (204 lines, 18 items, 11 exported per Decision); `decl_cpp.mlc` reduced 1360→1171 lines, imports wired via `./decl_cpp_fn`, unused imports dropped (`CppStatement`, `CppBinary`, `prototype_context_for_function`, `gen_return_body_cpp`); controlled bootstrap diff (same mlcc binary, only `decl_cpp.mlc` source toggled) scoped exactly to `decl_cpp.cpp/.hpp` (namespace/line-number only, function bodies byte-identical) + new `decl_cpp_fn.cpp/.hpp`, no other module touched; `rake test_compiler_mlc` 1471 passed 0 failed, arch lint failures=0; mlcc2 built via `build_bin.sh`, `mlcc2 -o out2 compiler/main.mlc` output IDENTICAL to mlcc's |
 | 3 | Critic: full re-audit | pending |
 
 ## Verification discipline

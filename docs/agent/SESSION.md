@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-4 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | §104-13 slice 4 green: created `compiler/codegen/decl_cpp_fn.mlc` (204 lines) with all 18 fn-decl items moved wholesale, 11 exported per Decision (`function_parameter_def_items`, `main_program_parameter_items_cpp`, `main_set_args_preamble_cpp`, `merged_function_type_parameters_cpp`, `function_emits_template_cpp`, `context_with_fn_escape_cpp`, `native_fn_decl_cpp`, `gen_fn_proto_cpp`, `gen_fn_decl_cpp`, `gen_fn_proto_cpp_with_escape`, `gen_fn_decl_cpp_with_escape`); dead code `function_declaration_template_prefix` moved as-is (zero callers repo-wide, matches §104-12 slice-2 precedent). `decl_cpp.mlc` reduced 1360→1171 lines: removed the 18-item block, added `import { ... } from './decl_cpp_fn'`, dropped 4 now-unused imports (`CppStatement`, `CppBinary`, `prototype_context_for_function`, `gen_return_body_cpp` — all still used inside `decl_cpp_fn.mlc`, confirmed no longer referenced in `decl_cpp.mlc` itself by grep). Controlled bootstrap diff: same `compiler/out/mlcc` binary held fixed, only `decl_cpp.mlc` source toggled (committed HEAD version vs new version, `decl_cpp_fn.mlc` present in both) — `diff -rq before2 out` scoped to exactly `decl_cpp.cpp`/`.hpp` (namespace/line-number changes only, `diff` on bodies shows byte-identical statements, only `#include`/`using namespace`/`#line` annotations differ) + new `decl_cpp_fn.cpp`/`.hpp`; zero other module touched. `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint failures=0 (13 pre-existing allowlisted warnings unchanged). mlcc2 self-host: built via `compiler/build_bin.sh` (`TMPDIR` in-repo), ran `mlcc2 -o out2 compiler/main.mlc`, `diff -rq out out2 --exclude=obj` — IDENTICAL. Cleaned up `.tmp/s104-13-slice4/` after verification |
+| verify  | see `done` |
+| result  | §104-13 slice 4 STEP=2 **done** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 4 close — independent function/type-set diff old `decl_cpp.mlc` (`git show 6667ea37:...`, pre-slice-4 baseline) vs new `decl_cpp.mlc` + `decl_cpp_fn.mlc` combined, export-status diff matches Decision's 11, fresh `mlcc` translation grep for `decl_cpp_fn::` stray references, independent `rake test_compiler_mlc` rerun from clean shell, line-count confirmation, no false-done) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-4 red)
 
 | field   | value |

@@ -1,0 +1,204 @@
+// Function declaration codegen (native fn proto/def, main() wiring, escape
+// info merging), split out of decl_cpp.mlc (§104-13 slice 4). Shared
+// dependency of the FFI, extend/impl, and decl-segment orchestration groups
+// still in decl_cpp.mlc — pure leaf, no calls back.
+
+import { Param } from '../frontend/ast'
+import { SemanticExpression, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
+import { Type } from '../checker/registry'
+import { CppDeclaration, CppFnProto, CppFnDef, CppExpression, CppStatement, CppCall, CppBinary } from '../cpp_ir/cpp_ast'
+import * as emit_helpers from '../cpp_emit/emit_helpers'
+import { CodegenContext } from './context'
+import { compute_fn_body_context, prototype_context_for_function } from './decl/decl'
+import { gen_parameter_proto_items, gen_parameter_def_items } from './decl/decl_extend'
+import { sem_type_to_cpp, template_prefix, requires_clause } from './decl/type_gen'
+import { gen_return_body_cpp } from './stmt/return_body'
+
+fn function_parameter_proto_items(
+  name: string,
+  params: [Shared<Param>],
+  prototype_context: CodegenContext
+) -> [string] =
+  if name == 'main' && params.length() == 0 then
+    main_program_parameter_items_cpp()
+  else
+    gen_parameter_proto_items(prototype_context, params)
+  end
+
+export fn function_parameter_def_items(
+  name: string,
+  params: [Shared<Param>],
+  prototype_context: CodegenContext
+) -> [string] =
+  if name == 'main' && params.length() == 0 then
+    main_program_parameter_items_cpp()
+  else
+    gen_parameter_def_items(prototype_context, params)
+  end
+
+export fn main_program_parameter_items_cpp() -> [string] =
+  ['int argc', 'char** argv']
+
+fn main_set_args_vector_argument_cpp() -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    emit_helpers.make_identifier_cpp_expression('std::vector<mlc::String>'),
+    [
+      Shared.new(CppBinary(
+        "+",
+        emit_helpers.make_identifier_cpp_expression('argv'),
+        emit_helpers.make_integer_cpp_expression(1))),
+      Shared.new(CppBinary(
+        "+",
+        emit_helpers.make_identifier_cpp_expression('argv'),
+        emit_helpers.make_identifier_cpp_expression('argc')))]))
+
+export fn main_set_args_preamble_cpp() -> [Shared<CppStatement>] =
+  [emit_helpers.make_expression_cpp_statement(
+    Shared.new(CppCall(
+      emit_helpers.make_identifier_cpp_expression('mlc::io::set_args'),
+      [main_set_args_vector_argument_cpp()])))]
+
+fn prepend_main_set_args_preamble(statements: [Shared<CppStatement>]) -> [Shared<CppStatement>] = do
+  let mut result = main_set_args_preamble_cpp()
+  let mut statement_index = 0
+  while statement_index < statements.length() do
+    result.push(statements[statement_index])
+    statement_index = statement_index + 1
+  end
+  result
+end
+
+fn function_declaration_template_prefix(type_params: [string], type_bounds: [[string]]) -> string =
+  template_prefix(type_params) + requires_clause(type_params, type_bounds)
+
+export fn merged_function_type_parameters_cpp(type_params: [string], escape_info: FnEscapeInfo) -> [string] =
+  type_params.concat(escape_info.synthetic_type_params)
+
+export fn function_emits_template_cpp(type_params: [string], escape_info: FnEscapeInfo) -> bool =
+  merged_function_type_parameters_cpp(type_params, escape_info).length() > 0
+
+export fn context_with_fn_escape_cpp(context: CodegenContext, escape_info: FnEscapeInfo) -> CodegenContext =
+  context.with_param_template_type_names(escape_info.param_template_type_names)
+
+fn native_fn_proto_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppDeclaration> =
+  native_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, empty_fn_escape_info(), context)
+
+fn native_fn_proto_cpp_with_escape(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  escape_info: FnEscapeInfo,
+  context: CodegenContext
+) -> Shared<CppDeclaration> = do
+  const escape_context = context_with_fn_escape_cpp(context, escape_info)
+  const prototype_context = prototype_context_for_function(escape_context, params)
+  const safe_name = escape_context.resolve(name)
+  const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
+  const parameters = function_parameter_proto_items(name, params, prototype_context)
+  const all_type_params = merged_function_type_parameters_cpp(type_params, escape_info)
+  Shared.new(CppFnProto(
+    template_prefix(all_type_params) + requires_clause(type_params, type_bounds),
+    return_type_cpp,
+    safe_name,
+    parameters))
+end
+
+export fn native_fn_decl_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SemanticExpression>,
+  context: CodegenContext,
+  body_statement_depth: i32
+) -> Shared<CppDeclaration> =
+  native_fn_decl_cpp_with_escape(name, type_params, type_bounds, params, return_type, body, empty_fn_escape_info(), context, body_statement_depth)
+
+fn native_fn_decl_cpp_with_escape(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SemanticExpression>,
+  escape_info: FnEscapeInfo,
+  context: CodegenContext,
+  body_statement_depth: i32
+) -> Shared<CppDeclaration> = do
+  const escape_context = context_with_fn_escape_cpp(context, escape_info)
+  const body_context = compute_fn_body_context(name, params, escape_context)
+    .with_enclosing_function_return_type(return_type)
+  const prototype_context = if params.length() > 0 && params[0].name == 'self' then body_context else escape_context end
+  const safe_name = escape_context.resolve(name)
+  const return_type_cpp = sem_type_to_cpp(prototype_context, return_type)
+  const parameters = function_parameter_def_items(name, params, prototype_context)
+  const return_body_statements = gen_return_body_cpp(body, body_context)
+  const body_statements =
+    if name == 'main' && params.length() == 0 then
+      prepend_main_set_args_preamble(return_body_statements)
+    else
+      return_body_statements
+    end
+  const all_type_params = merged_function_type_parameters_cpp(type_params, escape_info)
+  Shared.new(CppFnDef(
+    template_prefix(all_type_params) + requires_clause(type_params, type_bounds),
+    return_type_cpp,
+    safe_name,
+    parameters,
+    body_statements,
+    body_statement_depth))
+end
+
+export fn gen_fn_proto_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppDeclaration> =
+  native_fn_proto_cpp(name, type_params, type_bounds, params, return_type, context)
+
+export fn gen_fn_decl_cpp(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> Shared<CppDeclaration> =
+  native_fn_decl_cpp(name, type_params, type_bounds, params, return_type, body, context, 1)
+
+export fn gen_fn_proto_cpp_with_escape(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  escape_info: FnEscapeInfo,
+  context: CodegenContext
+) -> Shared<CppDeclaration> =
+  native_fn_proto_cpp_with_escape(name, type_params, type_bounds, params, return_type, escape_info, context)
+
+export fn gen_fn_decl_cpp_with_escape(
+  name: string,
+  type_params: [string],
+  type_bounds: [[string]],
+  params: [Shared<Param>],
+  return_type: Shared<Type>,
+  body: Shared<SemanticExpression>,
+  escape_info: FnEscapeInfo,
+  context: CodegenContext
+) -> Shared<CppDeclaration> =
+  native_fn_decl_cpp_with_escape(name, type_params, type_bounds, params, return_type, body, escape_info, context, 1)
