@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-4 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Independent re-audit of §104-13 slice 4: (1) function/type-set diff — old `decl_cpp.mlc` (`git show 6667ea37:...`, pre-slice-4 baseline, 92 names) vs new `decl_cpp.mlc` + `decl_cpp_fn.mlc` combined (92), `diff` empty, zero lost/duplicated; (2) export-status diff — exactly the 5 documented items gained `export` (`context_with_fn_escape_cpp`, `function_emits_template_cpp`, `function_parameter_def_items`, `merged_function_type_parameters_cpp`, `native_fn_decl_cpp`), zero lost, matches Decision exactly (23→28 exported); (3) fresh `mlcc -o ... compiler/main.mlc` translation from scratch — `decl_cpp_fn.cpp/.hpp` created, grepped `decl_cpp_fn::` across every generated file, found only in `decl_cpp.cpp` (1 direct caller), zero stray references; (4) independent full `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first) — exit_code=0, arch lint `failures=0`; (5) line counts confirmed: `decl_cpp.mlc` 1171, `decl_cpp_fn.mlc` 204, no drift. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 same session, no source change since). No false-done found |
+| verify  | see `done` |
+| result  | **§104-13 slice 4 closed.** §104-13 itself stays open — 2 more groups remain (FFI/extern codegen, extend/impl codegen — largest, decl-segment orchestration), each needs its own Decision |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 5 — Decision: pick next group from the 2 remaining, FFI/extern codegen or extend/impl codegen, re-derive dependency closure by grep against the current 1171-line `decl_cpp.mlc`) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-4 green)
 
 | field   | value |
