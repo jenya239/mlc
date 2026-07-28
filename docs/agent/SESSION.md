@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-3 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of §104-13 slice 3 — closed. (1) Function/type-set diff: `git show 37b056a9~1:compiler/codegen/decl_cpp.mlc` + `decl_cpp_helpers.mlc` (pre-slice baseline, 106 names combined) vs current `decl_cpp.mlc` + `decl_cpp_helpers.mlc` + `decl_cpp_trait.mlc` combined (106) — `diff` empty, zero lost/duplicated. (2) Export-status diff: exactly 2 items gained `export` — `is_semantic_declaration_fn` and `trait_concept_dispatch_forward_protos_cpp` — matching the Decision exactly (`gen_trait_decl_cpp` already exported pre-slice, unchanged). (3) Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `decl_cpp_trait.cpp/.hpp` created; grepped `decl_cpp_trait::` across every generated file — found only in `decl_cpp.cpp` (the 1 direct caller); grepped `is_semantic_declaration_fn` definitions — exactly 1 (`decl_cpp_helpers.cpp`), zero duplicates; callers confirmed only in `decl_cpp_trait.cpp`/`decl_cpp.cpp`/`.hpp`. (4) Independent full `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first): `1471 passed, 0 failed`, `arch lint failures=0`. Line counts confirmed: `decl_cpp.mlc` 1360, `decl_cpp_helpers.mlc` 37, `decl_cpp_trait.mlc` 111 — no drift. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 in the same continuous session, no source change since). No false-done found |
+| verify  | see `done` — 4 independent checks, all clean |
+| result  | §104-13 slice 3 **closed**. §104-13 itself stays **open** — 3 more groups surveyed (fn decl codegen, FFI/extern codegen, extend/impl codegen — largest, decl-segment orchestration), each needs its own Decision |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 4 — Decision freeze for the next group, likely fn decl codegen or FFI/extern codegen per the surveyed remainder) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-3 green)
 
 | field   | value |
