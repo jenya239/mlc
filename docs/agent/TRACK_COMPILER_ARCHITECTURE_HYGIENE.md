@@ -14,10 +14,13 @@ renumbered, see §104-12 section below), **§104-12 slice 3 Decision frozen**
 same day (`transform_call_args.mlc` — 2-3 injected function parameters
 threaded through 4 functions), **STEP=1 red confirmed** same day (module
 absent, all 9 items at documented lines, file at baseline 1468 lines),
-**queue head is now §104-12 slice 3 STEP=2 (green)** (priority override
-2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1 moved
-ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays
-gated)
+**STEP=2 green** same day (`transform_call_args.mlc` created, 9 items
+moved, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new files only,
+`rake test_compiler_mlc` exit_code=0, mlcc2 self-host diff IDENTICAL),
+**queue head is now §104-12 slice 3 STEP=3 (Critic close)** (priority
+override 2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1
+moved ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3
+stays gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -234,8 +237,12 @@ injection-heavy `transform_call_args.mlc` extraction).
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries | **done** |
-| 2 | Green: create `transform_call_args.mlc`, thread the 3 injected parameters, wire `transform.mlc` call site + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `transform_call_args.mlc`, thread the 3 injected parameters, wire `transform.mlc` call site + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
 | 3 | Critic: full re-audit | pending |
+
+#### Green result (STEP=2, 2026-07-28)
+
+`transform_call_args.mlc` created (365 lines): 3 leaf helpers + 6 group items moved wholesale (`expected_call_argument_type_at_index` inlines `Shared.new(TUnknown)` instead of importing `standalone_unknown_cell`, which stays in `transform.mlc` with 4 other callers). `transform.mlc`: 1468 → 1132 lines. Bootstrap diff scoped to exactly `transform.cpp/.hpp` + the 2 new files — no other direct-caller namespace-prefix renames needed this slice (unlike slice 1/2), since both moved public functions had exactly 1 external caller, inside `transform.mlc` itself. `rake test_compiler_mlc`: exit_code=0, arch lint failures=0. mlcc2 self-host diff (in-repo `TMPDIR`, host disk 99%): IDENTICAL.
 
 ### Slice 4 — `transform_method.mlc` (needs `transform_exprs_fn` injection — depends on slice 2)
 

@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-3 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Green for §104-12 slice 3: created `compiler/checker/transform/transform_call_args.mlc` (365 lines). Moved wholesale the 3 leaf helpers (`callee_semantic_type_is_function`, `function_parameter_types_from_callee_type`, `call_argument_is_lambda`) plus the 6 group items (`expected_call_argument_type_at_index`, `transform_lambda_call_argument`, `transform_one_call_argument_using_optional_expected_type`, `Transform_call_arguments_fold_state`, `function_return_type_from_callee_type`, `transform_call_arguments_fold_step`, `transform_call_arguments_using_callee_semantic_type`). `expected_call_argument_type_at_index` now inlines `Shared.new(TUnknown)` instead of calling `standalone_unknown_cell` (stays in `transform.mlc`, 4 other callers). Threaded 2 injected function parameters (`transform_expr_fn`, `transform_expr_lambda_with_param_types_fn`) through `transform_lambda_call_argument`/`transform_one_call_argument_using_optional_expected_type`/`transform_call_arguments_fold_step`/`transform_call_arguments_using_callee_semantic_type`, plus a 3rd (`transform_exprs_fn`) for the outermost function's own direct call — confirmed via ast/type match-arm precedent that variant constructors don't need explicit import for matching (only for construction), so the new module's import list stays minimal (`Expr, Stmt, Span` / `Type, TUnknown` / `SemanticExpression, sexpr_type` / `coerce_expr_to_type` / `partial_application_desugar_expr` / `TransformContext, TransformStmtsResult`). `transform.mlc` shrank from 1468 to 1132 lines, gained 1 import line, and its 1 call site (`dispatch_transform_pass`/`visit_call`) now passes `transform_expr, transform_expr_lambda_with_param_types, transform_exprs` as 3 trailing arguments |
+| verify  | Fresh `mlcc` translation of `compiler/main.mlc` succeeded (0 errors); confirmed `transform_call_args.cpp/.hpp` created. Built pre-change baseline `p0` (temporarily removed the new file + reverted `transform.mlc` via `git stash`, restored after) and post-change `p1`; `diff -rq p0 p1` scoped to exactly `transform.cpp/.hpp` (removed implementations + namespace-qualified call site `transform_call_args::transform_call_arguments_using_callee_semantic_type(..., transform_expr, transform_expr_lambda_with_param_types, transform_exprs)`) plus the 2 new files — zero other files touched (unlike slice 1/2, no external module called these 2 functions directly, so no other namespace-prefix renames). Full `rake test_compiler_mlc` (all 10 phases, `TMPDIR` unset to avoid the known stale-var pitfall): exit_code=0, phase 9 (vm vs C++ exit diff, 18 programs) all ok, phase 10 arch lint failures=0, `transform.mlc` shows reduced 1132 lines in the file-size WARN list. mlcc2 self-host: built via `compiler/build_bin.sh` with in-repo `TMPDIR` (host disk at 99%/5.7G free), ran `mlcc2` on `compiler/main.mlc`, `diff -r p1 p2 --exclude=obj` → IDENTICAL. Cleaned up all `.tmp/s104-12-slice3/**` build artifacts after |
+| result  | §104-12 slice-3 green; `compiler/out/mlcc` rebuilt fresh by the rake run (excluded path, not committed) |
+| issues  | none |
+| next    | ROLE=Critic TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 3 — full re-audit: independent function/type-set diff, independent mlcc translation spot-check, independent `rake test_compiler_mlc` rerun; close slice 3 if clean) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-3 red)
 
 | field   | value |
