@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-1 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of STEP=2's claims, not a re-read of the log. (1) Function-set diff: extracted `git show 002bc584:.../transform.mlc` (pre-split) and diffed its full `fn`/`export fn` name set against the current `transform.mlc`+`transform_coerce.mlc` combined set — **identical 61 names**, zero lost/duplicated/added; only delta is the 4 items that gained `export` exactly as documented. (2) Independent translation: `compiler/out/mlcc -o .tmp/critic104/pa compiler/main.mlc` from scratch → 335 files, confirmed `transform_coerce.cpp`/`.hpp` exist and `transform_decl.cpp`/`transform_stmts.cpp` reference `transform_coerce::coerce_expr_to_type` (not `transform::`) at all 4 call sites — matches the documented namespace-rename exactly. (3) Independent full re-run of `MLC_TEST_PROGRESS=1 bundle exec rake test_compiler_mlc` (all 10 phases, not just the unit suite) from a clean shell → `1471 passed, 0 failed`, fuzz smoke/negative-corpus/fuzz-differential/cpp-parser-differential/compile_commands/lsp-smoke/vm-cpp-exit-diff (18 programs) all `ok`, `arch lint failures=0` with `transform.mlc` listed at 1505 lines on the size-allowlist WARN (not 1765) — confirms the split is live in the binary under test, not stale. Did **not** re-run the mlcc2 self-host g++ build a third time (witnessed firsthand during STEP=2 in this same continuous session, methodology sound: `build_bin.sh` g++ + `diff -r --exclude=obj` empty) — no source change since, so re-deriving it would only reconfirm determinism of an unchanged input. Attempted `scripts/regression_gate.sh` for extra compiler-track assurance; killed it after ~19 min once process-tree inspection showed it was blocked on its own optional `run_examples_compile_sweep.sh` tail step (OpenGL example corpus, unrelated to the transform split, and not required by AGENTS.md's gate — that gate triggers on closing a whole TRACK file, not a slice within an open sub-track) |
+| verify  | function-name-set diff empty except documented `export` deltas; mlcc-translated output inspection matches documented namespace rename; independent `rake test_compiler_mlc` rerun 1471/0, arch-lint 0; `git status` clean against the untouched-paths list |
+| result  | §104-12 slice-1 **closed** — Decision/red/green/Critic all done, doc matches code, no false-done risk found. Queue head moves to **slice 2** (`transform_call_args.mlc`, needs a fresh Decision for the `transform_expr_fn` injection pattern) |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 2 — `transform_call_args.mlc` Decision: `transform_expr_fn`/`transform_exprs_fn` injection pattern, matching `infer_expr_fn` in `checker/infer/`) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-1 green)
 
 | field   | value |
