@@ -24,10 +24,14 @@ reference grep, independent full `rake test_compiler_mlc` rerun
 (`transform_method.mlc` — 12 items, not the roughly-estimated 5, found
 by repo-wide grep dependency closure), **STEP=1 red confirmed** same day
 (module absent, all 12 items at documented lines, file at baseline 1132
-lines), **queue head is now §104-12 slice 4 STEP=2 (green)** (priority
-override 2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1
-moved ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3
-stays gated)
+lines), **STEP=2 green** same day (`transform_method.mlc` created,
+12 items moved, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new
+files only, `rake test_compiler_mlc` exit_code=0 1471/0, mlcc2 self-host
+diff IDENTICAL), **queue head is now §104-12 slice 4 STEP=3 (Critic
+close — last slice, closes §104-12 itself)** (priority override
+2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1 moved
+ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays
+gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -274,8 +278,12 @@ Independent function/type-set diff: old `transform.mlc` (46 names) vs new `trans
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries | **done** |
-| 2 | Green: create `transform_method.mlc`, thread the 2 injected parameters, wire `transform.mlc` call sites + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `transform_method.mlc`, thread the 2 injected parameters, wire `transform.mlc` call sites + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
 | 3 | Critic: full re-audit, close §104-12 | pending |
+
+#### Green result (STEP=2, 2026-07-28)
+
+`transform_method.mlc` created (287 lines): all 12 items moved wholesale. `transform.mlc`: 1132 → 881 lines. Bootstrap diff scoped to exactly `transform.cpp/.hpp` + the 2 new files — 12 removed declarations match the Decision exactly, 4 namespace-qualified call sites inside `transform_method_call_after_object` pass `transform_expr`/`transform_exprs` as documented. `rake test_compiler_mlc`: exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host diff (in-repo `TMPDIR`, host disk 99%): IDENTICAL.
 
 ## Verification discipline
 

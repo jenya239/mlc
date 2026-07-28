@@ -1,0 +1,287 @@
+// Method-call dispatch helpers for AST -> SemanticIR transform.
+// Extracted from transform.mlc (§104-12 slice 4, compiler architecture hygiene):
+// transform_expr / transform_exprs stay in transform.mlc, so the functions below
+// take them as injected parameters to avoid recreating the cycle transform_context.mlc
+// (slice 2) was built to break. transform_method_call_after_object stays in
+// transform.mlc too — it calls dispatch_transform_pass directly, tightly coupled
+// to the dispatcher.
+
+import { Expr, Stmt, Span } from '../../frontend/ast'
+import { Type, TypeRegistry, TGeneric, TShared, TUnknown } from '../registry'
+import {
+  builtin_method_return_type,
+  type_is_unknown,
+  array_element_type_from_array_type,
+  shared_pointer_inner_type
+} from '../semantic_type_structure'
+import { hof_call_result_type } from '../hof_method_spec'
+import {
+  is_shared_weak_method_on_receiver,
+  is_weak_upgrade_method_on_receiver
+} from '../infer/infer_weak_method'
+import {
+  region_handle_tag_type,
+  region_pointer_type,
+  is_region_handle_alloc_method
+} from '../infer/infer_region_method'
+import { SemanticExpression, sexpr_type, SemanticExpressionIdent, SemanticExpressionCall, SemanticExpressionMethod } from '../../ir/semantic_ir'
+import { TransformContext, transform_context_with_lambda_parameter_types, TransformStmtsResult } from './transform_context'
+import { method_return_type_from_object } from '../registry'
+
+export fn receiver_type_key_for_method_dispatch(receiver_semantic_type: Shared<Type>) -> string =
+  match receiver_semantic_type {
+    TNamed(name) => name,
+    TShared(shared_inner_type) => match shared_inner_type { TNamed(inner_name) => inner_name, _ => '' },
+    _ => '',
+  }
+
+export fn instance_method_receiver_and_parameters_mutability_pattern(
+  registry: TypeRegistry,
+  receiver_semantic_type: Shared<Type>,
+  method_name: string,
+  method_argument_count: i32
+) -> [i32] = do
+  const receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type)
+  if receiver_key == '' then
+    do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+  else
+    do
+      const mangled = receiver_key + "_" + method_name
+      if !registry.has_fn(mangled) then
+        do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+      else
+        do
+          const stored = registry.parameter_mutability_flags_for(mangled)
+          if stored.length() != method_argument_count + 1 then
+            do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
+          else
+            stored
+          end
+        end
+      end
+    end
+  end
+end
+
+export fn extend_method_mangled_name(
+  registry: TypeRegistry,
+  receiver_semantic_type: Shared<Type>,
+  method_name: string
+) -> string = do
+  const receiver_key = receiver_type_key_for_method_dispatch(receiver_semantic_type)
+  if receiver_key == '' then ''
+  else
+    const mangled = receiver_key + "_" + method_name
+    if registry.has_fn(mangled) then mangled else '' end
+  end
+end
+
+export fn transform_extend_method_as_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  typed_arguments: [Shared<SemanticExpression>],
+  receiver_type: Shared<Type>,
+  result_type: Shared<Type>,
+  source_span: Span
+) -> Shared<SemanticExpression> = do
+  const mangled = extend_method_mangled_name(registry, receiver_type, method_name)
+  const required_arity = registry.required_arity_for_fn(mangled)
+  let call_arguments: [Shared<SemanticExpression>] = []
+  // Instance methods: Type_method(self, …). Static methods (e.g. Type.from_json(v)):
+  // arity matches arguments only — do not prepend the type-name receiver.
+  if required_arity == typed_arguments.length() + 1 then
+    call_arguments.push(typed_object)
+  end
+  let mut argument_index = 0
+  while argument_index < typed_arguments.length() do
+    call_arguments.push(typed_arguments[argument_index])
+    argument_index = argument_index + 1
+  end
+  const callee = Shared.new(SemanticExpressionIdent(mangled, registry.fn_type(mangled), source_span))
+  const call_parameter_mutability_flags =
+    if required_arity == typed_arguments.length() + 1 then
+      instance_method_receiver_and_parameters_mutability_pattern(
+        registry, receiver_type, method_name, typed_arguments.length())
+    else
+      registry.parameter_mutability_flags_for(mangled)
+    end
+  Shared.new(SemanticExpressionCall(
+    callee, call_arguments, call_parameter_mutability_flags, result_type, source_span))
+end
+
+export fn method_result_type_for_dispatch(
+  receiver_type: Shared<Type>,
+  method_name: string,
+  registry: TypeRegistry
+) -> Shared<Type> =
+  if is_shared_weak_method_on_receiver(receiver_type, method_name) then
+    Shared.new(TGeneric('Weak', [shared_pointer_inner_type(receiver_type)]))
+  else if is_weak_upgrade_method_on_receiver(receiver_type, method_name) then
+    match receiver_type {
+      TGeneric(_, type_arguments) =>
+        if type_arguments.length() == 1 then
+          Shared.new(TGeneric('Option', [Shared.new(TShared(type_arguments[0]))]))
+        else Shared.new(TUnknown) end,
+      _ => Shared.new(TUnknown)
+    }
+  else if is_region_handle_alloc_method(receiver_type, method_name) then
+    Shared.new(TUnknown)
+  else if type_is_unknown(builtin_method_return_type(method_name)) then
+    method_return_type_from_object(receiver_type, method_name, registry)
+  else
+    builtin_method_return_type(method_name)
+  end
+
+export fn transform_result_option_hof_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_exprs_fn: ([Shared<Expr>], TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticExpression>]
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs_fn(method_arguments, transform_context, stmts_fn)
+  const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+  const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+  const method_parameter_mutability_flags =
+    instance_method_receiver_and_parameters_mutability_pattern(
+      registry, receiver_type, method_name, typed_arguments.length())
+  Shared.new(SemanticExpressionMethod(
+    typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+end
+
+export fn transform_expr_with_lambda_parameter_types(
+  expression: Shared<Expr>,
+  expected_param_types: [Shared<Type>],
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_expr_fn: (Shared<Expr>, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  transform_expr_fn(
+    expression,
+    transform_context_with_lambda_parameter_types(transform_context, expected_param_types),
+    stmts_fn)
+
+export fn semantic_expression_list_singleton(
+  expression: Shared<SemanticExpression>
+) -> [Shared<SemanticExpression>] = do
+  let empty_transformed_arguments: [Shared<SemanticExpression>] = []
+  empty_transformed_arguments.concat([expression])
+end
+
+export fn transform_array_hof_method_arguments(
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  transform_context: TransformContext,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_expr_fn: (Shared<Expr>, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>
+) -> [Shared<SemanticExpression>] = do
+  const element_type = array_element_type_from_array_type(sexpr_type(typed_object))
+  let empty_transformed_arguments: [Shared<SemanticExpression>] = []
+  if method_name == 'fold' then
+    if method_arguments.length() == 0 then
+      empty_transformed_arguments
+    else if method_arguments.length() == 1 then
+      semantic_expression_list_singleton(
+        transform_expr_fn(method_arguments[0], transform_context, stmts_fn))
+    else do
+      const first_transformed = transform_expr_fn(method_arguments[0], transform_context, stmts_fn)
+      const second_transformed = transform_expr_with_lambda_parameter_types(
+        method_arguments[1], [sexpr_type(first_transformed), element_type], transform_context, stmts_fn, transform_expr_fn)
+      semantic_expression_list_singleton(first_transformed).concat([second_transformed])
+    end
+  else if method_name == 'zip' || method_name == 'join' then
+    if method_arguments.length() > 0 then
+      semantic_expression_list_singleton(
+        transform_expr_fn(method_arguments[0], transform_context, stmts_fn))
+    else
+      empty_transformed_arguments
+    end
+  else if method_name == 'take' || method_name == 'drop' then
+    if method_arguments.length() > 0 then
+      semantic_expression_list_singleton(
+        transform_expr_fn(method_arguments[0], transform_context, stmts_fn))
+    else
+      empty_transformed_arguments
+    end
+  else if method_name == 'enumerate' || method_name == 'sum' || method_name == 'flat' then
+    empty_transformed_arguments
+  else if method_arguments.length() > 0 then
+    semantic_expression_list_singleton(
+      transform_expr_with_lambda_parameter_types(
+        method_arguments[0], [element_type], transform_context, stmts_fn, transform_expr_fn))
+  else
+    empty_transformed_arguments
+  end
+end
+
+export fn transform_array_hof_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_expr_fn: (Shared<Expr>, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_array_hof_method_arguments(
+    typed_object, method_name, method_arguments, transform_context, stmts_fn, transform_expr_fn)
+  const argument_types = typed_arguments.map(typed_argument => sexpr_type(typed_argument))
+  const result_type = hof_call_result_type(receiver_type, method_name, argument_types)
+  const method_parameter_mutability_flags =
+    instance_method_receiver_and_parameters_mutability_pattern(
+      registry, receiver_type, method_name, typed_arguments.length())
+  Shared.new(SemanticExpressionMethod(
+    typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+end
+
+export fn transform_regular_method_call(
+  registry: TypeRegistry,
+  typed_object: Shared<SemanticExpression>,
+  method_name: string,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_exprs_fn: ([Shared<Expr>], TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticExpression>]
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs_fn(method_arguments, transform_context, stmts_fn)
+  const result_type = method_result_type_for_dispatch(receiver_type, method_name, registry)
+  const mangled = extend_method_mangled_name(registry, receiver_type, method_name)
+  if mangled != '' then
+    transform_extend_method_as_call(
+      registry, typed_object, method_name, typed_arguments, receiver_type, result_type, source_span)
+  else
+    const method_parameter_mutability_flags =
+      instance_method_receiver_and_parameters_mutability_pattern(
+        registry, receiver_type, method_name, typed_arguments.length())
+    Shared.new(SemanticExpressionMethod(
+      typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
+  end
+end
+
+export fn transform_region_alloc_method_call(
+  typed_object: Shared<SemanticExpression>,
+  method_arguments: [Shared<Expr>],
+  receiver_type: Shared<Type>,
+  transform_context: TransformContext,
+  source_span: Span,
+  stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
+  transform_exprs_fn: ([Shared<Expr>], TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticExpression>]
+) -> Shared<SemanticExpression> = do
+  const typed_arguments = transform_exprs_fn(method_arguments, transform_context, stmts_fn)
+  const value_type =
+    if typed_arguments.length() == 1 then sexpr_type(typed_arguments[0]) else Shared.new(TUnknown) end
+  const result_type = region_pointer_type(region_handle_tag_type(receiver_type), value_type)
+  const empty_mutability: [i32] = []
+  Shared.new(SemanticExpressionMethod(
+    typed_object, 'alloc', typed_arguments, empty_mutability, result_type, source_span))
+end

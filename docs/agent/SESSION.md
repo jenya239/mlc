@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-4 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Green for §104-12 slice 4: created `compiler/checker/transform/transform_method.mlc` (287 lines). Moved wholesale all 12 items from the frozen Decision: 6 pure leaves (`receiver_type_key_for_method_dispatch`, `instance_method_receiver_and_parameters_mutability_pattern`, `extend_method_mangled_name`, `transform_extend_method_as_call`, `method_result_type_for_dispatch`, `semantic_expression_list_singleton`), 2 needing `transform_expr_fn` (`transform_expr_with_lambda_parameter_types`, `transform_array_hof_method_arguments`), 1 forwarding `transform_expr_fn` without using it directly (`transform_array_hof_method_call`), 3 needing `transform_exprs_fn` (`transform_result_option_hof_method_call`, `transform_regular_method_call`, `transform_region_alloc_method_call`). `transform_method_call_after_object` stays in `transform.mlc`, its 4 branches now pass `transform_expr`/`transform_exprs` as trailing arguments to whichever group function each branch calls. `transform.mlc` shrank 1132 → 881 lines, gained 1 import line |
+| verify  | Fresh `mlcc` translation of `compiler/main.mlc` succeeded (0 errors); confirmed `transform_method.cpp/.hpp` created. Built pre-change baseline `p0` (temporarily removed the new file + reverted `transform.mlc` via `git stash`, restored after) and post-change `p1`; `diff -rq p0 p1` scoped to exactly `transform.cpp/.hpp` (12 removed declarations matching the Decision exactly, 4 namespace-qualified call sites `transform_method::transform_result_option_hof_method_call(..., transform_exprs)` / `transform_array_hof_method_call(..., transform_expr)` / `transform_region_alloc_method_call(..., transform_exprs)` / `transform_regular_method_call(..., transform_exprs)`) plus the 2 new files — zero other files touched (same pattern as slice 3: no external module called these functions directly). Full `rake test_compiler_mlc` (all 10 phases, `TMPDIR` unset): exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host: built via `compiler/build_bin.sh` with in-repo `TMPDIR` (host disk 99%/5.3G free), ran `mlcc2` on `compiler/main.mlc`, `diff -r p1 p2 --exclude=obj` → IDENTICAL. Cleaned up all `.tmp/s104-12-slice4/**` build artifacts after |
+| result  | §104-12 slice-4 green; `compiler/out/mlcc` rebuilt fresh by the rake run (excluded path, not committed) |
+| issues  | none |
+| next    | ROLE=Critic TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 4 — full re-audit: independent function/type-set diff, independent mlcc translation spot-check, independent `rake test_compiler_mlc` rerun; close slice 4 AND §104-12 itself if clean, since this is the last slice) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-4 red)
 
 | field   | value |
