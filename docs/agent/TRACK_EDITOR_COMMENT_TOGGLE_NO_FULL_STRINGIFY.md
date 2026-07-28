@@ -4,18 +4,19 @@ Parent: [../PLAN.md](../PLAN.md) §100.
 Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md)
 (§99) / #1d. Size **S**.
 
-## Status: **open** — STEP=1 done; next Driver STEP=2
+## Status: **open** — STEP=2 done; next Critic STEP=3
 
 ## Next step
 
-**STEP=2** — Green: slice + local replace; zero `document_to_string`/`document_from_string` in `edit_toggle_line_comment`; stable prints `ux_ok comment_toggle_no_full_stringify`.
+**STEP=3** — Critic: stable×2 + related (autoclose/newline/word-delete/clipboard) + `run_ux_gate`×2.
 
 ### STEPs done in git
 
 | Step | Commit (abbrev) | Notes |
 |------|-----------------|-------|
 | 0 | `77e4d402` | Decision: comment toggle via slice + local replace |
-| 1 | (this) | Red: still flatten+rebuild; stable stub |
+| 1 | `86f53e4f` | Red: still flatten+rebuild; stable stub |
+| 2 | (this) | Green: per-line slice via `document_line_start_before`/`document_line_end_after`/`document_byte_slice`; `document_delete`+`document_insert` on touched span only; zero `document_to_string`/`document_from_string`/`LineIndex` in `edit.mlc` |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -34,7 +35,7 @@ Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK
 |------|------|------|
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: comment toggle still full-flattens | **done** |
-| 2 | Slice + local replace; green | pending |
+| 2 | Slice + local replace; green | **done** |
 | 3 | Critic: stable + related + `run_ux_gate` | pending |
 
 <!-- STEP=2: line-span scan + document_byte_slice + delete/insert; green; toggle_line_comment -->

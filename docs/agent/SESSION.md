@@ -2,6 +2,49 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+| started | 2026-07-28 |
+| elapsed | ~25 min |
+| done    | `misc/editor/document/edit.mlc`: `edit_toggle_line_comment` rewritten to per-line slice — new `document_line_end_after` helper + existing `document_line_start_before`; per-line `document_byte_slice` + `comment_line_body`/`uncomment_line_body`; write-back via `document_delete`+`document_insert` on the touched multi-line span only. Removed `document_to_string`/`document_from_string`/`LineIndex` import and the two `line_index_*`-based helpers (`line_content_exclusive_end`, `line_content_is_commented`) — zero full-stringify calls left in `edit.mlc`. Rewrote `scripts/run_ux_comment_toggle_no_full_stringify_stable.sh` to check the function body + run `run_editor_edit_unit.sh` + `run_ux_toggle_line_comment.sh` |
+| verify  | `run_editor_edit_unit.sh` EXIT=0; `run_ux_toggle_line_comment.sh` EXIT=0 `ux_ok toggle_line_comment`; new stable EXIT=0 `ux_ok comment_toggle_no_full_stringify`; red EXIT=1 (gap correctly closed: `to=0 from=0`); related stables green: `edit_autoclose_no_full_stringify`, `newline_indent_no_full_stringify`, `word_delete_no_full_stringify`, `clipboard_slice_no_full_stringify` |
+| result  | §100 STEP=2 **done**; queue → Critic STEP=3 |
+| issues  | Full `run_ux_gate.sh` (all scenarios) not run this turn — that is Critic's STEP=3 gate (×2), not required for Driver green per the pattern of prior closed stringify tracks (STEP=2 turns verify function + related scripts only) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-28 (interactive session, Planner-style — §102/§103 authorized: terminal + Script VM Phase 1)
+
+| field   | value |
+|---------|-------|
+| role    | Planner (interactive, not queue) |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-28 |
+| elapsed | n/a (interactive) |
+| done    | User asked for a track count and explicitly authorized two new epics by name: terminal component and MLC Script VM. Counted current backlog: 99 numbered `PLAN.md` rows, 97 closed/superseded, effectively only §100 (near close) and §101 (§97a residual, confirmed root cause, queued) open in the main sequence; §19 (auto-cycle detection) and MLC Script VM were the only gated/design-only items. Opened **§102 `TRACK_EDITOR_TERMINAL`** — libvterm-backed terminal panel, decomposed into 7 ordered sub-tracks (§102a FFI binding → §102b PTY spawn → §102c cell-grid render reusing existing `static_text`/`solid_renderer` → §102d input forward → §102e resize/scrollback → §102f panel integration into the post-§97 unified `EditorAppState` → §102g perf budget), explicit non-goal against building a second parallel widget/render system (direct lesson from the 2026-07-15 architecture review). Opened **§103 `TRACK_MLC_SCRIPT_VM`**, lifting the previous HARD STOP GATE for **Phase 1 only** (design doc `MLC_SCRIPT_VM.md` §12 phases 2-5 remain explicitly not authorized) — decomposed into 9 ordered sub-tracks (§103a `Value` rep → §103b bytecode format → §103c verifier → §103d arithmetic interpreter → §103e control flow → §103f GC arena → §103g arrays/records → §103h closures/fibers → §103i embedding ABI), verifier-before-interpreter per the design doc's own LuaJIT-precedent requirement. Rewrote `TRACK_MLC_SCRIPT_VM.md` to remove the old "agent-hours" sizing estimates (violates the standing token/calendar-only rule) — no replacement time metric substituted, sizing left implicit in the sub-track count/scope. Every sub-track in both new tracks carries an explicit test gate per user's stated emphasis (performance, architecture, testing) |
+| verify  | Confirmed `libvterm0` runtime already installed (0.3.3) via `dpkg -l`, dev headers not yet confirmed (deferred to §102a Decision, not assumed) — did not overstate readiness |
+| next    | Driver: finish §100 STEP=2 (green) → Critic → §101 Decision (perf fix) → §102a Decision (`TERMINAL_LIBVTERM_FFI`) → §103a Decision (`SCRIPT_VM_VALUE_REP`), strict order per `CONTINUITY.md` override (d) |
+
+
+### Turn 2026-07-27 (interactive session, Planner-style — §97a perf smoke re-run, new finding logged as §101)
+
+| field   | value |
+|---------|-------|
+| role    | Planner (interactive, not queue) |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-27 |
+| elapsed | n/a (interactive) |
+| done    | User asked for a progress check ("как успехи?"). Reviewed `git log` since 2026-07-25: §97 (`TRACK_EDITOR_RENDER_ARCHITECTURE`) closed — §97a real perf harness, §97b frame-split (wrap/frame_cache/shared_span_cache/minimap_cache/frame_input extracted into `app/frame_layout.mlc` + collapsed dual wrap tick), §97c (killed `demo_live` app-loop-head unpack, unified mutation via `editor_app_set_*`, wheel-hover-focus-independent L0 lock-in) all Critic-closed; queue continued through §93/§98/§99 stringify residuals, §100 in flight. Re-ran `scripts/run_editor_demo_live_perf_smoke.sh` (§97a's own harness) directly to get a real number rather than trust doc claims: on the 100k-line fixture, `frames=30 layout_us=82511 draw_us=12063257 total_us=12240140` — draw phase is 98.6% of frame time, ~402ms/frame, ~2.4 FPS while scrolling. Confirmed `visible_row_budget` already virtualizes the paint loop (not drawing all 100k rows), so this is not the already-fixed per-frame-full-wrap regression (§36) recurring; read the draw span in `demo_live.mlc` and found `visual_row_index_for_caret_pixel_budget` called every frame inside it (~line 2210) as the prime suspect — a pixel-budget wrap walk for caret placement that may not be bounded by viewport size. Logged as PLAN §101, explicitly as a hypothesis needing a narrower timer to confirm before any fix (no track file yet, no code touched) |
+| verify  | Re-ran the smoke script myself (99.5s, exit 0) rather than citing a prior run; read `demo_live.mlc`'s `perf_draw_t0`/`perf_draw_us` boundaries (line 1900-2632) to confirm what's actually inside the measured span before hypothesizing a cause |
+| next    | Driver: after §100 (`EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY`) closes, PLAN §101 Decision — bisect `draw_us` with an inner timer around `visual_row_index_for_caret_pixel_budget` specifically (and 1-2 other candidates in the same span) on the same 100k-line fixture, confirm or refute before naming a TRACK / touching code |
+
+
 ### Turn 2026-07-25 16:07 (Driver TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=1)
 
 | field   | value |
