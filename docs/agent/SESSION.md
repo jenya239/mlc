@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-3 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of §104-12 slice 3 (`transform_call_args.mlc`). (1) Function/type-set diff: extracted old `transform.mlc` from commit `503f9970` (pre-slice-3 parent), name-set = 46; new `transform.mlc` (36) + `transform_call_args.mlc` (10) combined = 46, `diff` empty — zero names lost or duplicated. (2) Export-status diff: confirmed exactly the 8 moved functions (`call_argument_is_lambda`, `callee_semantic_type_is_function`, `function_parameter_types_from_callee_type`, `expected_call_argument_type_at_index`, `function_return_type_from_callee_type`, `transform_call_arguments_using_callee_semantic_type`, `transform_lambda_call_argument`, `transform_one_call_argument_using_optional_expected_type`) gained `export`; the type `Transform_call_arguments_fold_state` and `transform_call_arguments_fold_step` stayed non-exported, matching the frozen Decision exactly. (3) Fresh `mlcc` translation of `compiler/main.mlc`: `transform_call_args.cpp/.hpp` created; grepped every generated file for `transform_call_args::` — found only inside `transform.cpp` (the 1 direct caller, `visit_call`), zero stray references anywhere else. (4) Independent full `rake test_compiler_mlc` rerun from a clean shell (confirmed `TMPDIR` unset beforehand, avoiding the known stale-var pitfall): `1471 passed, 0 failed`, `arch lint failures=0`. (5) Confirmed line counts: `transform.mlc` 1132, `transform_call_args.mlc` 365. No false-done, no stale docs found |
+| verify  | see `done` — all 5 independent checks above, run fresh this turn (not reused from the Driver's STEP=2 run) |
+| result  | §104-12 slice 3 **closed** |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 4 — `transform_method.mlc` Decision: `transform_result_option_hof_method_call` + `transform_array_hof_method_call` + `transform_regular_method_call` + `transform_extend_method_as_call` + `transform_region_alloc_method_call`, needs `transform_exprs_fn` injection at 3 call sites; `transform_method_call_after_object` stays in `transform.mlc`, tightly coupled to `dispatch_transform_pass`) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-3 green)
 
 | field   | value |

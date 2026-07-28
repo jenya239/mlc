@@ -17,10 +17,13 @@ absent, all 9 items at documented lines, file at baseline 1468 lines),
 **STEP=2 green** same day (`transform_call_args.mlc` created, 9 items
 moved, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new files only,
 `rake test_compiler_mlc` exit_code=0, mlcc2 self-host diff IDENTICAL),
-**queue head is now §104-12 slice 3 STEP=3 (Critic close)** (priority
-override 2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1
-moved ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3
-stays gated)
+**§104-12 slice 3 closed** same day (Critic-audited: independent
+function/type-set diff, independent fresh mlcc translation + stray-
+reference grep, independent full `rake test_compiler_mlc` rerun
+1471/0), **queue head is now §104-12 slice 4 Decision**
+(`transform_method.mlc`) (priority override 2026-07-28, user: "это
+должно быть приоритетом сейчас" — Wave 1 moved ahead of §101/§102/§103;
+Wave 2 stays queued after §103, Wave 3 stays gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -238,7 +241,11 @@ injection-heavy `transform_call_args.mlc` extraction).
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries | **done** |
 | 2 | Green: create `transform_call_args.mlc`, thread the 3 injected parameters, wire `transform.mlc` call site + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — closed** |
+
+#### Critic close (STEP=3, 2026-07-28)
+
+Independent function/type-set diff: old `transform.mlc` (46 names) vs new `transform.mlc` (36) + `transform_call_args.mlc` (10) combined = 46, zero lost/duplicated. Export-status diff: exactly the 8 moved functions gained `export` (needed for cross-module visibility); the type `Transform_call_arguments_fold_state` and `transform_call_arguments_fold_step` stayed non-exported (internal to the new module, matches Decision). Fresh `mlcc` translation of `compiler/main.mlc`: `transform_call_args.cpp/.hpp` created; grepped for `transform_call_args::` across all generated files — found only in `transform.cpp` (the 1 direct caller), zero stray references. Independent `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first): `1471 passed, 0 failed`, `arch lint failures=0`. Line counts confirmed: `transform.mlc` 1132, `transform_call_args.mlc` 365. No false-done found. **§104-12 slice 3 closed.**
 
 #### Green result (STEP=2, 2026-07-28)
 
