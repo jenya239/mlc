@@ -465,7 +465,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` (`git show 6667ea37:...`,
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries (`decl_cpp_ffi.mlc` absent, 15 items at the documented lines, file at baseline 1171 lines) | pending |
+| 1 | Red: confirm current boundaries (`decl_cpp_ffi.mlc` absent, 15 items at the documented lines, file at baseline 1171 lines) | **done** — `test -f` negative; all 15 items confirmed at lines 100/106/112/118/121/124/136/153/210/220/230/243/246/258/307, no drift; `decl_cpp.mlc` confirmed at baseline 1171 lines |
 | 2 | Green: create `decl_cpp_ffi.mlc`, wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
 | 3 | Critic: full re-audit | pending |
 

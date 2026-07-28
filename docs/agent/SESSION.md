@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-5 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-13 slice 5 (`decl_cpp_ffi.mlc`): `compiler/codegen/decl_cpp_ffi.mlc` confirmed absent (`test -f` negative). All 15 FFI/extern items confirmed still present at the exact documented lines: `semantic_expression_is_extern` (100), `semantic_extern_ffi_c_name` (106), `semantic_extern_ffi_header` (112), `semantic_expression_is_ffi_extern` (118), `semantic_expression_is_bare_extern` (121), `ffi_header_include_line` (124), `collect_ffi_include_lines_from_declaration` (136), `gen_extern_type_decl_cpp` (153), `collect_ffi_include_lines` (210), `ffi_parameter_type_items` (220), `ffi_parameter_name_items` (230), `ffi_extern_reuses_imported_binding` (243), `gen_ffi_fn_proto_cpp` (246), `gen_ffi_fn_decl_cpp` (258), `semantic_fn_body_is_extern` (307). `decl_cpp.mlc` confirmed at baseline 1171 lines (matches Decision, no drift) |
+| verify  | see `done` |
+| result  | §104-13 slice 5 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 5 — green: create `decl_cpp_ffi.mlc`, move 15 items wholesale (export the 8 needing cross-module visibility), wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-5 Decision)
 
 | field   | value |
