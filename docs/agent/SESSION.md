@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-3 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-12 slice 3 (`transform_call_args.mlc`), unblocked now that slice 2 landed. Re-derived the call_args group against current line numbers (post slice-2 shift): `expected_call_argument_type_at_index` (438), `transform_lambda_call_argument` (446), `transform_one_call_argument_using_optional_expected_type` (466-618, 26 `transform_expr(` calls), `Transform_call_arguments_fold_state` type (620), `function_return_type_from_callee_type` (625), `transform_call_arguments_fold_step` (650), `transform_call_arguments_using_callee_semantic_type` (667-690, 1 `transform_exprs(` call) — all confirmed at the exact lines by grep, matching the original (pre-slice-2) analysis just shifted. Found this group has a genuine value-level dependency (unlike slice 2's type-only cycle) on `transform_expr` and `transform_expr_lambda_with_param_types` (790, which has an unrelated second caller inside `dispatch_transform_pass` plus its own lambda-parameter-environment dependency chain — deliberately staying in `transform.mlc`, not part of this slice). Decision: move the 6 group items + 3 group-local leaf helpers (`callee_semantic_type_is_function`, `function_parameter_types_from_callee_type`, `call_argument_is_lambda` — confirmed zero other callers in `transform.mlc` by grep) wholesale into new `compiler/checker/transform/transform_call_args.mlc`; resolve `expected_call_argument_type_at_index`'s dependency on `standalone_unknown_cell` (4 other callers remain, can't move wholesale) by inlining the 1-line `Shared.new(TUnknown)` literal, matching the idiom already used in `transform_coerce.mlc`; thread 2 injected function parameters (`transform_expr_fn`, `transform_expr_lambda_with_param_types_fn`) through the 4 non-leaf functions, plus a 3rd (`transform_exprs_fn`) for the outermost function's own direct call — mirroring the multi-callback-parameter precedent at `infer_isolate_method.mlc:77`. Import `TransformContext`/`TransformStmtsResult` from `./transform_context` (the slice-2 leaf), not from `./transform`. Documented full Decision + Steps table in `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` |
+| verify  | grep audits only this turn (no code changes): re-confirmed all 9 items' line numbers and call-site counts against the shifted post-slice-2 file; confirmed the 3 leaf helpers have zero other callers; confirmed `transform_expr_lambda_with_param_types`'s second, unrelated caller at line 1308 |
+| result  | §104-12 slice-3 Decision **frozen**; no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 3 — red: confirm `transform_call_args.mlc` absent / all 9 items still in `transform.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-2 close)
 
 | field   | value |
