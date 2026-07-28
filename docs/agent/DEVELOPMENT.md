@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-13 slice 1 (`decl_cpp_helpers.mlc`) STEP=3 close — green done 2026-07-28: 4 pure-leaf declaration-list helpers moved, `decl_cpp.mlc` 1666→1641 lines, bootstrap diff scoped to `decl_cpp.cpp/.hpp` + 2 new files only, `rake test_compiler_mlc` exit_code=0 1471/0, mlcc2 self-host diff IDENTICAL. §104-12 (`transform.mlc` split) **CLOSED** 2026-07-28: 4 slices, 1765→881 lines, all Critic-audited. §104-1/2/3 found already pre-existing, see track file.
+**Queue head:** Driver `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-13 slice 2 STEP=0 Decision — slice 1 (`decl_cpp_helpers.mlc`, 4 pure-leaf declaration-list helpers) **closed** 2026-07-28, Critic-audited, `decl_cpp.mlc` 1666→1641 lines. §104-13 itself stays open: 5 more groups surveyed (type/trait/fn decl codegen, FFI/extern codegen, extend/impl codegen — largest, decl-segment orchestration), each needs its own Decision. §104-12 (`transform.mlc` split) **CLOSED** 2026-07-28: 4 slices, 1765→881 lines, all Critic-audited. §104-1/2/3 found already pre-existing, see track file.
 **`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **closed** 2026-07-28 (Critic OK). Archived.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.

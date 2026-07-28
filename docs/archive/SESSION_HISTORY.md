@@ -26335,3 +26335,263 @@ Turns from §81 Critic and older moved from live SESSION.md.
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97b shared_span_cache) |
 
+
+## Archived 2026-07-28 (SESSION trim before COMPILER_ARCHITECTURE_HYGIENE §104-13 slice 2)
+
+Turns from 2026-07-25 15:20 through 2026-07-25 16:07 (§97c §96 wheel-hover close through §100 STEP=1) moved from live SESSION.md.
+
+### Turn 2026-07-25 16:07 (Driver TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 16:07 |
+| elapsed | ~3 min |
+| done    | Red harness: `edit_toggle_line_comment` still `document_to_string` + `document_from_string`; stable stub |
+| verify  | `ux_ok comment_toggle_no_full_stringify_red`; stable EXIT=1 |
+| result  | §100 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 16:06 (Planner plan-refresh → §100)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 16:06 |
+| elapsed | ~4 min |
+| done    | Opened §100 `TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY`: Decision — slice + local replace; last `edit.mlc` flatten |
+| verify  | `edit_toggle_line_comment` still `document_to_string` + `document_from_string` (edit.mlc:261,323) |
+| result  | §100 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:53 (Critic TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:53 |
+| elapsed | ~12 min |
+| done    | Critic OK: word-delete stable×2 + related + `run_ux_gate`×2 (111); track archived |
+| verify  | `ux_ok word_delete_no_full_stringify` ×2; related EXIT=0; `[ux gate] all ok (111 scenarios)` ×2 |
+| result  | §99 **closed**; queue → Planner plan-refresh |
+| issues  | honest: `*_red` obsolete; comment toggle / frame_snapshot / save / word-nav `line_index.text` still OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
+### Turn 2026-07-25 15:51 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:51 |
+| elapsed | ~5 min |
+| done    | Green: `word_boundary_*_document` via `document_byte_slice`; wired both word-delete fns |
+| verify  | `ux_ok word_delete_no_full_stringify`; word_boundary_unit; edit_unit; ctrl_backspace |
+| result  | §99 STEP=2 done; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:50 (Driver TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:50 |
+| elapsed | ~3 min |
+| done    | Red harness: both `edit_delete_word_*` still `document_to_string`; stable stub `not implemented` |
+| verify  | `ux_ok word_delete_no_full_stringify_red`; stable EXIT=1 |
+| result  | §99 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:49 (Planner plan-refresh → §99)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 15:49 |
+| elapsed | ~4 min |
+| done    | Opened §99 `TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY`: Decision — word-delete via document byte peeks + `is_word_char`; §98 residual |
+| verify  | `edit_delete_word_*` still call `document_to_string` (edit.mlc:384,409) |
+| result  | §99 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:40 (Critic TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:40 |
+| elapsed | ~9 min |
+| done    | Critic OK: newline stable×2 + edit_unit/newline/autoclose/clipboard + `run_ux_gate`×2 (110); track archived |
+| verify  | `ux_ok newline_indent_no_full_stringify` ×2; related EXIT=0; `[ux gate] all ok (110 scenarios)` ×2 |
+| result  | §98 **closed**; queue → Planner plan-refresh |
+| issues  | honest: `*_red` obsolete post-green; comment/word-delete/save/frame_snapshot flattens still OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
+### Turn 2026-07-25 15:38 (Driver TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:38 |
+| elapsed | ~5 min |
+| done    | Green: `document_line_start_before` + `document_byte_slice` indent; zero `document_to_string` in newline path |
+| verify  | `ux_ok newline_indent_no_full_stringify`; edit_unit ok; `ux_ok newline_caret_and_spaces` |
+| result  | §98 STEP=2 done; queue → Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:37 (Driver TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:37 |
+| elapsed | ~3 min |
+| done    | Red harness: `edit_insert_newline` still `document_to_string`; stable stub `not implemented` |
+| verify  | `ux_ok newline_indent_no_full_stringify_red`; stable EXIT=1 |
+| result  | §98 STEP=1 done; queue → Driver STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:35 (Planner plan-refresh → §98)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | plan-refresh |
+| track   | PLAN |
+| started | 2026-07-25 15:35 |
+| elapsed | ~5 min |
+| done    | Opened §98 `TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY`: Decision — newline indent via line-start scan + `document_byte_slice`; §93 residual |
+| verify  | `edit_insert_newline` still calls `document_to_string(working)` |
+| result  | §98 **open** STEP=0 done; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:34 (Critic TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:29 |
+| elapsed | ~5 min |
+| done    | Critic OK: autoclose stable×2 + typing_paren/edit_unit/clipboard_slice + `run_ux_gate`×2 (109); track archived |
+| verify  | `ux_ok edit_autoclose_no_full_stringify` ×2; related EXIT=0; `[ux gate] all ok (109 scenarios)` ×2 |
+| result  | §93 **closed**; queue → Planner plan-refresh |
+| issues  | honest: `*_red` obsolete post-green; newline/comment/word-delete/save/frame_snapshot flattens still OOS |
+| next    | ROLE=Planner STEP=plan-refresh TRACK=PLAN |
+
+### Turn 2026-07-25 15:27 (Driver TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:27 |
+| elapsed | ~2 min |
+| done    | Autoclose wrap+peek via `document_byte_slice`; green stable |
+| verify  | stable EXIT=0 `ux_ok edit_autoclose_no_full_stringify`; red EXIT=1; typing_paren + edit_unit EXIT=0 |
+| result  | §93 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:26 (Driver TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+| started | 2026-07-25 15:26 |
+| elapsed | ~2 min |
+| done    | Red harness `run_ux_edit_autoclose_no_full_stringify_red.sh` + stable stub; gap = ≥2 `document_to_string` in `edit_insert_text_autoclose` |
+| verify  | red EXIT=0 `ux_ok edit_autoclose_no_full_stringify_red` flattens=2; stable EXIT=1 `not implemented` |
+| result  | §93 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:25 (Critic TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=3)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:23 |
+| elapsed | ~2 min |
+| done    | Critic OK: wheel_hover stable×2 + wheel/unpack related + §97a perf + `run_ux_gate`×2 (108); §96 add-on closed; §97 P0 closed |
+| verify  | `ux_ok wheel_hover_focus_independent` ×2; related EXIT=0; `ux_ok demo_live_perf`; `[ux gate] all ok (108 scenarios)` ×2 |
+| result  | §97c §96 **closed**; §97 **closed**; queue → §93 STEP=1 |
+| issues  | honest: `*_red` obsolete post-green; glyph rebuild locals still in demo (later fold, not queued) |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_EDIT_AUTOCLOSE_NO_FULL_STRINGIFY |
+
+### Turn 2026-07-25 15:22 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:22 |
+| elapsed | ~2 min |
+| done    | Green L0 stable: wheel block has `tree_hovered` + `editor_rect` hover gates, zero `editor_focused` |
+| verify  | stable EXIT=0 `ux_ok wheel_hover_focus_independent`; red EXIT=1 |
+| result  | §97c §96 STEP=2 **done**; next Critic STEP=3 |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+
+### Turn 2026-07-25 15:21 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:21 |
+| elapsed | ~2 min |
+| done    | Red harness `run_ux_wheel_hover_focus_independent_red.sh` + stable stub (`not implemented`); gap = missing green L0 (demo already hover-only) |
+| verify  | red EXIT=0 `ux_ok wheel_hover_focus_independent_red`; stable EXIT=1 `not implemented` |
+| result  | §97c §96 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+
+### Turn 2026-07-25 15:20 (Driver TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96 wheel-hover add-on) |
+| started | 2026-07-25 15:20 |
+| elapsed | ~5 min |
+| done    | Froze Decision: protective L0 harness on `demo_live` wheel block — hover gates, zero `editor_focused`; no demo logic change; OOS glfw scenario |
+| verify  | gap: no `run_ux_wheel_hover_focus_independent_*.sh`; wheel block ~1054–1085 has no `editor_focused` |
+| result  | §97c §96 STEP=0 **done**; queue → Driver STEP=1 |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RENDER_ARCHITECTURE (§97c §96) |
+

@@ -353,11 +353,15 @@ file's own glue layer, not extracted). Slice order and count for groups
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`decl_cpp_helpers.mlc` absent, 4 items at the documented lines, file at baseline 1666 lines) | **done** — `test -f` negative; all 4 helpers confirmed at lines 26/1536/1541/1550, no drift; `decl_cpp.mlc` confirmed at baseline 1666 lines |
 | 2 | Green: create `decl_cpp_helpers.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** — see verification below |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — closed** |
 
 #### Green result (STEP=2, 2026-07-28)
 
 `decl_cpp_helpers.mlc` created (30 lines): all 4 items moved wholesale + exported. `decl_cpp.mlc`: 1666 → 1641 lines (gained 1 import line, dropped the now-unused `CppDeclarationEmpty`/`CppDeclarationSequence` imports since only the new module constructs them directly). Bootstrap diff (`mlcc -o p0` pre-change, `mlcc -o p1` post-change, same pre-existing `mlcc` binary) scoped to exactly 4 files: `decl_cpp.cpp/.hpp` (shrink) + `decl_cpp_helpers.cpp/.hpp` (new) — zero other files touched (confirms the Decision's "zero external importers" claim). Unlike the `transform.mlc` slices, mlcc emits a plain `using namespace decl_cpp_helpers;` at the top of `decl_cpp.cpp` rather than qualifying each of the ~90 call sites — read the full non-`#line` diff anyway: every changed line is either that `using namespace`/`#include` pair, a removed function body, or (at exactly the call sites mlcc chose to qualify explicitly rather than rely on the `using namespace`) a `decl_cpp_helpers::` prefix insertion — zero logic changes. `rake test_compiler_mlc` (`TMPDIR` unset): exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host diff (`build_bin.sh`, in-repo `TMPDIR`, host disk 99%): IDENTICAL. All `.tmp/s104-13-slice1/**` build artifacts cleaned up after.
+
+#### Critic close (STEP=3, 2026-07-28)
+
+Independent function/type-set diff: old `decl_cpp.mlc` (`git show 9a7272df:...`, 119 names) vs new `decl_cpp.mlc` (115) + `decl_cpp_helpers.mlc` (4) combined = 119, zero lost/duplicated. Export-status diff: exactly the 4 moved items gained `export`, matching the Decision exactly. Fresh `mlcc` translation of `compiler/main.mlc` from scratch: `decl_cpp_helpers.cpp/.hpp` created; grepped `decl_cpp_helpers::` across every generated `.cpp`/`.hpp` — found only in `decl_cpp.cpp`/`.hpp` (the 1 direct caller), zero stray references. Independent `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first): `1471 passed, 0 failed`, `arch lint failures=0`. Line counts confirmed: `decl_cpp.mlc` 1641, `decl_cpp_helpers.mlc` 30 — no drift. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 in the same continuous session, no source change since). No false-done found. **§104-13 slice 1 closed.** §104-13 itself stays **open** — 5 more groups surveyed (type/trait/fn decl codegen, FFI/extern codegen, extend/impl codegen, decl-segment orchestration), each needs its own Decision. Queue head → §104-13 slice 2 Decision.
 
 ## Verification discipline
 
