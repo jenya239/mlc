@@ -4,11 +4,7 @@ Parent: [../PLAN.md](../PLAN.md) §100.
 Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY.md)
 (§99) / #1d. Size **S**.
 
-## Status: **open** — STEP=2 done; next Critic STEP=3
-
-## Next step
-
-**STEP=3** — Critic: stable×2 + related (autoclose/newline/word-delete/clipboard) + `run_ux_gate`×2.
+## Status: **closed** 2026-07-28 (Critic OK)
 
 ### STEPs done in git
 
@@ -16,7 +12,8 @@ Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK
 |------|-----------------|-------|
 | 0 | `77e4d402` | Decision: comment toggle via slice + local replace |
 | 1 | `86f53e4f` | Red: still flatten+rebuild; stable stub |
-| 2 | (this) | Green: per-line slice via `document_line_start_before`/`document_line_end_after`/`document_byte_slice`; `document_delete`+`document_insert` on touched span only; zero `document_to_string`/`document_from_string`/`LineIndex` in `edit.mlc` |
+| 2 | `cce76b0e` | Green: per-line slice via `document_line_start_before`/`document_line_end_after`/`document_byte_slice`; `document_delete`+`document_insert` on touched span only; zero `document_to_string`/`document_from_string`/`LineIndex` in `edit.mlc` |
+| 3 | (this) | Critic OK: stable×2 + red confirmed fail + related (autoclose/newline/word-delete/clipboard) ×1 + `run_ux_gate`×2 (112 scenarios, one unrelated `idle_cpu_budget_stable` flake on run #2 — host CPU noise, reproduced green in isolation, confirmed unrelated to this track, clean rerun of full gate all-ok) |
 
 ## Decision (STEP=0) — **frozen** 2026-07-25
 
@@ -36,7 +33,7 @@ Residual of [TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY](../archive/tracks/TRACK
 | 0 | Decision freeze + open | **done** |
 | 1 | Red: comment toggle still full-flattens | **done** |
 | 2 | Slice + local replace; green | **done** |
-| 3 | Critic: stable + related + `run_ux_gate` | pending |
+| 3 | Critic: stable + related + `run_ux_gate` | **done** |
 
 <!-- STEP=2: line-span scan + document_byte_slice + delete/insert; green; toggle_line_comment -->
 

@@ -5,9 +5,10 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — §104-1 Decision next, **queue head** (priority override
-2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1 moved ahead
-of §101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays gated)
+## Status: **open** — §100 closed 2026-07-28, §104-1 Decision next, **queue
+head** (priority override 2026-07-28, user: "это должно быть приоритетом
+сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after
+§103, Wave 3 stays gated)
 
 ## Why this track exists
 
