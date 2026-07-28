@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-2 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-13 slice 2 (`decl_cpp_type.mlc`) — type/variant struct codegen group. Re-derived against current `decl_cpp.mlc` (1641 lines, post slice-1 shift): 13 items at lines 58-234 — `variant_forward_struct_cpp` (58), `variant_alias_arm_cpp` (69), `append_type_forward_declarations` (81), `gen_type_decl_fwd_cpp` (108, export), `record_field_cpp` (120), `record_fields_cpp` (126), `tuple_fields_cpp` (129), `variant_body_struct_cpp` (142), `cpp_using_from_struct_using_entry` (160), `struct_using_declarations_cpp` (163), `single_variant_body_struct_cpp` (174), `append_type_body_struct_declarations` (192), `gen_type_decl_body_cpp` (219, export). Grep confirmed: the 11 internal helpers each have exactly 1 caller, entirely within the group; only the 2 exported entry points are called from elsewhere in `decl_cpp.mlc` (515-516 inside `gen_decl_cpp`, 1326-1327 inside `decl_segment_type_cpp` — both plain downstream calls, zero back-reference). All other dependencies are already-imported external symbols (`./decl/type_gen`, `./cpp_naming`, `./decl/derive_methods_cpp`) or `append_cpp_declarations` (already in `decl_cpp_helpers.mlc` from slice 1) — **zero circular dependency, no injection needed**, unlike §104-12's call_args/method slices. 1 external test importer (`test_decl_gen.mlc`) unaffected per the transitive-import-forwarding precedent. Strategy: new `compiler/codegen/decl_cpp_type.mlc`, move all 13 wholesale, export only the 2 that need cross-module visibility (keep the 11 internal helpers non-exported, matching §104-12 slice 3's precedent) |
+| verify  | gap confirmed: `decl_cpp_type.mlc` absent (`test -f` negative); `decl_cpp.mlc` confirmed at baseline 1641 lines (no drift since slice 1 close) |
+| result  | §104-13 slice 2 Decision **frozen**; queue → Driver STEP=1 (red) |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 2 — red: confirm `decl_cpp_type.mlc` absent / all 13 items still in `decl_cpp.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-1 close)
 
 | field   | value |
