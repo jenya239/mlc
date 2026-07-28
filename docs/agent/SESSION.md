@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-1 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Split `transform.mlc` (1765→1505 lines): extracted the 14 items (coerce group + 3 leaf type-predicate helpers) into new `compiler/checker/transform/transform_coerce.mlc` (268 lines), added `export` to 4 items now called cross-module (`semantic_type_is_tarray`/`array_element_type_from_semantic_type`/`generic_type_name`/`conditional_else_empty_unknown_array_coerced_to_then_array_element`; `coerce_expr_to_type` already exported), added one import line to `transform.mlc` for all 5. Pure relocation via a Ruby one-off (exact line-range slice, no hand-retyping) to avoid transcription errors, then hand-verified both seams by reading the resulting files |
+| verify  | `--check-only` clean. Bootstrap diff (old `mlcc` on pre/post-split source): full-tree `diff -rq` found differences in **exactly** 4 files — `transform.cpp`/`.hpp` (shrink), `transform_coerce.cpp`/`.hpp` (new) — plus 2 more, `transform_decl.cpp`/`transform_stmts.cpp`, each a 1-token namespace-prefix rename per call site (`transform::coerce_expr_to_type`→`transform_coerce::coerce_expr_to_type` — C++ codegen qualifies by defining module, mechanical, not a logic change); confirmed **zero** other differences among ~335 files. Cleared a stale precompiled-header cache (`mlcc_precompiled.pch`, unrelated pre-existing staleness) and a stamp file that had been written despite a prior failed link, then `compiler/build.sh` rebuilt `mlcc` clean. `rake test_compiler_mlc` (rebuilds `run_tests` from split source) → **1471 passed, 0 failed**, `arch lint failures=0`, `transform.mlc` still allowlisted (now 1505 vs 1765 lines). Determinism: new-mlcc-translated `compiler/main.mlc` output byte-identical to old-mlcc-translated output of the same post-split source. Self-host mlcc2 identity (`.cursor/rules/mlcc-self-host-verification.mdc`): `build_bin.sh` (g++) built mlcc2 from the new mlcc's own translation; mlcc2 re-translating the same source → `diff -r --exclude=obj` **empty**, IDENTICAL. Refined the TRACK doc's "Verification discipline" section: literal byte-empty bootstrap diff is impossible for any god-file split (namespace-prefix rename at direct-caller sites is expected collateral, not a regression) — documented so §104-13/14/15/16 aren't held to an unachievable standard |
+| result  | §104-12 slice-1 STEP=2 (green) done, all gates pass; ready for Critic |
+| issues  | Corrected an overstated claim in my own STEP=0 Decision ("codegen output must not change one byte") — the real invariant is "zero changes outside the split modules and their direct callers' namespace-prefix", now documented precisely instead of restated as a false absolute |
+| next    | ROLE=Critic TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 1 — full re-audit before closing the slice) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-1 red)
 
 | field   | value |

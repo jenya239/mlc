@@ -133,8 +133,10 @@ not re-derive step content here, read the review file at pickup time.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`transform_coerce.mlc` absent, 14 items located at the lines above) | **done** — `find compiler/checker/transform -iname transform_coerce.mlc` empty; grep confirms all 14 items at the exact documented lines (139/161/183/492/505/521/531/599/608/623/637/655/667/675), `transform.mlc` still 1765 lines |
-| 2 | Green: create `transform_coerce.mlc`, wire `transform.mlc` imports, bootstrap diff empty | pending |
-| 3 | Critic: `rake test_compiler_mlc` + bootstrap diff + mlcc2 self-host diff | pending |
+| 2 | Green: create `transform_coerce.mlc`, wire `transform.mlc` imports, bootstrap diff empty, `rake test_compiler_mlc`, mlcc2 self-host diff | **done** — see verification below |
+| 3 | Critic: full re-audit | pending |
+
+**STEP=2 verification (2026-07-28):** `transform.mlc` 1765→1505 lines, new `transform_coerce.mlc` 268 lines (14 items + 2 additional `export` keywords added for the 2 items now called cross-module: `semantic_type_is_tarray`/`array_element_type_from_semantic_type`/`generic_type_name`/`conditional_else_empty_unknown_array_coerced_to_then_array_element` gained `export`, `coerce_expr_to_type` already was). Bootstrap diff (`mlcc -o p1` before-split source, `mlcc -o p2` after-split source, same pre-existing `mlcc` binary both times): **not literally empty** — honest finding, refined from the Decision's overstated "not one byte" wording. Diff restricted to exactly 4 files: `transform.cpp`/`.hpp` (shrink, expected), `transform_coerce.cpp`/`.hpp` (new, expected) — plus 2 **other** modules that call the relocated `coerce_expr_to_type` directly, `transform_decl.cpp`/`transform_stmts.cpp`, each with a 1-token change per call site (`transform::coerce_expr_to_type` → `transform_coerce::coerce_expr_to_type`): C++ namespace-qualification always resolves to the symbol's defining module, so any relocation mechanically renames its external call sites' namespace prefix — logic unchanged, confirmed by full-tree `diff -rq` finding **zero** other differing files among the ~335. `compiler/build.sh` (fresh rebuild, cleared a stale precompiled-header cache first — unrelated pre-existing staleness, not from this change) → new `mlcc` built successfully. `rake test_compiler_mlc` (rebuilds `run_tests` from the split source) → **1471 passed, 0 failed**, matches pre-split baseline exactly, `arch lint failures=0` (transform.mlc stays on the file-size allowlist, now smaller: 1505 vs 1765). Determinism cross-check: new-`mlcc`-translated output of `compiler/main.mlc` byte-identical to old-`mlcc`-translated output of the same (post-split) source. Self-host `mlcc2` identity check per `.cursor/rules/mlcc-self-host-verification.mdc`: `build_bin.sh` (g++) built `mlcc2` from the new `mlcc`'s own translation of `compiler/main.mlc`; `mlcc2` re-translating the same source produced a **byte-identical** result (`diff -r --exclude=obj` empty) — self-hosting determinism holds.
 
 ### Next slices (deferred, need `transform_expr_fn` injection — separate Decisions)
 
@@ -148,6 +150,17 @@ Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
 (bootstrap diff) unless the sub-track explicitly changes output by design
 (§104-18/19/20/24 — those gate on `rake test_compiler_mlc` + a working
 `clang++` build instead, exactly as the source review specifies per-step).
-`scripts/regression_gate.sh` after any `lib/mlc/` touch. Self-host
-verification per `.cursor/rules/mlcc-self-host-verification.mdc` — mlcc2
-diff check — required before Critic close on any Wave 1/2 sub-track.
+**Refined 2026-07-28 (§104-12 slice 1 finding):** for a god-file split
+specifically, "empty" cannot be literal — the split module's own
+`.cpp`/`.hpp` pair is new and the source module's shrinks, and any *other*
+module that calls a relocated symbol gets its call site's C++ namespace
+prefix mechanically renamed to the symbol's new home (C++ codegen always
+qualifies by defining module, regardless of import path). The actual gate
+for a split: restrict `diff -rq` to files **other than** the split
+modules and confirm **zero** further differences; any change touching a
+direct caller of a moved symbol must be exactly 1 renamed namespace
+prefix per call site, not a logic change — verify by reading the diff,
+don't just eyeball line counts. `scripts/regression_gate.sh` after any
+`lib/mlc/` touch. Self-host verification per
+`.cursor/rules/mlcc-self-host-verification.mdc` — mlcc2 diff check —
+required before Critic close on any Wave 1/2 sub-track.

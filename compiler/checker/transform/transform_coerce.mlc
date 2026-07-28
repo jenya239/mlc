@@ -1,0 +1,268 @@
+// Type coercion helpers for AST -> SemanticIR transform.
+// Extracted from transform.mlc (§104-12 slice 1, compiler architecture hygiene).
+
+import { Span } from '../../frontend/ast'
+import { Type, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared } from '../registry'
+import { type_is_unknown } from '../semantic_type_structure'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
+
+export fn semantic_type_is_tarray(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TArray(_) => true,
+    TI32 => false,
+    TString => false,
+    TBool => false,
+    TUnit => false,
+    TI64 => false,
+    TF64 => false,
+    TU8 => false,
+    TUsize => false,
+    TChar => false,
+    TShared(_) => false,
+    TNamed(_) => false,
+    TGeneric(_, _) => false,
+    TPair(_, _) => false,
+    TTuple(_) => false,
+    TFn(_, _) => false,
+    TAssoc(_, _) => false,
+    TUnknown => false
+  }
+
+export fn array_element_type_from_semantic_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TArray(inner) => inner,
+    TI32 => Shared.new(TUnknown),
+    TString => Shared.new(TUnknown),
+    TBool => Shared.new(TUnknown),
+    TUnit => Shared.new(TUnknown),
+    TI64 => Shared.new(TUnknown),
+    TF64 => Shared.new(TUnknown),
+    TU8 => Shared.new(TUnknown),
+    TUsize => Shared.new(TUnknown),
+    TChar => Shared.new(TUnknown),
+    TShared(_) => Shared.new(TUnknown),
+    TNamed(_) => Shared.new(TUnknown),
+    TGeneric(_, _) => Shared.new(TUnknown),
+    TPair(_, _) => Shared.new(TUnknown),
+    TTuple(_) => Shared.new(TUnknown),
+    TFn(_, _) => Shared.new(TUnknown),
+    TAssoc(_, _) => Shared.new(TUnknown),
+    TUnknown => Shared.new(TUnknown)
+  }
+
+export fn generic_type_name(type_value: Shared<Type>) -> string =
+  match type_value {
+    TGeneric(name, _) => name,
+    TI32 => '',
+    TString => '',
+    TBool => '',
+    TUnit => '',
+    TI64 => '',
+    TF64 => '',
+    TU8 => '',
+    TUsize => '',
+    TChar => '',
+    TShared(_) => '',
+    TNamed(_) => '',
+    TArray(_) => '',
+    TPair(_, _) => '',
+    TTuple(_) => '',
+    TFn(_, _) => '',
+    TAssoc(_, _) => '',
+    TUnknown => ''
+  }
+
+fn coerce_unknown_else_array_when_then_known_inner(
+  elements: [Shared<SemanticExpression>],
+  span_else: Span,
+  then_element_type: Shared<Type>,
+  typed_else: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  const else_type = sexpr_type(typed_else)
+  if semantic_type_is_tarray(else_type) &&
+     type_is_unknown(array_element_type_from_semantic_type(else_type)) then
+    Shared.new(SemanticExpressionArray(elements, Shared.new(TArray(then_element_type)), span_else))
+  else typed_else end
+end
+
+fn conditional_else_coerce_empty_array_using_then_type(
+  typed_then: Shared<SemanticExpression>,
+  elements: [Shared<SemanticExpression>],
+  span_else: Span,
+  typed_else: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  const then_type = sexpr_type(typed_then)
+  if semantic_type_is_tarray(then_type) then
+    coerce_unknown_else_array_when_then_known_inner(
+      elements,
+      span_else,
+      array_element_type_from_semantic_type(then_type),
+      typed_else)
+  else typed_else end
+end
+
+fn array_literal_else_maybe_coerce(
+  typed_then: Shared<SemanticExpression>,
+  elements: [Shared<SemanticExpression>],
+  span_else: Span,
+  typed_else: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  if elements.length() > 0 then typed_else
+  else conditional_else_coerce_empty_array_using_then_type(typed_then, elements, span_else, typed_else)
+  end
+
+export fn conditional_else_empty_unknown_array_coerced_to_then_array_element(
+  typed_then: Shared<SemanticExpression>,
+  typed_else: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  match typed_else {
+    SemanticExpressionArray(elements, _, span_else) =>
+      array_literal_else_maybe_coerce(typed_then, elements, span_else, typed_else),
+    SemanticExpressionInt(_, _, _) => typed_else,
+    SemanticExpressionStr(_, _, _) => typed_else,
+    SemanticExpressionFloat(_, _, _) => typed_else,
+    SemanticExpressionI64(_, _, _) => typed_else,
+    SemanticExpressionU8(_, _, _) => typed_else,
+    SemanticExpressionUsize(_, _, _) => typed_else,
+    SemanticExpressionChar(_, _, _) => typed_else,
+    SemanticExpressionBool(_, _, _) => typed_else,
+    SemanticExpressionUnit(_, _) => typed_else,
+    SemanticExpressionExtern(_, _, _, _, _) => typed_else,
+    SemanticExpressionIdent(_, _, _) => typed_else,
+    SemanticExpressionBin(_, _, _, _, _) => typed_else,
+    SemanticExpressionUn(_, _, _, _) => typed_else,
+    SemanticExpressionCall(_, _, _, _, _) => typed_else,
+    SemanticExpressionMethod(_, _, _, _, _, _) => typed_else,
+    SemanticExpressionField(_, _, _, _) => typed_else,
+    SemanticExpressionIndex(_, _, _, _) => typed_else,
+    SemanticExpressionIf(_, _, _, _, _) => typed_else,
+    SemanticExpressionBlock(_, _, _, _) => typed_else,
+    SemanticExpressionWhile(_, _, _, _) => typed_else,
+    SemanticExpressionFor(_, _, _, _, _) => typed_else,
+    SemanticExpressionMatch(_, _, _, _) => typed_else,
+    SemanticExpressionRecord(_, _, _, _) => typed_else,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => typed_else,
+    SemanticExpressionTuple(_, _, _) => typed_else,
+    SemanticExpressionQuestion(_, _, _) => typed_else,
+    SemanticExpressionLambda(_, _, _, _) => typed_else,
+    SemanticExpressionWith(_, _, _, _, _) => typed_else
+  }
+
+fn coerce_array_semantic_expression_to_type(
+  elements: [Shared<SemanticExpression>],
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  if elements.length() == 0 then Shared.new(SemanticExpressionArray(elements, target_type, source_span))
+  else expression end
+
+fn coerce_record_semantic_expression_to_type(
+  type_name: string,
+  fields: [Shared<SemanticFieldVal>],
+  expr_type: Shared<Type>,
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  const target_generic_name = generic_type_name(target_type)
+  const expression_generic_name = generic_type_name(expr_type)
+  if target_generic_name != '' && target_generic_name == expression_generic_name then
+    Shared.new(SemanticExpressionRecord(type_name, fields, target_type, source_span))
+  else expression end
+end
+
+fn coerce_block_semantic_expression_to_type(
+  statements: [Shared<SemanticStatement>],
+  result_expression: Shared<SemanticExpression>,
+  span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  if semantic_type_is_tarray(target_type) then do
+    const coerced_result = coerce_expr_to_type(result_expression, target_type)
+    Shared.new(SemanticExpressionBlock(statements, coerced_result, sexpr_type(coerced_result), span))
+  end
+  else expression end
+end
+
+fn coerce_if_semantic_expression_to_type(
+  condition: Shared<SemanticExpression>,
+  then_branch: Shared<SemanticExpression>,
+  else_branch: Shared<SemanticExpression>,
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> = do
+  if semantic_type_is_tarray(target_type) then
+    Shared.new(SemanticExpressionIf(
+      condition,
+      coerce_expr_to_type(then_branch, target_type),
+      coerce_expr_to_type(else_branch, target_type),
+      target_type,
+      source_span))
+  else expression end
+end
+
+fn coerce_match_arm_to_type(arm: Shared<SemanticMatchArm>, target_type: Shared<Type>) -> Shared<SemanticMatchArm> =
+  Shared.new(SemanticMatchArm {
+    pattern: arm.pattern,
+    has_guard: arm.has_guard,
+    when_condition: arm.when_condition,
+    body: coerce_expr_to_type(arm.body, target_type),
+  })
+
+// Every match arm body must share the match's overall result type for codegen
+// (std::visit lambdas deduce their return type per-arm); without this, an
+// empty-array catch-all arm (`_ => []`) keeps an unresolved element type and
+// generates an ambiguous `{}` literal that fails to compile.
+fn coerce_match_arms_to_type(
+  arms: [Shared<SemanticMatchArm>],
+  target_type: Shared<Type>
+) -> [Shared<SemanticMatchArm>] =
+  arms.map(arm => coerce_match_arm_to_type(arm, target_type))
+
+// Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
+// phantom-typed records adopt target TGeneric type.
+export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_type: Shared<Type>) -> Shared<SemanticExpression> =
+  match expression {
+    SemanticExpressionArray(elements, _, source_span) =>
+      coerce_array_semantic_expression_to_type(elements, source_span, target_type, expression),
+    SemanticExpressionRecord(type_name, fields, expr_type, source_span) =>
+      coerce_record_semantic_expression_to_type(type_name, fields, expr_type, source_span, target_type, expression),
+    SemanticExpressionBlock(statements, result_expression, _, span) =>
+      coerce_block_semantic_expression_to_type(statements, result_expression, span, target_type, expression),
+    SemanticExpressionIf(condition, then_branch, else_branch, _, source_span) =>
+      coerce_if_semantic_expression_to_type(
+        condition, then_branch, else_branch, source_span, target_type, expression),
+    SemanticExpressionInt(_, _, _) => expression,
+    SemanticExpressionStr(_, _, _) => expression,
+    SemanticExpressionFloat(_, _, _) => expression,
+    SemanticExpressionI64(_, _, _) => expression,
+    SemanticExpressionU8(_, _, _) => expression,
+    SemanticExpressionUsize(_, _, _) => expression,
+    SemanticExpressionChar(_, _, _) => expression,
+    SemanticExpressionBool(_, _, _) => expression,
+    SemanticExpressionUnit(_, _) => expression,
+    SemanticExpressionExtern(_, _, _, _, _) => expression,
+    SemanticExpressionIdent(_, _, _) => expression,
+    SemanticExpressionBin(_, _, _, _, _) => expression,
+    SemanticExpressionUn(_, _, _, _) => expression,
+    SemanticExpressionCall(function, arguments, flags, _, span) =>
+      match target_type {
+        TGeneric(_, _) =>
+          Shared.new(SemanticExpressionCall(function, arguments, flags, target_type, span)),
+        _ => expression
+      },
+    SemanticExpressionMethod(_, _, _, _, _, _) => expression,
+    SemanticExpressionField(_, _, _, _) => expression,
+    SemanticExpressionIndex(_, _, _, _) => expression,
+    SemanticExpressionWhile(_, _, _, _) => expression,
+    SemanticExpressionFor(_, _, _, _, _) => expression,
+    SemanticExpressionMatch(_, _, _, _) => expression,
+    SemanticExpressionRecordUpdate(_, _, _, _, _) => expression,
+    SemanticExpressionTuple(_, _, _) => expression,
+    SemanticExpressionQuestion(_, _, _) => expression,
+    SemanticExpressionLambda(_, _, _, _) => expression,
+    SemanticExpressionWith(_, _, _, _, _) => expression
+  }
