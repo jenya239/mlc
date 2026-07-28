@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-2 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for the next §104-12 slice. Started from the track doc's existing "Next slices" list (call_args group), but re-derived from scratch against current line numbers and found a prerequisite the earlier plan missed: the call_args group threads `TransformContext`/`TransformStmtsResult` (currently defined inside `transform.mlc`, lines 429/460) through every function; extracting the group directly would need `transform_call_args.mlc` to import those types from `transform.mlc` while `transform.mlc` imports the group back — a genuine type-level cycle, confirmed by grep that no two `compiler/**` modules currently import from each other bidirectionally. Found the established fix in the codebase itself: `infer.mlc`/`infer_call.mlc` avoid the same shape of cycle by keeping their shared `CheckContext` type in an independent third leaf module (`checker/check/check_context.mlc`), imported one-directionally by both sides. Decision: insert a new prerequisite slice — extract `TransformContext`/`TransformStmtsResult` + 4 constructors (`transform_context_new` — dead code, zero callers anywhere in the tree, confirmed by grep; `empty_transform_context`, `transform_context_with_env`, `transform_context_with_lambda_parameter_types`) into new leaf `compiler/checker/transform/transform_context.mlc`, mirroring `check_context.mlc`'s role. Renumbered the track doc's slices: this becomes **Slice 2**, the original call_args group becomes **Slice 3**, the method group becomes **Slice 4**. Also found, re-reading slice 1's own already-committed `coerce_expr_to_type` precedent: external importers (`transform_stmts.mlc` etc.) still write `import { ..., coerce_expr_to_type } from './transform'` today even though the real definition lives in `transform_coerce.mlc` since slice 1 — compiles and passes tests unmodified, proving the checker resolves re-exported names transitively through whichever module textually imports them, only the generated C++ namespace changes. Applied the same reasoning here: slice 2's external importers (`transform_stmts.mlc`, `check_mutations.mlc`, `names.mlc`, 2 test files) should not need any edits, only `transform.mlc` and the new module. Documented full Decision, Steps table, and the renumbered Slice 3/4 scope notes (including the injection signature slice 3 will need: `transform_expr_fn`/`transform_exprs_fn`/`transform_expr_lambda_with_param_types_fn`, 3 parameters threaded through 4 functions, and how `expected_call_argument_type_at_index`'s one dependency on `standalone_unknown_cell` — which has 4 *other* callers, so can't move wholesale — gets resolved by inlining the 1-line `Shared.new(TUnknown)` literal instead of a back-import, matching the idiom already used throughout `transform_coerce.mlc`) in `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` |
+| verify  | grep audits only this turn (no code changes): confirmed `transform_context_new` has exactly 1 occurrence tree-wide (its own definition, dead code); confirmed no existing `compiler/**` module pair imports bidirectionally; confirmed the `check_context.mlc` precedent's own import structure; confirmed `transform_stmts.mlc`'s current import line still says `from './transform'` for `coerce_expr_to_type` post-slice-1 (transitive-forwarding evidence) |
+| result  | §104-12 slice-2 Decision **frozen** (extract `transform_context.mlc`, prerequisite for the renumbered slice 3); no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 2 — red: confirm `transform_context.mlc` absent / `TransformContext`/`TransformStmtsResult`/4 constructors still in `transform.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-1 close)
 
 | field   | value |

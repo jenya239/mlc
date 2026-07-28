@@ -7,11 +7,13 @@ render) and §102/§103 (new feature epics).
 
 ## Status: **open** — §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
-2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **queue head
-is now §104-12 slice 2** (`transform_call_args.mlc`, needs its own Decision)
-(priority override 2026-07-28, user: "это должно быть приоритетом сейчас" —
-Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3
-stays gated)
+2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
+slice 2 Decision frozen** same day (`transform_context.mlc` — prerequisite
+leaf-module extraction for slice 3's `transform_call_args.mlc`; slices
+renumbered, see §104-12 section below), **queue head is now §104-12 slice 2
+STEP=1 (red)** (priority override 2026-07-28, user: "это должно быть
+приоритетом сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays
+queued after §103, Wave 3 stays gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -162,10 +164,35 @@ the whole TRACK_*.md) — attempted anyway for extra assurance, aborted after
 `run_examples_compile_sweep.sh` OpenGL-example tail step, unrelated to this
 change. No false-done found. Queue head → slice 2.
 
-### Next slices (deferred, need `transform_expr_fn` injection — separate Decisions)
+### Slice 2 — `transform_context.mlc` (prerequisite for slice 3, do first — zero injection)
 
-- **Slice 2** `transform_call_args.mlc`: `transform_one_call_argument_using_optional_expected_type` + `transform_lambda_call_argument` + `transform_call_arguments_fold_step` + `transform_call_arguments_using_callee_semantic_type` + `expected_call_argument_type_at_index` + `function_return_type_from_callee_type`. Needs `transform_expr_fn`/`transform_exprs_fn` injected (both defined in `transform.mlc`, used ~26 call sites combined).
-- **Slice 3** `transform_method.mlc`: `transform_result_option_hof_method_call` + `transform_array_hof_method_call` + `transform_regular_method_call` + `transform_extend_method_as_call` + `transform_region_alloc_method_call`. Needs `transform_exprs_fn` injected (3 call sites). `transform_method_call_after_object` stays in `transform.mlc` (calls `dispatch_transform_pass` directly, tightly coupled to the dispatcher).
+#### Decision (STEP=0) — **frozen** 2026-07-28
+
+| Item | Choice |
+|------|--------|
+| Problem | Slice 3 (`transform_call_args.mlc`, formerly numbered "slice 2" — renumbered here) threads `transform_context: TransformContext` and `stmts_fn: (...) -> TransformStmtsResult` through every moved function. Both types are currently defined **inside** `transform.mlc` (lines 429/460) alongside their constructors (`transform_context_new` — dead code, zero callers anywhere in the tree, confirmed by grep; `empty_transform_context`, `transform_context_with_env`, `transform_context_with_lambda_parameter_types`). If `transform_call_args.mlc` imported these types directly from `./transform`, and `transform.mlc` also imports the call_args group back from `transform_call_args.mlc`, that is a genuine value-level **and** type-level cycle — untested territory (confirmed by grep: no two `compiler/**` modules currently import from each other in both directions; the closest analog, `infer.mlc`/`infer_call.mlc`, avoids this by keeping the shared `CheckContext` type in a **third**, independent leaf module `checker/check/check_context.mlc`, imported one-directionally by both). Same fix applies here: extract `TransformContext`/`TransformStmtsResult` into their own leaf module first, so both `transform.mlc` and the future `transform_call_args.mlc` import the type one-directionally from it, never from each other |
+| Strategy (v1) | New `compiler/checker/transform/transform_context.mlc`, mirroring `checker/check/check_context.mlc`'s role exactly. Move (export, no behavior change): `TransformContext` type, `TransformStmtsResult` type, `transform_context_new`, `empty_transform_context`, `transform_context_with_env`, `transform_context_with_lambda_parameter_types`. `transform.mlc` imports all 6 back (needs them at 10+ internal call sites: 435/762/849/850/872/1176/1199/1226/1350/1362/1382/1395/1427 and the type itself as a parameter/return type throughout). **No signature change, no algorithm change** — pure relocation, same pattern as slice 1's `transform_coerce.mlc`. External importers (`transform_stmts.mlc`, `check_mutations.mlc`, `names.mlc`, `tests/test_pipe_and_record_update.mlc`, `tests/test_visitor_pass_parity.mlc`) currently write `import { TransformContext, ..., transform_expr, ... } from './transform'` (or `'../transform/transform'`) in a single combined line — **do not need to change**: confirmed by slice 1's own `coerce_expr_to_type` precedent (`transform_stmts.mlc` still imports it `from './transform'` today even though the real definition moved to `transform_coerce.mlc` in slice 1 — the checker resolves a re-exported/forwarded name transitively through whichever module textually imports it, only the **generated C++ namespace** changes to the true defining module, not the MLC source import path). This means this slice's only source edits are 2 files: the new module, and `transform.mlc`'s own definitions replaced by one import line |
+| Primary gate | Red: `transform_context.mlc` absent, `TransformContext`/`TransformStmtsResult`/4 constructors still defined in `transform.mlc` at lines 429-463. Green: `transform_context.mlc` exists with all 6 items exported; `transform.mlc` shrinks by ~35 lines, gains 1 import line; **bootstrap diff restricted to split modules + direct-caller namespace-prefix renames only** (per the refined Verification-discipline gate below — literal empty is not the standard for a god-file split); `rake test_compiler_mlc` (1471+ passed, 0 failed); self-host mlcc2 diff before Critic close |
+| Module touch | new `compiler/checker/transform/transform_context.mlc`; `compiler/checker/transform/transform.mlc` (shrinks, gains 1 import line). Zero other files touched (relying on the confirmed transitive-import-forwarding behavior — if this turns out wrong at STEP=2, the 5 external importers get an explicit second import line as a fallback, still a small bounded edit) |
+| REG | no (`compiler/**` only) |
+| Out of scope | the call_args group itself (next slice, needs `transform_expr_fn`/`transform_exprs_fn`/`transform_expr_lambda_with_param_types_fn` injection — see Slice 3 below); any type/constructor signature change; MIR |
+
+#### Steps (§104-12 — slice 2: transform_context)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries | pending |
+| 2 | Green: create `transform_context.mlc`, wire `transform.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 3 | Critic: full re-audit | pending |
+
+### Slice 3 — `transform_call_args.mlc` (needs `transform_expr_fn` injection — depends on slice 2)
+
+Renumbered from the original "Slice 2" (the review's own call_args group) — unchanged scope: `transform_one_call_argument_using_optional_expected_type` + `transform_lambda_call_argument` + `transform_call_arguments_fold_step` + `transform_call_arguments_using_callee_semantic_type` + `expected_call_argument_type_at_index` + `function_return_type_from_callee_type`, plus 3 group-local leaf helpers moving wholesale since they have zero other callers in `transform.mlc` (confirmed by grep, 2026-07-28): `callee_semantic_type_is_function`, `function_parameter_types_from_callee_type`, `call_argument_is_lambda`, and the `Transform_call_arguments_fold_state` type. `expected_call_argument_type_at_index`'s one dependency on `standalone_unknown_cell` (has 4 *other* callers in `transform.mlc`, so moving it would need its own back-import) is resolved by inlining the one-line `Shared.new(TUnknown)` literal directly — matches the idiom already used throughout `transform_coerce.mlc`'s own match arms, not a new pattern. Needs 3 injected function parameters threaded through all 4 non-leaf functions: `transform_expr_fn` (26 call sites in the group), `transform_exprs_fn` (1 call site), `transform_expr_lambda_with_param_types_fn` (1 call site — that function itself stays in `transform.mlc`, it has an unrelated second caller at line 1345 and its own lambda-parameter-environment dependency chain, out of scope for this slice). Mirrors the multi-parameter injection precedent at `infer_isolate_method.mlc:77` (`infer_expr_fn` passed alongside other callback parameters). Needs its own Decision once slice 2 lands (`TransformContext`/`TransformStmtsResult` must be importable from the new leaf module before this slice can avoid the cycle).
+
+### Slice 4 — `transform_method.mlc` (needs `transform_exprs_fn` injection — depends on slice 2)
+
+Renumbered from the original "Slice 3". `transform_result_option_hof_method_call` + `transform_array_hof_method_call` + `transform_regular_method_call` + `transform_extend_method_as_call` + `transform_region_alloc_method_call`. Needs `transform_exprs_fn` injected (3 call sites). `transform_method_call_after_object` stays in `transform.mlc` (calls `dispatch_transform_pass` directly, tightly coupled to the dispatcher).
 
 ## Verification discipline
 
