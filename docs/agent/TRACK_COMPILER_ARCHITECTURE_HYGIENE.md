@@ -12,10 +12,12 @@ slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
 — prerequisite leaf-module for slice 3's `transform_call_args.mlc`; slices
 renumbered, see §104-12 section below), **§104-12 slice 3 Decision frozen**
 same day (`transform_call_args.mlc` — 2-3 injected function parameters
-threaded through 4 functions), **queue head is now §104-12 slice 3 STEP=1
-(red)** (priority override 2026-07-28, user: "это должно быть приоритетом
-сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after
-§103, Wave 3 stays gated)
+threaded through 4 functions), **STEP=1 red confirmed** same day (module
+absent, all 9 items at documented lines, file at baseline 1468 lines),
+**queue head is now §104-12 slice 3 STEP=2 (green)** (priority override
+2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1 moved
+ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays
+gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -231,7 +233,7 @@ injection-heavy `transform_call_args.mlc` extraction).
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries | pending |
+| 1 | Red: confirm current boundaries | **done** |
 | 2 | Green: create `transform_call_args.mlc`, thread the 3 injected parameters, wire `transform.mlc` call site + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
 | 3 | Critic: full re-audit | pending |
 

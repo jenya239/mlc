@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-3 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-12 slice 3 (`transform_call_args.mlc`): `compiler/checker/transform/transform_call_args.mlc` confirmed absent (`test -f` negative). All 9 items from the frozen Decision confirmed still present in `compiler/checker/transform/transform.mlc` at the exact documented lines: `callee_semantic_type_is_function` (141), `function_parameter_types_from_callee_type` (163), `call_argument_is_lambda` (225), `expected_call_argument_type_at_index` (438), `transform_lambda_call_argument` (446), `transform_one_call_argument_using_optional_expected_type` (466), `Transform_call_arguments_fold_state` (620), `function_return_type_from_callee_type` (625), `transform_call_arguments_fold_step` (650), `transform_call_arguments_using_callee_semantic_type` (667). `transform.mlc` confirmed at baseline 1468 lines (matches slice-2-close state, no drift) |
+| verify  | `wc -l` + 10 targeted `grep -n` line-anchor checks against `transform.mlc`; `test -f` for the not-yet-created module |
+| result  | red state established; no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 3 — green: create `transform_call_args.mlc`, move 9 items wholesale, thread the 2-3 injected function parameters through the 4 non-leaf functions, wire `transform.mlc` call site + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-3 Decision)
 
 | field   | value |
