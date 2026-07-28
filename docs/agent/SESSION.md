@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-4 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-12 slice 4 (`transform_method.mlc`): `compiler/checker/transform/transform_method.mlc` confirmed absent (`test -f` negative). All 12 items from the frozen Decision confirmed still present in `compiler/checker/transform/transform.mlc` at the exact documented lines: `receiver_type_key_for_method_dispatch` (45), `instance_method_receiver_and_parameters_mutability_pattern` (67), `extend_method_mangled_name` (95), `transform_extend_method_as_call` (108), `method_result_type_for_dispatch` (189), `transform_result_option_hof_method_call` (279), `transform_array_hof_method_call` (299), `transform_regular_method_call` (320), `transform_expr_with_lambda_parameter_types` (490), `semantic_expression_list_singleton` (501), `transform_array_hof_method_arguments` (508), `transform_region_alloc_method_call` (1112). `transform.mlc` confirmed at baseline 1132 lines (matches slice-3-close state, no drift) |
+| verify  | `wc -l` + 12 targeted `grep -n` line-anchor checks against `transform.mlc`; `test -f` for the not-yet-created module |
+| result  | red state established; no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 4 — green: create `transform_method.mlc`, move 12 items wholesale, thread `transform_expr_fn`/`transform_exprs_fn` into the 5 that need them, wire `transform.mlc` call sites + import inside `transform_method_call_after_object`, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-4 Decision)
 
 | field   | value |
