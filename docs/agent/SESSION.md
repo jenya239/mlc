@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-1 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-12 (`transform/transform.mlc` split, 1765 lines). Read current file (drifted since the 2026-06-29 review) and re-derived the review's 3 proposed groups against actual line numbers/call graph. Found the review's "**высокий риск**" circular-import warning applies to 2 of the 3 groups (call_args, method — both call `transform_expr`, defined later in the same file: `transform_one_call_argument_using_optional_expected_type` alone has 25 such calls), but **not** the coerce group: grep-verified `coerce_expr_to_type` + its 10 helpers (lines 492-566, 599-716) never call `transform_expr`/`dispatch_transform_pass`, only 3 small leaf helpers (`semantic_type_is_tarray`/`array_element_type_from_semantic_type`/`generic_type_name`, lines 139/161/183) that are also used elsewhere in the file. Decision: **first slice** = extract coerce group **plus** those 3 leaf helpers into new `compiler/checker/transform/transform_coerce.mlc` — makes it a pure leaf module (zero cycle, only `transform.mlc` imports across the new boundary), no `transform_expr_fn` injection needed for this slice. Call_args/method groups deferred to 2 later slices (own Decisions), each needing the `infer_expr_fn`-style injection pattern already used in `checker/infer/`. Documented in `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` (`§104-12` section, Decision table + Steps table + deferred-slices list), updated `PLAN.md`/`DEVELOPMENT.md` queue-head pointers |
+| verify  | grep audits only this turn (no code changes): confirmed exactly which lines/functions call `transform_expr`/`dispatch_transform_pass`/`coerce_expr_to_type`/the 3 leaf helpers across the whole file, confirming the zero-cycle claim before freezing the Decision (anti-false-done: did not accept the review's risk rating at face value, re-verified against current code) |
+| result  | §104-12 slice-1 Decision **frozen**; no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 1 — red: confirm `transform_coerce.mlc` absent / 14 items still in `transform.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-1 audit)
 
 | field   | value |

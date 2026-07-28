@@ -112,6 +112,35 @@ not re-derive step content here, read the review file at pickup time.
 - **§104-21** `TypeId` interner with runtime `extern fn` singleton (Step 21) — touches `runtime/`, needs its own Decision on whether a runtime change is acceptable here
 - **§104-24** switch C++ backend to MIR by default (Step 24) — only after Wave 2 fully green + 100% MIR coverage; flagged maximum risk in source review, do not schedule a date
 
+## §104-12 `transform/transform.mlc` split (1765 lines)
+
+### Slice 1 — `transform_coerce.mlc` (do first — zero circular dependency)
+
+#### Decision (STEP=0) — **frozen** 2026-07-28
+
+| Item | Choice |
+|------|--------|
+| Problem | `transform.mlc` is 1765 lines. Review's Step 12 names 3 groups (coerce/call_args/method) to extract, flags **высокий риск** (circular import: extracted code needs `transform_expr`, defined later in the same file). Re-derived against the **current** file (drifted since 2026-06-29 review): the coerce group (`coerce_expr_to_type` + 10 helpers, lines 492-566 + 599-716) does **not** actually call `transform_expr`/`dispatch_transform_pass` at all — it only needs 3 small leaf helpers already in `transform.mlc` (`semantic_type_is_tarray`, `array_element_type_from_semantic_type`, `generic_type_name`, lines 139/161/183, used both inside and outside the coerce group). Moving those 3 helpers together with the group makes the new module a pure leaf (imports only `ast`/`registry`/`semantic_ir`) with **zero** cycle — `transform.mlc` becomes the only side that imports across the new module boundary. The call_args/method groups (review's other two) genuinely do call back into `transform_expr` (confirmed by grep: `transform_one_call_argument_using_optional_expected_type` alone has 25 `transform_expr(` calls) and need the injection pattern (`transform_expr_fn` parameter, matching `infer_expr_fn` in `checker/infer/`) — deferred to later slices below, not this one |
+| Strategy (v1) | New `compiler/checker/transform/transform_coerce.mlc`. Move: `semantic_type_is_tarray`, `array_element_type_from_semantic_type`, `generic_type_name` (export, no behavior change), `coerce_unknown_else_array_when_then_known_inner`, `conditional_else_coerce_empty_array_using_then_type`, `array_literal_else_maybe_coerce`, `conditional_else_empty_unknown_array_coerced_to_then_array_element` (export — called from `dispatch_transform_pass`), `coerce_array_semantic_expression_to_type`, `coerce_record_semantic_expression_to_type`, `coerce_block_semantic_expression_to_type`, `coerce_if_semantic_expression_to_type`, `coerce_match_arm_to_type`, `coerce_match_arms_to_type`, `coerce_expr_to_type` (already exported). `transform.mlc` imports all of these back (it still calls `coerce_expr_to_type` from `transform_one_call_argument_using_optional_expected_type` and `conditional_else_empty_unknown_array_coerced_to_then_array_element`/`semantic_type_is_tarray`/`array_element_type_from_semantic_type` from `dispatch_transform_pass`/`merge_conditional_expression_types`/`array_element_type_from_semantic_expression`). **No signature change, no algorithm change** — pure relocation. `TransformContext` and everything after line ~720 (call-args, method-call, dispatch, `transform_expr`) stay untouched in `transform.mlc` this slice |
+| Primary gate | Red: `coerce_expr_to_type` still defined in `transform.mlc`, no `transform_coerce.mlc`. Green: `transform_coerce.mlc` exists with the 14 moved items; **bootstrap diff empty** (`mlcc -o /tmp/p1 compiler/main.mlc` before, `/tmp/p2` after, `diff -r` empty — codegen output must not change one byte, since this is pure relocation); `rake test_compiler_mlc` (1471+ passed, 0 failed); self-host mlcc2 diff per `.cursor/rules/mlcc-self-host-verification.mdc` before Critic close |
+| Module touch | new `compiler/checker/transform/transform_coerce.mlc`; `compiler/checker/transform/transform.mlc` (shrinks by ~230 lines, gains 2 import lines) |
+| REG | no (`compiler/**` only) |
+| Out of scope | call_args/method groups (next slices, need `transform_expr_fn` injection); `dispatch_transform_pass`/`TransformContext`/`transform_expr` relocation; algorithm changes; MIR |
+
+#### Steps (§104-12 — slice 1: coerce)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries (`transform_coerce.mlc` absent, 14 items located at the lines above) | pending |
+| 2 | Green: create `transform_coerce.mlc`, wire `transform.mlc` imports, bootstrap diff empty | pending |
+| 3 | Critic: `rake test_compiler_mlc` + bootstrap diff + mlcc2 self-host diff | pending |
+
+### Next slices (deferred, need `transform_expr_fn` injection — separate Decisions)
+
+- **Slice 2** `transform_call_args.mlc`: `transform_one_call_argument_using_optional_expected_type` + `transform_lambda_call_argument` + `transform_call_arguments_fold_step` + `transform_call_arguments_using_callee_semantic_type` + `expected_call_argument_type_at_index` + `function_return_type_from_callee_type`. Needs `transform_expr_fn`/`transform_exprs_fn` injected (both defined in `transform.mlc`, used ~26 call sites combined).
+- **Slice 3** `transform_method.mlc`: `transform_result_option_hof_method_call` + `transform_array_hof_method_call` + `transform_regular_method_call` + `transform_extend_method_as_call` + `transform_region_alloc_method_call`. Needs `transform_exprs_fn` injected (3 call sites). `transform_method_call_after_object` stays in `transform.mlc` (calls `dispatch_transform_pass` directly, tightly coupled to the dispatcher).
+
 ## Verification discipline
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,

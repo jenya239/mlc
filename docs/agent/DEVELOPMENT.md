@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver STEP=0 `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-12 (`transform.mlc` split Decision) — §104-1/2/3 found already pre-existing 2026-07-28, see track file.
+**Queue head:** Driver STEP=1 `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-12 slice 1 (`transform_coerce.mlc` red) — Decision frozen 2026-07-28, §104-1/2/3 found already pre-existing, see track file.
 **`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **closed** 2026-07-28 (Critic OK). Archived.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.
