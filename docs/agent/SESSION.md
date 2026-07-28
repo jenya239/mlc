@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-4 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-12 slice 4 (`transform_method.mlc`). Re-derived the method-call dispatch group by dependency closure (repo-wide grep, not just within `transform.mlc`): found 12 items with zero other callers anywhere in `compiler/**`, not the roughly-estimated 5 the track file had noted — matches the pattern already seen in slice 1 (14 vs the review's smaller estimate). The 12: `receiver_type_key_for_method_dispatch` (45), `instance_method_receiver_and_parameters_mutability_pattern` (67), `extend_method_mangled_name` (95), `transform_extend_method_as_call` (108 — pure, builds `SemanticExpressionCall` from already-typed values, no transform dependency despite the name), `method_result_type_for_dispatch` (189 — pure leaf), `transform_expr_with_lambda_parameter_types` (490), `semantic_expression_list_singleton` (501), `transform_array_hof_method_arguments` (508), `transform_result_option_hof_method_call` (279), `transform_array_hof_method_call` (299), `transform_regular_method_call` (320), `transform_region_alloc_method_call` (1112). `transform_method_call_after_object` (1082) stays in `transform.mlc` — takes `TransformPass` and calls `dispatch_transform_pass` directly, same rationale as `transform_expr_lambda_with_param_types` staying in slice 3. Decision: move all 12 wholesale (6 pure leaves need zero injection; 2 need `transform_expr_fn`; 3 need `transform_exprs_fn`; no 3rd parameter needed this slice, nothing here calls `transform_expr_lambda_with_param_types`). `transform.mlc`'s call site (`transform_method_call_after_object`, all 4 branches) passes `transform_expr, transform_exprs` as trailing args, gains 1 plain import (not re-exported). This closes out §104-12 — no further slices planned after slice 4. Documented full Decision + Steps table in `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` |
+| verify  | grep audits only this turn (no code changes): confirmed all 12 items' line numbers; repo-wide grep (`compiler/**`, not just `transform.mlc`) confirmed zero external callers for every item, including a false-positive check on `extend_method_mangled_name` (a same-named but differently-signed function exists in `codegen/decl/decl_index.mlc`, confirmed unrelated); confirmed `transform_method_call_after_object`'s single caller inside `transform.mlc` |
+| result  | §104-12 slice-4 Decision **frozen**; no code touched |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 4 — red: confirm `transform_method.mlc` absent / all 12 items still in `transform.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-3 close)
 
 | field   | value |

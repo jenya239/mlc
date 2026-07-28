@@ -20,8 +20,10 @@ moved, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new files only,
 **§104-12 slice 3 closed** same day (Critic-audited: independent
 function/type-set diff, independent fresh mlcc translation + stray-
 reference grep, independent full `rake test_compiler_mlc` rerun
-1471/0), **queue head is now §104-12 slice 4 Decision**
-(`transform_method.mlc`) (priority override 2026-07-28, user: "это
+1471/0), **§104-12 slice 4 Decision frozen** same day
+(`transform_method.mlc` — 12 items, not the roughly-estimated 5, found
+by repo-wide grep dependency closure), **queue head is now §104-12
+slice 4 STEP=1 (red)** (priority override 2026-07-28, user: "это
 должно быть приоритетом сейчас" — Wave 1 moved ahead of §101/§102/§103;
 Wave 2 stays queued after §103, Wave 3 stays gated)
 
@@ -251,9 +253,27 @@ Independent function/type-set diff: old `transform.mlc` (46 names) vs new `trans
 
 `transform_call_args.mlc` created (365 lines): 3 leaf helpers + 6 group items moved wholesale (`expected_call_argument_type_at_index` inlines `Shared.new(TUnknown)` instead of importing `standalone_unknown_cell`, which stays in `transform.mlc` with 4 other callers). `transform.mlc`: 1468 → 1132 lines. Bootstrap diff scoped to exactly `transform.cpp/.hpp` + the 2 new files — no other direct-caller namespace-prefix renames needed this slice (unlike slice 1/2), since both moved public functions had exactly 1 external caller, inside `transform.mlc` itself. `rake test_compiler_mlc`: exit_code=0, arch lint failures=0. mlcc2 self-host diff (in-repo `TMPDIR`, host disk 99%): IDENTICAL.
 
-### Slice 4 — `transform_method.mlc` (needs `transform_exprs_fn` injection — depends on slice 2)
+### Slice 4 — `transform_method.mlc` (needs `transform_expr_fn`/`transform_exprs_fn` injection — depends on slice 2)
 
-Renumbered from the original "Slice 3". `transform_result_option_hof_method_call` + `transform_array_hof_method_call` + `transform_regular_method_call` + `transform_extend_method_as_call` + `transform_region_alloc_method_call`. Needs `transform_exprs_fn` injected (3 call sites). `transform_method_call_after_object` stays in `transform.mlc` (calls `dispatch_transform_pass` directly, tightly coupled to the dispatcher).
+#### Decision (STEP=0) — **frozen** 2026-07-28
+
+| Item | Choice |
+|------|--------|
+| Problem | Re-derived the method-call dispatch group by grep dependency closure (2026-07-28) — the rough 5-function estimate in this file undercounted, matching the pattern already seen in slice 1 (14 functions, not the review's smaller estimate). Confirmed 12 items with zero other callers anywhere in `compiler/**` outside `transform.mlc` (checked by repo-wide grep, not just within the file): `receiver_type_key_for_method_dispatch` (45), `instance_method_receiver_and_parameters_mutability_pattern` (67), `extend_method_mangled_name` (95), `transform_extend_method_as_call` (108 — pure, builds `SemanticExpressionCall` from already-typed values, no `transform_expr`/`transform_exprs` dependency despite superficially looking related to call dispatch), `method_result_type_for_dispatch` (189 — pure leaf, only reachable from `transform_regular_method_call`), `transform_expr_with_lambda_parameter_types` (490), `semantic_expression_list_singleton` (501), `transform_array_hof_method_arguments` (508), `transform_result_option_hof_method_call` (279), `transform_array_hof_method_call` (299), `transform_regular_method_call` (320), `transform_region_alloc_method_call` (1112). `transform_method_call_after_object` (1082) stays in `transform.mlc`: takes `transform_pass: TransformPass` and calls `dispatch_transform_pass` directly — tightly coupled to the dispatcher, same rationale as `transform_expr_lambda_with_param_types` staying put in slice 3 |
+| Strategy (v1) | New `compiler/checker/transform/transform_method.mlc`. Move all 12 items wholesale. 6 are pure leaves needing zero injection (`receiver_type_key_for_method_dispatch`, `instance_method_receiver_and_parameters_mutability_pattern`, `extend_method_mangled_name`, `transform_extend_method_as_call`, `method_result_type_for_dispatch`, `semantic_expression_list_singleton`). 2 need `transform_expr_fn` injected (`transform_expr_with_lambda_parameter_types`, `transform_array_hof_method_arguments` — the latter also forwards it to the former); `transform_array_hof_method_call` forwards `transform_expr_fn` down to `transform_array_hof_method_arguments` without using it directly. 3 need `transform_exprs_fn` injected (`transform_result_option_hof_method_call`, `transform_regular_method_call`, `transform_region_alloc_method_call`). Both injected parameters use the same signatures established in slice 3 (`transform_expr_fn: (Shared<Expr>, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>`, `transform_exprs_fn: ([Shared<Expr>], TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticExpression>]`) — no 3rd parameter needed this slice (nothing in this group calls `transform_expr_lambda_with_param_types`). `transform.mlc`'s 1 call site (`transform_method_call_after_object`, 3 of its 4 branches) passes `transform_expr, transform_exprs` as trailing arguments to whichever of the 3 top-level group functions it calls (`transform_result_option_hof_method_call`, `transform_array_hof_method_call`, `transform_region_alloc_method_call`, `transform_regular_method_call`); `transform.mlc` also gains 1 plain import for these 4 function names (no injection needed on the import side, they're just called, not re-exported) |
+| Primary gate | Red: `transform_method.mlc` absent, all 12 items still in `transform.mlc` at the documented lines. Green: `transform_method.mlc` exists; `transform.mlc` shrinks by ~330 lines, gains 1 import + passes 2 trailing args at up to 4 call sites inside `transform_method_call_after_object`; bootstrap diff restricted to split modules + direct-caller namespace-prefix renames only; `rake test_compiler_mlc` (1471+ passed, 0 failed); self-host mlcc2 diff before Critic close |
+| Module touch | new `compiler/checker/transform/transform_method.mlc`; `compiler/checker/transform/transform.mlc` (shrinks, gains 1 import line + 2 trailing arguments at the 4 call sites inside `transform_method_call_after_object`) |
+| REG | no (`compiler/**` only) |
+| Out of scope | `transform_method_call_after_object`/`dispatch_transform_pass`/`transform_expr_lambda_with_param_types`/`transform_shared_static_new_call` relocation (unrelated concern — `Shared.new(...)` static-call dispatch, not `.method()` dispatch); algorithm changes; MIR. This closes out §104-12 (the `transform.mlc` god-file split) — no further slices planned after this one |
+
+#### Steps (§104-12 — slice 4: method)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries | pending |
+| 2 | Green: create `transform_method.mlc`, thread the 2 injected parameters, wire `transform.mlc` call sites + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 3 | Critic: full re-audit, close §104-12 | pending |
 
 ## Verification discipline
 
