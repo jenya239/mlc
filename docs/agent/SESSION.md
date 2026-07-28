@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-1 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Confirmed the red state for §104-12 slice 1 (`transform_coerce.mlc` extraction), no drift since the STEP=0 Decision: `find compiler/checker/transform -iname transform_coerce.mlc` → empty (module absent); grep re-confirms all 14 items to move (`semantic_type_is_tarray`/`array_element_type_from_semantic_type`/`generic_type_name`/`coerce_unknown_else_array_when_then_known_inner`/`conditional_else_coerce_empty_array_using_then_type`/`array_literal_else_maybe_coerce`/`conditional_else_empty_unknown_array_coerced_to_then_array_element`/`coerce_array_semantic_expression_to_type`/`coerce_record_semantic_expression_to_type`/`coerce_block_semantic_expression_to_type`/`coerce_if_semantic_expression_to_type`/`coerce_match_arm_to_type`/`coerce_match_arms_to_type`/`coerce_expr_to_type`) still present at the exact lines recorded in the Decision (139/161/183/492/505/521/531/599/608/623/637/655/667/675); `transform.mlc` unchanged at 1765 lines. Baseline `compiler/out/tests/run_tests` timestamp (2026-07-09) recorded for later before/after comparison. Updated `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` Steps table |
+| verify  | `find`/grep line-number re-check (0 drift from Decision); no code changed this turn |
+| result  | §104-12 slice-1 STEP=1 (red) confirmed; ready for STEP=2 (green: create module) |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 1 — green: create `compiler/checker/transform/transform_coerce.mlc`, wire imports, bootstrap diff empty, `rake test_compiler_mlc`) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-12 slice-1 Decision)
 
 | field   | value |

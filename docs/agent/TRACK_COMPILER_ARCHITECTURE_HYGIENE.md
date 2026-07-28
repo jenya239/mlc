@@ -132,7 +132,7 @@ not re-derive step content here, read the review file at pickup time.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries (`transform_coerce.mlc` absent, 14 items located at the lines above) | pending |
+| 1 | Red: confirm current boundaries (`transform_coerce.mlc` absent, 14 items located at the lines above) | **done** — `find compiler/checker/transform -iname transform_coerce.mlc` empty; grep confirms all 14 items at the exact documented lines (139/161/183/492/505/521/531/599/608/623/637/655/667/675), `transform.mlc` still 1765 lines |
 | 2 | Green: create `transform_coerce.mlc`, wire `transform.mlc` imports, bootstrap diff empty | pending |
 | 3 | Critic: `rake test_compiler_mlc` + bootstrap diff + mlcc2 self-host diff | pending |
 
