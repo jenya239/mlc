@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-1 audit)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Audited §104-1 (`FileId`/`FileStore`) before writing new code. Found the review's "0 of 24 steps ever actioned" claim **wrong** for Steps 1/2/3: `compiler/infrastructure/file_store.mlc` (`SourceFileId`/`SourceFileStore`) added by commit `36a1e372` 2026-06-30 and `compiler/infrastructure/intern.mlc` (`StringInternTable`) added by commit `ab088d90` 2026-07-01 — one day / two days after the 2026-06-29 review — already match Steps 1/3's spec field-for-field, just under `compiler/infrastructure/` not the review's suggested `compiler/build/` path, which is why the file-existence check at the review's own path missed them. `compiler/tests/file_store_test.mlc`/`intern_test.mlc` already wired into `compiler/tests/support/suite_registry.mlc`. Step 2's concrete code (`Span.start_offset`/`end_offset` + `span_make` + literal replacement) also already done in `compiler/frontend/ast.mlc` (grep: only 2 raw `Span {}` literals in the tree, both the canonical constructors, 345 call sites already use `span_make`/`span_unknown`); the `file_id: FileId` field named only in the step's title (not its own code sample) has no Wave-1 consumer, deferred. Corrected `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md` (new "Correction 2026-07-28" section + sub-track bullets), `PLAN.md` §104 row + queue chain, `CONTINUITY.md` queue/track rows, `DEVELOPMENT.md` queue-head pointer — all now point queue head at §104-12 (`transform.mlc` split) instead of a redundant §104-1 re-implementation |
+| verify  | `compiler/out/tests/run_tests` (binary newer than all 4 source files touched by this finding) → `1471 passed, 0 failed`, including `[compiler tests] sub: file_store`; grep confirms both modules remain zero-importer outside their own test files (intentionally unwired, per review's own Step 1 instruction) |
+| result  | §104-1/§104-3 **done** (pre-existing, no action needed); §104-2 done except deferred non-blocking `file_id` field; no code changes this turn, docs corrected to remove false-done risk in the other direction (false-not-done) |
+| issues  | none — this is a documentation-accuracy correction, not a regression; no `lib/mlc/`/`compiler/**` code touched so no self-host/regression-gate re-run needed |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 `transform.mlc` split Decision) |
+
 ### Turn 2026-07-28 (Critic TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=3)
 
 | field   | value |

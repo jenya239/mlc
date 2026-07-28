@@ -5,10 +5,43 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — §100 closed 2026-07-28, §104-1 Decision next, **queue
-head** (priority override 2026-07-28, user: "это должно быть приоритетом
-сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after
-§103, Wave 3 stays gated)
+## Status: **open** — §100 closed 2026-07-28, §104-1/2/3 found already
+implemented (see correction below, 2026-07-28), **queue head is now §104-12**
+(priority override 2026-07-28, user: "это должно быть приоритетом сейчас" —
+Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3
+stays gated)
+
+## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
+
+The "why this track exists" section below claims "0 of 24 steps ever
+actioned", verified by file-existence check at the review's own suggested
+paths (`build/file_store.mlc`, `build/intern.mlc`). That check was **wrong**
+for Steps 1/2/3: the same functionality exists under different paths/names,
+predating this track:
+
+| Step | Review's suggested path/name | Actual path/name | Added | Evidence |
+|------|-------------------------------|-------------------|-------|----------|
+| 1 `FileId`/`FileStore` | `build/file_store.mlc`, `FileId`/`FileStore` | `compiler/infrastructure/file_store.mlc`, `SourceFileId`/`SourceFileStore` | commit `36a1e372` 2026-06-30 (one day after the review) | identical fields/functions (`paths`/`sources`, `_new`/`_intern`/`_path`/`_source`); dedup-by-path intern; isolated (zero non-test importers, confirmed by grep) |
+| 3 `StringInterner` | `build/intern.mlc`, `InternTable` | `compiler/infrastructure/intern.mlc`, `StringInternTable` | commit `ab088d90` 2026-07-01 ("feat: add string interner infrastructure") | identical fields/functions; isolated |
+| 2 `Span.file_id` | add `file_id: FileId` field | `Span` already has `start_offset`/`end_offset: i32` + `span_make(file, line, column)` constructor (the concrete "До/После" code the review shows); **no** `file_id` field | same era, in `compiler/frontend/ast.mlc` | grep confirms exactly 2 raw `Span { ... }` literals in the whole tree — both are the canonical constructors (`span_unknown`/`span_make`) themselves, zero stray literals elsewhere; 345 call sites already use `span_make`/`span_unknown` |
+
+Verification run this turn: `compiler/tests/support/suite_registry.mlc`
+already imports and runs `file_store_tests`/`intern_tests`
+(`compiler/tests/file_store_test.mlc`, `compiler/tests/intern_test.mlc`,
+round-trip intern/dedup/resolve assertions); `compiler/out/tests/run_tests`
+(binary newer than all four source files) → `1471 passed, 0 failed`. Both
+modules remain intentionally unwired outside tests (grep for
+`infrastructure/file_store`/`infrastructure/intern` importers → only the two
+test files), matching the review's own Step 1 instruction ("Пока не
+подключать к driver").
+
+**Disposition:** §104-1 and §104-3 — **done**, no further action, do not
+recreate. §104-2 — the code the review actually specifies (offsets +
+`span_make` + literal replacement) is **done**; the `file_id: FileId` field
+named only in the step's title (not in its own code sample) has **no
+consumer inside Wave 1** (only Wave-3 §104-5 span-preservation would use it)
+— **deferred, not a Wave-1 gap**, revisit only if/when §104-5 is
+re-authorized. Queue head moves to **§104-12** (`transform.mlc` split).
 
 ## Why this track exists
 
@@ -49,10 +82,10 @@ not re-derive step content here, read the review file at pickup time.
 
 ### Wave 1 — foundation + god-files + build speed (parallelizable, low-to-moderate risk)
 
-- **§104-1** `FileId`/`FileStore` (review Step 1) — isolated addition, zero blast radius
-- **§104-2** `Span.file_id` extension via `span_make` (Step 2) — depends on §104-1
-- **§104-3** `StringInterner` (Step 3) — isolated, parallel with §104-1
-- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12)
+- **§104-1** `FileId`/`FileStore` (review Step 1) — **done**, pre-existing (see Correction above)
+- **§104-2** `Span.file_id` extension via `span_make` (Step 2) — **done** except deferred `file_id` field (see Correction above)
+- **§104-3** `StringInterner` (Step 3) — **done**, pre-existing (see Correction above)
+- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — **queue head**
 - **§104-13** split `codegen/decl_cpp.mlc` (1666 lines now, was 1119) (Step 13)
 - **§104-14** split `codegen/expr/match_gen.mlc` (1403 lines now, was 907) (Step 14)
 - **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) — needs re-export language support first, see review Часть 3 §1 (Step 15)
