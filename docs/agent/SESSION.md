@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-5 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | §104-13 slice 5 green: created `compiler/codegen/decl_cpp_ffi.mlc` (229 lines) with all 15 FFI/extern items moved wholesale, 8 exported per Decision (`semantic_expression_is_extern`, `semantic_expression_is_ffi_extern`, `semantic_expression_is_bare_extern`, `gen_extern_type_decl_cpp`, `collect_ffi_include_lines`, `gen_ffi_fn_proto_cpp`, `gen_ffi_fn_decl_cpp`, `semantic_fn_body_is_extern`). Noted one Decision-text omission caught during implementation: `gen_ffi_fn_proto_cpp` also calls `gen_fn_proto_cpp_with_escape` (already imported into `decl_cpp.mlc` from `./decl_cpp_fn`, not spelled out in the frozen dependency list) — added to `decl_cpp_ffi.mlc`'s own import list; pure relocation, no algorithm change. `decl_cpp.mlc` reduced 1171→959 lines: removed the 15-item block, added `import { ... } from './decl_cpp_ffi'`, dropped 16 now-unused imports (`SemanticExpressionExtern`, `CppCast`, `CppCastStatic`, `CppTypeName`, `CppTypePtr`, `CppUnary`, `CppUsing`, `CppClassDeclaration`, `CppClassDefinition`, `CppClassMemberFunctionDef`, `CppFunctionPrototype`, `CppParam`, `CppFnModifiers`, `CppIdent`, `type_to_cpp`, `compute_fn_body_context` — all confirmed still used inside `decl_cpp_ffi.mlc`, zero remaining usage in `decl_cpp.mlc` itself by grep). Controlled bootstrap diff: same `compiler/out/mlcc` binary held fixed, only `decl_cpp.mlc` source toggled (committed HEAD version vs new version, `decl_cpp_ffi.mlc` present in both) — `diff -rq before2 out` scoped to exactly `decl_cpp.cpp`/`.hpp` (namespace/line-number changes only, statement bodies byte-identical when re-aligned) + new `decl_cpp_ffi.cpp`/`.hpp` + `module.cpp` (1 direct-caller rename: `decl_cpp::collect_ffi_include_lines` → `decl_cpp_ffi::collect_ffi_include_lines`, expected per the Decision — `collect_ffi_include_lines` is `module.mlc`'s only external-to-`decl_cpp.mlc` caller); zero other module touched. `rake test_compiler_mlc`: exit_code=0, arch lint failures=0 (`decl_cpp.mlc` now 959 lines, still allowlisted, 13 pre-existing warnings unchanged). mlcc2 self-host: built via `compiler/build_bin.sh` (`TMPDIR` in-repo), ran `mlcc2 -o out2 compiler/main.mlc`, `diff -rq out out2 --exclude=obj` — IDENTICAL. Cleaned up `.tmp/s104-13-slice5/` after verification |
+| verify  | see `done` |
+| result  | §104-13 slice 5 STEP=2 **done** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 5 close — independent function/type-set diff old `decl_cpp.mlc` (`git show 201254fd:...`, pre-slice-5 baseline) vs new `decl_cpp.mlc` + `decl_cpp_ffi.mlc` combined, export-status diff matches Decision's 8, fresh `mlcc` translation grep for `decl_cpp_ffi::` stray references (expect exactly 2 callers: `decl_cpp.cpp` and `module.cpp`), independent `rake test_compiler_mlc` rerun from clean shell, line-count confirmation, no false-done) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-5 red)
 
 | field   | value |
