@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-2 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-13 slice 2 (`decl_cpp_type.mlc`): `compiler/codegen/decl_cpp_type.mlc` confirmed absent (`test -f` negative). All 13 items from the frozen Decision confirmed still present in `compiler/codegen/decl_cpp.mlc` at the exact documented lines: `variant_forward_struct_cpp` (58), `variant_alias_arm_cpp` (69), `append_type_forward_declarations` (81), `gen_type_decl_fwd_cpp` (108), `record_field_cpp` (120), `record_fields_cpp` (126), `tuple_fields_cpp` (129), `variant_body_struct_cpp` (142), `cpp_using_from_struct_using_entry` (160), `struct_using_declarations_cpp` (163), `single_variant_body_struct_cpp` (174), `append_type_body_struct_declarations` (192), `gen_type_decl_body_cpp` (219). `decl_cpp.mlc` confirmed at baseline 1641 lines (matches Decision, no drift) |
+| verify  | see `done` |
+| result  | §104-13 slice 2 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 2 — green: create `decl_cpp_type.mlc`, move 13 items wholesale (export only the 2 needing cross-module visibility), wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-2 Decision)
 
 | field   | value |
