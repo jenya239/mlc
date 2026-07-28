@@ -437,7 +437,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` + old `decl_cpp_helpers.m
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries (`decl_cpp_fn.mlc` absent, 18 items at the documented lines, file at baseline 1360 lines) | pending |
+| 1 | Red: confirm current boundaries (`decl_cpp_fn.mlc` absent, 18 items at the documented lines, file at baseline 1360 lines) | **done** — `test -f` negative; all 18 items confirmed at lines 34/45/56/59/72/78/88/91/94/97/100/110/132/144/179/189/200/211, no drift; `decl_cpp.mlc` confirmed at baseline 1360 lines |
 | 2 | Green: create `decl_cpp_fn.mlc`, wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
 | 3 | Critic: full re-audit | pending |
 

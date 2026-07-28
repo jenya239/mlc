@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-4 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-13 slice 4 (`decl_cpp_fn.mlc`): `compiler/codegen/decl_cpp_fn.mlc` confirmed absent (`test -f` negative). All 18 fn-decl items confirmed still present at the exact documented lines: `function_parameter_proto_items` (34), `function_parameter_def_items` (45), `main_program_parameter_items_cpp` (56), `main_set_args_vector_argument_cpp` (59), `main_set_args_preamble_cpp` (72), `prepend_main_set_args_preamble` (78), `function_declaration_template_prefix` (88), `merged_function_type_parameters_cpp` (91), `function_emits_template_cpp` (94), `context_with_fn_escape_cpp` (97), `native_fn_proto_cpp` (100), `native_fn_proto_cpp_with_escape` (110), `native_fn_decl_cpp` (132), `native_fn_decl_cpp_with_escape` (144), `gen_fn_proto_cpp` (179), `gen_fn_decl_cpp` (189), `gen_fn_proto_cpp_with_escape` (200), `gen_fn_decl_cpp_with_escape` (211). `decl_cpp.mlc` confirmed at baseline 1360 lines (matches Decision, no drift) |
+| verify  | see `done` |
+| result  | §104-13 slice 4 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 4 — green: create `decl_cpp_fn.mlc`, move 18 items wholesale (export the 11 needing cross-module visibility), wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-4 Decision)
 
 | field   | value |
