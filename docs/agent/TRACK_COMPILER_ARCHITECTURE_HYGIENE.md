@@ -409,7 +409,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` (`git show b72febeb~1:...
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** |
-| 1 | Red: confirm current boundaries (`decl_cpp_trait.mlc` absent, `is_semantic_declaration_fn` at line 386, 8 trait items at the documented lines, file at baseline 1463 lines) | pending |
+| 1 | Red: confirm current boundaries (`decl_cpp_trait.mlc` absent, `is_semantic_declaration_fn` at line 386, 8 trait items at the documented lines, file at baseline 1463 lines) | **done** — `test -f` negative; `is_semantic_declaration_fn` confirmed at line 386; all 8 items confirmed at lines 58/65/79/95/106/109/135/143, no drift; `decl_cpp.mlc` confirmed at baseline 1463 lines |
 | 2 | Green: relocate `is_semantic_declaration_fn` to `decl_cpp_helpers.mlc`, create `decl_cpp_trait.mlc`, wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
 | 3 | Critic: full re-audit | pending |
 

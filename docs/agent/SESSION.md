@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-3 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-13 slice 3 (`decl_cpp_trait.mlc`): `compiler/codegen/decl_cpp_trait.mlc` confirmed absent (`test -f` negative). `is_semantic_declaration_fn` confirmed still at line 386 in `decl_cpp.mlc`. All 8 trait-decl items confirmed still present at the exact documented lines: `trait_template_header` (58), `trait_requires_expression_for_method` (65), `trait_requires_expressions_cpp` (79), `trait_concept_dispatch_forward_proto_cpp` (95), `trait_skips_concept_dispatch_forward_protos` (106), `trait_concept_dispatch_forward_protos_body` (109), `trait_concept_dispatch_forward_protos_cpp` (135), `gen_trait_decl_cpp` (143). `decl_cpp.mlc` confirmed at baseline 1463 lines (matches Decision, no drift) |
+| verify  | see `done` |
+| result  | §104-13 slice 3 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 3 — green: relocate `is_semantic_declaration_fn` to `decl_cpp_helpers.mlc`, create `decl_cpp_trait.mlc`, move 8 items wholesale (export only the 2 needing cross-module visibility), wire `decl_cpp.mlc` imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-3 Decision)
 
 | field   | value |
