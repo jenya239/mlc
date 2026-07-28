@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-13 slice 1 (`decl_cpp_helpers.mlc`) STEP=1 red — Decision frozen 2026-07-28: extract 4 pure-leaf declaration-list helpers (`empty_cpp_declaration`/`empty_cpp_declarations`/`append_cpp_declarations`/`cpp_decl_from_native_declarations`, zero external callers, ~90 internal call sites across every group) from `decl_cpp.mlc` (1666 lines) first, mirroring §104-12 slice 2's prerequisite-leaf role. §104-12 (`transform.mlc` split) **CLOSED** 2026-07-28: 4 slices, 1765→881 lines, all Critic-audited. §104-1/2/3 found already pre-existing, see track file.
+**Queue head:** Driver `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-13 slice 1 (`decl_cpp_helpers.mlc`) STEP=2 green — Decision frozen and STEP=1 red confirmed 2026-07-28 (module absent, 4 items at documented lines, file at baseline 1666 lines): extract 4 pure-leaf declaration-list helpers (`empty_cpp_declaration`/`empty_cpp_declarations`/`append_cpp_declarations`/`cpp_decl_from_native_declarations`, zero external callers, ~90 internal call sites across every group) from `decl_cpp.mlc`, mirroring §104-12 slice 2's prerequisite-leaf role. §104-12 (`transform.mlc` split) **CLOSED** 2026-07-28: 4 slices, 1765→881 lines, all Critic-audited. §104-1/2/3 found already pre-existing, see track file.
 **`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **closed** 2026-07-28 (Critic OK). Archived.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.

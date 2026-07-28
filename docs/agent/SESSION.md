@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-13 slice-1 red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Red confirmed for §104-13 slice 1 (`decl_cpp_helpers.mlc`): `compiler/codegen/decl_cpp_helpers.mlc` confirmed absent (`test -f` negative). All 4 items from the frozen Decision confirmed still present in `compiler/codegen/decl_cpp.mlc` at the exact documented lines: `empty_cpp_declaration` (26), `empty_cpp_declarations` (1536), `append_cpp_declarations` (1541), `cpp_decl_from_native_declarations` (1550). `decl_cpp.mlc` confirmed at baseline 1666 lines (matches Decision, no drift) |
+| verify  | see `done` |
+| result  | §104-13 slice 1 STEP=1 **done**; next STEP=2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 1 — green: create `decl_cpp_helpers.mlc`, move 4 items wholesale + export, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-1 Decision)
 
 | field   | value |
