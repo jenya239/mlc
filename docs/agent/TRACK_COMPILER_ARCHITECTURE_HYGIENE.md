@@ -27,8 +27,12 @@ by repo-wide grep dependency closure), **STEP=1 red confirmed** same day
 lines), **STEP=2 green** same day (`transform_method.mlc` created,
 12 items moved, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new
 files only, `rake test_compiler_mlc` exit_code=0 1471/0, mlcc2 self-host
-diff IDENTICAL), **queue head is now §104-12 slice 4 STEP=3 (Critic
-close — last slice, closes §104-12 itself)** (priority override
+diff IDENTICAL), **§104-12 slice 4 closed, §104-12 itself CLOSED** same
+day (Critic-audited: independent function/type-set diff, independent
+fresh mlcc translation + stray-reference grep, independent full
+`rake test_compiler_mlc` rerun 1471/0 — `transform.mlc` 1765→881 lines
+across 4 new modules). **Queue head is now §104-13**
+(`codegen/decl_cpp.mlc` split, 1666 lines) (priority override
 2026-07-28, user: "это должно быть приоритетом сейчас" — Wave 1 moved
 ahead of §101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays
 gated)
@@ -107,8 +111,8 @@ not re-derive step content here, read the review file at pickup time.
 - **§104-1** `FileId`/`FileStore` (review Step 1) — **done**, pre-existing (see Correction above)
 - **§104-2** `Span.file_id` extension via `span_make` (Step 2) — **done** except deferred `file_id` field (see Correction above)
 - **§104-3** `StringInterner` (Step 3) — **done**, pre-existing (see Correction above)
-- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — **queue head**
-- **§104-13** split `codegen/decl_cpp.mlc` (1666 lines now, was 1119) (Step 13)
+- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — **closed**, 1765→881 lines
+- **§104-13** split `codegen/decl_cpp.mlc` (1666 lines now, was 1119) (Step 13) — **queue head**
 - **§104-14** split `codegen/expr/match_gen.mlc` (1403 lines now, was 907) (Step 14)
 - **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) — needs re-export language support first, see review Часть 3 §1 (Step 15)
 - **§104-16** split `checker/infer/infer.mlc` (962 lines now, was 786) (Step 16)
@@ -279,11 +283,36 @@ Independent function/type-set diff: old `transform.mlc` (46 names) vs new `trans
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries | **done** |
 | 2 | Green: create `transform_method.mlc`, thread the 2 injected parameters, wire `transform.mlc` call sites + import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit, close §104-12 | pending |
+| 3 | Critic: full re-audit, close §104-12 | **done — closed** |
 
 #### Green result (STEP=2, 2026-07-28)
 
 `transform_method.mlc` created (287 lines): all 12 items moved wholesale. `transform.mlc`: 1132 → 881 lines. Bootstrap diff scoped to exactly `transform.cpp/.hpp` + the 2 new files — 12 removed declarations match the Decision exactly, 4 namespace-qualified call sites inside `transform_method_call_after_object` pass `transform_expr`/`transform_exprs` as documented. `rake test_compiler_mlc`: exit_code=0, `1471 passed, 0 failed`, arch lint failures=0. mlcc2 self-host diff (in-repo `TMPDIR`, host disk 99%): IDENTICAL.
+
+#### Critic close (STEP=3, 2026-07-28) — §104-12 CLOSED
+
+Independent function/type-set diff: old `transform.mlc` (`git show 5fee3313:...`,
+36 names) vs new `transform.mlc` (24) + `transform_method.mlc` (12) combined =
+36, zero lost/duplicated. Export-status diff: all 12 moved items gained
+`export` (wider than strictly needed — 6 of them have no caller outside
+`transform_method.mlc` itself and could have stayed non-exported, unlike
+slice 3's 2 internal-only items — noted as a minor deviation from the
+slice-3 precedent, not a defect: no test failure, no cycle, no behavior
+change). Fresh `mlcc` translation of `compiler/main.mlc` from scratch:
+`transform_method.cpp/.hpp` created; grepped `transform_method::` across
+every generated file — found only in `transform.cpp` (the 1 direct
+caller), zero stray references. Independent `rake test_compiler_mlc` rerun
+from a clean shell (`TMPDIR` confirmed unset): `1471 passed, 0 failed`,
+`arch lint failures=0`. Line counts confirmed: `transform.mlc` 881 lines
+(down from 1765 at track start — on the file-size WARN allowlist, not a
+failure, same status as slices 1/2/3), `transform_method.mlc` 287,
+`transform_call_args.mlc` 365, `transform_context.mlc` 41,
+`transform_coerce.mlc` 268. No false-done found.
+
+**§104-12 closed** — `transform.mlc` split from 1765 to 881 lines across 4
+new leaf/injection modules (slices 1-4), all bootstrap-diff-scoped,
+self-host mlcc2-identical, 1471/0 throughout. Queue head → §104-13
+(`codegen/decl_cpp.mlc` split, 1666 lines).
 
 ## Verification discipline
 

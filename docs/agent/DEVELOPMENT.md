@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Critic `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-12 slice 4 (`transform_method.mlc`) STEP=3 close — green done 2026-07-28: 12 items moved, `transform_expr_fn`/`transform_exprs_fn` injected into 5 of them, bootstrap diff scoped to `transform.cpp/.hpp` + 2 new files only, `rake test_compiler_mlc` exit_code=0 1471/0, mlcc2 self-host diff IDENTICAL. `transform_method_call_after_object` stays in `transform.mlc`. This is the last slice of §104-12 — closing it here also closes §104-12 itself. §104-1/2/3 found already pre-existing, see track file.
+**Queue head:** Driver `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-13 (`codegen/decl_cpp.mlc` split, 1666 lines) STEP=0 Decision — §104-12 (`transform.mlc` split) **CLOSED** 2026-07-28: 4 slices (`transform_coerce.mlc`, `transform_context.mlc`, `transform_call_args.mlc`, `transform_method.mlc`), 1765→881 lines, all Critic-audited, bootstrap-diff-scoped, self-host mlcc2-identical, 1471/0 throughout. §104-1/2/3 found already pre-existing, see track file.
 **`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **closed** 2026-07-28 (Critic OK). Archived.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.

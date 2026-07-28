@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-4 close — §104-12 CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of §104-12 slice 4, last slice — closed slice 4 and §104-12 itself. (1) Function/type-set diff: `git show 5fee3313:compiler/checker/transform/transform.mlc` (pre-slice-4 baseline, 36 names) vs current `transform.mlc` (24) + `transform_method.mlc` (12) combined (36) — `diff` empty, zero lost/duplicated. (2) Export-status diff: all 12 moved items gained `export` — wider than strictly needed (6 have no caller outside the new module and could have stayed non-exported, unlike slice 3's 2 internal-only items) but not a defect: no cycle, no test failure, no behavior change — noted as a minor deviation from the slice-3 precedent, not requiring rework. (3) Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `transform_method.cpp/.hpp` created; grepped `transform_method::` across every generated `.cpp`/`.hpp` — found only in `transform.cpp` (the 1 direct caller), zero stray references. (4) Independent full `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first): `1471 passed, 0 failed`, `arch lint failures=0`. Line counts: `transform.mlc` 881 (down from 1765 at track start, on the file-size WARN allowlist same as slices 1-3, not a failure), `transform_method.mlc` 287, `transform_call_args.mlc` 365, `transform_context.mlc` 41, `transform_coerce.mlc` 268. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 in the same continuous session, no source change since). No false-done found |
+| verify  | see `done` — 4 independent checks, all clean |
+| result  | §104-12 slice 4 **closed**; §104-12 (`transform.mlc` god-file split, review Step 12) **CLOSED** — 1765→881 lines across 4 new leaf/injection modules over 4 slices, all bootstrap-diff-scoped, self-host mlcc2-identical, 1471/0 throughout |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 — split `codegen/decl_cpp.mlc`, 1666 lines — Decision freeze) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-4 green)
 
 | field   | value |
