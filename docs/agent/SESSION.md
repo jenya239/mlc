@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-4 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-13 slice 4 (`decl_cpp_fn.mlc`) — fn decl codegen group. Re-derived against current `decl_cpp.mlc` (1360 lines, post slice-3 shift): 18 items at lines 34-221. Found this group is a shared dependency of **all 3** remaining groups (FFI codegen, extend/impl codegen, decl-segment orchestration — confirmed one-directional by grep, zero back-references), so 11 of 18 need `export` (vs 2 in slices 2/3): 6 already exported with an external test importer (`test_decl_gen.mlc`, unaffected per transitive-import-forwarding), 5 newly needed (`function_parameter_def_items`, `context_with_fn_escape_cpp`, `merged_function_type_parameters_cpp`, `function_emits_template_cpp`, `native_fn_decl_cpp` — zero external-to-`decl_cpp.mlc` callers repo-wide). Found 1 dead-code item (`function_declaration_template_prefix`, zero callers repo-wide) — moved as-is per the `transform_context_new` precedent (§104-12 slice 2), dropping it is out of scope for a pure-relocation slice. Strategy: new `decl_cpp_fn.mlc`, move all 18 wholesale, export the 11 documented; `decl_cpp.mlc` imports them back (no injection needed) and drops 4 now-unused imports (`CppStatement`/`CppBinary`/`prototype_context_for_function`/`gen_return_body_cpp`) |
+| verify  | gap confirmed: `decl_cpp_fn.mlc` absent (`test -f` negative); all 18 items confirmed at the documented lines by grep; `decl_cpp.mlc` confirmed at baseline 1360 lines (no drift since slice 3 close) |
+| result  | §104-13 slice 4 Decision **frozen**; queue → Driver STEP=1 (red) |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 4 — red: confirm `decl_cpp_fn.mlc` absent / all 18 fn-decl items still in `decl_cpp.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-3 close)
 
 | field   | value |
