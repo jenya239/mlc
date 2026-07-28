@@ -314,6 +314,47 @@ new leaf/injection modules (slices 1-4), all bootstrap-diff-scoped,
 self-host mlcc2-identical, 1471/0 throughout. Queue head → §104-13
 (`codegen/decl_cpp.mlc` split, 1666 lines).
 
+## §104-13 `codegen/decl_cpp.mlc` split (1666 lines)
+
+Rough group survey (2026-07-28, by section boundary, subject to revision
+per-slice as later slices get their own Decision): leaf declaration-list
+helpers (~25 lines, scattered top/bottom of file); type/variant struct
+codegen (~35-236, `gen_type_decl_fwd_cpp`/`gen_type_decl_body_cpp` and
+helpers); trait decl codegen (~238-334, `gen_trait_decl_cpp`); fn
+declaration codegen (~336-565, `gen_fn_proto_cpp`/`gen_fn_decl_cpp`/
+`gen_decl_cpp`/`gen_proto_cpp`, large external-test surface); FFI/extern
+codegen (~566-784, `gen_ffi_fn_proto_cpp`/`gen_ffi_fn_decl_cpp`/
+`collect_ffi_include_lines`); extend/impl codegen (~785-1319, by far the
+largest single group, `gen_decl_extend_cpp` and ~30 helpers); decl-segment
+orchestration (~1320-1666, `decl_segment_cpp`/`collect_all_decl_parts_cpp`/
+`collect_fn_defs_cpp`, calls into every other group — likely stays as the
+file's own glue layer, not extracted). Slice order and count for groups
+2-6 to be finalized as each slice gets its own Decision, mirroring
+§104-12's incremental approach (5 slices ended up replacing an initial
+3-group review estimate there).
+
+### Slice 1 — `decl_cpp_helpers.mlc` (do first — zero external callers, zero circular dependency)
+
+#### Decision (STEP=0) — **frozen** 2026-07-28
+
+| Item | Choice |
+|------|--------|
+| Problem | `decl_cpp.mlc` is 1666 lines. 4 tiny declaration-list helpers — `empty_cpp_declaration` (26), `empty_cpp_declarations` (1536), `append_cpp_declarations` (1541), `cpp_decl_from_native_declarations` (1550) — are pure leaves (only depend on `CppDeclaration`/`CppDeclarationEmpty`/`CppDeclarationSequence` from `cpp_ir/cpp_ast`, each other, and nothing else) but are called pervasively throughout every other group in the file (confirmed by grep: `empty_cpp_declaration()` at 15 call sites, `empty_cpp_declarations()` at 60+, `append_cpp_declarations()` at 15, `cpp_decl_from_native_declarations()` at 4 — spanning type-decl, trait-decl, fn-decl, FFI, extend, and decl-segment groups alike). Repo-wide grep confirms **zero callers outside `decl_cpp.mlc`** for all 4 (the superficially similar `append_cpp_declarations_from_include_text` in `cpp_emit/module_tu_helpers.mlc` is a distinct, unrelated function — false-positive substring match, verified by exact-name grep). Extracting these first, before any of the 5 larger groups, mirrors §104-12 slice 2's `transform_context.mlc` role: a zero-risk prerequisite leaf that every later slice of this track will need to import from, avoiding re-deriving the same 4 helpers' new home 5 times over |
+| Strategy (v1) | New `compiler/codegen/decl_cpp_helpers.mlc`. Move all 4 helpers verbatim (export all — needed cross-module by `decl_cpp.mlc` itself, and by whichever slice 2+ module ends up calling them). No signature change, no algorithm change — pure relocation, same as `transform_context.mlc`. `decl_cpp.mlc` imports all 4 back (needs them at ~90+ internal call sites across every group). Zero other files touched — no external importers exist today |
+| Primary gate | Red: `decl_cpp_helpers.mlc` absent, all 4 helpers still in `decl_cpp.mlc` at lines 26/1536/1541/1550. Green: `decl_cpp_helpers.mlc` exists with the 4 items exported; `decl_cpp.mlc` shrinks by ~25 lines, gains 1 import line; bootstrap diff restricted to split modules + direct-caller namespace-prefix renames only (the refined god-file-split gate, since `decl_cpp.mlc`'s own ~90 internal call sites get namespace-qualified to the new module, this is expected and is the split's entire point — not a regression); `rake test_compiler_mlc` (1471+ passed, 0 failed); self-host mlcc2 diff before Critic close |
+| Module touch | new `compiler/codegen/decl_cpp_helpers.mlc`; `compiler/codegen/decl_cpp.mlc` (shrinks, gains 1 import line) |
+| REG | no (`compiler/**` only) |
+| Out of scope | the 5 larger groups (type/trait/fn/FFI/extend codegen, decl-segment orchestration) — each needs its own Decision, deferred to later slices; any signature/algorithm change; MIR |
+
+#### Steps (§104-13 — slice 1: decl_cpp_helpers)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries (`decl_cpp_helpers.mlc` absent, 4 items at the documented lines, file at baseline 1666 lines) | pending |
+| 2 | Green: create `decl_cpp_helpers.mlc`, wire `decl_cpp.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 3 | Critic: full re-audit | pending |
+
 ## Verification discipline
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,

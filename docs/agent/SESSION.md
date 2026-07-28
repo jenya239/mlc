@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-1 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-13 slice 1 (`decl_cpp_helpers.mlc`) — first slice of the `codegen/decl_cpp.mlc` split (1666 lines, confirmed by `wc -l`, matches track file's documented count). Surveyed the file into 6 groups by section boundary (leaf helpers; type/variant struct codegen; trait decl codegen; fn decl codegen; FFI/extern codegen; extend/impl codegen — by far the largest at ~535 lines; decl-segment orchestration). Repo-wide grep found exactly 4 pure-leaf declaration-list helpers used pervasively across every other group but with **zero external callers**: `empty_cpp_declaration` (26, 15 call sites), `empty_cpp_declarations` (1536, 60+ call sites), `append_cpp_declarations` (1541, 15 call sites), `cpp_decl_from_native_declarations` (1550, 4 call sites) — a superficially similar `append_cpp_declarations_from_include_text` in `cpp_emit/module_tu_helpers.mlc` is confirmed a distinct, unrelated function by exact-name grep. Mirrors §104-12 slice 2's `transform_context.mlc` role: zero-risk prerequisite leaf every later slice will need. Strategy: new `compiler/codegen/decl_cpp_helpers.mlc`, move all 4 verbatim + export, `decl_cpp.mlc` imports them back (needs them at ~90 internal call sites) |
+| verify  | gap confirmed: `decl_cpp_helpers.mlc` absent (`find` negative); all 4 helpers present in `decl_cpp.mlc` at documented lines 26/1536/1541/1550; file at baseline 1666 lines |
+| result  | §104-13 slice 1 Decision **frozen**; queue → Driver STEP=1 (red) |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 1 — red: confirm `decl_cpp_helpers.mlc` absent / all 4 items still in `decl_cpp.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-4 close — §104-12 CLOSED)
 
 | field   | value |
