@@ -8,10 +8,10 @@ render) and §102/§103 (new feature epics).
 ## Status: **open** — §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
-slice 2 red confirmed** same day (`transform_context.mlc` — prerequisite
-leaf-module extraction for slice 3's `transform_call_args.mlc`; slices
-renumbered, see §104-12 section below), **queue head is now §104-12 slice 2
-STEP=2 (green)** (priority override 2026-07-28, user: "это должно быть
+slice 2 green** same day (`transform_context.mlc` extracted — prerequisite
+leaf-module for slice 3's `transform_call_args.mlc`; slices renumbered, see
+§104-12 section below), **queue head is now §104-12 slice 2 STEP=3
+(Critic)** (priority override 2026-07-28, user: "это должно быть
 приоритетом сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays
 queued after §103, Wave 3 stays gated)
 
@@ -183,8 +183,10 @@ change. No false-done found. Queue head → slice 2.
 |------|------|------|
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries | **done** — `find compiler/checker/transform -iname transform_context.mlc` empty (module absent); `transform.mlc` still 1505 lines (unchanged since slice 1); all 6 items (`TransformContext`/`TransformStmtsResult` types + 4 constructors) confirmed at the exact documented lines (429/435/438/441/448/460) |
-| 2 | Green: create `transform_context.mlc`, wire `transform.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | pending |
+| 2 | Green: create `transform_context.mlc`, wire `transform.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** — see verification below |
 | 3 | Critic: full re-audit | pending |
+
+**STEP=2 verification (2026-07-28):** `transform.mlc` 1505→1468 lines, new `transform_context.mlc` 41 lines (6 items: `TransformContext`/`TransformStmtsResult` types + `transform_context_new`/`empty_transform_context`/`transform_context_with_env`/`transform_context_with_lambda_parameter_types`, all exported — the latter 2 gained `export` since `transform.mlc` now needs them cross-module, `transform_context_new` gained `export` too though it remains dead code tree-wide, confirmed by grep, unchanged from before). `--check-only` clean. Bootstrap diff (old `mlcc` on pre/post-split source): full-tree `diff -rq` found differences in **exactly** 8 files — `transform.cpp`/`.hpp` (shrink), `transform_context.cpp`/`.hpp` (new) — plus 4 direct-caller files (`check_mutations.cpp`, `names.cpp`, `transform_decl.cpp`, `transform_stmts.cpp`/`.hpp`, all referencing the moved types/functions), each change read line-by-line and confirmed to be **exactly** a `transform::` → `transform_context::` namespace-prefix rename (e.g. `transform::TransformContext` → `transform_context::TransformContext`), zero logic changes; confirmed **zero** other differences among ~335 files. Notably: **zero MLC source edits needed in the 5 external importers** (`transform_stmts.mlc`, `check_mutations.mlc`, `names.mlc`, 2 test files) — confirms the Decision's transitive-import-forwarding hypothesis (they still write `import { ..., TransformContext, ... } from './transform'`, unchanged, and it resolves correctly to the new home). `compiler/build.sh` rebuilt `mlcc` clean (only pre-existing unrelated `-Wparentheses-equality` warnings). `rake test_compiler_mlc` (rebuilds `run_tests` from split source) → **1471 passed, 0 failed**, `arch lint failures=0`, `transform.mlc` now shown at 1468 lines on the size-allowlist WARN. Determinism cross-check: new-mlcc-translated `compiler/main.mlc` output byte-identical to old-mlcc-translated output of the same post-split source. Self-host `mlcc2` identity check per `.cursor/rules/mlcc-self-host-verification.mdc`: `build_bin.sh` (g++, `TMPDIR` set in-repo — root filesystem at 99% usage) built `mlcc2` from the new `mlcc`'s own translation; `mlcc2` re-translating the same source → `diff -r --exclude=obj` **empty**, IDENTICAL — self-hosting determinism holds.
 
 ### Slice 3 — `transform_call_args.mlc` (needs `transform_expr_fn` injection — depends on slice 2)
 

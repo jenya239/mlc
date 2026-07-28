@@ -1,0 +1,41 @@
+// Shared context/result types for the AST -> SemanticIR transform.
+// Extracted from transform.mlc (§104-12 slice 2, compiler architecture hygiene):
+// a leaf module so both transform.mlc and transform_call_args.mlc (next slice)
+// can import these types one-directionally, mirroring checker/check/check_context.mlc.
+
+import { Type, TypeRegistry, empty_registry } from '../registry'
+import { SemanticStatement } from '../../ir/semantic_ir'
+
+export type TransformContext = TransformContext {
+  type_env: Map<string, Shared<Type>>,
+  registry: TypeRegistry,
+  lambda_parameter_types: [Shared<Type>],
+}
+
+export fn transform_context_new(type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> TransformContext =
+  TransformContext { type_env: type_env, registry: registry, lambda_parameter_types: [] }
+
+export fn empty_transform_context() -> TransformContext =
+  TransformContext { type_env: Map.new(), registry: empty_registry(), lambda_parameter_types: [] }
+
+export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
+  TransformContext {
+    type_env: type_env,
+    registry: base.registry,
+    lambda_parameter_types: base.lambda_parameter_types,
+  }
+
+export fn transform_context_with_lambda_parameter_types(
+  base: TransformContext,
+  lambda_parameter_types: [Shared<Type>]
+) -> TransformContext =
+  TransformContext {
+    type_env: base.type_env,
+    registry: base.registry,
+    lambda_parameter_types: lambda_parameter_types,
+  }
+
+export type TransformStmtsResult = TransformStmtsResult {
+  statements: [Shared<SemanticStatement>],
+  type_env:   Map<string, Shared<Type>>
+}

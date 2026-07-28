@@ -39,6 +39,7 @@ import { partial_application_desugar_expr } from './partial_application_desugar'
 import * as named_args from '../named_args'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
 import { semantic_type_is_tarray, array_element_type_from_semantic_type, generic_type_name, conditional_else_empty_unknown_array_coerced_to_then_array_element, coerce_expr_to_type } from './transform_coerce'
+import { TransformContext, transform_context_with_env, transform_context_with_lambda_parameter_types, TransformStmtsResult, empty_transform_context } from './transform_context'
 
 fn receiver_type_key_for_method_dispatch(receiver_semantic_type: Shared<Type>) -> string =
   match receiver_semantic_type {
@@ -423,44 +424,6 @@ fn transform_regular_method_call(
       typed_object, method_name, typed_arguments, method_parameter_mutability_flags, result_type, source_span))
   end
 end
-
-// --- Context ----------------------------------------------------------------
-
-export type TransformContext = TransformContext {
-  type_env: Map<string, Shared<Type>>,
-  registry: TypeRegistry,
-  lambda_parameter_types: [Shared<Type>],
-}
-
-fn transform_context_new(type_env: Map<string, Shared<Type>>, registry: TypeRegistry) -> TransformContext =
-  TransformContext { type_env: type_env, registry: registry, lambda_parameter_types: [] }
-
-export fn empty_transform_context() -> TransformContext =
-  TransformContext { type_env: Map.new(), registry: empty_registry(), lambda_parameter_types: [] }
-
-export fn transform_context_with_env(base: TransformContext, type_env: Map<string, Shared<Type>>) -> TransformContext =
-  TransformContext {
-    type_env: type_env,
-    registry: base.registry,
-    lambda_parameter_types: base.lambda_parameter_types,
-  }
-
-fn transform_context_with_lambda_parameter_types(
-  base: TransformContext,
-  lambda_parameter_types: [Shared<Type>]
-) -> TransformContext =
-  TransformContext {
-    type_env: base.type_env,
-    registry: base.registry,
-    lambda_parameter_types: lambda_parameter_types,
-  }
-
-// --- Statement list result --------------------------------------------------
-
-export type TransformStmtsResult = TransformStmtsResult {
-  statements: [Shared<SemanticStatement>],
-  type_env:   Map<string, Shared<Type>>
-}
 
 // --- Helpers ----------------------------------------------------------------
 

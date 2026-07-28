@@ -2,6 +2,20 @@
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-12 slice-2 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Extracted `TransformContext`/`TransformStmtsResult` types + 4 constructors (`transform_context_new`, `empty_transform_context`, `transform_context_with_env`, `transform_context_with_lambda_parameter_types`) from `transform.mlc` (1505→1468 lines) into new leaf module `compiler/checker/transform/transform_context.mlc` (41 lines, all 6 items exported). Added one import line to `transform.mlc` pulling them back in |
+| verify  | `--check-only` clean. Bootstrap diff (old `mlcc` on pre/post-split source): differences in exactly 8 files — `transform.cpp`/`.hpp` (shrink), `transform_context.cpp`/`.hpp` (new), plus 4 direct-caller files (`check_mutations.cpp`, `names.cpp`, `transform_decl.cpp`, `transform_stmts.cpp`/`.hpp`) each with a pure `transform::`→`transform_context::` namespace-prefix rename, read line-by-line to confirm zero logic change; zero other differences among ~335 files. Confirmed the Decision's transitive-import-forwarding hypothesis: **zero MLC source edits needed** in the 5 external importers (they still write `from './transform'` unchanged and it resolves correctly). `compiler/build.sh` rebuilt `mlcc` clean. `rake test_compiler_mlc` → **1471 passed, 0 failed**, `arch lint failures=0`, `transform.mlc` now 1468 lines. Determinism: new-mlcc output byte-identical to old-mlcc output of the same post-split source. Self-host `mlcc2` identity (`.cursor/rules/mlcc-self-host-verification.mdc`): `build_bin.sh` (g++, `TMPDIR` in-repo — root fs at 99%) built `mlcc2`; re-translation → `diff -r --exclude=obj` **empty**, IDENTICAL |
+| result  | §104-12 slice-2 STEP=2 (green) done, all gates pass; ready for Critic |
+| issues  | none |
+| next    | ROLE=Critic TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 2 — full re-audit before closing the slice) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-12 slice-2 red)
 
 | field   | value |

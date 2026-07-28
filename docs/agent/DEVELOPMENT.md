@@ -41,7 +41,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 ## Current priority
 
-**Queue head:** Driver `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-12 slice 2 (`transform_context.mlc`) STEP=2 green (create module, wire import, verify) — red confirmed 2026-07-28, 0 drift. Slice 1 (`transform_coerce.mlc`) closed same day, Critic-audited. Slice 2 is a prerequisite leaf-module extraction (avoids a `TransformContext`-type import cycle) inserted ahead of the renumbered slice 3 (`transform_call_args.mlc`, formerly "slice 2"). §104-1/2/3 found already pre-existing, see track file.
+**Queue head:** Critic `TRACK_COMPILER_ARCHITECTURE_HYGIENE` §104-12 slice 2 (`transform_context.mlc`) — green 2026-07-28 (1471 tests, bootstrap diff, mlcc2 self-host diff all pass, zero external-importer edits needed). Slice 1 (`transform_coerce.mlc`) closed same day, Critic-audited. Slice 2 is a prerequisite leaf-module extraction (avoids a `TransformContext`-type import cycle) inserted ahead of the renumbered slice 3 (`transform_call_args.mlc`, formerly "slice 2"). §104-1/2/3 found already pre-existing, see track file.
 **`TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY` (§100)** **closed** 2026-07-28 (Critic OK). Archived.
 **`TRACK_EDITOR_WORD_DELETE_NO_FULL_STRINGIFY` (§99)** **closed** 2026-07-25 (Critic OK). Archived.
 **`TRACK_EDITOR_NEWLINE_INDENT_NO_FULL_STRINGIFY` (§98)** **closed** 2026-07-25 (Critic OK). Archived.
