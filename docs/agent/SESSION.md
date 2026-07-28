@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-2 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Full independent re-audit of §104-13 slice 2 — closed. (1) Function/type-set diff: `git show b72febeb~1:compiler/codegen/decl_cpp.mlc` (pre-slice baseline, 115 names) vs current `decl_cpp.mlc` + `decl_cpp_type.mlc` combined (115) — `diff` empty, zero lost/duplicated. (2) Export-status diff: identical export sets before/after — `gen_type_decl_fwd_cpp`/`gen_type_decl_body_cpp` already exported pre-slice, remain the only 2 exports in `decl_cpp_type.mlc`; 11 internal helpers stay non-exported, matching the Decision exactly. (3) Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `decl_cpp_type.cpp/.hpp` created; grepped `decl_cpp_type::` across every generated `.cpp`/`.hpp` — found only in `decl_cpp.cpp` (the 1 direct caller), zero stray references elsewhere. (4) Independent full `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first): `1471 passed, 0 failed`, `arch lint failures=0`. Line counts confirmed: `decl_cpp.mlc` 1463, `decl_cpp_type.mlc` 190 — no drift. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 in the same continuous session, no source change since). No false-done found |
+| verify  | see `done` — 4 independent checks, all clean |
+| result  | §104-13 slice 2 **closed**. §104-13 itself stays **open** — 4 more groups surveyed (trait decl codegen, fn decl codegen, FFI/extern codegen, extend/impl codegen — largest, decl-segment orchestration), each needs its own Decision |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 3 — Decision freeze for the next group, likely trait decl codegen or fn decl codegen per the surveyed remainder) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-2 green)
 
 | field   | value |
