@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-13 slice-3 Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Decision freeze for §104-13 slice 3 (`decl_cpp_trait.mlc`) — trait decl codegen group. Re-derived against current `decl_cpp.mlc` (1463 lines, post slice-2 shift): 8 items at lines 58-154 — `trait_template_header` (58), `trait_requires_expression_for_method` (65), `trait_requires_expressions_cpp` (79), `trait_concept_dispatch_forward_proto_cpp` (95), `trait_skips_concept_dispatch_forward_protos` (106), `trait_concept_dispatch_forward_protos_body` (109), `trait_concept_dispatch_forward_protos_cpp` (135), `gen_trait_decl_cpp` (143, export). Grep confirmed: 6 of 8 have exactly 1 caller entirely within the group; the 2 needing cross-module visibility (`gen_trait_decl_cpp` already exported, `trait_concept_dispatch_forward_protos_cpp` not yet) are called only from elsewhere in `decl_cpp.mlc` (341/1164 fn-decl+decl-segment groups, 1163 decl-segment group) — plain downstream calls, no back-reference. Found 1 real complication unlike slice 2: `trait_concept_dispatch_forward_protos_body` (118) calls `is_semantic_declaration_fn`, a 4-line pure predicate defined later in `decl_cpp.mlc` (386) and shared by 3 *other* groups (370/682/813, zero external-to-file callers repo-wide) — moving the trait group wholesale while leaving that predicate behind would force either duplication or a genuine two-way import cycle. Fix: relocate `is_semantic_declaration_fn` into the existing `decl_cpp_helpers.mlc` leaf first (zero dependency on anything beyond already-imported `SemanticDeclaration`/`SemanticDeclarationFn`), same role slice 1 already plays. Strategy: Step 1 moves the predicate to `decl_cpp_helpers.mlc` (export); Step 2 creates `decl_cpp_trait.mlc` with the 8 items, exporting only `gen_trait_decl_cpp`/`trait_concept_dispatch_forward_protos_cpp` |
+| verify  | gap confirmed: `decl_cpp_trait.mlc` absent (`test -f` negative); `is_semantic_declaration_fn` confirmed at line 386 in `decl_cpp.mlc`, zero external-to-`decl_cpp.mlc` callers repo-wide (grep); `decl_cpp.mlc` confirmed at baseline 1463 lines (no drift since slice 2 close) |
+| result  | §104-13 slice 3 Decision **frozen**; queue → Driver STEP=1 (red) |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 3 — red: confirm `decl_cpp_trait.mlc` absent / `is_semantic_declaration_fn` at line 386 / all 8 trait items still in `decl_cpp.mlc` at the documented lines) |
+
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-2 close)
 
 | field   | value |
