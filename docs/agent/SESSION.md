@@ -1,8 +1,50 @@
 # Agent session log
 
-Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](../archive/SESSION_HISTORY.md).
+Turns before 2026-07-28 (§104-1 audit) archived — see [../archive/SESSION_HISTORY.md](../archive/SESSION_HISTORY.md).
 
 ## Entries
+
+### Turn 2026-07-29 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-6 close — §104-13 itself CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-29 |
+| done    | Independent re-audit of §104-13 slice 6: (1) function/type-set diff — old `decl_cpp.mlc` (`git show b193ec0e:...`, pre-slice-6 baseline, 60 top-level `fn`/`type` names) vs new `decl_cpp.mlc` + `decl_cpp_extend.mlc` combined (60), `diff` empty, zero lost/duplicated; (2) export-status diff — 17 exports before, 17 after, `diff` empty, zero gained/lost, matches the Decision's "no new exports needed" claim; (3) confirmed the 1 Decision correction found during green (hub had to move with the group to avoid a real circular import, 1 dot-call rewritten to free-function form) is a pure mechanical fix — re-read both new files in full, no other deviation from moved-verbatim bodies; (4) fresh `mlcc -o ... compiler/main.mlc` translation from scratch, grepped `decl_cpp_extend::` across every generated file, found only in `decl_cpp.cpp` (the 1 direct-caller module), zero stray references; (5) independent full `rake test_compiler_mlc` rerun — exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=12`; (6) `ReadLints` on both files — no errors; (7) line counts confirmed: `decl_cpp.mlc` 355, `decl_cpp_extend.mlc` 626, both under 800, `architecture_lint_allowlist.txt` no longer lists `codegen/decl_cpp.mlc`. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2, twice, same continuous session, no source change since). No false-done found |
+| verify  | see `done` |
+| result  | **§104-13 slice 6 closed.** **§104-13 itself CLOSED** — `codegen/decl_cpp.mlc` split 1666→355 lines across 6 slices/modules (`decl_cpp_helpers/type/trait/fn/ffi/extend.mlc`), original file and every new module now under the 800-line arch-lint gate |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-12 slice 5 Decision — reopen: `transform.mlc` still 881 lines, over the 800-line gate, allowlist entry not removed; find one more extractable group or record an explicit residual-size Decision, per the 2026-07-29 exit-criterion correction) |
+
+### Turn 2026-07-29 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-6 green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-29 |
+| done    | §104-13 slice 6 green, with 1 correction to the frozen Decision found mid-implementation: the Decision's dependency analysis treated the extend/impl group and the ~100-line `gen_decl_cpp`/`gen_proto_cpp` dispatch hub as one-directional (hub → group only), but it is actually **mutual** — `gen_decl_cpp`'s `SemanticDeclarationExtend` arm calls `gen_decl_extend_cpp` (in the group), and 4 group functions (`extend_forward_protos_for_declaration_cpp`, `extend_helper_protos_for_declaration_cpp`, `extend_forward_proto_for_fn_method`, dead `extend_trait_implementation_protos_cpp`) call back into `gen_proto_cpp` (in the hub). Moving only the 32-item group as originally planned would have created a real circular import (`decl_cpp.mlc` ↔ `decl_cpp_extend.mlc`) with no established injection-closure pattern that fit cleanly. Fix: moved the hub (both already-`export`ed free functions + the `extend CodegenContext { gen_decl_cpp, gen_proto_cpp }` block) into `decl_cpp_extend.mlc` together with the 32-item group — confirmed by grep first that the hub has zero dependency on decl-segment orchestration, so this is still a clean one-directional split, just with a larger leaf module than planned. The 1 cross-module dot-call site left in decl-segment orchestration (`context.gen_proto_cpp(declaration)`) rewritten to the equivalent free-function form `gen_proto_cpp(declaration, context)` — avoids relying on unverified cross-module `extend`-block dot-dispatch semantics (the codebase already scatters `extend CodegenContext` blocks across 5 files, but only this one dot-call site crossed a to-be-split module boundary). Also dropped 2 stray unused imports surfaced by the same grep-audit discipline as every prior slice: `semantic_fn_body_is_extern` (into `decl_cpp.mlc`, zero uses left after the move) and `TypeVariant`/`gen_fn_decl_cpp` (into `decl_cpp_extend.mlc`, zero uses — superseded before this track started). Net: `decl_cpp.mlc` 959→355 lines; new `decl_cpp_extend.mlc` 626 lines (32-item group + hub + 3 dead functions moved as-is, no algorithm change). Removed `file_size:codegen/decl_cpp.mlc` from `compiler/tests/architecture_lint_allowlist.txt` — both files now under 800 |
+| verify  | Fresh `mlcc -o ... compiler/main.mlc` translation from scratch (exit 0); grepped `decl_cpp_extend::` across every generated file, found only in `decl_cpp.cpp`; `rake test_compiler_mlc` exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=12` (13→12, `decl_cpp.mlc` dropped off the WARN list); mlcc2 self-host (`build_bin.sh`, `MLC_CXX=g++`, in-repo `TMPDIR`) `diff -rq out out2 --exclude=obj` IDENTICAL. Repeated the full translate+test+mlcc2-diff cycle a second time after the import cleanup (not just after the hub-move fix) — green both times. `ReadLints` on both files: clean |
+| result  | §104-13 slice 6 STEP=2 **done** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 6 close — independent function/type-set diff old `decl_cpp.mlc` (`git show b193ec0e:...`, pre-slice-6 baseline) vs new `decl_cpp.mlc` + `decl_cpp_extend.mlc` combined, export-status diff, fresh `mlcc` translation grep for `decl_cpp_extend::` stray references, independent `rake test_compiler_mlc` rerun, line-count confirmation against the 800-line gate, no false-done — this closes §104-13 itself if clean) |
+
+### Turn 2026-07-29 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0/1, §104-13 slice-6 Decision + red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-29 |
+| done    | Decision frozen for §104-13 slice 6: re-derived the remaining "extend/impl codegen + decl-segment orchestration" group against the current 959-line `decl_cpp.mlc` by grep, found it is actually 2 separable groups — extend/impl codegen (32 items, lines 101-634, 8 already exported) and decl-segment orchestration (23 items, lines 636-959, stays as the file's own glue layer per the original slice-1 survey note) plus the ~100-line dispatch hub. Confirmed one-directional at Decision time (hub/decl-segment call into the group at 7 sites, zero calls the other way) — this was later found incomplete during green (see STEP=2 entry), but the group boundary itself and its 8 exports were correct. Extraction plan: new `decl_cpp_extend.mlc`, move all 32 items wholesale (including 3 confirmed-dead: `extend_forward_call_argument_list`, `extend_methods_have_assoc_bind`, `extend_trait_implementation_protos_cpp` — zero callers repo-wide, moved as-is per the `function_declaration_template_prefix` precedent), no new exports needed. Projected `decl_cpp.mlc` drop to ~426 lines, under the 800-line arch-lint gate — first time since before the 2026-06-29 review. Red confirmed same turn: `decl_cpp_extend.mlc` absent, `decl_cpp.mlc` at baseline 959 lines, boundary lines 101/123/606/636 spot-checked and matching |
+| verify  | grep dependency-closure audit (Decision); `test -f` negative + line spot-checks (red) |
+| result  | §104-13 slice 6 STEP=0/1 **done** |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 6 — green: create `decl_cpp_extend.mlc`, wire `decl_cpp.mlc` imports, drop stale import + allowlist entry, bootstrap diff, `rake test_compiler_mlc`, mlcc2 self-host diff) |
 
 ### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-5 close)
 
@@ -536,46 +578,4 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 | result  | §100 **closed** (Critic OK); queue → Driver §104-1 |
 | issues  | `idle_cpu_budget_stable` flaked once under back-to-back full-gate CPU load — pre-existing test fragility (host-noise-sensitive by its own header comment), not a regression from this track; logged here rather than in TRACK per no-repeat-note convention |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-1 `FileId`/`FileStore` Decision) |
-
-### Turn 2026-07-28 (Driver TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY STEP=2)
-
-| field   | value |
-|---------|-------|
-| role    | Driver |
-| step    | 2 |
-| track   | TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
-| started | 2026-07-28 |
-| elapsed | ~25 min |
-| done    | `misc/editor/document/edit.mlc`: `edit_toggle_line_comment` rewritten to per-line slice — new `document_line_end_after` helper + existing `document_line_start_before`; per-line `document_byte_slice` + `comment_line_body`/`uncomment_line_body`; write-back via `document_delete`+`document_insert` on the touched multi-line span only. Removed `document_to_string`/`document_from_string`/`LineIndex` import and the two `line_index_*`-based helpers (`line_content_exclusive_end`, `line_content_is_commented`) — zero full-stringify calls left in `edit.mlc`. Rewrote `scripts/run_ux_comment_toggle_no_full_stringify_stable.sh` to check the function body + run `run_editor_edit_unit.sh` + `run_ux_toggle_line_comment.sh` |
-| verify  | `run_editor_edit_unit.sh` EXIT=0; `run_ux_toggle_line_comment.sh` EXIT=0 `ux_ok toggle_line_comment`; new stable EXIT=0 `ux_ok comment_toggle_no_full_stringify`; red EXIT=1 (gap correctly closed: `to=0 from=0`); related stables green: `edit_autoclose_no_full_stringify`, `newline_indent_no_full_stringify`, `word_delete_no_full_stringify`, `clipboard_slice_no_full_stringify` |
-| result  | §100 STEP=2 **done**; queue → Critic STEP=3 |
-| issues  | Full `run_ux_gate.sh` (all scenarios) not run this turn — that is Critic's STEP=3 gate (×2), not required for Driver green per the pattern of prior closed stringify tracks (STEP=2 turns verify function + related scripts only) |
-| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY |
-
-### Turn 2026-07-28 (interactive session, Planner-style — §102/§103 authorized: terminal + Script VM Phase 1)
-
-| field   | value |
-|---------|-------|
-| role    | Planner (interactive, not queue) |
-| step    | plan-refresh |
-| track   | PLAN |
-| started | 2026-07-28 |
-| elapsed | n/a (interactive) |
-| done    | User asked for a track count and explicitly authorized two new epics by name: terminal component and MLC Script VM. Counted current backlog: 99 numbered `PLAN.md` rows, 97 closed/superseded, effectively only §100 (near close) and §101 (§97a residual, confirmed root cause, queued) open in the main sequence; §19 (auto-cycle detection) and MLC Script VM were the only gated/design-only items. Opened **§102 `TRACK_EDITOR_TERMINAL`** — libvterm-backed terminal panel, decomposed into 7 ordered sub-tracks (§102a FFI binding → §102b PTY spawn → §102c cell-grid render reusing existing `static_text`/`solid_renderer` → §102d input forward → §102e resize/scrollback → §102f panel integration into the post-§97 unified `EditorAppState` → §102g perf budget), explicit non-goal against building a second parallel widget/render system (direct lesson from the 2026-07-15 architecture review). Opened **§103 `TRACK_MLC_SCRIPT_VM`**, lifting the previous HARD STOP GATE for **Phase 1 only** (design doc `MLC_SCRIPT_VM.md` §12 phases 2-5 remain explicitly not authorized) — decomposed into 9 ordered sub-tracks (§103a `Value` rep → §103b bytecode format → §103c verifier → §103d arithmetic interpreter → §103e control flow → §103f GC arena → §103g arrays/records → §103h closures/fibers → §103i embedding ABI), verifier-before-interpreter per the design doc's own LuaJIT-precedent requirement. Rewrote `TRACK_MLC_SCRIPT_VM.md` to remove the old "agent-hours" sizing estimates (violates the standing token/calendar-only rule) — no replacement time metric substituted, sizing left implicit in the sub-track count/scope. Every sub-track in both new tracks carries an explicit test gate per user's stated emphasis (performance, architecture, testing) |
-| verify  | Confirmed `libvterm0` runtime already installed (0.3.3) via `dpkg -l`, dev headers not yet confirmed (deferred to §102a Decision, not assumed) — did not overstate readiness |
-| next    | Driver: finish §100 STEP=2 (green) → Critic → §101 Decision (perf fix) → §102a Decision (`TERMINAL_LIBVTERM_FFI`) → §103a Decision (`SCRIPT_VM_VALUE_REP`), strict order per `CONTINUITY.md` override (d) |
-
-
-### Turn 2026-07-27 (interactive session, Planner-style — §97a perf smoke re-run, new finding logged as §101)
-
-| field   | value |
-|---------|-------|
-| role    | Planner (interactive, not queue) |
-| step    | plan-refresh |
-| track   | PLAN |
-| started | 2026-07-27 |
-| elapsed | n/a (interactive) |
-| done    | User asked for a progress check ("как успехи?"). Reviewed `git log` since 2026-07-25: §97 (`TRACK_EDITOR_RENDER_ARCHITECTURE`) closed — §97a real perf harness, §97b frame-split (wrap/frame_cache/shared_span_cache/minimap_cache/frame_input extracted into `app/frame_layout.mlc` + collapsed dual wrap tick), §97c (killed `demo_live` app-loop-head unpack, unified mutation via `editor_app_set_*`, wheel-hover-focus-independent L0 lock-in) all Critic-closed; queue continued through §93/§98/§99 stringify residuals, §100 in flight. Re-ran `scripts/run_editor_demo_live_perf_smoke.sh` (§97a's own harness) directly to get a real number rather than trust doc claims: on the 100k-line fixture, `frames=30 layout_us=82511 draw_us=12063257 total_us=12240140` — draw phase is 98.6% of frame time, ~402ms/frame, ~2.4 FPS while scrolling. Confirmed `visible_row_budget` already virtualizes the paint loop (not drawing all 100k rows), so this is not the already-fixed per-frame-full-wrap regression (§36) recurring; read the draw span in `demo_live.mlc` and found `visual_row_index_for_caret_pixel_budget` called every frame inside it (~line 2210) as the prime suspect — a pixel-budget wrap walk for caret placement that may not be bounded by viewport size. Logged as PLAN §101, explicitly as a hypothesis needing a narrower timer to confirm before any fix (no track file yet, no code touched) |
-| verify  | Re-ran the smoke script myself (99.5s, exit 0) rather than citing a prior run; read `demo_live.mlc`'s `perf_draw_t0`/`perf_draw_us` boundaries (line 1900-2632) to confirm what's actually inside the measured span before hypothesizing a cause |
-| next    | Driver: after §100 (`EDITOR_COMMENT_TOGGLE_NO_FULL_STRINGIFY`) closes, PLAN §101 Decision — bisect `draw_us` with an inner timer around `visual_row_index_for_caret_pixel_budget` specifically (and 1-2 other candidates in the same span) on the same 100k-line fixture, confirm or refute before naming a TRACK / touching code |
 

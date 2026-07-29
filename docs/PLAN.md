@@ -947,12 +947,18 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       same day, Critic-audited; §104-12 slice 3 (`transform_call_args.mlc`)
       closed same day, Critic-audited; §104-12 slice 4
       (`transform_method.mlc`, 12 items) closed same day, Critic-audited —
-      **§104-12 itself CLOSED** (`transform.mlc` split 1765→881 lines across
-      4 new modules over 4 slices); queue head → §104-13
-      (`codegen/decl_cpp.mlc` split, 1666 lines) open Decision next; only
-      §104-1/2/3/12 (done), §104-13..16, §104-18..20, §104-22/23 pulled
-      forward here, Wave 2 (§104-6..11) stays after §103, Wave 3 stays gated;
-      [TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md))**
+      **§104-12 marked CLOSED same day, corrected 2026-07-29: premature** —
+      `transform.mlc` 1765→881 lines is still **>800**, the project's own
+      arch-lint hard gate (`compiler/tests/run_architecture_lint.sh:7`), and
+      its `file_size:` allowlist entry was never removed; reopen as slice 5
+      Decision before treating §104-12 as done, see track file's exit
+      criterion added 2026-07-29; **§104-13 (`codegen/decl_cpp.mlc` split,
+      1666 lines) CLOSED 2026-07-29 — 6 slices, 1666→355 lines across
+      `decl_cpp.mlc` + 5 new modules, all ≤800, allowlist entry removed,
+      Critic-audited**; queue head → §104-12 slice 5 Decision (reopen); only
+      §104-1/2/3/12(reopened)/13(done), §104-14..16, §104-18..20, §104-22/23
+      pulled forward here, Wave 2 (§104-6..11) stays after §103, Wave 3 stays
+      gated; [TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md))**
   → **EDITOR_CARET_VISUAL_ROW_CACHE (§101, open STEP=0 next after §104 Wave 1 closes:
       caret pixel-budget wrap walk uncached every frame, see §499 row for full root-cause; track file not yet created)**
   → **EDITOR_TERMINAL (§102, open §102a Decision next:

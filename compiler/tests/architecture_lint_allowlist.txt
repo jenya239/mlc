@@ -5,7 +5,6 @@
 file_size:checker/transform/transform.mlc
 file_size:frontend/parser/exprs.mlc
 file_size:frontend/parser/decls.mlc
-file_size:codegen/decl_cpp.mlc
 file_size:checker/infer/infer.mlc
 file_size:checker/registry.mlc
 file_size:codegen/expr/match_gen.mlc
