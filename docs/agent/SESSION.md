@@ -4,6 +4,20 @@ Turns before 2026-07-25 15:20 archived — see [../archive/SESSION_HISTORY.md](.
 
 ## Entries
 
+### Turn 2026-07-28 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-13 slice-5 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-28 |
+| done    | Independent re-audit of §104-13 slice 5: (1) function/type-set diff — old `decl_cpp.mlc` (`git show 201254fd:...`, pre-slice-5 baseline, 74 names) vs new `decl_cpp.mlc` + `decl_cpp_ffi.mlc` combined (74), `diff` empty, zero lost/duplicated; (2) export-status diff — exactly the 7 documented items gained `export` (`gen_extern_type_decl_cpp`, `gen_ffi_fn_decl_cpp`, `gen_ffi_fn_proto_cpp`, `semantic_expression_is_bare_extern`, `semantic_expression_is_extern`, `semantic_expression_is_ffi_extern`, `semantic_fn_body_is_extern`), zero lost, matches Decision exactly (17→24 exported, `collect_ffi_include_lines` already exported pre-slice); (3) fresh `mlcc -o ... compiler/main.mlc` translation from scratch — `decl_cpp_ffi.cpp/.hpp` created, grepped `decl_cpp_ffi::` across every generated file, found only in `decl_cpp.cpp`, `decl_cpp.hpp` (legitimate inline extend-method body in the header, still the 1 direct-caller module) and `module.cpp` (the `collect_ffi_include_lines` call site), zero stray references elsewhere; (4) independent full `rake test_compiler_mlc` rerun from a clean shell (`TMPDIR` confirmed unset first) — exit_code=0, arch lint `failures=0`; (5) line counts confirmed: `decl_cpp.mlc` 959, `decl_cpp_ffi.mlc` 229, no drift. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2 same session, no source change since). No false-done found |
+| verify  | see `done` |
+| result  | **§104-13 slice 5 closed.** §104-13 itself stays open — 1 group remains (extend/impl codegen + decl-segment orchestration, largest, ~750 lines), likely needs its own multi-slice sub-sequencing given its size |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-13 slice 6 — Decision: re-derive the dependency closure of the remaining extend/impl codegen + decl-segment orchestration group by grep against the current 959-line `decl_cpp.mlc`, decide sub-slicing given its size ~750 lines) |
+
 ### Turn 2026-07-28 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-13 slice-5 green)
 
 | field   | value |
