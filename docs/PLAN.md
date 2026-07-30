@@ -1010,10 +1010,16 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       −4.8%, Critic (real `-c` compiles, quiet machine, child-CPU-time)
       g++ −4.22%/clang++ −5.66% — same direction/magnitude, confirms the
       payoff is real but modest, not the dramatic reduction a naive read of
-      "removes a 75-arm `std::visit`" might suggest; queue head → §104-22
-      Decision (Driver STEP=0); only
-      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected)/20(done),
-      §104-22/23
+      "removes a 75-arm `std::visit`" might suggest; **§104-22 tooling
+      Driver STEP=0-2 done same day** — 2 new scripts
+      (`compiler/scripts/bootstrap-fast.sh`/`bootstrap-full.sh`), no `.mlc`
+      touched; found and fixed a link failure in the review's own literal
+      Шаг 22 snippet (missing runtime `.cpp` sources); both scripts verified
+      exit 0, `bootstrap-full.sh` printed `STAGE IDENTICAL` from a genuine
+      `mlcc`→`mlcc2` self-host round-trip; queue head → Critic re-audit of
+      §104-22, then §104-23 Decision; only
+      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected)/20(done)/22(green),
+      §104-23
       pulled forward here, Wave 2 (§104-6..11) stays after §103, Wave 3 stays
       gated; [TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md))**
   → **EDITOR_CARET_VISUAL_ROW_CACHE (§101, open STEP=0 next after §104 Wave 1 closes:

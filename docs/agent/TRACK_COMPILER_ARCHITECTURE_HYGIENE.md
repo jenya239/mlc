@@ -92,8 +92,32 @@ Decision-only, no code changed). §104-20 `--cpp-mode=fast-build` CLOSED**
 twice — Driver + Critic — self-host round-trip byte-identical for both
 modes, `rake test_compiler_mlc` 1471/0, measured real g++/clang++
 compile-time reduction on the affected files, independently re-measured
-with a 2nd methodology, same direction/magnitude). **Queue head is now
-§104-22 Decision (Driver STEP=0, `bootstrap-fast.sh`/`bootstrap-full.sh`)**
+with a 2nd methodology, same direction/magnitude). **§104-22 tooling
+(`bootstrap-fast.sh`/`bootstrap-full.sh`) Decision+Red+Green done same
+day** (2 new scripts under `compiler/scripts/`, no `.mlc` touched; found
+and fixed a link failure in the review's own literal snippet — missing
+runtime `.cpp` sources; both scripts verified exit 0, `bootstrap-full.sh`
+printed `STAGE IDENTICAL` from a genuine `mlcc`→`mlcc2` round-trip).
+**Queue head is now Critic re-audit of §104-22, then §104-23 Decision.**
+
+## Update 2026-07-30 (d) — §104-22 tooling scripts, Driver STEP=0-2 done, Queue head → Critic
+
+Created `compiler/scripts/bootstrap-fast.sh` (fast dev-loop bootstrap:
+hybrid layout + fast-build codegen + `-O0` link, then times the resulting
+binary's own re-translation of `compiler/main.mlc`) and
+`compiler/scripts/bootstrap-full.sh` (self-hosting-correctness round-trip:
+`mlcc`→p1, `build_bin.sh`→`mlcc2`, `mlcc2`→p2, `diff -rq --exclude=obj`,
+prints `STAGE IDENTICAL`) per review Шаг 22. Both follow the existing
+`compiler/scripts/` convention (`mir_bootstrap_report.sh`'s pattern —
+assume `compiler/out/mlcc` pre-built, fail fast otherwise) rather than
+the review's illustrative snippet, which — taken literally — fails to
+link (missing runtime `.cpp` sources); fixed by adding the same 3
+runtime source files `bisect_bootstrap_link.sh` already links. Both
+scripts run end-to-end, exit 0; `bootstrap-full.sh` printed
+`STAGE IDENTICAL` from a real `mlcc`→`mlcc2` round-trip (not simulated).
+No `.mlc` file touched, so no self-host-diff risk from this step itself
+— the scripts exercise, not modify, the pipeline. **Queue head is now
+Critic re-audit of §104-22**, then §104-23 Decision.
 
 ## Update 2026-07-30 (c) — §104-20 CLOSED (Critic re-audit), Queue head → §104-22
 
@@ -240,7 +264,7 @@ a silent "closed" with the file still allowlisted.
 - **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
 - **§104-19** include planner / forward-decls (Step 19) — **CLOSED (REJECTED)** 2026-07-30 — survey found the technique structurally inapplicable to this codebase's 2 dominant hub types (`ast::Expr`/`Stmt`, `registry_type::Type`, both `std::variant` aliases, not forward-declarable) and low residual payoff (66% of direct includes already transitively redundant); no code changed, see Decision
 - **§104-20** `--cpp-mode=fast-build` (Step 20) — **CLOSED** 2026-07-30, Critic-audited — opt-in flag, default path diff-empty verified independently twice, measured g++ −3.0%/clang++ −4.8% aggregate compile-time on affected files (Driver), independently re-measured g++ −4.22%/clang++ −5.66% with a 2nd methodology (Critic) — modest, real, confirmed; depends on Step 17 (already done via §44)
-- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18 (done) — **next**
+- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18 (done) — Driver STEP=0-2 done 2026-07-30, **Critic pending (next)**
 - **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
@@ -1108,6 +1132,39 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 - Compile-time payoff, spot-checked with a **different, controlled methodology** than the Driver's (quiet machine, `Process.times` child cutime+cstime instead of wall-clock, real `-c` object-file compiles — not `-fsyntax-only`, which was tried first and found to understate the effect since it skips the codegen/optimization work that `std::visit`/`overloaded` template cost actually falls in) across the same 46-file affected set: **g++ 530.77s → 508.35s (−4.22%)**, **clang++ 610.82s → 576.27s (−5.66%)** — same direction, same order of magnitude as the Driver's claimed g++ −3.0%/clang++ −4.8%. Confirms the payoff is real and the Driver's methodology (aggregate, not per-file) is sound; flagging for the record that a `-fsyntax-only` shortcut is **not** a valid substitute for measuring this specific optimization's payoff, since it skips the cost center being optimized.
 - Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`, `.vscode/`) are absent from commit `b83022a4` and still present/uncommitted/untouched after this audit.
 - No false-done found beyond the stray duplicate text corrected above. **§104-20 CLOSED.** Scratch build artifacts (`.tmp/critic_104_20/**`, the detached worktree) cleaned up after verification.
+
+## §104-22 `bootstrap-fast.sh`/`bootstrap-full.sh` tooling
+
+### Decision (STEP=0) — **frozen** 2026-07-30
+
+| Item | Choice |
+|------|--------|
+| Problem | Review's Шаг 22 (`review_20260629_144027.md:453-473`): no reusable script exercises the build-speed levers from §104-18/§104-20 together (fast dev-loop bootstrap) or the self-hosting-correctness round-trip (`mlcc`→`.cpp`→`mlcc2`→re-translate→diff) documented as a *manual* procedure in `.cursor/rules/mlcc-self-host-verification.mdc`. Doing this by hand is error-prone — this track's own §104-15 and §104-20 Critic audits both hit the same false-positive (a path-mismatch producing spurious whole-tree `#line`-only diffs) from re-deriving the steps ad hoc each time |
+| Strategy | Two new scripts under `compiler/scripts/` (existing home for build/bootstrap tooling: `bench_build.sh`, `bisect_bootstrap_link.sh`, `mir_bootstrap_report.sh`, `select_cxx.sh`), following those scripts' own established convention — assume `compiler/out/mlcc` is already built (fail fast with a clear message if not, matching `mir_bootstrap_report.sh`), `MLCC`/`ENTRY` overridable via env var / `$1`. `bootstrap-fast.sh`: `mlcc --emit-layout=hybrid --cpp-mode=fast-build` translation → compile with `-O0` (via `select_cxx.sh`'s existing MLC_CXX-aware clang++/g++ selection, not a hardcoded `clang++`) → time that binary's own default-mode re-translation of the entry, demonstrating the fast-dev-loop trade-off (cheap to compile, slower to run) the review's Шаг 22 is scoping. `bootstrap-full.sh`: `mlcc` translates the entry (p1) → `compiler/build_bin.sh` builds `mlcc2` from p1 → `mlcc2` re-translates the entry (p2) → `diff -rq --exclude=obj p1 p2`, printing `STAGE IDENTICAL` on success — this is the project's own documented self-host-verification procedure (`.cursor/rules/mlcc-self-host-verification.mdc`), encapsulated instead of re-typed by hand each time; uses `build_bin.sh` (parallel + PCH) rather than a bespoke 2nd raw compiler invocation, per that same rule's own guidance to prefer `build_bin.sh` over "голый однопоточный `g++ *.cpp`" |
+| Language choice | Bash (`.sh`), not Ruby — the personal scripts-language rule's intent (avoid Python; prefer Ruby/JS for general-purpose scripting/automation) does not override this project's own established convention for this exact class of tool: every sibling script in `compiler/scripts/` (`bench_build.sh`, `bisect_bootstrap_link.sh`, `mir_bootstrap_report.sh`, `select_cxx.sh`) plus `compiler/build.sh`/`build_bin.sh`/`scripts/regression_gate.sh` are Bash, and the review's own literal Шаг 22 action blocks are Bash. These two scripts are thin sequential wrappers around external binary invocations (`mlcc`, `clang++`/`g++`, `diff`) with no data processing — Bash's native fit for this, consistent with the rest of the toolchain |
+| Primary gate | Review's own literal acceptance test: both scripts exit 0; `bootstrap-full.sh` prints `STAGE IDENTICAL` |
+| Module touch | 2 new files: `compiler/scripts/bootstrap-fast.sh`, `compiler/scripts/bootstrap-full.sh`. No `.mlc` file changed — pure tooling, no codegen/checker change, so no self-host-diff risk is introduced by this step itself (the scripts exercise, but do not modify, the existing self-host pipeline) |
+| REG | no (`compiler/**` tooling only, no `.mlc` touched) |
+| Out of scope | §104-23 determinism checks (`--dump-mir`/`--dump-sem` diff-stable), depends on this step, queued next |
+
+### Steps (§104-22)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirmed `compiler/scripts/bootstrap-fast.sh`/`bootstrap-full.sh` did not exist before this step (`ls compiler/scripts/`) | **done** |
+| 2 | Green: implemented + verified (below) | **done** 2026-07-30 |
+| 3 | Critic: full re-audit | pending |
+
+#### Green (STEP=2) — **done** 2026-07-30
+
+- First implementation attempt (mirroring the review's illustrative 3-line snippet literally — `clang++ ... /tmp/stage1/*.cpp -Iruntime/include -o /tmp/mlcc-stage1`, no runtime `.cpp` sources) **failed to link**: `undefined reference to mlc::String::substring(...)` and similar — the review's own snippet omits the runtime implementation object files, which every `mlcc`-generated `.cpp` needs linked in (confirmed by comparing against `bisect_bootstrap_link.sh`'s own `RT_CPP` list). Fixed by compiling+linking `runtime/src/io/io.cpp`/`runtime/src/core/string.cpp`/`runtime/src/core/profile.cpp` alongside the generated `.cpp` files in `bootstrap-fast.sh`, matching `bisect_bootstrap_link.sh`'s existing pattern. This finding is disclosed here because it means the review's Шаг 22 snippet, taken literally, is not directly runnable as written.
+- Fresh `MLCC_INCREMENTAL=0 compiler/build.sh` (0 errors, pre-existing `-Wparentheses-equality` warnings only) to have a known-fresh `compiler/out/mlcc` before testing either script.
+- `compiler/scripts/bootstrap-fast.sh` run end-to-end: `mlcc --emit-layout=hybrid --cpp-mode=fast-build` translation → `-O0` link via `select_cxx.sh` (picked `clang++`, matching the review's own choice) → exit 0. The `-O0`-built `mlcc-stage1` binary's own timed re-translation of `compiler/main.mlc` (`--emit-layout=hybrid`, default `readable` codegen): **37.054s real** (`36.572s` user CPU) — contrasted against this project's own documented `mlcc -O2` benchmark reference (~4-5s, `.cursor/rules/mlcc-self-host-verification.mdc`), i.e. roughly 8-9× slower to *run* in exchange for a much faster *compile* of `mlcc-stage1` itself (no `-O2` optimization pass) — the exact fast-dev-loop trade-off the review's Шаг 22 is illustrating, now reproducibly measurable instead of asserted.
+- `compiler/scripts/bootstrap-full.sh` run end-to-end: `mlcc -o p1 compiler/main.mlc` → `MLC_CXX` auto-selected `clang++` via `build_bin.sh` → `mlcc2` (parallel+PCH build) → `mlcc2 -o p2 compiler/main.mlc` → `diff -rq --exclude=obj p1 p2` empty → printed **`STAGE IDENTICAL`**, exit 0 — this run is itself a full, genuine self-hosting-correctness round-trip (not a simulated/mocked check), directly satisfying this track's own standing Tier-B bar for the step.
+- Both scripts' exit codes confirmed 0 via the shell's own `exit_code` in the terminal-file footer (not just visual inspection of printed text).
+- Scratch artifacts (`$TMPDIR/mlc_bootstrap_fast`, `$TMPDIR/mlc_bootstrap_full`, both under `.tmp/104_22_tmpdir/`, plus the log files) deleted after verification, not committed. No `git worktree` needed this step (no baseline-vs-current comparison — no `.mlc` file changed).
+- No new `rake test_compiler_mlc` run required this step per the Decision (no `.mlc`/codegen change) — the two scripts' own successful execution, including `bootstrap-full.sh`'s `STAGE IDENTICAL`, is the step's actual regression evidence (it re-exercises the existing, unmodified, already-tested pipeline end-to-end).
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
 `mlcc -o /tmp/p2 compiler/main.mlc` after, `diff -r /tmp/p1 /tmp/p2` empty
