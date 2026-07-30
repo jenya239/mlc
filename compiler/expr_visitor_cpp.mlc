@@ -12,6 +12,7 @@ import { field_access_operator, find_field_value, is_constructor_call, question_
 import { is_result_generic, result_ok_type, result_err_type } from './checker/check/method_types/result_option_method_types'
 import { first_arm_needs_deref, should_use_string_match_if_chain, subject_is_bool_type } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
+import { expression_result_cpp_type_for_codegen, match_expression_return_cpp_type } from './codegen/expr/match_result_type'
 import * as mut_actual_argument from './codegen/expr/mut_actual_argument'
 import * as method_gen from './codegen/expr/method_gen'
 import * as record_gen from './codegen/expr/record_gen'
@@ -385,7 +386,7 @@ fn if_ternary_is_safe(
   const else_ctor = if_branch_constructor_name(else_expression)
   if (then_ctor.length() > 0 || else_ctor.length() > 0) && then_ctor != else_ctor then false
   else
-    const result_cpp = match_codegen.expression_result_cpp_type_for_codegen(context, if_semantic_type)
+    const result_cpp = expression_result_cpp_type_for_codegen(context, if_semantic_type)
     if result_cpp == 'auto' || result_cpp.length() == 0 then true
     else
       if_branch_type_matches_result(then_expression, result_cpp, context) &&
@@ -515,7 +516,7 @@ export fn gen_if_via_cpp_visitor(
     then_expression_cpp,
     else_expression_cpp,
     if_ternary_is_safe(then_expression, else_expression, if_semantic_type, context),
-    match_codegen.expression_result_cpp_type_for_codegen(context, if_semantic_type),
+    expression_result_cpp_type_for_codegen(context, if_semantic_type),
     context)
 end
 
@@ -558,13 +559,13 @@ export fn gen_match_via_cpp_visitor(
     subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
 end
 
-fn match_return_cpp_type(
+fn match_default_block_return_cpp_type(
   context: CodegenContext,
   match_semantic_type: Shared<Type>,
   subject: Shared<SemanticExpression>
 ) -> string =
   if match_codegen.match_visit_uses_void_lambdas(match_semantic_type) then ''
-  else match_codegen.match_expression_return_cpp_type(context, match_semantic_type, subject)
+  else match_expression_return_cpp_type(context, match_semantic_type, subject)
   end
 
 fn gen_match_default_block_cpp(
@@ -574,7 +575,7 @@ fn gen_match_default_block_cpp(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
-  const return_cpp = match_return_cpp_type(context, match_semantic_type, subject)
+  const return_cpp = match_default_block_return_cpp_type(context, match_semantic_type, subject)
   const body_statements = match_codegen.gen_match_guarded_body_cpp(
     subject,
     expanded_arms,

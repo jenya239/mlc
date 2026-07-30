@@ -4,6 +4,20 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 
 ## Entries
 
+### Turn 2026-07-30 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0/1/2, §104-14 slice 1 — match_result_type.mlc)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0/1/2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-30 |
+| done    | §104-14 slice 1 Decision+implementation in one turn: surveyed `match_gen.mlc` (1403 lines) — most codegen strategies thread injected `gen_stmts`/`eval_expr_fn` parameters, same shape as prior god-file splits in this track. Found one zero-injected-parameter subset: lines 923-1085, the match-result-C++-return-type resolution subsystem (13 functions: `full_result_cpp_template`, `expression_result_cpp_type_for_codegen`, `result_ok_type_cpp_from_generic`, `result_ok_type_cpp_if_generic`, `result_err_type_cpp_from_generic`, `result_err_type_cpp_if_generic`, `match_ok_cpp_type`, `match_err_cpp_type`, `cpp_type_string_has_auto_placeholder`, `is_bare_result_cpp_name`, `match_return_cpp_type`, `result_template_from_match_type`, `match_expression_return_cpp_type`). Created `compiler/codegen/expr/match_result_type.mlc` (173 lines), 3 exported (`match_return_cpp_type` new, other 2 already exported). `match_gen.mlc` 1403→1240 lines, gained 1 import line. **1 correction found during implementation:** the planned wildcard import in `expr_visitor_cpp.mlc` (and, confirmed by retry, a named import too) triggered a real mlcc codegen bug — that file's own unrelated local `fn match_return_cpp_type` collided by name with the newly-exported one, and mlcc mis-qualified the local definition's C++ body with the imported module's namespace (duplicate-symbol risk). Fixed by renaming the local helper to `match_default_block_return_cpp_type` (its only caller updated too) — pure rename, confirmed via grep no other repo-wide collisions exist for any of the 3 newly-exported names |
+| verify  | controlled bootstrap diff (same `mlcc` binary held fixed, only the 3 touched `.mlc` files toggled pre/post, both raw and `#line`-stripped): scoped to exactly `match_gen.cpp/.hpp` (shrink) + new `match_result_type.cpp/.hpp` + `expr_visitor_cpp.cpp/.hpp` (3 call-site qualifications + 1 rename), zero other module touched; `rake test_compiler_mlc` (after clearing a stale PCH from unrelated concurrent-session mtime drift): exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=11` (unchanged, `match_gen.mlc` still allowlisted at 1240 lines); mlcc2 self-host diff (`build_bin.sh` `MLC_CXX=g++`, in-repo `TMPDIR`): fresh `mlcc`→`mlc_p1`, `mlcc2` built from `mlc_p1`, `mlcc2`→`mlc_p2`, `diff -rq mlc_p1 mlc_p2 --exclude=obj` IDENTICAL; `compiler/out/mlcc` confirmed fresh (rebuilt as a side effect of the `rake test_compiler_mlc` run) by re-translating `compiler/main.mlc` with it. No `lib/mlc/**` touched, `scripts/regression_gate.sh` not required |
+| result  | **§104-14 slice 1 done.** `match_gen.mlc` 1403→1240 lines (still above 800, stays allowlisted, needs 1+ more slice). Updated `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md`, `PLAN.md` |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (independent re-audit of §104-14 slice 1 close; on confirm, queue head moves to §104-14 slice 2 Decision — remaining `match_gen.mlc` groups: the 3 codegen strategies + shared arm/binding helpers, all thread the injection pattern) |
+
 ### Turn 2026-07-30 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-12 slice-5 close — §104-12 re-confirmed CLOSED)
 
 | field   | value |
