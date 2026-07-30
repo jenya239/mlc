@@ -712,7 +712,7 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`match_generic_ctor_type.mlc` absent, 11 items at the documented lines, file at baseline 1129 lines) | **done** |
 | 2 | Green: create `match_generic_ctor_type.mlc`, wire `match_gen.mlc` import, drop now-dead imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done** |
 
 #### Green (STEP=2) — result
 
@@ -722,6 +722,21 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 - `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint `failures=0 warnings=11` (`match_gen.mlc` now at 1015 lines, still allowlisted).
 - mlcc2 self-host diff (`compiler/build_bin.sh` `MLC_CXX=g++`, fresh translation from the rebuilt `mlcc`): `diff -rq p1_fresh p2 --exclude=obj` empty — identical.
 - Fresh-translation stray-reference grep: `match_generic_ctor_type::` found only in `match_gen.cpp/.hpp` (both documented call sites collapse to 1 in the generated output — confirmed identical behavior in the pre-slice baseline too, not a regression); `generic_ctor_type_argument` defined exactly once, only in `match_generic_ctor_type.cpp`.
+
+#### Critic (STEP=3) — independent re-audit, **CLOSED** 2026-07-30
+
+- Function/type-set diff: pre-slice-4 baseline `match_gen.mlc` (`git show 731b3755:...`, 1129 lines, 65 names) vs post-slice-4 `match_gen.mlc` + `match_generic_ctor_type.mlc` combined (65 names) — `diff` empty, zero lost/duplicated.
+- Export-status diff: exactly 1 new export (`generic_ctor_type_argument`), zero lost — matches the Decision exactly.
+- Byte-level function-body diff (Ruby script extracting all 11 items from the pre-slice-4 baseline and from `match_generic_ctor_type.mlc`): all 11 verbatim-identical modulo `export`.
+- Confirmed zero local definitions of any of the 11 names remain in `match_gen.mlc`.
+- Confirmed all 4 dropped import names (`type_is_unknown`, `generic_type_name_from_type`, `generic_type_arguments_from_type`, `result_err_type`) are genuinely absent from `match_gen.mlc` (0 occurrences each) — no correctness regression from the hygiene cleanup.
+- Independently re-verified the `type_parameter_name_index` collision analysis: `expr_visitor_cpp.mlc` imports `match_gen` only via `import * as match_codegen` (namespace form) and defines its own non-exported `type_parameter_name_index` at line 92; our new module's `type_parameter_name_index` also stays non-exported — confirmed no exported symbol with that name is reachable through either import graph.
+- Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `match_generic_ctor_type::` qualification found only in `match_gen.cpp/.hpp` (the 1 documented direct caller in the generated output); each of the 11 functions defined exactly once, only in `match_generic_ctor_type.cpp` — confirmed via `noexcept{`-anchored grep (a looser grep initially over-matched call sites as false "definitions", corrected). `type_parameter_name_index` appears in both `match_generic_ctor_type.cpp` and `expr_visitor_cpp.cpp`, each inside its own C++ namespace (`match_generic_ctor_type::` / `expr_visitor_cpp::`) — confirmed pre-existing (already duplicated as `match_gen.cpp`/`expr_visitor_cpp.cpp` before this slice), not a regression, no duplicate-symbol risk.
+- Independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR`, unset first): exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=11`, `match_gen.mlc` at 1015 lines.
+- mlcc2 self-host diff, independently rebuilt from the Critic's own fresh translation (`build_bin.sh` `MLC_CXX=g++`, not reusing the Driver's binary): `diff -rq` against the Critic's own fresh translation — empty, identical.
+- No false-done found.
+
+**§104-14 slice 4 CLOSED.** Queue head → §104-14 slice 5 Decision — the 3 remaining codegen strategies in `match_gen.mlc` (std::visit string-lambda, std::visit `CppExpression`, guarded if-chain), each threading the `gen_stmts`/`eval_expr_fn` injection pattern; need their own per-strategy Decision(s), likely higher-risk than the prior 4 slices.
 
 ## Verification discipline
 
