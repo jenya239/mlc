@@ -670,7 +670,7 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`match_field_binding.mlc` absent, 4 items at the documented lines, file at baseline 1185 lines) | **done** |
 | 2 | Green: create `match_field_binding.mlc`, wire `match_gen.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done** |
 
 #### Green (STEP=2) — result
 
@@ -680,6 +680,19 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 - Controlled bootstrap diff (same on-disk `mlcc` binary, `#line`-stripped): only `match_gen.cpp`/`.hpp` differ (struct + 3 function bodies removed, 3 call sites now `match_field_binding::`-qualified, 1 new `#include`) and `match_field_binding.cpp`/`.hpp` are new. Zero other file touched — no external caller needed editing (repo-wide grep before the move found none).
 - `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint `failures=0 warnings=11` (`match_gen.mlc` now at 1129 lines, still allowlisted).
 - mlcc2 self-host diff (`compiler/build_bin.sh` `MLC_CXX=g++`): `diff -rq p1 p2 --exclude=obj` empty — identical.
+
+#### Critic (STEP=3) — independent re-audit, **CLOSED** 2026-07-30
+
+- Function/type-set diff: pre-slice-3 baseline `match_gen.mlc` (`git show 562c2e27:...`, 1185 lines, 69 names) vs post-slice-3 `match_gen.mlc` + `match_field_binding.mlc` combined (69 names) — `diff` empty, zero lost/duplicated.
+- Export-status diff: exactly 2 new exports (`codegen_context_with_ctor_field_bindings`, `record_pattern_field_bindings_and_context`), zero lost — matches the Decision exactly (`RecordFieldBindAccum`/`record_field_bind_step` correctly stayed internal).
+- Byte-level function/type-body diff (Ruby script extracting all 4 items from the pre-slice-3 baseline and from `match_field_binding.mlc`): all 4 verbatim-identical modulo `export`.
+- Confirmed zero local definitions of any of the 4 names remain in `match_gen.mlc`.
+- Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `match_field_binding::` qualification found only in `match_gen.cpp`/`.hpp` (the 1 documented direct caller); each of the 3 functions and the 1 struct defined exactly once, only in `match_field_binding.cpp`/`.hpp` — no duplicate-symbol risk.
+- Independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR`, unset first): exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=11`, `match_gen.mlc` at 1129 lines.
+- mlcc2 self-host diff, independently rebuilt from the Critic's own fresh translation (`build_bin.sh` `MLC_CXX=g++`, not reusing the Driver's binary): `diff -rq` against the Critic's own fresh translation — empty, identical.
+- No false-done found.
+
+**§104-14 slice 3 CLOSED.** Queue head → §104-14 slice 4 Decision (next: the 2-way-shared generic-ctor-type-argument resolution group found during this slice's survey, or one of the 3 codegen strategies if lower-risk on inspection).
 
 ## Verification discipline
 

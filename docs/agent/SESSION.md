@@ -102,3 +102,17 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (independent re-audit of §104-14 slice 3 close; on confirm, queue head moves to §104-14 slice 4 Decision — next lowest-risk subset: the 2-way-shared generic-ctor-type-argument resolution group (lines ~487-599, used by the guarded if-chain and `CppExpression` strategies), or one of the 3 codegen strategies themselves if that proves lower-risk on inspection) |
 
+### Turn 2026-07-30 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-14 slice 3 close — match_field_binding.mlc CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-30 |
+| done    | Independent re-audit of §104-14 slice 3: (1) function/type-set diff — pre-slice-3 baseline `match_gen.mlc` (`git show 562c2e27:...`, 1185 lines, 69 names) vs post-slice-3 `match_gen.mlc`+`match_field_binding.mlc` combined (69), `diff` empty, zero lost/duplicated; (2) export-status diff — exactly the 2 newly-documented functions gained `export` (`codegen_context_with_ctor_field_bindings`, `record_pattern_field_bindings_and_context`), zero lost, `RecordFieldBindAccum`/`record_field_bind_step` correctly stayed internal; (3) byte-level function/type-body diff via a Ruby script — all 4 moved items (1 type + 3 functions) verbatim modulo `export`; (4) confirmed zero local definitions of any of the 4 names remain in `match_gen.mlc`; (5) fresh `mlcc -o ... compiler/main.mlc` translation from scratch, grepped `match_field_binding::` across every generated file — found only in `match_gen.cpp/.hpp` (1 documented direct caller), and confirmed the struct + all 3 functions defined exactly once, only in `match_field_binding.cpp/.hpp` (no duplicate-symbol risk); (6) independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR`) — exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=11`, `match_gen.mlc` at 1129 lines; (7) mlcc2 self-host diff, independently rebuilt from the Critic's own fresh translation (not reusing the Driver's binary) via `build_bin.sh` `MLC_CXX=g++` — `diff -rq` against the Critic's own fresh translation empty, IDENTICAL. No false-done found |
+| verify  | see `done` |
+| result  | **§104-14 slice 3 closed.** `match_gen.mlc` 1185→1129 lines (still above 800, allowlisted, more slices needed — the 3 codegen strategies and the 2-way-shared generic-ctor-type-argument resolution group remain). Updated `TRACK_COMPILER_ARCHITECTURE_HYGIENE.md`, `PLAN.md`, `CONTINUITY.md`, `DEVELOPMENT.md` |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-14 slice 4 Decision — survey the 2-way-shared generic-ctor-type-argument resolution group (lines ~487-599 in `match_gen.mlc`: `generic_variant_type_argument`, `type_parameter_name_index`, `cpp_angle_bracket_type_arguments`, `instantiated_variant_type_argument_from_maps`, `generic_subject_type_name`, `generic_subject_type_arguments`, `instantiated_variant_type_argument_from_generic_subject`, `instantiated_variant_type_argument_from_subject`, `result_ctor_cpp_type_argument`, `generic_ctor_type_argument`, `non_result_ctor_type_argument`, used by the guarded if-chain and `CppExpression` strategies) and the 3 codegen strategies themselves; pick the lowest-risk boundary first, same discipline as prior slices in this track) |
+
