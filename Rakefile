@@ -68,6 +68,11 @@ task :test_compiler_mlc do
   sh "#{__dir__}/compiler/tests/build_tests.sh"
 end
 
+desc "Determinism-проверка --dump-mir/--dump-sem (compiler/scripts/check-determinism.sh)"
+task :test_determinism do
+  sh "#{__dir__}/compiler/scripts/check-determinism.sh"
+end
+
 desc "Сборка mlcc (MLCC_FORCE_RUBY=1 compiler/build.sh), затем triple-bootstrap (compiler/triple_bootstrap.sh); долго, нужны g++ и ~10+ мин"
 task :triple_bootstrap do
   sh "MLCC_FORCE_RUBY=1 #{__dir__}/compiler/build.sh"

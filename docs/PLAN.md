@@ -1019,10 +1019,16 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       each time), `bootstrap-full.sh` printed `STAGE IDENTICAL` from 2
       independent genuine `mlcc`→`mlcc2` self-host round-trips; Critic also
       exercised the missing-`mlcc` fail-fast path (exit 1, correct message)
-      not explicitly scoped by the review; queue head → §104-23 Decision;
-      only
-      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected)/20(done)/22(done),
-      §104-23
+      not explicitly scoped by the review; **§104-23 (determinism checks)
+      Decision+Red+Green done same day** — new
+      `compiler/scripts/check-determinism.sh` + `rake test_determinism`
+      task, no `.mlc` touched; ran `--dump-mir`/`--dump-sem` twice each
+      against the real `compiler/main.mlc` — both `MIR DETERMINISTIC`/`SEM
+      DETERMINISTIC` printed on the first attempt (38441/3753-line dumps,
+      non-trivial), no hidden `Map`-ordering non-determinism found; queue
+      head → Critic re-audit of §104-23 (last sub-track in this track's
+      authorized Wave 1 list); only
+      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected)/20(done)/22(done)/23(green)
       pulled forward here, Wave 2 (§104-6..11) stays after §103, Wave 3 stays
       gated; [TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md))**
   → **EDITOR_CARET_VISUAL_ROW_CACHE (§101, open STEP=0 next after §104 Wave 1 closes:
