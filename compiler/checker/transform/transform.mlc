@@ -2,12 +2,11 @@
 // Mirrors infer_expr but produces typed Shared<SemanticExpression> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, RecordLitFields, RecordLitSpread, expr_spawn_body_result, expr_spawn_body_statements } from '../../frontend/ast'
-import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object, method_return_type_from_object } from '../registry'
+import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, expr_spawn_body_result, expr_spawn_body_statements } from '../../frontend/ast'
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object } from '../registry'
 import {
   binary_operation_result_type,
   builtin_method_return_type,
-  type_is_unknown,
   function_parameter_list,
   type_is_function,
   array_element_type_from_array_type,
@@ -32,7 +31,6 @@ import {
 } from '../infer/infer_region_method'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
-import { infer_expr } from '../infer/infer'
 import { check_context_new } from '../check/check_context'
 import * as record_lit_merge from './record_lit_merge'
 import { partial_application_desugar_expr } from './partial_application_desugar'
@@ -42,68 +40,7 @@ import { semantic_type_is_tarray, array_element_type_from_semantic_type, generic
 import { TransformContext, transform_context_with_env, transform_context_with_lambda_parameter_types, TransformStmtsResult, empty_transform_context } from './transform_context'
 import { transform_call_arguments_using_callee_semantic_type, function_return_type_from_callee_type } from './transform_call_args'
 import { transform_result_option_hof_method_call, transform_array_hof_method_call, transform_regular_method_call, transform_region_alloc_method_call } from './transform_method'
-
-fn direct_call_parameter_mutability_flags(registry: TypeRegistry, callee_name: string, positional_argument_count: i32) -> [i32] = do
-  if callee_name == '' then
-    do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
-  else
-    do
-      const stored = registry.parameter_mutability_flags_for(callee_name)
-      if stored.length() != positional_argument_count then
-        do let empty_mutability_pattern: [i32] = []; empty_mutability_pattern end
-      else
-        stored
-      end
-    end
-  end
-end
-
-fn call_callee_ident_name(function: Shared<Expr>) -> string =
-  match function {
-    ExprIdent(name, _) => name,
-    ExprInt(_, _) => '',
-    ExprStr(_, _) => '',
-    ExprBool(_, _) => '',
-    ExprUnit(_) => '',
-    ExprFloat(_, _) => '',
-    ExprI64(_, _) => '',
-    ExprU8(_, _) => '',
-    ExprUsize(_, _) => '',
-    ExprChar(_, _) => '',
-    ExprBin(_, _, _, _) => '',
-    ExprUn(_, _, _) => '',
-    ExprCall(_, _, _) => '',
-    ExprMethod(_, _, _, _) => '',
-    ExprField(_, _, _) => '',
-    ExprIndex(_, _, _) => '',
-    ExprIf(_, _, _, _) => '',
-    ExprBlock(_, _, _) => '',
-    ExprWhile(_, _, _) => '',
-    ExprFor(_, _, _, _) => '',
-    ExprMatch(_, _, _) => '',
-    ExprRecord(_, _, _) => '',
-    ExprRecordUpdate(_, _, _, _) => '',
-    ExprArray(_, _) => '',
-    ExprTuple(_, _) => '',
-    ExprQuestion(_, _) => '',
-    ExprExtern(_, _, _, _) => '',
-    ExprLambda(_, _, _) => '',
-    ExprSpawn(_, _) => '',
-    ExprNamedArg(_, _, _) => '',
-    ExprWith(_, _, _, _) => '',
-    ExprScope(_, _, _) => '',
-    ExprRegion(_, _, _) => ''
-  }
-
-fn binary_result_type_for_operator(
-  registry: TypeRegistry,
-  left_type: Shared<Type>,
-  operation: string,
-  method: string
-) -> Shared<Type> = do
-  const from_registry = method_return_type_from_object(left_type, method, registry)
-  if type_is_unknown(from_registry) then binary_operation_result_type(operation, left_type) else from_registry end
-end
+import { direct_call_parameter_mutability_flags, call_callee_ident_name, binary_result_type_for_operator, merge_conditional_expression_types, array_element_type_from_semantic_expression, question_unwrapped_type_from_inner, standalone_unknown_cell, inferred_types_from_record_literal_part_for_merge } from './transform_support'
 
 fn transform_shared_static_new_call(
   method_arguments: [Shared<Expr>],
@@ -120,62 +57,7 @@ fn transform_shared_static_new_call(
     typed_receiver, 'new', typed_arguments, [0], result_type, source_span))
 end
 
-fn merge_conditional_expression_types(
-  typed_then: Shared<SemanticExpression>,
-  typed_else: Shared<SemanticExpression>
-) -> Shared<Type> = do
-  const then_type = sexpr_type(typed_then)
-  const else_type = sexpr_type(typed_else)
-  if semantic_type_is_tarray(then_type) then
-    if semantic_type_is_tarray(else_type) then
-      const then_element_type = array_element_type_from_semantic_type(then_type)
-      const else_element_type = array_element_type_from_semantic_type(else_type)
-      if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
-      else Shared.new(TArray(then_element_type)) end
-    else then_type end
-  else then_type end
-end
-
-fn array_element_type_from_semantic_expression(
-  typed_expression: Shared<SemanticExpression>
-) -> Shared<Type> = do
-  const expression_type = sexpr_type(typed_expression)
-  if semantic_type_is_tarray(expression_type) then
-    array_element_type_from_semantic_type(expression_type)
-  else Shared.new(TUnknown) end
-end
-
-fn type_arguments_from_generic_type(type_value: Shared<Type>) -> [Shared<Type>] =
-  match type_value {
-    TGeneric(_, type_arguments) => type_arguments,
-    TI32 => do const empty: [Shared<Type>] = []; empty end,
-    TString => do const empty: [Shared<Type>] = []; empty end,
-    TBool => do const empty: [Shared<Type>] = []; empty end,
-    TUnit => do const empty: [Shared<Type>] = []; empty end,
-    TI64 => do const empty: [Shared<Type>] = []; empty end,
-    TF64 => do const empty: [Shared<Type>] = []; empty end,
-    TU8 => do const empty: [Shared<Type>] = []; empty end,
-    TUsize => do const empty: [Shared<Type>] = []; empty end,
-    TChar => do const empty: [Shared<Type>] = []; empty end,
-    TShared(_) => do const empty: [Shared<Type>] = []; empty end,
-    TNamed(_) => do const empty: [Shared<Type>] = []; empty end,
-    TArray(_) => do const empty: [Shared<Type>] = []; empty end,
-    TPair(_, _) => do const empty: [Shared<Type>] = []; empty end,
-    TTuple(_) => do const empty: [Shared<Type>] = []; empty end,
-    TFn(_, _) => do const empty: [Shared<Type>] = []; empty end,
-    TAssoc(_, _) => do const empty: [Shared<Type>] = []; empty end,
-    TUnknown => do const empty: [Shared<Type>] = []; empty end
-  }
-
-fn question_unwrapped_type_from_inner(inner_expression_type: Shared<Type>) -> Shared<Type> = do
-  const type_arguments = type_arguments_from_generic_type(inner_expression_type)
-  if type_arguments.length() > 0 then type_arguments[0] else Shared.new(TUnknown) end
-end
-
 // --- Helpers ----------------------------------------------------------------
-
-fn standalone_unknown_cell() -> Shared<Type> =
-  Shared.new(TUnknown)
 
 fn transform_exprs(expressions: [Shared<Expr>], transform_context: TransformContext, stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> [Shared<SemanticExpression>] =
   expressions.map(
@@ -316,16 +198,6 @@ fn transform_expr_lambda_with_param_types(
         sexpr_type(typed_body))),
     source_span))
 end
-
-fn inferred_types_from_record_literal_part_for_merge(
-  literal_record_part: RecordLitPart,
-  inference_context_for_spread: CheckContext
-) -> [Shared<Type>] =
-  match literal_record_part {
-    RecordLitSpread(spread_expression) =>
-      [infer_expr(spread_expression, inference_context_for_spread).inferred_type],
-    RecordLitFields(_) => do const empty_types: [Shared<Type>] = []; empty_types end,
-  }
 
 // --- TransformPass visitor (parser Expr) ------------------------------------
 

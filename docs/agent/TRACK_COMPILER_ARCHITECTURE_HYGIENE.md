@@ -121,7 +121,7 @@ a silent "closed" with the file still allowlisted.
 - **§104-1** `FileId`/`FileStore` (review Step 1) — **done**, pre-existing (see Correction above)
 - **§104-2** `Span.file_id` extension via `span_make` (Step 2) — **done** except deferred `file_id` field (see Correction above)
 - **§104-3** `StringInterner` (Step 3) — **done**, pre-existing (see Correction above)
-- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — 4 slices done, 1765→**881 lines — still over 800, allowlist entry NOT removed**. Marked "closed" prematurely by Critic on 2026-07-28 without checking the 800-line gate; **reopen as slice 5 Decision** (find one more extractable group) before treating §104-12 as done, unless a Decision explicitly accepts 881 as residual with a stated reason
+- **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — **CLOSED** 2026-07-30, slice 5: extracted `transform_support.mlc` (139 lines, 9 pure-leaf helpers with zero recursion back into `transform_expr`/`dispatch_transform_pass` — `direct_call_parameter_mutability_flags`, `call_callee_ident_name`, `binary_result_type_for_operator`, `merge_conditional_expression_types`, `array_element_type_from_semantic_expression`, `question_unwrapped_type_from_inner` + its internal-only `type_arguments_from_generic_type`, `standalone_unknown_cell`, `inferred_types_from_record_literal_part_for_merge`); `transform.mlc` 881→**753 lines**, allowlist entry removed, both files ≤800
 - **§104-13** split `codegen/decl_cpp.mlc` (1666 lines now, was 1119) (Step 13) — **CLOSED** 2026-07-29, 6 slices, 1666→**355 lines** across `decl_cpp.mlc` + 5 new modules (`decl_cpp_helpers.mlc`/`decl_cpp_type.mlc`/`decl_cpp_trait.mlc`/`decl_cpp_fn.mlc`/`decl_cpp_ffi.mlc`/`decl_cpp_extend.mlc`), all ≤800, allowlist entry removed
 - **§104-14** split `codegen/expr/match_gen.mlc` (1403 lines now, was 907) (Step 14) — target ≤800, expect 2+ slices
 - **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) — needs re-export language support first, see review Часть 3 §1 (Step 15) — target ≤800
@@ -319,10 +319,66 @@ failure, same status as slices 1/2/3), `transform_method.mlc` 287,
 `transform_call_args.mlc` 365, `transform_context.mlc` 41,
 `transform_coerce.mlc` 268. No false-done found.
 
-**§104-12 closed** — `transform.mlc` split from 1765 to 881 lines across 4
-new leaf/injection modules (slices 1-4), all bootstrap-diff-scoped,
-self-host mlcc2-identical, 1471/0 throughout. Queue head → §104-13
-(`codegen/decl_cpp.mlc` split, 1666 lines).
+**§104-12 closed (premature — see reopen below)** — `transform.mlc` split
+from 1765 to 881 lines across 4 new leaf/injection modules (slices 1-4),
+all bootstrap-diff-scoped, self-host mlcc2-identical, 1471/0 throughout.
+
+#### Slice 5 (reopen, 2026-07-29/30) — `transform_support.mlc`
+
+**Problem:** the slice-4 close (2026-07-28) treated §104-12 as done without
+checking `transform.mlc` against the 800-line gate — 881 lines, over the
+line, `architecture_lint_allowlist.txt` still carried the entry. Caught
+2026-07-29 alongside the same finding for §104-13 slice 6, which is what
+motivated the exit-criterion addition above. Re-derived the remaining
+helper section (lines 46-330 of the 881-line file, ahead of the
+`TransformPass` type + `dispatch_transform_pass` + `extend TransformPass`
+block, which is one mutually-recursive cluster with the multi-arg
+recursion helpers `transform_exprs`/`transform_field_values`/
+`transform_match_arms`/`transform_expr_lambda_with_param_types` — those all
+call `transform_expr` by name, which is defined at the file's bottom as
+the public entry wrapping `dispatch_transform_pass`; moving any of that
+cluster elsewhere reproduces the same circular-import shape §104-13
+slice 6 hit, deliberately left alone here as out of scope for a pure
+relocation). Found 9 true pure-leaf functions with **zero** calls into
+`transform_expr`/`dispatch_transform_pass`/the extend block, confirmed by
+grep — zero external callers repo-wide for all 9 either:
+`direct_call_parameter_mutability_flags`, `call_callee_ident_name`,
+`binary_result_type_for_operator`, `merge_conditional_expression_types`,
+`array_element_type_from_semantic_expression`,
+`type_arguments_from_generic_type` (internal-only, called by the next
+one), `question_unwrapped_type_from_inner`, `standalone_unknown_cell`,
+`inferred_types_from_record_literal_part_for_merge`.
+
+**Strategy:** new `compiler/checker/transform/transform_support.mlc`, same
+directory as `transform.mlc` so all relative import paths transfer
+unchanged. 8 of 9 exported (every caller stays in `transform.mlc`'s
+surviving helper/extend-block code); `type_arguments_from_generic_type`
+stays non-exported (only caller, `question_unwrapped_type_from_inner`,
+moved into the same new module). `transform.mlc` imports the 8 back;
+5 now-unused imports dropped (`RecordLitFields`/`RecordLitSpread` from
+`../../frontend/ast`, `method_return_type_from_object` from `../registry`,
+`type_is_unknown` from `../semantic_type_structure`, `infer_expr` from
+`../infer/infer` — `binary_operation_result_type` stayed, still called
+directly from `visit_bin`).
+
+**Verify (2026-07-30):** fresh `mlcc -o ... compiler/main.mlc` translation
+from scratch, exit 0. `compiler/build.sh` rebuild, exit 0. Independent
+`rake test_compiler_mlc` full rerun: `1471 passed, 0 failed`, arch lint
+`failures=0 warnings=11` (down from 12 — `transform.mlc` no longer flagged).
+Line counts: `transform.mlc` 753, `transform_support.mlc` 139, both ≤800;
+allowlist entry `file_size:checker/transform/transform.mlc` removed.
+mlcc2 self-host diff (`build_bin.sh`, `MLC_CXX=g++`, in-repo `TMPDIR`):
+fresh `mlcc` → `/tmp/mlc_p1`, `mlcc2` built from `/tmp/mlc_p1`'s C++,
+`mlcc2` → `/tmp/mlc_p2`, `diff -r /tmp/mlc_p1 /tmp/mlc_p2 --exclude=obj`
+IDENTICAL. No `lib/mlc/**` touched, `scripts/regression_gate.sh` not
+required for this sub-step.
+
+**§104-12 itself CLOSED** — `transform.mlc` split from 1765 to 753 lines
+across 5 modules (`transform_coerce.mlc`/`transform_context.mlc`/
+`transform_call_args.mlc`/`transform_method.mlc`/`transform_support.mlc`),
+original file and every new module now ≤800, allowlist entry removed.
+Queue head → §104-13 (`codegen/decl_cpp.mlc` split, 1666 lines) — already
+closed below, so queue head after this turn is Critic on §104-12 slice 5.
 
 ## §104-13 `codegen/decl_cpp.mlc` split (1666 lines)
 
@@ -513,7 +569,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` (`git show 201254fd:...`,
 
 Independent function/type-set diff: old `decl_cpp.mlc` (`git show b193ec0e:...`, pre-slice-6 baseline, 60 top-level `fn`/`type` names) vs new `decl_cpp.mlc` + `decl_cpp_extend.mlc` combined (60) — `diff` empty, zero lost/duplicated (note: this count excludes the `extend CodegenContext { ... }` block's 2 nested methods, consistent with the counting method used in every prior slice of this track). Export-status diff: 17 exports before, 17 after, `diff` empty — zero gained, zero lost, matching the Decision's "no new exports needed" claim exactly (the hub's `gen_decl_cpp`/`gen_proto_cpp` were already `export`ed pre-slice, carried over as-is). Confirmed the 1 Decision correction (hub had to move with the group, 1 dot-call rewritten to free-function form) is a pure mechanical fix with no behavior change — re-read both new files in full, no other deviation from the moved-verbatim bodies found. Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `decl_cpp_extend.cpp/.hpp` created; grepped `decl_cpp_extend::` across every generated `.cpp`/`.hpp` — found only in `decl_cpp.cpp`, zero stray references elsewhere. Independent full `rake test_compiler_mlc` rerun: exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=12`. Independent `ReadLints` on both files: no linter errors. Line counts confirmed: `decl_cpp.mlc` 355, `decl_cpp_extend.mlc` 626 — both under the 800-line threshold, `compiler/tests/architecture_lint_allowlist.txt` no longer lists `codegen/decl_cpp.mlc`. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2, twice, in the same continuous session, no source change since the last one). No false-done found. **§104-13 slice 6 closed.**
 
-**§104-13 itself CLOSED** (`codegen/decl_cpp.mlc` split 1666→355 lines across 6 slices/modules over the track: `decl_cpp_helpers.mlc`, `decl_cpp_type.mlc`, `decl_cpp_trait.mlc`, `decl_cpp_fn.mlc`, `decl_cpp_ffi.mlc`, `decl_cpp_extend.mlc`; both the original file and every new module now under the 800-line arch-lint gate, allowlist entry removed — the exit criterion added 2026-07-29 after the §104-12 premature-close finding). Queue head → §104-12 slice 5 Decision (reopen per the 2026-07-29 correction: `transform.mlc` at 881 lines is still over 800, allowlist entry still present).
+**§104-13 itself CLOSED** (`codegen/decl_cpp.mlc` split 1666→355 lines across 6 slices/modules over the track: `decl_cpp_helpers.mlc`, `decl_cpp_type.mlc`, `decl_cpp_trait.mlc`, `decl_cpp_fn.mlc`, `decl_cpp_ffi.mlc`, `decl_cpp_extend.mlc`; both the original file and every new module now under the 800-line arch-lint gate, allowlist entry removed — the exit criterion added 2026-07-29 after the §104-12 premature-close finding). **§104-12 slice 5 done 2026-07-30** (`transform_support.mlc` extracted, `transform.mlc` 881→753 lines, allowlist entry removed) — **§104-12 itself now CLOSED**, both split tracks meet the 2026-07-29 exit criterion. Queue head → Critic re-audit of §104-12 slice 5, then §104-14 (`codegen/expr/match_gen.mlc` split, 1403 lines).
 
 ## Verification discipline
 

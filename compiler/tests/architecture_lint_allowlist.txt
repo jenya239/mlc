@@ -2,7 +2,6 @@
 # format: RULE:path[:detail]
 
 # god files >800 lines (split candidates)
-file_size:checker/transform/transform.mlc
 file_size:frontend/parser/exprs.mlc
 file_size:frontend/parser/decls.mlc
 file_size:checker/infer/infer.mlc
