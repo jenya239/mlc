@@ -59,7 +59,7 @@ independent fresh Ruby-bootstrap rebuild + fresh translation +
 duplicate-symbol check clean, independent full `rake
 test_compiler_mlc` rerun 1471/0, independent mlcc2 self-host diff
 rebuilt from scratch — IDENTICAL). **§104-18 `--emit-layout=hybrid`
-Driver-done 2026-07-30** (Decision+Red+Green in one turn: new
+CLOSED 2026-07-30** (Decision+Red+Green in one turn: new
 `compiler/cpp_emit/layout.mlc`, `emit_layout` field threaded through
 `CompileOptions`/`ModularCompileInput`/`compile_modular`, hybrid
 codegen branch in `run_codegen_pass`; review's own literal acceptance
@@ -67,8 +67,27 @@ test passed — 5 group `.cpp` files, byte-identical re-translation
 between a split-built and a hybrid-built binary; new test coverage
 added but its execution could only be verified via a standalone probe,
 not the standard harness — see Green section for the disclosed
-pre-existing `tests_main.mlc` rebuild limitation). **Queue head is now
-§104-18 Critic (STEP=3)**
+pre-existing `tests_main.mlc` rebuild limitation). Critic-audited same
+day: independent diff-review of all 13 touched files against the
+Decision's own Module-touch list (exact match, no unlisted files),
+independent from-scratch Ruby-bootstrap `mlcc` rebuild, independent
+split-mode (185/185) and hybrid-mode (exactly 5 `.cpp` files, all
+non-trivial for the real `compiler/main.mlc`) translations, 2
+independently-built binaries (from split- and hybrid-mode source, via
+`build_bin.sh`) whose own re-translations of `compiler/main.mlc` are
+byte-identical, total `.cpp` byte count preserved exactly across the
+split/hybrid boundary (3328011 bytes both ways — no content
+lost/duplicated), independent `rake test_compiler_mlc` rerun (1471/0,
+same disclosed staleness), a from-scratch independent probe (not
+reusing the Driver's, built from the actual `test_layout.mlc`/
+`test_dump_flags.mlc` source via direct import) exercising all 25
+assertions end-to-end through a fresh `mlcc`→C++→binary pipeline — 25
+passed, 0 failed, and an independent mlcc1→mlcc2 self-host
+re-translation diff — IDENTICAL. Confirmed the disclosed
+`tests_main.mlc`-rebuild limitation is genuine and pre-existing (its
+own root cause is documented inline in `build_tests.sh`, predating
+this track). No false-done found. **Queue head is now §104-19 Decision
+(Driver STEP=0)**
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -159,7 +178,7 @@ a silent "closed" with the file still allowlisted.
 - **§104-14** split `codegen/expr/match_gen.mlc` (1403 lines now, was 907) (Step 14) — **CLOSED** 2026-07-30, 5 slices, 1403→**414 lines** across `match_gen.mlc` + 5 new modules (`match_result_type.mlc`/`match_arm_lambda.mlc`/`match_field_binding.mlc`/`match_generic_ctor_type.mlc`/`match_guarded_gen.mlc`), ≤800, allowlist entry removed, all Critic-audited
 - **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) — needs re-export language support first, see review Часть 3 §1 (Step 15) — target ≤800
 - **§104-16** split `checker/infer/infer.mlc` (962 lines now, was 786) (Step 16) — **CLOSED** 2026-07-30, 1 slice, 962→**747 lines** across `infer.mlc` + new `infer_record.mlc` (255 lines), ≤800, allowlist entry removed
-- **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — Driver-done 2026-07-30, Critic pending
+- **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
 - **§104-19** include planner / forward-decls (Step 19) — depends on §104-18
 - **§104-20** `--cpp-mode=fast-build` (Step 20) — depends on Step 17 (already done via §44)
 - **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18
@@ -925,7 +944,7 @@ Independent re-audit, none of the Driver's artifacts reused:
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm `--emit-layout=` unrecognized by current `parse_compile_options` (falls through to the `entry_path` branch, silently wrong) | **done** — confirmed by code reading; `is_*_flag` exact-match list has no entry, so `--emit-layout=hybrid` would have been captured as `entry_path` on the old code |
 | 2 | Green: implement flag+layout module+hybrid codegen branch, verify | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done** — CLOSED |
 
 ### Green (STEP=2) — **done** 2026-07-30
 
@@ -938,7 +957,24 @@ Independent re-audit, none of the Driver's artifacts reused:
 - mlcc2 self-host diff: fresh `mlcc -o .tmp/... compiler/main.mlc` (default split mode) → `MLC_CXX=g++ compiler/build_bin.sh` → mlcc2 → mlcc2 re-translates the same entry → `diff -rq --exclude=obj` — empty, IDENTICAL.
 - Architecture lint: `compiler/cpp_emit/layout.mlc` 14 lines, `compiler/pipeline.mlc` 401 lines (was 372), `compiler/compile_options.mlc` 142 lines (was 129) — all well under 800, no new allowlist entries needed.
 
-#### Critic (STEP=3) — pending
+#### Critic (STEP=3) — **done** 2026-07-30, §104-18 CLOSED
+
+Independent re-audit, none of the Driver's artifacts reused (fresh scratch under `.tmp/critic_104_18/`, deleted after verification):
+
+- `git diff --stat 67cad403 ba796eec -- compiler/` — exactly the 13 files the Decision's own "Module touch" row lists, no unlisted file touched. Read every diff hunk in full: `compile_options.mlc`/`cli.mlc`/`compile_driver.mlc`/`pipeline.mlc`/`cpp_emit/layout.mlc` (new) match the Decision's Strategy verbatim; all 5 `ModularCompileInput`-literal test sites plus the 2 `compile_modular` call sites correctly plumb `emit_layout: 'split'`; the `run_codegen_pass` split-mode `else` branch is byte-identical to the pre-change per-module-write code (confirms default/unchanged behavior is truly unchanged, not just claimed).
+- Independent from-scratch Ruby-bootstrap rebuild (`MLCC_BUILD_VERBOSE=1 MLCC_INCREMENTAL=0 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing `-Wparentheses-equality` warnings.
+- Independent split-mode translation of `compiler/main.mlc`: 185 `.hpp` + 185 `.cpp`, matches the claimed unchanged count. Independent hybrid-mode translation (`--emit-layout=hybrid`): exactly 5 `.cpp` files (`frontend`/`sema`/`mir`/`cpp_backend`/`driver`) + the same 185 `.hpp` files; each of the 5 group files is non-trivial for the real codebase (342144/1208849/265793/1154597/356628 bytes respectively — not degenerate).
+- Built 2 binaries independently via `MLC_CXX=g++ compiler/build_bin.sh` — one from the split-mode output, one from the hybrid-mode output (neither reused from the Driver). Both binaries independently re-translate `compiler/main.mlc` in default split mode → `diff -rq` between the two outputs: empty, byte-identical — confirms a binary built from 5 hybrid-grouped translation units behaves identically to one built from 185 split ones (validates the review's namespace-safety argument empirically, same conclusion as the Driver, reached independently).
+- Total `.cpp` byte-count accounting: sum of all 185 split-mode `.cpp` files (3328011 bytes) equals the sum of the 5 hybrid-mode group `.cpp` files (3328011 bytes) exactly — proves the hybrid concatenation loses/duplicates zero content, a stronger check than the Driver's line-count spot values.
+- mlcc1→mlcc2 self-hosting-correctness diff: the split-mode binary built from the fresh Ruby-built `mlcc`'s own translation, re-translating `compiler/main.mlc` again, reproduces byte-identical output to the original translation (`diff -rq --exclude=obj`, empty) — full self-host round-trip confirmed independently, not just a same-generation A/B comparison.
+- Independent `rake test_compiler_mlc` rerun (fresh `TMPDIR`, captured to file to avoid `tail`-truncating the summary): exit_code=0, `1471 passed, 0 failed` — confirms the same disclosed staleness (new tests not exercised by this stale `run_tests` binary), not a regression.
+- Independent standalone probe, **not** the Driver's (which was already deleted) — a fresh `.mlc` file placed directly under `compiler/`, directly importing and invoking the real, committed `layout_tests()` and `dump_flags_tests()` functions from `test_layout.mlc`/`test_dump_flags.mlc` (no re-implementation, no risk of the probe silently testing something else), avoiding the broken `suite_registry.mlc` import chain that reproduces the same pre-existing bug when accidentally exercised (confirmed as a side effect — `compiler/tests/support/suite_registry.mlc` importing `../test_checker` which imports `../frontend/ast` resolves incorrectly to `compiler/tests/frontend/ast.mlc` when the import chain crosses a directory-depth boundary, matching the disclosed bug class). Compiled + built (`MLCC_ENTRY_BASENAME=<probe>` needed to stop `build_bin.sh`'s default `mlcc_only_skip_source` from excluding `test_*.cpp`) + ran through the full pipeline: **25 passed, 0 failed** (11 from `layout_tests`, 14 from `dump_flags_tests` — exact counts match reading the source, confirming no test was silently skipped). Probe deleted after verification, not committed.
+- Confirmed the disclosed `tests_main.mlc`-rebuild limitation is genuine and pre-existing, not introduced this step: `compiler/tests/build_tests.sh`'s own inline comment ("Same Decision as build_tests_fast.sh / TRACK_CODEGEN_CPPAST_ONLY test-fix... Ruby ModularCompiler cannot rebuild the tests_main graph") predates this track and references an unrelated older track, independently corroborating the Driver's `git stash`-based reproduction.
+- Confirmed line counts exactly: `compiler/cpp_emit/layout.mlc` 14, `compiler/pipeline.mlc` 401, `compiler/compile_options.mlc` 142, `compiler/tests/test_layout.mlc` 72.
+- Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`) are absent from the Driver's commit (`git show --stat ba796eec`) and still present/uncommitted/untouched after this audit.
+- No false-done found. **§104-18 CLOSED.** Scratch build artifacts (`.tmp/critic_104_18/**`, probe file) cleaned up after verification.
+
+#### Critic (STEP=3) — **done** 2026-07-30 — §104-16-original
 
 - `infer_record.mlc` created (255 lines, 9 items, 2 exported). `infer.mlc` 962→**747 lines** — already ≤800, exit criterion met by 1 slice. Dropped now-fully-unused imports from `infer.mlc`: `expr_span`, `RecordLitFields`, `RecordLitSpread`, `field_type_from_object`, `infer_expr_field_diagnostics`, `types_structurally_equal`, `type_description`, `record_lit_merge` (whole `import *`), `diagnostic_code_e065`/`e066`/`e075`, `TypeRegistry` — all confirmed by grep to have zero remaining uses in `infer.mlc` outside the moved code; kept `RecordLitPart` (still used in `visit_record`'s signature) and `type_is_unknown`/`diagnostic_code_e067` (still used elsewhere in the file).
 - Scoped bootstrap diff via a detached `git worktree` at the pre-slice commit (`7bd55d68`), both translations run with matching relative `compiler/main.mlc` paths (lesson from the §104-15 incident — mismatched absolute/relative worktree paths produce a spurious whole-tree diff via `#line` directives alone; caught and corrected this turn before drawing any conclusion). `diff -rq` confined to exactly `infer.cpp`/`infer.hpp` (declarations relocated to `infer_record.hpp`, 2 call sites gain the `infer_expr` argument, `using namespace type_diagnostics`/`record_lit_merge` replaced by `using namespace infer_record`) plus the 2 new files `infer_record.cpp`/`.hpp` — nothing else in the ~230-file translation output differs.
