@@ -93,12 +93,40 @@ twice — Driver + Critic — self-host round-trip byte-identical for both
 modes, `rake test_compiler_mlc` 1471/0, measured real g++/clang++
 compile-time reduction on the affected files, independently re-measured
 with a 2nd methodology, same direction/magnitude). **§104-22 tooling
-(`bootstrap-fast.sh`/`bootstrap-full.sh`) Decision+Red+Green done same
-day** (2 new scripts under `compiler/scripts/`, no `.mlc` touched; found
-and fixed a link failure in the review's own literal snippet — missing
-runtime `.cpp` sources; both scripts verified exit 0, `bootstrap-full.sh`
-printed `STAGE IDENTICAL` from a genuine `mlcc`→`mlcc2` round-trip).
-**Queue head is now Critic re-audit of §104-22, then §104-23 Decision.**
+(`bootstrap-fast.sh`/`bootstrap-full.sh`) CLOSED 2026-07-30** (2 new
+scripts under `compiler/scripts/`, no `.mlc` touched; found and fixed a
+link failure in the review's own literal snippet — missing runtime
+`.cpp` sources; both scripts verified exit 0, `bootstrap-full.sh`
+printed `STAGE IDENTICAL` from a genuine `mlcc`→`mlcc2` round-trip.
+Critic-audited same day: independently re-ran both scripts from a fresh
+`mlcc` rebuild — same result, timing within noise of the Driver's;
+tested the fail-fast path (`MLCC=/nonexistent/mlcc`) neither Driver nor
+review scoped explicitly; confirmed via `git show --stat` that zero
+`.mlc` files were touched). **Queue head is now §104-23 Decision (Driver
+STEP=0) — determinism checks.**
+
+## Update 2026-07-30 (e) — §104-22 CLOSED (Critic re-audit), Queue head → §104-23
+
+Independent re-audit reproduced every claim: `git show --stat` confirms
+exactly the 2 new scripts + 5 doc files (zero `.mlc` touched). Read the
+review's own Шаг 22 text directly (outside this repo, under
+`mlc-support/responses/`) and confirmed both scripts correctly extend
+its illustrative-only pseudocode (missing runtime-link step / missing
+`build_bin.sh` step respectively) rather than misrepresenting it.
+Independent from-scratch `mlcc` rebuild (0 errors); independent run of
+`bootstrap-fast.sh` (exit 0, 36.648s re-translation — matches the
+Driver's 37.054s within noise); independent run of `bootstrap-full.sh`
+(exit 0, printed `STAGE IDENTICAL` from its own `p1`/`mlcc2`/`p2`, not
+reusing the Driver's). Confirmed all `compiler/scripts/*.sh` plus
+`build.sh`/`build_bin.sh`/`regression_gate.sh` are actually Bash
+(`file`), corroborating the Decision's language-choice rationale.
+Additionally tested the fail-fast path with a missing `mlcc` (not
+explicitly scoped by the Driver or the review) — both scripts correctly
+exit 1 with a clear stderr message. No `rake test_compiler_mlc` rerun
+needed (zero `.mlc` touched, confirmed above). No false-done found.
+**§104-22 CLOSED. Queue head is now §104-23 Decision (Driver STEP=0) —
+determinism checks (`--dump-mir`/`--dump-sem` diff-stable), depends on
+§104-22, now satisfied.**
 
 ## Update 2026-07-30 (d) — §104-22 tooling scripts, Driver STEP=0-2 done, Queue head → Critic
 
@@ -264,8 +292,8 @@ a silent "closed" with the file still allowlisted.
 - **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
 - **§104-19** include planner / forward-decls (Step 19) — **CLOSED (REJECTED)** 2026-07-30 — survey found the technique structurally inapplicable to this codebase's 2 dominant hub types (`ast::Expr`/`Stmt`, `registry_type::Type`, both `std::variant` aliases, not forward-declarable) and low residual payoff (66% of direct includes already transitively redundant); no code changed, see Decision
 - **§104-20** `--cpp-mode=fast-build` (Step 20) — **CLOSED** 2026-07-30, Critic-audited — opt-in flag, default path diff-empty verified independently twice, measured g++ −3.0%/clang++ −4.8% aggregate compile-time on affected files (Driver), independently re-measured g++ −4.22%/clang++ −5.66% with a 2nd methodology (Critic) — modest, real, confirmed; depends on Step 17 (already done via §44)
-- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18 (done) — Driver STEP=0-2 done 2026-07-30, **Critic pending (next)**
-- **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22
+- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18 (done) — **CLOSED** 2026-07-30, Critic-audited
+- **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22 (done) — **next**
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
@@ -1154,7 +1182,7 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirmed `compiler/scripts/bootstrap-fast.sh`/`bootstrap-full.sh` did not exist before this step (`ls compiler/scripts/`) | **done** |
 | 2 | Green: implemented + verified (below) | **done** 2026-07-30 |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — CLOSED** |
 
 #### Green (STEP=2) — **done** 2026-07-30
 
@@ -1165,6 +1193,21 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 - Both scripts' exit codes confirmed 0 via the shell's own `exit_code` in the terminal-file footer (not just visual inspection of printed text).
 - Scratch artifacts (`$TMPDIR/mlc_bootstrap_fast`, `$TMPDIR/mlc_bootstrap_full`, both under `.tmp/104_22_tmpdir/`, plus the log files) deleted after verification, not committed. No `git worktree` needed this step (no baseline-vs-current comparison — no `.mlc` file changed).
 - No new `rake test_compiler_mlc` run required this step per the Decision (no `.mlc`/codegen change) — the two scripts' own successful execution, including `bootstrap-full.sh`'s `STAGE IDENTICAL`, is the step's actual regression evidence (it re-exercises the existing, unmodified, already-tested pipeline end-to-end).
+
+#### Critic (STEP=3) — **done** 2026-07-30, §104-22 CLOSED
+
+Independent re-audit, none of the Driver's artifacts reused (fresh scratch under `.tmp/critic_104_22/`, deleted after verification):
+
+- `git show --stat 2f06acee` — exactly 2 new files (`compiler/scripts/bootstrap-fast.sh`, `compiler/scripts/bootstrap-full.sh`) plus the 5 documentation files the Decision's own Module-touch row lists; **zero `.mlc` files touched**, confirming the "no self-host-diff risk from this step itself" claim directly rather than by inference.
+- Read both scripts in full, independently, against the review's own Шаг 22 text (`mlc-support/responses/review_20260629_144027.md:453-473`, located and read in full — outside this repo, under the sibling `mlc-support/` directory) — confirmed the review's own literal 3-line `bootstrap-fast.sh` snippet (`clang++ ... /tmp/stage1/*.cpp -Iruntime/include -o /tmp/mlcc-stage1`, no runtime `.cpp` sources) and the `bootstrap-full.sh` snippet (assumes `mlcc`/`mlcc2` both already exist, no `build_bin.sh` step) are illustrative pseudocode rather than directly runnable, exactly as the Driver disclosed; both implemented scripts extend the snippets with the missing runtime-linking step / `build_bin.sh` build step respectively, which is necessary and correctly attributed.
+- Independent from-scratch Ruby-bootstrap rebuild of `mlcc` (`MLCC_INCREMENTAL=0 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing `-Wparentheses-equality` warnings.
+- Independent run of `compiler/scripts/bootstrap-fast.sh` (fresh `TMPDIR`, own scratch dir): **exit 0**. The `-O0`-built `mlcc-stage1`'s own timed re-translation of `compiler/main.mlc`: **36.648s real** (36.464s user CPU) — matches the Driver's independently-measured 37.054s to within run-to-run noise, confirming the reported fast-compile/slow-run trade-off is real and reproducible, not a one-off measurement.
+- Independent run of `compiler/scripts/bootstrap-full.sh` (fresh `TMPDIR`, own scratch dir, own `mlcc2` built via `build_bin.sh`): **exit 0**, printed **`STAGE IDENTICAL`** — a full, independent self-hosting-correctness round-trip, not reusing the Driver's `p1`/`mlcc2`/`p2`.
+- Independent language-choice check: `file` on all of `compiler/scripts/*.sh` plus `compiler/build.sh`/`build_bin.sh`/`scripts/regression_gate.sh` — confirmed every one is a Bourne-Again shell script, corroborating the Decision's "Bash, not Ruby" rationale against the actual repository state rather than trusting the prose claim.
+- Edge case not exercised by the Driver: ran both scripts with `MLCC=/nonexistent/mlcc` — both correctly print `missing .../mlcc — run compiler/build.sh first` to stderr and exit 1, confirming the fail-fast contract (matching `mir_bootstrap_report.sh`'s own convention) actually works, not just reads correctly.
+- Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`, `.vscode/`) are absent from commit `2f06acee` and still present/uncommitted/untouched after this audit.
+- No `rake test_compiler_mlc` rerun performed — correctly not required per the Decision (zero `.mlc` files touched, independently confirmed via `git show --stat` above), consistent with the §104-19 precedent (survey/tooling-only steps don't need a functional regression rerun when no compiler source changed).
+- No false-done found. **§104-22 CLOSED.** Scratch artifacts (`.tmp/critic_104_22/**`) cleaned up after verification, not committed.
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
 `mlcc -o /tmp/p2 compiler/main.mlc` after, `diff -r /tmp/p1 /tmp/p2` empty
