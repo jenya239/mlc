@@ -1,4 +1,4 @@
-import { TestResult, assert_true } from './test_runner'
+import { TestResult, assert_true, assert_eq_str } from './test_runner'
 import { parse_compile_options } from '../compile_options'
 import { dump_label_is_safe, emit_dump_mir_from_semantic_items } from '../dump_flags'
 import { print_semantic_load_item } from '../ir/semantic_ir_dump'
@@ -22,6 +22,11 @@ export fn dump_flags_tests() -> [TestResult] = do
   const run_parsed = parse_compile_options(['--run', '--trace-vm', 'entry.mlc'])
   results.push(assert_true('parse_compile_options --run', run_parsed.run_interpreter))
   results.push(assert_true('parse_compile_options --trace-vm', run_parsed.trace_vm))
+
+  const default_layout_parsed = parse_compile_options(['entry.mlc'])
+  results.push(assert_eq_str('parse_compile_options default emit_layout', default_layout_parsed.emit_layout, 'split'))
+  const hybrid_layout_parsed = parse_compile_options(['--emit-layout=hybrid', 'entry.mlc'])
+  results.push(assert_eq_str('parse_compile_options --emit-layout=hybrid', hybrid_layout_parsed.emit_layout, 'hybrid'))
 
   const program = parse_program(tokenize('fn main() -> i32 = 0').tokens)
   match program_to_semantic_load_item(program, 'probe.mlc') {

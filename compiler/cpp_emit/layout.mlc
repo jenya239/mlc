@@ -1,0 +1,14 @@
+// Hybrid emit layout (PLAN.md §104-18): group generated .cpp modules by
+// path prefix into a handful of translation units to reduce clang++ parse
+// and link overhead versus one TU per module.
+
+export fn layout_group_for_path(path: string) -> string =
+  if path.contains('/frontend/') then 'frontend'
+  else if path.contains('/checker/') || path.contains('/sema/') then 'sema'
+  else if path.contains('/mir/') || path.contains('/vm/') then 'mir'
+  else if path.contains('/codegen/') || path.contains('/cpp_') then 'cpp_backend'
+  else 'driver'
+  end
+
+export fn layout_group_names() -> [string] =
+  ['frontend', 'sema', 'mir', 'cpp_backend', 'driver']

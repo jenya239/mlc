@@ -63,7 +63,7 @@ export fn driver_tests() -> [TestResult] = do
       && escape_resolved.substring(0, package_prefix.length()) == package_prefix)
   ))
 
-  const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false, false, false, false, false)
+  const unsafe_compile = compile_modular('../bad.mlc', '', false, true, false, false, false, false, false, false, false, false, false, 'split')
   results.push(assert_true('compile_modular rejects unsafe entry path',
     match unsafe_compile { Err(_) => true, Ok(_) => false }))
 

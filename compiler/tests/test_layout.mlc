@@ -1,0 +1,72 @@
+import { TestResult, assert_eq_str, assert_true } from './test_runner'
+import { layout_group_for_path, layout_group_names } from '../cpp_emit/layout'
+import { tokenize } from '../frontend/lexer'
+import { parse_program } from '../frontend/parser/decls'
+import { LoadItem } from '../ir/load_item'
+import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
+
+fn hybrid_pipeline_input(source: string, output_directory: string) -> ModularCompileInput = do
+  const program = parse_program(tokenize(source).tokens)
+  const load_item = LoadItem {
+    path: 'layout_probe.mlc',
+    decls: program.decls,
+    imports: [],
+    namespace_import_aliases: []
+  }
+  ModularCompileInput {
+    load_items: [load_item],
+    full_program: program,
+    entry_program: program,
+    output_directory: output_directory,
+    profile_enabled: false,
+    check_only: false,
+    emit_compile_commands: false,
+    verify_each_pass: false,
+    dump_ast: false,
+    dump_sem: false,
+    dump_mir: false,
+    mir_bootstrap_report: false,
+    time_passes: false,
+    run_interpreter: false,
+    trace_vm: false,
+    emit_layout: 'hybrid'
+  }
+end
+
+fn hybrid_layout_group_files_ok(output_directory: string) -> bool = do
+  match run_modular_compiler_pipeline(hybrid_pipeline_input('fn probe() -> i32 = 42', output_directory)) {
+    Err(_) => false,
+    Ok(_) =>
+      File.exists(output_directory + '/frontend.cpp')
+        && File.exists(output_directory + '/sema.cpp')
+        && File.exists(output_directory + '/mir.cpp')
+        && File.exists(output_directory + '/cpp_backend.cpp')
+        && File.exists(output_directory + '/driver.cpp')
+        && File.exists(output_directory + '/layout_probe.hpp')
+        && File.read(output_directory + '/driver.cpp').contains('probe')
+        && File.read(output_directory + '/frontend.cpp') == ''
+  }
+end
+
+export fn layout_tests() -> [TestResult] = do
+  let results: [TestResult] = []
+
+  results.push(assert_eq_str('layout_group_for_path frontend', layout_group_for_path('compiler/frontend/lexer.mlc'), 'frontend'))
+  results.push(assert_eq_str('layout_group_for_path checker -> sema', layout_group_for_path('compiler/checker/registry.mlc'), 'sema'))
+  results.push(assert_eq_str('layout_group_for_path mir', layout_group_for_path('compiler/mir/lower_fn.mlc'), 'mir'))
+  results.push(assert_eq_str('layout_group_for_path vm -> mir', layout_group_for_path('compiler/vm/interpreter.mlc'), 'mir'))
+  results.push(assert_eq_str('layout_group_for_path codegen -> cpp_backend', layout_group_for_path('compiler/codegen/module.mlc'), 'cpp_backend'))
+  results.push(assert_eq_str('layout_group_for_path cpp_ir -> cpp_backend', layout_group_for_path('compiler/cpp_ir/cpp_ast.mlc'), 'cpp_backend'))
+  results.push(assert_eq_str('layout_group_for_path fallback -> driver', layout_group_for_path('compiler/pipeline.mlc'), 'driver'))
+
+  const group_names = layout_group_names()
+  results.push(assert_true('layout_group_names has 5 groups', group_names.length() == 5))
+  results.push(assert_eq_str('layout_group_names[0]', group_names[0], 'frontend'))
+  results.push(assert_eq_str('layout_group_names[4]', group_names[4], 'driver'))
+
+  const output_directory = File.make_temp_directory('mlcc_test_layout_')
+  results.push(assert_true('run_modular_compiler_pipeline --emit-layout=hybrid writes 5 group .cpp files',
+    hybrid_layout_group_files_ok(output_directory)))
+
+  results
+end

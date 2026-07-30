@@ -16,6 +16,7 @@ import { write_compile_commands_file } from './compile_commands'
 import { verify_ast_program } from './verify/verify_ast'
 import { verify_semantic_ir_load_items } from './verify/verify_semantic_ir'
 import { PreservedAnalyses, preserved_analyses_empty } from './preserved_analyses'
+import { layout_group_for_path, layout_group_names } from './cpp_emit/layout'
 import { PassManager, PassDescriptor, build_compiler_pass_manager, pass_manager_validate_descriptor, pass_manager_apply_preserved, context_mark_keys } from './pass_manager'
 import { emit_dump_semantic_items, emit_dump_mir_from_semantic_items, emit_mir_bootstrap_report_from_semantic_items } from './dump_flags'
 import { run_mir_program_from_semantic_items } from './vm/interpreter'
@@ -41,7 +42,8 @@ export type ModularCompileInput = ModularCompileInput {
   mir_bootstrap_report: bool,
   time_passes: bool,
   run_interpreter: bool,
-  trace_vm: bool
+  trace_vm: bool,
+  emit_layout: string
 }
 
 fn pipeline_wants_timing(input: ModularCompileInput) -> bool =
@@ -172,9 +174,28 @@ export fn run_transform_pass(checked_state: CheckedCompileState) -> Result<Trans
   })
 end
 
-export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_compile_commands: bool) -> Result<string, [string]> = do
+fn write_hybrid_group_cpp_files(output_directory: string, group_sources: Map<string, string>) -> [string] = do
+  const output_directory_prefix =
+    if output_directory.length() > 0 then output_directory + "/" else "" end
+  let written_paths: [string] = []
+  const group_names = layout_group_names()
+  let mut index = 0
+  while index < group_names.length() do
+    const group_name = group_names[index]
+    const group_path = output_directory_prefix + group_name + ".cpp"
+    const group_content = if group_sources.has(group_name) then group_sources.get(group_name) else '' end
+    write_text_if_changed(group_path, group_content)
+    written_paths.push(group_path)
+    index = index + 1
+  end
+  written_paths
+end
+
+export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_compile_commands: bool, emit_layout: string) -> Result<string, [string]> = do
   profile_maybe_begin(transformed_state.profile_enabled, 'codegen')
-  let implementation_paths: [string] = []
+  const use_hybrid_layout = emit_layout == 'hybrid'
+  let mut implementation_paths: [string] = []
+  let mut group_sources: Map<string, string> = Map.new()
   let mut link_libraries: [string] = []
   let mut index = 0
   while index < transformed_state.transformed_items.length() do
@@ -187,10 +208,17 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
       then transformed_state.output_directory + "/"
       else ""
     const header_path = output_directory_prefix + module_base + ".hpp"
-    const implementation_path = output_directory_prefix + module_base + ".cpp"
     write_text_if_changed(header_path, print_cpp_declarations(generated_output.header))
-    write_text_if_changed(implementation_path, print_cpp_declarations(generated_output.source))
-    implementation_paths.push(implementation_path)
+    const source_text = print_cpp_declarations(generated_output.source)
+    if use_hybrid_layout then
+      const group_name = layout_group_for_path(transformed_load_item.path)
+      const existing_group_source = if group_sources.has(group_name) then group_sources.get(group_name) else '' end
+      group_sources.set(group_name, existing_group_source + source_text)
+    else
+      const implementation_path = output_directory_prefix + module_base + ".cpp"
+      write_text_if_changed(implementation_path, source_text)
+      implementation_paths.push(implementation_path)
+    end
     let mut library_index = 0
     while library_index < generated_output.link_libraries.length() do
       const library_name = generated_output.link_libraries[library_index]
@@ -204,6 +232,9 @@ export fn run_codegen_pass(transformed_state: TransformedCompileState, emit_comp
       library_index = library_index + 1
     end
     index = index + 1
+  end
+  if use_hybrid_layout then
+    implementation_paths = write_hybrid_group_cpp_files(transformed_state.output_directory, group_sources)
   end
   if transformed_state.output_directory.length() > 0 then
     write_text_if_changed(
@@ -363,7 +394,7 @@ end
 fn run_codegen_pipeline_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
   if context.modular_input.check_only then return Ok(context) end
   if !context.has_transformed then return Err(['pipeline: transform pass required before codegen']) end
-  const codegen_result = run_codegen_pass(context.transformed_state, context.modular_input.emit_compile_commands)
+  const codegen_result = run_codegen_pass(context.transformed_state, context.modular_input.emit_compile_commands, context.modular_input.emit_layout)
   match codegen_result {
     Err(errors) => Err(errors),
     Ok(_) => Ok(context)

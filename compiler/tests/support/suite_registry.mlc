@@ -34,6 +34,7 @@ import { compiler_db_tests } from '../test_compiler_db'
 import { driver_tests } from '../test_driver'
 import { verify_ir_tests } from '../test_verify_ir'
 import { compile_commands_tests } from '../test_compile_commands'
+import { layout_tests } from '../test_layout'
 import { expr_visitor_tests } from '../test_expr_visitor'
 import { visitor_pass_parity_tests } from '../test_visitor_pass_parity'
 import { cpp_printer_tests } from '../test_cpp_printer'
@@ -156,6 +157,7 @@ export fn integration_suite_results() -> [TestResult] = do
   results = append_suite_results(results, expr_visitor_tests())
   results = append_suite_results(results, visitor_pass_parity_tests())
   results = append_suite_results(results, compile_commands_tests())
+  results = append_suite_results(results, layout_tests())
   results = append_suite_results(results, fuzz_tests())
   results
 end

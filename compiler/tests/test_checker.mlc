@@ -202,6 +202,7 @@ export fn checker_tests() -> [TestResult] = do
         mir_bootstrap_report: false,
         time_passes: false,
         run_interpreter: false,
+        emit_layout: 'split',
         trace_vm: false
       }
     end) {
