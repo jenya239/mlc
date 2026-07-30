@@ -9,75 +9,20 @@ import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { first_arm_needs_deref, pattern_bind_names, pattern_binding_name_list, should_use_string_match_if_chain } from './match_analysis'
 import { tuple_destructure_binding } from './let_pat'
-
-fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
-  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
-
-
-export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
-  `[=](const auto& __v) { return ${return_expression_code}; }`
-
-
-fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
-  `[=](const auto& __v) -> void { ${body_expression_code}; }`
-
-
-export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
-  `[=](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
-
-
-fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
-  `[=](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
-
-
-export fn match_arm_constructed_value(
-  const_reference_parameter: string,
-  binding_prefix: string,
-  return_expression_code: string
-) -> string =
-  `[=](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
-
-
-fn match_arm_constructed_value_void(
-  const_reference_parameter: string,
-  binding_prefix: string,
-  body_expression_code: string
-) -> string =
-  `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
-
-
-fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
-  `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
-
-
-fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
-  if needs_dereference then `(*${expression_code})` else expression_code end
-
-
-fn match_lambda_const_reference_parameter(
-  resolved_type_name: string,
-  generic_angle_bracket_argument: string,
-  binding_name_cpp_safe: string
-) -> string =
-  `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
-
-
-export fn match_arm_constructed_value_generic(
-  resolved_type_name: string,
-  binding_name_cpp_safe: string,
-  binding_prefix: string,
-  return_expression_code: string
-) -> string =
-  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
-
-
-fn match_arm_constructed_value_generic_void(
-  resolved_type_name: string,
-  binding_name_cpp_safe: string,
-  binding_prefix: string,
-  body_expression_code: string
-) -> string =
-  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
+import {
+  std_visit_match_expression,
+  match_arm_wild_or_unit_return,
+  match_arm_wild_or_unit_statement,
+  match_arm_binding_identifier,
+  match_arm_binding_identifier_void,
+  match_arm_constructed_value,
+  match_arm_constructed_value_void,
+  record_pattern_field_binding,
+  visit_subject_for_match,
+  match_lambda_const_reference_parameter,
+  match_arm_constructed_value_generic,
+  match_arm_constructed_value_generic_void
+} from './match_arm_lambda'
 
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
 import { type_is_unknown, generic_type_name_from_type, generic_type_arguments_from_type } from '../../checker/semantic_type_structure'

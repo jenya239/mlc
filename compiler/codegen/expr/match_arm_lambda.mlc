@@ -1,0 +1,71 @@
+// Pure C++ lambda-string template builders for match-arm codegen.
+// No CodegenContext, no injected gen_stmts/eval_expr_fn — plain string templates.
+
+export fn std_visit_match_expression(arm_lambdas: string, visit_subject: string) -> string =
+  `std::visit(overloaded{${arm_lambdas}\n}, ${visit_subject})`
+
+
+export fn match_arm_wild_or_unit_return(return_expression_code: string) -> string =
+  `[=](const auto& __v) { return ${return_expression_code}; }`
+
+
+export fn match_arm_wild_or_unit_statement(body_expression_code: string) -> string =
+  `[=](const auto& __v) -> void { ${body_expression_code}; }`
+
+
+export fn match_arm_binding_identifier(parameter_cpp_safe: string, return_expression_code: string) -> string =
+  `[=](const auto& ${parameter_cpp_safe}) { return ${return_expression_code}; }`
+
+
+export fn match_arm_binding_identifier_void(parameter_cpp_safe: string, body_expression_code: string) -> string =
+  `[=](const auto& ${parameter_cpp_safe}) -> void { ${body_expression_code}; }`
+
+
+export fn match_arm_constructed_value(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  `[=](${const_reference_parameter}) { ${binding_prefix}return ${return_expression_code}; }`
+
+
+export fn match_arm_constructed_value_void(
+  const_reference_parameter: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[=](${const_reference_parameter}) -> void { ${binding_prefix}${body_expression_code}; }`
+
+
+export fn record_pattern_field_binding(field_cpp_safe: string, variant_lower_name: string) -> string =
+  `const auto& ${field_cpp_safe} = ${variant_lower_name}.${field_cpp_safe}; `
+
+
+export fn visit_subject_for_match(expression_code: string, needs_dereference: bool) -> string =
+  if needs_dereference then `(*${expression_code})` else expression_code end
+
+
+export fn match_lambda_const_reference_parameter(
+  resolved_type_name: string,
+  generic_angle_bracket_argument: string,
+  binding_name_cpp_safe: string
+) -> string =
+  `const ${resolved_type_name}${generic_angle_bracket_argument}& ${binding_name_cpp_safe}`
+
+
+export fn match_arm_constructed_value_generic(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  return_expression_code: string
+) -> string =
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) { ${binding_prefix}return ${return_expression_code}; }`
+
+
+export fn match_arm_constructed_value_generic_void(
+  resolved_type_name: string,
+  binding_name_cpp_safe: string,
+  binding_prefix: string,
+  body_expression_code: string
+) -> string =
+  `[=]<typename __mlcT>(const ${resolved_type_name}<__mlcT>& ${binding_name_cpp_safe}) -> void { ${binding_prefix}${body_expression_code}; }`
