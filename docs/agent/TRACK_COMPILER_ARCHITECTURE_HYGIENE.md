@@ -35,9 +35,17 @@ across 4 new modules). §104-12 later regrew to 1765 lines and needed a
 5th slice (`transform_support.mlc`), **CLOSED** 2026-07-30 at 753 lines.
 **§104-13 CLOSED** 2026-07-29 (`decl_cpp.mlc` split, 6 slices,
 1666→355 lines). **§104-14 CLOSED** 2026-07-30 (`match_gen.mlc` split,
-5 slices, 1403→414 lines). **Queue head is now §104-15**
-(`checker/registry.mlc` split, needs re-export language support first)
-(priority override 2026-07-28, user: "это должно быть приоритетом
+5 slices, 1403→414 lines). **§104-15 CLOSED** 2026-07-30
+(`checker/registry.mlc` split, 1 slice, 1060→728 lines — no re-export
+language extension was needed, see Decision below; Critic-audited:
+independent function-name-set diff 68/68 empty at all nesting depths,
+independent byte-level body diff all 9 moved items verbatim,
+independent full-file diff confirming zero unrelated changes to the
+remaining 724 lines of `registry.mlc`, independent fresh
+Ruby-bootstrap rebuild of `mlcc` + fresh translation + duplicate-symbol
+check clean, independent full `rake test_compiler_mlc` rerun 1471/0,
+independent mlcc2 self-host diff rebuilt from scratch — IDENTICAL).
+**Queue head is now §104-16** (priority override 2026-07-28, user: "это должно быть приоритетом
 сейчас" — Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued
 after §103, Wave 3 stays gated)
 
@@ -810,7 +818,20 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`registry_type.mlc` absent, all 9 items at documented baseline lines, `registry.mlc` at baseline 1060 lines) | **done** |
 | 2 | Green: create `registry_type.mlc`, wire `registry.mlc` import, bootstrap diff, `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — CLOSED** |
+
+#### Critic (STEP=3) — **done** 2026-07-30, §104-15 CLOSED
+
+Independent re-audit, none of the Driver's artifacts reused:
+
+- Function/type-name-set diff, baseline `registry.mlc` (commit `df3bdc45`) vs post-split `registry.mlc`+`registry_type.mlc` combined, both at top-level-declaration granularity and at full-nesting granularity (including every method inside `extend TypeRegistry`) — 68/68 names both ways, `diff` empty.
+- Byte-level body diff (Ruby script) for all 9 moved items (`Type`, `FunctionIndex`, `AdtIndex`, `RecordIndex`, `TypeRegistry`, `empty_registry`, `resolution_stack_contains_name`, `type_alias_named_target`, `resolve_nominal_type_name_for_fields`) — all verbatim modulo `export`.
+- Full-file reconstruction: stripped the 9 moved blocks out of the baseline (336 lines removed) and diffed the remainder against the post-split `registry.mlc` body (both aligned past their respective import headers) — empty diff, confirming the split touched nothing else in the file. `git diff --stat` for the whole slice commit confirms exactly 3 files changed: `registry.mlc`, `registry_type.mlc` (new), `infer_literals.mlc` (1 import line added) — nothing else in `compiler/**`.
+- Fresh, from-scratch Ruby-bootstrap rebuild of `mlcc` (`MLCC_INCREMENTAL=0 MLCC_BUILD_VERBOSE=1 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing 10 `-Wparentheses-equality` warnings. Fresh translation of `compiler/main.mlc` with this rebuilt `mlcc`: `registry_type::` qualification present in 172 generated files (consistent with the transitive-forwarding claim at scale); confirmed `Type`/`FunctionIndex`/`AdtIndex`/`RecordIndex`/`TypeRegistry` struct/variant definitions occur only in `registry_type.hpp`, and `empty_registry`/`resolution_stack_contains_name`/`type_alias_named_target`/`resolve_nominal_type_name_for_fields` are defined exactly once each (in `registry_type.cpp`), all cross-file references properly `registry_type::`-qualified — no duplicate-symbol risk.
+- Independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR` inside the repo) — exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=9`, `registry.mlc` absent from the warning list.
+- Independent mlcc2 self-host diff: built `mlcc2` via `compiler/build_bin.sh MLC_CXX=g++` from the Critic's own fresh translation (not the Driver's), then re-translated `compiler/main.mlc` with `mlcc2` — `diff -rq --exclude=obj` against the Critic's own `mlcc` translation: empty, IDENTICAL.
+- Confirmed the 3 non-track WIP files disturbed by the mid-slice incident (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`) are still present and still show as modified/uncommitted (not reverted, not lost).
+- No false-done found. **§104-15 CLOSED** — `registry.mlc` split 1060→728 lines in 1 slice, already under the 800-line threshold, allowlist entry not needed (was never allowlisted). Scratch build artifacts (`.tmp/critic_104_15/**`) cleaned up after verification.
 
 #### Green (STEP=2) — **done** 2026-07-30
 
