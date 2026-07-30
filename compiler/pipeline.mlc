@@ -43,7 +43,8 @@ export type ModularCompileInput = ModularCompileInput {
   time_passes: bool,
   run_interpreter: bool,
   trace_vm: bool,
-  emit_layout: string
+  emit_layout: string,
+  cpp_mode: string
 }
 
 fn pipeline_wants_timing(input: ModularCompileInput) -> bool =
@@ -87,7 +88,8 @@ fn empty_precomputed_context() -> PrecomputedCtx =
     field_order_index: Map.new(),
     ctor_type_info_index: Map.new(),
     type_alias_annotations: Map.new(),
-    trait_associated_type_names: Map.new()
+    trait_associated_type_names: Map.new(),
+    cpp_mode: 'readable'
   }
 
 export type PipelineContext = PipelineContext {
@@ -149,7 +151,7 @@ export fn run_checker_pass(input: ModularCompileInput) -> Result<CheckedCompileS
   })
 end
 
-export fn run_transform_pass(checked_state: CheckedCompileState) -> Result<TransformedCompileState, [string]> = do
+export fn run_transform_pass(checked_state: CheckedCompileState, cpp_mode: string) -> Result<TransformedCompileState, [string]> = do
   profile_maybe_begin(checked_state.profile_enabled, 'expand_destructure')
   const expanded_program = expand_parameter_destructuring_in_program(checked_state.full_program)
   profile_maybe_end(checked_state.profile_enabled, 'expand_destructure')
@@ -162,7 +164,7 @@ export fn run_transform_pass(checked_state: CheckedCompileState) -> Result<Trans
     if semantic_errors.length() > 0 then return Err(semantic_errors) end
   end
   profile_maybe_begin(checked_state.profile_enabled, 'precompute')
-  const precomputed = precompute(expanded_program, checked_state.load_items)
+  const precomputed = precompute(expanded_program, checked_state.load_items, cpp_mode)
   profile_maybe_end(checked_state.profile_enabled, 'precompute')
   Ok(TransformedCompileState {
     load_items: checked_state.load_items,
@@ -379,7 +381,7 @@ end
 
 fn run_transform_pipeline_pass(context: PipelineContext) -> Result<PipelineContext, [string]> = do
   if !context.has_checked then return Err(['pipeline: checker pass required before transform']) end
-  const transformed_state = run_transform_pass(context.checked_state)?
+  const transformed_state = run_transform_pass(context.checked_state, context.modular_input.cpp_mode)?
   Ok(PipelineContext {
     modular_input: context.modular_input,
     has_checked: context.has_checked,

@@ -29,7 +29,8 @@ fn compile_commands_pipeline_input(source: string, output_directory: string) -> 
     time_passes: false,
     run_interpreter: false,
     trace_vm: false,
-    emit_layout: 'split'
+    emit_layout: 'split',
+    cpp_mode: 'readable'
   }
 end
 

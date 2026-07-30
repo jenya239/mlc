@@ -125,7 +125,7 @@ export fn build_struct_using_data(declarations: [Shared<SemanticDeclaration>], c
   StructUsingData { entries: entries, lines: lines }
 end
 
-export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx = do
+export fn precompute(program: Program, all_items: [LoadItem], cpp_mode: string) -> PrecomputedCtx = do
   const field_orders = build_field_orders(program)
   const ctor_type_infos = build_ctor_type_infos_from_decls(program.decls)
   const registry = build_registry(program)
@@ -141,7 +141,8 @@ export fn precompute(program: Program, all_items: [LoadItem]) -> PrecomputedCtx 
     field_order_index: build_field_order_index(field_orders),
     ctor_type_info_index: build_ctor_type_info_index(ctor_type_infos),
     type_alias_annotations: registry.type_alias_annotations,
-    trait_associated_type_names: registry.adt_index.trait_assoc_types
+    trait_associated_type_names: registry.adt_index.trait_assoc_types,
+    cpp_mode: cpp_mode
   }
 end
 
@@ -181,7 +182,8 @@ fn prepare_module_generation(
     trait_associated_type_names: precomputed_context.trait_associated_type_names,
     temp_name_counter: new_temp_name_counter(),
     enclosing_function_return_type: Shared.new(TUnknown),
-    param_template_type_names: Map.new()
+    param_template_type_names: Map.new(),
+    cpp_mode: precomputed_context.cpp_mode
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
   const module_namespace = if base == 'main' then 'mlc_main' else base end

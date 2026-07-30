@@ -12,11 +12,12 @@ export type CompileOptions = CompileOptions {
   time_passes: bool,
   run_interpreter: bool,
   trace_vm: bool,
-  emit_layout: string
+  emit_layout: string,
+  cpp_mode: string
 }
 
 export fn compile_usage_message() -> string =
-  'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] [--emit-layout=split|unity|hybrid] <source.mlc|-> [-o out_dir]\n       (- reads program from stdin)\n       mlcc fmt <source.mlc>\n       mlcc lsp'
+  'Usage: mlcc [--check-only] [--run] [--trace-vm] [--profile] [--emit-compile-commands] [--verify-each] [--dump-ast] [--dump-sem] [--dump-mir] [--mir-bootstrap-report] [--time-passes] [--emit-layout=split|unity|hybrid] [--cpp-mode=readable|fast-build] <source.mlc|-> [-o out_dir]\n       (- reads program from stdin)\n       mlcc fmt <source.mlc>\n       mlcc lsp'
 
 fn emit_layout_flag_prefix() -> string = '--emit-layout='
 
@@ -26,6 +27,15 @@ fn is_emit_layout_flag(argument: string) -> bool =
 
 fn emit_layout_value_from_flag(argument: string) -> string =
   argument.substring(emit_layout_flag_prefix().length(), argument.length() - emit_layout_flag_prefix().length())
+
+fn cpp_mode_flag_prefix() -> string = '--cpp-mode='
+
+fn is_cpp_mode_flag(argument: string) -> bool =
+  argument.length() >= cpp_mode_flag_prefix().length()
+    && argument.substring(0, cpp_mode_flag_prefix().length()) == cpp_mode_flag_prefix()
+
+fn cpp_mode_value_from_flag(argument: string) -> string =
+  argument.substring(cpp_mode_flag_prefix().length(), argument.length() - cpp_mode_flag_prefix().length())
 
 fn is_output_directory_flag(argument: string) -> bool =
   argument == "-o"
@@ -85,6 +95,7 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
   let mut run_interpreter = false
   let mut trace_vm = false
   let mut emit_layout = 'split'
+  let mut cpp_mode = 'readable'
   let mut out_directory = ''
   let mut out_directory_explicit = false
   let mut entry_path = ''
@@ -115,6 +126,8 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
       trace_vm = true
     else if is_emit_layout_flag(argument) then
       emit_layout = emit_layout_value_from_flag(argument)
+    else if is_cpp_mode_flag(argument) then
+      cpp_mode = cpp_mode_value_from_flag(argument)
     else if is_output_directory_flag(argument) && index + 1 < arguments.length() then
       out_directory = arguments[index + 1]
       out_directory_explicit = true
@@ -138,6 +151,7 @@ export fn parse_compile_options(arguments: [string]) -> CompileOptions = do
     time_passes: time_passes,
     run_interpreter: run_interpreter,
     trace_vm: trace_vm,
-    emit_layout: emit_layout
+    emit_layout: emit_layout,
+    cpp_mode: cpp_mode
   }
 end

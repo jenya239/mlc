@@ -12,7 +12,7 @@ export fn gen_program(program: Program) -> string = do
     Err(errors) => `/* transform error */ ${errors.join(', ')}`,
     Ok(semantic_load_item) => do
       const all_items: [LoadItem] = []
-      const precomputed_context = precompute(program, all_items)
+      const precomputed_context = precompute(program, all_items, 'readable')
       const module_parsed = gen_module(semantic_load_item, all_items, program, precomputed_context)
       print_cpp_declarations(module_parsed.header) + print_cpp_declarations(module_parsed.source)
     end

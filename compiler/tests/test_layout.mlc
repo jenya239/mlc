@@ -29,7 +29,8 @@ fn hybrid_pipeline_input(source: string, output_directory: string) -> ModularCom
     time_passes: false,
     run_interpreter: false,
     trace_vm: false,
-    emit_layout: 'hybrid'
+    emit_layout: 'hybrid',
+    cpp_mode: 'readable'
   }
 end
 

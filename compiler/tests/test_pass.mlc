@@ -41,7 +41,8 @@ fn pipeline_input_for_source(source: string, check_only: bool, verify_each_pass:
     time_passes: false,
     run_interpreter: false,
     trace_vm: false,
-    emit_layout: 'split'
+    emit_layout: 'split',
+    cpp_mode: 'readable'
   }
 end
 

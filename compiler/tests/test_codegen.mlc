@@ -724,7 +724,7 @@ export fn codegen_tests() -> [TestResult] = do
   const h11_program_source = "type Opt<T> = Some(T) | None\nfn f() -> Opt<i64> = Some(42)\n"
   const h11_program = parse_program(tokenize(h11_program_source).tokens)
   results.push(assert_true('Opt decl has type parameters', type_decl_has_type_parameters(h11_program)))
-  const h11_precomputed = precompute(h11_program, [])
+  const h11_precomputed = precompute(h11_program, [], 'readable')
   results.push(assert_true('precompute: Some is generic variant',
     list_contains(h11_precomputed.generic_variants, 'Some')))
   const h11_context =

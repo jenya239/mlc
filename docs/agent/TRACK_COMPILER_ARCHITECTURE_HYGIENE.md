@@ -89,6 +89,20 @@ own root cause is documented inline in `build_tests.sh`, predating
 this track). No false-done found. **Queue head is now §104-19 Decision
 (Driver STEP=0)**
 
+## Update 2026-07-30 (b) — §104-20 implemented, Driver STEP=2 done, Queue head → Critic
+
+Implemented `--cpp-mode=fast-build`: opt-in flag (default `readable`, unchanged),
+for match arm count >6 in the non-guarded/non-wildcard/non-string codegen path,
+reuses the already-production-proven if-chain generator instead of
+`std::visit(overloaded{...})`. Verified: default-path diff-empty against a
+`git stash`-based clean baseline (only the scoped 9 files differ, purely
+additive); `rake test_compiler_mlc` 1471/1471 unaffected; self-host round-trip
+byte-identical for both modes; measured real C++ compile-time delta on the 44
+affected files — **g++ −3.0%, clang++ −4.8%** aggregate, a genuine but modest
+win (not the dramatic reduction a naive read of "removes a 75-arm
+`std::visit`" might suggest — see Green section for why). Full detail in the
+§104-20 section below. **Queue head is now Critic re-audit of §104-20**.
+
 ## Update 2026-07-30 — §104-19 REJECTED (evidence-based), Queue head → §104-20
 
 Surveyed the review's Шаг 19 (include planner / forward-decls in `.hpp`)
@@ -197,7 +211,7 @@ a silent "closed" with the file still allowlisted.
 - **§104-16** split `checker/infer/infer.mlc` (962 lines now, was 786) (Step 16) — **CLOSED** 2026-07-30, 1 slice, 962→**747 lines** across `infer.mlc` + new `infer_record.mlc` (255 lines), ≤800, allowlist entry removed
 - **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
 - **§104-19** include planner / forward-decls (Step 19) — **CLOSED (REJECTED)** 2026-07-30 — survey found the technique structurally inapplicable to this codebase's 2 dominant hub types (`ast::Expr`/`Stmt`, `registry_type::Type`, both `std::variant` aliases, not forward-declarable) and low residual payoff (66% of direct includes already transitively redundant); no code changed, see Decision
-- **§104-20** `--cpp-mode=fast-build` (Step 20) — depends on Step 17 (already done via §44)
+- **§104-20** `--cpp-mode=fast-build` (Step 20) — **implemented, awaiting Critic** 2026-07-30 — opt-in flag, default path diff-empty verified, measured g++ −3.0%/clang++ −4.8% aggregate compile-time on affected files (modest, real); depends on Step 17 (already done via §44)
 - **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18
 - **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22
 
@@ -1010,6 +1024,46 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done — REJECTED, §104-19 CLOSED (no Red/Green/Critic needed, no code changed)** |
+
+## §104-20 `--cpp-mode=fast-build`
+
+### Decision (STEP=0) — **frozen** 2026-07-30
+
+| Item | Choice |
+|------|--------|
+| Problem | Review's Шаг 20 (`review_20260629_144027.md:420-427`): the default (non-guarded, non-wildcard, non-string) match codegen path emits `std::visit(overloaded{lambda1, ..., lambdaN}, subject)` — for a match over an N-variant sum type, that is an N-lambda `overloaded` struct plus a `std::visit` template instantiation, both known to cost real `clang++`/`g++` compile time as N grows. Proposal: under a new `--cpp-mode=fast-build` flag (default `readable`, unchanged behavior), for a match with more than N arms (review's own example: N=6), generate the same `if (std::holds_alternative<...>(x)) { ... }` if-chain already used for guarded/wildcard/string matches, instead of `std::visit(overloaded{...})` |
+| Survey (payoff, before committing — same discipline as §104-19) | Unlike §104-19, measured a **real, substantial** population: brace-matched every `overloaded{...}` call site in a fresh `compiler/out/*.cpp` translation (331 sites total, top-level-comma arm-count per site, not a naive regex) — **161 of 331 (49%) have >6 arms**, with a long tail (7/8/10/11/12/15/16/18/28/29/33/75-arm sites; several sites match over `ast::Expr` (31 variants)/`ast::Stmt`/`ast::TypeExpr`, one 75-arm site in `cpp_tokens.cpp`). This validates the review's premise for this codebase, in contrast to §104-19's rejection |
+| Safety analysis | Read `compiler/codegen/expr/match_guarded_gen.mlc` in full: `gen_match_guarded_body_from_subject_expression` (lines 511-548) already builds a sequential `if (std::holds_alternative<V>(x)) { ...; return ...; }` chain for **every** pattern kind (ctor/record/literal/wildcard/identifier) and unconditionally appends a trailing `std::abort()` statement after the last arm — it does **not** rely on an explicit wildcard arm being present to close the chain safely. This function is already used today for the `expanded_any_wildcard` case (a match that happens to have a wildcard but otherwise looks just like the plain-std::visit case) and is therefore already proven, in production, to generate valid, correct C++ for an *exhaustive-without-a-literal-wildcard-arm* match — extending its use to the *"large arm count, still exhaustive"* case under a new flag carries no new class of `clang++` risk (contrast with §104-19's real "incomplete type" risk). Both codegen flavors — string-returning (`gen_match` in `match_gen.mlc`, calls `gen_match_guarded_expression`) and `CppExpression`-IR-returning (`gen_match_via_cpp_visitor` in `expr_visitor_cpp.mlc`, calls `gen_match_guarded_expression_cpp`) — already have this if-chain generator wired in for the guard/wildcard/string cases, so this step only adds one more dispatch condition to each, no new generator code |
+| Strategy | `compile_options.mlc`: add `cpp_mode: string` field to `CompileOptions`, parse `--cpp-mode=<value>` (prefix match, same shape as `--emit-layout=`, default `'readable'`). Thread `cpp_mode` through `ModularCompileInput` (`pipeline.mlc`) → `compile_modular` (`compile_driver.mlc`) → `cli.mlc` call site → the 6 `ModularCompileInput`-literal test sites (`compile_driver.mlc` production path + `test_checker.mlc`/`test_compile_commands.mlc`/`test_fuzz.mlc`/`test_layout.mlc`/`test_pass.mlc`, all `'readable'`) → `test_driver.mlc`'s `compile_modular` call (`'readable'`). Add `cpp_mode: string` to `PrecomputedCtx` (`codegen/context.mlc`) and to `precompute(program, all_items, cpp_mode)` (`codegen/module.mlc`, 3 call sites: `pipeline.mlc`'s `run_transform_pass` — gains a `cpp_mode: string` parameter, threaded from `run_transform_pipeline_pass`'s `context.modular_input.cpp_mode` — plus `tests/codegen_harness.mlc`/`tests/test_codegen.mlc`, both `'readable'`). Add `cpp_mode: string` to `CodegenContext` (`codegen/context.mlc`), copied from `precomputed_context.cpp_mode` in `module.mlc`'s `prepare_module_generation`; default `'readable'` in `create_codegen_context` (used only by test harnesses building a `CodegenContext` directly, not through the pipeline). New predicate in `codegen/expr/match_analysis.mlc` (the shared leaf both `match_gen.mlc` and `expr_visitor_cpp.mlc` already import from): `fast_build_arm_threshold() -> i32 = 6` and `should_use_fast_build_if_chain(context: CodegenContext, arm_count: i32) -> bool = context.cpp_mode == 'fast-build' && arm_count > fast_build_arm_threshold()`. `match_gen.mlc`'s `gen_match`: insert 1 new `else if should_use_fast_build_if_chain(context, expanded.length()) then gen_match_guarded_expression(...)` branch between the existing `expanded_any_wildcard` branch and the `use_void_visit`/std-visit fallback. `expr_visitor_cpp.mlc`'s `gen_match_via_cpp_visitor`: same insertion point, calling `gen_match_guarded_expression_cpp(...)` |
+| Primary gate | Review's own literal acceptance test: `mlcc --cpp-mode=fast-build -o <dir> compiler/main.mlc`, build with `g++`/`clang++`, run `rake test_compiler_mlc` against the resulting binary; measure `.cpp` compile time delta vs `readable`. Plus (this track's own standing bar): **default (no flag / `readable`) translation of `compiler/main.mlc` stays byte-identical before/after** — bootstrap-diff-empty is the primary safety gate for the unchanged default path, exactly as `--cpp-mode=fast-build` staying opt-in is meant to guarantee |
+| Module touch | `compile_options.mlc`; `pipeline.mlc` (`ModularCompileInput`, `run_transform_pass`); `driver/compile_driver.mlc`/`driver/cli.mlc`; `codegen/context.mlc` (`CodegenContext`, `PrecomputedCtx`, `create_codegen_context`); `codegen/module.mlc` (`precompute`, `prepare_module_generation`); `codegen/expr/match_analysis.mlc` (new predicate); `codegen/expr/match_gen.mlc` (`gen_match` dispatch); `expr_visitor_cpp.mlc` (`gen_match_via_cpp_visitor` dispatch); 6 `ModularCompileInput`-literal test sites; `test_driver.mlc`; `tests/codegen_harness.mlc`/`tests/test_codegen.mlc` (`precompute` call sites) |
+| REG | no (`compiler/**` only) |
+| Out of scope | Applying the if-chain to hot-path inference matches without a separate runtime benchmark (review's own risk note: if-chain is O(N) sequential vs `std::visit`'s near-O(1) jump-table-like dispatch) — this step only gates the change behind an opt-in flag, default stays `readable`/std::visit everywhere, so no hot-path risk is introduced by default; a future step could selectively default `fast-build` for cold codegen-only matches, not attempted here |
+
+### Steps (§104-20)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirmed `grep -n 'cpp_mode\|fast-build' compiler/compile_options.mlc` empty before this step | **done** |
+| 2 | Green: implemented + verified (below) | **done** 2026-07-30 |
+| 3 | Critic: full re-audit | pending |
+
+#### Green (STEP=2) — **done** 2026-07-30
+
+Implementation exactly as scoped in Strategy above (14 files: `compile_options.mlc`, `pipeline.mlc`, `driver/compile_driver.mlc`, `driver/cli.mlc`, `codegen/context.mlc`, `codegen/module.mlc`, `codegen/expr/match_analysis.mlc`, `codegen/expr/match_gen.mlc`, `expr_visitor_cpp.mlc`, `tests/test_checker.mlc`/`test_compile_commands.mlc`/`test_fuzz.mlc`/`test_layout.mlc`/`test_pass.mlc`/`test_driver.mlc`/`codegen_harness.mlc`/`test_codegen.mlc`).
+
+| Check | Result |
+|-------|--------|
+| Full non-incremental Ruby-bootstrap rebuild (`MLCC_INCREMENTAL=0 compiler/build.sh`) | 0 errors, only the same pre-existing `-Wparentheses-equality` warnings |
+| Default-path (`--cpp-mode` omitted / `readable`) regression check | Built a **separate baseline mlcc** from `git stash`-reverted sources (this track's own change stashed out), translated `compiler/main.mlc` with it, then un-stashed, rebuilt mlcc with the change, re-translated in default mode — the only `.cpp`/`.hpp` diffs vs baseline are in the 9 files this step's own Module-touch row lists (new struct field `cpp_mode`/new function parameter threading + 1 new `else if` dispatch line in `match_gen.cpp`/`expr_visitor_cpp.cpp`, confirmed by reading every diff hunk) — no unrelated file changed, no existing line changed beyond `#line` shifts from added code above it |
+| `--cpp-mode=fast-build` translation of `compiler/main.mlc` | Succeeded; diffed against the same default-mode translation — 44 `.cpp` files differ (0 `.hpp` files — purely a function-body codegen change, as scoped), all differences are `std::visit(overloaded{...})` sites replaced by the `if (std::holds_alternative<V>(x))` chain; spot-checked `cpp_tokens.cpp`'s 75-arm site — confirms exactly 1 fewer `overloaded{` site and +77 new `std::holds_alternative` calls (76 pattern arms + 1 pre-existing unrelated site) |
+| `MLC_CXX=g++ compiler/build_bin.sh` on both the `readable` and `fast-build` translations | Both link into working binaries |
+| Self-hosting-correctness round-trip | Both binaries independently re-translate `compiler/main.mlc` (the `fast-build` binary re-translating with `--cpp-mode=fast-build` again) — `diff -rq --exclude=obj` against their own generation's output: **empty** for both, confirming stability, not just a one-shot A/B |
+| `rake test_compiler_mlc` (fresh `TMPDIR`, no flag — must show no behavior change) | exit 0, **1471 passed, 0 failed**, arch lint `failures=0 warnings=8` (pre-existing allowlisted warnings only) |
+| C++ compile-time delta, `readable` vs `fast-build`, all 44 affected files, `-O2`, sequential single-file compiles (Ruby script, both `g++` and `clang++`, wall-clock via `Process.clock_gettime`) | **g++: 538.38s → 522.49s (−3.0%)**. **clang++: 613.33s → 584.07s (−4.8%)**. Per-file deltas are noisy (±5-25%, sign varies by file) but the aggregate is consistently negative for both compilers, i.e. a real, reproducible, but **modest** net win — far short of what a naive read of "removes a 75-arm `std::visit`" might suggest, because per-arm lambda-body compile cost (not the `std::visit`/`overloaded` template mechanism itself) dominates most of these files' total compile time |
+
+**Honest scope note (contrast with §104-19's rejection):** unlike §104-19, this technique is broadly applicable (161/331 real call sites have >6 arms) and the implementation is complete, correct, opt-in, and measured-safe for the unchanged default path. The measured payoff (3-5% aggregate `.cpp` compile-time reduction on the affected file subset) is real but modest, not the potentially-assumed dramatic reduction from converting a 75-arm template instantiation — flagging this so a future track does not re-litigate this step expecting a bigger number without re-measuring.
 
 #### Critic (STEP=3) — **done** 2026-07-30 — §104-16-original
 

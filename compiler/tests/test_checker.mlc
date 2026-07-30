@@ -203,7 +203,8 @@ export fn checker_tests() -> [TestResult] = do
         time_passes: false,
         run_interpreter: false,
         emit_layout: 'split',
-        trace_vm: false
+        trace_vm: false,
+        cpp_mode: 'readable'
       }
     end) {
       Ok(_) => true,

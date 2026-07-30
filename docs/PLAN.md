@@ -997,10 +997,19 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       (749/1127) of all direct `.hpp` `#include` lines are already
       transitively redundant today, so even eligible forward-declarations
       would mostly have no compile-time effect. No `compiler/**` code
-      changed, no self-host diff applicable (survey-only); queue
-      head → §104-20 Decision (Driver STEP=0); only
-      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected),
-      §104-20, §104-22/23
+      changed, no self-host diff applicable (survey-only); **§104-20
+      implemented 2026-07-30, awaiting Critic** — opt-in
+      `--cpp-mode=fast-build` flag, default path diff-empty verified against
+      a `git stash`-clean baseline (only the 9 scoped files differ, purely
+      additive struct-field/parameter threading + 1 new dispatch branch),
+      `rake test_compiler_mlc` 1471/1471 unaffected, self-host round-trip
+      byte-identical both modes, measured real C++ compile-time delta on the
+      44 affected files: g++ −3.0%, clang++ −4.8% aggregate — real but
+      modest, not the dramatic reduction a naive read of "removes a 75-arm
+      `std::visit`" might suggest; queue head → Critic re-audit of §104-20;
+      only
+      §104-1/2/3/12(done)/13(done)/14(done)/15(done)/16(done)/18(done)/19(rejected)/20(implemented,
+      awaiting Critic), §104-22/23
       pulled forward here, Wave 2 (§104-6..11) stays after §103, Wave 3 stays
       gated; [TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md))**
   → **EDITOR_CARET_VISUAL_ROW_CACHE (§101, open STEP=0 next after §104 Wave 1 closes:

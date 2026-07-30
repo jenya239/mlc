@@ -7,7 +7,7 @@ import { SemanticExpression, SemanticStatement, SemanticMatchArm, sexpr_type } f
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
-import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain } from './match_analysis'
+import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain, should_use_fast_build_if_chain } from './match_analysis'
 import { tuple_destructure_binding } from './let_pat'
 import {
   std_visit_match_expression,
@@ -406,6 +406,8 @@ export fn gen_match(
   else if should_use_string_match_if_chain(subject, expanded) then
     gen_match_string_literal_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
   else if expanded_any_wildcard(expanded) then
+    gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
+  else if should_use_fast_build_if_chain(context, expanded.length()) then
     gen_match_guarded_expression(subject, expanded, match_result_type, context, gen_stmts, eval_expr_fn)
   else if use_void_visit then
     gen_match_std_visit_string(subject, expanded, context, gen_stmts, eval_expr_fn, true)

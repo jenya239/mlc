@@ -10,7 +10,7 @@ import * as literals from './codegen/expr/literals'
 import * as identifiers from './codegen/expr/identifiers'
 import { field_access_operator, find_field_value, is_constructor_call, question_from_converter_name } from './codegen/expr/expression_support'
 import { is_result_generic, result_ok_type, result_err_type } from './checker/check/method_types/result_option_method_types'
-import { first_arm_needs_deref, should_use_string_match_if_chain, subject_is_bool_type } from './codegen/expr/match_analysis'
+import { first_arm_needs_deref, should_use_string_match_if_chain, subject_is_bool_type, should_use_fast_build_if_chain } from './codegen/expr/match_analysis'
 import * as match_codegen from './codegen/expr/match_gen'
 import { expression_result_cpp_type_for_codegen, match_expression_return_cpp_type } from './codegen/expr/match_result_type'
 import { gen_match_guarded_expression_cpp, gen_match_string_literal_expression_cpp, gen_match_guarded_body_cpp, match_visit_uses_void_lambdas } from './codegen/expr/match_guarded_gen'
@@ -553,6 +553,10 @@ export fn gen_match_via_cpp_visitor(
       subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
   end
   if match_codegen.expanded_any_wildcard(expanded_arms) || subject_is_bool_type(subject) then
+    return gen_match_guarded_expression_cpp(
+      subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
+  end
+  if should_use_fast_build_if_chain(context, expanded_arms.length()) then
     return gen_match_guarded_expression_cpp(
       subject, expanded_arms, match_semantic_type, context, gen_stmts, eval_expr_cpp)
   end

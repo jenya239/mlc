@@ -91,3 +91,16 @@ export fn should_use_string_match_if_chain(subject: Shared<SemanticExpression>, 
     (match_arms_use_string_literals(arms) || subject_is_string_type(subject)) &&
       arms.all(arm => pattern_is_string_match_pattern(arm.pattern))
   end
+
+// --cpp-mode=fast-build: large std::visit(overloaded{N lambdas}) sites cost real
+// clang++/g++ template-instantiation time as N grows (measured: many 18-75-arm
+// sites in this codebase's own sum types). Above the threshold, reuse the
+// already-production-proven if-chain generator (match_guarded_gen.mlc) instead -
+// it does not require an explicit wildcard arm to close the chain safely (falls
+// through to std::abort() for an exhaustive match), so this is a pure opt-in
+// dispatch change with no new correctness risk. Default mode 'readable' never
+// takes this branch.
+export fn fast_build_arm_threshold() -> i32 = 6
+
+export fn should_use_fast_build_if_chain(context: CodegenContext, arm_count: i32) -> bool =
+  context.cpp_mode == 'fast-build' && arm_count > fast_build_arm_threshold()
