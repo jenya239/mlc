@@ -1,6 +1,7 @@
 // Literal and placeholder expression inference (no CheckContext).
 
 import { InferResult, infer_ok } from './infer_result'
+import { TI32, TString, TBool, TUnit, TF64, TI64, TU8, TUsize, TChar } from '../registry'
 
 export fn infer_expr_integer_literal() -> InferResult =
   infer_ok(Shared.new(TI32))
