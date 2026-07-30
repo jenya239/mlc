@@ -694,6 +694,35 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 
 **§104-14 slice 3 CLOSED.** Queue head → §104-14 slice 4 Decision (next: the 2-way-shared generic-ctor-type-argument resolution group found during this slice's survey, or one of the 3 codegen strategies if lower-risk on inspection).
 
+#### Decision (STEP=0) — **frozen** 2026-07-30
+
+| Item | Choice |
+|------|--------|
+| Problem | `match_gen.mlc` (1129 lines, post-slice-3) — the 2-way-shared generic-ctor-type-argument resolution group flagged during slice 3's survey: lines 431-543, 11 functions (`generic_variant_type_argument`, `type_parameter_name_index`, `cpp_angle_bracket_type_arguments`, `instantiated_variant_type_argument_from_maps`, `generic_subject_type_name`, `generic_subject_type_arguments`, `instantiated_variant_type_argument_from_generic_subject`, `instantiated_variant_type_argument_from_subject`, `result_ctor_cpp_type_argument`, `generic_ctor_type_argument`, `non_result_ctor_type_argument`). Confirmed by reading every signature: **zero injected `gen_stmts`/`eval_expr_fn` parameters** — only `CodegenContext`/`SemanticExpression`/`Type`/`string` in, `string`/`[Type]`/`i32` out. Grep-confirmed only 1 function in the group (`generic_ctor_type_argument`) has an external caller: `gen_guarded_constructor_arm_statements` (guarded if-chain strategy, line 558→444 post-move) and `gen_arm_ctor_cpp` (`CppExpression` strategy, line 973→859 post-move) — 2-way shared as flagged. Repo-wide grep for all 11 names found exactly one same-named collision: `type_parameter_name_index` also exists as an independent, unrelated, non-exported local helper in `compiler/expr_visitor_cpp.mlc` (line 92) — confirmed **not** a risk because `expr_visitor_cpp.mlc` only reaches `match_gen.mlc` via `import * as match_codegen`, and we keep `type_parameter_name_index` internal (non-exported) in the new module, so no exported symbol with that name becomes reachable through the import graph (same collision-avoidance discipline established in slice 1's correction) |
+| Strategy (v1) | New `compiler/codegen/expr/match_generic_ctor_type.mlc`. Move all 11 items wholesale. Export only `generic_ctor_type_argument` (the sole item with external callers, both still living in `match_gen.mlc`); the other 10 stay internal. Needed imports: `SemanticExpression`/`sexpr_type` (from `../../ir/semantic_ir`), `CodegenContext` (from `../context`), `list_contains` (from `../decl/decl_index`), `Type` (from `../../checker/registry`), `type_is_unknown`/`generic_type_name_from_type`/`generic_type_arguments_from_type` (from `../../checker/semantic_type_structure`), `is_result_generic`/`result_ok_type`/`result_err_type` (from `../../checker/check/method_types/result_option_method_types`), `sem_type_to_cpp` (from `../decl/type_gen`) — all already imported into `match_gen.mlc` today, just re-pointed. `match_gen.mlc` adds 1 import line pulling `generic_ctor_type_argument` back. After the move, `type_is_unknown`/`generic_type_name_from_type`/`generic_type_arguments_from_type` and `result_err_type` become fully unused in `match_gen.mlc` (only the group used them) — drop them from `match_gen.mlc`'s import lines as part of this slice (hygiene, not scope creep: same file, same edit) |
+| Primary gate | Red: `match_generic_ctor_type.mlc` absent, all 11 items at the documented lines, file at baseline 1129 lines. Green: `match_generic_ctor_type.mlc` exists, 1 exported; `match_gen.mlc` shrinks to ~1015 lines (114 lines removed, 1 import line added, 4 now-dead import names dropped — still above 800, allowlisted, more slices needed); bootstrap diff restricted to the split module + `match_gen.cpp/.hpp`; `rake test_compiler_mlc` (1471+ passed, 0 failed, arch lint failures=0); mlcc2 self-host diff before Critic close |
+| Module touch | new `compiler/codegen/expr/match_generic_ctor_type.mlc`; `compiler/codegen/expr/match_gen.mlc` (shrinks, gains 1 import line, drops 4 now-unused import names) |
+| REG | no (`compiler/**` only) |
+| Out of scope | the 3 codegen strategies themselves (still thread the injection pattern, need their own per-strategy Decision); the pre-existing unrelated `type_parameter_name_index` duplicate and pre-existing unused `TGeneric`/`cpp_template_two_type_arguments` imports in `match_gen.mlc` (confirmed already unused before this slice via `git show 731b3755:...` — not introduced by this change, not this slice's responsibility); any signature/algorithm change; MIR |
+
+#### Steps (§104-14 — slice 4: match_generic_ctor_type)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries (`match_generic_ctor_type.mlc` absent, 11 items at the documented lines, file at baseline 1129 lines) | **done** |
+| 2 | Green: create `match_generic_ctor_type.mlc`, wire `match_gen.mlc` import, drop now-dead imports, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
+| 3 | Critic: full re-audit | pending |
+
+#### Green (STEP=2) — result
+
+- `match_generic_ctor_type.mlc` created, 125 lines: 10 internal helpers + 1 exported (`generic_ctor_type_argument`), matches the Decision exactly.
+- `match_gen.mlc`: 1129 → 1015 lines (114 lines removed, 2 lines added — 1 import line; also dropped 4 now-unused import names: `type_is_unknown`, `generic_type_name_from_type`, `generic_type_arguments_from_type`, `result_err_type`). Still allowlisted.
+- Controlled bootstrap diff (same on-disk `mlcc` binary, `#line`-stripped, save/revert/rebuild-p0/restore/rebuild-p1 discipline): only `match_gen.cpp/.hpp` differ (11 function/type bodies removed, 1 call site now `match_generic_ctor_type::`-qualified, 1 dropped `#include`/`using namespace` for `semantic_type_structure`, 1 new `#include`/`using namespace` for `match_generic_ctor_type`) and `match_generic_ctor_type.cpp/.hpp` are new. Zero other file touched.
+- `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint `failures=0 warnings=11` (`match_gen.mlc` now at 1015 lines, still allowlisted).
+- mlcc2 self-host diff (`compiler/build_bin.sh` `MLC_CXX=g++`, fresh translation from the rebuilt `mlcc`): `diff -rq p1_fresh p2 --exclude=obj` empty — identical.
+- Fresh-translation stray-reference grep: `match_generic_ctor_type::` found only in `match_gen.cpp/.hpp` (both documented call sites collapse to 1 in the generated output — confirmed identical behavior in the pre-slice baseline too, not a regression); `generic_ctor_type_argument` defined exactly once, only in `match_generic_ctor_type.cpp`.
+
 ## Verification discipline
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
