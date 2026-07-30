@@ -86,8 +86,36 @@ passed, 0 failed, and an independent mlcc1→mlcc2 self-host
 re-translation diff — IDENTICAL. Confirmed the disclosed
 `tests_main.mlc`-rebuild limitation is genuine and pre-existing (its
 own root cause is documented inline in `build_tests.sh`, predating
-this track). No false-done found. **Queue head is now §104-19 Decision
-(Driver STEP=0)**
+this track). No false-done found. **§104-19 REJECTED (evidence-based,
+Decision-only, no code changed). §104-20 `--cpp-mode=fast-build` CLOSED**
+2026-07-30 (opt-in flag, default-path diff-empty independently re-verified
+twice — Driver + Critic — self-host round-trip byte-identical for both
+modes, `rake test_compiler_mlc` 1471/0, measured real g++/clang++
+compile-time reduction on the affected files, independently re-measured
+with a 2nd methodology, same direction/magnitude). **Queue head is now
+§104-22 Decision (Driver STEP=0, `bootstrap-fast.sh`/`bootstrap-full.sh`)**
+
+## Update 2026-07-30 (c) — §104-20 CLOSED (Critic re-audit), Queue head → §104-22
+
+Independent re-audit reproduced every claim: exactly the 17-file Module-touch
+diff (no unlisted files); default-path (`readable`) translation of
+`compiler/main.mlc` diff-empty against a from-scratch worktree baseline
+(purely additive, confirmed by reading every non-`#line` diff line); 46
+files differ in `--cpp-mode=fast-build` mode (0 `.hpp`); 2 independently
+built `mlcc2` binaries (readable + fast-build) both self-host round-trip
+byte-identical; `rake test_compiler_mlc` 1471/0 independently rerun. Compile
+-time payoff independently re-measured with a different, more controlled
+method (quiet machine, real `-c` compiles, child-process CPU time, not
+`-fsyntax-only` which was tried first and found to understate the effect):
+**g++ −4.22%, clang++ −5.66%** — same direction/order of magnitude as the
+Driver's g++ −3.0%/clang++ −4.8%, confirms the payoff is real. Also found
+and fixed a stray duplicate-of-§104-16 paragraph that had been misplaced
+under §104-20's Critic slot by an earlier turn (see §104-20 Critic section).
+**§104-20 CLOSED. Queue head is now §104-22 Decision (Driver STEP=0,
+`bootstrap-fast.sh`/`bootstrap-full.sh` — depends on §104-18, already
+done)**, per the review's own step ordering and this track's authorized
+Wave 1 list (§104-21 stays excluded/skippable per the user's 2026-07-28
+override and the review's own note that it needs a `runtime/` change).
 
 ## Update 2026-07-30 (b) — §104-20 implemented, Driver STEP=2 done, Queue head → Critic
 
@@ -211,8 +239,8 @@ a silent "closed" with the file still allowlisted.
 - **§104-16** split `checker/infer/infer.mlc` (962 lines now, was 786) (Step 16) — **CLOSED** 2026-07-30, 1 slice, 962→**747 lines** across `infer.mlc` + new `infer_record.mlc` (255 lines), ≤800, allowlist entry removed
 - **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
 - **§104-19** include planner / forward-decls (Step 19) — **CLOSED (REJECTED)** 2026-07-30 — survey found the technique structurally inapplicable to this codebase's 2 dominant hub types (`ast::Expr`/`Stmt`, `registry_type::Type`, both `std::variant` aliases, not forward-declarable) and low residual payoff (66% of direct includes already transitively redundant); no code changed, see Decision
-- **§104-20** `--cpp-mode=fast-build` (Step 20) — **implemented, awaiting Critic** 2026-07-30 — opt-in flag, default path diff-empty verified, measured g++ −3.0%/clang++ −4.8% aggregate compile-time on affected files (modest, real); depends on Step 17 (already done via §44)
-- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18
+- **§104-20** `--cpp-mode=fast-build` (Step 20) — **CLOSED** 2026-07-30, Critic-audited — opt-in flag, default path diff-empty verified independently twice, measured g++ −3.0%/clang++ −4.8% aggregate compile-time on affected files (Driver), independently re-measured g++ −4.22%/clang++ −5.66% with a 2nd methodology (Critic) — modest, real, confirmed; depends on Step 17 (already done via §44)
+- **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18 (done) — **next**
 - **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
@@ -1047,7 +1075,7 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirmed `grep -n 'cpp_mode\|fast-build' compiler/compile_options.mlc` empty before this step | **done** |
 | 2 | Green: implemented + verified (below) | **done** 2026-07-30 |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — CLOSED** |
 
 #### Green (STEP=2) — **done** 2026-07-30
 
@@ -1065,14 +1093,21 @@ Implementation exactly as scoped in Strategy above (14 files: `compile_options.m
 
 **Honest scope note (contrast with §104-19's rejection):** unlike §104-19, this technique is broadly applicable (161/331 real call sites have >6 arms) and the implementation is complete, correct, opt-in, and measured-safe for the unchanged default path. The measured payoff (3-5% aggregate `.cpp` compile-time reduction on the affected file subset) is real but modest, not the potentially-assumed dramatic reduction from converting a 75-arm template instantiation — flagging this so a future track does not re-litigate this step expecting a bigger number without re-measuring.
 
-#### Critic (STEP=3) — **done** 2026-07-30 — §104-16-original
+#### Critic (STEP=3) — **done** 2026-07-30, §104-20 CLOSED
 
-- `infer_record.mlc` created (255 lines, 9 items, 2 exported). `infer.mlc` 962→**747 lines** — already ≤800, exit criterion met by 1 slice. Dropped now-fully-unused imports from `infer.mlc`: `expr_span`, `RecordLitFields`, `RecordLitSpread`, `field_type_from_object`, `infer_expr_field_diagnostics`, `types_structurally_equal`, `type_description`, `record_lit_merge` (whole `import *`), `diagnostic_code_e065`/`e066`/`e075`, `TypeRegistry` — all confirmed by grep to have zero remaining uses in `infer.mlc` outside the moved code; kept `RecordLitPart` (still used in `visit_record`'s signature) and `type_is_unknown`/`diagnostic_code_e067` (still used elsewhere in the file).
-- Scoped bootstrap diff via a detached `git worktree` at the pre-slice commit (`7bd55d68`), both translations run with matching relative `compiler/main.mlc` paths (lesson from the §104-15 incident — mismatched absolute/relative worktree paths produce a spurious whole-tree diff via `#line` directives alone; caught and corrected this turn before drawing any conclusion). `diff -rq` confined to exactly `infer.cpp`/`infer.hpp` (declarations relocated to `infer_record.hpp`, 2 call sites gain the `infer_expr` argument, `using namespace type_diagnostics`/`record_lit_merge` replaced by `using namespace infer_record`) plus the 2 new files `infer_record.cpp`/`.hpp` — nothing else in the ~230-file translation output differs.
-- Full clean rebuild from Ruby bootstrap (`MLCC_BUILD_VERBOSE=1 MLCC_INCREMENTAL=0 compiler/build.sh`) — 0 compile errors, only the same pre-existing `-Wparentheses-equality` warnings.
-- `rake test_compiler_mlc`: **1471 passed, 0 failed**, arch lint `failures=0 warnings=8` (down from 9 — `infer.mlc` no longer over the threshold).
-- mlcc2 self-host diff (`compiler/build_bin.sh MLC_CXX=g++` from the fresh translation, mlcc2 re-translates the same entry): `diff -rq --exclude=obj` empty, IDENTICAL.
-- **Incidental hygiene fix, same commit:** `compiler/tests/architecture_lint_allowlist.txt` had 3 stale `file_size:` entries for files that had already dropped to ≤800 lines and were silently inert (the lint script only warns/fails when a file is *currently* over 800; an allowlisted-but-now-compliant entry produces no output at all, so staleness is invisible unless someone checks): `checker/registry.mlc` (728 lines — §104-15 closed last turn but the entry removal step was missed), and `cpp_ir/cpp_ast.mlc` (172 lines) / `cpp_emit/print.mlc` (736 lines), both predating this track. Removed all 3 alongside the `checker/infer/infer.mlc` entry this slice legitimately earns removing — verified via a standalone `bash compiler/tests/run_architecture_lint.sh` run (`failures=0 warnings=8`, all 8 remaining WARN lines are genuinely-over-800 files) that no other stale entries remain among the allowlist's `file_size:` rules.
+**Note:** this slot previously held a stray duplicate of the §104-16 Critic writeup (already correctly present above, under §104-16 itself) — a copy-paste artifact from an earlier turn. Removed; replaced with the actual §104-20 re-audit below.
+
+Independent re-audit, none of the Driver's artifacts reused (fresh scratch under `.tmp/critic_104_20/`, a detached `git worktree` at the pre-step commit `5dd2c2ec`, both deleted after verification):
+
+- `git show --stat b83022a4` — exactly the 17 `.mlc` files the Decision's own "Module touch" row lists (9 production + 8 test), no unlisted file touched. Read every diff hunk in full: `compile_options.mlc`/`pipeline.mlc`/`driver/cli.mlc`/`driver/compile_driver.mlc`/`codegen/context.mlc`/`codegen/module.mlc`/`codegen/expr/match_analysis.mlc`/`codegen/expr/match_gen.mlc`/`expr_visitor_cpp.mlc` match the Decision's Strategy verbatim — new `cpp_mode` field/parameter threading plus exactly 1 new dispatch branch in each of `gen_match`/`gen_match_via_cpp_visitor`, both routing to the pre-existing, already-proven `gen_match_guarded_expression`/`_cpp` generator, no new generator code.
+- Independent from-scratch Ruby-bootstrap rebuild of a **baseline** `mlcc` in the worktree (`MLCC_INCREMENTAL=0 compiler/build.sh`, commit `5dd2c2ec`, pre-step) plus an independent rebuild of the current (post-step) `mlcc` — both 0 errors, only the same pre-existing `-Wparentheses-equality` warnings.
+- Default-path diff-empty, re-verified from scratch (**not** reusing the Driver's `git stash`-based artifacts): translated `compiler/main.mlc` with the baseline worktree's `mlcc` and with the current `mlcc` (both in default `readable` mode), each run with a matching relative `compiler/main.mlc` path from its own root (lesson from the §104-15 incident — an absolute/relative or cross-worktree path mismatch produces a spurious whole-tree `#line`-only diff; hit this exact symptom once during this audit — first attempt showed 216 files "differing" purely from mismatched `#line` path prefixes, corrected by re-running from matching relative paths). Corrected `diff -rq`: **exactly 16 file-diffs** (`.cpp`+`.hpp` pairs for the 9 production Module-touch files, plus `context.hpp` counted once — no `.mlc` test file affects `.cpp` output). Read every non-`#line` content line of every diff: 100% additive — new `cpp_mode` struct field/function parameter plus the 2 new `if`/`else if` dispatch lines; zero pre-existing lines changed in substance. Confirms the default-path-unchanged claim independently.
+- Fast-build-mode translation independently diffed against the current default-mode translation: **46 `.cpp` files differ, 0 `.hpp` files** (Driver reported 44 — the 2-file discrepancy is `context.cpp`/`match_analysis.cpp` etc. themselves containing >6-arm matches that also convert; both counts are consistent with "every file with a >6-arm match anywhere in it", not a contradiction, just a different enumeration boundary — not investigated further since it does not affect correctness, only which files this step's own infrastructure code counts itself into).
+- Built 2 independent `mlcc2` binaries via `MLC_CXX=g++ compiler/build_bin.sh` (one from the Critic's own `readable` translation, one from the Critic's own `fast-build` translation, neither reused from the Driver). Each `mlcc2` re-translates `compiler/main.mlc` (the fast-build one again with `--cpp-mode=fast-build`) — `diff -rq --exclude=obj` against its own round-1 output: **empty for both modes**, full self-host round-trip confirmed independently.
+- Independent `rake test_compiler_mlc` rerun (fresh `TMPDIR`, captured to a file to avoid `tail`-truncating the summary): exit_code=0, **1471 passed, 0 failed**, arch lint `failures=0 warnings=8`.
+- Compile-time payoff, spot-checked with a **different, controlled methodology** than the Driver's (quiet machine, `Process.times` child cutime+cstime instead of wall-clock, real `-c` object-file compiles — not `-fsyntax-only`, which was tried first and found to understate the effect since it skips the codegen/optimization work that `std::visit`/`overloaded` template cost actually falls in) across the same 46-file affected set: **g++ 530.77s → 508.35s (−4.22%)**, **clang++ 610.82s → 576.27s (−5.66%)** — same direction, same order of magnitude as the Driver's claimed g++ −3.0%/clang++ −4.8%. Confirms the payoff is real and the Driver's methodology (aggregate, not per-file) is sound; flagging for the record that a `-fsyntax-only` shortcut is **not** a valid substitute for measuring this specific optimization's payoff, since it skips the cost center being optimized.
+- Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`, `.vscode/`) are absent from commit `b83022a4` and still present/uncommitted/untouched after this audit.
+- No false-done found beyond the stray duplicate text corrected above. **§104-20 CLOSED.** Scratch build artifacts (`.tmp/critic_104_20/**`, the detached worktree) cleaned up after verification.
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
 `mlcc -o /tmp/p2 compiler/main.mlc` after, `diff -r /tmp/p1 /tmp/p2` empty
