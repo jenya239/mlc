@@ -4,6 +4,20 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 
 ## Entries
 
+### Turn 2026-07-30 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-14 slice-1 close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-07-30 |
+| done    | Independent re-audit of §104-14 slice 1: (1) function/type-set diff — old `match_gen.mlc` (`git show 0a0351a2:...`, pre-slice baseline, 94 top-level `fn`/`type` names) vs new `match_gen.mlc` + `match_result_type.mlc` combined (94), `diff` empty, zero lost/duplicated; (2) export-status diff — exactly the 1 documented item (`match_return_cpp_type`) gained `export`, zero lost, matching the Decision exactly; (3) byte-level function-body diff via a Ruby script extracting each of the 13 moved functions from both the pre-slice baseline and the new module — all 13 match verbatim modulo the added `export ` prefix; (4) independently re-diffed `expr_visitor_cpp.mlc` whole against its pre-slice baseline — exactly 1 new import line, 3 call-site rewrites, 1 local rename (`match_return_cpp_type` → `match_default_block_return_cpp_type`, definition + its 1 caller), no other change; (5) fresh `mlcc -o ... compiler/main.mlc` translation from scratch, grepped `match_result_type::` across every generated file — found only in `match_gen.cpp`/`expr_visitor_cpp.cpp` (the 2 documented direct callers), zero stray references; grepped `match_return_cpp_type` definitions tree-wide — exactly 1 (`match_result_type.cpp/.hpp`), confirming the collision fix left no duplicate-symbol risk; (6) independent full `rake test_compiler_mlc` rerun (`TMPDIR` unset first) — exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=11` (unchanged, `match_gen.mlc` still allowlisted); (7) independent mlcc2 self-host diff (`build_bin.sh` `MLC_CXX=g++`, in-repo `TMPDIR`): fresh `mlcc` translation → `mlcc2` built → `mlcc2` translation, `diff -rq --exclude=obj` IDENTICAL; (8) line counts confirmed: `match_gen.mlc` 1240, `match_result_type.mlc` 173, allowlist entry for `match_gen.mlc` correctly still present. No false-done found |
+| verify  | see `done` |
+| result  | **§104-14 slice 1 closed.** §104-14 itself stays **open** — `match_gen.mlc` at 1240 lines, still above 800; remaining groups (3 codegen strategies threading the injection pattern + shared arm/binding helpers) need their own Decision(s) |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-14 slice 2 Decision — survey remaining `match_gen.mlc` groups: 3 codegen strategies std::visit string-lambda / std::visit `CppExpression` / guarded if-chain, all thread `gen_stmts`/`eval_expr_fn` injected parameters, plus shared arm/binding helpers; pick the lowest-risk boundary first, same discipline as `transform.mlc`/`decl_cpp_extend.mlc` slices in this track) |
+
 ### Turn 2026-07-30 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0/1/2, §104-14 slice 1 — match_result_type.mlc)
 
 | field   | value |
