@@ -45,16 +45,23 @@ remaining 724 lines of `registry.mlc`, independent fresh
 Ruby-bootstrap rebuild of `mlcc` + fresh translation + duplicate-symbol
 check clean, independent full `rake test_compiler_mlc` rerun 1471/0,
 independent mlcc2 self-host diff rebuilt from scratch — IDENTICAL).
-**§104-16 split `checker/infer/infer.mlc`, Decision+red+green done**
-2026-07-30 (1 slice, 962→747 lines, new `infer_record.mlc` — record
-literal / record-update field-value inference, using the existing
+**§104-16 split `checker/infer/infer.mlc` — CLOSED** 2026-07-30 (1
+slice, 962→747 lines, new `infer_record.mlc` — record literal /
+record-update field-value inference, using the existing
 `infer_expr_fn` injection convention already used by every sibling
-module in the directory; also fixed 3 stale `file_size:` allowlist
-entries found inert while touching that file, see Green section),
-Critic pending. **Queue head is now §104-16 Critic** (priority
-override 2026-07-28, user: "это должно быть приоритетом сейчас" —
-Wave 1 moved ahead of §101/§102/§103; Wave 2 stays queued after §103,
-Wave 3 stays gated)
+module in the directory; also fixed 4 stale `file_size:` allowlist
+entries found inert while touching that file, see Green section;
+Critic-audited: independent function/type-name-set diff 41/41 (71/71
+at full nesting) empty, independent byte-level body diff all 8 moved
+items verbatim modulo the documented injection edits, independent
+full-file reconstruction diff confirming zero unrelated changes,
+independent fresh Ruby-bootstrap rebuild + fresh translation +
+duplicate-symbol check clean, independent full `rake
+test_compiler_mlc` rerun 1471/0, independent mlcc2 self-host diff
+rebuilt from scratch — IDENTICAL). **Queue head is now §104-18
+Decision** (`--emit-layout=hybrid` — priority override 2026-07-28,
+user: "это должно быть приоритетом сейчас" — Wave 1 moved ahead of
+§101/§102/§103; Wave 2 stays queued after §103, Wave 3 stays gated)
 
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
@@ -872,7 +879,21 @@ Independent re-audit, none of the Driver's artifacts reused:
 | 0 | Decision freeze | **done** |
 | 1 | Red: confirm current boundaries (`infer_record.mlc` absent, `infer.mlc` at baseline 962 lines) | **done** |
 | 2 | Green: create `infer_record.mlc`, wire `infer.mlc` import + 2 call-site edits, bootstrap diff, `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
-| 3 | Critic: full re-audit | pending |
+| 3 | Critic: full re-audit | **done — CLOSED** |
+
+#### Critic (STEP=3) — **done** 2026-07-30, §104-16 CLOSED
+
+Independent re-audit, none of the Driver's artifacts reused:
+
+- Function/type-name-set diff, baseline `infer.mlc` (commit `7bd55d68`) vs post-split `infer.mlc`+`infer_record.mlc` combined, both at top-level-declaration granularity (41/41) and at full-nesting granularity including every `extend InferPass` method (71/71) — both diffs empty.
+- Byte-level body diff (Ruby script, next-top-level-marker boundary extraction) for all 8 moved items — 3 verbatim (`infer_explicit_record_literal_field_unknown_name_step`, `infer_explicit_record_literal_field_name_errors`, `Record_literal_spread_inference_fold_state`), 5 differ from baseline in exactly the documented way (added `infer_expr_fn` parameter, `infer_expr`→`infer_expr_fn`, `infer_field_values_errors` gained `export`) — no undocumented change found.
+- Full-file reconstruction: stripped the 2 moved blocks out of the baseline (109 lines removed) and diffed the remainder against the post-split `infer.mlc` body — differences confined to exactly the documented import cleanup (11 dropped names) and the 2 call-site edits (`infer_expr_record_update`, `visit_record` each gain `, infer_expr`). `git diff --stat 7bd55d68 410d4826 -- compiler/` confirms exactly 3 files changed: `infer.mlc`, `infer_record.mlc` (new), `architecture_lint_allowlist.txt` — nothing else in `compiler/**`.
+- Fresh, from-scratch Ruby-bootstrap rebuild of `mlcc` (`MLCC_INCREMENTAL=0 MLCC_BUILD_VERBOSE=1 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing `-Wparentheses-equality` warnings. Fresh translation of `compiler/main.mlc`: `infer_record::` qualification present at the 1 real cross-module call site; duplicate-symbol check — 2 of the 7 non-exported moved helpers (`infer_record_field_binding_value_inference_step`, `accumulate_record_literal_spread_inference_for_literal_part`) are emitted as header-defined templates (mlcc's existing codegen convention for helpers whose only callers are closures capturing a generic callable — confirmed this predates the split by checking that `infer_expr_method`'s own `infer_expr_fn` parameter uses plain `std::function` when not itself closure-captured) — each defined exactly once, no ODR risk.
+- Independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR` inside the repo, captured to a file to avoid truncating the pass/fail summary via `tail`) — exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=8`, `infer.mlc` absent from the warning list.
+- Independent mlcc2 self-host diff: built `mlcc2` via `compiler/build_bin.sh MLC_CXX=g++` from the Critic's own fresh translation (not the Driver's), then re-translated `compiler/main.mlc` with `mlcc2` — `diff -rq --exclude=obj` against the Critic's own `mlcc` translation: empty, IDENTICAL.
+- Confirmed the allowlist cleanup is accurate: `checker/infer/infer.mlc` (746 lines), `checker/registry.mlc` (728), `cpp_ir/cpp_ast.mlc` (172), `cpp_emit/print.mlc` (736) — all 4 removed entries genuinely ≤800 lines; standalone `run_architecture_lint.sh` rerun confirms `failures=0 warnings=8` with all 8 remaining WARN lines genuinely over 800.
+- Confirmed the 3 non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`) are still present and modified/uncommitted (not reverted, not lost).
+- No false-done found. **§104-16 CLOSED** — `infer.mlc` split 962→747 lines in 1 slice, already under the 800-line threshold. Scratch build artifacts (`.tmp/critic_104_16/**`) cleaned up after verification.
 
 #### Green (STEP=2) — **done** 2026-07-30
 
