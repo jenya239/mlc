@@ -636,6 +636,20 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 - `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint `failures=0 warnings=11` (`match_gen.mlc` now at 1185 lines, still on the allowlist).
 - mlcc2 self-host diff (`compiler/build_bin.sh` with `MLC_CXX=g++`, `mlcc2` translating `compiler/main.mlc` from the same tree): `diff -rq p1 p2 --exclude=obj` empty — identical.
 
+#### Critic (STEP=3) — independent re-audit, **CLOSED** 2026-07-30
+
+- Function/type-set diff: pre-slice-2 baseline `match_gen.mlc` (`git show 1ebbcc15:...`, 1240 lines, 81 names) vs post-slice-2 `match_gen.mlc` + `match_arm_lambda.mlc` combined (81 names) — `diff` empty, zero lost/duplicated.
+- Export-status diff: exactly 8 new exports gained (`match_arm_binding_identifier_void`, `match_arm_constructed_value_generic_void`, `match_arm_constructed_value_void`, `match_arm_wild_or_unit_statement`, `match_lambda_const_reference_parameter`, `record_pattern_field_binding`, `std_visit_match_expression`, `visit_subject_for_match`), zero lost — matches the Decision exactly (4 already exported + 8 new = 12).
+- Byte-level function-body diff (Ruby script extracting each of the 12 functions from the pre-slice-2 baseline and from `match_arm_lambda.mlc`): all 12 verbatim-identical (1 apparent mismatch on `match_arm_constructed_value_generic_void` was a script boundary-detection artifact — the function itself matched once the extraction regex was corrected to stop at the function's own closing backtick rather than greedily consuming the next file's leftover `import` lines).
+- `git diff HEAD~1 -- compiler/tests/test_codegen.mlc`: empty — confirms the file was genuinely left untouched and its 4-name import still resolves (transitive import forwarding through `match_gen.mlc`'s own re-import).
+- Confirmed zero local definitions of any of the 12 names remain in `match_gen.mlc` (`grep -c "fn NAME("` = 0 for all 12).
+- Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `match_arm_lambda::` qualification found only in `match_gen.cpp`/`.hpp` (the 1 documented direct caller), zero stray references elsewhere; each of the 12 function bodies (`mlc::String NAME(`) defined exactly once, only in `match_arm_lambda.cpp` — no duplicate-symbol risk.
+- Independent full `rake test_compiler_mlc` rerun (fresh `TMPDIR`, unset first): exit_code=0, arch lint `failures=0 warnings=11`, `match_gen.mlc` at 1185 lines in the WARN/allowlist line, no `fail`/`failed` markers anywhere in output.
+- mlcc2 self-host diff, independently rebuilt (`build_bin.sh` `MLC_CXX=g++` from the Critic's own fresh translation, not reusing the Driver's binary): `mlcc2` → translated `compiler/main.mlc`, `diff -rq` against the Critic's own fresh translation — empty, identical.
+- No false-done found.
+
+**§104-14 slice 2 CLOSED.** Queue head → §104-14 slice 3 Decision (remaining `match_gen.mlc` groups: the 3-way-shared record/ctor-field-binding helper group, or one of the 3 codegen strategies if lower-risk on inspection).
+
 ## Verification discipline
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
