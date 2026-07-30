@@ -89,6 +89,23 @@ own root cause is documented inline in `build_tests.sh`, predating
 this track). No false-done found. **Queue head is now §104-19 Decision
 (Driver STEP=0)**
 
+## Update 2026-07-30 — §104-19 REJECTED (evidence-based), Queue head → §104-20
+
+Surveyed the review's Шаг 19 (include planner / forward-decls in `.hpp`)
+concrete scope before implementing: measured that this codebase's 2 most
+heavily cross-module-shared types (`ast::Expr`/`Stmt`, `registry_type::Type`)
+compile to C++ `std::variant` type **aliases**, which cannot be
+forward-declared at all (unlike `struct T;`), eliminating ~90% of all
+`Shared<T>`-typed cross-module usages (4365 of 4811 measured) from the
+technique's applicability outright; separately measured that 66% (749/1127)
+of all direct `#include` lines in the current `.hpp` set are already
+transitively redundant today (reachable via a sibling include regardless),
+meaning removing an eligible one has no compile-time effect in most cases.
+**Decision: do not implement** — see full evidence and reasoning in the
+§104-19 Decision section below. No `compiler/**` code changed; no self-host
+diff applicable (survey-only). **§104-19 CLOSED (REJECTED). Queue head is
+now §104-20 Decision (`--cpp-mode=fast-build`, Driver STEP=0)**
+
 ## Correction 2026-07-28 (Driver STEP=0 audit) — §104-1/§104-2/§104-3 already done
 
 The "why this track exists" section below claims "0 of 24 steps ever
@@ -176,10 +193,10 @@ a silent "closed" with the file still allowlisted.
 - **§104-12** split `transform/transform.mlc` (1765 lines now, was 1558) (Step 12) — **CLOSED** 2026-07-30, slice 5: extracted `transform_support.mlc` (139 lines, 9 pure-leaf helpers with zero recursion back into `transform_expr`/`dispatch_transform_pass` — `direct_call_parameter_mutability_flags`, `call_callee_ident_name`, `binary_result_type_for_operator`, `merge_conditional_expression_types`, `array_element_type_from_semantic_expression`, `question_unwrapped_type_from_inner` + its internal-only `type_arguments_from_generic_type`, `standalone_unknown_cell`, `inferred_types_from_record_literal_part_for_merge`); `transform.mlc` 881→**753 lines**, allowlist entry removed, both files ≤800
 - **§104-13** split `codegen/decl_cpp.mlc` (1666 lines now, was 1119) (Step 13) — **CLOSED** 2026-07-29, 6 slices, 1666→**355 lines** across `decl_cpp.mlc` + 5 new modules (`decl_cpp_helpers.mlc`/`decl_cpp_type.mlc`/`decl_cpp_trait.mlc`/`decl_cpp_fn.mlc`/`decl_cpp_ffi.mlc`/`decl_cpp_extend.mlc`), all ≤800, allowlist entry removed
 - **§104-14** split `codegen/expr/match_gen.mlc` (1403 lines now, was 907) (Step 14) — **CLOSED** 2026-07-30, 5 slices, 1403→**414 lines** across `match_gen.mlc` + 5 new modules (`match_result_type.mlc`/`match_arm_lambda.mlc`/`match_field_binding.mlc`/`match_generic_ctor_type.mlc`/`match_guarded_gen.mlc`), ≤800, allowlist entry removed, all Critic-audited
-- **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) — needs re-export language support first, see review Часть 3 §1 (Step 15) — target ≤800
+- **§104-15** split `checker/registry.mlc` (1060 lines now, was 870) (Step 15) — **CLOSED** 2026-07-30, 1 slice: extracted `registry_type.mlc` (339 lines); `registry.mlc` 1060→**728 lines**, no language extension needed (see Decision — plain `import` is a sufficient substitute for the review's hypothetical `export ... from` syntax)
 - **§104-16** split `checker/infer/infer.mlc` (962 lines now, was 786) (Step 16) — **CLOSED** 2026-07-30, 1 slice, 962→**747 lines** across `infer.mlc` + new `infer_record.mlc` (255 lines), ≤800, allowlist entry removed
 - **§104-18** `--emit-layout=hybrid` (Step 18) — review's own top pick for build-speed ROI — **CLOSED** 2026-07-30, Critic-audited
-- **§104-19** include planner / forward-decls (Step 19) — depends on §104-18
+- **§104-19** include planner / forward-decls (Step 19) — **CLOSED (REJECTED)** 2026-07-30 — survey found the technique structurally inapplicable to this codebase's 2 dominant hub types (`ast::Expr`/`Stmt`, `registry_type::Type`, both `std::variant` aliases, not forward-declarable) and low residual payoff (66% of direct includes already transitively redundant); no code changed, see Decision
 - **§104-20** `--cpp-mode=fast-build` (Step 20) — depends on Step 17 (already done via §44)
 - **§104-22** `bootstrap-fast.sh`/`bootstrap-full.sh` tooling (Step 22) — depends on §104-18
 - **§104-23** determinism checks (`--dump-mir`/`--dump-sem` diff-stable) (Step 23) — depends on §104-22
@@ -973,6 +990,26 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 - Confirmed line counts exactly: `compiler/cpp_emit/layout.mlc` 14, `compiler/pipeline.mlc` 401, `compiler/compile_options.mlc` 142, `compiler/tests/test_layout.mlc` 72.
 - Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`) are absent from the Driver's commit (`git show --stat ba796eec`) and still present/uncommitted/untouched after this audit.
 - No false-done found. **§104-18 CLOSED.** Scratch build artifacts (`.tmp/critic_104_18/**`, probe file) cleaned up after verification.
+
+## §104-19 Include planner / forward-decls in `.hpp`
+
+### Decision (STEP=0) — **REJECTED, evidence-based** 2026-07-30
+
+| Item | Choice |
+|------|--------|
+| Problem (review's framing) | Review's Шаг 19 (`review_20260629_144027.md:409-416`): every `.hpp` currently `#include`s the `.hpp` of every module it imports (`compiler/codegen/cpp_naming.mlc:116-117` `include_lines`, used unconditionally in `module.mlc:189/210-211`'s `std_includes`). Proposal: a `plan_includes(load_item, all_items) -> IncludePlan` that replaces an import's `#include` with a bare `struct T;` forward-declaration in the `.hpp` (moving the real `#include` to the `.cpp`) whenever the imported type `T` is used in that `.hpp` **only** as `Shared<T>`/`T*`/`T&`, never by value. Review's own risk note: **"высокий"** — an insufficient include is a silent-until-late `incomplete type` `clang++` error; review's own mitigation is "начать консервативно: forward-decl только для типов, используемых исключительно за `std::shared_ptr`" |
+| Survey (this Decision, before committing to Red/Green) | Measured the actual population of candidate types in the real, current `compiler/out/*.hpp` (185 files, fresh translation) rather than assuming the review's premise: (1) every MLC **sum type** (`type X = A(..) \| B(..) \| ...`, ≥2 variants) compiles to a C++ **type alias** `using X = std::variant<A, B, ...>;` (confirmed: `codegen/decl_cpp_type.mlc:70-74` `gen_type_decl_fwd_cpp` emits **zero** forward declarations for the sum type itself, only for each variant struct; `ast.hpp:69` `using Expr = std::variant<...31 variants...>;`, `registry_type.hpp:27` `using Type = std::variant<...18 variants...>;`) — a C++ type **alias** categorically **cannot** be forward-declared (unlike `struct T;`, there is no partial/incomplete form of a `using` declaration; the full alias line, and therefore every one of its alternative types, must already be visible wherever the alias name is spelled). This is not a corner case: a repo-wide scan of every `std::shared_ptr<Module::Type>` occurrence across all 185 headers (`ruby` one-off, not committed) found **4365** such occurrences resolve to a sum-type alias (dominated by `ast::Expr`/`ast::Stmt`/`registry_type::Type`, the 3 most heavily-shared cross-module types in the entire compiler) versus only **446** resolving to an actual forward-declarable `struct` (record type, single-variant) — a **~10:1** ratio, meaning the review's own proposed technique is structurally inapplicable to roughly 90% of the `Shared<T>`-typed cross-module traffic in this codebase, before even applying the "used *exclusively* via `Shared`" per-header filter that would shrink the eligible 446 further (many of the same record types are *also* used by value elsewhere in the same header — e.g. as a return type or a sibling struct field — which the review's own conservative rule disqualifies). (2) Independently checked whether removing an *eligible* direct `#include` line would even change compile-time transitive-closure size: for every one of the 1127 total direct `#include` lines across all 185 headers, checked whether that same header is *also* reachable transitively via one of the header's **other** direct includes (a no-op re-inclusion, blocked by the `#ifndef` guard, that costs the preprocessor nothing on the 2nd+ path) — **749 of 1127 (66%)** direct includes are already transitively redundant *today*, independent of this change. Combined with (1), this means the review's premise — that swapping individual `#include` lines for forward-declarations meaningfully shrinks `.hpp` parse time — does not hold for this codebase's actual dependency shape: the dominant parse cost is the transitive closure rooted at a handful of hub files (`ast.hpp`, `registry_type.hpp`, `check_context.hpp`, ...) that is reached from nearly every module regardless of which single direct `#include` line specifically triggers it, and those exact hub types are the ones ineligible for forward-declaration in the first place |
+| Verdict | **Do not implement** `compiler/cpp_emit/include_planner.mlc` / `--plan-includes` as scoped by the review's Шаг 19. The technique is real and correctly described by the review in the abstract, but this specific codebase's two most heavily cross-referenced hub types (`ast::Expr`/`Stmt`, `registry_type::Type`) are C++ `std::variant` type aliases, categorically outside the technique's applicability, and the residual ~10% of candidate `Shared<T>` usages sit behind already-redundant `#include` lines two-thirds of the time — the effort (new module, new codegen branch, new flag, per-header forward-declarability analysis, all under the review's own "высокий" risk banner for a class of bug — incomplete-type errors — that surfaces only at `clang++` time, potentially per call site) is not justified by the measured payoff. No code changed under `compiler/**`; no self-host diff / Tier B applicable this step (survey-only, evidence-based rejection) |
+| Evidence artifacts | Ad-hoc `ruby -e` one-liners run against a fresh `compiler/out/*.hpp` translation (not committed, scratch analysis only): sum-vs-record `Shared<T>` usage counts (4365 vs 446) and direct-include transitive-redundancy count (749/1127) — both reproducible by rerunning the same scan against any fresh translation, methodology documented here in full so the numbers are independently checkable without rerunning if a reviewer trusts the described `grep`/`scan` logic |
+| Module touch | none (`compiler/**` unmodified this step) |
+| REG | no |
+| Out of scope | Not pursuing a narrower variant (e.g. forward-decl only within the ~446 truly-eligible-and-non-redundant record-type usages) now — the residual population is small enough, after both filters, that a dedicated codegen feature for it is unlikely to be worth tracking separately; revisit only if a future profiling pass shows `.hpp` parsing (as opposed to `.cpp` body compilation, which §104-18's hybrid layout already addresses) is a measured bottleneck |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done — REJECTED, §104-19 CLOSED (no Red/Green/Critic needed, no code changed)** |
 
 #### Critic (STEP=3) — **done** 2026-07-30 — §104-16-original
 
