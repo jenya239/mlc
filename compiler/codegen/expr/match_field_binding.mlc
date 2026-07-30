@@ -1,0 +1,65 @@
+// Record/ctor field-binding helpers shared by all 3 match-arm codegen strategies
+// (std::visit string-lambda, std::visit CppExpression IR, guarded if-chain).
+// No injected gen_stmts/eval_expr_fn — only CodegenContext/Pattern/string in, CodegenContext/RecordFieldBindAccum out.
+
+import { Pattern } from '../../frontend/ast'
+import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
+import { cpp_safe } from '../cpp_naming'
+import { record_pattern_field_binding } from './match_arm_lambda'
+
+type RecordFieldBindAccum = RecordFieldBindAccum {
+  field_bindings: string,
+  arm_context: CodegenContext
+}
+
+fn record_field_bind_step(
+  accumulated: RecordFieldBindAccum,
+  field_pattern: Shared<Pattern>,
+  lower_name: string
+) -> RecordFieldBindAccum =
+  match field_pattern {
+    PatternIdent(field_name, _) =>
+      RecordFieldBindAccum {
+        field_bindings: accumulated.field_bindings +
+          record_pattern_field_binding(cpp_safe(field_name), lower_name),
+        arm_context: accumulated.arm_context.add_value(field_name)
+      },
+    _ => accumulated
+  }
+
+export fn record_pattern_field_bindings_and_context(
+  field_patterns: [Shared<Pattern>],
+  lower_name: string,
+  start_context: CodegenContext
+) -> RecordFieldBindAccum =
+  field_patterns.fold(
+    RecordFieldBindAccum { field_bindings: '', arm_context: start_context },
+    (accumulated, field_pattern) => record_field_bind_step(accumulated, field_pattern, lower_name))
+
+export fn codegen_context_with_ctor_field_bindings(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  base_context: CodegenContext
+) -> CodegenContext = do
+  const ctor_type_information: Shared<CtorTypeInfo> = lookup_ctor_type_info_for_context(base_context, constructor_name)
+  let mut arm_context = base_context
+  let mut pattern_index = 0
+  while pattern_index < sub_patterns.length() do
+    match sub_patterns[pattern_index] {
+      PatternIdent(pattern_name, _) => do
+        if ctor_type_information.shared_pos.contains(pattern_index) then
+          arm_context = arm_context.add_shared(pattern_name)
+        end
+        if ctor_type_information.shared_arr_pos.contains(pattern_index) then
+          arm_context = arm_context.add_shared_array(pattern_name)
+        end
+        if (!ctor_type_information.shared_pos.contains(pattern_index)) && (!ctor_type_information.shared_arr_pos.contains(pattern_index)) then
+          arm_context = arm_context.add_value(pattern_name)
+        end
+      end,
+      _ => do end
+    }
+    pattern_index = pattern_index + 1
+  end
+  arm_context
+end

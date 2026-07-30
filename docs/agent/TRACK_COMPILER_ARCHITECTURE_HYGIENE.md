@@ -650,6 +650,37 @@ Independent function/type-set diff: old `match_gen.mlc` (`git show 0a0351a2:...`
 
 **§104-14 slice 2 CLOSED.** Queue head → §104-14 slice 3 Decision (remaining `match_gen.mlc` groups: the 3-way-shared record/ctor-field-binding helper group, or one of the 3 codegen strategies if lower-risk on inspection).
 
+### Slice 3 — `match_field_binding.mlc` (3-way-shared record/ctor-field-binding helper group — zero injected function parameters, prerequisite leaf before any of the 3 codegen strategies)
+
+#### Decision (STEP=0) — **frozen** 2026-07-30
+
+| Item | Choice |
+|------|--------|
+| Problem | `match_gen.mlc` (1185 lines, post-slice-2) still has 3 codegen strategies (std::visit string-lambda lines 113-213/990-1140, std::visit `CppExpression` IR lines 1014-1165, guarded if-chain lines 283-703/869-988) each threading `gen_stmts`/`eval_expr_fn` injected parameters — not zero-risk single-slice extractions. Re-surveyed for a lower-risk prerequisite leaf first (same discipline as `transform_context.mlc`/`decl_cpp_helpers.mlc` in this track): lines 53-111 — `type RecordFieldBindAccum`, `fn record_field_bind_step` (internal-only, sole caller is the next item), `fn record_pattern_field_bindings_and_context`, `fn codegen_context_with_ctor_field_bindings`. Confirmed by reading each signature and grepping every call site: **zero injected `gen_stmts`/`eval_expr_fn` parameters** anywhere in this group — it only takes `CodegenContext`/`Pattern`/`string` and returns `CodegenContext`/`RecordFieldBindAccum`. Grep-confirmed this group is called from all **3** remaining strategies still living in `match_gen.mlc`: `record_pattern_field_bindings_and_context` from `gen_arm_record_pattern` (string-lambda strategy, line 204) and `gen_arm_record_pattern_cpp` (`CppExpression` strategy, line 1071); `codegen_context_with_ctor_field_bindings` from `gen_arm_ctor` (string-lambda, line 183), `gen_guarded_constructor_arm_statements` (guarded if-chain, line 616), and `gen_arm_ctor_cpp` (`CppExpression`, line 1046) — genuinely 3-way shared, matching the risk assessment already logged in slice 2's Decision. Repo-wide grep for all 4 names (type + 3 functions) found **zero external usage and zero naming collisions** anywhere else in `compiler/**` |
+| Strategy (v1) | New `compiler/codegen/expr/match_field_binding.mlc`. Move all 4 items wholesale. Export only the 2 with external callers (`record_pattern_field_bindings_and_context`, `codegen_context_with_ctor_field_bindings`); `RecordFieldBindAccum`/`record_field_bind_step` stay internal (both used only inside this group, zero external callers found). Needed imports: `CodegenContext`/`CtorTypeInfo`/`lookup_ctor_type_info_for_context` (from `../context`), `Pattern` (from `../../frontend/ast`), `cpp_safe` (from `../cpp_naming`), `record_pattern_field_binding` (from `./match_arm_lambda`) — all already imported into `match_gen.mlc` today, just re-pointed. `match_gen.mlc` adds 1 import line pulling the 2 exported names back (all 3 strategies still call them from there). If the checker reports `RecordFieldBindAccum` unresolved in `match_gen.mlc` despite the inferred-type-only usage (no explicit type annotation at any call site — `record_pattern_field_bindings_and_context`'s return type is consumed only via `.field_bindings`/`.arm_context` field access, never named explicitly), export it too and document the correction — same discovery-during-green discipline as every prior slice's unplanned import fix |
+| Primary gate | Red: `match_field_binding.mlc` absent, all 4 items at the documented lines, file at baseline 1185 lines. Green: `match_field_binding.mlc` exists, 2 (or 3, if the correction above triggers) exported; `match_gen.mlc` shrinks to ~1126 lines (58 lines removed, 1 import line added — still above 800, allowlisted, more slices needed); bootstrap diff restricted to the split modules + any direct caller found by grep; `rake test_compiler_mlc` (1471+ passed, 0 failed, arch lint failures=0); mlcc2 self-host diff before Critic close |
+| Module touch | new `compiler/codegen/expr/match_field_binding.mlc`; `compiler/codegen/expr/match_gen.mlc` (shrinks, gains 1 import line) |
+| REG | no (`compiler/**` only) |
+| Out of scope | the 3 codegen strategies themselves (still thread the injection pattern, need their own per-strategy Decision); the 2-way-shared generic-ctor-type-argument resolution group (lines 487-599, used by the guarded and `CppExpression` strategies only — found during this survey, needs its own Decision, not moved this slice); any signature/algorithm change; MIR |
+
+#### Steps (§104-14 — slice 3: match_field_binding)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirm current boundaries (`match_field_binding.mlc` absent, 4 items at the documented lines, file at baseline 1185 lines) | **done** |
+| 2 | Green: create `match_field_binding.mlc`, wire `match_gen.mlc` import, bootstrap diff (split-scoped), `rake test_compiler_mlc`, mlcc2 self-host diff | **done** |
+| 3 | Critic: full re-audit | pending |
+
+#### Green (STEP=2) — result
+
+- `match_field_binding.mlc` created, 65 lines: `RecordFieldBindAccum` type + `record_field_bind_step` internal (2 items, zero export — no external callers found), `record_pattern_field_bindings_and_context` + `codegen_context_with_ctor_field_bindings` exported (2 items, matches the Decision exactly).
+- `match_gen.mlc`: 1185 → 1129 lines (58 lines removed, 2 lines added — 1 import line). Still allowlisted.
+- No correction needed this slice: the checker resolved `RecordFieldBindAccum` cleanly at every call site in `match_gen.mlc` via inferred return types (`.field_bindings`/`.arm_context` field access), with zero explicit type import required — confirmed by a clean `compiler/build.sh` rebuild with no checker errors.
+- Controlled bootstrap diff (same on-disk `mlcc` binary, `#line`-stripped): only `match_gen.cpp`/`.hpp` differ (struct + 3 function bodies removed, 3 call sites now `match_field_binding::`-qualified, 1 new `#include`) and `match_field_binding.cpp`/`.hpp` are new. Zero other file touched — no external caller needed editing (repo-wide grep before the move found none).
+- `rake test_compiler_mlc`: 1471 passed, 0 failed, arch lint `failures=0 warnings=11` (`match_gen.mlc` now at 1129 lines, still allowlisted).
+- mlcc2 self-host diff (`compiler/build_bin.sh` `MLC_CXX=g++`): `diff -rq p1 p2 --exclude=obj` empty — identical.
+
 ## Verification discipline
 
 Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
