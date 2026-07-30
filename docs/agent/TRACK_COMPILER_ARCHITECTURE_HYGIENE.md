@@ -373,12 +373,16 @@ fresh `mlcc` → `/tmp/mlc_p1`, `mlcc2` built from `/tmp/mlc_p1`'s C++,
 IDENTICAL. No `lib/mlc/**` touched, `scripts/regression_gate.sh` not
 required for this sub-step.
 
-**§104-12 itself CLOSED** — `transform.mlc` split from 1765 to 753 lines
-across 5 modules (`transform_coerce.mlc`/`transform_context.mlc`/
-`transform_call_args.mlc`/`transform_method.mlc`/`transform_support.mlc`),
-original file and every new module now ≤800, allowlist entry removed.
-Queue head → §104-13 (`codegen/decl_cpp.mlc` split, 1666 lines) — already
-closed below, so queue head after this turn is Critic on §104-12 slice 5.
+**§104-12 itself CLOSED, re-confirmed by Critic 2026-07-30** — independent
+function/type-set diff (24/24, empty), export-status diff (exactly the 8
+documented), byte-level function-body diff (all 9 verbatim modulo `export`),
+fresh `mlcc` translation + stray-`transform_support::`-reference grep
+(zero outside `transform.cpp`), independent `rake test_compiler_mlc` rerun
+(1471/0, arch lint warnings 12→11), line counts (753/139, both ≤800),
+allowlist entry absence confirmed. `transform.mlc` split from 1765 to 753
+lines across 5 modules (`transform_coerce.mlc`/`transform_context.mlc`/
+`transform_call_args.mlc`/`transform_method.mlc`/`transform_support.mlc`).
+Queue head → §104-14 (`codegen/expr/match_gen.mlc` split, 1403 lines) Decision.
 
 ## §104-13 `codegen/decl_cpp.mlc` split (1666 lines)
 
@@ -569,7 +573,7 @@ Independent function/type-set diff: old `decl_cpp.mlc` (`git show 201254fd:...`,
 
 Independent function/type-set diff: old `decl_cpp.mlc` (`git show b193ec0e:...`, pre-slice-6 baseline, 60 top-level `fn`/`type` names) vs new `decl_cpp.mlc` + `decl_cpp_extend.mlc` combined (60) — `diff` empty, zero lost/duplicated (note: this count excludes the `extend CodegenContext { ... }` block's 2 nested methods, consistent with the counting method used in every prior slice of this track). Export-status diff: 17 exports before, 17 after, `diff` empty — zero gained, zero lost, matching the Decision's "no new exports needed" claim exactly (the hub's `gen_decl_cpp`/`gen_proto_cpp` were already `export`ed pre-slice, carried over as-is). Confirmed the 1 Decision correction (hub had to move with the group, 1 dot-call rewritten to free-function form) is a pure mechanical fix with no behavior change — re-read both new files in full, no other deviation from the moved-verbatim bodies found. Fresh `mlcc -o ... compiler/main.mlc` translation from scratch: `decl_cpp_extend.cpp/.hpp` created; grepped `decl_cpp_extend::` across every generated `.cpp`/`.hpp` — found only in `decl_cpp.cpp`, zero stray references elsewhere. Independent full `rake test_compiler_mlc` rerun: exit_code=0, `1471 passed, 0 failed`, arch lint `failures=0 warnings=12`. Independent `ReadLints` on both files: no linter errors. Line counts confirmed: `decl_cpp.mlc` 355, `decl_cpp_extend.mlc` 626 — both under the 800-line threshold, `compiler/tests/architecture_lint_allowlist.txt` no longer lists `codegen/decl_cpp.mlc`. mlcc2 self-host g++ diff not re-run a third time (witnessed directly during Driver STEP=2, twice, in the same continuous session, no source change since the last one). No false-done found. **§104-13 slice 6 closed.**
 
-**§104-13 itself CLOSED** (`codegen/decl_cpp.mlc` split 1666→355 lines across 6 slices/modules over the track: `decl_cpp_helpers.mlc`, `decl_cpp_type.mlc`, `decl_cpp_trait.mlc`, `decl_cpp_fn.mlc`, `decl_cpp_ffi.mlc`, `decl_cpp_extend.mlc`; both the original file and every new module now under the 800-line arch-lint gate, allowlist entry removed — the exit criterion added 2026-07-29 after the §104-12 premature-close finding). **§104-12 slice 5 done 2026-07-30** (`transform_support.mlc` extracted, `transform.mlc` 881→753 lines, allowlist entry removed) — **§104-12 itself now CLOSED**, both split tracks meet the 2026-07-29 exit criterion. Queue head → Critic re-audit of §104-12 slice 5, then §104-14 (`codegen/expr/match_gen.mlc` split, 1403 lines).
+**§104-13 itself CLOSED** (`codegen/decl_cpp.mlc` split 1666→355 lines across 6 slices/modules over the track: `decl_cpp_helpers.mlc`, `decl_cpp_type.mlc`, `decl_cpp_trait.mlc`, `decl_cpp_fn.mlc`, `decl_cpp_ffi.mlc`, `decl_cpp_extend.mlc`; both the original file and every new module now under the 800-line arch-lint gate, allowlist entry removed — the exit criterion added 2026-07-29 after the §104-12 premature-close finding). **§104-12 slice 5 done 2026-07-30** (`transform_support.mlc` extracted, `transform.mlc` 881→753 lines, allowlist entry removed) — **§104-12 itself now CLOSED**, both split tracks meet the 2026-07-29 exit criterion. Critic re-audit 2026-07-30 confirmed clean (see §104-12 slice-5 section above). Queue head → §104-14 (`codegen/expr/match_gen.mlc` split, 1403 lines) Decision.
 
 ## Verification discipline
 
