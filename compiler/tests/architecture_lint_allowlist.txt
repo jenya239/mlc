@@ -6,7 +6,6 @@ file_size:frontend/parser/exprs.mlc
 file_size:frontend/parser/decls.mlc
 file_size:checker/infer/infer.mlc
 file_size:checker/registry.mlc
-file_size:codegen/expr/match_gen.mlc
 file_size:mir/lower_fn.mlc
 file_size:cpp_ir/cpp_ast.mlc
 file_size:cpp_emit/print.mlc
