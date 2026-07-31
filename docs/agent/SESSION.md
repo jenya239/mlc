@@ -521,3 +521,17 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | issues  | None new. `compiler/out/**` and other non-track WIP (`CLAUDE.md`/`README.md`/`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) untouched, confirmed via `git status` before commit |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TERMINAL (§102e — independent re-audit: re-verify the gate test and `dev_gate_fast.sh`/`run_ux_gate.sh` from scratch with a clean environment and a fresh `mlcc` rebuild; independently re-derive the resize/reflow and scrollback-eviction behavior with a standalone probe rather than trusting the Driver's own; independently sabotage the gate's own assertions (different mutations than the Driver's own 3) to confirm they are load-bearing; spot-check the destroy-time scrollback-cleanup logic and the combined-callbacks change for any regression risk to §102a/§102b/§102c/§102d; then close §102e or return a correction — closing §102e advances to §102f `TERMINAL_PANEL_INTEGRATION`) |
 
+
+### Turn 2026-07-31 (Critic TRACK_EDITOR_TERMINAL STEP=3, §102e close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_TERMINAL |
+| started | 2026-07-31 |
+| done    | Independent re-audit of §102e. Read Decision + `vterm_abi.cpp`/`pty_abi.cpp`/`terminal_resize.mlc`/unit test. Gate rebuild in a fresh out dir under `.tmp/critic_102e`: `terminal_resize_scrollback_unit ok`. Independent ABI probe (different scenarios from Driver): shrink-then-grow reflow (`HELLO_WORLD_TEST` 5×20→5×8→5×20 rejoins); capacity=3 / 50 lines into 2-row screen retains `L46`/`L47`/`L48` (oldest-first); capacity=0 discards all pushlines; 80-iter create/fill/destroy — no stale scrollback count; `pty_resize(24,80)` → `stty size` = `24 80`. `PROBE_FAILS=0`. Spot-check: destroy uses raw `::vterm_obtain_screen` (not the resetting wrapper) as map key before free — correct; combined `VTermScreenCallbacks` still fires damage (§102a unit asserts `damage_count > 0`, still passes). Sabotage with mutations *distinct* from Driver's 3: (1) `pop_back` instead of `pop_front` in `on_sb_pushline` → exit 7, oldest=`line0` not `line98`; (2) `vterm_resize` returns 0 without `vterm_set_size` → exit 3; (3) `terminal_panel_resize` skips pty → exit 14, `stty size`=`0 0`. All reverted (`git checkout` empty vs HEAD). Regression §102a/b/c/d all `ok`. `dev_gate_fast.sh` 1471/0. First `run_ux_gate.sh` with Critic `TMPDIR=.tmp/critic_102e` failed `newline_indent_no_full_stringify_stable` (`missing document_line_start_before`) — same stale-TMPDIR class as §102a/§102d SESSION precedents; unset TMPDIR/MLCC_* + rerun → 114/114, zero code changes between runs. No production defect. Closed §102e in TRACK/PLAN/CONTINUITY/DEVELOPMENT/SESSION |
+| verify  | Independent probe EXIT=0; gate `ok`; sabotage exits 7/3/14 then clean rebuild `ok`; §102a–d `ok`; `dev_gate_fast.sh` 1471/0; `run_ux_gate.sh` 114/114 (clean env) |
+| result  | **§102e CLOSED.** No correction. Advances to §102f |
+| issues  | First UX pass false-failed under Critic-exported TMPDIR; not a §102e defect. Non-track WIP untouched |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_TERMINAL (§102f `TERMINAL_PANEL_INTEGRATION` — read the track file's own §102f spec before freezing the Decision; wire terminal as a new tab/panel kind in `demo_live.mlc` / `EditorAppState` post-§97c; gate = one new `run_ux_gate.sh` scenario) |

@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a/§102b/§102c/§102d all **CLOSED**, Critic-audited.
-§102e `TERMINAL_RESIZE_SCROLLBACK` Driver done (red+green), Critic next.
+## Status: **open** — §102a/§102b/§102c/§102d/§102e all **CLOSED**, Critic-audited.
+§102f `TERMINAL_PANEL_INTEGRATION` next.
 
 ## §102e Decision (frozen 2026-07-31)
 
@@ -115,6 +115,41 @@ after the combined-callbacks/reflow change to `vterm_abi.cpp`:
 failures=0. `scripts/run_ux_gate.sh`: all 114 scenarios ok. No
 `lib/mlc/**` files touched → `scripts/regression_gate.sh` not required by
 the standing rule.
+
+## §102e Critic (closed 2026-07-31)
+
+Independent re-audit, clean env (`TMPDIR` inside repo for probes/gate,
+then **unset** for `run_ux_gate.sh` — first UX pass with Critic's
+`TMPDIR=.tmp/critic_102e` exported failed `newline_indent_no_full_stringify_stable`
+with `missing document_line_start_before`, same class of stale-TMPDIR
+false-fail as §102a/§102d SESSION precedents; confirmed via unset+rerun
+→ 114/114 clean, zero §102e code changes between the two runs):
+- Fresh gate rebuild in a separate out dir: `terminal_resize_scrollback_unit
+  ok`. `dev_gate_fast.sh` 1471/0. `run_ux_gate.sh` 114/114 (clean env).
+- Independent ABI probe (different scenarios from Driver's): shrink-then-grow
+  reflow (`HELLO_WORLD_TEST` 5×20→5×8→5×20 rejoins exactly); capacity=3 /
+  50 lines into a 2-row screen retains exactly `L46`/`L47`/`L48` (oldest-first,
+  different N than Driver's 5/105); capacity=0 immediately discards all
+  pushlines; 80-iteration create/fill/destroy loop — no stale nonzero
+  scrollback count on a fresh screen; PTY `stty size` after `pty_resize(24,80)`
+  reports `24 80`. `PROBE_FAILS=0`.
+- Combined-callbacks / destroy cleanup spot-check: §102a's
+  `terminal_libvterm_ffi_unit` still asserts `damage_count > 0` (damage
+  callback not dropped by the shared `VTermScreenCallbacks` struct);
+  destroy uses raw `::vterm_obtain_screen` (not the resetting wrapper) as
+  the map-key lookup before `vterm_free` — correct; §102a/§102b/§102c/§102d
+  all still `ok` after the Critic rebuild.
+- **Sabotage (different mutations from Driver's 3)**: (1) `pop_back` instead
+  of `pop_front` in `on_sb_pushline` → exit 7, oldest retained was `line0`
+  not `line98` (load-bearing oldest-first check); (2) `vterm_resize` no-op
+  returning 0 without `vterm_set_size` → exit 3, size getters still 4×6;
+  (3) `terminal_panel_resize` skips `pty_terminal_resize` → exit 14,
+  `stty size` reported `0 0`. All three reverted; `git checkout` confirmed
+  empty diff vs `HEAD` before proceeding. No production defect found.
+- No `lib/mlc/**` / `compiler/**` `.mlc` touched → `regression_gate.sh` /
+  self-host diff not required.
+
+**§102e CLOSED.** Next: §102f `TERMINAL_PANEL_INTEGRATION`.
 
 ## §102d Decision (frozen 2026-07-31)
 
