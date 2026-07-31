@@ -103,6 +103,7 @@ struct BindingKeyEdges {
   int32_t key_z = 0;
   int32_t key_y = 0;
   int32_t key_c = 0;
+  int32_t key_d = 0;
   int32_t key_x = 0;
   int32_t key_v = 0;
   int32_t key_a = 0;
@@ -651,6 +652,10 @@ String glfw_gl_take_binding_key() {
   }
   if (edge_key_down(GLFW_KEY_C, edges.key_c) != 0) {
     return String("c");
+  }
+  // TRACK_EDITOR_TERMINAL §102d — Ctrl+D (EOF signal), no prior binding used D.
+  if (edge_key_down(GLFW_KEY_D, edges.key_d) != 0) {
+    return String("d");
   }
   if (edge_key_down(GLFW_KEY_X, edges.key_x) != 0) {
     return String("x");

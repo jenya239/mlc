@@ -1,0 +1,90 @@
+// TRACK_EDITOR_TERMINAL §102d — keyboard input -> PTY byte forwarding.
+// Pure encoder: GLFW-polled keyboard state -> raw bytes for a PTY's line
+// discipline. Caller does the actual pty_terminal_write, same poll/transform
+// split as frame_input_poll.
+import {
+  glfw_gl_take_text,
+  glfw_gl_key_backspace_down,
+  glfw_gl_key_enter_down,
+  glfw_gl_take_binding_key,
+  glfw_gl_mod_ctrl_down
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { vterm_control_escape_byte } from './vterm_ffi'
+
+// Reuses the byte<->string helper already exposed for the websocket stdlib
+// (TRACK_STDLIB_WEBSOCKET_TO_MLC) — same header, arbitrary byte 0..255, no
+// new C++ binding needed for control-character bytes MLC string literals
+// cannot express (only \n \t \r \\ \" \0 \$ \{ \}).
+extern fn terminal_control_byte(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp" thread_safe
+
+// Byte values empirically confirmed against this codebase's own PTY shim
+// (§102b's forkpty, default termios): `stty -a` on a freshly spawned PTY
+// reports `erase = ^?` (DEL, 0x7f) — sending it twice into a `cat` session
+// correctly erased 2 preceding characters via the tty's own echo. Ctrl+D
+// (0x04) on an empty line correctly EOFs a `cat` child (0 further bytes,
+// clean close). Ctrl+C (0x03) correctly SIGINTs a `sleep 5` child (child
+// exits immediately instead of completing). Ctrl+Z (0x1a, SUSP per the same
+// `stty -a`) is not live-tested here — suspending a child leaves it stopped,
+// not exited, not a safe thing to leave behind in an automated smoke test.
+export fn terminal_delete_byte() -> string = terminal_control_byte(127)
+export fn terminal_interrupt_byte() -> string = terminal_control_byte(3)
+export fn terminal_eof_byte() -> string = terminal_control_byte(4)
+export fn terminal_suspend_byte() -> string = terminal_control_byte(26)
+
+export type TerminalKeyboardForward = {
+  bytes: string,
+  backspace_down: i32,
+  enter_down: i32
+}
+
+// last_backspace_down/last_enter_down: previous poll's down state for
+// rising-edge detection — glfw_gl_key_*_down() is level (is-currently-down
+// this frame), same convention frame_input_poll already uses for
+// last_backspace/last_enter (avoids repeating the byte every frame a key is
+// held, since this polling layer has no OS key-repeat awareness).
+export fn terminal_keyboard_forward_poll(
+  last_backspace_down: i32,
+  last_enter_down: i32
+) -> TerminalKeyboardForward = do
+  let mut bytes = glfw_gl_take_text()
+
+  const backspace_down = glfw_gl_key_backspace_down()
+  if backspace_down != 0 && last_backspace_down == 0 then
+    bytes = bytes + terminal_delete_byte()
+  end
+
+  const enter_down = glfw_gl_key_enter_down()
+  if enter_down != 0 && last_enter_down == 0 then
+    // Enter sends CR (0x0d), not LF — matches a real terminal's own key
+    // encoding; the PTY's own icrnl translates it to LF for the child
+    // (confirmed in the same `stty -a` probe: `icrnl` is set).
+    bytes = bytes + "\r"
+  end
+
+  const binding_key = glfw_gl_take_binding_key()
+  const ctrl_down = glfw_gl_mod_ctrl_down()
+  if binding_key == "tab" then
+    bytes = bytes + "\t"
+  else if binding_key == "left" then
+    bytes = bytes + vterm_control_escape_byte() + "[D"
+  else if binding_key == "right" then
+    bytes = bytes + vterm_control_escape_byte() + "[C"
+  else if binding_key == "up" then
+    bytes = bytes + vterm_control_escape_byte() + "[A"
+  else if binding_key == "down" then
+    bytes = bytes + vterm_control_escape_byte() + "[B"
+  else if ctrl_down != 0 && binding_key == "c" then
+    bytes = bytes + terminal_interrupt_byte()
+  else if ctrl_down != 0 && binding_key == "d" then
+    bytes = bytes + terminal_eof_byte()
+  else if ctrl_down != 0 && binding_key == "z" then
+    bytes = bytes + terminal_suspend_byte()
+  end
+
+  TerminalKeyboardForward {
+    bytes: bytes,
+    backspace_down: backspace_down,
+    enter_down: enter_down
+  }
+end

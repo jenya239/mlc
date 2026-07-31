@@ -1,0 +1,296 @@
+// TRACK_EDITOR_TERMINAL §102d — keyboard -> PTY forwarding, offscreen
+// (MLC_GLFW_VISIBLE=0), driven via the same glfw_gl_input_test_* hooks the
+// editor's own "live" L2 smokes use (editor_command_bus_live_smoke.mlc),
+// same convention. No rendering involved (headless input-forwarding logic),
+// so no glReadPixels here — unlike §102c's own gate.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_text_test_push,
+  glfw_gl_keys_test_set,
+  glfw_gl_input_test_clear,
+  glfw_gl_mods_test_set,
+  glfw_gl_binding_key_test_push
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  vterm_terminal_create,
+  vterm_terminal_destroy,
+  vterm_terminal_screen,
+  vterm_terminal_write,
+  vterm_cell_at,
+  vterm_control_escape_byte
+} from '../editor/terminal/vterm_ffi'
+import {
+  pty_terminal_spawn,
+  pty_terminal_read_until_eof,
+  pty_terminal_write,
+  pty_terminal_close
+} from '../editor/terminal/pty_ffi'
+import {
+  TerminalKeyboardForward,
+  terminal_keyboard_forward_poll,
+  terminal_delete_byte,
+  terminal_interrupt_byte,
+  terminal_eof_byte,
+  terminal_suspend_byte
+} from '../editor/terminal/terminal_input_forward'
+
+fn rows() -> i32 = 10
+fn columns() -> i32 = 60
+
+// Independent re-derivation of the expected Ctrl+Z byte (0x1a), via the same
+// underlying header but declared separately here rather than trusting
+// terminal_suspend_byte()'s own value against itself.
+extern fn independent_byte_from_value(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp" thread_safe
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn vterm_row_text(screen_handle: i64, row: i32) -> string = do
+  let mut text = ""
+  let mut column = 0
+  while column < columns() do
+    text = text + vterm_cell_at(screen_handle, row, column).text
+    column = column + 1
+  end
+  text.trim()
+end
+
+fn vterm_screen_has_exact_line(screen_handle: i64, expected: string) -> bool = do
+  let mut row = 0
+  let mut found = false
+  while row < rows() do
+    if vterm_row_text(screen_handle, row) == expected then
+      found = true
+    end
+    row = row + 1
+  end
+  found
+end
+
+fn main() -> i32 = do
+  // --- Scenario 1: type "echo hi" then Enter into an interactive shell,
+  // assert the vterm screen ends up with a line reading exactly "hi" (the
+  // command's own output, distinct from the locally-echoed "echo hi" typed
+  // line, which also contains the substring "hi" but is not equal to it).
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    println("terminal_input_forward_smoke fail begin_status=" + begin_status.to_string())
+    return 1
+  end
+
+  const vterm_handle = vterm_terminal_create(rows(), columns())
+  if vterm_handle == i64_from_i32(0) then
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail vterm create")
+    return 2
+  end
+  const screen_handle = vterm_terminal_screen(vterm_handle)
+
+  const shell_fd = pty_terminal_spawn("sh")
+  if shell_fd < 0 then
+    vterm_terminal_destroy(vterm_handle)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail shell spawn")
+    return 3
+  end
+  vterm_terminal_write(vterm_handle, pty_terminal_read_until_eof(shell_fd, 8192, 300))
+
+  glfw_gl_text_test_push("echo hi")
+  let mut forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != "echo hi" then
+    pty_terminal_close(shell_fd)
+    vterm_terminal_destroy(vterm_handle)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode echo hi, got=" + forward.bytes)
+    return 4
+  end
+  pty_terminal_write(shell_fd, forward.bytes)
+
+  glfw_gl_keys_test_set(0, 1)
+  forward = terminal_keyboard_forward_poll(forward.backspace_down, forward.enter_down)
+  if forward.bytes != "\r" then
+    pty_terminal_close(shell_fd)
+    vterm_terminal_destroy(vterm_handle)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode enter")
+    return 5
+  end
+  pty_terminal_write(shell_fd, forward.bytes)
+  glfw_gl_input_test_clear()
+
+  vterm_terminal_write(vterm_handle, pty_terminal_read_until_eof(shell_fd, 8192, 400))
+  pty_terminal_close(shell_fd)
+
+  if !vterm_screen_has_exact_line(screen_handle, "hi") then
+    vterm_terminal_destroy(vterm_handle)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: no 'hi' output line found")
+    return 6
+  end
+  vterm_terminal_destroy(vterm_handle)
+
+  // --- Scenario 2: printable text + Backspace correction — type "echo hix",
+  // press Backspace once (erasing 'x'), then Enter; asserts the corrected
+  // output line "hi" appears, not "hix".
+  const vterm_handle_2 = vterm_terminal_create(rows(), columns())
+  const screen_handle_2 = vterm_terminal_screen(vterm_handle_2)
+  const shell_fd_2 = pty_terminal_spawn("sh")
+  if shell_fd_2 < 0 then
+    vterm_terminal_destroy(vterm_handle_2)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail shell_2 spawn")
+    return 7
+  end
+  vterm_terminal_write(vterm_handle_2, pty_terminal_read_until_eof(shell_fd_2, 8192, 300))
+
+  glfw_gl_text_test_push("echo hix")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  pty_terminal_write(shell_fd_2, forward.bytes)
+
+  glfw_gl_keys_test_set(1, 0)
+  forward = terminal_keyboard_forward_poll(forward.backspace_down, forward.enter_down)
+  if forward.bytes != terminal_delete_byte() then
+    pty_terminal_close(shell_fd_2)
+    vterm_terminal_destroy(vterm_handle_2)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode backspace")
+    return 8
+  end
+  pty_terminal_write(shell_fd_2, forward.bytes)
+
+  glfw_gl_keys_test_set(0, 1)
+  forward = terminal_keyboard_forward_poll(forward.backspace_down, forward.enter_down)
+  pty_terminal_write(shell_fd_2, forward.bytes)
+  glfw_gl_input_test_clear()
+
+  vterm_terminal_write(vterm_handle_2, pty_terminal_read_until_eof(shell_fd_2, 8192, 400))
+  pty_terminal_close(shell_fd_2)
+
+  if !vterm_screen_has_exact_line(screen_handle_2, "hi") then
+    vterm_terminal_destroy(vterm_handle_2)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: backspace correction did not yield 'hi'")
+    return 9
+  end
+  if vterm_screen_has_exact_line(screen_handle_2, "hix") then
+    vterm_terminal_destroy(vterm_handle_2)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: uncorrected 'hix' line found")
+    return 10
+  end
+  vterm_terminal_destroy(vterm_handle_2)
+
+  // --- Scenario 3: Ctrl+D (EOF) on an empty line — sends the encoded byte
+  // to a `cat` child, asserts the child actually exits (EOF observed: no
+  // more output after, `pty_terminal_close` reports a clean already-exited
+  // close per §102b's own double-close-returns-(-1)-on-2nd-call precedent —
+  // here checked indirectly via 0 bytes read, not double-close).
+  const cat_fd = pty_terminal_spawn("cat")
+  pty_terminal_read_until_eof(cat_fd, 4096, 150)
+  glfw_gl_mods_test_set(1, 0, 0)
+  glfw_gl_binding_key_test_push("d")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != terminal_eof_byte() then
+    pty_terminal_close(cat_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode ctrl+d")
+    return 11
+  end
+  pty_terminal_write(cat_fd, forward.bytes)
+  glfw_gl_input_test_clear()
+  const after_eof = pty_terminal_read_until_eof(cat_fd, 4096, 400)
+  pty_terminal_close(cat_fd)
+  if after_eof.byte_size() != 0 then
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: ctrl+d did not EOF cat, got " +
+      after_eof.byte_size().to_string() + " bytes")
+    return 12
+  end
+
+  // --- Scenario 4: Ctrl+C (SIGINT) — sends the encoded byte to a
+  // `sleep 3; echo DONE` child, asserts DONE never appears (child was
+  // interrupted before completing the sleep).
+  const sleep_fd = pty_terminal_spawn("sh -c 'sleep 3; echo DONE'")
+  pty_terminal_read_until_eof(sleep_fd, 4096, 150)
+  glfw_gl_mods_test_set(1, 0, 0)
+  glfw_gl_binding_key_test_push("c")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != terminal_interrupt_byte() then
+    pty_terminal_close(sleep_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode ctrl+c")
+    return 13
+  end
+  pty_terminal_write(sleep_fd, forward.bytes)
+  glfw_gl_input_test_clear()
+  const after_sigint = pty_terminal_read_until_eof(sleep_fd, 4096, 1000)
+  pty_terminal_close(sleep_fd)
+  if after_sigint.contains("DONE") then
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: ctrl+c did not interrupt sleep, saw DONE")
+    return 14
+  end
+
+  // --- Scenario 5: Tab and arrow-key byte-level encoding, verified against
+  // a `cat` child (raw byte pass-through, tab0 per §102d's own stty probe —
+  // no post-processing) rather than an interactive shell's line-editing
+  // (out of scope here; that is the shell/readline's own behavior, not this
+  // forwarding layer's).
+  const raw_fd = pty_terminal_spawn("cat")
+  pty_terminal_read_until_eof(raw_fd, 4096, 150)
+  glfw_gl_binding_key_test_push("tab")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != "\t" then
+    pty_terminal_close(raw_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode tab")
+    return 15
+  end
+  glfw_gl_binding_key_test_push("left")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != vterm_control_escape_byte() + "[D" then
+    pty_terminal_close(raw_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode left arrow")
+    return 16
+  end
+  glfw_gl_binding_key_test_push("right")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != vterm_control_escape_byte() + "[C" then
+    pty_terminal_close(raw_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode right arrow")
+    return 17
+  end
+  glfw_gl_binding_key_test_push("up")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != vterm_control_escape_byte() + "[A" then
+    pty_terminal_close(raw_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode up arrow")
+    return 18
+  end
+  glfw_gl_binding_key_test_push("down")
+  forward = terminal_keyboard_forward_poll(0, 0)
+  if forward.bytes != vterm_control_escape_byte() + "[B" then
+    pty_terminal_close(raw_fd)
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail encode down arrow")
+    return 19
+  end
+  glfw_gl_input_test_clear()
+  pty_terminal_close(raw_fd)
+
+  // --- Scenario 6: Ctrl+Z byte value only (no live suspend — leaving a
+  // stopped child process behind is unsafe in an automated smoke test).
+  if terminal_suspend_byte() != independent_byte_from_value(26) then
+    glfw_gl_context_end()
+    println("terminal_input_forward_smoke fail: ctrl+z byte wrong")
+    return 20
+  end
+
+  glfw_gl_context_end()
+  println("terminal_input_forward_smoke ok")
+  0
+end

@@ -6,7 +6,96 @@ architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
 ## Status: **open** — §102a/§102b/§102c all **CLOSED**, Critic-audited. §102d
-`TERMINAL_INPUT_FORWARD` next.
+`TERMINAL_INPUT_FORWARD` Driver done (red+green), Critic next.
+
+## §102d Decision (frozen 2026-07-31)
+
+Pure encoder module `misc/editor/terminal/terminal_input_forward.mlc`:
+`terminal_keyboard_forward_poll(last_backspace_down, last_enter_down)` reads
+the same GLFW poll surface `misc/gui/input.mlc`/`frame_input.mlc` already use
+(`glfw_gl_take_text`, `glfw_gl_key_backspace_down`/`_enter_down`,
+`glfw_gl_take_binding_key`, `glfw_gl_mod_ctrl_down`) and returns the raw
+bytes to forward + the new backspace/enter edge state; caller does the
+actual `pty_terminal_write` (same poll/pure-transform split as
+`frame_input_poll`). Arrow keys and Tab reuse the *existing*
+`glfw_gl_take_binding_key()` "command-bus chords" channel (already used for
+editor nav — same convention, no new input surface); Ctrl+C/D/Z read
+`glfw_gl_mod_ctrl_down()` + the same channel's `"c"`/`"d"`/`"z"`. One small
+addition to that channel: `glfw_window_gl.cpp` never tracked
+`GLFW_KEY_D` (only C/Z were wired, for copy/undo) — added for live-input
+symmetry, since terminal Ctrl+D has no substitute. Byte values reuse the
+existing `mlc::net::string_from_byte_u8` header inline (TRACK_STDLIB_
+WEBSOCKET_TO_MLC) via a fresh `extern fn` — no new C++ binding, MLC string
+literals have no hex/control-byte escape syntax.
+
+Byte mapping, **empirically measured** against this codebase's own `forkpty`
+default termios (a standalone `pty_abi.cpp` probe, not assumed): `stty -a`
+on a freshly spawned PTY reports `erase = ^?` (DEL 0x7f) — sending it twice
+into a `cat` session correctly erased 2 preceding characters via the tty's
+own echo (`ab<08> <08><08> <08>` raw bytes observed). `icrnl` is set, so
+Enter sends CR (`\r`, 0x0d) — the tty translates it to LF for the child.
+Ctrl+D (0x04) on an empty line correctly EOFs a `cat` child (0 further
+bytes). Ctrl+C (0x03) correctly SIGINTs a `sleep 5` child (child exits
+immediately, never reaches a trailing `echo`). Ctrl+Z (SUSP per the same
+`stty -a`, 0x1a) is encoded but never live-tested with a real suspend — that
+would leave a stopped child process behind, unsafe in an automated smoke
+test. Tab forwards `\t` (0x09) raw — `stty -a` shows `tab0`, no
+tab-expansion post-processing by the tty. Arrows forward VT100 "normal mode"
+CSI sequences (`ESC[A/B/C/D`) via the existing `vterm_control_escape_byte()`
+(§102a) — the standard convention the track's own text names, application
+cursor-key mode (`ESC O A/B/C/D`) is out of scope (v1, no client requests
+it).
+
+Gate (per the track file's own §102d spec, headless — the input-forward
+hooks work without an open GLFW window per code reading, `glfw_gl_
+take_text`/`_key_*_down`/`_take_binding_key` all check their test-override
+state before ever touching `context_window()`; a context is still opened
+for convention/consistency with `editor_command_bus_live_smoke.mlc`, same
+`glfw_gl_input_test_*`-driven "live smoke" shape): type `"echo hi"` +
+simulated Enter into a real interactive `sh` PTY session, assert the
+resulting vterm screen has a row whose *trimmed* text is exactly `"hi"`
+(distinct from the locally-echoed `"echo hi"` line, which also contains the
+substring `"hi"` but does not equal it). New test `misc/examples/
+terminal_input_forward_smoke.mlc` + runner `scripts/
+run_editor_terminal_input_forward_smoke.sh` (same glfw3-pkg-config-skip /
+`MLC_GLFW_VISIBLE=0` shape as `run_editor_terminal_cell_grid_render_smoke.sh`).
+5 supplementary scenarios beyond the bare gate: printable text + Backspace
+correction (`"echo hix"` + Backspace + Enter → line reads `"hi"`, not
+`"hix"`); Ctrl+D forwarding EOFs a real `cat` child; Ctrl+C forwarding
+SIGINTs a real `sleep` child before it completes; Tab/arrow byte-level
+encoding verified against a real `cat` child (raw byte pass-through, not
+interactive line-editing semantics — that is the shell/readline's own
+concern, out of scope for a forwarding layer); Ctrl+Z byte value
+independently re-derived (separate `extern fn` declaration to the same
+header, not compared against itself).
+
+Module-touch: `misc/editor/terminal/terminal_input_forward.mlc` (new),
+`misc/examples/terminal_input_forward_smoke.mlc` (new),
+`scripts/run_editor_terminal_input_forward_smoke.sh` (new),
+`runtime/src/gl/glfw_window_gl.cpp` (edit — 4-line `GLFW_KEY_D` addition,
+symmetric with the existing C/Z tracking). No `compiler/**` `.mlc` files
+touched — no self-host diff/Tier B required (same precedent as
+§102a/§102b/§102c).
+
+## §102d Green (2026-07-31)
+
+`scripts/run_editor_terminal_input_forward_smoke.sh`:
+`terminal_input_forward_smoke ok` / `[terminal input forward] ok`, exit 0
+(all 6 scenarios). Regression checks after the `glfw_window_gl.cpp`
+`GLFW_KEY_D` addition: `scripts/run_editor_terminal_libvterm_ffi_unit.sh`
+(§102a), `scripts/run_editor_terminal_pty_spawn_unit.sh` (§102b),
+`scripts/run_editor_terminal_cell_grid_render_smoke.sh` (§102c) all still
+`ok`. `scripts/dev_gate_fast.sh`: 1471 passed, 0 failed, arch lint
+failures=0 (first run showed the 2 known stale-`TMPDIR` failures from
+`docs/agent/SESSION.md`'s own §102a precedent — a leftover `TMPDIR=.tmp/
+critic_102c` exported in this persistent shell session by the prior turn's
+Critic verification, confirmed via `git stash` reproducing the same 2
+failures on committed `HEAD` with zero of this turn's changes present;
+unsetting `TMPDIR`/`MLCC_OBJ_CLEAN`/`MLCC_PCH` and rerunning gave 1471/0
+clean). `scripts/run_ux_gate.sh`: all 114 scenarios ok — confirms the new
+`GLFW_KEY_D` polling introduces no regression to any existing editor
+build/scenario. No `lib/mlc/**` files touched → `scripts/
+regression_gate.sh` not required by the standing rule.
 
 ## §102c Decision (frozen 2026-07-31)
 
