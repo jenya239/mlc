@@ -210,7 +210,14 @@ fn main() -> i32 = do
 
   // --- Scenario 4: Ctrl+C (SIGINT) — sends the encoded byte to a
   // `sleep 3; echo DONE` child, asserts DONE never appears (child was
-  // interrupted before completing the sleep).
+  // interrupted before completing the sleep). Read window (4000ms) is
+  // deliberately longer than the sleep (3000ms): a read window shorter than
+  // the sleep would pass this assertion even if the interrupt byte did
+  // nothing at all (absence of DONE would then just mean "sleep isn't done
+  // yet", not "child was interrupted") — Critic §102d audit caught this
+  // exact non-discriminating-window defect with the wait originally at
+  // 1000ms; confirmed via a byte-5 (non-interrupt) sabotage that passed the
+  // old assertion.
   const sleep_fd = pty_terminal_spawn("sh -c 'sleep 3; echo DONE'")
   pty_terminal_read_until_eof(sleep_fd, 4096, 150)
   glfw_gl_mods_test_set(1, 0, 0)
@@ -224,7 +231,7 @@ fn main() -> i32 = do
   end
   pty_terminal_write(sleep_fd, forward.bytes)
   glfw_gl_input_test_clear()
-  const after_sigint = pty_terminal_read_until_eof(sleep_fd, 4096, 1000)
+  const after_sigint = pty_terminal_read_until_eof(sleep_fd, 4096, 4000)
   pty_terminal_close(sleep_fd)
   if after_sigint.contains("DONE") then
     glfw_gl_context_end()

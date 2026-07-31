@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a/§102b/§102c all **CLOSED**, Critic-audited. §102d
-`TERMINAL_INPUT_FORWARD` Driver done (red+green), Critic next.
+## Status: **open** — §102a/§102b/§102c/§102d all **CLOSED**, Critic-audited.
+§102e `TERMINAL_RESIZE_SCROLLBACK` next.
 
 ## §102d Decision (frozen 2026-07-31)
 
@@ -96,6 +96,49 @@ clean). `scripts/run_ux_gate.sh`: all 114 scenarios ok — confirms the new
 `GLFW_KEY_D` polling introduces no regression to any existing editor
 build/scenario. No `lib/mlc/**` files touched → `scripts/
 regression_gate.sh` not required by the standing rule.
+
+## §102d Critic (closed 2026-07-31)
+
+Independent re-audit, clean env (fresh `compiler/build.sh` rebuild,
+`TMPDIR` inside repo, `MLCC_OBJ_CLEAN`/`MLCC_PCH`/`MLC_GLFW_VISIBLE` unset):
+- Fresh `mlcc` build clean; official smoke runner rerun in a fresh output
+  dir, `ok`; `dev_gate_fast.sh` 1471/0; `run_ux_gate.sh` 114/114.
+- Byte mapping independently re-derived with a standalone `pty_abi.cpp`
+  probe (own scenario shapes, not the Driver's): `stty -a` confirmed
+  `erase=^?`/`icrnl`/`tab0`/`eof=^D`/`intr=^C`/`susp=^Z` programmatically
+  (not eyeballed); a `foo` + 2×DEL + `x` + Tab + `bar` + Enter session
+  against `cat` showed the exact expected raw-byte echo and pass-through;
+  Ctrl+D against `wc -l` (a child that visibly processes EOF, stronger
+  signal than §102d's own "0 further bytes" check on `cat`) printed `0`,
+  confirming genuine EOF delivery. All Driver byte claims independently
+  confirmed.
+- `GLFW_KEY_D` / `glfw_gl_take_binding_key()` reuse: checked
+  `misc/editor/commands/bus.mlc`'s `command_bus_default_bindings()` — no
+  existing chord binds bare `"d"` (Ctrl+S/Z/Y/C/X/V/A/W/F/G/H/`/` are used,
+  not D), `command_bus_lookup` falls through to `CmdNone` for any
+  unmatched chord — no collision with editor nav/command-bus consumers.
+- **Defect found and fixed**: sabotage-tested every encoded byte constant
+  by mutating `terminal_input_forward.mlc` in place and rerunning the
+  smoke test, then reverting (verified via `git diff` back to empty before
+  moving on). Backspace byte 127→8 correctly failed scenario 2 (exit 9) —
+  load-bearing. Ctrl+C byte 3→5 **did not fail** — smoke test still
+  printed `ok`. Root cause: scenario 4's `after_sigint` read window was
+  1000ms against a `sleep 3` child — shorter than the sleep itself, so
+  "no DONE seen" was true regardless of whether the interrupt byte did
+  anything at all (confirmed independently with a byte-5 probe: no DONE
+  at 1000ms, DONE appears once let run past 3000ms). The `if forward.bytes
+  != terminal_interrupt_byte()` check just before it is a tautological
+  self-comparison (both sides call the same production function) and does
+  not substitute for a real behavioral check. Fixed by widening the read
+  window to 4000ms (`misc/examples/terminal_input_forward_smoke.mlc`,
+  scenario 4) — longer than the 3000ms sleep, so absence of `DONE` now
+  provably means the child was interrupted, not merely "still sleeping".
+  Re-verified: correct byte 3 → `ok`; sabotaged byte 5 → correctly fails
+  with `ctrl+c did not interrupt sleep, saw DONE`. Full gate rerun after
+  the fix: smoke `ok`, `dev_gate_fast.sh` 1471/0, `run_ux_gate.sh` 114/114.
+- No `lib/mlc/**` touched by this fix → `regression_gate.sh` not required.
+
+**§102d CLOSED.** Next: §102e `TERMINAL_RESIZE_SCROLLBACK`.
 
 ## §102c Decision (frozen 2026-07-31)
 
