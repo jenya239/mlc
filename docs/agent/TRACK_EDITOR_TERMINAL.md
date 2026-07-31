@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a/§102b both **CLOSED**, Critic-audited. §102c
-`TERMINAL_CELL_GRID_RENDER` red+green done, Critic next.
+## Status: **open** — §102a/§102b/§102c all **CLOSED**, Critic-audited. §102d
+`TERMINAL_INPUT_FORWARD` next.
 
 ## §102c Decision (frozen 2026-07-31)
 
@@ -75,6 +75,76 @@ regression programs pass, examples compile+link sweep ok=147 fail=0 skip=3
 `terminal_cell_grid_render_smoke.mlc` itself compiles+links in the ok count).
 No `compiler/**` `.mlc` files touched — no self-host diff/Tier B required
 (same precedent as §102a/§102b).
+
+## §102c Critic audit (2026-07-31)
+
+Independent re-audit, no Driver artifact reused. `git show --stat a021d71e`:
+exactly the module-touch files claimed (`terminal_grid_render.mlc` new,
+`terminal_cell_grid_render_smoke.mlc` new, its runner script new,
+`vterm_ffi.mlc`/`vterm_abi.hpp`/`.cpp`/`glad_gl_abi.hpp`/`glad_gl.mlc` edited)
+plus 5 doc files — no stray file. Read the `vterm_abi.cpp` diff directly
+(not the Driver's prose): confirms all 3 claimed defects — `vterm_set_utf8`
+added in `vterm_create`; `vterm_screen_set_default_colors` added in
+`vterm_obtain_screen`; `vterm_screen_convert_color_to_rgb` added in
+`vterm_read_screen_cell`, with the original `is_indexed`/`index` captured
+*before* the mutating conversion call, matching the comment's claim.
+
+Independent from-scratch Ruby-bootstrap rebuild of `mlcc`
+(`TMPDIR=.tmp/critic_102c MLCC_INCREMENTAL=0 compiler/build.sh`) — 0 errors,
+only pre-existing `-Wparentheses-equality` warnings. Independent rerun of
+`scripts/run_editor_terminal_cell_grid_render_smoke.sh` in a separate output
+directory (`TERMINAL_CELL_GRID_RENDER_OUT=.tmp/critic_102c/render_smoke`):
+passed.
+
+New independent probe (not reusing the Driver's test, exercising a case it
+did not cover): the Driver's own smoke test only used truecolor SGR
+(`38;2`/`48;2`), never exercising the indexed-color-resolution path
+end-to-end through the render bridge. Wrote a separate scratch probe with
+different geometry (6×24 grid, 10×18 cells) using ANSI **indexed** colors
+(`ESC[42m` background index 2, `ESC[31m` foreground index 1) — background
+rendered as a real resolved color (`(0,224,0)`, not black/garbage) and the
+indexed-foreground "ERR" text produced glyph ink. Confirms the color-fix
+covers the indexed path, not just truecolor. Probe deleted after
+verification, not committed.
+
+Independently sabotaged the actual committed smoke test twice, differently
+from the Driver's own sabotage (which shifted expected values/scan range):
+(1) deleted the `terminal_grid_draw_backgrounds` call entirely — background
+assertion correctly failed (`fail background rgb=0,0,0`, exit 6); (2)
+replaced the `terminal_grid_text_lines` result with an empty list — ink
+assertion correctly failed (`fail no glyph ink found`, exit 7). Both
+confirm the assertions are load-bearing, not tautological. Reverted both
+sabotages; reran the unmodified file — passes again, byte-identical to the
+committed version (`git status` shows no diff).
+
+Independent `scripts/dev_gate_fast.sh`: 1471 passed, 0 failed, arch lint
+failures=0. Independent `scripts/run_ux_gate.sh`: all 114 scenarios ok.
+`lib/mlc/common/stdlib/gl/glad_gl.mlc` touched → independent
+`scripts/regression_gate.sh` run in the background (~9 min compile-bound,
+consistent with prior runs): 20 regression programs pass (ruby vs expected,
+mlcc vs expected, ruby vs mlcc all PASS), examples compile+link sweep
+`ok=147 fail=0 skip=3` with the same 3 pre-existing skips
+(`dynrecord_demo`/`scene_form_live`/`text_glyph_color_smoke`) — matches the
+Driver's claim exactly.
+
+Confirmed the non-track WIP files (`CLAUDE.md`/`README.md`/
+`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) absent from commit
+`a021d71e` and still present/uncommitted after this audit. Cleaned up all
+scratch artifacts (`.tmp/critic_102c/`, the scratch probe `.mlc` file,
+`tmp/examples_sweep/`) after verification, not committed. No
+self-host diff/Tier B performed — correctly not required (zero
+`compiler/**` files touched — only `runtime/**` C++ shims and non-`compiler`
+`.mlc` files, confirmed by the `git show --stat` above, same precedent as
+§102a/§102b).
+
+**§102c CLOSED.** No false-done found. All Driver claims independently
+reproduced: exact file scope, the 3 `vterm_abi.cpp` fixes verified by
+reading the diff directly, new test green from a fresh output dir,
+`run_ux_gate.sh`/`dev_gate_fast.sh`/`regression_gate.sh` all green.
+Additionally verified the indexed-color path (not truecolor-only) renders
+correctly end-to-end, and both smoke-test assertions independently
+confirmed load-bearing via a different sabotage than the Driver's own.
+Queue advances to **§102d `TERMINAL_INPUT_FORWARD`**.
 
 ## §102b Decision (frozen 2026-07-31)
 
