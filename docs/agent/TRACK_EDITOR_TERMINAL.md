@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a **CLOSED**, Critic-audited. §102b Driver step done,
-Critic pending. §102c `TERMINAL_CELL_GRID_RENDER` next after Critic close.
+## Status: **open** — §102a/§102b both **CLOSED**, Critic-audited. §102c
+`TERMINAL_CELL_GRID_RENDER` next.
 
 ## §102b Decision (frozen 2026-07-31)
 
@@ -86,6 +86,65 @@ scripts/run_ux_gate.sh` run 1 and run 2 both `[ux gate] all ok (114
 scenarios)` — confirms the new unconditional `pty_abi.cpp`
 compile + `-lutil` link in `build_bin.sh` introduces no regression in any
 existing editor build.
+
+## §102b Critic audit (2026-07-31)
+
+Independent re-audit, no Driver artifact reused. `git show --stat 32d8acc8`:
+exactly the 5 module-touch files (`pty_abi.hpp`/`.cpp`, `pty_ffi.mlc`, the
+new unit test + runner script) plus `compiler/build_bin.sh` and 5 doc
+files — no stray file. `grep -rl "fork(\|execvp\|posix_openpt\|forkpty\|
+waitpid\|popen" runtime/src runtime/include misc/editor`: exactly those 3
+non-doc files, confirmed. Read `pty_abi.hpp`/`.cpp`/`pty_ffi.mlc` directly:
+all 5 functions (`pty_spawn`/`pty_write`/`pty_read`/`pty_read_until_eof`/
+`pty_close`) line up 1:1 across header ↔ implementation ↔ MLC extern fn
+declaration, no drift. Read the `build_bin.sh` diff directly: confirms the
+addition is unconditional (no `pkg-config` gate, unlike freetype2/harfbuzz/
+vterm — correct, since `forkpty`/`<pty.h>` is standard glibc, not an
+optional package) — `pty_abi.cpp` added to `RT_SRC`, `-lutil` added to
+`EXTERN_LINK_LIBS` via a new `EXTRA_LINK_LIBS_ALWAYS` array.
+
+Independent from-scratch Ruby-bootstrap rebuild of `mlcc`
+(`TMPDIR=.tmp/critic_102b MLCC_INCREMENTAL=0 compiler/build.sh`) — 0 errors,
+only pre-existing `-Wparentheses-equality` warnings. Independent rerun of
+`scripts/run_editor_terminal_pty_spawn_unit.sh` in a separate output
+directory (`EDITOR_TERMINAL_PTY_SPAWN_OUT=/tmp/critic_102b_pty`): passed.
+
+New independent probe (not reusing the Driver's test, exercising cases it
+did not cover): `pty_terminal_write`/`pty_terminal_read`/`pty_terminal_close`
+on an unopened fd (9999) all return their documented error values (-1/""/-1)
+without crashing; spawning a non-existent binary (`/bin/nonexistent_binary_
+zzz_12345`) still returns a valid master fd (the shell itself starts fine)
+and the drained output contains `/bin/sh`'s own "not found" error line;
+double-`pty_terminal_close` on the same fd — first call returns 0, second
+call (already closed) returns -1 rather than silently succeeding or
+crashing. All passed (`critic_ok`, exit 0) — confirms the shim's error paths
+beyond what the Driver's own test exercised.
+
+Independent `scripts/run_ux_gate.sh` run 1 and run 2 (own logs, not reusing
+the Driver's): both `[ux gate] all ok (114 scenarios)`, 0 failures —
+confirms the new unconditional `pty_abi.cpp` compile + `-lutil` link
+doesn't regress any existing editor build. Independent
+`scripts/dev_gate_fast.sh` rerun with a clean environment (`unset TMPDIR
+MLCC_OBJ_CLEAN MLCC_PCH` first): 1471 passed, 0 failed, arch lint
+failures=0.
+
+Confirmed the non-track WIP files (`CLAUDE.md`/`README.md`/
+`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) absent from commit
+`32d8acc8` and still present/uncommitted after this audit. Cleaned up all
+scratch artifacts (`.tmp/critic_102b/`, `/tmp/critic_102b_*`, the scratch
+probe `.mlc` file) after verification, not committed. No `rake
+test_compiler_mlc`/self-host diff performed — correctly not required (only
+`compiler/build_bin.sh`, a Bash tooling script, touched under
+`compiler/**`; zero `.mlc` checker/codegen files touched, confirmed by the
+`git show --stat`/`grep` above, same precedent as §102a/§104-22).
+
+**§102b CLOSED.** No false-done found. All Driver claims independently
+reproduced: exact file scope, matching signatures across the ABI boundary,
+new test green from a fresh output dir, `run_ux_gate.sh` stable ×2, `-lutil`
+link unconditional and correctly scoped. Additionally verified 3 error/edge
+paths (invalid-fd operations, spawn-of-nonexistent-command, double-close)
+not covered by the Driver's own test. Queue advances to **§102c
+`TERMINAL_CELL_GRID_RENDER`**.
 
 ## §102a Decision (frozen 2026-07-31)
 
