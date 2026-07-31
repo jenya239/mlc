@@ -385,7 +385,8 @@ import {
   editor_app_open_terminal,
   editor_app_close_terminal,
   editor_app_terminal_tab_active,
-  editor_app_terminal_frame
+  editor_app_terminal_frame,
+  editor_app_terminal_drain
 } from './app/state'
 import {
   terminal_grid_text_lines,
@@ -1889,8 +1890,9 @@ fn main() -> i32 = do
     active = tab_set_active(app.ux.tabs)
     document = active.buffer.document
     if editor_app_terminal_tab_active(app) then
-      // Idle drain even when no keys this frame (shell output arrives async).
-      app = editor_app_terminal_frame(app, "", 0, 0, "", 0)
+      // Idle drain only — must not zero enter/backspace edge state (see
+      // editor_app_terminal_drain).
+      app = editor_app_terminal_drain(app)
     end
     if !line_index_matches_document(frame.line_index, document) then
       frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)

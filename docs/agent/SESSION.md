@@ -549,3 +549,17 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | result  | **§102f STEP=1/2 done (Red+Green), awaiting Critic before CLOSE** |
 | issues  | None new. Non-track WIP untouched |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TERMINAL (§102f — independent re-audit: rebuild+rerun UX scenario + `run_ux_gate` ×2 clean env; sabotage panel open/forward/assert path with mutations distinct from Driver; spot-check demo_live divert does not regress document editing; close §102f or return correction — closing advances to §102g `TERMINAL_PERF_BUDGET`) |
+
+### Turn 2026-07-31 (Critic TRACK_EDITOR_TERMINAL STEP=3, §102f close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_TERMINAL |
+| started | 2026-07-31 |
+| done    | Independent re-audit of §102f. Fresh scenario rebuild: `ux_ok`. Spot-check `run_ux_enter_keeps_indent.sh` still `ok` (document Enter path not swallowed). **Defect found+fixed**: demo_live idle called `editor_app_terminal_frame("",0,0,"",0)`, resetting `last_enter_down`/`last_backspace_down` after a same-frame rising edge — held Enter would re-fire `\r` next frame. Added `editor_app_terminal_drain` (tick-only) and routed idle through it. Sabotages distinct from Driver: noop `write_bytes` → exit 6; noop `drain` → exit 6; open tab at wrong path → exit 4; all reverted. `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 115/115. Closed §102f |
+| verify  | scenario ok after fix; enter_keeps_indent ok; sabotages 6/6/4; ux gate ×2 115/115; git diff Critic fix only (`state.mlc` + `demo_live.mlc`) |
+| result  | **§102f CLOSED** (with live-loop edge-state correction). Advances to §102g |
+| issues  | Gate covers open+forward_poll/drain, not encode_polled live path — noted; defect was in live idle path only |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_TERMINAL (§102g `TERMINAL_PERF_BUDGET` — read the track file's own §102g spec before freezing the Decision; measure ms/frame under high-throughput terminal output on the shared render loop; explicit numeric budget + no editor idle/scroll regression) |

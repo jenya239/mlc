@@ -345,6 +345,20 @@ export fn editor_app_terminal_frame(
   editor_app_set_terminal(app, session)
 end
 
+// Drain-only: do not touch enter/backspace edge state. The live loop's
+// end-of-frame idle call must use this — calling editor_app_terminal_frame
+// with zeroed key levels would reset last_* and re-fire edges on the next
+// frame while the key is still held (Critic §102f finding).
+export fn editor_app_terminal_drain(app: EditorAppState) -> EditorAppState = do
+  if !editor_app_terminal_tab_active(app) || app.terminal.active == 0 then
+    return app
+  end
+  let mut session = terminal_panel_session_tick(app.terminal)
+  session = terminal_panel_session_tick(session)
+  session = terminal_panel_session_tick(session)
+  editor_app_set_terminal(app, session)
+end
+
 export fn editor_app_wheel_scroll(
   app: EditorAppState,
   metrics: EditorTextMetrics,

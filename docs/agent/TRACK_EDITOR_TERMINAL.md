@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a/§102b/§102c/§102d/§102e all **CLOSED**, Critic-audited.
-§102f `TERMINAL_PANEL_INTEGRATION` Driver done (red+green), Critic next.
+## Status: **open** — §102a/§102b/§102c/§102d/§102e/§102f all **CLOSED**, Critic-audited.
+§102g `TERMINAL_PERF_BUDGET` next.
 
 ## §102f Decision (frozen 2026-07-31)
 
@@ -49,6 +49,35 @@ passed, 0 failed. `scripts/run_ux_gate.sh` ×2: all ok (115 scenarios,
 was 114 — new terminal scenario included). `demo_live.mlc` translates +
 links clean. No `compiler/**` `.mlc` / no `lib/mlc/**` — no self-host /
 regression_gate required.
+
+## §102f Critic (closed 2026-07-31)
+
+Independent re-audit, clean env (`TMPDIR` inside `.tmp/critic_102f` for
+scenario rebuilds; **unset** for `run_ux_gate.sh`):
+- Fresh scenario rebuild in a separate out dir: `ux_ok`. `dev_gate_fast.sh`
+  1471/0. `run_ux_gate.sh` ×2: 115/115 both. Document-edit spot-check
+  `run_ux_enter_keeps_indent.sh` still `ok` (terminal divert does not
+  swallow Enter on non-terminal tabs).
+- **Defect found and fixed**: `demo_live.mlc` end-of-frame idle called
+  `editor_app_terminal_frame(app, "", 0, 0, "", 0)`, which overwrote
+  `terminal.last_enter_down` / `last_backspace_down` with 0 after a same-
+  frame rising-edge encode — so a held Enter would re-fire `\r` on the next
+  frame. Fixed by adding `editor_app_terminal_drain` (tick-only, preserves
+  edge state) and routing the idle call through it. UX scenario itself does
+  not exercise this path (uses `forward_poll` + `drain`); the bug is in the
+  live loop only.
+- Sabotage (mutations distinct from Driver): (1) noop
+  `terminal_panel_session_write_bytes` → exit 6 `no_hi_line`; (2) noop
+  `terminal_panel_session_drain` → exit 6; (3) `editor_app_open_terminal`
+  opens tab at `"terminal://sabotage"` instead of
+  `terminal_panel_tab_path()` → exit 4 `tab_path`. All reverted
+  (`terminal_panel.mlc` diff empty vs HEAD before close).
+- Coverage note (not a false-done of the frozen Decision): the UX gate
+  exercises `editor_app_open_terminal` + `forward_poll`/`drain`, not
+  `terminal_panel_encode_polled` / `editor_app_terminal_frame` — those are
+  the live-loop path, now also carrying the drain-only idle fix above.
+
+**§102f CLOSED.** Next: §102g `TERMINAL_PERF_BUDGET`.
 
 ## §102e Decision (frozen 2026-07-31)
 
