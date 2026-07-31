@@ -563,3 +563,17 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | result  | **§102f CLOSED** (with live-loop edge-state correction). Advances to §102g |
 | issues  | Gate covers open+forward_poll/drain, not encode_polled live path — noted; defect was in live idle path only |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_TERMINAL (§102g `TERMINAL_PERF_BUDGET` — read the track file's own §102g spec before freezing the Decision; measure ms/frame under high-throughput terminal output on the shared render loop; explicit numeric budget + no editor idle/scroll regression) |
+
+### Turn 2026-07-31 (Driver TRACK_EDITOR_TERMINAL STEP=0, §102g red+green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_TERMINAL |
+| started | 2026-07-31 |
+| done    | Froze §102g Decision: same `demo_live` loop; `MLC_EDITOR_TERMINAL_PERF=1` opens 24×80 via `editor_app_open_terminal`, kicks `seq 1 100000` through live `editor_app_terminal_frame`, prints `demo_live_terminal_perf`; Phase A keeps existing `MLC_EDITOR_PERF` document fixture. Implemented `editor_perf_format_demo_live_terminal`, demo_live hooks, `scripts/run_editor_terminal_perf_smoke.sh`. Measured baselines then set ceilings DOC≤1500000 / TERM≤2000000 (first run doc=557288 term=735662; final gate doc=514794 term=605032) |
+| verify  | `run_editor_terminal_perf_smoke.sh` ux_ok; `run_ux_terminal_panel_type_sees_output.sh` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 115/115 |
+| result  | **§102g STEP=1/2 done (Red+Green), awaiting Critic before CLOSE** |
+| issues  | None new. Non-track WIP untouched |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TERMINAL (§102g — independent re-measure of both phases into a separate out dir; sabotage ceilings/load-bearing path with mutations distinct from Driver; confirm document Phase A still under budget with terminal feature present; close §102g or return correction — closing finishes §102 epic → next Planner/§103a) |

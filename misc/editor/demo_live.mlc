@@ -345,7 +345,8 @@ import {
   editor_perf_new,
   editor_perf_now_us,
   editor_perf_accumulate_frame,
-  editor_perf_format_demo_live
+  editor_perf_format_demo_live,
+  editor_perf_format_demo_live_terminal
 } from './ui/perf'
 import {
   EditorAppState,
@@ -776,10 +777,11 @@ fn main() -> i32 = do
   let mut folder_nav = folder_nav_new(folder_current_path(panels.tree))
 
   let mut tabs = ensure_tabs(load_demo_session(), panels)
-  const perf_enabled = has("MLC_EDITOR_PERF")
+  const terminal_perf_enabled = has("MLC_EDITOR_TERMINAL_PERF")
+  const perf_enabled = has("MLC_EDITOR_PERF") || terminal_perf_enabled
   let mut perf_counters = editor_perf_new()
   const perf_frame_limit = 30
-  if perf_enabled then
+  if perf_enabled && !terminal_perf_enabled then
     const perf_open = get_or("MLC_EDITOR_PERF_OPEN", "")
     if perf_open.byte_size() > 0 then
       tabs = try_open_path(tabs, perf_open)
@@ -795,6 +797,13 @@ fn main() -> i32 = do
   )
   app = editor_app_set_scroll_y(app, startup_view.scroll_offset_y)
   app = editor_app_set_scroll_x(app, startup_view.scroll_offset_x)
+  if terminal_perf_enabled then
+    // Fixed grid — independent of content-rect font metrics (those come later).
+    app = editor_app_open_terminal(app, 24, 80, "sh")
+    // Rising-edge Enter via live encode path (not write_bytes bypass).
+    app = editor_app_terminal_frame(app, "seq 1 100000", 0, 1, "", 0)
+    app = editor_app_terminal_frame(app, "", 0, 0, "", 0)
+  end
   let mut zoom_font_size = editor_font_size_default()
   let mut metrics = editor_font_metrics_from_size(zoom_font_size)
   const command_bindings = command_bus_default_bindings()
@@ -2727,7 +2736,11 @@ fn main() -> i32 = do
         perf_counters, perf_layout_us, perf_draw_us, perf_total_us
       )
       if perf_counters.frames >= perf_frame_limit then
-        println(editor_perf_format_demo_live(perf_counters))
+        if terminal_perf_enabled then
+          println(editor_perf_format_demo_live_terminal(perf_counters))
+        else
+          println(editor_perf_format_demo_live(perf_counters))
+        end
         break
       end
     end

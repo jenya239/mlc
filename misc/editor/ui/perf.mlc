@@ -66,3 +66,10 @@ export fn editor_perf_format_demo_live(counters: EditorPerfCounters) -> string =
     + " layout_us=" + counters.layout_us.to_string()
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
+
+// TRACK_EDITOR_TERMINAL §102g — same counters, distinct tag for the gate.
+export fn editor_perf_format_demo_live_terminal(counters: EditorPerfCounters) -> string =
+  "[mlc-editor] demo_live_terminal_perf frames=" + counters.frames.to_string()
+    + " layout_us=" + counters.layout_us.to_string()
+    + " draw_us=" + counters.draw_us.to_string()
+    + " total_us=" + counters.total_us.to_string()

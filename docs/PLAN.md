@@ -1040,7 +1040,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       caret pixel-budget cache added, Critic-audited, no false-done;
       see §499 row and [TRACK_EDITOR_CARET_VISUAL_ROW_CACHE](agent/TRACK_EDITOR_CARET_VISUAL_ROW_CACHE.md))**
   → **EDITOR_TERMINAL (§102, open — §102a/§102b/§102c/§102d/§102e/§102f CLOSED,
-      §102g `TERMINAL_PERF_BUDGET` next, of
+      §102g `TERMINAL_PERF_BUDGET` Driver done / Critic next, of
       7 ordered sub-tracks; [TRACK_EDITOR_TERMINAL](agent/TRACK_EDITOR_TERMINAL.md))**
   → **MLC_SCRIPT_VM Phase 1 (§103, open §103a Decision next:
       9 ordered sub-tracks, verifier before interpreter; [TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md))**

@@ -6,7 +6,42 @@ architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
 ## Status: **open** — §102a/§102b/§102c/§102d/§102e/§102f all **CLOSED**, Critic-audited.
-§102g `TERMINAL_PERF_BUDGET` next.
+§102g `TERMINAL_PERF_BUDGET` Driver red+green done — Critic next.
+
+## §102g Decision (frozen 2026-07-31)
+
+Perf smoke on the **same** `demo_live` shared render loop (§97a shape) — no
+parallel benchmark harness, no synthetic stub counters.
+
+1. **Modes** (env, mutually exclusive per run):
+   - `MLC_EDITOR_PERF=1` — existing document idle/scroll fixture
+     (`MLC_EDITOR_PERF_OPEN` 100k-line file, N=`MLC_EDITOR_PERF_FRAMES`
+     default 30). Unchanged tag line
+     `[mlc-editor] demo_live_perf frames=… layout_us=… draw_us=… total_us=…`.
+   - `MLC_EDITOR_TERMINAL_PERF=1` — open terminal via
+     `editor_app_open_terminal` (fixed 24×80 grid), kick
+     `seq 1 100000` + CR once through `editor_app_terminal_frame` (live
+     encode path), then N frames of active-tab drain+§102c paint.
+     Tag line
+     `[mlc-editor] demo_live_terminal_perf frames=… layout_us=… draw_us=… total_us=…`.
+2. **Gate script** `scripts/run_editor_terminal_perf_smoke.sh`:
+   - Phase A (editor not-focused / no terminal tab): run document
+     `demo_live_perf` and assert `total_us` ≤ documented document ceiling
+     (measured baseline × headroom; must not regress §105-class numbers).
+   - Phase B (terminal flood): run `demo_live_terminal_perf` and assert
+     `total_us` ≤ documented terminal ceiling (same honesty rule — set
+     after first real measurement, not guessed).
+3. **Numeric budgets** filled in Green after measurement (not before).
+4. **Out of scope**: optimizing the drain/paint path unless Phase B misses
+   budget; scrollback capacity changes; new draw APIs.
+
+## §102g Green (2026-07-31)
+
+Measured on this machine (30 frames, `MLC_GLFW_VISIBLE=0`):
+- Phase A document: `demo_live_perf frames=30 layout_us=396686 draw_us=90268 total_us=557288` (rerun `568102`) — ceiling **`DOC_TOTAL_US_MAX=1500000`**.
+- Phase B terminal flood: `demo_live_terminal_perf frames=30 layout_us=200 draw_us=174832 total_us=735662` (rerun `445671`) — ceiling **`TERM_TOTAL_US_MAX=2000000`** (~2.7× first baseline).
+
+`scripts/run_editor_terminal_perf_smoke.sh`: `ux_ok terminal_perf`. Spot-check `run_ux_terminal_panel_type_sees_output.sh` still `ok`. No `compiler/**` `.mlc` / no `lib/mlc/**`.
 
 ## §102f Decision (frozen 2026-07-31)
 
