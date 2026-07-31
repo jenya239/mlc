@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §101. §97a residual, named by the user
 uncached O(caret_line) walk in `visual_row_index_for_caret_pixel_budget`)
 is next, PRIORITY over further stringify."
 
-## Status: **open** — STEP=0-2 done 2026-07-31 (Decision+Red+Green), Critic next
+## Status: **CLOSED** 2026-07-31 — STEP=0-3 all done, Critic-audited
 
 ## Important correction before Decision
 
@@ -48,7 +48,22 @@ original framing implied.
 | 0 | Decision freeze + correction (moved dominant-bug fix to §105) | **done** |
 | 1 | Red: confirmed no `prefix_visual_rows` field / cached lookup existed anywhere in `misc/editor/**` before this step (`grep -rn "prefix_visual_rows" misc/editor` — zero matches) | **done** |
 | 2 | Green: prefix table + cached lookup wired into `demo_live.mlc`, scenario green | **done** |
-| 3 | Critic | next |
+| 3 | Critic | **done** |
+
+## Critic audit — 2026-07-31
+
+Independent from the Driver's own numbers above, none of the Driver's build/output directories reused:
+
+- `git show --stat 5399ac90`: exactly the 10 files the Decision's Module-touch row + new-scenario/script lines list — `word_wrap.mlc`, `wrap_cache.mlc`, `demo_live.mlc`, the new scenario + runner script, and the 5 doc files. No stray file.
+- Read the `wrap_cache.mlc` diff directly: confirmed `wrap_count_cache_new_pixel`/`wrap_count_cache_tick_pixel` **replace** (not add alongside) their previous single call to `document_visual_row_count_pixel_budget` with one call to `document_visual_row_prefix_pixel_budget`, deriving `visual_row_count` from the prefix array's last element — exactly one O(n) walk per constructor/tick, confirming the "no added asymptotic cost" claim rather than trusting the prose.
+- Read the `word_wrap.mlc` diff directly: `visual_row_index_for_caret_pixel_budget_cached`'s tail (single-line row scan) is byte-identical to the original uncached function's own tail, modulo `visual` being sourced from `prefix_visual_rows[caret_line]` instead of a walk-accumulated sum — confirms zero behavior drift beyond the intended optimization.
+- Independent rerun of `scripts/run_ux_caret_visual_row_cache_stable.sh` in a separate output directory (`UX_CARET_VISUAL_ROW_CACHE_STABLE_OUT=/tmp/critic_101_scenario`): `ux_ok caret_visual_row_cache_stable`, exit 0.
+- Independent rerun of `scripts/run_editor_demo_live_perf_smoke.sh` in a separate output directory (`EDITOR_DEMO_LIVE_PERF_OUT=/tmp/critic_101_perf`): `frames=30 layout_us=447786 draw_us=91929 total_us=614481` — same order of magnitude as the Driver's `draw_us=77818`/§105's baseline `draw_us=84844`/`78062`, confirms no regression (this fixture keeps caret at line 0 throughout, so §101's own fix is not exercised by it, matching the track's own framing — not a gap in this audit, an intrinsic property of the standing fixture).
+- `scripts/run_ux_gate.sh` run 1 (independent, own log): `[ux gate] all ok (114 scenarios)`, 0 failures.
+- `scripts/run_ux_gate.sh` run 2 (stability ×2): `[ux gate] all ok (114 scenarios)`, 0 failures.
+- Confirmed non-track WIP (`CLAUDE.md`/`README.md`/`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) still present and uncommitted after this audit.
+
+No false-done found. All Driver claims independently reproduced.
 
 ## Steps 1-2 (red/green) — done 2026-07-31
 
