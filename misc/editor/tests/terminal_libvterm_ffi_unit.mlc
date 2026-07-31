@@ -1,0 +1,75 @@
+// TRACK_EDITOR_TERMINAL §102a — libvterm FFI round-trip (no PTY, no rendering).
+// Feeds a fixed byte sequence (plain text + one SGR true-color escape) through
+// vterm_input_write and asserts the resulting cell grid via vterm_screen_get_cell.
+import {
+  vterm_terminal_create,
+  vterm_terminal_destroy,
+  vterm_terminal_screen,
+  vterm_terminal_write,
+  vterm_terminal_damage_count,
+  vterm_control_escape_byte,
+  vterm_cell_at
+} from '../terminal/vterm_ffi'
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn main() -> i32 = do
+  const vterm_handle = vterm_terminal_create(4, 20)
+  if vterm_handle == i64_from_i32(0) then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail create")
+    return 1
+  end
+
+  const screen_handle = vterm_terminal_screen(vterm_handle)
+  if screen_handle == i64_from_i32(0) then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail screen")
+    return 2
+  end
+
+  const escape = vterm_control_escape_byte()
+  const input = "hi" + escape + "[38;2;200;100;50mX"
+  const written = vterm_terminal_write(vterm_handle, input)
+  if written != input.byte_size() then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail write count")
+    return 3
+  end
+
+  const cell_h = vterm_cell_at(screen_handle, 0, 0)
+  if cell_h.codepoint != 104 then // 'h'
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail cell h")
+    return 4
+  end
+
+  const cell_i = vterm_cell_at(screen_handle, 0, 1)
+  if cell_i.codepoint != 105 then // 'i'
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail cell i")
+    return 5
+  end
+
+  const cell_x = vterm_cell_at(screen_handle, 0, 2)
+  if cell_x.codepoint != 88 then // 'X'
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail cell x codepoint")
+    return 6
+  end
+  if cell_x.foreground_is_indexed then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail cell x fg type")
+    return 7
+  end
+  if cell_x.foreground_red != 200 || cell_x.foreground_green != 100 || cell_x.foreground_blue != 50 then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail cell x fg rgb")
+    return 8
+  end
+
+  if vterm_terminal_damage_count(screen_handle) <= 0 then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail damage callback")
+    return 9
+  end
+
+  if vterm_terminal_destroy(vterm_handle) != 0 then
+    println("[mlc-editor] terminal_libvterm_ffi_unit fail destroy")
+    return 10
+  end
+
+  println("[mlc-editor] terminal_libvterm_ffi_unit ok")
+  0
+end

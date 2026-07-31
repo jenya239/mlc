@@ -1,0 +1,82 @@
+// TRACK_EDITOR_TERMINAL §102a — libvterm FFI bindings.
+// PTY plumbing, render adapter and panel wiring are later sub-tracks
+// (§102b/c/f); this module only owns the vterm round-trip.
+
+extern fn vterm_create(rows: i32, columns: i32) -> i64 =
+  "mlc::terminal::vterm_create" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_destroy(vterm_handle: i64) -> i32 =
+  "mlc::terminal::vterm_destroy" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_obtain_screen(vterm_handle: i64) -> i64 =
+  "mlc::terminal::vterm_obtain_screen" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_write_input(vterm_handle: i64, bytes: string) -> i32 =
+  "mlc::terminal::vterm_write_input" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_escape_byte() -> string =
+  "mlc::terminal::vterm_escape_byte" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_read_screen_cell(screen_handle: i64, row: i32, column: i32) -> i32 =
+  "mlc::terminal::vterm_read_screen_cell" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_codepoint() -> i32 =
+  "mlc::terminal::vterm_last_cell_codepoint" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_width() -> i32 =
+  "mlc::terminal::vterm_last_cell_width" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_foreground_is_indexed() -> i32 =
+  "mlc::terminal::vterm_last_cell_foreground_is_indexed" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_foreground_red() -> i32 =
+  "mlc::terminal::vterm_last_cell_foreground_red" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_foreground_green() -> i32 =
+  "mlc::terminal::vterm_last_cell_foreground_green" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_foreground_blue() -> i32 =
+  "mlc::terminal::vterm_last_cell_foreground_blue" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_foreground_index() -> i32 =
+  "mlc::terminal::vterm_last_cell_foreground_index" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_background_is_indexed() -> i32 =
+  "mlc::terminal::vterm_last_cell_background_is_indexed" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_background_red() -> i32 =
+  "mlc::terminal::vterm_last_cell_background_red" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_background_green() -> i32 =
+  "mlc::terminal::vterm_last_cell_background_green" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_background_blue() -> i32 =
+  "mlc::terminal::vterm_last_cell_background_blue" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_background_index() -> i32 =
+  "mlc::terminal::vterm_last_cell_background_index" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_damage_count(screen_handle: i64) -> i32 =
+  "mlc::terminal::vterm_damage_count" from "mlc/terminal/vterm_abi.hpp" thread_affine
+
+export type VtermCell = {
+  codepoint: i32,
+  width: i32,
+  foreground_is_indexed: bool,
+  foreground_red: i32,
+  foreground_green: i32,
+  foreground_blue: i32,
+  foreground_index: i32
+}
+
+export fn vterm_terminal_create(rows: i32, columns: i32) -> i64 = vterm_create(rows, columns)
+export fn vterm_terminal_destroy(vterm_handle: i64) -> i32 = vterm_destroy(vterm_handle)
+export fn vterm_terminal_screen(vterm_handle: i64) -> i64 = vterm_obtain_screen(vterm_handle)
+export fn vterm_terminal_write(vterm_handle: i64, bytes: string) -> i32 = vterm_write_input(vterm_handle, bytes)
+export fn vterm_terminal_damage_count(screen_handle: i64) -> i32 = vterm_damage_count(screen_handle)
+
+// One-byte ASCII ESC string. MLC string literals have no hex/control-byte
+// escape syntax, so VT100/ANSI sequence construction (SGR colors here,
+// arrow-key input in §102d) composes this with plain text via concatenation.
+export fn vterm_control_escape_byte() -> string = vterm_escape_byte()
+
+export fn vterm_cell_at(screen_handle: i64, row: i32, column: i32) -> VtermCell = do
+  const status = vterm_read_screen_cell(screen_handle, row, column)
+  if status != 0 then
+    return VtermCell {
+      codepoint: 0, width: 0, foreground_is_indexed: false,
+      foreground_red: 0, foreground_green: 0, foreground_blue: 0, foreground_index: 0
+    }
+  end
+  VtermCell {
+    codepoint: vterm_last_cell_codepoint(),
+    width: vterm_last_cell_width(),
+    foreground_is_indexed: vterm_last_cell_foreground_is_indexed() != 0,
+    foreground_red: vterm_last_cell_foreground_red(),
+    foreground_green: vterm_last_cell_foreground_green(),
+    foreground_blue: vterm_last_cell_foreground_blue(),
+    foreground_index: vterm_last_cell_foreground_index()
+  }
+end

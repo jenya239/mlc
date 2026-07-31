@@ -52,6 +52,14 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists egl && pkg-confi
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_renderer_shim.cpp")
   fi
 fi
+# Optional libvterm (TRACK_EDITOR_TERMINAL §102a): VT100/ANSI parsing shim.
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists vterm; then
+  RT_SRC+=("$ROOT_DIR/runtime/src/terminal/vterm_abi.cpp")
+  # shellcheck disable=SC2207
+  TEXT_CFLAGS+=($(pkg-config --cflags vterm))
+  # shellcheck disable=SC2207
+  TEXT_LIBS+=($(pkg-config --libs vterm))
+fi
 # Optional GLFW window + glad desktop (TRACK_GL_GLAD_MIGRATION).
 GLAD_DESKTOP=0
 GLAD_HEADLESS=0

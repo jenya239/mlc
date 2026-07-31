@@ -5,7 +5,45 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a Decision next
+## Status: **open** — §102a done (Red+Green), awaiting Critic. §102b next.
+
+## §102a Decision (frozen 2026-07-31)
+
+Bind libvterm via a thin ABI shim following the `freetype_abi`/`harfbuzz_abi`
+pattern exactly (raw pointers as `i64` handles, `thread_affine` extern fn,
+thread-local "last result" slot for structured reads instead of exposing C
+structs across the boundary):
+
+- `runtime/include/mlc/terminal/vterm_abi.hpp` + `runtime/src/terminal/vterm_abi.cpp`:
+  `vterm_create`/`vterm_destroy` (`vterm_new`/`vterm_free`), `vterm_obtain_screen`
+  (`vterm_obtain_screen` + `vterm_screen_set_callbacks` + `vterm_screen_reset(hard=1)`
+  in one call), `vterm_write_input` (`vterm_input_write`), `vterm_read_screen_cell`
+  (`vterm_screen_get_cell`, fills a thread-local `LastCellSlot`) + getters, a damage
+  callback that increments a per-screen counter (`vterm_damage_count`), and
+  `vterm_escape_byte` — a 1-byte ESC string, since MLC string literals have no
+  hex/control-byte escape syntax (only `\n \t \r \\ \" \0 \$ \{ \}`) and VT100/ANSI
+  sequence construction needs the raw 0x1b byte (SGR here, arrow-key input in §102d).
+- `compiler/build_bin.sh`: new `pkg-config --exists vterm` detection block
+  (same shape as the existing freetype2/harfbuzz block), unconditionally links
+  `-lvterm` into every mlcc-built binary when the system has it — matches how
+  freetype/harfbuzz are already handled, no per-program opt-in mechanism exists
+  in this build today.
+- `misc/editor/terminal/vterm_ffi.mlc`: extern fn declarations (module-private,
+  matching `text_shaping.mlc`'s convention) + exported wrapper functions
+  (`vterm_terminal_create/destroy/screen/write/damage_count`,
+  `vterm_control_escape_byte`, `vterm_cell_at` returning a `VtermCell` record).
+- Module-touch: `runtime/include/mlc/terminal/vterm_abi.hpp` (new),
+  `runtime/src/terminal/vterm_abi.cpp` (new), `compiler/build_bin.sh` (edit,
+  tooling script — not a checker/codegen `.mlc` file, self-host diff not
+  applicable), `misc/editor/terminal/vterm_ffi.mlc` (new).
+- Gate (per the track file's own §102a spec): feed a fixed byte sequence
+  (plain text + one SGR true-color escape) through `vterm_write_input`, read
+  back the resulting cell grid via `vterm_read_screen_cell`, assert
+  text+foreground-color match expected — no PTY, no rendering. New test
+  `misc/editor/tests/terminal_libvterm_ffi_unit.mlc` + runner
+  `scripts/run_editor_terminal_libvterm_ffi_unit.sh` (not a `run_ux_*.sh` UX
+  scenario — this is a pure FFI round-trip unit test per the track spec;
+  `run_ux_gate.sh` only gains its first terminal scenario at §102f).
 
 ## Non-goals (binding, per the 2026-07-15 architecture review's own lesson)
 
@@ -88,6 +126,32 @@ explicit numeric budget (document the measured baseline the same honest way
 §97a/§101 did — no unverified claims) and assert the terminal panel does not
 regress the editor's own idle/scroll frame budget (§97/§101 gates) when the
 terminal tab is not focused.
+
+## §102a Steps
+
+Red: confirmed `libvterm-dev` is already installed (`dpkg -l | grep vterm`:
+`libvterm-dev:amd64 0.3.3-2build1`, headers at `/usr/include/vterm.h`,
+`pkg-config --exists vterm` succeeds) — no apt install needed. Confirmed no
+existing vterm binding (`grep -rl vterm runtime/ misc/` before this step:
+zero matches).
+
+Green: implemented the shim + bindings per the Decision above. New unit test
+feeds `"hi" + ESC + "[38;2;200;100;50mX"` into a 4×20 `vterm_create`,
+asserts cell (0,0)='h' (104), (0,1)='i' (105), (0,2)='X' (88) with
+`foreground_is_indexed=false`/RGB=(200,100,50) exactly matching the SGR
+true-color escape, and `vterm_damage_count(screen) > 0` (the registered
+damage callback fired). Ran standalone: `[mlc-editor]
+terminal_libvterm_ffi_unit ok`, exit 0.
+
+Regression check: `scripts/dev_gate_fast.sh` green (1471 compiler unit tests
+pass — 2 apparent failures on a first attempt traced to a stale `TMPDIR`
+left exported in the shell session by an unrelated prior turn, not a real
+regression: confirmed by unsetting it and rerunning, all green). `bash
+scripts/run_ux_gate.sh` run 1 and run 2 both `[ux gate] all ok (114
+scenarios)` — unchanged from §101's close, confirming the new
+`compiler/build_bin.sh` vterm-detection block (which now unconditionally
+links `-lvterm` into every editor build on this machine) introduces no
+regression.
 
 ## Verification discipline
 
