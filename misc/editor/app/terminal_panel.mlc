@@ -1,0 +1,234 @@
+// TRACK_EDITOR_TERMINAL §102f — terminal panel session owned by EditorAppState.
+// Composes §102a–e primitives; demo_live / UX scenarios mutate via
+// editor_app_set_terminal / editor_app_open_terminal (no scattered locals).
+import {
+  vterm_terminal_create,
+  vterm_terminal_destroy,
+  vterm_terminal_screen,
+  vterm_terminal_write,
+  vterm_cell_at,
+  vterm_control_escape_byte
+} from '../terminal/vterm_ffi'
+import {
+  pty_terminal_spawn,
+  pty_terminal_write,
+  pty_terminal_read,
+  pty_terminal_read_until_eof,
+  pty_terminal_close
+} from '../terminal/pty_ffi'
+import { terminal_panel_resize } from '../terminal/terminal_resize'
+import {
+  terminal_keyboard_forward_poll,
+  terminal_delete_byte,
+  terminal_interrupt_byte,
+  terminal_eof_byte,
+  terminal_suspend_byte
+} from '../terminal/terminal_input_forward'
+
+fn i64_zero() -> i64 = 0
+
+// Sentinel path: one terminal tab kind without widening EditorTab with a
+// discriminant enum (minimal surface; path is already the tab identity).
+export fn terminal_panel_tab_path() -> string = "terminal://Terminal"
+
+export fn terminal_panel_is_tab_path(path: string) -> bool =
+  path == terminal_panel_tab_path()
+
+export type TerminalPanelSession = {
+  active: i32,
+  vterm_handle: i64,
+  screen_handle: i64,
+  pty_fd: i32,
+  rows: i32,
+  columns: i32,
+  last_backspace_down: i32,
+  last_enter_down: i32
+}
+
+export fn terminal_panel_session_inactive() -> TerminalPanelSession =
+  TerminalPanelSession {
+    active: 0,
+    vterm_handle: i64_zero(),
+    screen_handle: i64_zero(),
+    pty_fd: 0 - 1,
+    rows: 0,
+    columns: 0,
+    last_backspace_down: 0,
+    last_enter_down: 0
+  }
+
+export fn terminal_panel_session_open(
+  rows: i32,
+  columns: i32,
+  shell_command: string
+) -> TerminalPanelSession = do
+  const vterm_handle = vterm_terminal_create(rows, columns)
+  if vterm_handle == i64_zero() then
+    return terminal_panel_session_inactive()
+  end
+  const screen_handle = vterm_terminal_screen(vterm_handle)
+  const pty_fd = pty_terminal_spawn(shell_command)
+  if pty_fd < 0 then
+    vterm_terminal_destroy(vterm_handle)
+    return terminal_panel_session_inactive()
+  end
+  // Align PTY winsize with the vterm grid at open (same combo as §102e).
+  terminal_panel_resize(vterm_handle, pty_fd, rows, columns)
+  TerminalPanelSession {
+    active: 1,
+    vterm_handle: vterm_handle,
+    screen_handle: screen_handle,
+    pty_fd: pty_fd,
+    rows: rows,
+    columns: columns,
+    last_backspace_down: 0,
+    last_enter_down: 0
+  }
+end
+
+export fn terminal_panel_session_close(session: TerminalPanelSession) -> TerminalPanelSession = do
+  if session.active == 0 then
+    return session
+  end
+  if session.pty_fd >= 0 then
+    pty_terminal_close(session.pty_fd)
+  end
+  if session.vterm_handle != i64_zero() then
+    vterm_terminal_destroy(session.vterm_handle)
+  end
+  terminal_panel_session_inactive()
+end
+
+// Drain PTY master -> vterm (non-blocking poll window). Call once per frame
+// while the terminal tab is active.
+export fn terminal_panel_session_tick(session: TerminalPanelSession) -> TerminalPanelSession = do
+  if session.active == 0 then
+    return session
+  end
+  const chunk = pty_terminal_read(session.pty_fd, 8192, 0)
+  if chunk.byte_size() > 0 then
+    vterm_terminal_write(session.vterm_handle, chunk)
+  end
+  session
+end
+
+// Bounded wait-drain (same shape as §102d smoke's read_until_eof after Enter).
+export fn terminal_panel_session_drain(
+  session: TerminalPanelSession,
+  timeout_ms: i32
+) -> TerminalPanelSession = do
+  if session.active == 0 then
+    return session
+  end
+  const chunk = pty_terminal_read_until_eof(session.pty_fd, 8192, timeout_ms)
+  if chunk.byte_size() > 0 then
+    vterm_terminal_write(session.vterm_handle, chunk)
+  end
+  session
+end
+
+// Encode already-polled frame input into PTY bytes — used by demo_live after
+// frame_input_poll has consumed glfw_gl_take_text (calling
+// terminal_keyboard_forward_poll again would see an empty take).
+export fn terminal_panel_encode_polled(
+  text: string,
+  backspace_down: i32,
+  last_backspace_down: i32,
+  enter_down: i32,
+  last_enter_down: i32,
+  binding_key: string,
+  ctrl_down: i32
+) -> string = do
+  let mut bytes = text
+  if backspace_down != 0 && last_backspace_down == 0 then
+    bytes = bytes + terminal_delete_byte()
+  end
+  if enter_down != 0 && last_enter_down == 0 then
+    bytes = bytes + "\r"
+  end
+  if binding_key == "tab" then
+    bytes = bytes + "\t"
+  else if binding_key == "left" then
+    bytes = bytes + vterm_control_escape_byte() + "[D"
+  else if binding_key == "right" then
+    bytes = bytes + vterm_control_escape_byte() + "[C"
+  else if binding_key == "up" then
+    bytes = bytes + vterm_control_escape_byte() + "[A"
+  else if binding_key == "down" then
+    bytes = bytes + vterm_control_escape_byte() + "[B"
+  else if ctrl_down != 0 && binding_key == "c" then
+    bytes = bytes + terminal_interrupt_byte()
+  else if ctrl_down != 0 && binding_key == "d" then
+    bytes = bytes + terminal_eof_byte()
+  else if ctrl_down != 0 && binding_key == "z" then
+    bytes = bytes + terminal_suspend_byte()
+  end
+  bytes
+end
+
+export fn terminal_panel_session_write_bytes(
+  session: TerminalPanelSession,
+  bytes: string
+) -> TerminalPanelSession = do
+  if session.active == 0 || bytes.byte_size() == 0 then
+    return session
+  end
+  pty_terminal_write(session.pty_fd, bytes)
+  session
+end
+
+// Headless/live-smoke path: poll GLFW hooks directly (§102d shape).
+export fn terminal_panel_session_forward_poll(
+  session: TerminalPanelSession
+) -> TerminalPanelSession = do
+  if session.active == 0 then
+    return session
+  end
+  const forward = terminal_keyboard_forward_poll(
+    session.last_backspace_down, session.last_enter_down
+  )
+  let mut next = terminal_panel_session_write_bytes(session, forward.bytes)
+  TerminalPanelSession {
+    active: next.active,
+    vterm_handle: next.vterm_handle,
+    screen_handle: next.screen_handle,
+    pty_fd: next.pty_fd,
+    rows: next.rows,
+    columns: next.columns,
+    last_backspace_down: forward.backspace_down,
+    last_enter_down: forward.enter_down
+  }
+end
+
+export fn terminal_panel_session_row_text(
+  session: TerminalPanelSession,
+  row: i32
+) -> string = do
+  if session.active == 0 then
+    return ""
+  end
+  let mut text = ""
+  let mut column = 0
+  while column < session.columns do
+    text = text + vterm_cell_at(session.screen_handle, row, column).text
+    column = column + 1
+  end
+  text.trim()
+end
+
+export fn terminal_panel_session_has_exact_line(
+  session: TerminalPanelSession,
+  expected: string
+) -> bool = do
+  if session.active == 0 then
+    return false
+  end
+  let mut row = 0
+  while row < session.rows do
+    if terminal_panel_session_row_text(session, row) == expected then
+      return true
+    end
+    row = row + 1
+  end
+  false
+end

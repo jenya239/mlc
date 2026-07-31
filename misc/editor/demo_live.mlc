@@ -148,6 +148,7 @@ import {
   CmdReplaceOne,
   CmdReplaceAll,
   CmdToggleLineComment,
+  CmdOpenTerminal,
   CmdNone,
   CmdSave,
   command_id_tag,
@@ -380,8 +381,16 @@ import {
   editor_app_delete_word_backward,
   editor_app_delete_word_forward,
   editor_app_click_tab_strip,
-  editor_app_bump_frame
+  editor_app_bump_frame,
+  editor_app_open_terminal,
+  editor_app_close_terminal,
+  editor_app_terminal_tab_active,
+  editor_app_terminal_frame
 } from './app/state'
+import {
+  terminal_grid_text_lines,
+  terminal_grid_draw_backgrounds
+} from './terminal/terminal_grid_render'
 
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
@@ -1532,9 +1541,13 @@ fn main() -> i32 = do
             app = editor_app_set_history(app, history_new())
           end
         | CmdCloseTab => do
+            const closing_terminal = editor_app_terminal_tab_active(app)
             const close_outcome = tab_set_request_close(app.ux.tabs, app.ux.tabs.active_index)
             app = editor_app_set_tabs(app, close_outcome.tabs)
             app = editor_app_set_overlay(app, close_outcome.overlay)
+            if closing_terminal && !dirty_close_overlay_is_visible(app.overlay) then
+              app = editor_app_close_terminal(app)
+            end
             if !dirty_close_overlay_is_visible(app.overlay) && tab_set_has_active(app.ux.tabs) then
               active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
@@ -1703,6 +1716,27 @@ fn main() -> i32 = do
               app = editor_app_set_last_command(app, "session_save_fail")
             end
           end
+        | CmdOpenTerminal => do
+            const cell_rows = text_rect.height / metrics.line_height
+            const cell_columns = text_rect.width / metrics.char_width
+            let mut open_rows = cell_rows
+            if open_rows < 8 then
+              open_rows = 8
+            end
+            let mut open_columns = cell_columns
+            if open_columns < 40 then
+              open_columns = 40
+            end
+            app = editor_app_open_terminal(app, open_rows, open_columns, "sh")
+            if tab_set_has_active(app.ux.tabs) then
+              active = tab_set_active(app.ux.tabs)
+              document = active.buffer.document
+              frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+              frame = frame_layout.snapshot_cache.snapshot
+              line_index = frame.line_index
+              draw_text = frame.text
+            end
+          end
         | CmdNone => do
           end
         end
@@ -1789,7 +1823,17 @@ fn main() -> i32 = do
       app = editor_app_set_mouse_was_down(app, input.mouse_down)
       mouse_right_was_down = input.mouse_right_down
 
-      if input.text_buffer.length() > 0 then
+      if editor_app_terminal_tab_active(app) then
+        app = editor_app_terminal_frame(
+          app,
+          input.text_buffer,
+          input.backspace,
+          input.enter,
+          pending_binding_key,
+          glfw_gl_mod_ctrl_down()
+        )
+        pending_binding_key = ""
+      else if input.text_buffer.length() > 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         if multi_selection_count(multi) > 1 then
           const multi_insert = editor_app_insert_text_with_multi(
@@ -1808,7 +1852,7 @@ fn main() -> i32 = do
         line_index = frame.line_index
         draw_text = frame.text
       end
-      if input.enter != 0 && app.enter_was_down == 0 then
+      if !editor_app_terminal_tab_active(app) && input.enter != 0 && app.enter_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         app = editor_app_insert_newline(app)
         multi = multi_selection_from_single(app.ux.selection)
@@ -1819,7 +1863,7 @@ fn main() -> i32 = do
         line_index = frame.line_index
         draw_text = frame.text
       end
-      if input.backspace != 0 && app.backspace_was_down == 0 then
+      if !editor_app_terminal_tab_active(app) && input.backspace != 0 && app.backspace_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
         if glfw_gl_mod_ctrl_down() != 0 then
           app = editor_app_delete_word_backward(app)
@@ -1844,6 +1888,10 @@ fn main() -> i32 = do
     app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
     active = tab_set_active(app.ux.tabs)
     document = active.buffer.document
+    if editor_app_terminal_tab_active(app) then
+      // Idle drain even when no keys this frame (shell output arrives async).
+      app = editor_app_terminal_frame(app, "", 0, 0, "", 0)
+    end
     if !line_index_matches_document(frame.line_index, document) then
       frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
       frame = frame_layout.snapshot_cache.snapshot
@@ -2590,31 +2638,70 @@ fn main() -> i32 = do
     end
 
     let mut editor_lines: [StaticTextLine] = []
-    let mut draw_row = 0
-    while draw_row < visual_rows.length() do
-      const row = visual_rows[draw_row]
-      const baseline = gutter_baseline_y(text_rect.y + 2, metrics.line_height, draw_row, 14)
-      let mut gutter_label = ""
-      if row.is_wrap_continue == 0 then
-        gutter_label = gutter_line_label(row.doc_line)
+    if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
+      const terminal_origin_x = text_rect.x + 4
+      const terminal_origin_y = text_rect.y + 2
+      solid = terminal_grid_draw_backgrounds(
+        solid,
+        app.terminal.screen_handle,
+        app.terminal.rows,
+        app.terminal.columns,
+        metrics.char_width,
+        metrics.line_height,
+        terminal_origin_x,
+        terminal_origin_y,
+        width,
+        height,
+        f64_to_i32(theme.background_red * 255.0),
+        f64_to_i32(theme.background_green * 255.0),
+        f64_to_i32(theme.background_blue * 255.0)
+      )
+      const terminal_bg_flush = solid_renderer_flush_over(solid, width, height)
+      if terminal_bg_flush != 0 then
+        solid_renderer_destroy(solid)
+        static_text_destroy(text_state)
+        glfw_gl_context_end()
+        return terminal_bg_flush
       end
-      editor_lines = push_line(
-        editor_lines, gutter_label, 13,
-        gutter_label_pen_x(gutter_rect, 8), baseline
+      solid = solid_renderer_begin(solid)
+      editor_lines = terminal_grid_text_lines(
+        app.terminal.screen_handle,
+        app.terminal.rows,
+        app.terminal.columns,
+        metrics.char_width,
+        metrics.line_height,
+        terminal_origin_x,
+        terminal_origin_y,
+        14,
+        scaled_font_size
       )
-      editor_lines = editor_ux_append_syntax_colored_row(
-        editor_lines,
-        theme,
-        draw_text,
-        syntax_spans,
-        row.byte_start,
-        row.byte_end,
-        scaled_font_size,
-        text_pen_x,
-        baseline,
-        metrics.char_width
-      )
-      draw_row = draw_row + 1
+    else
+      let mut draw_row = 0
+      while draw_row < visual_rows.length() do
+        const row = visual_rows[draw_row]
+        const baseline = gutter_baseline_y(text_rect.y + 2, metrics.line_height, draw_row, 14)
+        let mut gutter_label = ""
+        if row.is_wrap_continue == 0 then
+          gutter_label = gutter_line_label(row.doc_line)
+        end
+        editor_lines = push_line(
+          editor_lines, gutter_label, 13,
+          gutter_label_pen_x(gutter_rect, 8), baseline
+        )
+        editor_lines = editor_ux_append_syntax_colored_row(
+          editor_lines,
+          theme,
+          draw_text,
+          syntax_spans,
+          row.byte_start,
+          row.byte_end,
+          scaled_font_size,
+          text_pen_x,
+          baseline,
+          metrics.char_width
+        )
+        draw_row = draw_row + 1
+      end
     end
 
     editor_gl_scissor_enable_rect(height, content_clip)

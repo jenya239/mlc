@@ -20,6 +20,7 @@ export type CommandId =
   | CmdReplaceOne
   | CmdReplaceAll
   | CmdToggleLineComment
+  | CmdOpenTerminal
   | CmdNone
 
 export type KeyChord = {
@@ -70,6 +71,7 @@ export fn command_id_tag(command: CommandId) -> string =
   | CmdReplaceOne => "replace_one"
   | CmdReplaceAll => "replace_all"
   | CmdToggleLineComment => "toggle_line_comment"
+  | CmdOpenTerminal => "open_terminal"
   | CmdNone => "none"
   end
 
@@ -121,6 +123,7 @@ export fn command_bus_default_bindings() -> [KeyBinding] = do
   bindings.push(binding(1, 0, 0, "h", CmdReplaceOne, 0, 1))
   bindings.push(binding(1, 1, 0, "h", CmdReplaceAll, 0, 1))
   bindings.push(binding(1, 0, 0, "/", CmdToggleLineComment, 0, 1))
+  bindings.push(binding(1, 1, 0, "t", CmdOpenTerminal, 0, 1))
   // both foci
   bindings.push(binding(1, 0, 0, "tab", CmdNextTab, 1, 1))
   bindings.push(binding(1, 1, 0, "tab", CmdPrevTab, 1, 1))

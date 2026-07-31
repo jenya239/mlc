@@ -535,3 +535,17 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | result  | **§102e CLOSED.** No correction. Advances to §102f |
 | issues  | First UX pass false-failed under Critic-exported TMPDIR; not a §102e defect. Non-track WIP untouched |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_TERMINAL (§102f `TERMINAL_PANEL_INTEGRATION` — read the track file's own §102f spec before freezing the Decision; wire terminal as a new tab/panel kind in `demo_live.mlc` / `EditorAppState` post-§97c; gate = one new `run_ux_gate.sh` scenario) |
+
+### Turn 2026-07-31 (Driver TRACK_EDITOR_TERMINAL STEP=0, §102f red+green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_TERMINAL |
+| started | 2026-07-31 |
+| done    | Read §102f spec. Froze Decision: `TerminalPanelSession` on `EditorAppState` (no scattered locals); sentinel tab path `terminal://Terminal`; `terminal_panel_encode_polled` for live loop (avoids double-consume of `glfw_gl_take_text` after `frame_input_poll`); `CmdOpenTerminal` (Ctrl+Shift+T); demo_live input/paint divert reusing §102c grid + §102d/e I/O. Implemented `misc/editor/app/terminal_panel.mlc`, extended `app/state.mlc` (`editor_app_open_terminal`/`_terminal_frame`/…), `commands/bus.mlc`, wired `demo_live.mlc`. Gate: `ux_scenarios/terminal_panel_type_sees_output.mlc` + `scripts/run_ux_terminal_panel_type_sees_output.sh` — open tab via app API, type `echo hi`+Enter, assert exact vterm line `hi`. First attempt failed (tick timeout 0 too short) — fixed with `terminal_panel_session_drain` (§102d `read_until_eof` shape). `demo_live` translates+links. `dev_gate_fast` 1471/0. `run_ux_gate` ×2: 115/115 both (was 114) |
+| verify  | `run_ux_terminal_panel_type_sees_output.sh` ok; `dev_gate_fast.sh` 1471/0; `run_ux_gate.sh` ×2 all ok (115); demo_live link exit 0 |
+| result  | **§102f STEP=1/2 done (Red+Green), awaiting Critic before CLOSE** |
+| issues  | None new. Non-track WIP untouched |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_TERMINAL (§102f — independent re-audit: rebuild+rerun UX scenario + `run_ux_gate` ×2 clean env; sabotage panel open/forward/assert path with mutations distinct from Driver; spot-check demo_live divert does not regress document editing; close §102f or return correction — closing advances to §102g `TERMINAL_PERF_BUDGET`) |

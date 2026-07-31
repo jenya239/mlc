@@ -1,0 +1,92 @@
+// TRACK_EDITOR_TERMINAL §102f — open terminal tab via EditorAppState, type
+// through the panel forward path, assert vterm screen shows command output.
+// L2 GLFW (same hooks as §102d); registered as run_ux_* for run_ux_gate.
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import { tab_set_new, tab_set_count, tab_set_active } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_app_state_new,
+  editor_app_open_terminal,
+  editor_app_close_terminal,
+  editor_app_set_terminal,
+  editor_app_terminal_tab_active
+} from '../app/state'
+import {
+  terminal_panel_session_forward_poll,
+  terminal_panel_session_drain,
+  terminal_panel_session_has_exact_line,
+  terminal_panel_tab_path
+} from '../app/terminal_panel'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_text_test_push,
+  glfw_gl_keys_test_set,
+  glfw_gl_input_test_clear
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    println("ux_fail terminal_panel_type_sees_output begin=" + begin_status.to_string())
+    return 1
+  end
+
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut app = editor_app_state_new(
+    800, 600, panels, tab_set_new(), selection_collapsed(0)
+  )
+
+  app = editor_app_open_terminal(app, 12, 60, "sh")
+  if app.terminal.active == 0 then
+    glfw_gl_context_end()
+    println("ux_fail terminal_panel_type_sees_output open_session")
+    return 2
+  end
+  if tab_set_count(app.ux.tabs) < 1 then
+    app = editor_app_close_terminal(app)
+    glfw_gl_context_end()
+    println("ux_fail terminal_panel_type_sees_output no_tab")
+    return 3
+  end
+  if tab_set_active(app.ux.tabs).path != terminal_panel_tab_path() then
+    app = editor_app_close_terminal(app)
+    glfw_gl_context_end()
+    println("ux_fail terminal_panel_type_sees_output tab_path")
+    return 4
+  end
+  if !editor_app_terminal_tab_active(app) then
+    app = editor_app_close_terminal(app)
+    glfw_gl_context_end()
+    println("ux_fail terminal_panel_type_sees_output not_active")
+    return 5
+  end
+
+  // Drain shell banner before typing (same shape as §102d smoke).
+  let mut session = terminal_panel_session_drain(app.terminal, 300)
+
+  glfw_gl_input_test_clear()
+  glfw_gl_text_test_push("echo hi")
+  session = terminal_panel_session_forward_poll(session)
+  glfw_gl_keys_test_set(0, 1)
+  session = terminal_panel_session_forward_poll(session)
+  glfw_gl_keys_test_set(0, 0)
+  glfw_gl_input_test_clear()
+
+  session = terminal_panel_session_drain(session, 400)
+  const saw_hi = terminal_panel_session_has_exact_line(session, "hi")
+
+  app = editor_app_set_terminal(app, session)
+  app = editor_app_close_terminal(app)
+  glfw_gl_context_end()
+
+  if !saw_hi then
+    println("ux_fail terminal_panel_type_sees_output no_hi_line")
+    return 6
+  end
+
+  println("ux_ok terminal_panel_type_sees_output")
+  0
+end

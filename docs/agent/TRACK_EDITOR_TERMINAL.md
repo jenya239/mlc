@@ -6,7 +6,49 @@ architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
 ## Status: **open** — §102a/§102b/§102c/§102d/§102e all **CLOSED**, Critic-audited.
-§102f `TERMINAL_PANEL_INTEGRATION` next.
+§102f `TERMINAL_PANEL_INTEGRATION` Driver done (red+green), Critic next.
+
+## §102f Decision (frozen 2026-07-31)
+
+Wire the terminal as a tab kind inside the existing post-§97c
+`EditorAppState` / tab strip — no parallel panel system (track non-goal).
+
+1. **Session SoT**: new `misc/editor/app/terminal_panel.mlc` owns
+   `TerminalPanelSession` (vterm + PTY handles, rows/cols, enter/backspace
+   edge state). `EditorAppState.terminal` holds it; mutate only via
+   `editor_app_set_terminal` / `editor_app_open_terminal` /
+   `editor_app_close_terminal` / `editor_app_terminal_frame` (same
+   `editor_app_set_*` discipline as §97c — no scattered locals in
+   `demo_live`).
+2. **Tab discriminant**: sentinel path `terminal://Terminal` via existing
+   `tab_set_open` path-identity (display name `Terminal`). No `EditorTab`
+   enum widen — path already is the identity.
+3. **Input**: `frame_input_poll` already consumes `glfw_gl_take_text`, so
+   live loop must **not** call `terminal_keyboard_forward_poll` (would see
+   empty). New `terminal_panel_encode_polled` encodes already-polled
+   text/edges/binding_key/ctrl into PTY bytes (same byte map as §102d).
+   `editor_app_terminal_frame` writes + drains. UX scenario uses
+   `terminal_panel_session_forward_poll` (direct GLFW hooks, §102d shape).
+4. **demo_live**: `CmdOpenTerminal` (Ctrl+Shift+T) opens session+tab;
+   when terminal tab active, divert text/enter/backspace to
+   `editor_app_terminal_frame` and paint via
+   `terminal_grid_draw_backgrounds` + `terminal_grid_text_lines` +
+   `static_text_draw_lines_colored` (reuse §102c path); close tab tears
+   down the session.
+5. **Gate**: `scripts/run_ux_terminal_panel_type_sees_output.sh` →
+   `misc/editor/ux_scenarios/terminal_panel_type_sees_output.mlc` —
+   open via `editor_app_open_terminal`, type `echo hi`+Enter through the
+   panel forward path, assert exact vterm line `"hi"`. Auto-discovered by
+   `run_ux_gate.sh`.
+
+## §102f Green (2026-07-31)
+
+`scripts/run_ux_terminal_panel_type_sees_output.sh`: `ux_ok
+terminal_panel_type_sees_output` / ok. `scripts/dev_gate_fast.sh`: 1471
+passed, 0 failed. `scripts/run_ux_gate.sh` ×2: all ok (115 scenarios,
+was 114 — new terminal scenario included). `demo_live.mlc` translates +
+links clean. No `compiler/**` `.mlc` / no `lib/mlc/**` — no self-host /
+regression_gate required.
 
 ## §102e Decision (frozen 2026-07-31)
 
