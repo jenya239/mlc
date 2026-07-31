@@ -1,0 +1,108 @@
+// TRACK_EDITOR_TERMINAL §102c — vterm screen state -> cell grid render.
+// Reuses static_text_draw_lines_colored (glyphs) and solid_renderer_rect
+// (cell background) — no new draw path, matches the track's own non-goal.
+import { VtermCell, vterm_cell_at } from './vterm_ffi'
+import { StaticTextLine } from '../ui/static_text'
+import { SolidRenderer, solid_renderer_rect } from '../../gui/solid_renderer'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+fn color_channel_to_unit(value: i32) -> f64 = i32_to_f64(value) / 255.0
+
+// One StaticTextLine per horizontally-contiguous same-foreground-color run
+// per row (static_text_draw_lines_colored itself batches by color across
+// lines too, so per-run entries cost nothing extra there).
+export fn terminal_grid_text_lines(
+  screen_handle: i64,
+  rows: i32,
+  columns: i32,
+  cell_pixel_width: i32,
+  cell_pixel_height: i32,
+  origin_x: i32,
+  origin_y: i32,
+  baseline_offset_y: i32,
+  font_pixel_size: i32
+) -> [StaticTextLine] = do
+  let mut lines: [StaticTextLine] = []
+  let mut row = 0
+  while row < rows do
+    let mut column = 0
+    while column < columns do
+      const cell = vterm_cell_at(screen_handle, row, column)
+      const run_red = color_channel_to_unit(cell.foreground_red)
+      const run_green = color_channel_to_unit(cell.foreground_green)
+      const run_blue = color_channel_to_unit(cell.foreground_blue)
+      let mut text = cell.text
+      const run_start_column = column
+      column = column + 1
+      while column < columns do
+        const next_cell = vterm_cell_at(screen_handle, row, column)
+        if color_channel_to_unit(next_cell.foreground_red) != run_red ||
+            color_channel_to_unit(next_cell.foreground_green) != run_green ||
+            color_channel_to_unit(next_cell.foreground_blue) != run_blue then
+          break
+        end
+        text = text + next_cell.text
+        column = column + 1
+      end
+      lines.push(StaticTextLine {
+        text: text,
+        pixel_size: font_pixel_size,
+        pen_x: origin_x + run_start_column * cell_pixel_width,
+        pen_y: origin_y + row * cell_pixel_height + baseline_offset_y,
+        red: run_red,
+        green: run_green,
+        blue: run_blue,
+        alpha: 1.0
+      })
+    end
+    row = row + 1
+  end
+  lines
+end
+
+// Accumulates 1 solid_renderer_rect per cell whose background differs from
+// the given default (caller flushes via solid_renderer_flush_over after —
+// composes over the panel's own background fill, drawn separately).
+export fn terminal_grid_draw_backgrounds(
+  renderer: SolidRenderer,
+  screen_handle: i64,
+  rows: i32,
+  columns: i32,
+  cell_pixel_width: i32,
+  cell_pixel_height: i32,
+  origin_x: i32,
+  origin_y: i32,
+  window_width: i32,
+  window_height: i32,
+  default_red: i32,
+  default_green: i32,
+  default_blue: i32
+) -> SolidRenderer = do
+  let mut working = renderer
+  let mut row = 0
+  while row < rows do
+    let mut column = 0
+    while column < columns do
+      const cell = vterm_cell_at(screen_handle, row, column)
+      if cell.background_red != default_red ||
+          cell.background_green != default_green ||
+          cell.background_blue != default_blue then
+        working = solid_renderer_rect(
+          working,
+          window_width, window_height,
+          origin_x + column * cell_pixel_width,
+          origin_y + row * cell_pixel_height,
+          cell_pixel_width, cell_pixel_height,
+          color_channel_to_unit(cell.background_red),
+          color_channel_to_unit(cell.background_green),
+          color_channel_to_unit(cell.background_blue),
+          1.0
+        )
+      end
+      column = column + 1
+    end
+    row = row + 1
+  end
+  working
+end

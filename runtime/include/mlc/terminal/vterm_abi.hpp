@@ -19,7 +19,10 @@ std::int64_t vterm_create(std::int32_t rows, std::int32_t columns);
 std::int32_t vterm_destroy(std::int64_t vterm_handle);
 
 // vterm_obtain_screen + vterm_screen_reset(hard=1) + register damage
-// callback. 0 = error.
+// callback + vterm_screen_set_default_colors (white fg / black bg, so
+// uncolored output resolves to a visible color via
+// vterm_screen_convert_color_to_rgb instead of an unconfigured fallback).
+// 0 = error.
 std::int64_t vterm_obtain_screen(std::int64_t vterm_handle);
 
 // vterm_input_write. Returns bytes consumed.
@@ -36,7 +39,14 @@ std::int32_t vterm_read_screen_cell(std::int64_t screen_handle, std::int32_t row
 
 // First Unicode codepoint of the last-read cell (0 = empty cell).
 std::int32_t vterm_last_cell_codepoint();
+// UTF-8 encoding of the last-read cell's codepoint (a single space for an
+// empty/unwritten cell, codepoint 0).
+String vterm_last_cell_utf8();
 std::int32_t vterm_last_cell_width();
+// Foreground/background RGB below are always resolved concrete colors
+// (vterm_screen_convert_color_to_rgb) — valid for the RGB/indexed/default
+// color types alike. is_indexed/index reflect the color's original type,
+// captured before resolution, for diagnostics only.
 std::int32_t vterm_last_cell_foreground_is_indexed();
 std::int32_t vterm_last_cell_foreground_red();
 std::int32_t vterm_last_cell_foreground_green();

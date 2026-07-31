@@ -24,6 +24,11 @@ export extern fn gl_is_enabled(capability: i32) -> i32
   = "mlc::gl::glad_abi::is_enabled" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_get_integer_at(parameter_name: i32, index: i32) -> i32
   = "mlc::gl::glad_abi::get_integer_at" from "mlc/gl/glad_gl_abi.hpp"
+// component_index 0..3 = R/G/B/A, each 0..255. (x, y) in GL window
+// coordinates — origin bottom-left, unlike this codebase's own
+// top-left pixel_x/pixel_y UI convention (TRACK_EDITOR_TERMINAL §102c).
+export extern fn gl_read_pixel_component(x: i32, y: i32, component_index: i32) -> i32
+  = "mlc::gl::glad_abi::read_pixel_component" from "mlc/gl/glad_gl_abi.hpp"
 
 // OpenGL enum: GL_SCISSOR_TEST = 0x0C11, GL_SCISSOR_BOX = 0x0C10.
 export fn gl_scissor_test() -> i32 = 3089

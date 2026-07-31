@@ -16,6 +16,8 @@ extern fn vterm_read_screen_cell(screen_handle: i64, row: i32, column: i32) -> i
   "mlc::terminal::vterm_read_screen_cell" from "mlc/terminal/vterm_abi.hpp" thread_affine
 extern fn vterm_last_cell_codepoint() -> i32 =
   "mlc::terminal::vterm_last_cell_codepoint" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_last_cell_utf8() -> string =
+  "mlc::terminal::vterm_last_cell_utf8" from "mlc/terminal/vterm_abi.hpp" thread_affine
 extern fn vterm_last_cell_width() -> i32 =
   "mlc::terminal::vterm_last_cell_width" from "mlc/terminal/vterm_abi.hpp" thread_affine
 extern fn vterm_last_cell_foreground_is_indexed() -> i32 =
@@ -43,12 +45,18 @@ extern fn vterm_damage_count(screen_handle: i64) -> i32 =
 
 export type VtermCell = {
   codepoint: i32,
+  text: string,
   width: i32,
   foreground_is_indexed: bool,
   foreground_red: i32,
   foreground_green: i32,
   foreground_blue: i32,
-  foreground_index: i32
+  foreground_index: i32,
+  background_is_indexed: bool,
+  background_red: i32,
+  background_green: i32,
+  background_blue: i32,
+  background_index: i32
 }
 
 export fn vterm_terminal_create(rows: i32, columns: i32) -> i64 = vterm_create(rows, columns)
@@ -66,17 +74,25 @@ export fn vterm_cell_at(screen_handle: i64, row: i32, column: i32) -> VtermCell 
   const status = vterm_read_screen_cell(screen_handle, row, column)
   if status != 0 then
     return VtermCell {
-      codepoint: 0, width: 0, foreground_is_indexed: false,
-      foreground_red: 0, foreground_green: 0, foreground_blue: 0, foreground_index: 0
+      codepoint: 0, text: " ", width: 0, foreground_is_indexed: false,
+      foreground_red: 0, foreground_green: 0, foreground_blue: 0, foreground_index: 0,
+      background_is_indexed: false,
+      background_red: 0, background_green: 0, background_blue: 0, background_index: 0
     }
   end
   VtermCell {
     codepoint: vterm_last_cell_codepoint(),
+    text: vterm_last_cell_utf8(),
     width: vterm_last_cell_width(),
     foreground_is_indexed: vterm_last_cell_foreground_is_indexed() != 0,
     foreground_red: vterm_last_cell_foreground_red(),
     foreground_green: vterm_last_cell_foreground_green(),
     foreground_blue: vterm_last_cell_foreground_blue(),
-    foreground_index: vterm_last_cell_foreground_index()
+    foreground_index: vterm_last_cell_foreground_index(),
+    background_is_indexed: vterm_last_cell_background_is_indexed() != 0,
+    background_red: vterm_last_cell_background_red(),
+    background_green: vterm_last_cell_background_green(),
+    background_blue: vterm_last_cell_background_blue(),
+    background_index: vterm_last_cell_background_index()
   }
 end

@@ -64,7 +64,14 @@ std::int64_t vterm_create(std::int32_t rows, std::int32_t columns) {
   if (rows <= 0 || columns <= 0) {
     return 0;
   }
-  return pointer_to_i64(vterm_new(rows, columns));
+  VTerm* vterm = vterm_new(rows, columns);
+  if (vterm == nullptr) {
+    return 0;
+  }
+  // Real PTY sessions overwhelmingly emit UTF-8 today; without this,
+  // multi-byte input decodes as raw Latin-1 bytes, one per cell.
+  vterm_set_utf8(vterm, 1);
+  return pointer_to_i64(vterm);
 }
 
 std::int32_t vterm_destroy(std::int64_t vterm_handle) {
@@ -88,6 +95,15 @@ std::int64_t vterm_obtain_screen(std::int64_t vterm_handle) {
   static const VTermScreenCallbacks callbacks = damage_only_callbacks();
   vterm_screen_set_callbacks(screen, &callbacks, screen);
   vterm_screen_reset(screen, 1);
+
+  VTermColor default_foreground;
+  VTermColor default_background;
+  vterm_color_rgb(&default_foreground, 255, 255, 255);
+  vterm_color_rgb(&default_background, 0, 0, 0);
+  // vterm_screen_convert_color_to_rgb (used by vterm_read_screen_cell) reads
+  // the screen's own default colors, distinct from vterm_state_*'s — set
+  // both would be redundant/inconsistent, this is the one that matters here.
+  vterm_screen_set_default_colors(screen, &default_foreground, &default_background);
   return pointer_to_i64(screen);
 }
 
@@ -119,20 +135,56 @@ std::int32_t vterm_read_screen_cell(std::int64_t screen_handle, std::int32_t row
   LastCellSlot& slot = last_cell_slot();
   slot.codepoint = static_cast<std::int32_t>(cell.chars[0]);
   slot.width = cell.width;
+
+  // Capture original color-type diagnostics before resolving to concrete
+  // RGB below (convert_color_to_rgb mutates the color's type in place).
   slot.foreground_is_indexed = VTERM_COLOR_IS_INDEXED(&cell.fg);
+  slot.foreground_index = cell.fg.indexed.idx;
+  slot.background_is_indexed = VTERM_COLOR_IS_INDEXED(&cell.bg);
+  slot.background_index = cell.bg.indexed.idx;
+
+  // Resolves RGB/indexed/default alike to a concrete RGB triple using the
+  // screen's palette + default colors (set in vterm_obtain_screen) — a
+  // no-op for already-RGB colors (e.g. SGR truecolor).
+  vterm_screen_convert_color_to_rgb(screen, &cell.fg);
+  vterm_screen_convert_color_to_rgb(screen, &cell.bg);
   slot.foreground_red = cell.fg.rgb.red;
   slot.foreground_green = cell.fg.rgb.green;
   slot.foreground_blue = cell.fg.rgb.blue;
-  slot.foreground_index = cell.fg.indexed.idx;
-  slot.background_is_indexed = VTERM_COLOR_IS_INDEXED(&cell.bg);
   slot.background_red = cell.bg.rgb.red;
   slot.background_green = cell.bg.rgb.green;
   slot.background_blue = cell.bg.rgb.blue;
-  slot.background_index = cell.bg.indexed.idx;
   return 0;
 }
 
+namespace {
+std::string utf8_encode_codepoint(std::uint32_t codepoint) {
+  std::string encoded;
+  if (codepoint == 0) {
+    encoded.push_back(' ');
+  } else if (codepoint <= 0x7F) {
+    encoded.push_back(static_cast<char>(codepoint));
+  } else if (codepoint <= 0x7FF) {
+    encoded.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  } else if (codepoint <= 0xFFFF) {
+    encoded.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  } else {
+    encoded.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  }
+  return encoded;
+}
+} // namespace
+
 std::int32_t vterm_last_cell_codepoint() { return last_cell_slot().codepoint; }
+String vterm_last_cell_utf8() {
+  return String(utf8_encode_codepoint(static_cast<std::uint32_t>(last_cell_slot().codepoint)));
+}
 std::int32_t vterm_last_cell_width() { return last_cell_slot().width; }
 std::int32_t vterm_last_cell_foreground_is_indexed() { return last_cell_slot().foreground_is_indexed ? 1 : 0; }
 std::int32_t vterm_last_cell_foreground_red() { return last_cell_slot().foreground_red; }

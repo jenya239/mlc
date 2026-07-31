@@ -1,0 +1,179 @@
+// TRACK_EDITOR_TERMINAL §102c — vterm screen -> cell grid render (headless
+// GLFW, MLC_GLFW_VISIBLE=0 + glReadPixels). Runs a fixed shell command that
+// prints a background-colored run of cells and a colored word, feeds the
+// PTY output through vterm, renders via terminal_grid_render (reusing
+// static_text_draw_lines_colored + solid_renderer_rect, no new draw path),
+// then samples pixels to assert the render actually happened.
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import {
+  gl_read_pixel_component
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+import {
+  static_text_create,
+  static_text_draw_lines_colored,
+  static_text_destroy
+} from '../editor/ui/static_text'
+import {
+  solid_renderer_create,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  vterm_terminal_create,
+  vterm_terminal_destroy,
+  vterm_terminal_screen,
+  vterm_terminal_write,
+  vterm_control_escape_byte
+} from '../editor/terminal/vterm_ffi'
+import {
+  pty_terminal_spawn,
+  pty_terminal_read_until_eof,
+  pty_terminal_close
+} from '../editor/terminal/pty_ffi'
+import {
+  terminal_grid_text_lines,
+  terminal_grid_draw_backgrounds
+} from '../editor/terminal/terminal_grid_render'
+
+// GL window coordinates have a bottom-left origin; the renderers here (and
+// this grid) use top-left pixel coordinates.
+fn gl_y_from_top_left(window_height: i32, top_left_y: i32) -> i32 = window_height - 1 - top_left_y
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn main() -> i32 = do
+  const rows = 4
+  const columns = 20
+  const cell_pixel_width = 12
+  const cell_pixel_height = 20
+  const baseline_offset_y = 16
+  const font_pixel_size = 16
+  const window_width = columns * cell_pixel_width
+  const window_height = rows * cell_pixel_height
+  const font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+
+  const begin_status = glfw_gl_context_begin(window_width, window_height)
+  if begin_status != 0 then
+    return begin_status
+  end
+
+  let mut text_state = static_text_create(512, font_path, 1)
+  if text_state.renderer.program < 0 then
+    const error_code = text_state.renderer.program
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  let mut solid = solid_renderer_create()
+  if solid.program < 0 then
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 2
+  end
+
+  const vterm_handle = vterm_terminal_create(rows, columns)
+  if vterm_handle == i64_from_i32(0) then
+    solid_renderer_destroy(solid)
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 3
+  end
+  const screen_handle = vterm_terminal_screen(vterm_handle)
+
+  const escape = vterm_control_escape_byte()
+  // 6 background-colored spaces (columns 0..5), then a green word (from
+  // column 6) — exercises solid_renderer_rect (exact color, no glyph AA)
+  // and static_text_draw_lines_colored (glyph ink) in one line.
+  const command =
+    "echo '" + escape + "[48;2;200;100;50m      " + escape + "[0m" +
+    escape + "[38;2;10;220;10mOK" + escape + "[0m'"
+  const pty_fd = pty_terminal_spawn(command)
+  if pty_fd < 0 then
+    vterm_terminal_destroy(vterm_handle)
+    solid_renderer_destroy(solid)
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 4
+  end
+  const output = pty_terminal_read_until_eof(pty_fd, 4096, 1000)
+  pty_terminal_close(pty_fd)
+  vterm_terminal_write(vterm_handle, output)
+
+  solid = terminal_grid_draw_backgrounds(
+    solid, screen_handle, rows, columns, cell_pixel_width, cell_pixel_height,
+    0, 0, window_width, window_height, 0, 0, 0
+  )
+  solid_renderer_flush(solid, window_width, window_height, 0.0, 0.0, 0.0)
+
+  const lines = terminal_grid_text_lines(
+    screen_handle, rows, columns, cell_pixel_width, cell_pixel_height,
+    0, 0, baseline_offset_y, font_pixel_size
+  )
+  const drawn = static_text_draw_lines_colored(
+    text_state, lines, window_width, window_height, 0,
+    1.0, 1.0, 1.0, 1.0
+  )
+  text_state = drawn.state
+  if drawn.error_code != 0 then
+    vterm_terminal_destroy(vterm_handle)
+    solid_renderer_destroy(solid)
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 5
+  end
+
+  // Background rect, column 2 (middle of the 6-column colored run), row 0 —
+  // exact match expected: no glyph ink there, pure solid_renderer_rect fill.
+  const background_sample_x = 2 * cell_pixel_width + cell_pixel_width / 2
+  const background_sample_y = gl_y_from_top_left(window_height, cell_pixel_height / 2)
+  const background_red = gl_read_pixel_component(background_sample_x, background_sample_y, 0)
+  const background_green = gl_read_pixel_component(background_sample_x, background_sample_y, 1)
+  const background_blue = gl_read_pixel_component(background_sample_x, background_sample_y, 2)
+  if background_red != 200 || background_green != 100 || background_blue != 50 then
+    vterm_terminal_destroy(vterm_handle)
+    solid_renderer_destroy(solid)
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    println(
+      "[mlc-editor] terminal_cell_grid_render_smoke fail background rgb=" +
+      background_red.to_string() + "," + background_green.to_string() + "," +
+      background_blue.to_string()
+    )
+    return 6
+  end
+
+  // "OK" glyph ink, columns 6..7 — default background is pure black, so any
+  // non-zero sample in this region proves the glyph draw path fired.
+  let mut found_ink = false
+  let mut scan_x = 6 * cell_pixel_width
+  while scan_x < 8 * cell_pixel_width do
+    let mut scan_top_left_y = 0
+    while scan_top_left_y < cell_pixel_height do
+      const scan_y = gl_y_from_top_left(window_height, scan_top_left_y)
+      const red = gl_read_pixel_component(scan_x, scan_y, 0)
+      const green = gl_read_pixel_component(scan_x, scan_y, 1)
+      const blue = gl_read_pixel_component(scan_x, scan_y, 2)
+      if red != 0 || green != 0 || blue != 0 then
+        found_ink = true
+      end
+      scan_top_left_y = scan_top_left_y + 1
+    end
+    scan_x = scan_x + 1
+  end
+
+  vterm_terminal_destroy(vterm_handle)
+  solid_renderer_destroy(solid)
+  static_text_destroy(text_state)
+  glfw_gl_context_end()
+
+  if !found_ink then
+    println("[mlc-editor] terminal_cell_grid_render_smoke fail no glyph ink found")
+    return 7
+  end
+
+  println("[mlc-editor] terminal_cell_grid_render_smoke ok")
+  0
+end

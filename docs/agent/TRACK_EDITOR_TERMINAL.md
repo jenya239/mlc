@@ -6,7 +6,75 @@ architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
 ## Status: **open** — §102a/§102b both **CLOSED**, Critic-audited. §102c
-`TERMINAL_CELL_GRID_RENDER` next.
+`TERMINAL_CELL_GRID_RENDER` red+green done, Critic next.
+
+## §102c Decision (frozen 2026-07-31)
+
+Bridge module `misc/editor/terminal/terminal_grid_render.mlc`, pure MLC, no
+new draw path: `terminal_grid_text_lines` walks the vterm screen row by row,
+grouping horizontally-contiguous same-foreground-color cells into one
+`StaticTextLine` per run (fed to the existing `static_text_draw_lines_colored`);
+`terminal_grid_draw_backgrounds` accumulates one `solid_renderer_rect` call
+per cell whose background differs from a caller-supplied default (fed to the
+existing `solid_renderer_flush_over`).
+
+Two defects found and fixed in `vterm_abi.cpp` while wiring this (both
+required for correct rendering, not cosmetic):
+- `vterm_read_screen_cell` read `cell.fg.rgb`/`cell.bg.rgb` directly, which is
+  only valid for already-RGB (truecolor) cells — for indexed/default-color
+  cells (the overwhelming majority of real terminal output) this returned
+  garbage/zero. Fixed by calling `vterm_screen_convert_color_to_rgb` on a
+  copy before reading, after capturing the original `is_indexed`/`index`
+  diagnostics. `vterm_obtain_screen` now also calls
+  `vterm_screen_set_default_colors` (white fg / black bg) — without it,
+  "default" color resolves to an unconfigured libvterm fallback (empirically
+  `(240,240,240)`, not documented/guaranteed), not the intended white.
+- `vterm_set_utf8` was never called, so multi-byte UTF-8 PTY output decoded
+  one raw byte per cell (Latin-1), not one codepoint per cell — real PTY
+  sessions are UTF-8 by default. Fixed in `vterm_create`.
+
+New `vterm_last_cell_utf8()` (UTF-8-encodes the cell's codepoint, space for
+an empty cell) and `VtermCell.text`/`.background_*` fields (getters already
+existed in the C++ shim since §102a, just unused by `VtermCell` until now).
+
+New GL binding `gl_read_pixel_component(x, y, component_index)` in
+`glad_gl_abi.hpp`/`glad_gl.mlc` (mirrors `gl_get_integer_at`'s convention: no
+caching, always re-queries via `glReadPixels`) — the gate's own pixel-probe
+primitive, reused by any future L2 pixel-content test, not terminal-specific.
+
+Gate: `misc/examples/terminal_cell_grid_render_smoke.mlc`, offscreen
+`MLC_GLFW_VISIBLE=0`. Spawns `echo` (via §102b's `pty_terminal_spawn`)
+printing 6 background-colored (200,100,50) spaces then a green "OK" word,
+drains the PTY (§102b), feeds it to a vterm (§102a), renders via the new
+bridge, then two independent pixel-content assertions on the actual
+framebuffer: (1) exact-match `gl_read_pixel_component` at the colored-space
+cell's center — deterministic, no font/AA dependency since it is a pure
+`solid_renderer_rect` fill; (2) a small region scan over the "OK" glyph cells
+asserting at least one non-black sample — the default background is pure
+black, so any ink proves `static_text_draw_lines_colored` actually drew
+there (exact-pixel glyph assertions are AA/hinting-environment-dependent,
+same reasoning as `TRACK_EDITOR_HOVER_SCROLLBAR_PAINT_GAP.md`'s established
+pattern). Both assertions independently verified to actually fail when
+sabotaged (wrong expected RGB / scanning an empty region) before being
+reverted — not tautological.
+
+## §102c Green (2026-07-31)
+
+`scripts/run_editor_terminal_cell_grid_render_smoke.sh`: `[mlc-editor]
+terminal_cell_grid_render_smoke ok` / `[terminal cell grid render] ok`, exit
+0. Regression checks after the `vterm_abi.cpp` color/UTF-8 fixes:
+`scripts/run_editor_terminal_libvterm_ffi_unit.sh` (§102a's own test) still
+`ok`; `scripts/run_editor_terminal_pty_spawn_unit.sh` (§102b's own test)
+still `ok`. `scripts/dev_gate_fast.sh`: 1471 passed, 0 failed, arch lint
+failures=0. `scripts/run_ux_gate.sh`: all 114 scenarios ok. `lib/mlc/
+common/stdlib/gl/glad_gl.mlc` touched (new `gl_read_pixel_component`) →
+`scripts/regression_gate.sh` run per the standing rule: Ruby-vs-mlcc
+regression programs pass, examples compile+link sweep ok=147 fail=0 skip=3
+(same 3 pre-existing skips as before this change — `dynrecord_demo`,
+`scene_form_live`, `text_glyph_color_smoke` — the new
+`terminal_cell_grid_render_smoke.mlc` itself compiles+links in the ok count).
+No `compiler/**` `.mlc` files touched — no self-host diff/Tier B required
+(same precedent as §102a/§102b).
 
 ## §102b Decision (frozen 2026-07-31)
 

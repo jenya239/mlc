@@ -51,6 +51,18 @@ inline int32_t get_integer_at(int32_t parameter_name, int32_t index) {
   return static_cast<int32_t>(values[index]);
 }
 
+// Reads back 1 RGBA pixel from the currently bound framebuffer at (x, y) in
+// GL window coordinates (origin bottom-left). component_index 0..3 = R/G/B/A,
+// each 0..255 (TRACK_EDITOR_TERMINAL §102c pixel-content test probe).
+inline int32_t read_pixel_component(int32_t x, int32_t y, int32_t component_index) {
+  unsigned char rgba[4] = {0, 0, 0, 0};
+  glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+  if (component_index < 0 || component_index > 3) {
+    return 0;
+  }
+  return static_cast<int32_t>(rgba[component_index]);
+}
+
 inline int32_t create_shader(int32_t shader_type) {
   return static_cast<int32_t>(glCreateShader(static_cast<GLenum>(shader_type)));
 }
