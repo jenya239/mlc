@@ -7,7 +7,8 @@ import {
 } from '../document/line_index'
 import {
   document_visual_row_count,
-  document_visual_row_count_pixel_budget
+  document_visual_row_count_pixel_budget,
+  document_visual_row_prefix_pixel_budget
 } from './word_wrap'
 
 export type DocumentWrapCountCache = {
@@ -17,6 +18,9 @@ export type DocumentWrapCountCache = {
   font_path: string,
   pixel_size: i32,
   visual_row_count: i32,
+  // §101: prefix[i] = visual rows for lines [0, i); empty when not pixel-budget mode
+  // (column-budget path, out of scope) or not yet ticked with real pixel data.
+  prefix_visual_rows: [i32],
   recompute_count: i32
 }
 
@@ -74,6 +78,7 @@ export fn wrap_count_cache_new(
     font_path: "",
     pixel_size: 0,
     visual_row_count: document_visual_row_count(text, line_index, wrap_columns),
+    prefix_visual_rows: [],
     recompute_count: 1
   }
 
@@ -83,18 +88,25 @@ export fn wrap_count_cache_new_pixel(
   viewport_width_px: i32,
   font_path: string,
   pixel_size: i32
-) -> DocumentWrapCountCache =
+) -> DocumentWrapCountCache = do
+  const prefix = document_visual_row_prefix_pixel_budget(
+    text, line_index, viewport_width_px, font_path, pixel_size
+  )
+  let mut count = 0
+  if prefix.length() > 0 then
+    count = prefix[prefix.length() - 1]
+  end
   DocumentWrapCountCache {
     text: text,
     wrap_columns: 0,
     viewport_width_px: viewport_width_px,
     font_path: font_path,
     pixel_size: pixel_size,
-    visual_row_count: document_visual_row_count_pixel_budget(
-      text, line_index, viewport_width_px, font_path, pixel_size
-    ),
+    visual_row_count: count,
+    prefix_visual_rows: prefix,
     recompute_count: 1
   }
+end
 
 export fn wrap_count_cache_tick(
   state: DocumentWrapCountCache,
@@ -114,6 +126,7 @@ export fn wrap_count_cache_tick(
     visual_row_count: document_visual_row_count(
       next_text, next_line_index, next_wrap_columns
     ),
+    prefix_visual_rows: [],
     recompute_count: state.recompute_count + 1
   }
 end
@@ -131,16 +144,22 @@ export fn wrap_count_cache_tick_pixel(
   ) == 0 then
     return state
   end
+  const prefix = document_visual_row_prefix_pixel_budget(
+    next_text, next_line_index, next_viewport_width_px,
+    next_font_path, next_pixel_size
+  )
+  let mut count = 0
+  if prefix.length() > 0 then
+    count = prefix[prefix.length() - 1]
+  end
   DocumentWrapCountCache {
     text: next_text,
     wrap_columns: 0,
     viewport_width_px: next_viewport_width_px,
     font_path: next_font_path,
     pixel_size: next_pixel_size,
-    visual_row_count: document_visual_row_count_pixel_budget(
-      next_text, next_line_index, next_viewport_width_px,
-      next_font_path, next_pixel_size
-    ),
+    visual_row_count: count,
+    prefix_visual_rows: prefix,
     recompute_count: state.recompute_count + 1
   }
 end

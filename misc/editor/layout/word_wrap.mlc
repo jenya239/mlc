@@ -382,6 +382,32 @@ export fn document_visual_row_count_pixel_budget(
   total
 end
 
+// prefix[i] = total visual rows for doc lines [0, i). Length line_count + 1.
+// §101: same O(n) pass as document_visual_row_count_pixel_budget, computed
+// once by the caller (wrap_cache.mlc) instead of duplicating the walk.
+export fn document_visual_row_prefix_pixel_budget(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32
+) -> [i32] = do
+  let mut prefix: [i32] = []
+  let mut total = 0
+  prefix.push(total)
+  let mut line = 0
+  const count = line_index_line_count(line_index)
+  while line < count do
+    const rows = visual_rows_for_line_pixel_budget(
+      text, line_index, line, viewport_width_px, font_path, pixel_size
+    )
+    total = total + rows.length()
+    prefix.push(total)
+    line = line + 1
+  end
+  prefix
+end
+
 export fn collect_visible_visual_rows_pixel_budget(
   text: string,
   line_index: LineIndex,
@@ -437,6 +463,43 @@ export fn visual_row_index_for_caret_pixel_budget(
     visual = visual + rows.length()
     line = line + 1
   end
+  const rows = visual_rows_for_line_pixel_budget(
+    text, line_index, caret_line, viewport_width_px, font_path, pixel_size
+  )
+  let mut row_index = 0
+  while row_index < rows.length() do
+    const row = rows[row_index]
+    if caret_column >= row.column_start && caret_column <= row.column_end then
+      return visual + row_index
+    end
+    row_index = row_index + 1
+  end
+  if rows.length() > 0 then
+    return visual + rows.length() - 1
+  end
+  visual
+end
+
+// §101: O(1) prefix lookup + single-line scan instead of visual_row_index_for_caret_pixel_budget's
+// O(caret_line) walk. Falls back to the uncached walk when prefix_visual_rows does not cover
+// caret_line (skip_full_pixel_wrap_now: wrap_count_cache is not ticked with real pixel data then).
+export fn visual_row_index_for_caret_pixel_budget_cached(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  prefix_visual_rows: [i32],
+  caret_line: i32,
+  caret_column: i32
+) -> i32 = do
+  if prefix_visual_rows.length() <= caret_line then
+    return visual_row_index_for_caret_pixel_budget(
+      text, line_index, viewport_width_px, font_path, pixel_size,
+      caret_line, caret_column
+    )
+  end
+  const visual = prefix_visual_rows[caret_line]
   const rows = visual_rows_for_line_pixel_budget(
     text, line_index, caret_line, viewport_width_px, font_path, pixel_size
   )

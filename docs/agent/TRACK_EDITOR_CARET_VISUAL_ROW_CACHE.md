@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §101. §97a residual, named by the user
 uncached O(caret_line) walk in `visual_row_index_for_caret_pixel_budget`)
 is next, PRIORITY over further stringify."
 
-## Status: **open** — Decision frozen 2026-07-31, deferred behind §105 (see below)
+## Status: **open** — STEP=0-2 done 2026-07-31 (Decision+Red+Green), Critic next
 
 ## Important correction before Decision
 
@@ -46,6 +46,51 @@ original framing implied.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze + correction (moved dominant-bug fix to §105) | **done** |
-| 1 | Red: no cached lookup / prefix table exists | next |
-| 2 | Green: prefix table + cached lookup wired into `demo_live.mlc`, scenario green | — |
-| 3 | Critic | — |
+| 1 | Red: confirmed no `prefix_visual_rows` field / cached lookup existed anywhere in `misc/editor/**` before this step (`grep -rn "prefix_visual_rows" misc/editor` — zero matches) | **done** |
+| 2 | Green: prefix table + cached lookup wired into `demo_live.mlc`, scenario green | **done** |
+| 3 | Critic | next |
+
+## Steps 1-2 (red/green) — done 2026-07-31
+
+Red: `grep -rn "prefix_visual_rows" misc/editor` returned zero matches before
+this step — no cached caret-row lookup existed.
+
+Green:
+
+- `layout/word_wrap.mlc`: new `document_visual_row_prefix_pixel_budget`
+  (same O(n) walk as `document_visual_row_count_pixel_budget`, returns the
+  per-line cumulative prefix array instead of just the final total) and new
+  `visual_row_index_for_caret_pixel_budget_cached` (O(1) prefix lookup +
+  single-line scan; falls back to the existing uncached
+  `visual_row_index_for_caret_pixel_budget` when
+  `prefix_visual_rows.length() <= caret_line`).
+- `layout/wrap_cache.mlc`: new `prefix_visual_rows: [i32]` field on
+  `DocumentWrapCountCache`. `wrap_count_cache_new_pixel`/
+  `wrap_count_cache_tick_pixel` compute the prefix array **once** via
+  `document_visual_row_prefix_pixel_budget` and derive `visual_row_count`
+  from its last element — no added asymptotic cost, matches the Decision.
+  Column-budget (non-pixel) `wrap_count_cache_new`/`_tick` set
+  `prefix_visual_rows: []` (out of scope, unused by the live loop, confirmed
+  by grep).
+- `demo_live.mlc`: the 1 live call site (inside the per-caret loop, ~line
+  2214) now calls `visual_row_index_for_caret_pixel_budget_cached` with
+  `frame_layout.wrap_count_cache.prefix_visual_rows`; direct import of the
+  uncached function removed.
+- New L2 scenario `ux_scenarios/caret_visual_row_cache_stable.mlc` +
+  `scripts/run_ux_caret_visual_row_cache_stable.sh`: builds a 40-line pixel-
+  budget fixture, compares the cached lookup against the uncached walk at
+  caret line 0, mid-file (20), and the last line (40, the trailing empty
+  line after 40 `\n`s); separately checks the fallback path with an empty
+  `prefix_visual_rows` array; checks 5 idle ticks do not bump
+  `recompute_count`; checks a text edit does bump it and the prefix table
+  length grows by 1. Ran standalone: `ux_ok caret_visual_row_cache_stable`,
+  exit 0.
+- Perf smoke re-run (regression check against §105's post-fix baseline):
+  `frames=30 layout_us=340918 draw_us=77818 total_us=485982` — same order
+  of magnitude as §105's `draw_us=84844 total_us=532723`/Critic's
+  `draw_us=78062 total_us=501532`, no regression (caret stays at line 0 on
+  this fixture, so this step's own win is not visible here — expected,
+  matches the Decision's own framing).
+- `scripts/run_ux_gate.sh` run twice from a clean log: `[ux gate] all ok
+  (114 scenarios)` both times, 0 failures (114 = the standing 113 + the new
+  `caret_visual_row_cache_stable` scenario).

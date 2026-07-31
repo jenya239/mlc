@@ -1,0 +1,136 @@
+// TRACK_EDITOR_CARET_VISUAL_ROW_CACHE (§101) STEP=2 —
+// prefix_visual_rows is text/wrap-column keyed; idle ticks do not recompute;
+// cached caret-row lookup matches the uncached walk at line 0, mid-file, last
+// line; fallback to the uncached walk fires when the prefix table is absent.
+import { LineIndex, line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  visual_row_index_for_caret_pixel_budget,
+  visual_row_index_for_caret_pixel_budget_cached
+} from '../layout/word_wrap'
+import {
+  wrap_count_cache_new_pixel,
+  wrap_count_cache_tick_pixel
+} from '../layout/wrap_cache'
+
+fn build_fixture(line_count: i32) -> string = do
+  let mut body = ""
+  let mut line = 0
+  while line < line_count do
+    body = body + "line_" + line.to_string() + " abcdefghijklmnopqrstuvwxyz0123456789\n"
+    line = line + 1
+  end
+  body
+end
+
+fn check_caret(
+  label: string,
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  prefix_visual_rows: [i32],
+  caret_line: i32,
+  caret_column: i32
+) -> i32 = do
+  const expected = visual_row_index_for_caret_pixel_budget(
+    text, line_index, viewport_width_px, font_path, pixel_size,
+    caret_line, caret_column
+  )
+  const actual = visual_row_index_for_caret_pixel_budget_cached(
+    text, line_index, viewport_width_px, font_path, pixel_size,
+    prefix_visual_rows, caret_line, caret_column
+  )
+  if actual != expected then
+    println("ux_fail caret_visual_row_cache_stable " + label)
+    return 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const fixture = build_fixture(40)
+  const line_index = line_index_from_string(fixture)
+  const viewport_width_px = 220
+
+  let mut cache = wrap_count_cache_new_pixel(
+    fixture, line_index, viewport_width_px, font_path, pixel_size
+  )
+  if cache.recompute_count != 1 then
+    println("ux_fail caret_visual_row_cache_stable warm count")
+    return 1
+  end
+  // build_fixture(40) emits 40 trailing "\n" -> line_index has 41 lines
+  // (line 40 is the trailing empty line after the last "\n").
+  if cache.prefix_visual_rows.length() != 42 then
+    println("ux_fail caret_visual_row_cache_stable prefix length")
+    return 2
+  end
+
+  if check_caret(
+    "line0", fixture, line_index, viewport_width_px, font_path, pixel_size,
+    cache.prefix_visual_rows, 0, 0
+  ) != 0 then
+    return 3
+  end
+  if check_caret(
+    "mid", fixture, line_index, viewport_width_px, font_path, pixel_size,
+    cache.prefix_visual_rows, 20, 5
+  ) != 0 then
+    return 4
+  end
+  if check_caret(
+    "last", fixture, line_index, viewport_width_px, font_path, pixel_size,
+    cache.prefix_visual_rows, 40, 0
+  ) != 0 then
+    return 5
+  end
+
+  // Fallback: empty prefix table (skip_full_pixel_wrap_now case) still matches.
+  let mut empty_prefix: [i32] = []
+  if check_caret(
+    "fallback", fixture, line_index, viewport_width_px, font_path, pixel_size,
+    empty_prefix, 20, 5
+  ) != 0 then
+    return 6
+  end
+
+  let mut idle = 0
+  while idle < 5 do
+    const after_idle = wrap_count_cache_tick_pixel(
+      cache, fixture, line_index, viewport_width_px, font_path, pixel_size
+    )
+    if after_idle.recompute_count != cache.recompute_count then
+      println("ux_fail caret_visual_row_cache_stable idle recompute")
+      return 7
+    end
+    cache = after_idle
+    idle = idle + 1
+  end
+
+  const edited = fixture + "extra line for edit invalidate\n"
+  const edited_line_index = line_index_from_string(edited)
+  const after_edit = wrap_count_cache_tick_pixel(
+    cache, edited, edited_line_index, viewport_width_px, font_path, pixel_size
+  )
+  if after_edit.recompute_count != cache.recompute_count + 1 then
+    println("ux_fail caret_visual_row_cache_stable edit recompute")
+    return 8
+  end
+  if after_edit.prefix_visual_rows.length() != 43 then
+    println("ux_fail caret_visual_row_cache_stable edit prefix length")
+    return 9
+  end
+  if check_caret(
+    "post_edit_last", edited, edited_line_index, viewport_width_px, font_path,
+    pixel_size, after_edit.prefix_visual_rows, 41, 0
+  ) != 0 then
+    return 10
+  end
+
+  println("ux_ok caret_visual_row_cache_stable")
+  0
+end

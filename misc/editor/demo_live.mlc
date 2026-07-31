@@ -229,7 +229,7 @@ import {
 import {
   wrap_max_columns,
   collect_visible_visual_rows_pixel_budget,
-  visual_row_index_for_caret_pixel_budget,
+  visual_row_index_for_caret_pixel_budget_cached,
   wrap_offset_at_point_pixel,
   pixel_x_for_byte_offset,
   selection_fill_visual_rows
@@ -2211,8 +2211,9 @@ fn main() -> i32 = do
         draw_text,
         caret_byte
       )
-      const caret_visual = visual_row_index_for_caret_pixel_budget(
+      const caret_visual = visual_row_index_for_caret_pixel_budget_cached(
         draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
+        frame_layout.wrap_count_cache.prefix_visual_rows,
         caret_position.line, caret_position.column
       )
       const caret_row = caret_visual - (app.ux.scroll_offset_y / metrics.line_height)
