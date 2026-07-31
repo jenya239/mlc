@@ -2,6 +2,7 @@
 
 #include <pty.h>
 #include <poll.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -85,6 +86,16 @@ std::int32_t pty_close(std::int32_t master_fd) {
     pids.erase(found);
   }
   return ::close(master_fd) == 0 ? 0 : -1;
+}
+
+std::int32_t pty_resize(std::int32_t master_fd, std::int32_t rows, std::int32_t columns) {
+  if (rows <= 0 || columns <= 0) {
+    return -1;
+  }
+  struct winsize window_size{};
+  window_size.ws_row = static_cast<unsigned short>(rows);
+  window_size.ws_col = static_cast<unsigned short>(columns);
+  return ::ioctl(master_fd, TIOCSWINSZ, &window_size) == 0 ? 0 : -1;
 }
 
 } // namespace terminal

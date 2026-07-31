@@ -1,0 +1,175 @@
+// TRACK_EDITOR_TERMINAL §102e — resize (vterm reflow + PTY winsize/SIGWINCH)
+// and bounded scrollback ring buffer, independent of GLFW/input (pure
+// vterm+PTY logic, same "plain unit test" shape as §102a/§102b, not an
+// L2 GLFW smoke — this sub-track needs neither pixel output nor keyboard
+// input).
+import {
+  vterm_terminal_create,
+  vterm_terminal_destroy,
+  vterm_terminal_screen,
+  vterm_terminal_write,
+  vterm_terminal_resize,
+  vterm_terminal_size_rows,
+  vterm_terminal_size_columns,
+  vterm_terminal_set_scrollback_capacity,
+  vterm_terminal_scrollback_capacity,
+  vterm_terminal_scrollback_line_count,
+  vterm_terminal_scrollback_line_text,
+  vterm_cell_at
+} from '../terminal/vterm_ffi'
+import {
+  pty_terminal_spawn,
+  pty_terminal_resize,
+  pty_terminal_read_until_eof,
+  pty_terminal_close
+} from '../terminal/pty_ffi'
+import { terminal_panel_resize } from '../terminal/terminal_resize'
+
+fn row_text(screen_handle: i64, row: i32, columns: i32) -> string = do
+  let mut text = ""
+  let mut column = 0
+  while column < columns do
+    text = text + vterm_cell_at(screen_handle, row, column).text
+    column = column + 1
+  end
+  text.trim()
+end
+
+fn main() -> i32 = do
+  // --- Scenario 1: resize widens columns, previously auto-wrapped content
+  // rejoins onto 1 row (vterm's own reflow, enabled at vterm_obtain_screen).
+  const vterm_handle = vterm_terminal_create(4, 6)
+  const screen_handle = vterm_terminal_screen(vterm_handle)
+  vterm_terminal_write(vterm_handle, "ABCDEFGHIJKL\r\n")
+  if row_text(screen_handle, 0, 6) != "ABCDEF" || row_text(screen_handle, 1, 6) != "GHIJKL" then
+    vterm_terminal_destroy(vterm_handle)
+    println("terminal_resize_scrollback_unit fail: pre-resize wrap wrong")
+    return 1
+  end
+  const resize_status = vterm_terminal_resize(vterm_handle, 4, 12)
+  if resize_status != 0 then
+    vterm_terminal_destroy(vterm_handle)
+    println("terminal_resize_scrollback_unit fail: vterm_terminal_resize status")
+    return 2
+  end
+  if vterm_terminal_size_rows(vterm_handle) != 4 || vterm_terminal_size_columns(vterm_handle) != 12 then
+    vterm_terminal_destroy(vterm_handle)
+    println("terminal_resize_scrollback_unit fail: size getters after resize")
+    return 3
+  end
+  if row_text(screen_handle, 0, 12) != "ABCDEFGHIJKL" then
+    vterm_terminal_destroy(vterm_handle)
+    println("terminal_resize_scrollback_unit fail: reflow did not rejoin wrapped row, got=" +
+      row_text(screen_handle, 0, 12))
+    return 4
+  end
+  vterm_terminal_destroy(vterm_handle)
+
+  // --- Scenario 2: bounded scrollback — write N+100 lines into an N-line
+  // cap, assert count stays at N and the *oldest retained* line is the
+  // correct one (not just any N lines: confirms oldest-first eviction, not
+  // e.g. newest-first or random truncation).
+  const scrollback_vterm = vterm_terminal_create(3, 10)
+  const scrollback_screen = vterm_terminal_screen(scrollback_vterm)
+  const cap_status = vterm_terminal_set_scrollback_capacity(scrollback_screen, 5)
+  if cap_status != 0 || vterm_terminal_scrollback_capacity(scrollback_screen) != 5 then
+    vterm_terminal_destroy(scrollback_vterm)
+    println("terminal_resize_scrollback_unit fail: set_scrollback_capacity")
+    return 5
+  end
+  let mut line_index = 0
+  while line_index < 105 do
+    vterm_terminal_write(scrollback_vterm, "line" + line_index.to_string() + "\r\n")
+    line_index = line_index + 1
+  end
+  if vterm_terminal_scrollback_line_count(scrollback_screen) != 5 then
+    vterm_terminal_destroy(scrollback_vterm)
+    println("terminal_resize_scrollback_unit fail: scrollback_line_count not capped, got=" +
+      vterm_terminal_scrollback_line_count(scrollback_screen).to_string())
+    return 6
+  end
+  // 105 lines (line0..line104) into a 3-row screen: empirically confirmed
+  // (standalone abi_probe against this exact vterm build/scenario) that
+  // lines 0..102 get pushed to scrollback before this point, capped at the
+  // most recent 5 -> oldest retained is line98, newest is line102.
+  const oldest_scrollback_line = vterm_terminal_scrollback_line_text(scrollback_screen, 0).trim()
+  if oldest_scrollback_line != "line98" then
+    vterm_terminal_destroy(scrollback_vterm)
+    println("terminal_resize_scrollback_unit fail: oldest retained scrollback line, got=" +
+      oldest_scrollback_line)
+    return 7
+  end
+  const newest_scrollback_line = vterm_terminal_scrollback_line_text(scrollback_screen, 4).trim()
+  if newest_scrollback_line != "line102" then
+    vterm_terminal_destroy(scrollback_vterm)
+    println("terminal_resize_scrollback_unit fail: newest retained scrollback line, got=" +
+      newest_scrollback_line)
+    return 8
+  end
+  vterm_terminal_destroy(scrollback_vterm)
+
+  // --- Scenario 3: shrinking the capacity below the current line count
+  // evicts oldest-first immediately, not lazily on the next push.
+  const shrink_vterm = vterm_terminal_create(3, 10)
+  const shrink_screen = vterm_terminal_screen(shrink_vterm)
+  vterm_terminal_set_scrollback_capacity(shrink_screen, 20)
+  let mut shrink_index = 0
+  while shrink_index < 30 do
+    vterm_terminal_write(shrink_vterm, "s" + shrink_index.to_string() + "\r\n")
+    shrink_index = shrink_index + 1
+  end
+  const before_shrink_count = vterm_terminal_scrollback_line_count(shrink_screen)
+  vterm_terminal_set_scrollback_capacity(shrink_screen, 3)
+  const after_shrink_count = vterm_terminal_scrollback_line_count(shrink_screen)
+  if after_shrink_count != 3 then
+    vterm_terminal_destroy(shrink_vterm)
+    println("terminal_resize_scrollback_unit fail: shrink did not evict immediately, before=" +
+      before_shrink_count.to_string() + " after=" + after_shrink_count.to_string())
+    return 9
+  end
+  vterm_terminal_destroy(shrink_vterm)
+
+  // --- Scenario 4: PTY-side resize reaches the real kernel tty (SIGWINCH
+  // delivery is the kernel's own side effect of TIOCSWINSZ, not simulated
+  // here — verified via the child observing its own updated size).
+  const stty_fd = pty_terminal_spawn("sleep 0.2 && stty size")
+  const stty_resize_status = pty_terminal_resize(stty_fd, 40, 100)
+  if stty_resize_status != 0 then
+    pty_terminal_close(stty_fd)
+    println("terminal_resize_scrollback_unit fail: pty_terminal_resize status")
+    return 10
+  end
+  const stty_output = pty_terminal_read_until_eof(stty_fd, 4096, 800).trim()
+  pty_terminal_close(stty_fd)
+  if stty_output != "40 100" then
+    println("terminal_resize_scrollback_unit fail: stty size after pty resize, got=" + stty_output)
+    return 11
+  end
+
+  // --- Scenario 5: terminal_panel_resize drives both primitives from 1 call.
+  const combo_vterm = vterm_terminal_create(4, 6)
+  const combo_fd = pty_terminal_spawn("sleep 0.2 && stty size")
+  const combo_status = terminal_panel_resize(combo_vterm, combo_fd, 30, 90)
+  if combo_status != 0 then
+    vterm_terminal_destroy(combo_vterm)
+    pty_terminal_close(combo_fd)
+    println("terminal_resize_scrollback_unit fail: terminal_panel_resize status")
+    return 12
+  end
+  if vterm_terminal_size_rows(combo_vterm) != 30 || vterm_terminal_size_columns(combo_vterm) != 90 then
+    vterm_terminal_destroy(combo_vterm)
+    pty_terminal_close(combo_fd)
+    println("terminal_resize_scrollback_unit fail: terminal_panel_resize did not resize vterm")
+    return 13
+  end
+  const combo_output = pty_terminal_read_until_eof(combo_fd, 4096, 800).trim()
+  vterm_terminal_destroy(combo_vterm)
+  pty_terminal_close(combo_fd)
+  if combo_output != "30 90" then
+    println("terminal_resize_scrollback_unit fail: terminal_panel_resize did not resize pty, got=" + combo_output)
+    return 14
+  end
+
+  println("terminal_resize_scrollback_unit ok")
+  0
+end

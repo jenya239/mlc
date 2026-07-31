@@ -33,5 +33,11 @@ String pty_read_until_eof(std::int32_t master_fd, std::int32_t max_total_bytes, 
 // 0 = ok, negative = error.
 std::int32_t pty_close(std::int32_t master_fd);
 
+// ioctl(TIOCSWINSZ) on the master fd — the kernel delivers SIGWINCH to the
+// slave's foreground process group as a side effect when the size actually
+// changes (standard tty behavior, not done manually here). 0 = ok, negative
+// = error.
+std::int32_t pty_resize(std::int32_t master_fd, std::int32_t rows, std::int32_t columns);
+
 } // namespace terminal
 } // namespace mlc

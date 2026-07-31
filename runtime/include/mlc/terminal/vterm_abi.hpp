@@ -61,5 +61,29 @@ std::int32_t vterm_last_cell_background_index();
 // Count of damage callback invocations since the screen was obtained.
 std::int32_t vterm_damage_count(std::int64_t screen_handle);
 
+// vterm_set_size. The screen obtained via vterm_obtain_screen (reflow
+// enabled there) adjusts automatically: growing/shrinking preserves
+// in-bounds content, rejoining previously auto-wrapped rows when widened
+// (empirically confirmed against this vterm build). 0 = ok, negative =
+// error.
+std::int32_t vterm_resize(std::int64_t vterm_handle, std::int32_t rows, std::int32_t columns);
+std::int32_t vterm_size_rows(std::int64_t vterm_handle);
+std::int32_t vterm_size_columns(std::int64_t vterm_handle);
+
+// Bounded scrollback ring buffer, fed by libvterm's own sb_pushline screen
+// callback (fires once per line scrolled off the top of the visible grid,
+// during normal output or a row-shrinking resize alike — same mechanism).
+// Default capacity is 1000 lines; vterm_screen_set_scrollback_capacity
+// changes it, evicting oldest-first immediately if shrinking below the
+// current line count. sb_popline (restoring scrollback into newly-grown
+// rows) is intentionally not wired — out of scope for this sub-track, no
+// functional loss (grown rows are simply blank instead of backfilled).
+std::int32_t vterm_screen_set_scrollback_capacity(std::int64_t screen_handle, std::int32_t capacity);
+std::int32_t vterm_screen_scrollback_capacity(std::int64_t screen_handle);
+std::int32_t vterm_screen_scrollback_line_count(std::int64_t screen_handle);
+// index counts from the oldest retained line (0 = oldest); out-of-range
+// returns an empty string.
+String vterm_screen_scrollback_line_text(std::int64_t screen_handle, std::int32_t index);
+
 } // namespace terminal
 } // namespace mlc

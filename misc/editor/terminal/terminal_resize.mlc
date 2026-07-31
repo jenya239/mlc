@@ -1,0 +1,13 @@
+// TRACK_EDITOR_TERMINAL §102e — panel resize: 1 call site drives both the
+// vterm screen (reflow-enabled at §102a's vterm_obtain_screen) and the PTY's
+// own kernel-level winsize (SIGWINCH delivery to the child), same "single
+// glue function over 2 existing primitives" shape as §102d's
+// terminal_keyboard_forward_poll.
+import { vterm_terminal_resize } from './vterm_ffi'
+import { pty_terminal_resize } from './pty_ffi'
+
+export fn terminal_panel_resize(vterm_handle: i64, pty_master_fd: i32, rows: i32, columns: i32) -> i32 = do
+  const vterm_status = vterm_terminal_resize(vterm_handle, rows, columns)
+  const pty_status = pty_terminal_resize(pty_master_fd, rows, columns)
+  if vterm_status != 0 then vterm_status else pty_status end
+end

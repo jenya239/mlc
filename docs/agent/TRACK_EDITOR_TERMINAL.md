@@ -6,7 +6,115 @@ architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
 ## Status: **open** — §102a/§102b/§102c/§102d all **CLOSED**, Critic-audited.
-§102e `TERMINAL_RESIZE_SCROLLBACK` next.
+§102e `TERMINAL_RESIZE_SCROLLBACK` Driver done (red+green), Critic next.
+
+## §102e Decision (frozen 2026-07-31)
+
+Two independent primitives, both existing-libvterm/existing-PTY-ioctl based
+— no new mechanism, matching the track's own "reuse the primitive, add a
+thin binding" precedent:
+
+1. **Resize + reflow**: `vterm_resize(vterm_handle, rows, columns)` wraps
+   libvterm's own `vterm_set_size`; `vterm_screen_enable_reflow(screen,
+   true)` added to `vterm_obtain_screen` (§102a) so growing the screen
+   rejoins previously auto-wrapped rows instead of leaving them split —
+   empirically confirmed via a standalone probe against this vterm build
+   (raw libvterm, then re-confirmed through the real ABI wrapper). Has no
+   effect on same-size input (confirmed: all of §102a/b/c/d's own fixed-size
+   tests still pass unchanged), so zero regression risk to any closed
+   sub-track. `pty_resize(master_fd, rows, columns)` wraps
+   `ioctl(TIOCSWINSZ)` on the PTY master fd — the kernel delivers `SIGWINCH`
+   to the slave's foreground process group as a side effect when the size
+   actually changes; not raised manually, this is standard tty semantics
+   (empirically confirmed: a child running `stty size` after a resize
+   reports the new size exactly). New glue module
+   `misc/editor/terminal/terminal_resize.mlc` (`terminal_panel_resize`)
+   drives both primitives from 1 call site, same "single glue function over
+   2 existing primitives" shape as §102d's `terminal_keyboard_forward_poll`.
+2. **Bounded scrollback**: libvterm's own `sb_pushline` screen callback
+   (fires once per line scrolled off the top of the visible grid, during
+   ordinary output or a row-shrinking resize alike — same mechanism, not 2
+   separate code paths) feeds a per-screen `std::deque<std::string>` capped
+   at a configurable capacity (default 1000, `vterm_screen_set_
+   scrollback_capacity` to change — shrinking evicts oldest-first
+   immediately, not lazily on the next push). `sb_popline` (restoring
+   scrollback content into newly-grown rows) is intentionally left
+   unregistered — out of scope for this sub-track; grown rows are simply
+   blank instead of backfilled, no functional loss for what's tested here.
+   Scrollback state is keyed by the raw `VTermScreen*` pointer in an
+   `unordered_map`, same pattern as the existing `damage_counts()` map
+   (§102a) — cleaned up in `vterm_destroy` (re-`vterm_obtain_screen`s to
+   get the pointer key, a no-op cache hit if already obtained, before
+   `vterm_free`) so a later `vterm_create` reusing the same freed heap
+   address never inherits a stale scrollback entry — empirically verified
+   via a 200-iteration create/destroy/create-with-content loop, no stale
+   nonzero `scrollback_line_count` ever observed on a fresh screen.
+
+Both `sb_pushline` and `damage` now share 1 combined `VTermScreenCallbacks`
+struct (`vterm_screen_set_callbacks` replaces the *entire* callback set —
+a 2nd call would have silently dropped the existing damage callback).
+
+Before writing any assertion, **empirically measured** (not assumed) via a
+standalone probe linking `vterm_abi.cpp`/`pty_abi.cpp` directly: resize from
+4×6 to 4×12 rejoins a 2-row-wrapped 12-character line into 1 row exactly;
+105 lines written into a 3-row screen with scrollback capacity 5 retain
+exactly lines 98–102 (oldest-first eviction, not e.g. newest-first or
+random); `stty size` after a real PTY resize reports the exact new
+dimensions. A raw-libvterm-only probe (no MLC/ABI layer) additionally
+found and explains a real crash: disabling reflow and then reading newly
+column-grown cells crashes inside libvterm's own
+`vterm_state_convert_color_to_rgb` (confirmed via `gdb` backtrace during
+sabotage-testing below) — an independent reason (beyond the rejoin
+behavior itself) that `vterm_screen_enable_reflow(screen, true)` is not
+optional here.
+
+Gate: `misc/editor/tests/terminal_resize_scrollback_unit.mlc` (plain unit
+test, no GLFW/pixel/input dependency — same shape as §102a/§102b's own
+unit tests, not an L2 GLFW smoke, since this sub-track needs neither) + new
+runner `scripts/run_editor_terminal_resize_scrollback_unit.sh`. 5
+scenarios: (1) the track's own literal resize/reflow gate — narrow-width
+auto-wrapped text rejoins onto 1 row after widening; (2) scrollback
+capacity 5, 105 lines written, count stays at 5 and the *oldest retained*
+line's content is checked exactly (not just the count — confirms
+oldest-first eviction specifically); (3) shrinking capacity below the
+current line count evicts immediately, not lazily; (4) PTY-side resize
+reaches the real kernel tty, checked via a child's own `stty size` output;
+(5) `terminal_panel_resize` drives both primitives from 1 call.
+
+Sabotage-tested every load-bearing behavior before considering the gate
+real, all correctly caught: disabling reflow **crashes** scenario 1 (SIGSEGV
+inside libvterm's color resolver, confirmed via `gdb` — not merely a wrong
+answer); disabling the immediate-shrink eviction loop fails scenario 3
+(count stayed at 20, not 3); swapping rows/columns in the `pty_resize`
+`ioctl` call fails scenario 4 (`stty size` reported the transposed
+dimensions). All 3 sabotages reverted, confirmed via `git diff` back to
+the exact pre-sabotage diff before moving on.
+
+Module-touch: `runtime/include/mlc/terminal/vterm_abi.hpp`/`.cpp` (edit —
+resize + scrollback functions, combined callbacks, destroy-time cleanup),
+`runtime/include/mlc/terminal/pty_abi.hpp`/`.cpp` (edit — `pty_resize`),
+`misc/editor/terminal/vterm_ffi.mlc`/`pty_ffi.mlc` (edit — new bindings),
+`misc/editor/terminal/terminal_resize.mlc` (new),
+`misc/editor/tests/terminal_resize_scrollback_unit.mlc` (new),
+`scripts/run_editor_terminal_resize_scrollback_unit.sh` (new). No
+`compiler/**` `.mlc` files touched — no self-host diff/Tier B required
+(same precedent as §102a/§102b/§102c/§102d).
+
+## §102e Green (2026-07-31)
+
+`scripts/run_editor_terminal_resize_scrollback_unit.sh`:
+`terminal_resize_scrollback_unit ok` / `[editor terminal_resize_scrollback]
+ok`, exit 0 (all 5 scenarios, first attempt — byte/line values pre-verified
+via the standalone probe before writing assertions). Regression checks
+after the combined-callbacks/reflow change to `vterm_abi.cpp`:
+`scripts/run_editor_terminal_libvterm_ffi_unit.sh` (§102a),
+`scripts/run_editor_terminal_pty_spawn_unit.sh` (§102b),
+`scripts/run_editor_terminal_cell_grid_render_smoke.sh` (§102c),
+`scripts/run_editor_terminal_input_forward_smoke.sh` (§102d) all still
+`ok`. `scripts/dev_gate_fast.sh`: 1471 passed, 0 failed, arch lint
+failures=0. `scripts/run_ux_gate.sh`: all 114 scenarios ok. No
+`lib/mlc/**` files touched → `scripts/regression_gate.sh` not required by
+the standing rule.
 
 ## §102d Decision (frozen 2026-07-31)
 

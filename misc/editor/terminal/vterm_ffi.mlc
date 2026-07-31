@@ -42,6 +42,20 @@ extern fn vterm_last_cell_background_index() -> i32 =
   "mlc::terminal::vterm_last_cell_background_index" from "mlc/terminal/vterm_abi.hpp" thread_affine
 extern fn vterm_damage_count(screen_handle: i64) -> i32 =
   "mlc::terminal::vterm_damage_count" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_resize(vterm_handle: i64, rows: i32, columns: i32) -> i32 =
+  "mlc::terminal::vterm_resize" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_size_rows(vterm_handle: i64) -> i32 =
+  "mlc::terminal::vterm_size_rows" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_size_columns(vterm_handle: i64) -> i32 =
+  "mlc::terminal::vterm_size_columns" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_screen_set_scrollback_capacity(screen_handle: i64, capacity: i32) -> i32 =
+  "mlc::terminal::vterm_screen_set_scrollback_capacity" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_screen_scrollback_capacity(screen_handle: i64) -> i32 =
+  "mlc::terminal::vterm_screen_scrollback_capacity" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_screen_scrollback_line_count(screen_handle: i64) -> i32 =
+  "mlc::terminal::vterm_screen_scrollback_line_count" from "mlc/terminal/vterm_abi.hpp" thread_affine
+extern fn vterm_screen_scrollback_line_text(screen_handle: i64, index: i32) -> string =
+  "mlc::terminal::vterm_screen_scrollback_line_text" from "mlc/terminal/vterm_abi.hpp" thread_affine
 
 export type VtermCell = {
   codepoint: i32,
@@ -64,6 +78,18 @@ export fn vterm_terminal_destroy(vterm_handle: i64) -> i32 = vterm_destroy(vterm
 export fn vterm_terminal_screen(vterm_handle: i64) -> i64 = vterm_obtain_screen(vterm_handle)
 export fn vterm_terminal_write(vterm_handle: i64, bytes: string) -> i32 = vterm_write_input(vterm_handle, bytes)
 export fn vterm_terminal_damage_count(screen_handle: i64) -> i32 = vterm_damage_count(screen_handle)
+export fn vterm_terminal_resize(vterm_handle: i64, rows: i32, columns: i32) -> i32 =
+  vterm_resize(vterm_handle, rows, columns)
+export fn vterm_terminal_size_rows(vterm_handle: i64) -> i32 = vterm_size_rows(vterm_handle)
+export fn vterm_terminal_size_columns(vterm_handle: i64) -> i32 = vterm_size_columns(vterm_handle)
+export fn vterm_terminal_set_scrollback_capacity(screen_handle: i64, capacity: i32) -> i32 =
+  vterm_screen_set_scrollback_capacity(screen_handle, capacity)
+export fn vterm_terminal_scrollback_capacity(screen_handle: i64) -> i32 =
+  vterm_screen_scrollback_capacity(screen_handle)
+export fn vterm_terminal_scrollback_line_count(screen_handle: i64) -> i32 =
+  vterm_screen_scrollback_line_count(screen_handle)
+export fn vterm_terminal_scrollback_line_text(screen_handle: i64, index: i32) -> string =
+  vterm_screen_scrollback_line_text(screen_handle, index)
 
 // One-byte ASCII ESC string. MLC string literals have no hex/control-byte
 // escape syntax, so VT100/ANSI sequence construction (SGR colors here,

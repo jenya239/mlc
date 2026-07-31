@@ -3,11 +3,59 @@
 #include <vterm.h>
 
 #include <cstdint>
+#include <deque>
+#include <string>
 #include <unordered_map>
 
 namespace mlc {
 namespace terminal {
 namespace {
+
+std::string utf8_encode_codepoint(std::uint32_t codepoint) {
+  std::string encoded;
+  if (codepoint == 0) {
+    encoded.push_back(' ');
+  } else if (codepoint <= 0x7F) {
+    encoded.push_back(static_cast<char>(codepoint));
+  } else if (codepoint <= 0x7FF) {
+    encoded.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  } else if (codepoint <= 0xFFFF) {
+    encoded.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  } else {
+    encoded.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+  }
+  return encoded;
+}
+
+struct ScrollbackState {
+  std::int32_t capacity = 1000;
+  std::deque<std::string> lines;
+};
+
+std::unordered_map<VTermScreen*, ScrollbackState>& scrollback_states() {
+  static thread_local std::unordered_map<VTermScreen*, ScrollbackState> states;
+  return states;
+}
+
+int on_sb_pushline(int cols, const VTermScreenCell* cells, void* user) {
+  VTermScreen* screen = static_cast<VTermScreen*>(user);
+  ScrollbackState& state = scrollback_states()[screen];
+  std::string line;
+  for (int column = 0; column < cols; ++column) {
+    line += utf8_encode_codepoint(static_cast<std::uint32_t>(cells[column].chars[0]));
+  }
+  state.lines.push_back(std::move(line));
+  while (static_cast<std::int32_t>(state.lines.size()) > state.capacity) {
+    state.lines.pop_front();
+  }
+  return 1;
+}
 
 struct LastCellSlot {
   std::int32_t codepoint = 0;
@@ -40,9 +88,10 @@ int on_damage(VTermRect, void* user) {
   return 1;
 }
 
-VTermScreenCallbacks damage_only_callbacks() {
+VTermScreenCallbacks screen_callbacks() {
   VTermScreenCallbacks callbacks{};
   callbacks.damage = on_damage;
+  callbacks.sb_pushline = on_sb_pushline;
   return callbacks;
 }
 
@@ -79,6 +128,16 @@ std::int32_t vterm_destroy(std::int64_t vterm_handle) {
   if (vterm == nullptr) {
     return -1;
   }
+  // vterm_obtain_screen caches/returns the existing screen module rather
+  // than allocating a new one (a no-op if the caller never obtained a
+  // screen) — used here only to get the pointer key for cleanup, so a
+  // later vterm_create reusing this same freed address doesn't inherit a
+  // stale scrollback/damage-count entry.
+  VTermScreen* screen = ::vterm_obtain_screen(vterm);
+  if (screen != nullptr) {
+    scrollback_states().erase(screen);
+    damage_counts().erase(screen);
+  }
   vterm_free(vterm);
   return 0;
 }
@@ -92,8 +151,13 @@ std::int64_t vterm_obtain_screen(std::int64_t vterm_handle) {
   if (screen == nullptr) {
     return 0;
   }
-  static const VTermScreenCallbacks callbacks = damage_only_callbacks();
+  static const VTermScreenCallbacks callbacks = screen_callbacks();
   vterm_screen_set_callbacks(screen, &callbacks, screen);
+  // §102e: rejoins previously auto-wrapped rows when the screen widens
+  // (empirically confirmed via a standalone probe against this vterm
+  // build); has no effect on ordinary same-size input, so no regression
+  // risk to any fixed-size §102a-d scenario.
+  vterm_screen_enable_reflow(screen, true);
   vterm_screen_reset(screen, 1);
 
   VTermColor default_foreground;
@@ -157,30 +221,6 @@ std::int32_t vterm_read_screen_cell(std::int64_t screen_handle, std::int32_t row
   return 0;
 }
 
-namespace {
-std::string utf8_encode_codepoint(std::uint32_t codepoint) {
-  std::string encoded;
-  if (codepoint == 0) {
-    encoded.push_back(' ');
-  } else if (codepoint <= 0x7F) {
-    encoded.push_back(static_cast<char>(codepoint));
-  } else if (codepoint <= 0x7FF) {
-    encoded.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
-    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
-  } else if (codepoint <= 0xFFFF) {
-    encoded.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
-    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
-    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
-  } else {
-    encoded.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
-    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
-    encoded.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
-    encoded.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
-  }
-  return encoded;
-}
-} // namespace
-
 std::int32_t vterm_last_cell_codepoint() { return last_cell_slot().codepoint; }
 String vterm_last_cell_utf8() {
   return String(utf8_encode_codepoint(static_cast<std::uint32_t>(last_cell_slot().codepoint)));
@@ -205,6 +245,80 @@ std::int32_t vterm_damage_count(std::int64_t screen_handle) {
   auto& counts = damage_counts();
   auto found = counts.find(screen);
   return found == counts.end() ? 0 : found->second;
+}
+
+std::int32_t vterm_resize(std::int64_t vterm_handle, std::int32_t rows, std::int32_t columns) {
+  VTerm* vterm = i64_to_vterm(vterm_handle);
+  if (vterm == nullptr || rows <= 0 || columns <= 0) {
+    return -1;
+  }
+  vterm_set_size(vterm, rows, columns);
+  return 0;
+}
+
+std::int32_t vterm_size_rows(std::int64_t vterm_handle) {
+  VTerm* vterm = i64_to_vterm(vterm_handle);
+  if (vterm == nullptr) {
+    return -1;
+  }
+  int rows = 0;
+  int columns = 0;
+  vterm_get_size(vterm, &rows, &columns);
+  return static_cast<std::int32_t>(rows);
+}
+
+std::int32_t vterm_size_columns(std::int64_t vterm_handle) {
+  VTerm* vterm = i64_to_vterm(vterm_handle);
+  if (vterm == nullptr) {
+    return -1;
+  }
+  int rows = 0;
+  int columns = 0;
+  vterm_get_size(vterm, &rows, &columns);
+  return static_cast<std::int32_t>(columns);
+}
+
+std::int32_t vterm_screen_set_scrollback_capacity(std::int64_t screen_handle, std::int32_t capacity) {
+  VTermScreen* screen = i64_to_screen(screen_handle);
+  if (screen == nullptr || capacity < 0) {
+    return -1;
+  }
+  ScrollbackState& state = scrollback_states()[screen];
+  state.capacity = capacity;
+  while (static_cast<std::int32_t>(state.lines.size()) > state.capacity) {
+    state.lines.pop_front();
+  }
+  return 0;
+}
+
+std::int32_t vterm_screen_scrollback_capacity(std::int64_t screen_handle) {
+  VTermScreen* screen = i64_to_screen(screen_handle);
+  if (screen == nullptr) {
+    return -1;
+  }
+  auto found = scrollback_states().find(screen);
+  return found == scrollback_states().end() ? ScrollbackState().capacity : found->second.capacity;
+}
+
+std::int32_t vterm_screen_scrollback_line_count(std::int64_t screen_handle) {
+  VTermScreen* screen = i64_to_screen(screen_handle);
+  if (screen == nullptr) {
+    return -1;
+  }
+  auto found = scrollback_states().find(screen);
+  return found == scrollback_states().end() ? 0 : static_cast<std::int32_t>(found->second.lines.size());
+}
+
+String vterm_screen_scrollback_line_text(std::int64_t screen_handle, std::int32_t index) {
+  VTermScreen* screen = i64_to_screen(screen_handle);
+  if (screen == nullptr || index < 0) {
+    return String(std::string());
+  }
+  auto found = scrollback_states().find(screen);
+  if (found == scrollback_states().end() || index >= static_cast<std::int32_t>(found->second.lines.size())) {
+    return String(std::string());
+  }
+  return String(found->second.lines[static_cast<std::size_t>(index)]);
 }
 
 } // namespace terminal

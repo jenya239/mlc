@@ -12,6 +12,8 @@ extern fn pty_read_until_eof(master_fd: i32, max_total_bytes: i32, timeout_ms: i
   "mlc::terminal::pty_read_until_eof" from "mlc/terminal/pty_abi.hpp" thread_affine
 extern fn pty_close(master_fd: i32) -> i32 =
   "mlc::terminal::pty_close" from "mlc/terminal/pty_abi.hpp" thread_affine
+extern fn pty_resize(master_fd: i32, rows: i32, columns: i32) -> i32 =
+  "mlc::terminal::pty_resize" from "mlc/terminal/pty_abi.hpp" thread_affine
 
 export fn pty_terminal_spawn(command_line: string) -> i32 = pty_spawn(command_line)
 export fn pty_terminal_write(master_fd: i32, bytes: string) -> i32 = pty_write(master_fd, bytes)
@@ -20,3 +22,5 @@ export fn pty_terminal_read(master_fd: i32, max_bytes: i32, timeout_ms: i32) -> 
 export fn pty_terminal_read_until_eof(master_fd: i32, max_total_bytes: i32, timeout_ms: i32) -> string =
   pty_read_until_eof(master_fd, max_total_bytes, timeout_ms)
 export fn pty_terminal_close(master_fd: i32) -> i32 = pty_close(master_fd)
+export fn pty_terminal_resize(master_fd: i32, rows: i32, columns: i32) -> i32 =
+  pty_resize(master_fd, rows, columns)
