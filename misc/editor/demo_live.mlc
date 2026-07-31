@@ -239,7 +239,8 @@ import {
   frame_layout_tick_pixel,
   frame_layout_tick_snapshot,
   frame_layout_tick_spans,
-  frame_layout_tick_minimap
+  frame_layout_tick_minimap,
+  frame_layout_tick_max_columns
 } from './app/frame_layout'
 import { frame_input_poll } from './app/frame_input'
 import {
@@ -271,7 +272,7 @@ import {
   tab_strip_hit_index_from_widths,
   tab_strip_hit_close_index_from_widths
 } from './ux/tab_strip'
-import { EditorTextMetrics, editor_ux_max_line_columns_from_index } from './ux/overflow'
+import { EditorTextMetrics } from './ux/overflow'
 import {
   editor_ux_content_scrollbar_thumb,
   editor_ux_content_scrollbar_thumb_x,
@@ -1070,7 +1071,7 @@ fn main() -> i32 = do
           char_width = 1
         end
         const content_width =
-          editor_ux_max_line_columns_from_index(line_index) * char_width
+          frame_layout.max_columns_cache.max_columns * char_width
         app = editor_app_wheel_scroll_horizontal(
           app, metrics, scroll_ticks, content_width, text_rect.width
         )
@@ -1302,7 +1303,7 @@ fn main() -> i32 = do
             drag_char_width = 1
           end
           const drag_content_width =
-            editor_ux_max_line_columns_from_index(line_index) * drag_char_width
+            frame_layout.max_columns_cache.max_columns * drag_char_width
           const mapped_x = editor_ux_content_scrollbar_scroll_at_x(
             input.mouse_x, text_rect, drag_content_width, text_rect.width
           )
@@ -1737,7 +1738,7 @@ fn main() -> i32 = do
           drag_char_width_move = 1
         end
         const drag_content_width_move =
-          editor_ux_max_line_columns_from_index(line_index) * drag_char_width_move
+          frame_layout.max_columns_cache.max_columns * drag_char_width_move
         const mapped_sb_x = editor_ux_content_scrollbar_scroll_at_x(
           input.mouse_x, text_rect, drag_content_width_move, text_rect.width
         )
@@ -1866,6 +1867,7 @@ fn main() -> i32 = do
       wrap_viewport_width_now, font_path, zoom_font_size, metrics.line_height,
       skip_full_pixel_wrap_now
     )
+    frame_layout = frame_layout_tick_max_columns(frame_layout, draw_text, line_index)
     const visual_row_count_now = frame_layout.visual_row_count
     let mut wrapped_content_height_now = frame_layout.wrapped_content_height
     app = editor_app_clamp_scroll_to_content(
@@ -2268,7 +2270,7 @@ fn main() -> i32 = do
       horizontal_char_width = 1
     end
     const horizontal_content_width =
-      editor_ux_max_line_columns_from_index(line_index) * horizontal_char_width
+      frame_layout.max_columns_cache.max_columns * horizontal_char_width
     const content_thumb_x = editor_ux_content_scrollbar_thumb_x(
       editor_hovered, text_rect, horizontal_content_width, app.ux.scroll_offset_x
     )

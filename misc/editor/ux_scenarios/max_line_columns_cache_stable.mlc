@@ -1,0 +1,70 @@
+// TRACK_EDITOR_HORIZONTAL_SCROLLBAR_MAX_COLUMNS_CACHE STEP=2 —
+// L1: idle ticks do not recompute; text change does; value matches the
+// uncached editor_ux_max_line_columns_from_index scan.
+import { line_index_from_string } from '../document/line_index'
+import {
+  editor_ux_max_line_columns_from_index,
+  max_line_columns_cache_new,
+  max_line_columns_cache_tick
+} from '../ux/overflow'
+
+fn build_fixture(line_count: i32) -> string = do
+  let mut body = ""
+  let mut line = 0
+  while line < line_count do
+    body = body + "line_" + line.to_string() + " abcdefghijklmnopqrstuvwxyz0123456789\n"
+    line = line + 1
+  end
+  body
+end
+
+fn main() -> i32 = do
+  const fixture = build_fixture(80)
+  const line_index = line_index_from_string(fixture)
+  let mut cache = max_line_columns_cache_new(fixture, line_index)
+
+  if cache.recompute_count != 1 then
+    println("ux_fail max_line_columns_cache_stable warm count")
+    return 1
+  end
+  const expected = editor_ux_max_line_columns_from_index(line_index)
+  if cache.max_columns != expected then
+    println("ux_fail max_line_columns_cache_stable value mismatch")
+    return 2
+  end
+
+  let mut idle = 0
+  while idle < 5 do
+    const after_idle = max_line_columns_cache_tick(cache, fixture, line_index)
+    if after_idle.recompute_count != cache.recompute_count then
+      println("ux_fail max_line_columns_cache_stable idle recompute")
+      return 3
+    end
+    if after_idle.max_columns != cache.max_columns then
+      println("ux_fail max_line_columns_cache_stable idle value")
+      return 4
+    end
+    cache = after_idle
+    idle = idle + 1
+  end
+
+  const edited = fixture + "a much much much longer trailing line for edit invalidate\n"
+  const edited_index = line_index_from_string(edited)
+  const after_edit = max_line_columns_cache_tick(cache, edited, edited_index)
+  if after_edit.recompute_count != cache.recompute_count + 1 then
+    println("ux_fail max_line_columns_cache_stable edit recompute")
+    return 5
+  end
+  const expected_edit = editor_ux_max_line_columns_from_index(edited_index)
+  if after_edit.max_columns != expected_edit then
+    println("ux_fail max_line_columns_cache_stable edit value")
+    return 6
+  end
+  if after_edit.max_columns <= cache.max_columns then
+    println("ux_fail max_line_columns_cache_stable edit grew")
+    return 7
+  end
+
+  println("ux_ok max_line_columns_cache_stable")
+  0
+end

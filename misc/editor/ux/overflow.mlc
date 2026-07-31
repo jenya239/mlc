@@ -55,6 +55,54 @@ export fn editor_ux_max_line_columns_from_index(line_index: LineIndex) -> i32 = 
   max_columns
 end
 
+// §101/§105 residual — editor_ux_max_line_columns_from_index is an O(document)
+// full rescan; caching keeps the horizontal-scrollbar draw path from re-walking
+// every line every frame when text has not changed (same invalidation shape
+// as layout/wrap_cache.mlc's DocumentWrapCountCache).
+export type MaxLineColumnsCache = {
+  text: string,
+  max_columns: i32,
+  recompute_count: i32
+}
+
+fn max_line_columns_cache_needs_recompute(
+  state: MaxLineColumnsCache,
+  next_text: string
+) -> i32 = do
+  if state.text.byte_size() != next_text.byte_size() then
+    return 1
+  end
+  if state.text != next_text then
+    return 1
+  end
+  0
+end
+
+export fn max_line_columns_cache_new(
+  text: string,
+  line_index: LineIndex
+) -> MaxLineColumnsCache =
+  MaxLineColumnsCache {
+    text: text,
+    max_columns: editor_ux_max_line_columns_from_index(line_index),
+    recompute_count: 1
+  }
+
+export fn max_line_columns_cache_tick(
+  state: MaxLineColumnsCache,
+  next_text: string,
+  next_line_index: LineIndex
+) -> MaxLineColumnsCache = do
+  if max_line_columns_cache_needs_recompute(state, next_text) == 0 then
+    return state
+  end
+  MaxLineColumnsCache {
+    text: next_text,
+    max_columns: editor_ux_max_line_columns_from_index(next_line_index),
+    recompute_count: state.recompute_count + 1
+  }
+end
+
 fn text_viewport_rect(state: EditorUxState) -> Rect = do
   const editor_rect = shell_panels_editor_rect(state.panels)
   let mut strip_height = state.tab_strip_height
