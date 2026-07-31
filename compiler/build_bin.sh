@@ -19,7 +19,12 @@ RT_SRC=(
   "$ROOT_DIR/runtime/src/io/io.cpp"
   "$ROOT_DIR/runtime/src/core/string.cpp"
   "$ROOT_DIR/runtime/src/core/profile.cpp"
+  "$ROOT_DIR/runtime/src/terminal/pty_abi.cpp"
 )
+# forkpty (glibc/libutil) — Linux-only PTY spawn (TRACK_EDITOR_TERMINAL §102b),
+# no pkg-config package: standard glibc, always present on this project's
+# target platform (see TRACK_EDITOR_TERMINAL.md's Linux-only non-goal).
+EXTRA_LINK_LIBS_ALWAYS=(-lutil)
 # Optional text/GL shims (TRACK_TEXT_RENDERING): FreeType / HarfBuzz / EGL loader.
 TEXT_CFLAGS=()
 TEXT_LIBS=()
@@ -310,5 +315,6 @@ if [ -f "$CPP_DIR/mlc_link_libs.txt" ]; then
   done < "$CPP_DIR/mlc_link_libs.txt"
 fi
 EXTERN_LINK_LIBS+=("${TEXT_LIBS[@]}")
+EXTERN_LINK_LIBS+=("${EXTRA_LINK_LIBS_ALWAYS[@]}")
 
 "${CXX_CMD[@]}" -std=c++20 "${LINK_FLAGS[@]}" "${SANITIZE_FLAGS[@]}" -o "$BIN_OUT" "${OBJS[@]}" "${EXTERN_LINK_LIBS[@]}"

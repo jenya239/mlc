@@ -5,7 +5,87 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a **CLOSED**, Critic-audited. §102b `TERMINAL_PTY_SPAWN` next.
+## Status: **open** — §102a **CLOSED**, Critic-audited. §102b Driver step done,
+Critic pending. §102c `TERMINAL_CELL_GRID_RENDER` next after Critic close.
+
+## §102b Decision (frozen 2026-07-31)
+
+PTY plumbing via `forkpty` (glibc/libutil) — it owns slave tty setup
+(`setsid`, `TIOCSCTTY`, stdin/stdout/stderr dup) internally, so no manual
+`posix_openpt`/`grantpt`/`unlockpt` needed. The MLC boundary carries the
+master fd as an `i32` handle (fds are small non-negative ints; `-1` is the
+error sentinel), same style as §102a's `i64` pointer handles.
+
+- `runtime/include/mlc/terminal/pty_abi.hpp` + `runtime/src/terminal/pty_abi.cpp`:
+  `pty_spawn(command_line)` (`forkpty` + child `execl("/bin/sh", "sh", "-c",
+  command_line)` — running through a shell, not raw `execvp`, avoids needing
+  an array-typed extern fn parameter, for which there is no existing
+  precedent in this codebase; matches the real future use anyway, since
+  §102f's interactive shell panel spawns a shell, not a fixed argv), a
+  thread-local `master_fd -> pid_t` map for cleanup, `pty_write`, `pty_read`
+  (single `poll(timeout_ms)` + one `read()`, empty string on
+  timeout/EOF/error), `pty_read_until_eof` (loops `pty_read`'s poll+read
+  until a poll times out with no new data — this also naturally drains a
+  burst of output from a still-running process like `cat`, not only a
+  process that has actually exited), `pty_close` (`waitpid(WNOHANG)` +
+  `close`, avoids zombies without blocking).
+- `compiler/build_bin.sh`: added `runtime/src/terminal/pty_abi.cpp`
+  unconditionally to `RT_SRC` (no `pkg-config` gate — `forkpty`/`<pty.h>` is
+  standard glibc, not an optional external package, consistent with the
+  track's own Linux-only non-goal) and an unconditional `-lutil` link
+  (confirmed present via `ldconfig -p` on this machine; harmless no-op stub
+  on glibc versions where `forkpty` was merged into libc proper).
+- `misc/editor/terminal/pty_ffi.mlc`: extern fn declarations (module-private)
+  + exported wrappers (`pty_terminal_spawn/write/read/read_until_eof/close`),
+  same convention as `vterm_ffi.mlc`.
+- Module-touch: `runtime/include/mlc/terminal/pty_abi.hpp` (new),
+  `runtime/src/terminal/pty_abi.cpp` (new), `compiler/build_bin.sh` (edit,
+  tooling script, self-host diff not applicable), `misc/editor/terminal/pty_ffi.mlc`
+  (new).
+- Gate (per the track file's own §102b spec): spawn `/bin/echo hello`, read
+  the master fd, assert exact byte output; spawn `/bin/cat`, write bytes to
+  master, assert echoed back. New test
+  `misc/editor/tests/terminal_pty_spawn_unit.mlc` + runner
+  `scripts/run_editor_terminal_pty_spawn_unit.sh` (pure FFI/process-plumbing
+  unit test, not a `run_ux_*.sh` scenario — same rationale as §102a).
+
+## §102b Steps
+
+Red: confirmed no existing PTY/`fork`/`execvp`/`forkpty` binding anywhere in
+`runtime/` (`grep -rl "fork(\|execvp\|posix_openpt\|forkpty\|waitpid\|popen"
+runtime/src runtime/include`: zero matches) before this step. Confirmed
+`forkpty` links against this system's glibc both with and without
+`-lutil` (`gcc ... -lutil` and bare both succeed) — kept `-lutil` anyway for
+portability, it is always present (`ldconfig -p | grep libutil`).
+
+Empirically measured (not assumed) the exact bytes a PTY actually produces,
+via a standalone `g++` probe linking `pty_abi.cpp` directly (no `mlcc`
+round-trip needed for this measurement) before writing test assertions:
+- `/bin/echo hello` through a freshly `forkpty`'d master, drained with
+  `pty_read_until_eof`: **`"hello\r\n"`** (7 bytes) — the PTY's default
+  `termios` output processing (`ONLCR`) translates the child's `\n` to
+  `\r\n`; there is no bare `"hello\n"` on a PTY.
+- `/bin/cat` with `"ping\n"` written to the master then drained with
+  `pty_read_until_eof(fd, 4096, 300)`: **`"ping\r\nping\r\n"`** (12 bytes,
+  twice) — the tty line discipline's local echo (`ECHO`/`ICANON` are on by
+  default, exactly as a real terminal session leaves them) echoes the
+  written input back once, and `cat`'s own copy of its stdin to stdout
+  produces a second, independent copy; both go through the same `ONLCR`
+  translation. A single non-looping `pty_read` call can observe only one of
+  the two copies depending on arrival timing, which is why the test drains
+  with `pty_read_until_eof` rather than a single `pty_read`.
+
+Green: implemented the shim + bindings per the Decision above. New unit test
+asserts the two exact byte strings measured above. Ran standalone through
+the real `mlcc` pipeline (not just the raw probe):
+`[mlc-editor] terminal_pty_spawn_unit ok`, exit 0.
+
+Regression check: `scripts/dev_gate_fast.sh` (clean environment, no stale
+`TMPDIR`) — `1471 passed, 0 failed`, arch lint failures=0. `bash
+scripts/run_ux_gate.sh` run 1 and run 2 both `[ux gate] all ok (114
+scenarios)` — confirms the new unconditional `pty_abi.cpp`
+compile + `-lutil` link in `build_bin.sh` introduces no regression in any
+existing editor build.
 
 ## §102a Decision (frozen 2026-07-31)
 

@@ -1,0 +1,45 @@
+// TRACK_EDITOR_TERMINAL §102b — PTY spawn/read/write round-trip, independent
+// of libvterm. Byte values (\r\n via ONLCR, cat's double echo via the tty
+// line discipline + cat's own stdout copy) are empirically measured, not
+// assumed — see the track file's §102b Steps for the probe that measured
+// them.
+import {
+  pty_terminal_spawn,
+  pty_terminal_write,
+  pty_terminal_read_until_eof,
+  pty_terminal_close
+} from '../terminal/pty_ffi'
+
+fn main() -> i32 = do
+  const echo_fd = pty_terminal_spawn("/bin/echo hello")
+  if echo_fd < 0 then
+    println("[mlc-editor] terminal_pty_spawn_unit fail spawn echo")
+    return 1
+  end
+  const echo_output = pty_terminal_read_until_eof(echo_fd, 4096, 1000)
+  if echo_output != "hello\r\n" then
+    println("[mlc-editor] terminal_pty_spawn_unit fail echo output: " + echo_output)
+    return 2
+  end
+  pty_terminal_close(echo_fd)
+
+  const cat_fd = pty_terminal_spawn("/bin/cat")
+  if cat_fd < 0 then
+    println("[mlc-editor] terminal_pty_spawn_unit fail spawn cat")
+    return 3
+  end
+  const written = pty_terminal_write(cat_fd, "ping\n")
+  if written != 5 then
+    println("[mlc-editor] terminal_pty_spawn_unit fail write count")
+    return 4
+  end
+  const cat_output = pty_terminal_read_until_eof(cat_fd, 4096, 300)
+  if cat_output != "ping\r\nping\r\n" then
+    println("[mlc-editor] terminal_pty_spawn_unit fail cat output: " + cat_output)
+    return 5
+  end
+  pty_terminal_close(cat_fd)
+
+  println("[mlc-editor] terminal_pty_spawn_unit ok")
+  0
+end
