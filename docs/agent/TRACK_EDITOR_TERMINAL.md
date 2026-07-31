@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a done (Red+Green), awaiting Critic. §102b next.
+## Status: **open** — §102a **CLOSED**, Critic-audited. §102b `TERMINAL_PTY_SPAWN` next.
 
 ## §102a Decision (frozen 2026-07-31)
 
@@ -152,6 +152,63 @@ scenarios)` — unchanged from §101's close, confirming the new
 `compiler/build_bin.sh` vterm-detection block (which now unconditionally
 links `-lvterm` into every editor build on this machine) introduces no
 regression.
+
+## §102a Critic audit (2026-07-31)
+
+Independent re-audit, no Driver artifact reused. `git show --stat 57877a1c`:
+exactly the 5 module-touch files (`vterm_abi.hpp`/`.cpp`, `vterm_ffi.mlc`,
+the new unit test + runner script) plus `compiler/build_bin.sh` and 5 doc
+files — no stray file. `grep -rl vterm runtime/ misc/ compiler/build_bin.sh`:
+exactly those 5 non-doc files, confirmed. Read `vterm_abi.hpp`/`.cpp`/
+`vterm_ffi.mlc` directly: every function signature lines up 1:1 across all
+three (header ↔ implementation ↔ MLC extern fn declaration), no drift.
+Confirmed the new `build_bin.sh` block is shape-identical to the existing
+freetype2 block (same `command -v pkg-config` guard,
+`RT_SRC+=`/`TEXT_CFLAGS+=`/`TEXT_LIBS+=` idiom).
+
+Independent from-scratch Ruby-bootstrap rebuild of `mlcc`
+(`MLCC_INCREMENTAL=0 compiler/build.sh`, fresh `TMPDIR` under
+`.tmp/critic_102a/`, not reusing the Driver's binary) — 0 errors, only
+pre-existing `-Wparentheses-equality` warnings. Independent rerun of
+`scripts/run_editor_terminal_libvterm_ffi_unit.sh` in a separate output
+directory (`EDITOR_TERMINAL_LIBVTERM_FFI_OUT=/tmp/critic_102a_ffi`): passed.
+
+New independent probe (not reusing the Driver's test, exercising cases it
+did not cover): invalid-handle `vterm_terminal_destroy`/`vterm_terminal_screen`/
+`vterm_terminal_damage_count` all return their documented error codes; an
+**indexed** SGR escape (`ESC[31mR` — ANSI red, index 1, as opposed to the
+Driver's true-color test) correctly reads back `foreground_is_indexed=true`,
+`foreground_index=1`, codepoint 'R'; an out-of-range cell read
+(`vterm_cell_at(screen, 999, 999)`) returns the documented empty/default
+cell rather than crashing or returning garbage. All passed
+(`critic_ok`, exit 0) — confirms the shim's error paths and a second color
+mode beyond what the Green step's own test exercised.
+
+Independent `scripts/run_ux_gate.sh` run 1 and run 2 (own logs, not reusing
+the Driver's): both `[ux gate] all ok (114 scenarios)`, 0 failures —
+confirms the new unconditional `-lvterm` link doesn't regress any existing
+editor build. Independent `scripts/dev_gate_fast.sh` rerun with a
+deliberately clean environment (`unset TMPDIR MLCC_OBJ_CLEAN MLCC_PCH`
+first): 0 failures, arch lint failures=0 — reconfirms the Driver's own
+diagnosis that the 2 apparent failures on their first attempt were a
+stale-`TMPDIR` false alarm from an unrelated prior turn, not a real
+regression.
+
+Confirmed the non-track WIP files (`CLAUDE.md`/`README.md`/
+`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) absent from commit
+`57877a1c` and still present/uncommitted after this audit. Cleaned up all
+scratch artifacts (`.tmp/critic_102a/`, `/tmp/critic_102a_*`) after
+verification, not committed. No `rake test_compiler_mlc`/self-host diff
+performed — correctly not required (only `compiler/build_bin.sh`, a Bash
+tooling script, touched under `compiler/**`; zero `.mlc` checker/codegen
+files touched, confirmed by the `git show --stat`/`grep` above).
+
+**§102a CLOSED.** No false-done found. All Driver claims independently
+reproduced: exact file scope, matching signatures across the ABI boundary,
+new test green from a fresh output dir, `run_ux_gate.sh` stable ×2, and the
+disclosed `TMPDIR` false-alarm explanation reconfirmed. Additionally
+verified 3 error/edge paths and a second color mode not covered by the
+Driver's own test. Queue advances to **§102b `TERMINAL_PTY_SPAWN`**.
 
 ## Verification discipline
 
