@@ -252,7 +252,13 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     return -2;
   }
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(0);
+  // Visible interactive windows: vsync caps uncapped paint (SwapInterval 0)
+  // which burns a core on hover/pointer-dirty paths. Headless/automated stays 0.
+  if (env_flag_enabled("MLC_GLFW_VISIBLE")) {
+    glfwSwapInterval(1);
+  } else {
+    glfwSwapInterval(0);
+  }
   if (gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress)) == 0) {
     glfwDestroyWindow(window);
     glfwTerminate();

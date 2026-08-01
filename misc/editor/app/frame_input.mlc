@@ -18,7 +18,9 @@ export type EditorFrameInput = {
   pending_scroll_y: f64,
   pending_binding_key: string,
   pending_drop_path: string,
-  content_dirty: i32
+  content_dirty: i32,
+  // Mouse move alone — chrome/hover paint, not full wrap/layout retick.
+  pointer_dirty: i32
 }
 
 export fn frame_input_poll(
@@ -40,11 +42,21 @@ export fn frame_input_poll(
   const pending_binding_key = glfw_gl_take_binding_key()
   const pending_drop_path = glfw_gl_take_drop_path()
   let mut content_dirty = 0
+  let mut pointer_dirty = 0
   if width != last_width || height != last_height then
     content_dirty = 1
   end
+  // Ignore cursor jitter outside the client area — it must not force paint.
   if input.mouse_x != last_mouse_x || input.mouse_y != last_mouse_y then
-    content_dirty = 1
+    const mouse_inside =
+      input.mouse_x >= 0 && input.mouse_y >= 0 &&
+      input.mouse_x < width && input.mouse_y < height
+    const last_inside =
+      last_mouse_x >= 0 && last_mouse_y >= 0 &&
+      last_mouse_x < width && last_mouse_y < height
+    if mouse_inside || last_inside then
+      pointer_dirty = 1
+    end
   end
   if input.mouse_down != last_mouse_down ||
       input.mouse_right_down != last_mouse_right_down then
@@ -78,6 +90,7 @@ export fn frame_input_poll(
     pending_scroll_y: pending_scroll_y,
     pending_binding_key: pending_binding_key,
     pending_drop_path: pending_drop_path,
-    content_dirty: content_dirty
+    content_dirty: content_dirty,
+    pointer_dirty: pointer_dirty
   }
 end

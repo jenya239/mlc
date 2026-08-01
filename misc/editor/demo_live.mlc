@@ -233,7 +233,8 @@ import {
   visual_row_index_for_caret_pixel_budget_cached,
   wrap_offset_at_point_pixel,
   pixel_x_for_byte_offset,
-  selection_fill_visual_rows
+  selection_fill_visual_rows,
+  VisualRow
 } from './layout/word_wrap'
 import {
   frame_layout_new_pixel,
@@ -843,6 +844,8 @@ fn main() -> i32 = do
   let mut last_caret_h = 0
   let mut last_caret_valid = 0
   let mut last_caret_rects: [CaretOverlayRect] = caret_overlay_empty()
+  let mut cached_visual_rows: [VisualRow] = []
+  let mut cached_visual_rows_valid = 0
 
   while glfw_gl_context_should_close() == 0 do
     const scaled_font_size = f64_to_i32(
@@ -873,28 +876,9 @@ fn main() -> i32 = do
     let mut pending_binding_key = frame_in.pending_binding_key
     let mut pending_drop_path = frame_in.pending_drop_path
     let mut content_dirty = frame_in.content_dirty
-
-    const content_top = header_height() + tab_bar_height() + toolbar_height()
-    const content_height = height - content_top - status_height()
-    panels = shell_panels_set_bounds(
-      panels, rect_new(0, content_top, width, content_height)
-    )
-    const tab_bar_y = header_height()
-    const toolbar_y = header_height() + tab_bar_height()
-    const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
-
-    app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
+    const pointer_dirty = frame_in.pointer_dirty
     if app.ux.tabs.active_index != last_active_index then
       content_dirty = 1
-    end
-    let mut active = tab_set_active(app.ux.tabs)
-    let mut document = active.buffer.document
-    frame_layout = frame_layout_tick_snapshot(frame_layout, document, content_dirty)
-    let mut frame = frame_layout.snapshot_cache.snapshot
-    let mut line_index = frame.line_index
-    let mut draw_text = frame.text
-    if perf_enabled then
-      app = editor_app_wheel_scroll(app, metrics, 3, line_index)
     end
 
     last_mouse_x = input.mouse_x
@@ -905,7 +889,8 @@ fn main() -> i32 = do
     last_enter = input.enter
 
     let mut paint_dirty = 0
-    if content_dirty == 0 && !perf_enabled then
+    // Idle before layout/chrome work — pointer-only still paints (layout_skip).
+    if content_dirty == 0 && pointer_dirty == 0 && !perf_enabled then
       glfw_gl_context_wait_events_timeout(0.05)
       clock_ms = clock_ms + caret_blink_idle_wait_ms()
       paint_dirty = caret_blink_paint_dirty(
@@ -951,8 +936,38 @@ fn main() -> i32 = do
         glfw_gl_context_swap_poll()
         continue
       end
+      // Blink phase changed but no cached caret overlay yet — wait for a
+      // content frame; do not fall through into a full wrap retick.
+      continue
     else
       clock_ms = clock_ms + 16
+    end
+
+    const content_top = header_height() + tab_bar_height() + toolbar_height()
+    const content_height = height - content_top - status_height()
+    panels = shell_panels_set_bounds(
+      panels, rect_new(0, content_top, width, content_height)
+    )
+    const tab_bar_y = header_height()
+    const toolbar_y = header_height() + tab_bar_height()
+    const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
+
+    app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
+    let mut active = tab_set_active(app.ux.tabs)
+    let mut document = active.buffer.document
+    // Snapshot/layout retick only on real content changes — not pointer hover.
+    frame_layout = frame_layout_tick_snapshot(frame_layout, document, content_dirty)
+    let mut frame = frame_layout.snapshot_cache.snapshot
+    let mut line_index = frame.line_index
+    let mut draw_text = frame.text
+    if perf_enabled then
+      app = editor_app_wheel_scroll(app, metrics, 3, line_index)
+    end
+
+    // Pointer-only hover: reuse last visual rows / skip HarfBuzz wrap retick.
+    let mut layout_skip = 0
+    if content_dirty == 0 && pointer_dirty != 0 && cached_visual_rows_valid != 0 then
+      layout_skip = 1
     end
 
     last_width = width
@@ -1034,10 +1049,13 @@ fn main() -> i32 = do
     if visible_row_budget < 1 then
       visible_row_budget = 1
     end
-    let mut visual_rows = collect_visible_visual_rows_pixel_budget(
-      draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-      first_visual_row, visible_row_budget
-    )
+    let mut visual_rows = cached_visual_rows
+    if layout_skip == 0 then
+      visual_rows = collect_visible_visual_rows_pixel_budget(
+        draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
+        first_visual_row, visible_row_budget
+      )
+    end
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_tree_browser_rows(panels.tree)
     const crumbs_origin_x = folder_nav_crumbs_origin_x(tree_rect)
@@ -1117,6 +1135,8 @@ fn main() -> i32 = do
           draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
           app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
         )
+        cached_visual_rows = visual_rows
+        cached_visual_rows_valid = 1
       end
     end
 
@@ -1918,25 +1938,31 @@ fn main() -> i32 = do
       perf_layout_t0 = editor_perf_now_us()
     end
     let mut skip_full_pixel_wrap_now = 0
-    if perf_enabled then
+    if perf_enabled || layout_skip != 0 then
       skip_full_pixel_wrap_now = 1
     end
-    frame_layout = frame_layout_tick_pixel(
-      frame_layout, draw_text, line_index,
-      wrap_viewport_width_now, font_path, zoom_font_size, metrics.line_height,
-      skip_full_pixel_wrap_now
-    )
-    frame_layout = frame_layout_tick_max_columns(frame_layout, draw_text, line_index)
+    if layout_skip == 0 then
+      frame_layout = frame_layout_tick_pixel(
+        frame_layout, draw_text, line_index,
+        wrap_viewport_width_now, font_path, zoom_font_size, metrics.line_height,
+        skip_full_pixel_wrap_now
+      )
+      frame_layout = frame_layout_tick_max_columns(frame_layout, draw_text, line_index)
+    end
     const visual_row_count_now = frame_layout.visual_row_count
     let mut wrapped_content_height_now = frame_layout.wrapped_content_height
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height_now, text_rect.height
     )
     visible = visible_line_range(line_index_line_count(line_index), app.ux.scroll_offset_y, viewport)
-    visual_rows = collect_visible_visual_rows_pixel_budget(
-      draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
-      app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
-    )
+    if layout_skip == 0 then
+      visual_rows = collect_visible_visual_rows_pixel_budget(
+        draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
+        app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
+      )
+      cached_visual_rows = visual_rows
+      cached_visual_rows_valid = 1
+    end
     if perf_enabled then
       perf_layout_us = editor_perf_now_us() - perf_layout_t0
     end
