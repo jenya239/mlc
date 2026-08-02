@@ -1,0 +1,160 @@
+// TRACK_EDITOR_HYGIENE §107b — session restore must keep original absolute paths.
+// RED: reproduces today's save_demo_session dump_tab_file collision.
+import {
+  tab_set_new,
+  tab_set_open,
+  tab_set_open_buffer,
+  tab_set_set_active,
+  tab_set_count
+} from '../workspace/tabs'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_save,
+  open_buffer_has_error
+} from '../document/save'
+import { document_to_string } from '../document/piece_table'
+import {
+  workspace_session_from_tabs,
+  workspace_session_set_active_view,
+  workspace_session_save,
+  workspace_session_load,
+  workspace_session_restore_tabs
+} from '../workspace/session'
+
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_remove(path: string) -> bool
+  = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+
+// Mirror of demo_live.dump_tab_file (today's CmdSaveSession path).
+fn dump_tab_file(path: string, text: string) -> string = do
+  let mut file_name = "buffer.txt"
+  if path.ends_with("main.mlc") then
+    file_name = "main.mlc"
+  else if path.ends_with("README.md") then
+    file_name = "README.md"
+  else if path.ends_with("notes.txt") then
+    file_name = "notes.txt"
+  end
+  const out_path = ".tmp/editor_live_" + file_name
+  let mut buffer = open_buffer_from_text(out_path, text)
+  buffer = open_buffer_save(buffer)
+  out_path
+end
+
+// Mirror of demo_live.save_demo_session (dump before persist).
+fn save_session_dumping(tabs_in: TabSet, session_file: string) -> i32 = do
+  let mut saved = tab_set_new()
+  let mut index = 0
+  while index < tab_set_count(tabs_in) do
+    const tab = tabs_in.tabs[index]
+    const text = document_to_string(tab.buffer.document)
+    const out_path = dump_tab_file(tab.path, text)
+    saved = tab_set_open(saved, out_path, text)
+    index = index + 1
+  end
+  if tab_set_count(saved) == 0 then
+    return 0
+  end
+  saved = tab_set_set_active(saved, tabs_in.active_index)
+  let mut session = workspace_session_from_tabs(".tmp", saved)
+  session = workspace_session_set_active_view(session, 0, 0, 0)
+  if workspace_session_save(session_file, session) then
+    return 1
+  end
+  0
+end
+
+fn path_has_editor_live(path: string) -> bool =
+  path.contains("editor_live_")
+
+fn main() -> i32 = do
+  const dir = ".tmp/ux_session_restores_original_paths"
+  const path_a = dir + "/alpha.txt"
+  const path_b = dir + "/beta.txt"
+  const session_file = dir + "/session.txt"
+  const payload_a = "alpha-body\n"
+  const payload_b = "beta-body\n"
+
+  if file_exists(session_file) then
+    const _rm_session = file_remove(session_file)
+  end
+  if file_exists(".tmp/editor_live_buffer.txt") then
+    const _rm_live = file_remove(".tmp/editor_live_buffer.txt")
+  end
+
+  let mut seed = open_buffer_from_text(path_a, payload_a)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail session_restores_original_paths seed_a")
+    return 1
+  end
+  seed = open_buffer_from_text(path_b, payload_b)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail session_restores_original_paths seed_b")
+    return 2
+  end
+
+  const opened_a = open_buffer_from_path(path_a)
+  const opened_b = open_buffer_from_path(path_b)
+  if open_buffer_has_error(opened_a) || open_buffer_has_error(opened_b) then
+    println("ux_fail session_restores_original_paths open")
+    return 3
+  end
+
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open_buffer(tabs, path_a, opened_a)
+  tabs = tab_set_open_buffer(tabs, path_b, opened_b)
+  tabs = tab_set_set_active(tabs, 1)
+  if tab_set_count(tabs) != 2 then
+    println("ux_fail session_restores_original_paths pre_count")
+    return 4
+  end
+
+  if save_session_dumping(tabs, session_file) == 0 then
+    println("ux_fail session_restores_original_paths save")
+    return 5
+  end
+
+  const session = workspace_session_load(session_file)
+  let mut restored = workspace_session_restore_tabs(session)
+
+  if tab_set_count(restored) != 2 then
+    println("ux_fail session_restores_original_paths count")
+    return 6
+  end
+
+  let mut index = 0
+  while index < tab_set_count(restored) do
+    const path = restored.tabs[index].path
+    if path_has_editor_live(path) then
+      println("ux_fail session_restores_original_paths editor_live_path")
+      return 7
+    end
+    index = index + 1
+  end
+
+  // Order may follow session encoding; both originals must appear.
+  let mut saw_a = 0
+  let mut saw_b = 0
+  index = 0
+  while index < tab_set_count(restored) do
+    const path = restored.tabs[index].path
+    if path == path_a then
+      saw_a = 1
+    end
+    if path == path_b then
+      saw_b = 1
+    end
+    index = index + 1
+  end
+  if saw_a == 0 || saw_b == 0 then
+    println("ux_fail session_restores_original_paths missing_original")
+    return 8
+  end
+
+  println("ux_ok session_restores_original_paths")
+  0
+end
