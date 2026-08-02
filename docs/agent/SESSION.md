@@ -139,3 +139,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107c STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | Deep-scroll perf ceiling not written this STEP (Decision optional; belongs with measured §107d full path). Prompt INSTRUCTIONS_REV stale; followed CONTINUITY |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107c — independent rebuild+rerun; sabotages: (1) ignore prefix, (2) wrong jump line; `run_ux_gate` ×2; close §107c → §107d Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107c close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107c Green `390c2cfb`. Fresh rebuild `.tmp/critic_107c_jump`: `ux_ok`. Sabotages on cached collect: (1) ignore prefix → `lines_shaped` exit 4; (2) jump `low+5` → `rows_mismatch` exit 3; both reverted. `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118. Closed §107c |
+| verify  | critic scenario ok; sabotages 4/3; ux gate ×2 118/118; word_wrap.mlc clean after revert |
+| result  | **§107c CLOSED.** Advances to §107d |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107d `EDITOR_PERF_SMOKE_FULL_PATH` — freeze Decision; red: full-path smoke must fail or be absent on today's skip-heavy `MLC_EDITOR_PERF=1` path) |
