@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a/§107b/§107c/§107d **CLOSED**; §107e Decision next (Driver STEP=0)
+## Status: **open** 2026-08-03 — §107a–§107d **CLOSED**; §107e Decision+Red done (Driver STEP=2 Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -220,12 +220,26 @@ Final rebuild `.tmp/critic_107d_final`: `ux_ok` (`total_us=7206786`).
 
 ## §107e `EDITOR_DOCUMENT_VERSION` (EHA-05) — unblocks §107f/§107i/§107j and the minimap work
 
+### Decision (frozen 2026-08-03)
+
 | Item | Choice |
 |------|--------|
 | Problem | Four caches invalidate by comparing the whole document text: `wrap_count_cache_needs_recompute_pixel` (`layout/wrap_cache.mlc`), `max_line_columns_cache_needs_recompute` (`ux/overflow.mlc`, §105), `editor_ux_syntax_span_cache_tick` (`ux/syntax_span_cache.mlc`, `state.text == text`), `editor_ux_minimap_needs_rebuild` (`ux/minimap.mlc`). Up to 4 × O(n) memcmp per frame; the spans tick runs even on hover frames (outside `layout_skip`) |
-| Fix | Monotonic `version: i64` on `TextDocument`, incremented in `document_insert` / `document_delete` (and any other mutating primitive). All four caches key on `(version, parameters)` instead of on the text |
-| Gate | `run_ux_cache_keys_by_version`: instrument a compare counter; assert **zero** full-text comparisons across N idle frames and N hover frames, exactly one recompute per edit, and that a same-content-different-history document still invalidates (version changed) — i.e. the key is the version, not the bytes |
-| Sabotage | Freeze the version counter → caches must go stale and the gate must fail |
+| Fix | Monotonic `version: i64` on `TextDocument`, incremented in `document_insert` / `document_delete` (and any other mutating primitive). All four caches key on `(version, parameters)` instead of on the text. Caches may drop the stored full-text field once keyed by version (keep only if still needed for another reason — prefer drop) |
+| Module touch | `misc/editor/document/piece_table.mlc` (`version` + bump in `document_from_string` / `document_insert`), `misc/editor/document/document_delete.mlc` (bump), `layout/wrap_cache.mlc`, `ux/overflow.mlc`, `ux/syntax_span_cache.mlc`, `ux/minimap.mlc`; callers that construct/tick those caches; new `misc/editor/ux_scenarios/cache_keys_by_version.mlc` + `scripts/run_ux_cache_keys_by_version.sh` |
+| Gate | `run_ux_cache_keys_by_version`: instrument a compare counter (or assert caches expose version keys / zero full-text equality paths); assert **zero** full-text comparisons across N idle frames and N hover frames, exactly one recompute per edit, and that a same-content-different-history document still invalidates (version changed) — i.e. the key is the version, not the bytes |
+| Sabotage (required before close) | Freeze the version counter (insert/delete no longer bump) → caches go stale / gate fails |
+| REG | no |
+| Out of scope | Incremental line index (§107f); moving spans under `layout_skip` beyond version keying (§107i); single visible-row collect (§107j) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: version field / version-keyed caches absent; full-text compares still fire | **done** 2026-08-03 — `scripts/run_ux_cache_keys_by_version_red.sh` exits non-zero |
+| 2 | Green: `version` + re-key four caches; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ---
 

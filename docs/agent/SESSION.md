@@ -199,3 +199,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107d CLOSED.** Advances to §107e |
 | issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107e `EDITOR_DOCUMENT_VERSION` — freeze Decision; red: versioned cache keys absent / full-text compares still fire) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107e Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107e Decision (`version: i64` on TextDocument; four caches re-keyed; gate `run_ux_cache_keys_by_version`; sabotage: freeze version bump). Red: `scripts/run_ux_cache_keys_by_version_red.sh` |
+| verify  | `bash scripts/run_ux_cache_keys_by_version_red.sh` → FAIL exit 1 (`TextDocument.version absent; caches still key on full text`) |
+| result  | **§107e STEP=0/1 done (Decision+Red).** Green next |
+| issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107e Green — `version` + re-key wrap/overflow/spans/minimap; scenario `cache_keys_by_version`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
