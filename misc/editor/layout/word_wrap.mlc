@@ -466,8 +466,8 @@ fn collect_visible_visual_rows_pixel_budget_diag(
   CollectVisibleDiag { rows: out, lines_shaped: lines_shaped }
 end
 
-// §107c RED stub: accepts prefix_visual_rows but ignores it (today's O(document)
-// walk from line 0). Green replaces the body with a prefix jump.
+// §107c: jump via prefix_visual_rows (prefix[i] = visual rows for lines [0, i)).
+// Falls back to the uncached walk when the prefix table is empty or too short.
 export fn collect_visible_visual_rows_pixel_budget_cached(
   text: string,
   line_index: LineIndex,
@@ -478,13 +478,61 @@ export fn collect_visible_visual_rows_pixel_budget_cached(
   first_visual_row: i32,
   max_rows: i32
 ) -> CollectVisibleDiag = do
-  if prefix_visual_rows.length() < 0 then
+  if max_rows <= 0 then
     return CollectVisibleDiag { rows: [], lines_shaped: 0 }
   end
-  collect_visible_visual_rows_pixel_budget_diag(
-    text, line_index, viewport_width_px, font_path, pixel_size,
-    first_visual_row, max_rows
-  )
+  let mut first = first_visual_row
+  if first < 0 then
+    first = 0
+  end
+  const prefix_length = prefix_visual_rows.length()
+  // Need prefix[0]=0 plus at least one line sentinel (length >= 2).
+  if prefix_length < 2 then
+    return collect_visible_visual_rows_pixel_budget_diag(
+      text, line_index, viewport_width_px, font_path, pixel_size,
+      first, max_rows
+    )
+  end
+  const count = line_index_line_count(line_index)
+  // Last usable line index is prefix_length - 2 (prefix[line_count] = total).
+  let mut max_line = prefix_length - 2
+  if max_line >= count then
+    max_line = count - 1
+  end
+  if max_line < 0 then
+    return CollectVisibleDiag { rows: [], lines_shaped: 0 }
+  end
+  // Largest line with prefix[line] <= first (binary search).
+  let mut low = 0
+  let mut high = max_line
+  while low < high do
+    const mid = (low + high + 1) / 2
+    if prefix_visual_rows[mid] <= first then
+      low = mid
+    else
+      high = mid - 1
+    end
+  end
+  let mut line = low
+  let mut visual = prefix_visual_rows[line]
+  let mut out: [VisualRow] = []
+  let mut lines_shaped = 0
+  while line < count && out.length() < max_rows do
+    const rows = visual_rows_for_line_pixel_budget(
+      text, line_index, line, viewport_width_px, font_path, pixel_size
+    )
+    lines_shaped = lines_shaped + 1
+    let mut row_index = 0
+    while row_index < rows.length() && out.length() < max_rows do
+      if visual >= first then
+        out.push(rows[row_index])
+      end
+      visual = visual + 1
+      row_index = row_index + 1
+    end
+    line = line + 1
+  end
+  CollectVisibleDiag { rows: out, lines_shaped: lines_shaped }
 end
 
 export fn visual_row_index_for_caret_pixel_budget(

@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a/§107b **CLOSED**; §107c Decision+Red in progress (Driver STEP=1 done / STEP=2 Green next)
+## Status: **open** 2026-08-01 — §107a/§107b **CLOSED**; §107c Green done (awaiting Critic STEP=3)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -161,7 +161,7 @@ Sabotages distinct from Driver (both on `workspace_session_save_tabs`, then
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: cached collect ignores prefix; `lines_shaped` bound fails | **done** 2026-08-03 — stub `collect_visible_visual_rows_pixel_budget_cached` walks from line 0; `ux_fail … lines_shaped` |
-| 2 | Green: prefix jump + demo_live wire; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | pending |
+| 2 | Green: prefix jump + demo_live wire; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | **done** 2026-08-03 — binary-search jump in `collect_visible_*_cached`; 3 `demo_live` call sites wired to `wrap_count_cache.prefix_visual_rows`; scenario `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118. Deep-scroll ceiling deferred (optional; honest measure → §107d full mode) |
 | 3 | Critic | pending |
 
 ---

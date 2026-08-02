@@ -124,3 +124,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107c STEP=0/1 done (Decision+Red).** Green next |
 | issues  | New `run_ux_*` fails `run_ux_gate` until Green — expected. Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107c Green — prefix jump in cached collect; wire demo_live; scenario green; optional deep-scroll ceiling after measure; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107c Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Green §107c: `collect_visible_visual_rows_pixel_budget_cached` binary-searches `prefix_visual_rows` and shapes from the jump line; empty/short prefix falls back to walk. Wired 3 `demo_live` collect sites to `frame_layout.wrap_count_cache.prefix_visual_rows`. Scenario green |
+| verify  | `run_ux_visible_rows_prefix_jump` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118 |
+| result  | **§107c STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Deep-scroll perf ceiling not written this STEP (Decision optional; belongs with measured §107d full path). Prompt INSTRUCTIONS_REV stale; followed CONTINUITY |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107c — independent rebuild+rerun; sabotages: (1) ignore prefix, (2) wrong jump line; `run_ux_gate` ×2; close §107c → §107d Decision) |

@@ -225,7 +225,7 @@ import {
 } from './layout/gutter'
 import {
   wrap_max_columns,
-  collect_visible_visual_rows_pixel_budget,
+  collect_visible_visual_rows_pixel_budget_cached,
   visual_row_index_for_caret_pixel_budget_cached,
   wrap_offset_at_point_pixel,
   pixel_x_for_byte_offset,
@@ -1023,10 +1023,11 @@ fn main() -> i32 = do
     end
     let mut visual_rows = cached_visual_rows
     if layout_skip == 0 then
-      visual_rows = collect_visible_visual_rows_pixel_budget(
+      visual_rows = collect_visible_visual_rows_pixel_budget_cached(
         draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
+        frame_layout.wrap_count_cache.prefix_visual_rows,
         first_visual_row, visible_row_budget
-      )
+      ).rows
     end
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_tree_browser_rows(panels.tree)
@@ -1103,10 +1104,11 @@ fn main() -> i32 = do
           app.ux.scroll_offset_x, app.ux.scroll_offset_y,
           text_rect.height / metrics.line_height
         )
-        visual_rows = collect_visible_visual_rows_pixel_budget(
+        visual_rows = collect_visible_visual_rows_pixel_budget_cached(
           draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
+          frame_layout.wrap_count_cache.prefix_visual_rows,
           app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
-        )
+        ).rows
         cached_visual_rows = visual_rows
         cached_visual_rows_valid = 1
       end
@@ -1939,10 +1941,11 @@ fn main() -> i32 = do
     )
     visible = visible_line_range(line_index_line_count(line_index), app.ux.scroll_offset_y, viewport)
     if layout_skip == 0 then
-      visual_rows = collect_visible_visual_rows_pixel_budget(
+      visual_rows = collect_visible_visual_rows_pixel_budget_cached(
         draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
+        frame_layout.wrap_count_cache.prefix_visual_rows,
         app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
-      )
+      ).rows
       cached_visual_rows = visual_rows
       cached_visual_rows_valid = 1
     end
