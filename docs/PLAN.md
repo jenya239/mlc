@@ -1055,7 +1055,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [agent/TRACK_EDITOR_IDLE_POINTER_DIRTY](agent/TRACK_EDITOR_IDLE_POINTER_DIRTY.md))
   → **EDITOR_HYGIENE (§107, open 2026-08-01 — QUEUE HEAD, authorized ahead of §103a/§104 W2;
       source audit `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`):
-      §107a EDITOR_SAVE_ACTIVE_FILE (Driver STEP=0, next)
+      §107a EDITOR_SAVE_ACTIVE_FILE (Driver STEP=2 Green next; Decision+Red done)
         → §107b EDITOR_SESSION_ORIGINAL_PATHS
         → §107c EDITOR_VISIBLE_ROWS_PREFIX_JUMP
         → §107d EDITOR_PERF_SMOKE_FULL_PATH

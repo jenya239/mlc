@@ -1,0 +1,99 @@
+// TRACK_EDITOR_HYGIENE §107a — CmdSave must write the open file to disk.
+// Gate: edit → editor_app_save_active_buffer → read original path from disk.
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import {
+  tab_set_new,
+  tab_set_open_buffer,
+  tab_set_active,
+  tab_is_dirty
+} from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  open_buffer_from_path,
+  open_buffer_from_text,
+  open_buffer_save,
+  open_buffer_has_error,
+  open_buffer_is_dirty
+} from '../document/save'
+import { document_to_string } from '../document/piece_table'
+import {
+  editor_app_state_new,
+  editor_app_insert_text,
+  editor_app_save_active_buffer
+} from '../app/state'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_remove(path: string) -> bool
+  = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+
+fn main() -> i32 = do
+  const fixture_path = ".tmp/ux_save_writes_file_to_disk/fixture.txt"
+  const original = "original line\n"
+  const edit_suffix = "edited\n"
+  const expected = original + edit_suffix
+  const live_dump = ".tmp/editor_live_save_red.txt"
+
+  if file_exists(live_dump) then
+    const _removed = file_remove(live_dump)
+  end
+
+  let mut seed = open_buffer_from_text(fixture_path, original)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail save_writes_file_to_disk seed")
+    return 1
+  end
+
+  const opened = open_buffer_from_path(fixture_path)
+  if open_buffer_has_error(opened) then
+    println("ux_fail save_writes_file_to_disk open")
+    return 2
+  end
+
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open_buffer(tabs, fixture_path, opened)
+  let mut app = editor_app_state_new(
+    800, 600, panels, tabs, selection_collapsed(original.byte_size())
+  )
+
+  app = editor_app_insert_text(app, edit_suffix)
+  if !tab_is_dirty(tab_set_active(app.ux.tabs)) then
+    println("ux_fail save_writes_file_to_disk not_dirty_after_edit")
+    return 3
+  end
+  const edited_text = document_to_string(tab_set_active(app.ux.tabs).buffer.document)
+  if edited_text != expected then
+    println("ux_fail save_writes_file_to_disk edit_buffer")
+    return 4
+  end
+
+  // Command path (not open_buffer_save directly).
+  app = editor_app_save_active_buffer(app)
+
+  const on_disk = file_read_to_string(fixture_path)
+  if on_disk != expected then
+    println("ux_fail save_writes_file_to_disk disk_content")
+    return 5
+  end
+  if tab_is_dirty(tab_set_active(app.ux.tabs)) then
+    println("ux_fail save_writes_file_to_disk still_dirty")
+    return 6
+  end
+  if open_buffer_is_dirty(tab_set_active(app.ux.tabs).buffer) then
+    println("ux_fail save_writes_file_to_disk buffer_dirty")
+    return 7
+  end
+  if file_exists(live_dump) then
+    println("ux_fail save_writes_file_to_disk editor_live_copy")
+    return 8
+  end
+
+  println("ux_ok save_writes_file_to_disk")
+  0
+end

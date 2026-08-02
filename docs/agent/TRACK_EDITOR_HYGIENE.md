@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — queue head is **§107a `EDITOR_SAVE_ACTIVE_FILE`** (Driver STEP=0)
+## Status: **open** 2026-08-01 — queue head is **§107a `EDITOR_SAVE_ACTIVE_FILE`** (Driver STEP=1 Red done / STEP=2 Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -64,16 +64,16 @@ only if `lib/mlc/**` is touched. Critic must re-verify independently (fresh
 
 ## §107a `EDITOR_SAVE_ACTIVE_FILE` (EHA-01) — **queue head**
 
-### Decision (proposed by Planner 2026-08-01; Driver confirms/freezes at STEP=0)
+### Decision (frozen 2026-08-02 — confirms Planner proposal)
 
 | Item | Choice |
 |------|--------|
 | Problem | `CmdSave` maps to `save_demo_session`; `dump_tab_file` writes `.tmp/editor_live_<name>` copies. `open_buffer_save` (`document/save.mlc`, correct: CRLF preserve, BOM re-prefix, §12/§13) is called from nowhere else, so Ctrl+S and the toolbar Save button never write the file the user is editing, and the active tab's dirty flag is never cleared |
-| Fix | `CmdSave` → `open_buffer_save(active.buffer)` on the active tab's **original** path, then `tab_set_update_active_buffer` with the saved buffer (dirty cleared, `last_error` propagated). Session dumping moves to a distinct command (`CmdSaveSession`, bound to the existing session toolbar button / a chord that does not collide with `command_bus_default_bindings()`) |
+| Fix | `CmdSave` → `editor_app_save_active_buffer` → `open_buffer_save(active.buffer)` on the active tab's **original** path, then `tab_set_update_active_buffer` with the saved buffer (dirty cleared, `last_error` propagated). Session dumping moves to a distinct command (`CmdSaveSession`, bound to the existing session toolbar button / a chord that does not collide with `command_bus_default_bindings()`) |
 | Error path | Save failure must not be silent: set `buffer.last_error`, keep the tab dirty. Surfacing it in the status bar is EHA-24 (P2) — this sub-track only guarantees the flag is not falsely cleared |
-| Module touch | `misc/editor/demo_live.mlc` (dispatch arm), `misc/editor/app/state.mlc` and/or `misc/editor/app/frame_command.mlc` (`editor_app_save_active_buffer`, `editor_app_set_*` discipline — no scattered locals), `misc/editor/commands/bus.mlc` (`CmdSaveSession` + binding), new `misc/editor/ux_scenarios/save_writes_file_to_disk.mlc`, new `scripts/run_ux_save_writes_file_to_disk.sh` |
-| Gate | `run_ux_save_writes_file_to_disk`: write a fixture file under `.tmp`, open it through the real open path, apply an edit, dispatch `CmdSave` through the command path (not by calling `open_buffer_save` directly), **read the file back from disk**, assert the content matches the edited buffer, assert the active tab is no longer dirty, and assert no `.tmp/editor_live_*` copy was created for it |
-| Sabotage (required before close) | (1) revert `CmdSave` to `save_demo_session` → gate must fail; (2) make `open_buffer_save` a no-op returning success → gate must fail on the disk read, not only on the dirty flag |
+| Module touch | `misc/editor/demo_live.mlc` (dispatch arm), `misc/editor/app/state.mlc` (`editor_app_save_active_buffer`, `editor_app_set_*` discipline — no scattered locals), `misc/editor/commands/bus.mlc` (`CmdSaveSession` + binding), new `misc/editor/ux_scenarios/save_writes_file_to_disk.mlc`, new `scripts/run_ux_save_writes_file_to_disk.sh` |
+| Gate | `run_ux_save_writes_file_to_disk`: write a fixture file under `.tmp`, open it through the real open path, apply an edit, dispatch save through `editor_app_save_active_buffer` (the CmdSave command path — not `open_buffer_save` directly), **read the file back from disk**, assert the content matches the edited buffer, assert the active tab is no longer dirty, and assert no `.tmp/editor_live_*` copy was created for it |
+| Sabotage (required before close) | (1) revert `CmdSave` / `editor_app_save_active_buffer` to `save_demo_session` dump → gate must fail; (2) make `open_buffer_save` a no-op returning success → gate must fail on the disk read, not only on the dirty flag |
 | REG | no (`compiler/**` untouched; `lib/mlc/**` untouched unless the file-write helper is changed — if it is, run `regression_gate.sh`) |
 | Out of scope | Atomic write (`tmp` + `rename`) and `fsync` → P2 backlog `EDITOR_SAVE_ATOMIC_WRITE`; autosave / crash recovery; status-bar error display (EHA-24) |
 
@@ -81,8 +81,8 @@ only if `lib/mlc/**` is touched. Critic must re-verify independently (fresh
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | pending |
-| 1 | Red: new scenario fails on today's tree (disk content unchanged after Ctrl+S) | pending |
+| 0 | Decision freeze | **done** 2026-08-02 |
+| 1 | Red: new scenario fails on today's tree (disk content unchanged after save path) | **done** 2026-08-02 — stub `editor_app_save_active_buffer` still dumps `.tmp/editor_live_*` (CmdSave bug shape); `run_ux_save_writes_file_to_disk.sh` exits non-zero (`ux_fail … disk_content`) |
 | 2 | Green: `CmdSave` → active-buffer save; `CmdSaveSession` split out; scenario green; `run_ux_gate.sh` ×2; `dev_gate_fast.sh` | pending |
 | 3 | Critic: independent rebuild + rerun, own sabotages, gate ×2 | pending |
 

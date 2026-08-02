@@ -551,3 +551,18 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | issues  | §106 ships without a gate — accepted and documented, its missing idle-CPU-under-pointer-load gate is owned by §107r. §107d exists precisely because today's perf number is measured with the hot phases off; until it closes, no editor perf claim from `MLC_EDITOR_PERF=1` should be treated as characterising a real frame |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107a `EDITOR_SAVE_ACTIVE_FILE` — read `TRACK_EDITOR_HYGIENE.md` §107a and the audit's EHA-01/EHA-02 entries before confirming/re-freezing the proposed Decision; red first: the new scenario must fail on today's tree by reading the fixture back from disk after Ctrl+S, not merely by checking a dirty flag) |
 
+
+### Turn 2026-08-02 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107a Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-02 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107a Decision (confirms Planner table: `CmdSave` → `editor_app_save_active_buffer` → `open_buffer_save` on original path; `CmdSaveSession` split; gate reads disk). Red: added stub `editor_app_save_active_buffer` that still dumps `.tmp/editor_live_*` (CmdSave bug shape), scenario `save_writes_file_to_disk.mlc` + `scripts/run_ux_save_writes_file_to_disk.sh`. Ran gate: `ux_fail save_writes_file_to_disk disk_content`, binary exit=5 — Red proven. demo_live CmdSave not wired yet (Green) |
+| verify  | `bash scripts/run_ux_save_writes_file_to_disk.sh` → FAIL exit 1 / scenario exit 5 `disk_content` |
+| result  | **§107a STEP=0/1 done (Decision+Red).** Green next |
+| issues  | New `run_ux_*` script will fail `run_ux_gate` until Green — expected for Red |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107a Green — replace stub with `open_buffer_save` on active path + clear dirty; wire `CmdSave`/`CmdSaveSession` in `demo_live`+`bus.mlc`; scenario green; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |

@@ -40,6 +40,12 @@ import {
   tab_set_open
 } from '../workspace/tabs'
 import {
+  open_buffer_from_text,
+  open_buffer_save,
+  open_buffer_has_error
+} from '../document/save'
+import { document_to_string } from '../document/piece_table'
+import {
   EditorSelection,
   selection_collapsed
 } from '../document/selection'
@@ -303,6 +309,33 @@ end
 
 export fn editor_app_close_terminal(app: EditorAppState) -> EditorAppState =
   editor_app_set_terminal(app, terminal_panel_session_close(app.terminal))
+
+// TRACK_EDITOR_HYGIENE §107a — CmdSave path.
+// RED stub (2026-08-02): still mirrors the product bug — writes
+// `.tmp/editor_live_*` and leaves the original path / dirty flag untouched.
+// Green replaces the body with open_buffer_save on the active buffer path.
+export fn editor_app_save_active_buffer(app: EditorAppState) -> EditorAppState = do
+  if !tab_set_has_active(app.ux.tabs) then
+    return editor_app_set_last_command(app, "save_fail")
+  end
+  const active = tab_set_active(app.ux.tabs)
+  const text = document_to_string(active.buffer.document)
+  let mut file_name = "buffer.txt"
+  if active.path.ends_with(".mlc") then
+    file_name = "save_red.mlc"
+  else if active.path.ends_with(".md") then
+    file_name = "save_red.md"
+  else if active.path.ends_with(".txt") then
+    file_name = "save_red.txt"
+  end
+  const out_path = ".tmp/editor_live_" + file_name
+  let mut dump = open_buffer_from_text(out_path, text)
+  dump = open_buffer_save(dump)
+  if open_buffer_has_error(dump) then
+    return editor_app_set_last_command(app, "session_save_fail")
+  end
+  editor_app_set_last_command(app, "session_save")
+end
 
 export fn editor_app_terminal_tab_active(app: EditorAppState) -> bool =
   tab_set_has_active(app.ux.tabs) &&
