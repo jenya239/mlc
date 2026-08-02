@@ -335,6 +335,25 @@ export fn workspace_session_save(
 ) -> bool =
   file_write_string(path, workspace_session_encode(session))
 
+// Persist open tabs by original absolute paths (no dump copies).
+export fn workspace_session_save_tabs(
+  session_file: string,
+  root: string,
+  tabs: TabSet,
+  caret: i32,
+  scroll_offset_y: i32,
+  scroll_offset_x: i32
+) -> bool = do
+  if tab_set_count(tabs) == 0 then
+    return false
+  end
+  let mut session = workspace_session_from_tabs(root, tabs)
+  session = workspace_session_set_active_view(
+    session, caret, scroll_offset_y, scroll_offset_x
+  )
+  workspace_session_save(session_file, session)
+end
+
 export fn workspace_session_load(path: string) -> WorkspaceSession = do
   if !file_exists(path) then
     return workspace_session_new("")

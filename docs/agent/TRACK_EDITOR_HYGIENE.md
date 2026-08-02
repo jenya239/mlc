@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a **CLOSED**; §107b Decision+Red in progress (Driver STEP=1 done / STEP=2 Green next)
+## Status: **open** 2026-08-01 — §107a **CLOSED**; §107b Green done (awaiting Critic STEP=3)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -110,7 +110,7 @@ restore: `ux_ok`.
 |------|--------|
 | Problem | `save_demo_session` → `dump_tab_file` collapses tabs onto colliding `.tmp/editor_live_*` names; `workspace_session_restore_tabs` reopens those copies; `tab_set_open_buffer` dedupes identical dump paths → tabs lost; restored session points at scratch copies, not project files |
 | Fix | `save_demo_session` / `CmdSaveSession` stores **original absolute tab paths** via `workspace_session_from_tabs` on the live `TabSet` — delete the `dump_tab_file` loop from the session-save path (function may be deleted if unused) |
-| Module touch | `misc/editor/demo_live.mlc` (`save_demo_session`), new `misc/editor/ux_scenarios/session_restores_original_paths.mlc`, new `scripts/run_ux_session_restores_original_paths.sh` |
+| Module touch | `misc/editor/demo_live.mlc` (`save_demo_session`), `misc/editor/workspace/session.mlc` (`workspace_session_save_tabs`), `misc/editor/ux_scenarios/session_restores_original_paths.mlc`, `scripts/run_ux_session_restores_original_paths.sh`; update `run_ux_demo_save_no_double_stringify_stable.sh` (old dump/flatten L2 → assert no dump) |
 | Gate | `run_ux_session_restores_original_paths`: write ≥2 distinct fixture files under `.tmp`, open both through the real open path, save session through the **same** `save_demo_session` path `CmdSaveSession` uses, restore into a fresh `TabSet`, assert tab count matches, each restored path equals the original absolute path, and no restored path contains `editor_live_` |
 | Sabotage (required before close) | (1) reintroduce `dump_tab_file` into session save → gate must fail (count and/or path); (2) rewrite one restored path to `.tmp/editor_live_*` after save → gate must fail path assert |
 | REG | no |
@@ -122,7 +122,7 @@ restore: `ux_ok`.
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: scenario fails on today's dump-based `save_demo_session` | **done** 2026-08-03 — two `.txt` fixtures collide to `.tmp/editor_live_buffer.txt`; restore loses a tab / paths are `editor_live_*` |
-| 2 | Green: remove dump from session save; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | pending |
+| 2 | Green: remove dump from session save; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | **done** 2026-08-03 — `workspace_session_save_tabs` + `save_demo_session` no dump; `dump_tab_file` deleted; scenario `ux_ok`; `demo_save_no_double_stringify_stable` retargeted (0 flatten); `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 117/117 |
 | 3 | Critic | pending |
 
 ---

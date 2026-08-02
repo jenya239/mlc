@@ -79,3 +79,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107b STEP=0/1 done (Decision+Red).** Green next |
 | issues  | New `run_ux_*` fails `run_ux_gate` until Green — expected for Red. Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107b Green — `save_demo_session` uses `workspace_session_from_tabs` on live tabs, no dump; scenario green; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107b Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Green §107b: added `workspace_session_save_tabs`; `save_demo_session` uses it (original paths); deleted `dump_tab_file`. Scenario calls same helper → `ux_ok`. Retargeted `run_ux_demo_save_no_double_stringify_stable.sh` (assert no dump / 0 flatten). Unused save/dump imports removed from `demo_live` |
+| verify  | `run_ux_session_restores_original_paths` ok; `demo_save_no_double_stringify_stable` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 117/117 |
+| result  | **§107b STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107b — independent rebuild+rerun; sabotages: (1) reintroduce dump into session save, (2) rewrite one restored path to `editor_live_*`; `run_ux_gate` ×2; close §107b → §107c Decision) |

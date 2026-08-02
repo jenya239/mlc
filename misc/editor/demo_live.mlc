@@ -122,11 +122,9 @@ import {
   tab_set_activate_prev
 } from './workspace/tab_cycle'
 import {
-  workspace_session_from_tabs,
-  workspace_session_save,
+  workspace_session_save_tabs,
   workspace_session_load,
   workspace_session_restore_tabs,
-  workspace_session_set_active_view,
   workspace_session_clamped_active_view,
   SessionActiveView
 } from './workspace/session'
@@ -157,14 +155,11 @@ import {
 } from './commands/bus'
 import {
   open_buffer_set_document,
-  open_buffer_from_text,
   open_buffer_from_path,
-  open_buffer_has_error,
-  open_buffer_save
+  open_buffer_has_error
 } from './document/save'
 import {
   TextDocument,
-  document_to_string,
   document_from_string
 } from './document/piece_table'
 import { glfw_gl_context_wait_events_timeout } from './ui/gl_idle'
@@ -604,45 +599,20 @@ end
 fn toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
   editor_app_toolbar_button_rect(index, bar_y)
 
-fn dump_tab_file(path: string, text: string) -> string = do
-  let mut file_name = "buffer.txt"
-  if path.ends_with("main.mlc") then
-    file_name = "main.mlc"
-  else if path.ends_with("README.md") then
-    file_name = "README.md"
-  else if path.ends_with("notes.txt") then
-    file_name = "notes.txt"
-  end
-  const out_path = ".tmp/editor_live_" + file_name
-  let mut buffer = open_buffer_from_text(out_path, text)
-  buffer = open_buffer_save(buffer)
-  out_path
-end
-
 fn save_demo_session(
   tabs: TabSet,
   caret: i32,
   scroll_offset_y: i32,
   scroll_offset_x: i32
 ) -> i32 = do
-  let mut saved = tab_set_new()
-  let mut index = 0
-  while index < tab_set_count(tabs) do
-    const tab = tabs.tabs[index]
-    const text = document_to_string(tab.buffer.document)
-    const out_path = dump_tab_file(tab.path, text)
-    saved = tab_set_open(saved, out_path, text)
-    index = index + 1
-  end
-  if tab_set_count(saved) == 0 then
-    return 0
-  end
-  saved = tab_set_set_active(saved, tabs.active_index)
-  let mut session = workspace_session_from_tabs(".tmp", saved)
-  session = workspace_session_set_active_view(
-    session, caret, scroll_offset_y, scroll_offset_x
-  )
-  if workspace_session_save(session_path(), session) then
+  if workspace_session_save_tabs(
+    session_path(),
+    ".tmp",
+    tabs,
+    caret,
+    scroll_offset_y,
+    scroll_offset_x
+  ) then
     return 1
   end
   0
