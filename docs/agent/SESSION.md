@@ -169,3 +169,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107d STEP=0/1 done (Decision+Red).** Green next |
 | issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107d Green — wire PERF_FULL without skips; emit `demo_live_perf_full`; measure then write TOTAL_US_MAX; baseline smoke still green; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107d Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Green §107d: `perf_full_enabled` / `perf_skip_heavy`; wrap/spans/minimap live under `MLC_EDITOR_PERF_FULL`; `editor_perf_format_demo_live_full`; smoke defaults 10k×5 (100k full path too slow for a gate); measured `total_us=7336543` → `TOTAL_US_MAX=20000000` |
+| verify  | full smoke ok; baseline smoke ok (`total_us=476215`); `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118 |
+| result  | **§107d STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Decision amended: FULL fixture 10k/5 not 100k/30 — honest tractability note in track. Prompt INSTRUCTIONS_REV stale; followed CONTINUITY |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107d — independent rebuild+rerun; sabotages: (1) skip under PERF_FULL, (2) wrong tag; `run_ux_gate` ×2; close §107d → §107e Decision) |

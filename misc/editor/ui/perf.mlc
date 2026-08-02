@@ -73,3 +73,10 @@ export fn editor_perf_format_demo_live_terminal(counters: EditorPerfCounters) ->
     + " layout_us=" + counters.layout_us.to_string()
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
+
+// TRACK_EDITOR_HYGIENE §107d — full path (no skip branches), distinct tag.
+export fn editor_perf_format_demo_live_full(counters: EditorPerfCounters) -> string =
+  "[mlc-editor] demo_live_perf_full frames=" + counters.frames.to_string()
+    + " layout_us=" + counters.layout_us.to_string()
+    + " draw_us=" + counters.draw_us.to_string()
+    + " total_us=" + counters.total_us.to_string()

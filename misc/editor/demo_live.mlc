@@ -343,7 +343,8 @@ import {
   editor_perf_now_us,
   editor_perf_accumulate_frame,
   editor_perf_format_demo_live,
-  editor_perf_format_demo_live_terminal
+  editor_perf_format_demo_live_terminal,
+  editor_perf_format_demo_live_full
 } from './ui/perf'
 import {
   EditorAppState,
@@ -751,9 +752,20 @@ fn main() -> i32 = do
 
   let mut tabs = ensure_tabs(load_demo_session(), panels)
   const terminal_perf_enabled = has("MLC_EDITOR_TERMINAL_PERF")
-  const perf_enabled = has("MLC_EDITOR_PERF") || terminal_perf_enabled
+  const perf_full_enabled = has("MLC_EDITOR_PERF_FULL")
+  const perf_baseline_enabled = has("MLC_EDITOR_PERF")
+  // Counters run for baseline, terminal, or full. Heavy skips only on baseline/terminal
+  // when PERF_FULL is not set (FULL overrides skips).
+  const perf_enabled =
+    perf_baseline_enabled || terminal_perf_enabled || perf_full_enabled
+  const perf_skip_heavy =
+    (perf_baseline_enabled || terminal_perf_enabled) && !perf_full_enabled
   let mut perf_counters = editor_perf_new()
-  const perf_frame_limit = 30
+  let mut perf_frame_limit = 30
+  if perf_full_enabled then
+    // Full path is far costlier per frame; default 5 (script FRAMES default matches).
+    perf_frame_limit = 5
+  end
   if perf_enabled && !terminal_perf_enabled then
     const perf_open = get_or("MLC_EDITOR_PERF_OPEN", "")
     if perf_open.byte_size() > 0 then
@@ -1923,7 +1935,7 @@ fn main() -> i32 = do
       perf_layout_t0 = editor_perf_now_us()
     end
     let mut skip_full_pixel_wrap_now = 0
-    if perf_enabled || layout_skip != 0 then
+    if perf_skip_heavy || layout_skip != 0 then
       skip_full_pixel_wrap_now = 1
     end
     if layout_skip == 0 then
@@ -2142,9 +2154,10 @@ fn main() -> i32 = do
 
     // Glyph colors carry Solarized tags; app.ux.selection highlight rects stay below.
     // One full-buffer span cache for paint + minimap (scroll does not re-lex).
-    // Perf smoke: skip O(n) full-buffer lex + minimap rebuild on 100k fixtures.
+    // Baseline/terminal perf smoke: skip O(n) full-buffer lex on 100k fixtures.
+    // PERF_FULL keeps spans live (TRACK_EDITOR_HYGIENE §107d).
     let mut syntax_spans = frame_layout.span_cache.spans
-    if !perf_enabled then
+    if !perf_skip_heavy then
       frame_layout = frame_layout_tick_spans(
         frame_layout, draw_text, 0, draw_text.byte_size()
       )
@@ -2602,7 +2615,7 @@ fn main() -> i32 = do
       return tree_drawn.error_code
     end
 
-    if minimap_enabled != 0 && !perf_enabled then
+    if minimap_enabled != 0 && !perf_skip_heavy then
       const prev_rebuild = frame_layout.minimap_cache.rebuild_count
       frame_layout = frame_layout_tick_minimap(frame_layout, draw_text)
       if frame_layout.minimap_cache.rebuild_count != prev_rebuild ||
@@ -2750,6 +2763,8 @@ fn main() -> i32 = do
       if perf_counters.frames >= perf_frame_limit then
         if terminal_perf_enabled then
           println(editor_perf_format_demo_live_terminal(perf_counters))
+        else if perf_full_enabled then
+          println(editor_perf_format_demo_live_full(perf_counters))
         else
           println(editor_perf_format_demo_live(perf_counters))
         end

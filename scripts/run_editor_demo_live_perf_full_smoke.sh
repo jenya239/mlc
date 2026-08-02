@@ -10,11 +10,15 @@ DEMO="$ROOT_DIR/misc/editor/demo_live.mlc"
 OUT_DIR="${EDITOR_DEMO_LIVE_PERF_FULL_OUT:-$ROOT_DIR/tmp/editor_demo_live_perf_full_compile}"
 BIN_OUT="$OUT_DIR/bin"
 FIX_DIR="$ROOT_DIR/tmp/editor_demo_live_perf_full"
-FIX_FILE="$FIX_DIR/perf_100k.txt"
-LINES="${MLC_EDITOR_PERF_LINES:-100000}"
-FRAMES="${MLC_EDITOR_PERF_FRAMES:-30}"
-# Ceiling written at Green after first honest measurement (0 = not yet set).
-TOTAL_US_MAX="${MLC_EDITOR_PERF_FULL_TOTAL_US_MAX:-0}"
+FIX_FILE="$FIX_DIR/perf_full.txt"
+# Full wrap+spans+minimap on 100k is multi-minute/frame; 10k still exercises the
+# real path while remaining a usable gate (baseline smoke keeps 100k + skips).
+LINES="${MLC_EDITOR_PERF_LINES:-10000}"
+# Full path is far costlier per frame; default 5 (baseline keeps 30).
+FRAMES="${MLC_EDITOR_PERF_FRAMES:-5}"
+# Ceiling: measured 2026-08-03 Green total_us=7336543 / 5 frames on 10k-line
+# fixture (wrap+spans+minimap live). ~2.7× headroom against machine noise.
+TOTAL_US_MAX="${MLC_EDITOR_PERF_FULL_TOTAL_US_MAX:-20000000}"
 
 if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists glfw3; then
   echo "[editor demo_live_perf_full] SKIP: glfw3 not found (pkg-config)" >&2
@@ -71,8 +75,9 @@ if [ ! -x "$BIN_OUT" ]; then
 fi
 
 set +e
-output=$("$BIN_OUT" 2>&1)
-status=$?
+# Stream so long first-frame 100k open is visible (do not buffer until exit).
+output=$("$BIN_OUT" 2>&1 | tee /dev/stderr)
+status=${PIPESTATUS[0]}
 set -e
 printf '%s\n' "$output"
 if [ "$status" -ne 0 ]; then
