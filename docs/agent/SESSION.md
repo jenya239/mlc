@@ -109,3 +109,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107b CLOSED.** Advances to §107c |
 | issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP` — freeze Decision; red: deep-scroll / prefix-jump gate must fail on today's O(document) collect from line 0) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107c Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107c Decision (`collect_visible_visual_rows_pixel_budget_cached` + prefix jump; `lines_shaped <= max_rows+2` gate; fall back when prefix short). Red: diag + stub cached collect ignores prefix; scenario `visible_rows_prefix_jump.mlc` + `scripts/run_ux_visible_rows_prefix_jump.sh` |
+| verify  | `bash scripts/run_ux_visible_rows_prefix_jump.sh` → FAIL exit 1 / scenario exit 4 `ux_fail visible_rows_prefix_jump lines_shaped` |
+| result  | **§107c STEP=0/1 done (Decision+Red).** Green next |
+| issues  | New `run_ux_*` fails `run_ux_gate` until Green — expected. Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107c Green — prefix jump in cached collect; wire demo_live; scenario green; optional deep-scroll ceiling after measure; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |

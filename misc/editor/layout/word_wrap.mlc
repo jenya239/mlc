@@ -416,10 +416,30 @@ export fn collect_visible_visual_rows_pixel_budget(
   pixel_size: i32,
   first_visual_row: i32,
   max_rows: i32
-) -> [VisualRow] = do
+) -> [VisualRow] =
+  collect_visible_visual_rows_pixel_budget_diag(
+    text, line_index, viewport_width_px, font_path, pixel_size,
+    first_visual_row, max_rows
+  ).rows
+
+export type CollectVisibleDiag = {
+  rows: [VisualRow],
+  lines_shaped: i32
+}
+
+fn collect_visible_visual_rows_pixel_budget_diag(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  first_visual_row: i32,
+  max_rows: i32
+) -> CollectVisibleDiag = do
   let mut out: [VisualRow] = []
+  let mut lines_shaped = 0
   if max_rows <= 0 then
-    return out
+    return CollectVisibleDiag { rows: out, lines_shaped: 0 }
   end
   let mut visual = 0
   let mut line = 0
@@ -432,6 +452,7 @@ export fn collect_visible_visual_rows_pixel_budget(
     const rows = visual_rows_for_line_pixel_budget(
       text, line_index, line, viewport_width_px, font_path, pixel_size
     )
+    lines_shaped = lines_shaped + 1
     let mut row_index = 0
     while row_index < rows.length() && out.length() < max_rows do
       if visual >= first then
@@ -442,7 +463,28 @@ export fn collect_visible_visual_rows_pixel_budget(
     end
     line = line + 1
   end
-  out
+  CollectVisibleDiag { rows: out, lines_shaped: lines_shaped }
+end
+
+// §107c RED stub: accepts prefix_visual_rows but ignores it (today's O(document)
+// walk from line 0). Green replaces the body with a prefix jump.
+export fn collect_visible_visual_rows_pixel_budget_cached(
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  prefix_visual_rows: [i32],
+  first_visual_row: i32,
+  max_rows: i32
+) -> CollectVisibleDiag = do
+  if prefix_visual_rows.length() < 0 then
+    return CollectVisibleDiag { rows: [], lines_shaped: 0 }
+  end
+  collect_visible_visual_rows_pixel_budget_diag(
+    text, line_index, viewport_width_px, font_path, pixel_size,
+    first_visual_row, max_rows
+  )
 end
 
 export fn visual_row_index_for_caret_pixel_budget(

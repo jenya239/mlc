@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a/§107b **CLOSED**; queue head **§107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP`** (Driver STEP=0)
+## Status: **open** 2026-08-01 — §107a/§107b **CLOSED**; §107c Decision+Red in progress (Driver STEP=1 done / STEP=2 Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -142,12 +142,27 @@ Sabotages distinct from Driver (both on `workspace_session_save_tabs`, then
 
 ## §107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP` (EHA-03)
 
+### Decision (frozen 2026-08-03)
+
 | Item | Choice |
 |------|--------|
-| Problem | `collect_visible_visual_rows_pixel_budget` (`layout/word_wrap.mlc`) loops `while line < count` from line 0, shaping every line via `visual_rows_for_line_pixel_budget` → `text_shaping_shape`, and ignores `prefix_visual_rows` built by §101 (`DocumentWrapCountCache`). Scrolling into the middle of a 100k-line file re-shapes every preceding line **every frame** |
-| Fix | Extend the collector to take the prefix table and binary-search / index directly to the first visible line, shaping only the visible window; fall back to the existing walk when the prefix table does not cover the requested line (same fallback shape §101 already established for the caret) |
-| Gate | Extend `scripts/run_editor_demo_live_perf_smoke.sh` (or a sibling deep-scroll smoke): scroll to ~90% of the 100k-line fixture and assert a documented `total_us` ceiling measured **after** the fix, honestly (no guessed budget). Plus a correctness scenario: cached-jump rows == uncached-walk rows at top / middle / last line and across the fallback path |
-| Note | The existing smoke only scrolls ~90 lines, which is why this never showed up |
+| Problem | `collect_visible_visual_rows_pixel_budget` walks `line` from 0 every frame, shaping via `visual_rows_for_line_pixel_budget` → `text_shaping_shape`, and ignores `prefix_visual_rows` already built by §101 (`DocumentWrapCountCache`). Deep scroll re-shapes every preceding line |
+| Fix | Add `collect_visible_visual_rows_pixel_budget_cached(..., prefix_visual_rows, ...)` that finds the first document line whose prefix covers `first_visual_row` and shapes only from that line through the visible window; fall back to the uncached walk when `prefix_visual_rows` is empty or too short (same fallback shape as §101 caret). Wire call sites in `demo_live` that already hold the wrap-count cache |
+| Module touch | `misc/editor/layout/word_wrap.mlc`, `misc/editor/demo_live.mlc` (wire at Green), `misc/editor/ux_scenarios/visible_rows_prefix_jump.mlc`, `scripts/run_ux_visible_rows_prefix_jump.sh`; deep-scroll ceiling may extend `run_editor_demo_live_perf_smoke.sh` at Green after measure |
+| Gate | `run_ux_visible_rows_prefix_jump`: ≥80-line fixture, warm `prefix_visual_rows`, deep `first_visual_row`; assert cached rows == uncached rows; with covering prefix assert `lines_shaped <= max_rows + 2`; empty-prefix fallback rows still match uncached |
+| Sabotage (required before close) | (1) ignore prefix in cached collect → `lines_shaped` bound fails; (2) force wrong jump line → `rows_mismatch` |
+| Perf add-on | Deep-scroll (~90% of 100k) ceiling measured then written at Green (not guessed); full-path mode stays §107d |
+| REG | no |
+| Out of scope | §107j (triple collect → single); §107d full perf mode; changing wrap-cache invalidation (§107e) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: cached collect ignores prefix; `lines_shaped` bound fails | **done** 2026-08-03 — stub `collect_visible_visual_rows_pixel_budget_cached` walks from line 0; `ux_fail … lines_shaped` |
+| 2 | Green: prefix jump + demo_live wire; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ---
 

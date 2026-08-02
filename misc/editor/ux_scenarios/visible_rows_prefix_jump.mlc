@@ -1,0 +1,113 @@
+// TRACK_EDITOR_HYGIENE §107c — visible-row collect must jump via prefix_visual_rows.
+// RED: cached collect ignores prefix → lines_shaped walks from line 0.
+import { line_index_from_string } from '../document/line_index'
+import { editor_resolve_font_path } from '../config/font_path'
+import {
+  VisualRow,
+  collect_visible_visual_rows_pixel_budget,
+  collect_visible_visual_rows_pixel_budget_cached
+} from '../layout/word_wrap'
+import {
+  wrap_count_cache_new_pixel
+} from '../layout/wrap_cache'
+
+fn build_fixture(line_count: i32) -> string = do
+  let mut body = ""
+  let mut line = 0
+  while line < line_count do
+    body = body + "line_" + line.to_string() + " abcdefghijklmnopqrstuvwxyz0123456789\n"
+    line = line + 1
+  end
+  body
+end
+
+fn rows_equal(left: [VisualRow], right: [VisualRow]) -> bool = do
+  if left.length() != right.length() then
+    return false
+  end
+  let mut index = 0
+  while index < left.length() do
+    const a = left[index]
+    const b = right[index]
+    if a.doc_line != b.doc_line then
+      return false
+    end
+    if a.byte_start != b.byte_start then
+      return false
+    end
+    if a.byte_end != b.byte_end then
+      return false
+    end
+    if a.column_start != b.column_start then
+      return false
+    end
+    if a.column_end != b.column_end then
+      return false
+    end
+    if a.is_wrap_continue != b.is_wrap_continue then
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn main() -> i32 = do
+  const font_path = editor_resolve_font_path("")
+  const pixel_size = 13
+  const fixture = build_fixture(80)
+  const line_index = line_index_from_string(fixture)
+  const viewport_width_px = 220
+  const max_rows = 12
+
+  const cache = wrap_count_cache_new_pixel(
+    fixture, line_index, viewport_width_px, font_path, pixel_size
+  )
+  if cache.prefix_visual_rows.length() < 40 then
+    println("ux_fail visible_rows_prefix_jump prefix_short")
+    return 1
+  end
+
+  // Mid-document first visual row (prefix[i] = visual rows before line i).
+  const mid_line = 40
+  const first_visual = cache.prefix_visual_rows[mid_line]
+  if first_visual < max_rows then
+    println("ux_fail visible_rows_prefix_jump first_visual_too_small")
+    return 2
+  end
+
+  const expected = collect_visible_visual_rows_pixel_budget(
+    fixture, line_index, viewport_width_px, font_path, pixel_size,
+    first_visual, max_rows
+  )
+  const actual = collect_visible_visual_rows_pixel_budget_cached(
+    fixture, line_index, viewport_width_px, font_path, pixel_size,
+    cache.prefix_visual_rows, first_visual, max_rows
+  )
+
+  if !rows_equal(expected, actual.rows) then
+    println("ux_fail visible_rows_prefix_jump rows_mismatch")
+    return 3
+  end
+
+  // With a covering prefix, jump must not reshape every preceding line.
+  const shape_budget = max_rows + 2
+  if actual.lines_shaped > shape_budget then
+    println("ux_fail visible_rows_prefix_jump lines_shaped")
+    return 4
+  end
+
+  // Empty prefix → fallback walk must still match uncached rows.
+  const empty_prefix: [i32] = []
+  const fallback = collect_visible_visual_rows_pixel_budget_cached(
+    fixture, line_index, viewport_width_px, font_path, pixel_size,
+    empty_prefix, first_visual, max_rows
+  )
+  if !rows_equal(expected, fallback.rows) then
+    println("ux_fail visible_rows_prefix_jump fallback_mismatch")
+    return 5
+  end
+
+  println("ux_ok visible_rows_prefix_jump")
+  0
+end
