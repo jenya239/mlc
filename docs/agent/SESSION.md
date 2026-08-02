@@ -581,3 +581,18 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | result  | **§107a STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; CONTINUITY/SESSION use 2026-08-01-editor-hygiene-queue — followed CONTINUITY |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107a — independent rebuild+rerun of save scenario; sabotages: (1) dump/session path instead of open_buffer_save, (2) no-op open_buffer_save success; `run_ux_gate` ×2; close §107a → §107b Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107a close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107a Green `03179bcc`. Fresh scenario rebuild in `.tmp/critic_107a_save`: `ux_ok`. Sabotages (Decision-required, distinct): (1) `editor_app_save_active_buffer` dumps `.tmp/editor_live_save_red.txt` → `disk_content` exit 5; (2) `open_buffer_save` no-op clears dirty without write → `disk_content` exit 5; both reverted (`git checkout` clean). `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 116/116. Closed §107a |
+| verify  | critic scenario ok; sabotages 5/5; ux gate ×2 116/116; track files clean after revert |
+| result  | **§107a CLOSED.** Advances to §107b |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107b `EDITOR_SESSION_ORIGINAL_PATHS` — read track §107b; freeze Decision; red: session restore must fail on today's tree when paths are `.tmp/editor_live_*` copies / tab loss) |
