@@ -5,8 +5,8 @@ Parent: [../PLAN.md](../PLAN.md) §102. Authorized 2026-07-28 (user request: "м
 architecture, testing — every sub-track below carries an explicit gate, no
 sub-track is "done" without one.
 
-## Status: **open** — §102a/§102b/§102c/§102d/§102e/§102f all **CLOSED**, Critic-audited.
-§102g `TERMINAL_PERF_BUDGET` Driver red+green done — Critic next.
+## Status: **closed** 2026-07-31 — §102a–§102g all **CLOSED**, Critic-audited.
+Epic complete. Queue after 2026-08-01 docs sync: **§107a** (hygiene), then §103a.
 
 ## §102g Decision (frozen 2026-07-31)
 
@@ -42,6 +42,28 @@ Measured on this machine (30 frames, `MLC_GLFW_VISIBLE=0`):
 - Phase B terminal flood: `demo_live_terminal_perf frames=30 layout_us=200 draw_us=174832 total_us=735662` (rerun `445671`) — ceiling **`TERM_TOTAL_US_MAX=2000000`** (~2.7× first baseline).
 
 `scripts/run_editor_terminal_perf_smoke.sh`: `ux_ok terminal_perf`. Spot-check `run_ux_terminal_panel_type_sees_output.sh` still `ok`. No `compiler/**` `.mlc` / no `lib/mlc/**`.
+
+## §102g Critic (closed 2026-07-31)
+
+Independent re-audit, separate out dir `.tmp/critic_102g/`:
+- `git show --stat 44b66105`: exactly Decision touch list
+  (`demo_live.mlc`/`ui/perf.mlc`/`run_editor_terminal_perf_smoke.sh` + docs) —
+  no stray file.
+- Independent full smoke rebuild+rerun: doc `total_us=521074` /
+  term `total_us=677933` — both under documented ceilings; `ux_ok`.
+- Sabotages distinct from Driver: (1) `DOC_TOTAL_US_MAX=1` fails on real
+  doc total; (2) `TERM_TOTAL_US_MAX=1` fails on real term total; (3) missing
+  `demo_live_terminal_perf` tag fails Phase B parse; (4) source mutation of
+  the tag string to `demo_live_terminal_sabotaged` + rebuild — only sabotaged
+  tag emitted, gate would miss Phase B; reverted (`perf.mlc` clean).
+- `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 115/115 (clean env).
+- Notes (non-blocking, not false-done of budgets): Decision prose says
+  `N=MLC_EDITOR_PERF_FRAMES` but `demo_live` still hardcodes `30` (same
+  pre-existing §97a shape — script default matches); Phase A is
+  terminal-tab-not-open (feature linked in binary), not open-but-unfocused.
+
+**§102g CLOSED. TRACK_EDITOR_TERMINAL (§102) epic CLOSED.** No production
+defect. (Queue pointer updated 2026-08-01: next is **§107a**, then §103a.)
 
 ## §102f Decision (frozen 2026-07-31)
 
