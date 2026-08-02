@@ -94,3 +94,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107b STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107b — independent rebuild+rerun; sabotages: (1) reintroduce dump into session save, (2) rewrite one restored path to `editor_live_*`; `run_ux_gate` ×2; close §107b → §107c Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107b close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107b Green `4de554f8`. Fresh scenario rebuild `.tmp/critic_107b_session`: `ux_ok`. Sabotages on `workspace_session_save_tabs`: (1) all paths → `.tmp/editor_live_buffer.txt` → `count` exit 6; (2) first path → `.tmp/editor_live_sabotage.txt` → `editor_live_path` exit 7; both reverted (`git checkout` clean). `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 117/117. Closed §107b |
+| verify  | critic scenario ok; sabotages 6/7; ux gate ×2 117/117; session.mlc clean after revert |
+| result  | **§107b CLOSED.** Advances to §107c |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP` — freeze Decision; red: deep-scroll / prefix-jump gate must fail on today's O(document) collect from line 0) |

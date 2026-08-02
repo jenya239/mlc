@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a **CLOSED**; §107b Green done (awaiting Critic STEP=3)
+## Status: **open** 2026-08-01 — §107a/§107b **CLOSED**; queue head **§107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP`** (Driver STEP=0)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -123,7 +123,20 @@ restore: `ux_ok`.
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: scenario fails on today's dump-based `save_demo_session` | **done** 2026-08-03 — two `.txt` fixtures collide to `.tmp/editor_live_buffer.txt`; restore loses a tab / paths are `editor_live_*` |
 | 2 | Green: remove dump from session save; scenario green; `run_ux_gate` ×2; `dev_gate_fast` | **done** 2026-08-03 — `workspace_session_save_tabs` + `save_demo_session` no dump; `dump_tab_file` deleted; scenario `ux_ok`; `demo_save_no_double_stringify_stable` retargeted (0 flatten); `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 117/117 |
-| 3 | Critic | pending |
+| 3 | Critic: independent rebuild + rerun, own sabotages, gate ×2 | **done** 2026-08-03 — see Critic section below |
+
+### §107b Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `4de554f8`. Separate out dir
+`.tmp/critic_107b_session`: `ux_ok session_restores_original_paths`.
+Sabotages distinct from Driver (both on `workspace_session_save_tabs`, then
+`git checkout` clean):
+1. Collapse all session paths to `.tmp/editor_live_buffer.txt` → `count` exit 6.
+2. Rewrite first path to `.tmp/editor_live_sabotage.txt` → `editor_live_path` exit 7.
+`dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 117/117. Final rebuild after restore:
+`ux_ok`.
+
+**§107b CLOSED.** Next: §107c `EDITOR_VISIBLE_ROWS_PREFIX_JUMP`.
 
 ---
 
