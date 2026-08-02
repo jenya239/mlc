@@ -184,3 +184,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107d STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | Decision amended: FULL fixture 10k/5 not 100k/30 — honest tractability note in track. Prompt INSTRUCTIONS_REV stale; followed CONTINUITY |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107d — independent rebuild+rerun; sabotages: (1) skip under PERF_FULL, (2) wrong tag; `run_ux_gate` ×2; close §107d → §107e Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107d close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107d Green `7b8bf74c`. Fresh `.tmp/critic_107d_full`: `ux_ok` (`total_us=7417390`). Added permanent `perf_full_enabled && perf_skip_heavy → return 1` invariant (Green left sabotage (1) undetectable). Sabotages: (1) force skip → FAIL+exit 1; (2) baseline tag → missing-tag fail; both reverted (invariant kept). Final `.tmp/critic_107d_final`: `ux_ok` (`total_us=7206786`). Closed §107d |
+| verify  | final smoke ok; sabotages exit 1 / missing-tag; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118 |
+| result  | **§107d CLOSED.** Advances to §107e |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107e `EDITOR_DOCUMENT_VERSION` — freeze Decision; red: versioned cache keys absent / full-text compares still fire) |

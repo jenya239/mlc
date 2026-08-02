@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a/§107b/§107c **CLOSED**; §107d Green done (awaiting Critic STEP=3)
+## Status: **open** 2026-08-03 — §107a/§107b/§107c/§107d **CLOSED**; §107e Decision next (Driver STEP=0)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -199,7 +199,22 @@ Sabotages on `collect_visible_visual_rows_pixel_budget_cached` (then
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: full smoke fails — `MLC_EDITOR_PERF_FULL` / `demo_live_perf_full` absent | **done** 2026-08-03 — `run_editor_demo_live_perf_full_smoke.sh` exits non-zero |
 | 2 | Green: wire PERF_FULL (no skips); measure then write `TOTAL_US_MAX`; baseline + full green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `perf_skip_heavy` vs `perf_full_enabled`; tag `demo_live_perf_full`; measured `total_us=7336543` (10k×5) → `TOTAL_US_MAX=20000000`; baseline smoke ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107d Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `7b8bf74c`. Separate out dir
+`.tmp/critic_107d_full`: `ux_ok demo_live_perf_full` (`total_us=7417390`).
+Green left sabotage (1) undetectable by smoke alone (skip still prints the
+full tag under ceiling) — Critic added permanent invariant in `demo_live.mlc`:
+`if perf_full_enabled && perf_skip_heavy then return 1`. Sabotages (then
+`git`/source restore of the skip/tag only; invariant kept):
+1. Force `perf_skip_heavy = true` → FAIL message + binary exit 1.
+2. Print `editor_perf_format_demo_live` under FULL → missing-tag fail.
+Final rebuild `.tmp/critic_107d_final`: `ux_ok` (`total_us=7206786`).
+`dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 118/118.
+
+**§107d CLOSED.** Next: §107e `EDITOR_DOCUMENT_VERSION`.
 
 ---
 

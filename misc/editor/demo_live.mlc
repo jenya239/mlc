@@ -760,6 +760,11 @@ fn main() -> i32 = do
     perf_baseline_enabled || terminal_perf_enabled || perf_full_enabled
   const perf_skip_heavy =
     (perf_baseline_enabled || terminal_perf_enabled) && !perf_full_enabled
+  // §107d: PERF_FULL must not take the skip-heavy path (Critic sabotage (1)).
+  if perf_full_enabled && perf_skip_heavy then
+    println("[mlc-editor] FAIL: MLC_EDITOR_PERF_FULL still skips heavy path")
+    return 1
+  end
   let mut perf_counters = editor_perf_new()
   let mut perf_frame_limit = 30
   if perf_full_enabled then
