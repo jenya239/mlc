@@ -4,6 +4,7 @@ export type FocusTarget = FocusTree | FocusEditor
 
 export type CommandId =
   | CmdSave
+  | CmdSaveSession
   | CmdUndo
   | CmdRedo
   | CmdCopy
@@ -55,6 +56,7 @@ export fn key_chord(ctrl: i32, shift: i32, alt: i32, key: string) -> KeyChord =
 export fn command_id_tag(command: CommandId) -> string =
   match command
   | CmdSave => "save"
+  | CmdSaveSession => "save_session"
   | CmdUndo => "undo"
   | CmdRedo => "redo"
   | CmdCopy => "copy"
@@ -108,6 +110,7 @@ export fn command_bus_default_bindings() -> [KeyBinding] = do
   let mut bindings: [KeyBinding] = []
   // editor-only
   bindings.push(binding(1, 0, 0, "s", CmdSave, 0, 1))
+  bindings.push(binding(1, 1, 0, "s", CmdSaveSession, 0, 1))
   bindings.push(binding(1, 0, 0, "z", CmdUndo, 0, 1))
   bindings.push(binding(1, 1, 0, "z", CmdRedo, 0, 1))
   bindings.push(binding(1, 0, 0, "y", CmdRedo, 0, 1))

@@ -37,14 +37,13 @@ import {
   tab_set_active,
   tab_set_count,
   tab_set_set_active,
-  tab_set_open
+  tab_set_open,
+  tab_set_update_active_buffer
 } from '../workspace/tabs'
 import {
-  open_buffer_from_text,
   open_buffer_save,
   open_buffer_has_error
 } from '../document/save'
-import { document_to_string } from '../document/piece_table'
 import {
   EditorSelection,
   selection_collapsed
@@ -310,31 +309,24 @@ end
 export fn editor_app_close_terminal(app: EditorAppState) -> EditorAppState =
   editor_app_set_terminal(app, terminal_panel_session_close(app.terminal))
 
-// TRACK_EDITOR_HYGIENE §107a — CmdSave path.
-// RED stub (2026-08-02): still mirrors the product bug — writes
-// `.tmp/editor_live_*` and leaves the original path / dirty flag untouched.
-// Green replaces the body with open_buffer_save on the active buffer path.
+// TRACK_EDITOR_HYGIENE §107a — CmdSave writes the active buffer to its
+// original path (not `.tmp/editor_live_*` session dumps).
 export fn editor_app_save_active_buffer(app: EditorAppState) -> EditorAppState = do
   if !tab_set_has_active(app.ux.tabs) then
     return editor_app_set_last_command(app, "save_fail")
   end
   const active = tab_set_active(app.ux.tabs)
-  const text = document_to_string(active.buffer.document)
-  let mut file_name = "buffer.txt"
-  if active.path.ends_with(".mlc") then
-    file_name = "save_red.mlc"
-  else if active.path.ends_with(".md") then
-    file_name = "save_red.md"
-  else if active.path.ends_with(".txt") then
-    file_name = "save_red.txt"
+  if terminal_panel_is_tab_path(active.path) then
+    return editor_app_set_last_command(app, "save_fail")
   end
-  const out_path = ".tmp/editor_live_" + file_name
-  let mut dump = open_buffer_from_text(out_path, text)
-  dump = open_buffer_save(dump)
-  if open_buffer_has_error(dump) then
-    return editor_app_set_last_command(app, "session_save_fail")
+  const saved = open_buffer_save(active.buffer)
+  let mut next = editor_app_set_tabs(
+    app, tab_set_update_active_buffer(app.ux.tabs, saved)
+  )
+  if open_buffer_has_error(saved) then
+    return editor_app_set_last_command(next, "save_fail")
   end
-  editor_app_set_last_command(app, "session_save")
+  editor_app_set_last_command(next, "save")
 end
 
 export fn editor_app_terminal_tab_active(app: EditorAppState) -> bool =

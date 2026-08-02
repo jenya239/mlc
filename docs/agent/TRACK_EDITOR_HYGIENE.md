@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — queue head is **§107a `EDITOR_SAVE_ACTIVE_FILE`** (Driver STEP=1 Red done / STEP=2 Green next)
+## Status: **open** 2026-08-01 — queue head is **§107a `EDITOR_SAVE_ACTIVE_FILE`** (Driver Green done / Critic next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -83,7 +83,7 @@ only if `lib/mlc/**` is touched. Critic must re-verify independently (fresh
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-02 |
 | 1 | Red: new scenario fails on today's tree (disk content unchanged after save path) | **done** 2026-08-02 — stub `editor_app_save_active_buffer` still dumps `.tmp/editor_live_*` (CmdSave bug shape); `run_ux_save_writes_file_to_disk.sh` exits non-zero (`ux_fail … disk_content`) |
-| 2 | Green: `CmdSave` → active-buffer save; `CmdSaveSession` split out; scenario green; `run_ux_gate.sh` ×2; `dev_gate_fast.sh` | pending |
+| 2 | Green: `CmdSave` → active-buffer save; `CmdSaveSession` split out; scenario green; `run_ux_gate.sh` ×2; `dev_gate_fast.sh` | **done** 2026-08-02 — `editor_app_save_active_buffer` → `open_buffer_save` + `tab_set_update_active_buffer`; `CmdSaveSession` (Ctrl+Shift+S + toolbar tool 9); `CmdSave` (Ctrl+S) wires live path; `run_ux_save_writes_file_to_disk` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 116/116 |
 | 3 | Critic: independent rebuild + rerun, own sabotages, gate ×2 | pending |
 
 ---

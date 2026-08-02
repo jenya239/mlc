@@ -12,7 +12,8 @@ import {
   CmdNextTab,
   CmdPrevTab,
   CmdNone,
-  CmdSave
+  CmdSave,
+  CmdSaveSession
 } from '../commands/bus'
 
 export fn editor_app_line_height() -> i32 = 14
@@ -54,7 +55,7 @@ export fn editor_app_toolbar_command_at(tool: i32) -> CommandId = do
     return CmdPaste
   end
   if tool == 9 then
-    return CmdSave
+    return CmdSaveSession
   end
   CmdNone
 end

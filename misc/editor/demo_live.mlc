@@ -151,6 +151,7 @@ import {
   CmdOpenTerminal,
   CmdNone,
   CmdSave,
+  CmdSaveSession,
   command_id_tag,
   command_bus_default_bindings
 } from './commands/bus'
@@ -388,7 +389,8 @@ import {
   editor_app_close_terminal,
   editor_app_terminal_tab_active,
   editor_app_terminal_frame,
-  editor_app_terminal_drain
+  editor_app_terminal_drain,
+  editor_app_save_active_buffer
 } from './app/state'
 import {
   terminal_grid_text_lines,
@@ -1735,6 +1737,17 @@ fn main() -> i32 = do
             app = editor_app_set_selection(app, paste_result.selection)
           end
         | CmdSave => do
+            app = editor_app_save_active_buffer(app)
+            if tab_set_has_active(app.ux.tabs) then
+              active = tab_set_active(app.ux.tabs)
+              document = active.buffer.document
+              frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+              frame = frame_layout.snapshot_cache.snapshot
+              line_index = frame.line_index
+              draw_text = frame.text
+            end
+          end
+        | CmdSaveSession => do
             if save_demo_session(
               app.ux.tabs,
               selection_caret(app.ux.selection),

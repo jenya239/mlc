@@ -566,3 +566,18 @@ Turns before 2026-07-30 (§104-12 slice 5 Critic close) archived — see [../arc
 | result  | **§107a STEP=0/1 done (Decision+Red).** Green next |
 | issues  | New `run_ux_*` script will fail `run_ux_gate` until Green — expected for Red |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107a Green — replace stub with `open_buffer_save` on active path + clear dirty; wire `CmdSave`/`CmdSaveSession` in `demo_live`+`bus.mlc`; scenario green; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-02 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107a Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-02 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Green §107a: `editor_app_save_active_buffer` → `open_buffer_save` + `tab_set_update_active_buffer` (terminal tab refused). Added `CmdSaveSession` (Ctrl+Shift+S; toolbar tool 9). `CmdSave` (Ctrl+S) → active-file save in `demo_live`. Scenario `save_writes_file_to_disk` green. `dev_gate_fast` 1471/0. `run_ux_gate` ×2 = 116/116 (was 115). `demo_live` links |
+| verify  | `run_ux_save_writes_file_to_disk.sh` ok; `run_editor_command_bus_unit.sh` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 all ok (116) |
+| result  | **§107a STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; CONTINUITY/SESSION use 2026-08-01-editor-hygiene-queue — followed CONTINUITY |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107a — independent rebuild+rerun of save scenario; sabotages: (1) dump/session path instead of open_buffer_save, (2) no-op open_buffer_save success; `run_ux_gate` ×2; close §107a → §107b Decision) |
