@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-01 — §107a/§107b/§107c **CLOSED**; queue head **§107d `EDITOR_PERF_SMOKE_FULL_PATH`** (Driver STEP=0)
+## Status: **open** 2026-08-01 — §107a/§107b/§107c **CLOSED**; §107d Decision+Red in progress (Driver STEP=1 done / STEP=2 Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -180,12 +180,26 @@ Sabotages on `collect_visible_visual_rows_pixel_budget_cached` (then
 
 ## §107d `EDITOR_PERF_SMOKE_FULL_PATH` (EHA-04)
 
+### Decision (frozen 2026-08-03)
+
 | Item | Choice |
 |------|--------|
-| Problem | Under `MLC_EDITOR_PERF=1`, `demo_live.mlc` sets `skip_full_pixel_wrap_now = 1`, skips `frame_layout_tick_spans`, and skips the minimap. The three most expensive frame consumers are off, so `draw_us` from the current smoke does not characterise a real frame |
-| Fix | Add `MLC_EDITOR_PERF_FULL=1`: same fixture and frame count, **no** skip branches (wrap, spans, minimap all live). Rename/retag the existing mode as the `*_baseline` path and keep its budget; the full path gets its own measured ceiling |
-| Gate | New `scripts/run_editor_demo_live_perf_full_smoke.sh` with a ceiling set from the first real measurement (same honesty rule as §102g: measure, then write the number). Existing baseline smoke must stay green |
-| Note | §107c's deep-scroll assertion should run in the **full** mode once this exists |
+| Problem | Under `MLC_EDITOR_PERF=1`, `demo_live.mlc` forces `skip_full_pixel_wrap_now = 1`, skips `frame_layout_tick_spans`, and skips minimap rebuild (`!perf_enabled` guards). The three hottest frame consumers are off, so a green `draw_us` / `total_us` from `run_editor_demo_live_perf_smoke.sh` does not characterise a real frame (false-green class) |
+| Fix | Add `MLC_EDITOR_PERF_FULL=1`: same 100k fixture + frame count as the baseline smoke, but **no** perf-driven skip branches (pixel wrap, spans, minimap all live). Keep `MLC_EDITOR_PERF=1` as the `*_baseline` path with its existing budget. Emit a distinct log tag `demo_live_perf_full` via `editor_perf_format_demo_live_full` |
+| Module touch | `misc/editor/demo_live.mlc` (PERF_FULL env + skip guards), `misc/editor/ui/perf.mlc` (format tag), `scripts/run_editor_demo_live_perf_full_smoke.sh`; baseline `run_editor_demo_live_perf_smoke.sh` unchanged |
+| Gate | `run_editor_demo_live_perf_full_smoke.sh`: requires `MLC_EDITOR_PERF_FULL` handling + `demo_live_perf_full` tag; runs under `MLC_EDITOR_PERF_FULL=1`; asserts frames ≥ N and a `TOTAL_US_MAX` ceiling **written after the first honest Green measurement** (not guessed). Baseline smoke must stay green |
+| Sabotage (required before close) | (1) under `PERF_FULL` still force `skip_full_pixel_wrap_now` from perf → full smoke / invariant fails; (2) print baseline `demo_live_perf` tag instead of `demo_live_perf_full` → missing-tag fail |
+| REG | no |
+| Out of scope | §107e versioned caches; changing baseline ceilings; deep-scroll-only smoke (may reuse FULL once present) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: full smoke fails — `MLC_EDITOR_PERF_FULL` / `demo_live_perf_full` absent | **done** 2026-08-03 — `run_editor_demo_live_perf_full_smoke.sh` exits non-zero |
+| 2 | Green: wire PERF_FULL (no skips); measure then write `TOTAL_US_MAX`; baseline + full green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ---
 
