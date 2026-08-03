@@ -123,3 +123,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103b CLOSED (Critic OK).** No false-done |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103c `SCRIPT_VM_VERIFIER` — Decision freeze) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103c Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §103c Decision: `verify_function(words, register_count, constant_count)`; distinct err codes register/constant/branch/truncated_wide/unknown_opcode; §103b opcodes only; unit via `run_script_vm_verifier_unit.sh` |
+| verify  | Decision text in TRACK STEP=0=done; PLAN/CONTINUITY → Red; docs-only — no code gate |
+| result  | **§103c STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103c Red — `run_script_vm_verifier_unit` fails: no `verifier.mlc` / unit) |

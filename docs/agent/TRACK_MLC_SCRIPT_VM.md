@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103c `SCRIPT_VM_VERIFIER`** (§103b CLOSED Critic-audited; STEP=0 Decision next)
+## Status: **open** 2026-08-03 — queue head **§103c `SCRIPT_VM_VERIFIER`** (Decision frozen; STEP=1 Red next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -90,11 +90,30 @@ release backend — не цель никогда (третий путь испо
 
 ### §103c `SCRIPT_VM_VERIFIER`
 
-Validate register/constant indices, branch targets, instruction shapes on a
-raw bytecode buffer — runs **before** any interpreter exists. Gate: rejects
-out-of-range register index, rejects out-of-range constant index, rejects
-branch target outside function body, each with a distinct, testable error;
-accepts a well-formed fixture program.
+#### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | No static check of §103b bytecode before an interpreter exists; design §10 requires register/constant/branch/shape verification for untrusted buffers |
+| Fix | `script_vm/verifier.mlc`: `verify_function(words: [i32], register_count: i32, constant_count: i32) -> VerifyResult`. Walks the word buffer using §103b `instruction_word_span` / decode helpers. **No interpreter**, no heap, no execution of ops |
+| Opcode scope | §103b set only (tags 1–9). Unknown opcode → `VerifyErrUnknownOpcode`. Heap/call opcodes deferred with later sub-tracks |
+| Checks (each distinct `VerifyErr*` code) | (1) **Register**: any A/B/C used as a register index must be `0 ≤ index < register_count` (`VerifyErrRegister`). (2) **Constant**: `LOAD_CONST` index (narrow B or wide trailing) must be `0 ≤ index < constant_count` (`VerifyErrConstant`). (3) **Branch**: for `JUMP`/`JUMP_IF_FALSE`, `target = word_index + span + offset` must satisfy `0 ≤ target ≤ words.length()` and land on a **primary instruction boundary** (not on a wide trailing word) (`VerifyErrBranch`). (4) **Shape**: wide primary (`C=1`) without a following word → `VerifyErrTruncatedWide`. Empty buffer or missing terminal path not required in §103c (no CFG reachability / “must RETURN”) |
+| Result type | `VerifyResult = VerifyOk \| VerifyErr { code: string, word_index: i32 }` with frozen code strings: `register`, `constant`, `branch`, `truncated_wide`, `unknown_opcode` |
+| Well-formed fixture | Hand-built words: narrow `LOAD_CONST r0,#0` + `LOAD_CONST r1,#1` + `ADD r2,r0,r1` + `RETURN r2` with `register_count=3`, `constant_count=2` → `VerifyOk` |
+| Build / test | `scripts/run_script_vm_verifier_unit.sh` → `script_vm/tests/verifier_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate`. Same pattern as §103a/b |
+| Gate | Unit: fixture accepts; one crafted buffer each for register / constant / branch / truncated_wide / unknown_opcode — each yields its distinct code. Red: green runner / `verifier.mlc` / unit absent |
+| Sabotage | Drop register check (accept `A >= register_count`) → register case passes falsely → unit fails |
+| REG | no (`script_vm/**` only) |
+| Out of scope | Interpreter (§103d); instruction/heap resource limits; full CFG dominance; opcodes beyond §103b |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: verifier / unit runner absent | **open** |
+| 2 | Green: `verifier.mlc` + unit; `dev_gate_fast` | **open** |
+| 3 | Critic | **open** |
 
 ### §103d `SCRIPT_VM_INTERPRETER_ARITHMETIC`
 
