@@ -348,3 +348,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109a STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a Red — baseline harness / dogfood probe absent) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109a Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_dogfood_baseline_red.sh`: fail while green harness / `MLC_EDITOR_PERF_DOGFOOD` probe / measured baseline / report.txt absent |
+| verify  | `bash scripts/run_editor_perf_dogfood_baseline_red.sh` → FAIL exit 1 (`no editor perf dogfood baseline harness`) |
+| result  | **§109a STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a Green — harness + dogfood probe + numbers in track) |

@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109a** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109a** (Driver STEP=2 Green)
 
 ## Why (facts)
 
@@ -112,7 +112,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: harness absent / opens README | pending |
+| 1 | Red: harness absent / opens README | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_baseline_red.sh` exit 1 |
 | 2 | Green: harness + numbers in track | pending |
 | 3 | Critic | pending |
 
