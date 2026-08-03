@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=2 Green)
 
 ## Why (facts)
 
