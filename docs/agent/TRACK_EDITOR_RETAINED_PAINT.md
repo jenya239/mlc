@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (STEP=0 Decision **frozen**; Driver STEP=1 Red next)
+## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (STEP=0/1 Decision+Red done; Driver STEP=2 Green next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -64,7 +64,7 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
-| 1 | Red: scenario fails on today's tree | pending |
+| 1 | Red: `run_ux_hover_stable_hit_no_content_frame_red.sh` | **done** 2026-08-03 — FAIL exit 1 (`pointer_dirty` always-on; no counters/green gate) |
 | 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
 | 3 | Critic | pending |
 

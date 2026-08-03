@@ -363,3 +363,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108a STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a Red — `run_ux_hover_stable_hit_no_content_frame` fails on today's tree: stable-hit hover still bumps content/text rebuild) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=1, §108a Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Red gate `scripts/run_ux_hover_stable_hit_no_content_frame_red.sh`: asserts always-on `pointer_dirty`, overlay/context → `content_dirty`, missing rebuild counters + green artifacts |
+| verify  | `bash scripts/run_ux_hover_stable_hit_no_content_frame_red.sh` → FAIL exit 1 (`stable-hit hover still bumps content/text rebuild (pointer_dirty always-on; Red expected)`) |
+| result  | **§108a STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a Green — hit-stable chrome id + counters + gate; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
