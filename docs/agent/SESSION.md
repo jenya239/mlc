@@ -454,3 +454,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107j STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107j — independent rebuild+rerun; sabotages: restore second collect site, drop visible_collect_count; `run_ux_gate` ×2; close §107j → §107k Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107j close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107j Green `c4544666`. Gate `ux_ok` (collect_sites=1). Sabotages: second collect site → exit 1; drop `visible_collect_count` → exit 1; both restored. Closed §107j |
+| verify  | critic gate ok; sabotage1 exit 1; sabotage2 exit 1; `run_ux_gate` ×2 = 124/124 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107j CLOSED.** Advances to §107k |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107k `EDITOR_TERMINAL_DAMAGE_REPAINT` — freeze Decision; red: terminal grid still rebuilt every frame without vterm_damage_count) |

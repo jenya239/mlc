@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; §107j Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107j **CLOSED**; queue head §107k `EDITOR_TERMINAL_DAMAGE_REPAINT`
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -427,7 +427,20 @@ Restored; `run_ux_gate` ×2 = 123/123 (`EXIT1=0` / `EXIT2=0`).
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: 3 collect sites; counter/green absent | **done** 2026-08-03 — `scripts/run_ux_visible_rows_single_collect_red.sh` exits non-zero |
 | 2 | Green: single late collect + counter; gates green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — early/scroll collects removed; late collect only; `visible_collect_count` on perf; smoke `frames=30 visible_collect_count=30`; `ux_ok visible_rows_single_collect`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 124/124 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107j Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `c4544666`. Gate
+`run_ux_visible_rows_single_collect`: `ux_ok` (collect_sites=1). Sabotages (then
+`git checkout --` restore; tree clean of Critic mutations):
+1. Duplicate second `collect_visible_visual_rows_pixel_budget_cached` call →
+   FAIL exit 1 (`collect sites=2`).
+2. Rename/drop `visible_collect_count` in `perf.mlc` → FAIL exit 1
+   (`visible_collect_count missing in perf.mlc`).
+Restored; `run_ux_gate` ×2 = 124/124 (`EXIT1=0` / `EXIT2=0`).
+
+**§107j CLOSED.** Next: §107k `EDITOR_TERMINAL_DAMAGE_REPAINT`.
 
 ## §107k `EDITOR_TERMINAL_DAMAGE_REPAINT` (EHA-11)
 `terminal_grid_text_lines` / `terminal_grid_draw_backgrounds` rebuild every frame
