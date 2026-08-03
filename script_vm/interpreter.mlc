@@ -1,0 +1,243 @@
+// TRACK_MLC_SCRIPT_VM §103d — arithmetic interpreter (verify-first, no control flow).
+import {
+  Value,
+  ValueRep,
+  ValueNil,
+  ValueInt32,
+  ValueFloat64,
+  value_encode,
+  value_decode
+} from './value'
+import {
+  Instruction,
+  instruction_decode,
+  instruction_word_span,
+  instruction_load_const_index,
+  instruction_opcode_load_const,
+  instruction_opcode_move,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_return,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false
+} from './bytecode'
+import {
+  VerifyOk,
+  VerifyErr,
+  verify_function
+} from './verifier'
+
+export type RunResult =
+  | RunOk(Value)
+  | RunErr(string, i32)
+
+export fn run_err_verify() -> string = "verify"
+export fn run_err_type() -> string = "type"
+export fn run_err_overflow() -> string = "overflow"
+export fn run_err_div_zero() -> string = "div_zero"
+export fn run_err_no_return() -> string = "no_return"
+export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
+
+extern fn script_vm_int32_checked_add(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_add" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_checked_sub(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_sub" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_checked_mul(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_mul" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_arith_ok() -> i32 =
+  "mlc::script_vm::int32_arith_ok" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+
+fn registers_set(registers: [Value], index: i32, value: Value) -> [Value] = do
+  let mut next: [Value] = []
+  let mut cursor = 0
+  while cursor < registers.length() do
+    if cursor == index then
+      next.push(value)
+    else
+      next.push(registers[cursor])
+    end
+    cursor = cursor + 1
+  end
+  next
+end
+
+fn make_registers(register_count: i32) -> [Value] = do
+  let mut registers: [Value] = []
+  let mut index = 0
+  const nil_value = value_encode(ValueNil)
+  while index < register_count do
+    registers.push(nil_value)
+    index = index + 1
+  end
+  registers
+end
+
+fn float_is_zero(number: f64) -> bool =
+  number == 0.0
+
+type ArithOpResult = { err_code: string, value: Value }
+
+fn apply_binary(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+  const left_rep = value_decode(left_value)
+  const right_rep = value_decode(right_value)
+  let mut code = ""
+  let mut out = value_encode(ValueNil)
+
+  match left_rep {
+    ValueInt32(left_number) =>
+      match right_rep {
+        ValueInt32(right_number) => do
+          if opcode == instruction_opcode_div() then
+            if right_number == 0 then
+              code = run_err_div_zero()
+            else
+              out = value_encode(ValueInt32(left_number / right_number))
+            end
+          else if opcode == instruction_opcode_add() then
+            const sum = script_vm_int32_checked_add(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(sum))
+            end
+          else if opcode == instruction_opcode_sub() then
+            const difference = script_vm_int32_checked_sub(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(difference))
+            end
+          else if opcode == instruction_opcode_mul() then
+            const product = script_vm_int32_checked_mul(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(product))
+            end
+          else
+            code = run_err_unsupported_opcode()
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    ValueFloat64(left_number) =>
+      match right_rep {
+        ValueFloat64(right_number) => do
+          if opcode == instruction_opcode_div() then
+            if float_is_zero(right_number) then
+              code = run_err_div_zero()
+            else
+              out = value_encode(ValueFloat64(left_number / right_number))
+            end
+          else if opcode == instruction_opcode_add() then
+            out = value_encode(ValueFloat64(left_number + right_number))
+          else if opcode == instruction_opcode_sub() then
+            out = value_encode(ValueFloat64(left_number - right_number))
+          else if opcode == instruction_opcode_mul() then
+            out = value_encode(ValueFloat64(left_number * right_number))
+          else
+            code = run_err_unsupported_opcode()
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    _ => do
+      code = run_err_type()
+    end
+  }
+
+  ArithOpResult { err_code: code, value: out }
+end
+
+fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+  let mut registers = make_registers(register_count)
+  let mut program_counter = 0
+  let mut err_code = ""
+  let mut err_at = 0
+  let mut returned = false
+  let mut return_value = value_encode(ValueNil)
+
+  while program_counter < words.length() && err_code == "" && !returned do
+    const primary = program_counter
+    const decoded = instruction_decode(Instruction { word: words[primary] })
+    const span = instruction_word_span(words, primary)
+    if decoded.opcode == instruction_opcode_load_const() then
+      const constant_index = instruction_load_const_index(words, primary)
+      registers = registers_set(registers, decoded.a, constants[constant_index])
+      program_counter = program_counter + span
+    else if decoded.opcode == instruction_opcode_move() then
+      registers = registers_set(registers, decoded.a, registers[decoded.b])
+      program_counter = program_counter + span
+    else if decoded.opcode == instruction_opcode_add() then
+      const add_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if add_result.err_code != "" then
+        err_code = add_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, add_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_sub() then
+      const sub_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if sub_result.err_code != "" then
+        err_code = sub_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, sub_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_mul() then
+      const mul_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if mul_result.err_code != "" then
+        err_code = mul_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, mul_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_div() then
+      const div_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if div_result.err_code != "" then
+        err_code = div_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, div_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_return() then
+      return_value = registers[decoded.a]
+      returned = true
+    else if decoded.opcode == instruction_opcode_jump() then
+      err_code = run_err_unsupported_opcode()
+      err_at = primary
+    else if decoded.opcode == instruction_opcode_jump_if_false() then
+      err_code = run_err_unsupported_opcode()
+      err_at = primary
+    else
+      err_code = run_err_unsupported_opcode()
+      err_at = primary
+    end
+  end
+
+  if err_code != "" then
+    RunErr(err_code, err_at)
+  else if returned then
+    RunOk(return_value)
+  else
+    RunErr(run_err_no_return(), words.length())
+  end
+end
+
+export fn run_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+  const verified = verify_function(words, register_count, constants.length())
+  match verified {
+    VerifyErr(_code, word_index) => RunErr(run_err_verify(), word_index),
+    VerifyOk => execute_arithmetic(words, constants, register_count)
+  }
+end

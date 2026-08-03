@@ -213,3 +213,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103d STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103d Green — `interpreter.mlc` + unit + perf; `dev_gate_fast`; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103d Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `script_vm/interpreter.mlc` + `int32_arith_abi.hpp` + unit + green runner; verify-first `run_arithmetic`; perf host-loop line |
+| verify  | green ok (~224 ns/insn); red fails (green present); ADD-ignore-rhs sabotage → FAIL; restore ok; `dev_gate_fast` 1471/0 |
+| result  | **§103d STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103d — audit run_arithmetic / numeric errs / perf line; then §103e or close §103d) |

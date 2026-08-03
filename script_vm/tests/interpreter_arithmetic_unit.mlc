@@ -1,0 +1,221 @@
+// TRACK_MLC_SCRIPT_VM §103d — arithmetic interpreter unit + host-loop perf smoke.
+import {
+  Value,
+  ValueInt32,
+  ValueFloat64,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_words_jump,
+  instruction_opcode_add,
+  instruction_opcode_div
+} from '../bytecode'
+import {
+  RunResult,
+  RunOk,
+  RunErr,
+  run_arithmetic,
+  run_err_verify,
+  run_err_type,
+  run_err_overflow,
+  run_err_div_zero,
+  run_err_no_return,
+  run_err_unsupported_opcode
+} from '../interpreter'
+
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm interpreter_arithmetic_unit] FAIL: " + message)
+  code
+end
+
+fn err_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn run_ok_value(result: RunResult) -> Value =
+  match result {
+    RunOk(value) => value,
+    RunErr(_code, _word_index) => value_encode(ValueInt32(0))
+  }
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn int_add_fixture_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn int_add_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(1)))
+  constants.push(value_encode(ValueInt32(2)))
+  constants
+end
+
+fn expect_int32(result: RunResult, expected: i32, label: string, fail_code: i32) -> i32 = do
+  if !is_run_ok(result) then
+    return fail(label + " expected RunOk got=" + err_code(result), fail_code)
+  end
+  match value_decode(run_ok_value(result)) {
+    ValueInt32(number) => do
+      if number != expected then
+        return fail(label + " expected " + expected.to_string() + " got=" + number.to_string(), fail_code)
+      end
+      0
+    end,
+    _ => fail(label + " expected Int32", fail_code)
+  }
+end
+
+fn main() -> i32 = do
+  const int_words = int_add_fixture_words()
+  const int_constants = int_add_constants()
+  const int_result = run_arithmetic(int_words, int_constants, 3)
+  const int_check = expect_int32(int_result, 3, "int ADD", 1)
+  if int_check != 0 then
+    return int_check
+  end
+
+  let mut float_constants: [Value] = []
+  float_constants.push(value_encode(ValueFloat64(1.5)))
+  float_constants.push(value_encode(ValueFloat64(2.25)))
+  const float_result = run_arithmetic(int_words, float_constants, 3)
+  if !is_run_ok(float_result) then
+    return fail("float ADD expected RunOk got=" + err_code(float_result), 2)
+  end
+  const expected_float = value_encode(ValueFloat64(3.75))
+  if !value_raw_equal(run_ok_value(float_result), expected_float) then
+    return fail("float ADD bit-identical 3.75", 3)
+  end
+
+  // type: Int32 + Float64
+  let mut mixed_constants: [Value] = []
+  mixed_constants.push(value_encode(ValueInt32(1)))
+  mixed_constants.push(value_encode(ValueFloat64(2.0)))
+  const type_result = run_arithmetic(int_words, mixed_constants, 3)
+  if is_run_ok(type_result) then
+    return fail("expected type error", 4)
+  end
+  if err_code(type_result) != run_err_type() then
+    return fail("expected type code got=" + err_code(type_result), 5)
+  end
+
+  // overflow: INT_MAX + 1
+  let mut overflow_constants: [Value] = []
+  overflow_constants.push(value_encode(ValueInt32(2147483647)))
+  overflow_constants.push(value_encode(ValueInt32(1)))
+  const overflow_result = run_arithmetic(int_words, overflow_constants, 3)
+  if is_run_ok(overflow_result) then
+    return fail("expected overflow error", 6)
+  end
+  if err_code(overflow_result) != run_err_overflow() then
+    return fail("expected overflow code got=" + err_code(overflow_result), 7)
+  end
+
+  // div_zero
+  let mut div_words: [i32] = []
+  div_words = append_words(div_words, instruction_words_load_const(0, 0))
+  div_words = append_words(div_words, instruction_words_load_const(1, 1))
+  div_words = append_words(div_words, instruction_words_binary(instruction_opcode_div(), 2, 0, 1))
+  div_words = append_words(div_words, instruction_words_return(2))
+  let mut div_constants: [Value] = []
+  div_constants.push(value_encode(ValueInt32(1)))
+  div_constants.push(value_encode(ValueInt32(0)))
+  const div_result = run_arithmetic(div_words, div_constants, 3)
+  if is_run_ok(div_result) then
+    return fail("expected div_zero error", 8)
+  end
+  if err_code(div_result) != run_err_div_zero() then
+    return fail("expected div_zero code got=" + err_code(div_result), 9)
+  end
+
+  // no_return: LOAD_CONST only
+  let mut no_return_words: [i32] = []
+  no_return_words = append_words(no_return_words, instruction_words_load_const(0, 0))
+  let mut no_return_constants: [Value] = []
+  no_return_constants.push(value_encode(ValueInt32(1)))
+  const no_return_result = run_arithmetic(no_return_words, no_return_constants, 1)
+  if is_run_ok(no_return_result) then
+    return fail("expected no_return error", 10)
+  end
+  if err_code(no_return_result) != run_err_no_return() then
+    return fail("expected no_return code got=" + err_code(no_return_result), 11)
+  end
+
+  // unsupported_opcode: verify-ok JUMP alone (target = end)
+  let mut jump_words: [i32] = []
+  jump_words = append_words(jump_words, instruction_words_jump(0))
+  let mut jump_constants: [Value] = []
+  const jump_result = run_arithmetic(jump_words, jump_constants, 1)
+  if is_run_ok(jump_result) then
+    return fail("expected unsupported_opcode error", 12)
+  end
+  if err_code(jump_result) != run_err_unsupported_opcode() then
+    return fail("expected unsupported_opcode code got=" + err_code(jump_result), 13)
+  end
+
+  // verify passthrough: bad register
+  let mut verify_words: [i32] = []
+  verify_words = append_words(verify_words, instruction_words_load_const(3, 0))
+  verify_words = append_words(verify_words, instruction_words_return(0))
+  let mut verify_constants: [Value] = []
+  verify_constants.push(value_encode(ValueInt32(1)))
+  const verify_result = run_arithmetic(verify_words, verify_constants, 3)
+  if is_run_ok(verify_result) then
+    return fail("expected verify error", 14)
+  end
+  if err_code(verify_result) != run_err_verify() then
+    return fail("expected verify code got=" + err_code(verify_result), 15)
+  end
+
+  // Perf smoke: host loop N=100000, 4 instructions
+  const iteration_count = 100000
+  const instruction_count = 4
+  const start_us = script_vm_perf_now_us()
+  let mut iteration = 0
+  while iteration < iteration_count do
+    const warm = run_arithmetic(int_words, int_constants, 3)
+    if !is_run_ok(warm) then
+      return fail("perf loop RunOk", 16)
+    end
+    iteration = iteration + 1
+  end
+  const end_us = script_vm_perf_now_us()
+  const total_us = end_us - start_us
+  const total_ns = total_us * 1000
+  const total_instructions = iteration_count * instruction_count
+  const ns_per_instruction = total_ns / total_instructions
+  println(
+    "[script_vm] interpreter_arithmetic perf N=" + iteration_count.to_string() +
+      " insn=" + instruction_count.to_string() +
+      " total_us=" + total_us.to_string() +
+      " ns_per_insn=" + ns_per_instruction.to_string()
+  )
+
+  println("[script_vm] interpreter_arithmetic_unit ok")
+  0
+end
