@@ -484,3 +484,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107k STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107k Green — damage-keyed grid cache + scenario `terminal_idle_no_rebuild`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107k Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Damage-keyed terminal grid cache: `TerminalPanelSession` paint cache + `terminal_panel_session_grid_cache_tick`; `demo_live` draws from cache; scenario `terminal_idle_no_rebuild` + `run_ux_terminal_idle_no_rebuild.sh` |
+| verify  | `run_ux_terminal_idle_no_rebuild` ok; related terminal UX ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 125/125 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107k STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107k — independent rebuild+rerun; sabotages: always-rebuild / strip cache from demo; `run_ux_gate` ×2; close §107k → §107l Decision) |

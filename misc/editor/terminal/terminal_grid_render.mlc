@@ -1,4 +1,5 @@
 // TRACK_EDITOR_TERMINAL §102c — vterm screen state -> cell grid render.
+// TRACK_EDITOR_HYGIENE §107k — cacheable bg rect batch + text lines.
 // Reuses static_text_draw_lines_colored (glyphs) and solid_renderer_rect
 // (cell background) — no new draw path, matches the track's own non-goal.
 import { VtermCell, vterm_cell_at } from './vterm_ffi'
@@ -8,6 +9,16 @@ import { SolidRenderer, solid_renderer_rect } from '../../gui/solid_renderer'
 extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 
 fn color_channel_to_unit(value: i32) -> f64 = i32_to_f64(value) / 255.0
+
+export type TerminalGridBgRect = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64
+}
 
 // One StaticTextLine per horizontally-contiguous same-foreground-color run
 // per row (static_text_draw_lines_colored itself batches by color across
@@ -61,6 +72,65 @@ export fn terminal_grid_text_lines(
   lines
 end
 
+export fn terminal_grid_background_rects(
+  screen_handle: i64,
+  rows: i32,
+  columns: i32,
+  cell_pixel_width: i32,
+  cell_pixel_height: i32,
+  origin_x: i32,
+  origin_y: i32,
+  default_red: i32,
+  default_green: i32,
+  default_blue: i32
+) -> [TerminalGridBgRect] = do
+  let mut rects: [TerminalGridBgRect] = []
+  let mut row = 0
+  while row < rows do
+    let mut column = 0
+    while column < columns do
+      const cell = vterm_cell_at(screen_handle, row, column)
+      if cell.background_red != default_red ||
+          cell.background_green != default_green ||
+          cell.background_blue != default_blue then
+        rects.push(TerminalGridBgRect {
+          x: origin_x + column * cell_pixel_width,
+          y: origin_y + row * cell_pixel_height,
+          width: cell_pixel_width,
+          height: cell_pixel_height,
+          red: color_channel_to_unit(cell.background_red),
+          green: color_channel_to_unit(cell.background_green),
+          blue: color_channel_to_unit(cell.background_blue)
+        })
+      end
+      column = column + 1
+    end
+    row = row + 1
+  end
+  rects
+end
+
+export fn terminal_grid_draw_cached_backgrounds(
+  renderer: SolidRenderer,
+  rects: [TerminalGridBgRect],
+  window_width: i32,
+  window_height: i32
+) -> SolidRenderer = do
+  let mut working = renderer
+  let mut index = 0
+  while index < rects.length() do
+    const rect = rects[index]
+    working = solid_renderer_rect(
+      working,
+      window_width, window_height,
+      rect.x, rect.y, rect.width, rect.height,
+      rect.red, rect.green, rect.blue, 1.0
+    )
+    index = index + 1
+  end
+  working
+end
+
 // Accumulates 1 solid_renderer_rect per cell whose background differs from
 // the given default (caller flushes via solid_renderer_flush_over after —
 // composes over the panel's own background fill, drawn separately).
@@ -78,31 +148,14 @@ export fn terminal_grid_draw_backgrounds(
   default_red: i32,
   default_green: i32,
   default_blue: i32
-) -> SolidRenderer = do
-  let mut working = renderer
-  let mut row = 0
-  while row < rows do
-    let mut column = 0
-    while column < columns do
-      const cell = vterm_cell_at(screen_handle, row, column)
-      if cell.background_red != default_red ||
-          cell.background_green != default_green ||
-          cell.background_blue != default_blue then
-        working = solid_renderer_rect(
-          working,
-          window_width, window_height,
-          origin_x + column * cell_pixel_width,
-          origin_y + row * cell_pixel_height,
-          cell_pixel_width, cell_pixel_height,
-          color_channel_to_unit(cell.background_red),
-          color_channel_to_unit(cell.background_green),
-          color_channel_to_unit(cell.background_blue),
-          1.0
-        )
-      end
-      column = column + 1
-    end
-    row = row + 1
-  end
-  working
-end
+) -> SolidRenderer =
+  terminal_grid_draw_cached_backgrounds(
+    renderer,
+    terminal_grid_background_rects(
+      screen_handle, rows, columns,
+      cell_pixel_width, cell_pixel_height,
+      origin_x, origin_y,
+      default_red, default_green, default_blue
+    ),
+    window_width, window_height
+  )

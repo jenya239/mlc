@@ -1,0 +1,53 @@
+// TRACK_EDITOR_HYGIENE §107k — idle frames must not rebuild the terminal grid
+// when vterm_terminal_damage_count and paint geometry are unchanged.
+import {
+  terminal_panel_session_open,
+  terminal_panel_session_close,
+  terminal_panel_session_drain,
+  terminal_panel_session_grid_cache_tick
+} from '../app/terminal_panel'
+
+fn main() -> i32 = do
+  let mut session = terminal_panel_session_open(8, 40, "true")
+  if session.active == 0 then
+    println("ux_fail terminal_idle_no_rebuild open_session")
+    return 1
+  end
+  session = terminal_panel_session_drain(session, 200)
+
+  session = terminal_panel_session_grid_cache_tick(
+    session, 8, 16, 10, 20, 14, 14, 0, 0, 0
+  )
+  if session.grid_rebuild_count != 1 then
+    session = terminal_panel_session_close(session)
+    println("ux_fail terminal_idle_no_rebuild warm rebuild_count")
+    return 2
+  end
+
+  let mut idle = 0
+  while idle < 8 do
+    session = terminal_panel_session_grid_cache_tick(
+      session, 8, 16, 10, 20, 14, 14, 0, 0, 0
+    )
+    idle = idle + 1
+  end
+  if session.grid_rebuild_count != 1 then
+    session = terminal_panel_session_close(session)
+    println("ux_fail terminal_idle_no_rebuild idle rebuild_count")
+    return 3
+  end
+
+  // Geometry change must force one more rebuild even with unchanged damage.
+  session = terminal_panel_session_grid_cache_tick(
+    session, 9, 16, 10, 20, 14, 14, 0, 0, 0
+  )
+  if session.grid_rebuild_count != 2 then
+    session = terminal_panel_session_close(session)
+    println("ux_fail terminal_idle_no_rebuild geometry rebuild_count")
+    return 4
+  end
+
+  session = terminal_panel_session_close(session)
+  println("ux_ok terminal_idle_no_rebuild")
+  0
+end

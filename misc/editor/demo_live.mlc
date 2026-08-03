@@ -384,15 +384,14 @@ import {
   editor_app_bump_frame,
   editor_app_open_terminal,
   editor_app_close_terminal,
+  editor_app_set_terminal,
   editor_app_terminal_tab_active,
   editor_app_terminal_frame,
   editor_app_terminal_drain,
   editor_app_save_active_buffer
 } from './app/state'
-import {
-  terminal_grid_text_lines,
-  terminal_grid_draw_backgrounds
-} from './terminal/terminal_grid_render'
+import { terminal_panel_session_grid_cache_tick } from './app/terminal_panel'
+import { terminal_grid_draw_cached_backgrounds } from './terminal/terminal_grid_render'
 
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
@@ -2697,20 +2696,29 @@ fn main() -> i32 = do
     if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
       const terminal_origin_x = text_rect.x + 4
       const terminal_origin_y = text_rect.y + 2
-      solid = terminal_grid_draw_backgrounds(
+      const terminal_default_red = f64_to_i32(theme.background_red * 255.0)
+      const terminal_default_green = f64_to_i32(theme.background_green * 255.0)
+      const terminal_default_blue = f64_to_i32(theme.background_blue * 255.0)
+      app = editor_app_set_terminal(
+        app,
+        terminal_panel_session_grid_cache_tick(
+          app.terminal,
+          metrics.char_width,
+          metrics.line_height,
+          terminal_origin_x,
+          terminal_origin_y,
+          14,
+          scaled_font_size,
+          terminal_default_red,
+          terminal_default_green,
+          terminal_default_blue
+        )
+      )
+      solid = terminal_grid_draw_cached_backgrounds(
         solid,
-        app.terminal.screen_handle,
-        app.terminal.rows,
-        app.terminal.columns,
-        metrics.char_width,
-        metrics.line_height,
-        terminal_origin_x,
-        terminal_origin_y,
+        app.terminal.cached_bg_rects,
         width,
-        height,
-        f64_to_i32(theme.background_red * 255.0),
-        f64_to_i32(theme.background_green * 255.0),
-        f64_to_i32(theme.background_blue * 255.0)
+        height
       )
       const terminal_bg_flush = solid_renderer_flush_over(solid, width, height)
       if terminal_bg_flush != 0 then
@@ -2720,17 +2728,7 @@ fn main() -> i32 = do
         return terminal_bg_flush
       end
       solid = solid_renderer_begin(solid)
-      editor_lines = terminal_grid_text_lines(
-        app.terminal.screen_handle,
-        app.terminal.rows,
-        app.terminal.columns,
-        metrics.char_width,
-        metrics.line_height,
-        terminal_origin_x,
-        terminal_origin_y,
-        14,
-        scaled_font_size
-      )
+      editor_lines = app.terminal.cached_text_lines
     else
       let mut draw_row = 0
       while draw_row < visual_rows.length() do

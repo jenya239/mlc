@@ -6,6 +6,7 @@ import {
   vterm_terminal_destroy,
   vterm_terminal_screen,
   vterm_terminal_write,
+  vterm_terminal_damage_count,
   vterm_cell_at,
   vterm_control_escape_byte
 } from '../terminal/vterm_ffi'
@@ -24,6 +25,12 @@ import {
   terminal_eof_byte,
   terminal_suspend_byte
 } from '../terminal/terminal_input_forward'
+import { StaticTextLine } from '../ui/static_text'
+import {
+  TerminalGridBgRect,
+  terminal_grid_text_lines,
+  terminal_grid_background_rects
+} from '../terminal/terminal_grid_render'
 
 fn i64_zero() -> i64 = 0
 
@@ -42,8 +49,32 @@ export type TerminalPanelSession = {
   rows: i32,
   columns: i32,
   last_backspace_down: i32,
-  last_enter_down: i32
+  last_enter_down: i32,
+  // §107k — paint cache keyed by vterm_terminal_damage_count + geometry.
+  cached_text_lines: [StaticTextLine],
+  cached_bg_rects: [TerminalGridBgRect],
+  cached_damage_count: i32,
+  grid_rebuild_count: i32,
+  cache_cell_width: i32,
+  cache_cell_height: i32,
+  cache_origin_x: i32,
+  cache_origin_y: i32,
+  cache_baseline_offset_y: i32,
+  cache_font_pixel_size: i32,
+  cache_default_red: i32,
+  cache_default_green: i32,
+  cache_default_blue: i32
 }
+
+fn terminal_panel_empty_text_lines() -> [StaticTextLine] = do
+  let mut lines: [StaticTextLine] = []
+  lines
+end
+
+fn terminal_panel_empty_bg_rects() -> [TerminalGridBgRect] = do
+  let mut rects: [TerminalGridBgRect] = []
+  rects
+end
 
 export fn terminal_panel_session_inactive() -> TerminalPanelSession =
   TerminalPanelSession {
@@ -54,7 +85,20 @@ export fn terminal_panel_session_inactive() -> TerminalPanelSession =
     rows: 0,
     columns: 0,
     last_backspace_down: 0,
-    last_enter_down: 0
+    last_enter_down: 0,
+    cached_text_lines: terminal_panel_empty_text_lines(),
+    cached_bg_rects: terminal_panel_empty_bg_rects(),
+    cached_damage_count: 0 - 1,
+    grid_rebuild_count: 0,
+    cache_cell_width: 0,
+    cache_cell_height: 0,
+    cache_origin_x: 0,
+    cache_origin_y: 0,
+    cache_baseline_offset_y: 0,
+    cache_font_pixel_size: 0,
+    cache_default_red: 0,
+    cache_default_green: 0,
+    cache_default_blue: 0
   }
 
 export fn terminal_panel_session_open(
@@ -82,7 +126,20 @@ export fn terminal_panel_session_open(
     rows: rows,
     columns: columns,
     last_backspace_down: 0,
-    last_enter_down: 0
+    last_enter_down: 0,
+    cached_text_lines: terminal_panel_empty_text_lines(),
+    cached_bg_rects: terminal_panel_empty_bg_rects(),
+    cached_damage_count: 0 - 1,
+    grid_rebuild_count: 0,
+    cache_cell_width: 0,
+    cache_cell_height: 0,
+    cache_origin_x: 0,
+    cache_origin_y: 0,
+    cache_baseline_offset_y: 0,
+    cache_font_pixel_size: 0,
+    cache_default_red: 0,
+    cache_default_green: 0,
+    cache_default_blue: 0
   }
 end
 
@@ -196,7 +253,20 @@ export fn terminal_panel_session_forward_poll(
     rows: next.rows,
     columns: next.columns,
     last_backspace_down: forward.backspace_down,
-    last_enter_down: forward.enter_down
+    last_enter_down: forward.enter_down,
+    cached_text_lines: next.cached_text_lines,
+    cached_bg_rects: next.cached_bg_rects,
+    cached_damage_count: next.cached_damage_count,
+    grid_rebuild_count: next.grid_rebuild_count,
+    cache_cell_width: next.cache_cell_width,
+    cache_cell_height: next.cache_cell_height,
+    cache_origin_x: next.cache_origin_x,
+    cache_origin_y: next.cache_origin_y,
+    cache_baseline_offset_y: next.cache_baseline_offset_y,
+    cache_font_pixel_size: next.cache_font_pixel_size,
+    cache_default_red: next.cache_default_red,
+    cache_default_green: next.cache_default_green,
+    cache_default_blue: next.cache_default_blue
   }
 end
 
@@ -231,4 +301,73 @@ export fn terminal_panel_session_has_exact_line(
     row = row + 1
   end
   false
+end
+
+// §107k — rebuild text/bg caches only when damage_count or paint geometry changes.
+export fn terminal_panel_session_grid_cache_tick(
+  session: TerminalPanelSession,
+  cell_width: i32,
+  cell_height: i32,
+  origin_x: i32,
+  origin_y: i32,
+  baseline_offset_y: i32,
+  font_pixel_size: i32,
+  default_red: i32,
+  default_green: i32,
+  default_blue: i32
+) -> TerminalPanelSession = do
+  if session.active == 0 then
+    return session
+  end
+  const damage = vterm_terminal_damage_count(session.screen_handle)
+  const geometry_changed =
+    cell_width != session.cache_cell_width ||
+    cell_height != session.cache_cell_height ||
+    origin_x != session.cache_origin_x ||
+    origin_y != session.cache_origin_y ||
+    baseline_offset_y != session.cache_baseline_offset_y ||
+    font_pixel_size != session.cache_font_pixel_size ||
+    default_red != session.cache_default_red ||
+    default_green != session.cache_default_green ||
+    default_blue != session.cache_default_blue
+  if damage == session.cached_damage_count && !geometry_changed then
+    return session
+  end
+  TerminalPanelSession {
+    ...session,
+    cached_text_lines: terminal_grid_text_lines(
+      session.screen_handle,
+      session.rows,
+      session.columns,
+      cell_width,
+      cell_height,
+      origin_x,
+      origin_y,
+      baseline_offset_y,
+      font_pixel_size
+    ),
+    cached_bg_rects: terminal_grid_background_rects(
+      session.screen_handle,
+      session.rows,
+      session.columns,
+      cell_width,
+      cell_height,
+      origin_x,
+      origin_y,
+      default_red,
+      default_green,
+      default_blue
+    ),
+    cached_damage_count: damage,
+    grid_rebuild_count: session.grid_rebuild_count + 1,
+    cache_cell_width: cell_width,
+    cache_cell_height: cell_height,
+    cache_origin_x: origin_x,
+    cache_origin_y: origin_y,
+    cache_baseline_offset_y: baseline_offset_y,
+    cache_font_pixel_size: font_pixel_size,
+    cache_default_red: default_red,
+    cache_default_green: default_green,
+    cache_default_blue: default_blue
+  }
 end

@@ -361,7 +361,20 @@ export fn editor_app_terminal_frame(
     rows: session.rows,
     columns: session.columns,
     last_backspace_down: backspace_down,
-    last_enter_down: enter_down
+    last_enter_down: enter_down,
+    cached_text_lines: session.cached_text_lines,
+    cached_bg_rects: session.cached_bg_rects,
+    cached_damage_count: session.cached_damage_count,
+    grid_rebuild_count: session.grid_rebuild_count,
+    cache_cell_width: session.cache_cell_width,
+    cache_cell_height: session.cache_cell_height,
+    cache_origin_x: session.cache_origin_x,
+    cache_origin_y: session.cache_origin_y,
+    cache_baseline_offset_y: session.cache_baseline_offset_y,
+    cache_font_pixel_size: session.cache_font_pixel_size,
+    cache_default_red: session.cache_default_red,
+    cache_default_green: session.cache_default_green,
+    cache_default_blue: session.cache_default_blue
   }
   session = terminal_panel_session_tick(session)
   // Drain a few more times so interactive shell echo is visible same frame.
