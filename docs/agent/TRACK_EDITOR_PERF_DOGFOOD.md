@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109a** (Driver STEP=0)
+## Status: **open** 2026-08-04 — queue head **§109a** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -84,18 +84,41 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | Item | Choice |
 |------|--------|
 | Problem | No frozen, reproducible visible-window numbers for the real file |
-| Fix | Harness `scripts/run_editor_perf_dogfood_baseline.sh`: build once, run with `MLC_GLFW_VISIBLE=1`, force open `misc/editor/demo_live.mlc` (session file or new `MLC_EDITOR_OPEN` — Decision picks one), sample idle-away / still-over-text / text-jitter / scroll / type; write report under `.tmp/` **and** paste summary table into this track |
+| Fix | Harness below (Decision frozen 2026-08-04) |
 | Gate | Script exits 0 and prints all five metrics; fails if open path is README or file missing |
-| Out of scope | Optimizations |
+| Out of scope | Optimizations; budgets/ceilings (those are epic close criteria — baseline only records) |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Harness | `scripts/run_editor_perf_dogfood_baseline.sh` |
+| Build | Reuse `scripts/run_editor_demo_live_fs_compile.sh` → demo binary (same as §108d L2) |
+| Visible | `MLC_GLFW_VISIBLE=1` **mandatory**. No invisible skip path (unlike §108d L2 `VISIBLE=0`). Missing glfw/font/`/proc` → **fail**, not skip-green |
+| Open path | Existing `MLC_EDITOR_PERF_OPEN` only. Harness sets it to `$ROOT/misc/editor/demo_live.mlc`. **No** new `MLC_EDITOR_OPEN` in §109a (defer to §109j) |
+| Open fail | Exit ≠ 0 if env empty, path missing, or basename matches `README*` (case-sensitive prefix `README`) |
+| Input drive | Internal demo env `MLC_EDITOR_PERF_DOGFOOD=1`: sequential phases with synthetic pointer/wheel/keys (same class as `MLC_EDITOR_HOVER_CPU_PROBE`). No xdotool / manual launch |
+| Phases (order) | (1) `idle_away` (2) `still_over_text` (3) `text_jitter` (4) `scroll` (5) `type` — stdout markers `[dogfood] phase=<name>` |
+| CPU sample | `/proc/$pid/stat` utime+stime jiffies; `cpu_percent = delta * 100 / (HZ * SAMPLE_SEC)`; same reader pattern as `run_ux_hover_cpu_budget.sh` L2 |
+| Windows | `WARMUP_SEC=4`. idle / still / jitter: `SAMPLE_SEC=5`, `SAMPLE_ROUNDS=3`, report **min** `cpu_percent`. scroll: `SAMPLE_SEC=2`, `SAMPLE_ROUNDS=3`, report **max**. type: after 20-char burst, `SAMPLE_SEC=2`, report **max** `cpu_percent` **and** `type_stall_ms` (wall ms from last key to first phase-end marker; Green defines marker) |
+| Metrics keys | `idle_away_cpu_percent`, `still_over_text_cpu_percent`, `text_jitter_cpu_percent`, `scroll_cpu_percent`, `type_cpu_percent`, `type_stall_ms` |
+| Report file | `$ROOT/.tmp/editor_perf_dogfood_baseline/report.txt` (key=value lines) + stdout summary |
+| Track paste | Green pastes the five (+ stall) numbers into a **Baseline (measured)** table under this §109a |
+| Sabotage (Critic) | Force `MLC_EDITOR_PERF_OPEN` to README → harness must fail |
+| Red | Green harness absent; or red script proves fail while baseline runner / dogfood probe / report path missing |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | pending |
+| 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: harness absent / opens README | pending |
 | 2 | Green: harness + numbers in track | pending |
 | 3 | Critic | pending |
+
+### Baseline (measured)
+
+_pending Green_
 
 ---
 

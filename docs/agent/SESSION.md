@@ -333,3 +333,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109 epic plan written.** Queue head still §109a |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a `EDITOR_PERF_BASELINE_DOGFOOD` — Decision freeze; Red: no honest visible baseline harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109a Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109a: `run_editor_perf_dogfood_baseline.sh`; `MLC_GLFW_VISIBLE=1` mandatory; open via `MLC_EDITOR_PERF_OPEN`→`demo_live.mlc` (fail README*/missing); drive via `MLC_EDITOR_PERF_DOGFOOD=1` phases; `/proc` CPU% like §108d L2; report `.tmp/editor_perf_dogfood_baseline/report.txt` |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only |
+| result  | **§109a STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a Red — baseline harness / dogfood probe absent) |
