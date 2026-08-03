@@ -393,3 +393,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109a CLOSED (Critic OK).** Residual still=0% → §109b |
 | issues  | none (false-done not found for measure-only gate) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b `EDITOR_PERF_WAKE_ON_HOVER` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109b Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109b: text-rect probe geometry (kill fixed 420); frame reason counters; `run_editor_perf_wake_on_hover.sh`; L1 rebuild deltas==0 over 5s; L2 still≲8%/jitter≲15%; sab chrome_dirty every poll |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only |
+| result  | **§109b STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b Red — no wake harness / miss-geometry) |

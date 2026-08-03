@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109b** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109b** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -147,13 +147,42 @@ for §109a measure-only gate).
 
 | Item | Choice |
 |------|--------|
-| Problem | H1/H10/H11: mouse over text without move still ~32% CPU — hit-stable failed in dogfood; possible always-`chrome_dirty`, present path falling through to full paint, or blink path reshaping |
-| Fix | Instrument frame reasons (`content`/`chrome`/`present`/`idle_wait` counts per second). Fix until still-over-text matches blink-only budget. Include: overlay/menu must not raise dirty every poll without visual change; hit id for text must not flap; present_only must not rebuild chrome/text layers |
+| Problem | H1/H10/H11: mouse over text without move still ~32% CPU — hit-stable failed in dogfood; possible always-`chrome_dirty`, present path falling through to full paint, or blink path reshaping. §109a still=0% under fixed `(420, chrome+80)` test pointer — probe may miss text hit-id (false quiet) |
+| Fix | Below (Decision frozen 2026-08-04) |
 | Depends on | §109a |
 | Gate | Close criteria 2–3; counters: on still-over-text, `content_rebuild_count` and `chrome_rebuild_count` deltas == 0 over N seconds |
 | Sabotage | Force `chrome_dirty=1` every poll → gate fails |
+| Out of scope | Content-frame/scroll cost (§109d); glyph layer (§109e); SceneNode chrome; §109c L2 rewrite (may share probe geometry) |
 
----
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Diagnose first | Before “fix CPU”, prove still-over-text probe hits **text** chrome-hit id (not tree/header/`none`). §109a fixed `(420, chrome_top+80)` is **invalid** for wake gate until replaced |
+| Probe geometry | After layout: mouse at center of live **editor text rect** (content pane text area, not hardcoded x=420). Dogfood `still_over_text` / `text_jitter` phases must use this point; jitter = ±1px on that point |
+| Instrumentation | Extend `EditorPerfCounters` (or sibling) with per-frame reason tallies: `content_frame_count`, `chrome_frame_count`, `present_frame_count`, `idle_wait_count`. Demo increments exactly one reason per loop iteration. Optional stdout `[wake] reason=…` under probe env |
+| Probe env | `MLC_EDITOR_PERF_WAKE_PROBE=1` (may co-exist with dogfood CMD phases). Reuse `MLC_EDITOR_PERF_OPEN`→`demo_live.mlc`, `MLC_GLFW_VISIBLE=1`, no `MLC_EDITOR_PERF` skip-heavy |
+| Harness | `scripts/run_editor_perf_wake_on_hover.sh`: build via `run_editor_demo_live_fs_compile.sh`; drive still then jitter via CMD_FILE (or wake-specific cmds); sample `/proc` CPU% like §109a; read rebuild counter deltas from demo stdout/report |
+| Counter gate (L1) | Over **N=5** seconds still-over-text (no move): `content_rebuild_count` delta == 0 **and** `chrome_rebuild_count` delta == 0. `text_layer_rebuild_count` delta == 0. Blink/`present_frame_count` may rise; `content_frame_count`/`chrome_frame_count` deltas == 0 |
+| CPU gate (L2) | Epic close criteria: still-over-text 5s **min** `cpu_percent` ≲ **8**; text-jitter 5s **min** ≲ **15**. Written after first honest Green measure if headroom needed — do not invent lower ceilings |
+| Overlay/menu | Visible overlay/context menu must not set `chrome_dirty` every poll without visual change (H11) — covered by chrome_rebuild delta == 0 on still |
+| Hit flap (H10) | Coarse header/tab/toolbar slots must not flap hit-id when pointer stays in text; gate fails if still phase sees repeated hit-id changes |
+| Sabotage (Critic) | (1) Force `chrome_dirty=1` every poll → L1 fails. (2) Restore fixed miss-geometry probe → still CPU/counters falsely quiet while interactive path still hot — Critic checks geometry uses text rect |
+| Red | No `run_editor_perf_wake_on_hover.sh` / no reason counters / still phase still uses hardcoded non-text point |
+| Green | Harness green; L1+L2 pass; dogfood still/jitter geometry fixed; numbers pasted under this §109b |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no wake harness / miss-geometry | pending |
+| 2 | Green: geometry + counters + L1/L2 | pending |
+| 3 | Critic | pending |
+
+### Wake baseline (measured)
+
+_pending Green_
 
 ## §109c `EDITOR_PERF_GATE_HONESTY`
 
