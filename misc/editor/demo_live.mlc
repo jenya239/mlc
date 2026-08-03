@@ -968,23 +968,37 @@ fn main() -> i32 = do
           last_blink_visible = 0
         end
         solid = solid_renderer_begin(solid)
+        let mut caret_overlay_ops: [EditorPaintOp] = []
         let mut overlay_index = 0
         while overlay_index < caret_overlay_count(last_caret_rects) do
           const overlay_rect = last_caret_rects[overlay_index]
-          solid = solid_renderer_rect(
-            solid, width, height,
-            overlay_rect.x, overlay_rect.y, overlay_rect.width, overlay_rect.height,
-            theme.background_red, theme.background_green, theme.background_blue, 1.0
-          )
+          caret_overlay_ops.push(editor_paint_op_rect(
+            "caret_overlay_erase",
+            overlay_rect.x,
+            overlay_rect.y,
+            overlay_rect.width,
+            overlay_rect.height,
+            theme.background_red,
+            theme.background_green,
+            theme.background_blue,
+            1.0
+          ))
           if blink_on then
-            solid = solid_renderer_rect(
-              solid, width, height,
-              overlay_rect.x, overlay_rect.y, overlay_rect.width, overlay_rect.height,
-              theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
-            )
+            caret_overlay_ops.push(editor_paint_op_rect(
+              "caret_overlay",
+              overlay_rect.x,
+              overlay_rect.y,
+              overlay_rect.width,
+              overlay_rect.height,
+              theme.caret_red,
+              theme.caret_green,
+              theme.caret_blue,
+              1.0
+            ))
           end
           overlay_index = overlay_index + 1
         end
+        solid = editor_paint_ops_flatten(solid, width, height, caret_overlay_ops)
         const overlay_status = solid_renderer_flush_over(solid, width, height)
         if overlay_status != 0 then
           static_text_destroy(text_state)
@@ -2224,11 +2238,19 @@ fn main() -> i32 = do
         const folder_thumb_fill = editor_ux_chrome_hover_draw_entry(
           input, folder_thumb_slot, theme.muted_red, theme.muted_green, theme.muted_blue
         )
-        solid = solid_renderer_rect(
-          solid, width, height,
-          folder_thumb_fill.x, folder_thumb_fill.y, folder_thumb_fill.width, folder_thumb_fill.height,
-          folder_thumb_fill.red, folder_thumb_fill.green, folder_thumb_fill.blue, 1.0
-        )
+        let mut folder_scroll_ops: [EditorPaintOp] = []
+        folder_scroll_ops.push(editor_paint_op_rect(
+          "folder_scrollbar",
+          folder_thumb_fill.x,
+          folder_thumb_fill.y,
+          folder_thumb_fill.width,
+          folder_thumb_fill.height,
+          folder_thumb_fill.red,
+          folder_thumb_fill.green,
+          folder_thumb_fill.blue,
+          1.0
+        ))
+        solid = editor_paint_ops_flatten(solid, width, height, folder_scroll_ops)
       end
     end
     let mut text_pane_ops: [EditorPaintOp] = []
@@ -2244,12 +2266,19 @@ fn main() -> i32 = do
       1.0
     ))
     solid = editor_paint_ops_flatten(solid, width, height, text_pane_ops)
+    let mut chrome_tail_ops: [EditorPaintOp] = []
     if minimap_enabled != 0 then
-      solid = solid_renderer_rect(
-        solid, width, height,
-        minimap_rect.x, minimap_rect.y, minimap_rect.width, minimap_rect.height,
-        theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-      )
+      chrome_tail_ops.push(editor_paint_op_rect(
+        "minimap",
+        minimap_rect.x,
+        minimap_rect.y,
+        minimap_rect.width,
+        minimap_rect.height,
+        theme.panel_red,
+        theme.panel_green,
+        theme.panel_blue,
+        1.0
+      ))
     end
     let mut gutter_ops: [EditorPaintOp] = []
     gutter_ops.push(editor_paint_op_rect(
@@ -2264,15 +2293,29 @@ fn main() -> i32 = do
       1.0
     ))
     solid = editor_paint_ops_flatten(solid, width, height, gutter_ops)
-    solid = solid_renderer_rect(
-      solid, width, height,
-      divider.x, divider.y, divider.width, divider.height,
-      theme.accent_red, theme.accent_green, theme.accent_blue, 1.0
-    )
-    solid = solid_renderer_rect(
-      solid, width, height, 0, height - status_height(), width, status_height(),
-      theme.status_red, theme.status_green, theme.status_blue, 1.0
-    )
+    chrome_tail_ops.push(editor_paint_op_rect(
+      "divider",
+      divider.x,
+      divider.y,
+      divider.width,
+      divider.height,
+      theme.accent_red,
+      theme.accent_green,
+      theme.accent_blue,
+      1.0
+    ))
+    chrome_tail_ops.push(editor_paint_op_rect(
+      "status",
+      0,
+      height - status_height(),
+      width,
+      status_height(),
+      theme.status_red,
+      theme.status_green,
+      theme.status_blue,
+      1.0
+    ))
+    solid = editor_paint_ops_flatten(solid, width, height, chrome_tail_ops)
 
     let mut flush_status = solid_renderer_flush(
       solid, width, height, theme.background_red, theme.background_green, theme.background_blue
@@ -2501,6 +2544,7 @@ fn main() -> i32 = do
 
     const editor_hovered =
       point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)
+    let mut scrollbar_ops: [EditorPaintOp] = []
     const content_thumb = editor_ux_content_scrollbar_thumb(
       editor_hovered, text_rect, wrapped_content_height_now, app.ux.scroll_offset_y
     )
@@ -2511,11 +2555,17 @@ fn main() -> i32 = do
       const content_thumb_fill = editor_ux_chrome_hover_draw_entry(
         input, content_thumb_slot, theme.muted_red, theme.muted_green, theme.muted_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        content_thumb_fill.x, content_thumb_fill.y, content_thumb_fill.width, content_thumb_fill.height,
-        content_thumb_fill.red, content_thumb_fill.green, content_thumb_fill.blue, 1.0
-      )
+      scrollbar_ops.push(editor_paint_op_rect(
+        "content_scrollbar",
+        content_thumb_fill.x,
+        content_thumb_fill.y,
+        content_thumb_fill.width,
+        content_thumb_fill.height,
+        content_thumb_fill.red,
+        content_thumb_fill.green,
+        content_thumb_fill.blue,
+        1.0
+      ))
     end
     // horizontal_scrollbar: bottom thumb when content wider than viewport
     let mut horizontal_char_width = metrics.char_width
@@ -2534,61 +2584,76 @@ fn main() -> i32 = do
       const content_thumb_x_fill = editor_ux_chrome_hover_draw_entry(
         input, content_thumb_x_slot, theme.muted_red, theme.muted_green, theme.muted_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        content_thumb_x_fill.x, content_thumb_x_fill.y, content_thumb_x_fill.width, content_thumb_x_fill.height,
-        content_thumb_x_fill.red, content_thumb_x_fill.green, content_thumb_x_fill.blue, 1.0
-      )
+      scrollbar_ops.push(editor_paint_op_rect(
+        "content_scrollbar_x",
+        content_thumb_x_fill.x,
+        content_thumb_x_fill.y,
+        content_thumb_x_fill.width,
+        content_thumb_x_fill.height,
+        content_thumb_x_fill.red,
+        content_thumb_x_fill.green,
+        content_thumb_x_fill.blue,
+        1.0
+      ))
     end
+    solid = editor_paint_ops_flatten(solid, width, height, scrollbar_ops)
     if minimap_enabled != 0 then
       editor_gl_scissor_enable_rect(height, minimap_rect)
       const minimap_indicator = editor_ux_minimap_viewport_indicator(
         minimap_rect, wrapped_content_height_now, text_rect.height, app.ux.scroll_offset_y
       )
       if minimap_indicator.width > 0 then
-        solid = solid_renderer_rect(
-          solid, width, height,
-          minimap_indicator.x, minimap_indicator.y,
-          minimap_indicator.width, minimap_indicator.height,
-          theme.muted_red, theme.muted_green, theme.muted_blue, 1.0
-        )
+        let mut minimap_indicator_ops: [EditorPaintOp] = []
+        minimap_indicator_ops.push(editor_paint_op_rect(
+          "minimap_indicator",
+          minimap_indicator.x,
+          minimap_indicator.y,
+          minimap_indicator.width,
+          minimap_indicator.height,
+          theme.muted_red,
+          theme.muted_green,
+          theme.muted_blue,
+          1.0
+        ))
+        solid = editor_paint_ops_flatten(solid, width, height, minimap_indicator_ops)
       end
     end
 
+    let mut overlay_ops: [EditorPaintOp] = []
     if dirty_close_overlay_is_visible(app.overlay) then
       editor_gl_scissor_disable()
-      solid = solid_renderer_rect(
-        solid, width, height, width / 2 - 180, height / 2 - 70, 360, 140,
+      overlay_ops.push(editor_paint_op_rect(
+        "dirty_close_panel", width / 2 - 180, height / 2 - 70, 360, 140,
         theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-      )
+      ))
       const discard_rect = dirty_close_overlay_discard_rect(width, height)
       const discard_fill = editor_ux_chrome_hover_draw_entry(
         input, discard_rect, theme.danger_red, theme.danger_green, theme.danger_blue
-      )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        discard_fill.x, discard_fill.y, discard_fill.width, discard_fill.height,
-        discard_fill.red, discard_fill.green, discard_fill.blue, 1.0
       )
       const cancel_rect = dirty_close_overlay_cancel_rect(width, height)
       const cancel_fill = editor_ux_chrome_hover_draw_entry(
         input, cancel_rect, theme.accent_red, theme.accent_green, theme.accent_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
+      overlay_ops.push(editor_paint_op_rect(
+        "dirty_close_discard",
+        discard_fill.x, discard_fill.y, discard_fill.width, discard_fill.height,
+        discard_fill.red, discard_fill.green, discard_fill.blue, 1.0
+      ))
+      overlay_ops.push(editor_paint_op_rect(
+        "dirty_close_cancel",
         cancel_fill.x, cancel_fill.y, cancel_fill.width, cancel_fill.height,
         cancel_fill.red, cancel_fill.green, cancel_fill.blue, 1.0
-      )
+      ))
     end
 
     if editor_ux_context_menu_is_visible(context_menu) then
       editor_gl_scissor_disable()
       const menu_panel = editor_ux_context_menu_panel_rect(context_menu)
-      solid = solid_renderer_rect(
-        solid, width, height,
+      overlay_ops.push(editor_paint_op_rect(
+        "context_menu",
         menu_panel.x, menu_panel.y, menu_panel.width, menu_panel.height,
         theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-      )
+      ))
       let mut menu_item_index = 0
       while menu_item_index < editor_ux_context_menu_item_count() do
         const item_rect = editor_ux_context_menu_item_rect(
@@ -2597,14 +2662,15 @@ fn main() -> i32 = do
         const item_fill = editor_ux_chrome_hover_draw_entry(
           input, item_rect, theme.muted_red, theme.muted_green, theme.muted_blue
         )
-        solid = solid_renderer_rect(
-          solid, width, height,
+        overlay_ops.push(editor_paint_op_rect(
+          "context_menu_item",
           item_fill.x, item_fill.y, item_fill.width, item_fill.height,
           item_fill.red, item_fill.green, item_fill.blue, 1.0
-        )
+        ))
         menu_item_index = menu_item_index + 1
       end
     end
+    solid = editor_paint_ops_flatten(solid, width, height, overlay_ops)
 
     flush_status = solid_renderer_flush_over(solid, width, height)
     editor_gl_scissor_disable()

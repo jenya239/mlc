@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1–q5: chrome/tabs/nav/gutter/text).
+# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1–q6).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -117,6 +117,32 @@ if ! grep -q '"selection"' "$DEMO"; then
 fi
 if grep -q 'editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height' "$DEMO"; then
   fail "demo_live still paints editor_rect via direct solid_renderer_rect (q5)"
+fi
+
+# q6: overlays / minimap / scrollbars / status via ops.
+if ! grep -q 'chrome_tail_ops' "$DEMO"; then
+  fail "demo_live missing chrome_tail_ops (q6)"
+fi
+if ! grep -q '"status"' "$DEMO"; then
+  fail "demo_live missing status paint op id (q6)"
+fi
+if ! grep -q '"minimap"' "$DEMO"; then
+  fail "demo_live missing minimap paint op id (q6)"
+fi
+if ! grep -Eq 'scrollbar_ops|"content_scrollbar"' "$DEMO"; then
+  fail "demo_live missing content scrollbar paint ops (q6)"
+fi
+if ! grep -Eq 'overlay_ops|"dirty_close_panel"|"context_menu"' "$DEMO"; then
+  fail "demo_live missing overlay paint ops (q6)"
+fi
+if ! grep -Eq 'caret_overlay_ops|"caret_overlay"' "$DEMO"; then
+  fail "demo_live missing caret overlay paint ops (q6)"
+fi
+if grep -q 'minimap_rect.x, minimap_rect.y, minimap_rect.width, minimap_rect.height' "$DEMO"; then
+  fail "demo_live still paints minimap_rect via direct solid_renderer_rect (q6)"
+fi
+if grep -qE '0, height - status_height\(\), width, status_height\(\)' "$DEMO"; then
+  fail "demo_live still paints status via direct solid_renderer_rect (q6)"
 fi
 
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"

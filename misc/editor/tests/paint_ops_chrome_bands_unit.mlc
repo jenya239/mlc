@@ -83,6 +83,25 @@ fn main() -> i32 = do
   if selection.widget_id != "selection" then
     return 16
   end
+  // q6: status / minimap / overlay ids
+  const status = editor_paint_op_rect(
+    "status", 0, 580, 800, 20, 0.2, 0.2, 0.25, 1.0
+  )
+  if status.widget_id != "status" then
+    return 17
+  end
+  const minimap = editor_paint_op_rect(
+    "minimap", 700, 40, 80, 400, 0.3, 0.3, 0.35, 1.0
+  )
+  if minimap.widget_id != "minimap" then
+    return 18
+  end
+  const context_menu = editor_paint_op_rect(
+    "context_menu", 100, 100, 160, 80, 0.4, 0.4, 0.45, 1.0
+  )
+  if context_menu.widget_id != "context_menu" then
+    return 19
+  end
   print("[ux] draw_ops_from_live_state ok")
   0
 end

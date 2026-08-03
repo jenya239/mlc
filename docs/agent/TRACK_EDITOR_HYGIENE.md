@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q mid (q5 Critic **done**; Green q6 overlays next); queue head
+## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q mid (Green q6 done; Critic q6 next); queue head
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -625,7 +625,7 @@ restore; tree clean of Critic mutations):
 | Fix | Behaviour-preserving, **one paint region per Green commit**. Do **not** overload scenario `UxDrawOp`. New editor-local `EditorPaintOp` + flatten in `misc/editor/ux/paint_ops.mlc`. Region order: **(q1)** chrome band fills only — window background + header + tab_bar strip + toolbar strip (`solid_renderer_rect` at the top of the live paint block before tab-slot/hover loops) → **(q2)** tab strip slots/active/hover fills → **(q3)** tree / breadcrumb / folder-nav chrome fills → **(q4)** gutter → **(q5)** text/glyphs → **(q6)** overlays / minimap / scrollbars / status. Each Green: that region builds `[EditorPaintOp]`, one flatten to GL, remove the region's direct `solid_renderer_rect` calls. Critic after each region Green before the next region |
 | Module touch (q1) | new `misc/editor/ux/paint_ops.mlc` + `paint_ops_flatten.mlc`; `misc/editor/demo_live.mlc` (chrome-band paint only); new `scripts/run_ux_draw_ops_from_live_state.sh` (+ unit). Later regions extend the same module + gate family |
 | Gate | `run_ux_draw_ops_from_live_state` (q1): arch — `EditorPaintOp` / flatten present; demo chrome-band paint goes through ops (no direct bg/header/tab_bar/toolbar strip `solid_renderer_rect` quartet at paint start); unit or scenario builds chrome-band ops and flattens (≥4 rect ops). Plus `dev_gate_fast`. Later regions extend the same gate (or `_qN` siblings auto-picked by `run_ux_gate`) |
-| Sabotage (required before close of each region) | q1: restore direct chrome-band `solid_renderer_rect` quartet bypassing ops/flatten → gate fail. q2: restore direct `solid_renderer_rect` with `tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height` → gate fail. q3: restore direct `tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height` (or breadcrumb_fill packed args) → gate fail. q4: restore direct `gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height` → gate fail. q5: restore direct `editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height` → gate fail |
+| Sabotage (required before close of each region) | q1: restore direct chrome-band `solid_renderer_rect` quartet bypassing ops/flatten → gate fail. q2: restore direct `solid_renderer_rect` with `tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height` → gate fail. q3: restore direct `tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height` (or breadcrumb_fill packed args) → gate fail. q4: restore direct `gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height` → gate fail. q5: restore direct `editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height` → gate fail. q6: restore direct `minimap_rect.x, minimap_rect.y, minimap_rect.width, minimap_rect.height` (or packed status rect) → gate fail |
 | REG | no (`misc/editor/**` + `misc/gui` untouched; scenario `UxDrawOp` unchanged) |
 | Out of scope | Migrating all regions in one Green; SceneNode / `GUI_ARCHITECTURE` Deviation; changing scenario `editor_ux_draw_frame` semantics; §107r behavioural gate rewrite |
 
@@ -645,7 +645,7 @@ restore; tree clean of Critic mutations):
 | 9 | Critic q4 | **done** 2026-08-03 — independent green; sabotage packed `gutter_rect` → FAIL; restored; UX 136/136 ×2 |
 | 10 | Green q5: text pane + under-glyph fills via ops | **done** 2026-08-03 — `text_pane_ops` + `text_content_ops` (current_line/trailing_ws/find/selection/caret); gate extended |
 | 11 | Critic q5 | **done** 2026-08-03 — independent green; sabotage packed `editor_rect` → FAIL; restored; UX 136/136 ×2 |
-| 12 | Green q6: overlays / minimap / scrollbars / status | pending |
+| 12 | Green q6: overlays / minimap / scrollbars / status | **done** 2026-08-03 — `chrome_tail_ops`/`scrollbar_ops`/`overlay_ops`/`caret_overlay_ops`; gate extended |
 | 13 | Critic q6 | pending |
 
 ## §107r `EDITOR_UX_GATE_BEHAVIORAL` (EHA-19)

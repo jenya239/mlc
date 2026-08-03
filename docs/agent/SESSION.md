@@ -438,3 +438,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q q5 Critic CLOSED.** Advances to Green q6 |
 | issues  | none |
 | next    | ROLE=Driver STEP=12 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q6 — overlays/minimap/scrollbars/status via `EditorPaintOp`; gate extend; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q6) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=12, §107q Green q6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 12 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | q6 via ops: `chrome_tail_ops` (minimap/divider/status), `folder_scroll_ops`, `scrollbar_ops`, `minimap_indicator_ops`, `overlay_ops` (dirty_close/context_menu), `caret_overlay_ops`; gate/unit extended. Residual: toolbar-button + folder-row hover still direct `solid_renderer_rect` (outside Decision q6) |
+| verify  | green `ux_ok`; sab packed `minimap_rect` → FAIL; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q STEP=12 done (Green q6).** Critic q6 next |
+| issues  | none |
+| next    | ROLE=Critic STEP=13 TRACK=TRACK_EDITOR_HYGIENE (§107q q6 — independent rebuild+rerun; sabotage: restore packed `minimap_rect`; `run_ux_gate` ×2; close §107q → §107r Decision) |
