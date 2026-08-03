@@ -160,7 +160,7 @@ Baseline after §108a–c: hit-stable hover skips frames; chrome-only reuses tex
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
-| 1 | Red: `run_ux_hover_cpu_budget_red.sh` | pending |
+| 1 | Red: `run_ux_hover_cpu_budget_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no green gate / no L2 ceiling; idle gate ignores pointer) |
 | 2 | Green: L1 + measure-then-write L2 ceiling; `run_ux_gate` ×2 + `dev_gate_fast` | pending |
 | 3 | Critic | pending |
 

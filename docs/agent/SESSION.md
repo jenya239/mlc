@@ -543,3 +543,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108d STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d Red — `run_ux_hover_cpu_budget` fails on today's tree: no hover-under-pointer gate / no L2 ceiling path) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=1, §108d Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_ux_hover_cpu_budget_red.sh` — asserts missing green gate / L2 ceiling; idle gate ignores pointer |
+| verify  | `bash scripts/run_ux_hover_cpu_budget_red.sh` → FAIL exit 1 (`no hover-under-pointer CPU/rebuild gate`) |
+| result  | **§108d STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d Green — L1 `hover_cpu_budget` + measure-then-write L2 ceiling; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
