@@ -1058,7 +1058,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       §108a EDITOR_DIRTY_TAXONOMY (CLOSED 2026-08-03)
         → §108b EDITOR_RETAIN_TEXT_LAYER (CLOSED 2026-08-03)
         → §108c EDITOR_COMPOSE_PRESENT (CLOSED 2026-08-03)
-        → §108d EDITOR_HOVER_CPU_GATE (Decision next)
+        → §108d EDITOR_HOVER_CPU_GATE (Decision done; Red next)
       → [agent/TRACK_EDITOR_RETAINED_PAINT](agent/TRACK_EDITOR_RETAINED_PAINT.md))**
   → **EDITOR_HYGIENE (§107, open — remainder AFTER §108; was QUEUE HEAD 2026-08-01; authorized ahead of §103a/§104 W2;
       source audit `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`):
