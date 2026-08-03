@@ -453,3 +453,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108b STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b — independent rebuild+rerun; sabotage: invalidate/drop retained batch every frame; `run_ux_gate` ×2; close §108b → §108c Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_RETAINED_PAINT STEP=3, §108b)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green `ux_ok`. Sab1 `can_replay→0` fails. Sab2 demo invalidate-before-`can_replay` initially still green — strengthened gate arch check; sab2 then fails. Restored. Closed §108b |
+| verify  | green ok; sab1/sab2 exit 1; `run_ux_gate` ×2 = 134/134 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108b CLOSED.** Advances to §108c |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c `EDITOR_COMPOSE_PRESENT` — freeze Decision: compose text/chrome/overlay; caret present_only; red first) |

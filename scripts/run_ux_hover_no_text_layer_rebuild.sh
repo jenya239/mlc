@@ -32,6 +32,19 @@ if ! grep -q 'editor_ux_text_layer_batch_can_replay' "$DEMO"; then
   fail "demo_live not gated by can_replay"
 fi
 
+# Decision sabotage: invalidate/drop retained batch immediately before can_replay
+# on the document path must fail green (same pattern as §108a mouse→content_dirty).
+ruby -e '
+demo = File.read(ARGV[0])
+needle = "else if editor_ux_text_layer_batch_can_replay(text_layer_batch, layout_skip)"
+index = demo.index(needle)
+abort "demo_live missing document-path can_replay site" if index.nil?
+previous = demo[0...index].lines.reverse_each.find { |line| !line.strip.empty? }
+if previous && previous.include?("editor_ux_text_layer_batch_invalidate")
+  abort "invalidate immediately before can_replay (Decision sabotage)"
+end
+' "$DEMO" || fail "demo_live clears retained batch before can_replay"
+
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"
 export MLCC_OBJ_CLEAN="${MLCC_OBJ_CLEAN:-1}"
 export MLCC_PCH="${MLCC_PCH:-0}"

@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (STEP=0/1/2 Decision+Red+Green done; Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §108a–§108b **CLOSED**; queue head **§108c `EDITOR_COMPOSE_PRESENT`** (Decision next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -70,7 +70,7 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 
 ---
 
-## §108b `EDITOR_RETAIN_TEXT_LAYER` — **queue head**
+## §108b `EDITOR_RETAIN_TEXT_LAYER` — **CLOSED**
 
 ### Decision (**frozen** 2026-08-03, Driver STEP=0)
 
@@ -96,11 +96,11 @@ Baseline after §108a: chrome-only / `layout_skip` frames still rebuild gutter+e
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_hover_no_text_layer_rebuild_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no retain/replay; `editor_lines` rebuilt each paint) |
 | 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — `text_layer_batch` retain/replay; green `ux_ok`; UX 134/134 ×2 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — Decision sabotage was not load-bearing (demo invalidate-before-replay still green); gate strengthened (arch: no invalidate immediately before document-path `can_replay`); sab1/sab2 fail; UX 134/134 ×2 |
 
 ---
 
-## §108c `EDITOR_COMPOSE_PRESENT`
+## §108c `EDITOR_COMPOSE_PRESENT` — **queue head**
 
 | Item | Choice |
 |------|--------|
