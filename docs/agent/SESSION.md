@@ -318,3 +318,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=6 done (Green q3).** Critic q3 next |
 | issues  | first `run_ux_gate` flaked `idle_cpu_budget_stable` + `overlay_theme_tint_stable` under disk pressure; both pass alone; re-run ×2 = 132/132 |
 | next    | ROLE=Critic STEP=7 TRACK=TRACK_EDITOR_HYGIENE (§107q q3 — independent rebuild+rerun; sabotage: restore direct `tree_rect` solid_renderer_rect; `run_ux_gate` ×2; then Green q4) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=7, §107q q3 — blocked)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 7 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent green ok for `50d862e4`. Sabotage: direct `tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height` → FAIL; restored. `run_ux_gate` killed after thrash |
+| verify  | critic green ok; sab exit 1; restore ok; UX incomplete — first gate ~21/132 in ~16+ min at disk 100% |
+| result  | **§107q q3 Critic incomplete** — sabotage load-bearing; UX ×2 blocked by disk |
+| issues  | root filesystem 100% (`df` 4.2G free thrashing); `run_ux_gate` ~1 scenario/min |
+| next    | ROLE=Driver STEP=debug-verify TRACK=TRACK_EDITOR_HYGIENE (§107q q3 — free disk ≥10G; re-run `run_ux_gate` ×2; then close Critic q3 → Green q4) |
