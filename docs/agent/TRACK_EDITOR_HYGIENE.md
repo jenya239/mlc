@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107j **CLOSED**; §107k Green done (Critic next)
+## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; queue head §107l Decision
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -463,7 +463,20 @@ Restored; `run_ux_gate` ×2 = 124/124 (`EXIT1=0` / `EXIT2=0`).
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: unconditional grid rebuild; damage unused; green absent | **done** 2026-08-03 — `scripts/run_ux_terminal_idle_no_rebuild_red.sh` exits non-zero |
 | 2 | Green: damage-keyed cache + scenario; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `terminal_panel_session_grid_cache_tick`; `run_ux_terminal_idle_no_rebuild` |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107k Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `9caf45cc`. Gate
+`run_ux_terminal_idle_no_rebuild`: fresh `.tmp/critic_107k` → `ux_ok`. Sabotages
+(then `git checkout --` restore; tree clean of Critic mutations):
+1. Always rebuild (`if false && damage == …` early-return) →
+   `ux_fail … idle rebuild_count` (binary exit 3 / script exit 1).
+2. Strip `terminal_panel_session_grid_cache_tick` / cached draw from `demo_live` →
+   arch FAIL (`demo_live missing terminal_panel_session_grid_cache_tick`).
+`run_ux_gate` ×2 = 125/125.
+
+**§107k CLOSED.** Next: §107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY`.
 
 ## §107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY` (EHA-12)
 `edit_indent_tab` / `edit_outdent_lines` (`document/indent.mlc`) do
