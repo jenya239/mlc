@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107o **CLOSED**; §107p Decision+Red done (Green next)
+## Status: **open** 2026-08-03 — §107a–§107o **CLOSED**; §107p Green done (Critic next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -610,7 +610,7 @@ restore; tree clean of Critic mutations):
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: hit-test `< 10` + magic 10; table/CmdLoadSession absent | **done** 2026-08-03 — `scripts/run_ux_toolbar_table_single_source_red.sh` exits non-zero |
-| 2 | Green: table + CmdLoadSession; hit-test/draw unified; gates; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 2 | Green: table + CmdLoadSession; hit-test/draw unified; gates; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `scripts/run_ux_toolbar_table_single_source.sh` + unit `toolbar_table_unit` |
 | 3 | Critic | pending |
 
 ## §107q `EDITOR_DRAW_OPS` (EHA-17) — largest, strictly incremental

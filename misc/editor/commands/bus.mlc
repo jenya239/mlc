@@ -5,6 +5,7 @@ export type FocusTarget = FocusTree | FocusEditor
 export type CommandId =
   | CmdSave
   | CmdSaveSession
+  | CmdLoadSession
   | CmdUndo
   | CmdRedo
   | CmdCopy
@@ -57,6 +58,7 @@ export fn command_id_tag(command: CommandId) -> string =
   match command
   | CmdSave => "save"
   | CmdSaveSession => "save_session"
+  | CmdLoadSession => "load_session"
   | CmdUndo => "undo"
   | CmdRedo => "redo"
   | CmdCopy => "copy"

@@ -1,0 +1,32 @@
+// TRACK_EDITOR_HYGIENE §107p — toolbar table unit.
+import {
+  command_id_tag
+} from '../commands/bus'
+import {
+  editor_app_toolbar_count,
+  editor_app_toolbar_label_at,
+  editor_app_toolbar_command_at
+} from '../app/chrome'
+
+fn main() -> i32 = do
+  if editor_app_toolbar_count() != 11 then
+    return 1
+  end
+  if editor_app_toolbar_label_at(9) != "SessSv" then
+    return 2
+  end
+  if editor_app_toolbar_label_at(10) != "SessLd" then
+    return 3
+  end
+  if command_id_tag(editor_app_toolbar_command_at(9)) != "save_session" then
+    return 4
+  end
+  if command_id_tag(editor_app_toolbar_command_at(10)) != "load_session" then
+    return 5
+  end
+  if command_id_tag(editor_app_toolbar_command_at(11)) != "none" then
+    return 6
+  end
+  print("[ux] toolbar_table_unit ok")
+  0
+end

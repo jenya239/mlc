@@ -1,4 +1,4 @@
-// TRACK_EDITOR_LIVE_POLISH STEP=6 — chrome metrics + toolbar mapping (app seed).
+// TRACK_EDITOR_HYGIENE §107p — single toolbar label+command table.
 import { Rect, rect_new } from '../../gui/layout'
 import {
   CommandId,
@@ -12,9 +12,14 @@ import {
   CmdNextTab,
   CmdPrevTab,
   CmdNone,
-  CmdSave,
-  CmdSaveSession
+  CmdSaveSession,
+  CmdLoadSession
 } from '../commands/bus'
+
+export type ToolbarEntry = {
+  label: string,
+  command: CommandId
+}
 
 export fn editor_app_line_height() -> i32 = 14
 export fn editor_app_font_size() -> i32 = 11
@@ -26,36 +31,37 @@ export fn editor_app_status_height() -> i32 = 16
 export fn editor_app_toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
   rect_new(4 + index * 52, bar_y + 1, 50, editor_app_toolbar_height() - 2)
 
+export fn editor_app_toolbar_entries() -> [ToolbarEntry] = do
+  let mut entries: [ToolbarEntry] = []
+  entries.push(ToolbarEntry { label: "<Prev", command: CmdPrevTab })
+  entries.push(ToolbarEntry { label: "Next>", command: CmdNextTab })
+  entries.push(ToolbarEntry { label: "Close", command: CmdCloseTab })
+  entries.push(ToolbarEntry { label: "Undo", command: CmdUndo })
+  entries.push(ToolbarEntry { label: "Redo", command: CmdRedo })
+  entries.push(ToolbarEntry { label: "SelAll", command: CmdSelectAll })
+  entries.push(ToolbarEntry { label: "Copy", command: CmdCopy })
+  entries.push(ToolbarEntry { label: "Cut", command: CmdCut })
+  entries.push(ToolbarEntry { label: "Paste", command: CmdPaste })
+  entries.push(ToolbarEntry { label: "SessSv", command: CmdSaveSession })
+  entries.push(ToolbarEntry { label: "SessLd", command: CmdLoadSession })
+  entries
+end
+
+export fn editor_app_toolbar_count() -> i32 =
+  editor_app_toolbar_entries().length()
+
+export fn editor_app_toolbar_label_at(index: i32) -> string = do
+  const entries = editor_app_toolbar_entries()
+  if index < 0 || index >= entries.length() then
+    return ""
+  end
+  entries[index].label
+end
+
 export fn editor_app_toolbar_command_at(tool: i32) -> CommandId = do
-  if tool == 0 then
-    return CmdPrevTab
+  const entries = editor_app_toolbar_entries()
+  if tool < 0 || tool >= entries.length() then
+    return CmdNone
   end
-  if tool == 1 then
-    return CmdNextTab
-  end
-  if tool == 2 then
-    return CmdCloseTab
-  end
-  if tool == 3 then
-    return CmdUndo
-  end
-  if tool == 4 then
-    return CmdRedo
-  end
-  if tool == 5 then
-    return CmdSelectAll
-  end
-  if tool == 6 then
-    return CmdCopy
-  end
-  if tool == 7 then
-    return CmdCut
-  end
-  if tool == 8 then
-    return CmdPaste
-  end
-  if tool == 9 then
-    return CmdSaveSession
-  end
-  CmdNone
+  entries[tool].command
 end

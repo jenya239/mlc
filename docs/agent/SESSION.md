@@ -198,3 +198,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107p STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107p Green — table + CmdLoadSession + unified hit-test/draw; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107p Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `CmdLoadSession` + `ToolbarEntry` table in chrome; demo hit-test/draw/dispatch unified; `run_ux_toolbar_table_single_source` + `toolbar_table_unit` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 131/131 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107p STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107p — independent rebuild+rerun; sabotage: restore `while tool < 10` + index-10 special case; `run_ux_gate` ×2; close §107p → §107q Decision) |
