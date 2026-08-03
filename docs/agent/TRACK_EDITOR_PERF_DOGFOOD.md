@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -200,12 +200,38 @@ Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_
 
 | Item | Choice |
 |------|--------|
-| Problem | H2/H14: §108d L2 cpu=0; idle gate ignores pointer; PERF baseline skips heavy path |
-| Fix | Replace/augment hover L2 to require `MLC_GLFW_VISIBLE=1` + dogfood file; delete or demote cpu=0 ceiling; ensure PERF_FULL (or successor) is what “perf green” means for content budgets |
+| Problem | H2/H14: §108d L2 cpu=0 under `VISIBLE=0` + `HOVER_CPU_PROBE` (no dogfood open); idle gate is mouse-away only; `MLC_EDITOR_PERF` skip-heavy is not content-budget green; PERF_FULL ceiling `20e6` ≈2.7× measured ~7.3e6 on 10k — false-green |
+| Fix | Below (Decision frozen 2026-08-04) |
 | Depends on | §109a–b |
-| Gate | Sabotage restoring full content rebuild on hover fails L2 under visible load; old “cpu=0 OK” path removed or cannot pass alone |
+| Gate | Visible hover L2 cannot pass alone via old cpu=0 path; PERF_FULL ceiling measured-then-written fails inflated total; sabotage content rebuild on hover fails visible L2 |
+| Sabotage | (1) Restore `VISIBLE=0` L2-only as sole hover proof → honesty gate fails. (2) Force content rebuild every hover frame under visible L2 → fail. (3) Inflate PERF_FULL `total_us` above new ceiling → fail |
+| Out of scope | Cutting content-frame cost (§109d); wake geometry (§109b done); SceneNode; interactive-only residual vs test pointer |
 
----
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Hover CPU authority | **Load-bearing** hover/still/jitter CPU proof = `scripts/run_editor_perf_wake_on_hover.sh` (§109b): `MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_OPEN`→`misc/editor/demo_live.mlc`, text-rect probe, `hit=text`, still≲**8%**, jitter≲**15%**. No other script may claim “hover CPU green” alone |
+| Demote §108d L2 | Rewrite `scripts/run_ux_hover_cpu_budget.sh` L2: require `MLC_GLFW_VISIBLE=1` + open `demo_live.mlc` (same as wake) + text-rect/still probe; **forbid** `VISIBLE=0` skip-green; **delete** committed `COMMITTED_HOVER_CPU_BUDGET_PERCENT=10` tied to measured cpu=0. New L2 ceiling = epic still budget **8** (env may raise, not lower). L1 counter scenario may remain. Script header must state it is not sufficient without wake harness for epic close |
+| Idle gate | `run_ux_idle_cpu_budget_stable.sh` = mouse-**away** only. Header must say: must not be cited as still-over-text / hover green |
+| PERF skip-heavy | `MLC_EDITOR_PERF=1` (`perf_skip_heavy`) = micro-smoke only. Must not be the content-budget gate; honesty harness fails if a “perf green” entry point uses skip-heavy without FULL |
+| PERF_FULL ceiling | Content-budget gate = `scripts/run_editor_demo_live_perf_full_smoke.sh`. Green: remeasure 10k×5 `total_us` on current tree; write `TOTAL_US_MAX` default to **measured × ≤1.25** (integer), replacing `20000000`. Ceiling must fail a sabotage that roughly doubles draw work / adds multi-second stall. Keep `MLC_EDITOR_PERF_FULL` no-skip invariant |
+| Honesty harness | `scripts/run_editor_perf_gate_honesty.sh`: (1) assert wake harness exists and is the hover authority; (2) assert hover_cpu_budget L2 requires VISIBLE=1 + OPEN demo_live and committed ceiling ≥8 with no cpu=0 provenance; (3) assert PERF_FULL default `TOTAL_US_MAX` ≤ measured×1.25 and `< 20000000`; (4) run wake L2 still+jitter (or invoke wake script) under VISIBLE=1; (5) run PERF_FULL smoke under new ceiling. Fail if old VISIBLE=0 L2 path still greenable alone |
+| Red | No `run_editor_perf_gate_honesty.sh`; hover L2 still `VISIBLE=0` / cpu=0 ceiling 10; PERF_FULL still default `20000000` |
+| Green | Honesty harness green; hover L2 rewritten; PERF_FULL ceiling rewritten + measured number pasted under this §109c; red fails “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: honesty gap / false-green paths present | pending |
+| 2 | Green: rewrite gates + honesty harness | pending |
+| 3 | Critic | pending |
+
+### Gate honesty (measured)
+
+_pending Green_
 
 ## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET`
 

@@ -453,3 +453,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109b CLOSED (Critic OK).** No false-done |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c `EDITOR_PERF_GATE_HONESTY` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109c Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109c: wake harness = hover authority; rewrite hover L2 VISIBLE=1+OPEN; demote cpu=0 ceiling; PERF skip-heavy micro-only; PERF_FULL TOTAL_US_MAX≤measured×1.25; `run_editor_perf_gate_honesty.sh` |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only |
+| result  | **§109c STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c Red — honesty gap / VISIBLE=0 L2 / PERF_FULL 20e6) |
