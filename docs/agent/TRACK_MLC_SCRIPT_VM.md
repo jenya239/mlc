@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Decision frozen; STEP=1 Red next)
+## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Red done; STEP=2 Green next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -82,7 +82,7 @@ release backend — не цель никогда (третий путь испо
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
-| 1 | Red: bytecode format / unit runner absent | **open** |
+| 1 | Red: bytecode format / unit runner absent | **done** 2026-08-03 — `run_script_vm_bytecode_format_unit_red.sh` exits 1 (`no script_vm bytecode format / unit`) |
 | 2 | Green: `bytecode.mlc` + unit + fixtures; `dev_gate_fast` | **open** |
 | 3 | Critic | **open** |
 

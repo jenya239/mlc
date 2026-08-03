@@ -78,3 +78,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103b STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103b Red — `run_script_vm_bytecode_format_unit` fails: no `bytecode.mlc` / unit) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103b Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_script_vm_bytecode_format_unit_red.sh`: fail while `bytecode.mlc` / green runner / unit absent (§103a `value.mlc` may exist) |
+| verify  | `bash scripts/run_script_vm_bytecode_format_unit_red.sh` → FAIL exit 1 (`no script_vm bytecode format / unit`) |
+| result  | **§103b STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103b Green — `bytecode.mlc` + unit/fixtures; `dev_gate_fast`; then Critic) |
