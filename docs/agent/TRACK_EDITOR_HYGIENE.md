@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; §107i Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; queue head §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT`
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -391,7 +391,20 @@ Restored; `run_ux_gate` ×2 = 122/122 (`EXIT1=0` / `EXIT2=0`).
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: spans tick outside `layout_skip`; green gate absent | **done** 2026-08-03 — `scripts/run_ux_hover_no_full_compare_red.sh` exits non-zero |
 | 2 | Green: gate spans tick under `layout_skip`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — paint `frame_layout_tick_spans` under `layout_skip == 0 && !perf_skip_heavy`; `ux_ok hover_no_full_compare`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 123/123 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107i Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `67d4e1ed`. Separate out dir
+`.tmp/critic_107i`: `ux_ok hover_no_full_compare`. Sabotages (then
+`git checkout --` restore; tree clean of Critic mutations):
+1. Drop `layout_skip` guard around paint spans tick → FAIL exit 1
+   (`spans tick not gated by layout_skip`).
+2. Force always-rebuild in `editor_ux_syntax_span_cache_tick` → FAIL exit 1
+   (`ux_fail hover_no_full_compare same_version_rebuild`).
+Restored; `run_ux_gate` ×2 = 123/123 (`EXIT1=0` / `EXIT2=0`).
+
+**§107i CLOSED.** Next: §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT`.
 
 ## §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` (EHA-18)
 `collect_visible_visual_rows_pixel_budget` runs up to 3× per content frame

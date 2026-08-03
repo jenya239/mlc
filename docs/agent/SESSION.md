@@ -409,3 +409,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107i STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107i — independent rebuild+rerun; sabotages: drop layout_skip guard, force always-rebuild span cache; `run_ux_gate` ×2; close §107i → §107j Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107i close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107i Green `67d4e1ed`. Fresh `.tmp/critic_107i`: `ux_ok`. Sabotages: drop layout_skip guard → exit 1; always-rebuild span cache → exit 1; both restored. Closed §107i |
+| verify  | critic scenario ok; sabotage1 exit 1; sabotage2 exit 1; `run_ux_gate` ×2 = 123/123 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107i CLOSED.** Advances to §107j |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` — freeze Decision; red: visible-row collect still multi-call per frame) |
