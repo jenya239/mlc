@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103e `SCRIPT_VM_CONTROL_FLOW`** (§103d CLOSED; STEP=0 Decision next)
+## Status: **open** 2026-08-03 — queue head **§103e `SCRIPT_VM_CONTROL_FLOW`** (Decision frozen; STEP=1 Red next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -150,10 +150,32 @@ release backend — не цель никогда (третий путь испо
 
 ### §103e `SCRIPT_VM_CONTROL_FLOW`
 
-Conditional/unconditional jumps, comparison ops, backward branches (loops).
-Gate: a hand-assembled sum-1-to-N loop program produces the correct result
-for a fixed N; verifier (§103c) rejects a jump target outside bounds
-introduced by this opcode set specifically.
+#### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | §103d rejects `JUMP`/`JUMP_IF_FALSE` as `unsupported_opcode`; no compare ops → cannot express loops; track gate needs sum-1-to-N |
+| Fix | Extend `script_vm/bytecode.mlc` + `verifier.mlc` + `interpreter.mlc`. Keep entry `run_arithmetic(words, constants, register_count) -> RunResult` (API frozen §103d; name historical). Execute `JUMP`/`JUMP_IF_FALSE`; add compare opcodes that write `ValueBool` |
+| New opcodes (tags; §103b gaps) | `EQ=10`, `NE=11`, `LT=12`, `LE=13`, `GT=14`, `GE=15`. Encoding: A=dst, B=lhs, C=rhs (narrow only). Disasm + encode helpers. Verifier: known-opcode + register checks (A/B/C) |
+| JUMP semantics | Unconditional: `program_counter = primary + span + instruction_jump_offset(...)`. Offset may be negative (loops). Target already constrained by §103c verifier (primary boundary / bounds) — interpreter assumes verify-first |
+| JUMP_IF_FALSE | A=cond register. **Falsy** → take jump (same PC rule as JUMP): `ValueBool(false)`, `ValueNil`, `ValueInt32(0)`, `ValueFloat64(0.0)`. All other values → fall through (`program_counter += span`) |
+| Compare semantics | Same-kind only: Int32⊛Int32 or Float64⊛Float64 → `ValueBool`. Mixed / Nil/Bool operands → `RunErr("type", primary)`. Float compares use IEEE relational ops (NaN → false for `<`/`<=`/`>`/`>=`/`==`; `!=` true if unordered) |
+| Sum-1-to-N fixture | Fixed `N=10`. Hand-built: init `sum=0`, `i=1`, `n=10`; loop body `LE cond,i,n` / `JUMP_IF_FALSE cond,end` / `ADD sum,sum,i` / `ADD i,i,1` / `JUMP loop` / `RETURN sum` → `RunOk` Int32(55) |
+| Verifier gate (extra) | Crafted `JUMP` with target past `words.length()` still → `VerifyErr("branch", …)` (same §103c code); unit asserts `run_arithmetic` maps that to `RunErr("verify", …)` without executing |
+| Build / test | `scripts/run_script_vm_control_flow_unit.sh` → `script_vm/tests/control_flow_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate` |
+| Gate | Unit: sum-1-to-N = 55; forward JUMP skip; JUMP_IF_FALSE taken/not-taken on Bool; one compare `type` err; verify-fail branch passthrough; §103d Int32 ADD fixture still `RunOk(3)`. Red: green runner / unit absent |
+| Sabotage | `JUMP_IF_FALSE` always fall-through (ignore falsy) → sum loop never exits / wrong result → unit fails |
+| REG | no (`script_vm/**` only; bytecode/verifier/interpreter touch) |
+| Out of scope | Heap/GC; calls/closures; new jump forms beyond §103b encoding; changing §103a ValueRep; renaming `run_arithmetic` |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: control-flow unit runner absent | **open** |
+| 2 | Green: compare ops + JUMP exec + unit; `dev_gate_fast` | **open** |
+| 3 | Critic | **open** |
 
 ### §103f `SCRIPT_VM_HEAP_GC_ARENA`
 
