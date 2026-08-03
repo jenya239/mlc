@@ -394,3 +394,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107i STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107i Green — gate spans tick under `layout_skip`; scenario `hover_no_full_compare`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107i Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Paint `frame_layout_tick_spans` under `layout_skip == 0 && !perf_skip_heavy`. Scenario `hover_no_full_compare` + green script (arch + same-version rebuild_count) |
+| verify  | `run_ux_hover_no_full_compare.sh` → `ux_ok`; syntax_highlight_cache ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 123/123 |
+| result  | **§107i STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107i — independent rebuild+rerun; sabotages: drop layout_skip guard, force always-rebuild span cache; `run_ux_gate` ×2; close §107i → §107j Decision) |

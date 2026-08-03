@@ -2183,8 +2183,9 @@ fn main() -> i32 = do
     // One full-buffer span cache for paint + minimap (scroll does not re-lex).
     // Baseline/terminal perf smoke: skip O(n) full-buffer lex on 100k fixtures.
     // PERF_FULL keeps spans live (TRACK_EDITOR_HYGIENE §107d).
+    // §107i — pointer-only hover (layout_skip) reuses span_cache; no retick.
     let mut syntax_spans = frame_layout.span_cache.spans
-    if !perf_skip_heavy then
+    if layout_skip == 0 && !perf_skip_heavy then
       frame_layout = frame_layout_tick_spans(
         frame_layout, document.version, draw_text, 0, draw_text.byte_size()
       )

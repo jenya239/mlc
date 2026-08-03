@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; §107i Decision+Red done (Green next)
+## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; §107i Green done (Critic STEP=3 next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -390,7 +390,7 @@ Restored; `run_ux_gate` ×2 = 122/122 (`EXIT1=0` / `EXIT2=0`).
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: spans tick outside `layout_skip`; green gate absent | **done** 2026-08-03 — `scripts/run_ux_hover_no_full_compare_red.sh` exits non-zero |
-| 2 | Green: gate spans tick under `layout_skip`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 2 | Green: gate spans tick under `layout_skip`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — paint `frame_layout_tick_spans` under `layout_skip == 0 && !perf_skip_heavy`; `ux_ok hover_no_full_compare`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 123/123 |
 | 3 | Critic | pending |
 
 ## §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` (EHA-18)
