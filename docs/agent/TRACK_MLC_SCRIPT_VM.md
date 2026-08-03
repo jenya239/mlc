@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103c `SCRIPT_VM_VERIFIER`** (Red done; STEP=2 Green next)
+## Status: **open** 2026-08-03 — queue head **§103c `SCRIPT_VM_VERIFIER`** (Green done; STEP=3 Critic next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -98,7 +98,7 @@ release backend — не цель никогда (третий путь испо
 | Fix | `script_vm/verifier.mlc`: `verify_function(words: [i32], register_count: i32, constant_count: i32) -> VerifyResult`. Walks the word buffer using §103b `instruction_word_span` / decode helpers. **No interpreter**, no heap, no execution of ops |
 | Opcode scope | §103b set only (tags 1–9). Unknown opcode → `VerifyErrUnknownOpcode`. Heap/call opcodes deferred with later sub-tracks |
 | Checks (each distinct `VerifyErr*` code) | (1) **Register**: any A/B/C used as a register index must be `0 ≤ index < register_count` (`VerifyErrRegister`). (2) **Constant**: `LOAD_CONST` index (narrow B or wide trailing) must be `0 ≤ index < constant_count` (`VerifyErrConstant`). (3) **Branch**: for `JUMP`/`JUMP_IF_FALSE`, `target = word_index + span + offset` must satisfy `0 ≤ target ≤ words.length()` and land on a **primary instruction boundary** (not on a wide trailing word) (`VerifyErrBranch`). (4) **Shape**: wide primary (`C=1`) without a following word → `VerifyErrTruncatedWide`. Empty buffer or missing terminal path not required in §103c (no CFG reachability / “must RETURN”) |
-| Result type | `VerifyResult = VerifyOk \| VerifyErr { code: string, word_index: i32 }` with frozen code strings: `register`, `constant`, `branch`, `truncated_wide`, `unknown_opcode` |
+| Result type | `VerifyResult = VerifyOk \| VerifyErr(string, i32)` — `(code, word_index)` with frozen codes: `register`, `constant`, `branch`, `truncated_wide`, `unknown_opcode` (tuple form; Decision's `{code, word_index}` record maps 1:1 for MLC match/codegen) |
 | Well-formed fixture | Hand-built words: narrow `LOAD_CONST r0,#0` + `LOAD_CONST r1,#1` + `ADD r2,r0,r1` + `RETURN r2` with `register_count=3`, `constant_count=2` → `VerifyOk` |
 | Build / test | `scripts/run_script_vm_verifier_unit.sh` → `script_vm/tests/verifier_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate`. Same pattern as §103a/b |
 | Gate | Unit: fixture accepts; one crafted buffer each for register / constant / branch / truncated_wide / unknown_opcode — each yields its distinct code. Red: green runner / `verifier.mlc` / unit absent |
@@ -111,7 +111,7 @@ release backend — не цель никогда (третий путь испо
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
-| 1 | Red: verifier / unit runner absent | **open** |
+| 1 | Red: verifier / unit runner absent | **done** 2026-08-03 — `run_script_vm_verifier_unit_red.sh` exits 1 (`no script_vm verifier / unit`) |
 | 2 | Green: `verifier.mlc` + unit; `dev_gate_fast` | **open** |
 | 3 | Critic | **open** |
 

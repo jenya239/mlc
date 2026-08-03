@@ -1,0 +1,175 @@
+// TRACK_MLC_SCRIPT_VM §103c — static bytecode verifier (no interpreter).
+// VerifyErr is (code, word_index); Decision's record form maps to this tuple
+// variant for MLC match/codegen.
+import {
+  Instruction,
+  DecodedAbc,
+  instruction_decode,
+  instruction_is_wide,
+  instruction_word_span,
+  instruction_load_const_index,
+  instruction_jump_offset,
+  instruction_opcode_load_const,
+  instruction_opcode_move,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_return,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false
+} from './bytecode'
+
+export type VerifyResult =
+  | VerifyOk
+  | VerifyErr(string, i32)
+
+export fn verify_err_register() -> string = "register"
+export fn verify_err_constant() -> string = "constant"
+export fn verify_err_branch() -> string = "branch"
+export fn verify_err_truncated_wide() -> string = "truncated_wide"
+export fn verify_err_unknown_opcode() -> string = "unknown_opcode"
+
+fn register_in_range(register_index: i32, register_count: i32) -> bool =
+  register_index >= 0 && register_index < register_count
+
+fn constant_in_range(constant_index: i32, constant_count: i32) -> bool =
+  constant_index >= 0 && constant_index < constant_count
+
+fn is_known_opcode(opcode: i32) -> bool = do
+  if opcode == instruction_opcode_load_const() then
+    true
+  else if opcode == instruction_opcode_move() then
+    true
+  else if opcode == instruction_opcode_add() then
+    true
+  else if opcode == instruction_opcode_sub() then
+    true
+  else if opcode == instruction_opcode_mul() then
+    true
+  else if opcode == instruction_opcode_div() then
+    true
+  else if opcode == instruction_opcode_return() then
+    true
+  else if opcode == instruction_opcode_jump() then
+    true
+  else if opcode == instruction_opcode_jump_if_false() then
+    true
+  else
+    false
+  end
+end
+
+fn primary_index_at(primaries: [i32], target: i32) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < primaries.length() do
+    if primaries[index] == target then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
+  if decoded.opcode == instruction_opcode_load_const() then
+    register_in_range(decoded.a, register_count)
+  else if decoded.opcode == instruction_opcode_move() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count)
+  else if decoded.opcode == instruction_opcode_add() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_sub() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_mul() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_div() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_return() then
+    register_in_range(decoded.a, register_count)
+  else if decoded.opcode == instruction_opcode_jump_if_false() then
+    register_in_range(decoded.a, register_count)
+  else
+    true
+  end
+end
+
+fn branch_target_ok(words: [i32], primaries: [i32], primary: i32) -> bool = do
+  const span = instruction_word_span(words, primary)
+  const offset = instruction_jump_offset(words, primary)
+  const target = primary + span + offset
+  if target < 0 then
+    false
+  else if target > words.length() then
+    false
+  else if target < words.length() && !primary_index_at(primaries, target) then
+    false
+  else
+    true
+  end
+end
+
+export fn verify_function(words: [i32], register_count: i32, constant_count: i32) -> VerifyResult = do
+  let mut primaries: [i32] = []
+  let mut word_index = 0
+  let mut early_code = ""
+  let mut early_at = 0
+
+  while word_index < words.length() && early_code == "" do
+    const word_value = words[word_index]
+    const decoded = instruction_decode(Instruction { word: word_value })
+    if !is_known_opcode(decoded.opcode) then
+      early_code = verify_err_unknown_opcode()
+      early_at = word_index
+    else if instruction_is_wide(decoded) && word_index + 1 >= words.length() then
+      early_code = verify_err_truncated_wide()
+      early_at = word_index
+    else
+      primaries.push(word_index)
+      const span = instruction_word_span(words, word_index)
+      word_index = word_index + span
+    end
+  end
+
+  if early_code != "" then
+    VerifyErr(early_code, early_at)
+  else
+    let mut check_index = 0
+    let mut later_code = ""
+    let mut later_at = 0
+    while check_index < primaries.length() && later_code == "" do
+      const primary = primaries[check_index]
+      const word_value = words[primary]
+      const decoded = instruction_decode(Instruction { word: word_value })
+      if !registers_ok(decoded, register_count) then
+        later_code = verify_err_register()
+        later_at = primary
+      else if decoded.opcode == instruction_opcode_load_const() then
+        const constant_index = instruction_load_const_index(words, primary)
+        if !constant_in_range(constant_index, constant_count) then
+          later_code = verify_err_constant()
+          later_at = primary
+        end
+      end
+      if later_code == "" then
+        if decoded.opcode == instruction_opcode_jump() then
+          if !branch_target_ok(words, primaries, primary) then
+            later_code = verify_err_branch()
+            later_at = primary
+          end
+        else if decoded.opcode == instruction_opcode_jump_if_false() then
+          if !branch_target_ok(words, primaries, primary) then
+            later_code = verify_err_branch()
+            later_at = primary
+          end
+        end
+      end
+      check_index = check_index + 1
+    end
+    if later_code != "" then
+      VerifyErr(later_code, later_at)
+    else
+      VerifyOk
+    end
+  end
+end

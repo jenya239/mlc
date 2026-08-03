@@ -1,0 +1,121 @@
+// TRACK_MLC_SCRIPT_VM §103c — verifier unit (accept fixture + distinct rejects).
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_words_jump,
+  instruction_opcode_add,
+  instruction_encode,
+  instruction_opcode_load_const
+} from '../bytecode'
+import {
+  VerifyResult,
+  VerifyOk,
+  VerifyErr,
+  verify_function,
+  verify_err_register,
+  verify_err_constant,
+  verify_err_branch,
+  verify_err_truncated_wide,
+  verify_err_unknown_opcode
+} from '../verifier'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm verifier_unit] FAIL: " + message)
+  code
+end
+
+fn err_code(result: VerifyResult) -> string =
+  match result {
+    VerifyErr(code, _word_index) => code,
+    VerifyOk => ""
+  }
+
+fn is_verify_ok(result: VerifyResult) -> bool =
+  match result { VerifyOk => true, _ => false }
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn well_formed_fixture() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn main() -> i32 = do
+  const ok_words = well_formed_fixture()
+  const ok_result = verify_function(ok_words, 3, 2)
+  if !is_verify_ok(ok_result) then
+    return fail("well-formed fixture rejected code=" + err_code(ok_result), 1)
+  end
+
+  // Register out of range: LOAD_CONST r3 with register_count=3
+  let mut register_bad: [i32] = []
+  register_bad = append_words(register_bad, instruction_words_load_const(3, 0))
+  register_bad = append_words(register_bad, instruction_words_return(0))
+  const register_result = verify_function(register_bad, 3, 1)
+  if is_verify_ok(register_result) then
+    return fail("expected register error", 2)
+  end
+  if err_code(register_result) != verify_err_register() then
+    return fail("expected register code got=" + err_code(register_result), 3)
+  end
+
+  // Constant out of range: LOAD_CONST #5 with constant_count=2
+  let mut constant_bad: [i32] = []
+  constant_bad = append_words(constant_bad, instruction_words_load_const(0, 5))
+  constant_bad = append_words(constant_bad, instruction_words_return(0))
+  const constant_result = verify_function(constant_bad, 1, 2)
+  if is_verify_ok(constant_result) then
+    return fail("expected constant error", 4)
+  end
+  if err_code(constant_result) != verify_err_constant() then
+    return fail("expected constant code got=" + err_code(constant_result), 5)
+  end
+
+  // Branch out of range: JUMP +100 from a one-insn buffer
+  let mut branch_bad: [i32] = []
+  branch_bad = append_words(branch_bad, instruction_words_jump(100))
+  const branch_result = verify_function(branch_bad, 1, 0)
+  if is_verify_ok(branch_result) then
+    return fail("expected branch error", 6)
+  end
+  if err_code(branch_result) != verify_err_branch() then
+    return fail("expected branch code got=" + err_code(branch_result), 7)
+  end
+
+  // Truncated wide: LOAD_CONST wide primary without trailing word
+  let mut truncated: [i32] = []
+  truncated.push(instruction_encode(instruction_opcode_load_const(), 0, 0, 1).word)
+  const truncated_result = verify_function(truncated, 1, 1)
+  if is_verify_ok(truncated_result) then
+    return fail("expected truncated_wide error", 8)
+  end
+  if err_code(truncated_result) != verify_err_truncated_wide() then
+    return fail("expected truncated_wide code got=" + err_code(truncated_result), 9)
+  end
+
+  // Unknown opcode tag 99
+  let mut unknown: [i32] = []
+  unknown.push(instruction_encode(99, 0, 0, 0).word)
+  const unknown_result = verify_function(unknown, 1, 0)
+  if is_verify_ok(unknown_result) then
+    return fail("expected unknown_opcode error", 10)
+  end
+  if err_code(unknown_result) != verify_err_unknown_opcode() then
+    return fail("expected unknown_opcode code got=" + err_code(unknown_result), 11)
+  end
+
+  println("[script_vm] verifier_unit ok")
+  0
+end

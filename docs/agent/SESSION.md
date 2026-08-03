@@ -153,3 +153,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103c STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103c Green — `verifier.mlc` + unit; `dev_gate_fast`; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103c Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `script_vm/verifier.mlc` + unit + `run_script_vm_verifier_unit.sh`; `VerifyErr(code, word_index)` |
+| verify  | green ok; red fails (green present); register-check sabotage → FAIL; restore ok; `dev_gate_fast` 1471/0 |
+| result  | **§103c STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103c — audit verifier codes; then §103d or close §103c) |
