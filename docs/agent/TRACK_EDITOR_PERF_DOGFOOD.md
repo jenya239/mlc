@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109a** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109b** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -79,7 +79,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 
 # Sub-tracks (strict order)
 
-## §109a `EDITOR_PERF_BASELINE_DOGFOOD` — **queue head**
+## §109a `EDITOR_PERF_BASELINE_DOGFOOD` — **CLOSED** 2026-08-04
 
 | Item | Choice |
 |------|--------|
@@ -114,7 +114,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: harness absent / opens README | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_baseline_red.sh` exit 1 |
 | 2 | Green: harness + numbers in track | **done** 2026-08-04 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — **CLOSED** |
 
 ### Baseline (measured)
 
@@ -135,9 +135,15 @@ test-pointer injection — conflicts with interactive dogfood (~32% still); §10
 reconcile probe geometry / hit-stable vs real OS pointer. README open sabotage: harness
 exit 1 before launch.
 
+**Critic 2026-08-04:** Independent short remeasure (1×3s / 1×2s) → idle/still/jitter=0,
+scroll=106, type=100, stall_ms=16 (same order as Driver). Sabotages: README basename +
+missing path → exit 1; red fails (green present). `MLC_GLFW_VISIBLE=1`; no
+`MLC_EDITOR_PERF` skip-heavy. Residual still=0% vs interactive ~32% → §109b (not false-done
+for §109a measure-only gate).
+
 ---
 
-## §109b `EDITOR_PERF_WAKE_ON_HOVER`
+## §109b `EDITOR_PERF_WAKE_ON_HOVER` — **queue head**
 
 | Item | Choice |
 |------|--------|

@@ -378,3 +378,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109a STEP=2 done (Green).** Critic next |
 | issues  | still/jitter 0% under test pointer vs interactive ~32% — §109b |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a — audit harness/open-fail/baseline honesty) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109a)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109a: independent short remeasure (scroll=106/type=100/stall=16; idle/still/jitter=0); README+missing-path sabotages exit 1; red fails; VISIBLE=1; no PERF skip-heavy |
+| verify  | critic out report keys present; sab exits 1; red exit 1; phases in demo.log |
+| result  | **§109a CLOSED (Critic OK).** Residual still=0% → §109b |
+| issues  | none (false-done not found for measure-only gate) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b `EDITOR_PERF_WAKE_ON_HOVER` — Decision freeze) |
