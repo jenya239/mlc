@@ -274,3 +274,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107f STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue`. Autoclose may expand typed bytes — demo falls back to full flatten on length mismatch |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107f — independent rebuild+rerun; sabotage: force full flatten / bump flatten_count on apply_edit → gate fails; `run_ux_gate` ×2; close §107f → §107g Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107f close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107f Green `20591370`. Fresh `.tmp/critic_107f`: `ux_ok edit_no_full_flatten`. Sabotage: bump `flatten_count` in `document_frame_snapshot_apply_edit` → fail exit 2/1; restored clean. Closed §107f |
+| verify  | critic scenario ok; sabotage flatten-bump exit 1; `run_ux_gate` ×2 = 120/120 |
+| result  | **§107f CLOSED.** Advances to §107g |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107g `EDITOR_TERMINAL_TEARDOWN` — freeze Decision; red: tab-strip/window close still skip pty teardown) |

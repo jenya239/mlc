@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107e **CLOSED**; §107f Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107f **CLOSED**; §107g Decision next (Driver STEP=0)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -281,7 +281,22 @@ Both mutators restored; `run_ux_cache_keys_by_version.sh` → `ux_ok`.
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `line_index_apply_edit` / apply_edit snapshot path absent; edit still full-flattens | **done** 2026-08-03 — `scripts/run_ux_edit_no_full_flatten_red.sh` exits non-zero |
 | 2 | Green: apply_edit APIs + wire; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `line_index_apply_edit` + snapshot/cache/`frame_layout_tick_snapshot_edit`; single-caret insert wire in `demo_live` (autoclose mismatch → full tick); `ux_ok edit_no_full_flatten`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 120/120 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107f Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `20591370`. Separate out dir
+`.tmp/critic_107f`: `ux_ok edit_no_full_flatten`. Sabotage (then
+`git checkout --` restore; tree clean):
+1. Bump `flatten_count: previous.flatten_count + 1` in
+   `document_frame_snapshot_apply_edit` →
+   `ux_fail edit_no_full_flatten flatten grew got 2` (binary exit 2 / script exit 1).
+Restored; `run_ux_edit_no_full_flatten.sh` → `ux_ok`.
+`run_ux_gate` ×2 = 120/120 (`EXIT1=0` / `EXIT2=0`).
+
+**§107f CLOSED.** Next: §107g `EDITOR_TERMINAL_TEARDOWN`.
+
+---
 
 ## §107g `EDITOR_TERMINAL_TEARDOWN` (EHA-08 + EHA-09)
 `terminal_panel_session_close` is reached only from `CmdCloseTab`; the tab-strip
