@@ -333,3 +333,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q q3 Critic incomplete** — sabotage load-bearing; UX ×2 blocked by disk |
 | issues  | root filesystem 100% (`df` 4.2G free thrashing); `run_ux_gate` ~1 scenario/min |
 | next    | ROLE=Driver STEP=debug-verify TRACK=TRACK_EDITOR_HYGIENE (§107q q3 — free disk ≥10G; re-run `run_ux_gate` ×2; then close Critic q3 → Green q4) |
+
+### Turn 2026-08-03 (Planner — §108 retained paint queue head)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (docs / queue priority) |
+| track   | docs (PLAN / CONTINUITY / SESSION / TRACK_EDITOR_RETAINED_PAINT / TRACK_EDITOR_HYGIENE) |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | User override: hover still ~77% CPU after §107a–p / layout_skip — open **§108 `TRACK_EDITOR_RETAINED_PAINT`** as queue head ahead of remaining §107q/§107r. Track file written with §108a–d. PLAN row + CONTINUITY override (g) + HARD LIMIT + INSTRUCTIONS_REV bump. §107q q3 Critic disk-block left unfinished (not closed). No editor code in this turn |
+| verify  | Docs-only — no gate claimed |
+| result  | **§108 OPEN as queue head.** §107 remainder deferred |
+| issues  | Disk pressure may still block UX ×2; §108a gates should stay small/unit-first where possible |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a `EDITOR_DIRTY_TAXONOMY` — read track file; freeze Decision; red first: hover with stable hit must not bump content/text rebuild counters) |

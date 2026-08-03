@@ -1,0 +1,103 @@
+# Track: Editor retained paint / damage (§108)
+
+Parent: [../PLAN.md](../PLAN.md) §108.
+Authorized **2026-08-03** as **queue head**, ahead of remaining §107q/§107r
+(user: dogfood still «чудовищно тормозит» on hover; measured idle-away ~0.5%,
+hover ~77% — `layout_skip` skips HarfBuzz but still full-frame paints glyphs/chrome).
+Implements the present-pipeline already frozen in
+[GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) §2/§6/§7 and
+[misc/editor/ARCHITECTURE.md](../../misc/editor/ARCHITECTURE.md)
+(`invalidate → dirty views → layout → scene fragments → flatten → render`).
+Design note: Cursor plan `editor_paint_damage` (2026-08-03).
+
+## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (Driver STEP=0)
+
+Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
+**after** §108d closes (or on a new explicit override). §107q q3 Critic remains
+disk-blocked unfinished — do not silently mark it closed.
+
+## Why
+
+Mature UI stacks do **not** rebuild the whole framebuffer on every mousemove.
+They separate invalidate → layout → paint-dirty → present, and keep retained
+layers. MLC still immediate-paints the full window on hover.
+
+## Global non-goals (binding)
+
+- **No** chrome migration onto `SceneNode` (GUI_ARCHITECTURE Deviation).
+- **No** Flutter/Qt/Skia dependency.
+- **No** treating `SwapInterval(1)` as a perf win (§106).
+- **No** wholesale `demo_live.mlc` rewrite in one commit — one sub-track / layer at a time.
+- **No** `compiler/**` changes unless a Decision re-freeze says otherwise.
+
+## Precedent in-tree
+
+- `pointer_dirty` / `layout_skip` / idle caret overlay (§106) — layout skip only.
+- `EditorPaintOp` (§107q q1–q3) — region ops, still flattened every frame.
+- Terminal `vterm_damage_count` cache (§107k) — domain damage → reuse paint cache.
+- Document `version` (§107e) — content invalidation key.
+
+---
+
+## §108a `EDITOR_DIRTY_TAXONOMY` — **queue head**
+
+### Decision (proposed 2026-08-03; Driver confirms/freezes at STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Single `content_dirty` (+ `pointer_dirty` that still drives a full paint) cannot express chrome-only vs text vs present-only work; hover forces full glyph+tree redraw |
+| Fix | Three frame classes: `content_dirty` (document/scroll/zoom/wrap), `chrome_dirty` (tabs/tree/toolbar/breadcrumb/hover chrome), `present_only` (caret blink / overlay blit). Pointer move with **unchanged hit-style id** schedules **no** frame (cursor only). Overlay/context-menu open must not raise `content_dirty` (EHA-26 / §107 B7) — `chrome_dirty` or `present_only` only |
+| Module touch | `misc/editor/app/frame_input.mlc`, `misc/editor/demo_live.mlc` (loop branch), hit-id helper near existing chrome hover helpers |
+| Gate | `run_ux_hover_stable_hit_no_content_frame`: N pointer moves over the same chrome hit → `content_rebuild_count == 0` and `text_layer_rebuild_count == 0` (counters in `ui/perf.mlc`); move that changes hover target → exactly one chrome path |
+| Sabotage | Force `content_dirty = 1` on every pointer move → gate fails |
+| REG | no |
+| Out of scope | FBO / retained batches (§108b); compose (§108c); numeric CPU ceilings (§108d) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | pending |
+| 1 | Red: scenario fails on today's tree | pending |
+| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 3 | Critic | pending |
+
+---
+
+## §108b `EDITOR_RETAIN_TEXT_LAYER`
+
+| Item | Choice |
+|------|--------|
+| Problem | Even chrome-only frames rebuild visible glyph/gutter draw work |
+| Fix | Retain last text+gutter `EditorPaintOp` batch **or** an FBO for the text viewport across chrome-only / present-only frames; invalidate on `document.version`, scroll, zoom, wrap, text theme. Prefer batch reuse first if FBO plumbing is heavy — Decision at STEP=0 must pick one and stick |
+| Gate | `run_ux_hover_no_text_layer_rebuild`: after one content frame, N hover frames → `text_layer_rebuilds == 0` |
+| Depends on | §108a |
+| Sabotage | Drop retained batch every frame → gate fails |
+
+---
+
+## §108c `EDITOR_COMPOSE_PRESENT`
+
+| Item | Choice |
+|------|--------|
+| Problem | Present still means «re-run the whole paint block» |
+| Fix | Compose three layers: text+gutter / chrome / overlay. Caret blink stays on the present_only path already started in §106 idle overlay |
+| Gate | `run_ux_present_only_caret_no_chrome_rebuild` + unit on compose order |
+| Depends on | §108b |
+
+---
+
+## §108d `EDITOR_HOVER_CPU_GATE`
+
+| Item | Choice |
+|------|--------|
+| Problem | No behavioural gate for hover CPU; §106/`idle_cpu_budget_stable` measure idle without pointer motion |
+| Fix | Behavioural L1/L2: idle (mouse away), hover jitter (same hit), scroll — document measured ceilings after Green, then write them (honesty rule as §102g/§107d). Sabotage: force full content paint on hover → must exceed ceiling / fail counter gate |
+| Depends on | §108a–c (ceilings meaningless before retain) |
+| Note | May absorb / unblock the hover half of §107r; do not invent ceilings before measure |
+
+---
+
+## After §108
+
+Resume **§107q** from Critic q3 / disk-verify (or Green q4 if Critic q3 already closed by then) → q5 → q6 → **§107r**, then §103a → §104 Wave 2.
