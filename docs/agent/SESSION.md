@@ -483,3 +483,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108c STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c Red — `run_ux_present_only_caret_no_chrome_rebuild` fails on today's tree: present_only ungated / no chrome retain counter) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=1, §108c Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_ux_present_only_caret_no_chrome_rebuild_red.sh` — asserts missing `chrome_rebuild_count` / chrome retain / green gate |
+| verify  | `bash scripts/run_ux_present_only_caret_no_chrome_rebuild_red.sh` → FAIL exit 1 (`present_only caret ungated; chrome ops rebuilt each paint`) |
+| result  | **§108c STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c Green — chrome layer retain + `chrome_rebuild_count` + present_only gate + compose-order unit; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
