@@ -198,3 +198,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103d STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103d Red — `run_script_vm_interpreter_arithmetic_unit` fails: no `interpreter.mlc` / unit) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103d Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_script_vm_interpreter_arithmetic_unit_red.sh`: fail while `interpreter.mlc` / green runner / unit absent |
+| verify  | `bash scripts/run_script_vm_interpreter_arithmetic_unit_red.sh` → FAIL exit 1 (`no script_vm interpreter arithmetic / unit`) |
+| result  | **§103d STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103d Green — `interpreter.mlc` + unit + perf; `dev_gate_fast`; then Critic) |
