@@ -137,12 +137,32 @@ Baseline after §108b: text+gutter batch is retained across chrome-only frames, 
 
 ## §108d `EDITOR_HOVER_CPU_GATE` — **queue head**
 
+### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+Baseline after §108a–c: hit-stable hover skips frames; chrome-only reuses text batch; present_only caret skips chrome rebuild. Residual gap from §106 / dogfood: **`run_ux_idle_cpu_budget_stable` samples /proc CPU% with no pointer motion** — it would stay green through a hover that still forced content rebuilds. No gate asserts hover-under-pointer cost after retain. Numeric hover ceilings must **not** be invented here (honesty rule as §102g / §107d).
+
 | Item | Choice |
 |------|--------|
-| Problem | No behavioural gate for hover CPU; §106/`idle_cpu_budget_stable` measure idle without pointer motion |
-| Fix | Behavioural L1/L2: idle (mouse away), hover jitter (same hit), scroll — document measured ceilings after Green, then write them (honesty rule as §102g/§107d). Sabotage: force full content paint on hover → must exceed ceiling / fail counter gate |
+| Problem | No behavioural gate for hover-under-pointer CPU / rebuild; idle gate ignores pointer load |
+| Dual gate | **L1 counters** (deterministic, in `run_ux_gate`): `run_ux_hover_cpu_budget` — after one content frame, N stable-hit hover ticks → `content_rebuild_count` delta == 0 and `text_layer_rebuild_count` delta == 0; hit-id change may bump `chrome_rebuild_count` once, never content/text. **L2 /proc CPU%** (host-sensitive, same class as `idle_cpu_budget_stable`): sample during synthetic hover jitter on the live demo binary; ceiling **`HOVER_CPU_BUDGET_PERCENT` written only after first honest Green measurement** (min-of-rounds + documented headroom) — Decision/Red must leave it unset / absent |
+| Idle | Keep `idle_cpu_budget_stable` unchanged (mouse-away); §108d does not replace it |
+| Scroll | Minimal: one scroll/content event bumps `content_rebuild_count` once (sanity). Deep-scroll / full-path ceilings stay §107c/§107d |
+| Measure protocol | Green STEP=2: measure harness under `MLC_GLFW_VISIBLE=0` with scripted same-hit pointer jitter; record CPU%; write ceiling into green script with headroom; document measured value in TRACK |
+| Sabotage | Force `content_dirty=1` / text-layer rebuild on every pointer move → L1 fails; after L2 ceiling exists, same sabotage must exceed /proc budget |
+| Module touch | `scripts/run_ux_hover_cpu_budget.sh` (+ `_red.sh`), `misc/editor/ux_scenarios/hover_cpu_budget.mlc` (L1); L2 may extend idle-style /proc sampler against `demo_live` binary — prefer no demo_live change unless a measure hook is required |
+| REG | no |
+| Out of scope | Inventing ceilings before measure; SceneNode; finishing §107q; replacing §107r wholesale; FBO |
 | Depends on | §108a–c (ceilings meaningless before retain) |
-| Note | May absorb / unblock the hover half of §107r; do not invent ceilings before measure |
+| Note | May absorb / unblock the hover half of §107r |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: `run_ux_hover_cpu_budget_red.sh` | pending |
+| 2 | Green: L1 + measure-then-write L2 ceiling; `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ---
 
