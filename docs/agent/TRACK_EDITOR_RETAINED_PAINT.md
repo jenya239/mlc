@@ -95,7 +95,7 @@ Baseline after §108a: chrome-only / `layout_skip` frames still rebuild gutter+e
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_hover_no_text_layer_rebuild_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no retain/replay; `editor_lines` rebuilt each paint) |
-| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — `text_layer_batch` retain/replay; green `ux_ok`; UX 134/134 ×2 |
 | 3 | Critic | pending |
 
 ---
