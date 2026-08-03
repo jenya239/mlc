@@ -408,3 +408,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108a CLOSED.** Advances to §108b |
 | issues  | none (gate gap fixed this turn) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b `EDITOR_RETAIN_TEXT_LAYER` — freeze Decision: batch reuse vs FBO; red first) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=0, §108b Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §108b Decision: **retain/replay text+gutter `StaticTextLine` batch** (not FBO); invalidate on version/scroll/zoom/wrap/theme/viewport; chrome-only must not bump `text_layer_rebuild_count`; gate `run_ux_hover_no_text_layer_rebuild` |
+| verify  | Decision text in `TRACK_EDITOR_RETAINED_PAINT.md` STEP=0=done; PLAN §108b → STEP=1 Red; docs-only — no code gate |
+| result  | **§108b STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b Red — `run_ux_hover_no_text_layer_rebuild` fails on today's tree: chrome-only still rebuilds text layer) |

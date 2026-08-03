@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (Driver STEP=0 Decision next)
+## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (STEP=0 Decision **frozen**; Driver STEP=1 Red next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -72,13 +72,31 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 
 ## §108b `EDITOR_RETAIN_TEXT_LAYER` — **queue head**
 
+### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+Baseline after §108a: chrome-only / `layout_skip` frames still rebuild gutter+editor `StaticTextLine` lists and call `static_text_draw_lines_colored` for the text viewport every paint (`demo_live.mlc`). `text_layer_rebuild_count` already bumps when `layout_skip == 0`; chrome-only still redraws glyphs. No editor-viewport FBO in product path (FBO only in text-renderer smokes).
+
 | Item | Choice |
 |------|--------|
-| Problem | Even chrome-only frames rebuild visible glyph/gutter draw work |
-| Fix | Retain last text+gutter `EditorPaintOp` batch **or** an FBO for the text viewport across chrome-only / present-only frames; invalidate on `document.version`, scroll, zoom, wrap, text theme. Prefer batch reuse first if FBO plumbing is heavy — Decision at STEP=0 must pick one and stick |
-| Gate | `run_ux_hover_no_text_layer_rebuild`: after one content frame, N hover frames → `text_layer_rebuilds == 0` |
-| Depends on | §108a |
-| Sabotage | Drop retained batch every frame → gate fails |
+| Problem | Chrome-only / present-only frames still rebuild visible glyph+gutter draw work |
+| Mechanism | **Retain last text+gutter draw batch** (cached `[StaticTextLine]` for gutter+editor text plus gutter fill rect params). On chrome-only / present-only frames: **replay** the retained batch (no line rebuild, no HarfBuzz/span retick). **Not** an FBO / render-to-texture for the text viewport |
+| Why not FBO | No product FBO plumbing in `demo_live`; batch reuse fits existing `EditorPaintOp` / `StaticTextLine` / `text_layer_rebuild_count` (§107q/§108a); FBO deferred unless batch reuse proves insufficient |
+| Invalidate | `document.version`, scroll_x/scroll_y, zoom/font size, wrap width, text/gutter theme RGB, viewport rect size change |
+| Who rebuilds | Content frames (`content_dirty` / `layout_skip == 0`) rebuild + replace retained batch and bump `text_layer_rebuild_count`. Chrome-only / present-only must **not** bump `text_layer_rebuild_count` |
+| Module touch | `misc/editor/demo_live.mlc` (retain/replay around text+gutter draw); small helper under `misc/editor/ux/` if extractable; counters already in `ui/perf.mlc` |
+| Gate | `run_ux_hover_no_text_layer_rebuild`: after one content frame, N chrome-only / stable-hit hover frames → `text_layer_rebuild_count` stays at the post-content value (delta == 0) |
+| Sabotage | Drop / clear retained batch every frame (force rebuild on chrome-only) → gate fails |
+| REG | no |
+| Out of scope | FBO text viewport; chrome compose layers (§108c); CPU ceilings (§108d); SceneNode chrome |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: scenario fails on today's tree | pending |
+| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ---
 
