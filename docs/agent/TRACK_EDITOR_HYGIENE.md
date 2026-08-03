@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107g **CLOSED**; queue head §107h `EDITOR_SHAPE_SEGMENT_BUDGET`
+## Status: **open** 2026-08-03 — §107a–§107g **CLOSED**; §107h Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -335,11 +335,27 @@ Restored; `run_ux_gate` ×2 = 121/121 (`EXIT1=0` / `EXIT2=0`).
 **§107g CLOSED.** Next: §107h `EDITOR_SHAPE_SEGMENT_BUDGET`.
 
 ## §107h `EDITOR_SHAPE_SEGMENT_BUDGET` (EHA-07)
-`line_codepoint_advances_px` falls back, on HarfBuzz cluster mismatch (ligatures),
-to shaping **each codepoint separately** — a 5MB minified single-line file becomes
-millions of `text_shaping_shape` calls. Only real untrusted-content DoS vector.
-**Fix:** chunk the shaped segment (N codepoints) and hard-cap line length for wrap.
-**Gate:** `run_ux_long_single_line_budget` — one 1MB line, frame under a documented budget.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `line_codepoint_advances_px` (`layout/word_wrap.mlc`) shapes the full line slice in one HarfBuzz call, then on cluster/ligature mismatch falls back to **one `text_shaping_shape` per codepoint** with no bound — a multi-MB single-line (minified JS etc.) is an untrusted-content DoS |
+| Fix | (1) `SHAPE_LINE_BYTE_CAP = 65536`: wrap-shape only the first N bytes of a line; remaining codepoints get mono advance `1`. (2) On mismatch, shape in chunks of `SHAPE_SEGMENT_CODEPOINT_MAX = 64` codepoints per `text_shaping_shape` (not 1). Primary (matching) path still shapes the capped slice once |
+| Module touch | `misc/editor/layout/word_wrap.mlc` (`line_codepoint_advances_px` + exported caps); new `misc/editor/ux_scenarios/long_single_line_budget.mlc` + `scripts/run_ux_long_single_line_budget.sh` |
+| Gate | `run_ux_long_single_line_budget`: build a ~1MB single-line document, run one wrap/shape path (`visual_rows_for_line_pixel_budget` or equivalent); assert wall time under a `TOTAL_US_MAX` **written after the first honest Green measurement** (not guessed). Arch asserts both caps exist and the per-codepoint-alone loop is gone |
+| Sabotage (required before close) | (1) Drop `SHAPE_LINE_BYTE_CAP` / shape full line → budget fail. (2) Restore per-codepoint mismatch loop → budget fail or arch fail |
+| REG | no |
+| Out of scope | Changing HarfBuzz/FFI; open-size refusal (§107m); full-path perf smoke (§107d); draw-path shaping in `static_text` |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: caps / chunked mismatch path / green gate absent | **done** 2026-08-03 — `scripts/run_ux_long_single_line_budget_red.sh` exits non-zero |
+| 2 | Green: caps + chunked mismatch; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` (EHA-05 hover half)
 `frame_layout_tick_spans` is called in the paint phase outside `layout_skip`, so

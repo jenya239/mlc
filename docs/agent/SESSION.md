@@ -334,3 +334,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107g CLOSED.** Advances to §107h |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107h `EDITOR_SHAPE_SEGMENT_BUDGET` — freeze Decision; red: long single-line shape path still uncapped) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107h Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107h Decision (`SHAPE_LINE_BYTE_CAP=65536`, `SHAPE_SEGMENT_CODEPOINT_MAX=64`; gate `run_ux_long_single_line_budget`). Red: `scripts/run_ux_long_single_line_budget_red.sh` |
+| verify  | `bash scripts/run_ux_long_single_line_budget_red.sh` → FAIL exit 1 (`long single-line shape path still uncapped`) |
+| result  | **§107h STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107h Green — caps + chunked mismatch in `line_codepoint_advances_px`; scenario `long_single_line_budget`; measure then write `TOTAL_US_MAX`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
