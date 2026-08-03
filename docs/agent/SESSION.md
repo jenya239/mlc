@@ -528,3 +528,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107r CLOSED. TRACK_EDITOR_HYGIENE CLOSED.** Advances to §103a |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103a `SCRIPT_VM_VALUE_REP` — freeze Decision; red first) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103a Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §103a Decision: `Value { raw: i64 }` + NaN-box `ValueRep` (Nil/Bool/Int32/Float64); `script_vm/`; dyn/script-module policy; verifier-before-interpreter; unit via `run_script_vm_value_rep_unit.sh` |
+| verify  | Decision text in `TRACK_MLC_SCRIPT_VM.md` STEP=0=done; PLAN §103a → STEP=1 Red; docs-only — no code gate |
+| result  | **§103a STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103a Red — `run_script_vm_value_rep_unit` fails on today's tree: no `script_vm/` ValueRep) |

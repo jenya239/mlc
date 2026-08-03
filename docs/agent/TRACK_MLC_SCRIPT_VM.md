@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** — §103a Decision next
+## Status: **open** 2026-08-03 — queue head **§103a `SCRIPT_VM_VALUE_REP`** (Decision frozen; STEP=1 Red next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -22,26 +22,41 @@ release backend — не цель никогда (третий путь испо
 новом top-level `script_vm/` (sibling к `compiler/`/`runtime/`/`lib/`/`misc/`),
 **не** в `compiler/vm/` (это MIR VM).
 
-## Design decisions to close at §103a (before any code)
+## Design decisions closed at §103a (frozen 2026-08-03)
 
-1. `dyn` — новый явный тип на границе native-checker, или только внутри
-   `script module`? Черновой ответ в `MLC_SCRIPT_VM.md` §3: явный в native,
-   default для неаннотированных в script.
-2. `script module`/`native module` — синтаксис уровня модуля или отдельное
-   расширение файла/манифест.
-3. `Value` ABI: NaN-boxing vs tagged union — какая версия x86-64 первой (ARM64
-   — не в scope Phase 1).
-4. Verifier обязателен с первого коммита интерпретатора (design doc §10,
-   LuaJIT precedent) — §103c идёт **до** §103d, не после.
+| # | Question | Choice |
+|---|----------|--------|
+| 1 | `dyn` | Confirms [MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §2–§3: native MLC — `dyn` only as **explicit** annotation on the script/FFI boundary (never inferred). Script profile — unannotated locals/params default to `dyn`. No `any`/`dyn` in static MLC without that boundary. **Not implemented in §103a** (Value only); policy binds later language work |
+| 2 | `script module` / `native module` | Module-level keywords as in design §15 (`script module name` / `native module name`). File extension / package manifest — **deferred** (not required for Phase 1 Value/bytecode). Grammar not in §103a |
+| 3 | `Value` ABI (x86-64 Phase 1) | **`Value { raw: i64 }` (8 bytes)** + **`ValueRep` NaN-boxing** behind encode/decode helpers — not a scattered tagged-union match in callers. Quiet-NaN payloads for Nil / Bool / Int32; IEEE f64 bit pattern when the bits are a real float (round-trip no precision loss). Heap ptr tags reserved, unused until §103f. ARM64 / alternate reps — out of Phase 1 |
+| 4 | Verifier vs interpreter | Confirms design §10 / track order: **§103c before §103d**. No interpreter commit without verifier |
 
 ## Sub-tracks, in order (Phase 1 only — §12 фазы 2-5 остаются design-only)
 
 ### §103a `SCRIPT_VM_VALUE_REP`
 
-`struct Value { raw: u64 }` tagged representation — int/float/bool/nil
-variants behind a `ValueRep` abstraction (design doc §6), no heap yet. Gate:
-round-trip encode/decode unit tests for every variant, no precision loss for
-f64, `size_of(Value) == 8` assertion.
+#### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | No `script_vm/` tree; no 8-byte tagged `Value`; design leaves NaN-box vs tagged-union open behind `ValueRep` |
+| Fix | New top-level `script_vm/` (sibling of `compiler/`/`runtime/` — **not** `compiler/vm/`). Module `script_vm/value.mlc`: `type Value = { raw: i64 }`; `ValueRep` encode/decode for **Nil / Bool / Int32 / Float64**; `value_byte_size() == 8` (or equivalent compile/runtime assert). No heap, no GC, no dyn syntax |
+| Numeric | Int32 payload in NaN-box; Float = raw f64 bits when not a tagged quiet-NaN. Overflow → boxed i64 is **§103f+**, not §103a |
+| Build / test | Dedicated `scripts/run_script_vm_value_rep_unit.sh` builds+runs `script_vm/tests/value_rep_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** folded into `dev_gate_fast` / `run_ux_gate` this sub-track. Optional later `run_script_vm_gate.sh` when more units exist |
+| Gate | Unit: round-trip every variant; Float64 bit-identical; Bool/Nil distinct; Int32 extremes; `sizeof`/byte-size == 8. Red: green runner/artifacts absent |
+| Sabotage | Break Float round-trip (truncate to f32) or lie about size → unit fails |
+| REG | no (`script_vm/**` only; no `lib/mlc/**` / `compiler/**` `.mlc`) |
+| Out of scope | Heap/GC; bytecode; dyn/script grammar; embedding ABI; ARM64; changing native MLC type system |
+| Epic decisions | Table above (dyn / script module / NaN-box / verifier-before-interpreter) |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: value rep / unit runner absent | **open** — `run_script_vm_value_rep_unit_red.sh` must fail |
+| 2 | Green: `script_vm/value.mlc` + unit; size/round-trip; `dev_gate_fast` | **open** |
+| 3 | Critic | **open** |
 
 ### §103b `SCRIPT_VM_BYTECODE_FORMAT`
 
