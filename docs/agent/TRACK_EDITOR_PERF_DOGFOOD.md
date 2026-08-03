@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109b** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -143,7 +143,7 @@ for §109a measure-only gate).
 
 ---
 
-## §109b `EDITOR_PERF_WAKE_ON_HOVER` — **queue head**
+## §109b `EDITOR_PERF_WAKE_ON_HOVER` — **CLOSED** 2026-08-04 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -178,7 +178,7 @@ for §109a measure-only gate).
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no wake harness / miss-geometry | **done** 2026-08-04 — `scripts/run_editor_perf_wake_on_hover_red.sh` exit 1 |
 | 2 | Green: geometry + counters + L1/L2 | **done** 2026-08-04 — text-rect probe + H11 + harness; still=0% jitter=0% L1 deltas=0 hit=text |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — remeasure still=0%/jitter=1%; sab chrome_dirty→L1 fail; miss-geom x=40→hit=tree fail; restore ok |
 
 ### Wake baseline (measured)
 
@@ -196,7 +196,7 @@ for §109a measure-only gate).
 
 Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_DOGFOOD=1`, `MLC_EDITOR_PERF_WAKE_PROBE=1`, no PERF skip-heavy). H11: overlay/menu `chrome_dirty` only on visibility transition (`frame_input.mlc`).
 
-## §109c `EDITOR_PERF_GATE_HONESTY`
+## §109c `EDITOR_PERF_GATE_HONESTY` — **queue head**
 
 | Item | Choice |
 |------|--------|

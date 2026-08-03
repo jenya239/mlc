@@ -438,3 +438,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109b STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b — audit wake probe/L1/L2; sab chrome_dirty every poll) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109b)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109b: independent short remeasure (still=0%/jitter=1%, L1 deltas=0, hit=text); sab chrome_dirty every poll → L1 chrome_rebuild fail; miss-geom probe x=40 → hit=tree fail; restore green ok; red fails; VISIBLE=1 no PERF skip-heavy |
+| verify  | critic out report ok; sab_chrome exit 1; sab_geom exit 1 (hit=tree); restore exit 0; red exit 1 |
+| result  | **§109b CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c `EDITOR_PERF_GATE_HONESTY` — Decision freeze) |
