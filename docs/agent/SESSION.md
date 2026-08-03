@@ -138,3 +138,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103c STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103c Red — `run_script_vm_verifier_unit` fails: no `verifier.mlc` / unit) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103c Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_script_vm_verifier_unit_red.sh`: fail while `verifier.mlc` / green runner / unit absent |
+| verify  | `bash scripts/run_script_vm_verifier_unit_red.sh` → FAIL exit 1 (`no script_vm verifier / unit`) |
+| result  | **§103c STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103c Green — `verifier.mlc` + unit; `dev_gate_fast`; then Critic) |
