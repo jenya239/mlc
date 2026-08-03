@@ -543,3 +543,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§103a STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103a Red — `run_script_vm_value_rep_unit` fails on today's tree: no `script_vm/` ValueRep) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103a Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `scripts/run_script_vm_value_rep_unit_red.sh`: fail while `script_vm/` / green runner / unit absent (MIR `compiler/vm/value.mlc` unrelated) |
+| verify  | `bash scripts/run_script_vm_value_rep_unit_red.sh` → FAIL exit 1 (`no script_vm ValueRep / value_rep unit`) |
+| result  | **§103a STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103a Green — `script_vm/value.mlc` + unit round-trip; `dev_gate_fast`; then Critic) |
