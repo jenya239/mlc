@@ -319,3 +319,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107g STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107g — independent rebuild+rerun; sabotages: strip tab-strip teardown, revert pty_close to WNOHANG-only; `run_ux_gate` ×2; close §107g → §107h Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107g close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107g Green `63112052`. Fresh `.tmp/critic_107g`: `ux_ok terminal_tab_close_releases_pty`. Sabotages: strip tab-strip teardown → exit 1; WNOHANG-only `pty_close` → exit 1; both restored. Closed §107g |
+| verify  | critic scenario ok; sabotage1 exit 1; sabotage2 exit 1; `run_ux_gate` ×2 = 121/121 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107g CLOSED.** Advances to §107h |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107h `EDITOR_SHAPE_SEGMENT_BUDGET` — freeze Decision; red: long single-line shape path still uncapped) |

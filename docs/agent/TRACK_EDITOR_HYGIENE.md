@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107f **CLOSED**; §107g Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107g **CLOSED**; queue head §107h `EDITOR_SHAPE_SEGMENT_BUDGET`
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -319,7 +319,20 @@ Restored; `run_ux_edit_no_full_flatten.sh` → `ux_ok`.
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: tab-strip/window teardown + signaled `pty_close` absent | **done** 2026-08-03 — `scripts/run_ux_terminal_tab_close_releases_pty_red.sh` exits non-zero |
 | 2 | Green: wire teardown + signaled `pty_close`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — tab-strip + demo exit `editor_app_close_terminal`; `pty_close` SIGHUP→wait→SIGKILL; `pty_open_fd_count` / `pty_last_close_reaped`; `ux_ok terminal_tab_close_releases_pty`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 121/121 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107g Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `63112052`. Separate out dir
+`.tmp/critic_107g`: `ux_ok terminal_tab_close_releases_pty`. Sabotages (then
+`git checkout --` restore; tree clean of Critic mutations):
+1. Strip tab-strip `editor_app_close_terminal` in `editor_app_click_tab_strip`
+   → FAIL exit 1 (`tab-strip missing editor_app_close_terminal`).
+2. Revert `pty_close` to WNOHANG-only (no `SIGHUP`/`SIGKILL`) → FAIL exit 1
+   (`pty_close missing SIGHUP`).
+Restored; `run_ux_gate` ×2 = 121/121 (`EXIT1=0` / `EXIT2=0`).
+
+**§107g CLOSED.** Next: §107h `EDITOR_SHAPE_SEGMENT_BUDGET`.
 
 ## §107h `EDITOR_SHAPE_SEGMENT_BUDGET` (EHA-07)
 `line_codepoint_advances_px` falls back, on HarfBuzz cluster mismatch (ligatures),
