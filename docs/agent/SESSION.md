@@ -288,3 +288,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103e STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103e — audit JUMP/compare/sum loop; then §103f or close §103e) |
+
+### Turn 2026-08-03 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103e)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Audited §103e: independent unit + EQ/GT/Nil-falsy/JUMP+1-wide probe; sabotages distinct from Driver fallthrough: invert LE, JUMP no-op, drop JUMP+1 wide-escape |
+| verify  | unit ok; probe `critic_103e_probe ok`; sab exits 1 (sum/LE, sum/JUMP, forward skip); restore ok; `dev_gate_fast` 1471/0 |
+| result  | **§103e CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103f `SCRIPT_VM_HEAP_GC_ARENA` — Decision freeze) |

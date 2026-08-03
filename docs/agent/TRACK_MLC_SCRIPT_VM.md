@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103e `SCRIPT_VM_CONTROL_FLOW`** (Green done; STEP=3 Critic next)
+## Status: **open** 2026-08-03 — queue head **§103f `SCRIPT_VM_HEAP_GC_ARENA`** (§103e CLOSED; STEP=0 Decision next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -175,7 +175,9 @@ release backend — не цель никогда (третий путь испо
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: control-flow unit runner absent | **done** 2026-08-03 — `run_script_vm_control_flow_unit_red.sh` exits 1 (`no script_vm control_flow unit`) |
 | 2 | Green: compare ops + JUMP exec + unit; `dev_gate_fast` | **done** 2026-08-03 — unit ok (sum=55); JUMP_IF_FALSE sabotage fails; `dev_gate_fast` 1471/0 |
-| 3 | Critic | **open** |
+| 3 | Critic | **done** 2026-08-03 — independent unit + EQ/GT/Nil/JUMP+1-wide probe; sabotages (invert LE; JUMP fallthrough; drop JUMP+1 wide-escape) load-bearing |
+
+**§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
 ### §103f `SCRIPT_VM_HEAP_GC_ARENA`
 
