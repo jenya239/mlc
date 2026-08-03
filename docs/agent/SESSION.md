@@ -168,3 +168,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107o STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107o — independent arch rebuild; sabotage: restore private `fn text_viewport_rect`; `run_ux_gate` ×2; close §107o → §107p Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107o CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107o Green `73d3a254`. Fresh arch `ux_ok`. Sabotage: private `fn text_viewport_rect` in `scroll.mlc` → copies=1 fail; restored. Closed §107o |
+| verify  | critic arch ok; sab exit 1; restore ok; `run_ux_gate` ×2 = 130/130 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107o CLOSED.** Advances to §107p |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107p `EDITOR_TOOLBAR_COMMAND_TABLE` — freeze Decision; red: tool hit-test vs toolbar table diverge) |

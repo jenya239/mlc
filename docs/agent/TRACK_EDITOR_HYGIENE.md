@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107n **CLOSED**; §107o Green done (Critic next)
+## Status: **open** 2026-08-03 — §107a–§107o **CLOSED**; §107p Decision next
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -586,7 +586,9 @@ restore; tree clean of Critic mutations):
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: 8 private copies; export/green absent | **done** 2026-08-03 — `scripts/run_ux_viewport_rect_single_red.sh` exits non-zero |
 | 2 | Green: single export; delete copies; arch gate; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `editor_ux_text_viewport_rect`; 0 private copies; `run_ux_viewport_rect_single` |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — independent arch; sabotage private `fn text_viewport_rect` → fail; restored; `run_ux_gate` ×2 |
+
+**§107o CLOSED.** Next: §107p `EDITOR_TOOLBAR_COMMAND_TABLE`.
 
 ## §107p `EDITOR_TOOLBAR_COMMAND_TABLE` (EHA-16)
 `demo_live` hit-tests `while tool < 10` plus a magic index 10 for SessLd, while
