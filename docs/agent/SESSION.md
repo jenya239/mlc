@@ -423,3 +423,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108b STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b Red — `run_ux_hover_no_text_layer_rebuild` fails on today's tree: chrome-only still rebuilds text layer) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=1, §108b Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Red gate `scripts/run_ux_hover_no_text_layer_rebuild_red.sh`: asserts no retain/replay, fresh `editor_lines` each paint, green artifacts absent |
+| verify  | `bash scripts/run_ux_hover_no_text_layer_rebuild_red.sh` → FAIL exit 1 (`chrome-only still rebuilds text+gutter layer each paint (Red expected)`) |
+| result  | **§108b STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b Green — retain/replay text+gutter batch; gate; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |

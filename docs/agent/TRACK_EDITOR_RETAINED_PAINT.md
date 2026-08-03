@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (STEP=0 Decision **frozen**; Driver STEP=1 Red next)
+## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (STEP=0/1 Decision+Red done; Driver STEP=2 Green next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -94,7 +94,7 @@ Baseline after §108a: chrome-only / `layout_skip` frames still rebuild gutter+e
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
-| 1 | Red: scenario fails on today's tree | pending |
+| 1 | Red: `run_ux_hover_no_text_layer_rebuild_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no retain/replay; `editor_lines` rebuilt each paint) |
 | 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
 | 3 | Critic | pending |
 
