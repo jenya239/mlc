@@ -14,6 +14,12 @@ import {
   selection_start,
   selection_end
 } from '../document/selection'
+import {
+  TextDocument,
+  document_to_string,
+  document_insert
+} from '../document/piece_table'
+import { document_delete } from '../document/document_delete'
 
 export type FindMatch = {
   start: i32,
@@ -47,8 +53,9 @@ export type FindApplyResult = {
 
 export type FindReplaceResult = {
   session: FindSession,
-  text: string,
-  selection: EditorSelection
+  document: TextDocument,
+  selection: EditorSelection,
+  applied: i32
 }
 
 export fn find_session_new() -> FindSession =
@@ -114,12 +121,6 @@ export fn find_session_set_replacement(
     replacement: replacement
   }
 
-fn splice_range(text: string, start: i32, finish: i32, insertion: string) -> string = do
-  const prefix = text.byte_substring(0, start)
-  const suffix = text.byte_substring(finish, text.byte_size() - finish)
-  prefix + insertion + suffix
-end
-
 fn find_session_with_active(session: FindSession, active_index: i32) -> FindSession =
   FindSession {
     query: session.query,
@@ -128,32 +129,34 @@ fn find_session_with_active(session: FindSession, active_index: i32) -> FindSess
     replacement: session.replacement
   }
 
-// Replace active match; rebuild; select next (or collapse at insert end).
+// Replace active match via document_delete+insert; rescan matches from document text.
 export fn find_replace_one(
   session: FindSession,
-  text: string,
+  document: TextDocument,
   selection: EditorSelection
 ) -> FindReplaceResult = do
   if session.query.byte_size() == 0 then
     return FindReplaceResult {
       session: session,
-      text: text,
-      selection: selection
+      document: document,
+      selection: selection,
+      applied: 0
     }
   end
   if session.active_index < 0 || session.active_index >= session.matches.length() then
     return FindReplaceResult {
       session: session,
-      text: text,
-      selection: selection
+      document: document,
+      selection: selection,
+      applied: 0
     }
   end
   const match_index = session.active_index
   const match_entry = session.matches[match_index]
   const replacement = session.replacement
-  const next_text = splice_range(
-    text, match_entry.start, match_entry.finish, replacement
-  )
+  const deleted = document_delete(document, match_entry.start, match_entry.finish)
+  const next_document = document_insert(deleted, match_entry.start, replacement)
+  const next_text = document_to_string(next_document)
   let mut next_session = find_session_set_query(session, next_text, session.query)
   let mut next_active = match_index
   if next_session.matches.length() == 0 then
@@ -170,35 +173,36 @@ export fn find_replace_one(
   end
   FindReplaceResult {
     session: next_session,
-    text: next_text,
-    selection: next_selection
+    document: next_document,
+    selection: next_selection,
+    applied: 1
   }
 end
 
-// Replace all matches last→first; one rebuild; select last inserted range.
+// Replace all matches last→first via document_delete+insert.
 export fn find_replace_all(
   session: FindSession,
-  text: string,
+  document: TextDocument,
   selection: EditorSelection
 ) -> FindReplaceResult = do
   if session.query.byte_size() == 0 || session.matches.length() == 0 then
     return FindReplaceResult {
       session: session,
-      text: text,
-      selection: selection
+      document: document,
+      selection: selection,
+      applied: 0
     }
   end
   const replacement = session.replacement
-  let mut next_text = text
+  let mut next_document = document
   let mut last_start = 0
   let mut last_end = 0
   let mut have_last = 0
   let mut index = session.matches.length() - 1
   while index >= 0 do
     const match_entry = session.matches[index]
-    next_text = splice_range(
-      next_text, match_entry.start, match_entry.finish, replacement
-    )
+    const deleted = document_delete(next_document, match_entry.start, match_entry.finish)
+    next_document = document_insert(deleted, match_entry.start, replacement)
     if have_last == 0 then
       last_start = match_entry.start
       last_end = match_entry.start + replacement.byte_size()
@@ -206,12 +210,14 @@ export fn find_replace_all(
     end
     index = index - 1
   end
+  const next_text = document_to_string(next_document)
   let mut next_session = find_session_set_query(session, next_text, session.query)
   next_session = find_session_with_active(next_session, -1)
   FindReplaceResult {
     session: next_session,
-    text: next_text,
-    selection: selection_new(last_start, last_end)
+    document: next_document,
+    selection: selection_new(last_start, last_end),
+    applied: 1
   }
 end
 

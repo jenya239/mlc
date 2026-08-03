@@ -529,3 +529,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107l STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107l Green — range indent/outdent + document replace apply; both no_full_stringify gates; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107l Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Indent/outdent range-edit (`document_byte_slice`/`delete`/`insert`); `find_replace_*` apply via document ops; demo CmdReplace* no `document_from_string`; gates `run_ux_indent_no_full_stringify` + `run_ux_replace_no_full_stringify` |
+| verify  | both green gates `ux_ok`; demo_live mlcc ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 127/127 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107l STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107l — independent rebuild+rerun; sabotages: restore flatten indent / restore demo `document_from_string` on replace; `run_ux_gate` ×2; close §107l → §107m Decision) |

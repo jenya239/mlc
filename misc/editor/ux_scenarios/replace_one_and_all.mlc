@@ -1,4 +1,9 @@
-// TRACK_EDITOR_REPLACE STEP=1 — L1: replace one then all (red until STEP=2).
+// TRACK_EDITOR_REPLACE STEP=1 — L1: replace one then all.
+// TRACK_EDITOR_HYGIENE §107l — document_delete/insert apply path.
+import {
+  document_from_string,
+  document_to_string
+} from '../document/piece_table'
 import { selection_collapsed } from '../document/selection'
 import {
   find_session_new,
@@ -9,7 +14,8 @@ import {
 } from '../ux/find'
 
 fn main() -> i32 = do
-  let mut text = "aa x aa y aa"
+  let mut document = document_from_string("aa x aa y aa")
+  let mut text = document_to_string(document)
   let mut session = find_session_set_query(find_session_new(), text, "aa")
   if session.matches.length() != 3 then
     println("ux_fail replace setup match count")
@@ -22,29 +28,39 @@ fn main() -> i32 = do
   end
 
   let mut selection = selection_collapsed(0)
-  let mut one = find_replace_one(session, text, selection)
+  let mut one = find_replace_one(session, document, selection)
+  if one.applied == 0 then
+    println("ux_fail replace_one applied")
+    return 3
+  end
   session = one.session
-  text = one.text
+  document = one.document
   selection = one.selection
+  text = document_to_string(document)
   if text != "bb x aa y aa" then
     println("ux_fail replace_one text")
-    return 3
+    return 4
   end
   if session.matches.length() != 2 then
     println("ux_fail replace_one remaining matches")
-    return 4
+    return 5
   end
 
-  let mut all = find_replace_all(session, text, selection)
+  let mut all = find_replace_all(session, document, selection)
+  if all.applied == 0 then
+    println("ux_fail replace_all applied")
+    return 6
+  end
   session = all.session
-  text = all.text
+  document = all.document
+  text = document_to_string(document)
   if text != "bb x bb y bb" then
     println("ux_fail replace_all text")
-    return 5
+    return 7
   end
   if session.matches.length() != 0 then
     println("ux_fail replace_all leftover matches")
-    return 6
+    return 8
   end
 
   println("ux_ok replace_one_and_all")

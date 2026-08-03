@@ -1627,12 +1627,12 @@ fn main() -> i32 = do
               )
             end
             const replace_one_result = find_replace_one(
-              find_session, draw_text, app.ux.selection
+              find_session, document, app.ux.selection
             )
-            if replace_one_result.text != draw_text then
+            if replace_one_result.applied != 0 then
               app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
               app = editor_app_set_tabs(app, apply_edit(
-                app.ux.tabs, document_from_string(replace_one_result.text)
+                app.ux.tabs, replace_one_result.document
               ))
               active = tab_set_active(app.ux.tabs)
               document = active.buffer.document
@@ -1652,12 +1652,12 @@ fn main() -> i32 = do
               )
             end
             const replace_all_result = find_replace_all(
-              find_session, draw_text, app.ux.selection
+              find_session, document, app.ux.selection
             )
-            if replace_all_result.text != draw_text then
+            if replace_all_result.applied != 0 then
               app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
               app = editor_app_set_tabs(app, apply_edit(
-                app.ux.tabs, document_from_string(replace_all_result.text)
+                app.ux.tabs, replace_all_result.document
               ))
               active = tab_set_active(app.ux.tabs)
               document = active.buffer.document

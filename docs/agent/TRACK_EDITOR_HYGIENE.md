@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; §107l Decision+Red done (Green next)
+## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; §107l Green done (Critic next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -498,7 +498,7 @@ Independent re-audit of Green commit `9caf45cc`. Gate
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: indent/outdent still flatten; replace still `document_from_string`; green absent | **done** 2026-08-03 — `run_ux_indent_no_full_stringify_red.sh` + `run_ux_replace_no_full_stringify_red.sh` exit non-zero |
-| 2 | Green: range edits; both gates; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 2 | Green: range edits; both gates; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — indent range-edit; find replace via `document_delete`/`insert`; both `*_no_full_stringify` gates |
 | 3 | Critic | pending |
 
 ## §107m `EDITOR_OPEN_SIZE_GUARD` (EHA-13)
