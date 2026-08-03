@@ -423,3 +423,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109b STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b Green — text-rect geometry + reason counters + L1/L2) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109b Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Text-rect probe (`dogfood_probe_x/y`); reason counters; H11 overlay/menu transition-only `chrome_dirty`; `run_editor_perf_wake_on_hover.sh` L1+L2 |
+| verify  | green ok (still=0% jitter=0% L1 deltas=0 hit=text); red fails (green present); no hardcoded `dogfood_text_x = 420` |
+| result  | **§109b STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b — audit wake probe/L1/L2; sab chrome_dirty every poll) |

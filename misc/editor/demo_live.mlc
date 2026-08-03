@@ -373,12 +373,18 @@ import {
 } from './app/chrome'
 import { editor_app_frame_command_from_inputs } from './app/frame_command'
 import {
+  EditorPerfCounters,
   editor_perf_new,
   editor_perf_now_us,
   editor_perf_accumulate_frame,
   editor_perf_note_content_rebuild,
   editor_perf_note_text_layer_rebuild,
   editor_perf_note_chrome_rebuild,
+  editor_perf_note_content_frame,
+  editor_perf_note_chrome_frame,
+  editor_perf_note_present_frame,
+  editor_perf_note_idle_wait,
+  editor_perf_format_wake_counters,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
   editor_perf_format_demo_live_full
@@ -786,6 +792,21 @@ fn dogfood_emit(phase_file: string, marker: string) -> i32 = do
   0
 end
 
+fn wake_emit_counters(
+  counters_file: string,
+  counters: EditorPerfCounters,
+  hit_id: string
+) -> i32 = do
+  if counters_file.byte_size() > 0 then
+    const body = editor_perf_format_wake_counters(counters, hit_id)
+    const written = dogfood_phase_file_write(counters_file, body)
+    if !written then
+      println("[wake] FAIL: cannot write counters file")
+    end
+  end
+  0
+end
+
 fn main() -> i32 = do
   const begin_status = glfw_gl_context_begin(1100, 760)
   if begin_status != 0 then
@@ -838,6 +859,9 @@ fn main() -> i32 = do
   const dogfood_probe = has("MLC_EDITOR_PERF_DOGFOOD")
   const dogfood_phase_file = get_or("MLC_EDITOR_PERF_DOGFOOD_PHASE_FILE", "")
   const dogfood_cmd_file = get_or("MLC_EDITOR_PERF_DOGFOOD_CMD_FILE", "")
+  // §109b: wake-on-hover probe (honest text-rect + reason counters).
+  const wake_probe = has("MLC_EDITOR_PERF_WAKE_PROBE")
+  const wake_counters_file = get_or("MLC_EDITOR_PERF_WAKE_COUNTERS_FILE", "")
   // Counters run for baseline, terminal, or full. Heavy skips only on baseline/terminal
   // when PERF_FULL is not set (FULL overrides skips).
   const perf_enabled =
@@ -930,6 +954,8 @@ fn main() -> i32 = do
   let mut cached_visual_rows: [VisualRow] = []
   let mut cached_visual_rows_valid = 0
   let mut last_chrome_hit_id = "none"
+  let mut last_context_menu_visible = false
+  let mut last_overlay_visible = false
   let mut text_layer_batch = editor_ux_text_layer_batch_new()
   let mut chrome_layer_batch = editor_ux_chrome_layer_batch_new()
   // §109a dogfood — shell drives phases via CMD_FILE (ack on PHASE_FILE).
@@ -939,8 +965,11 @@ fn main() -> i32 = do
   let mut dogfood_jitter_flip = 0
   let mut dogfood_stall_printed = 0
   let mut dogfood_emit_sink = 0
-  const dogfood_text_x = 420
-  const dogfood_text_y = chrome_top + 80
+  // §109b — prior-frame text-rect center (updated after layout; kill fixed 420).
+  let mut dogfood_probe_x = 420
+  let mut dogfood_probe_y = chrome_top + 80
+  let mut wake_emit_sink = 0
+  let mut wake_last_hit_id = "none"
 
   while glfw_gl_context_should_close() == 0 do
     if dogfood_probe then
@@ -970,11 +999,11 @@ fn main() -> i32 = do
         glfw_gl_input_test_set(1200, 800, 0, 0)
       else if dogfood_phase == "text_jitter" then
         dogfood_jitter_flip = 1 - dogfood_jitter_flip
-        glfw_gl_input_test_set(dogfood_text_x + dogfood_jitter_flip, dogfood_text_y, 0, 0)
+        glfw_gl_input_test_set(dogfood_probe_x + dogfood_jitter_flip, dogfood_probe_y, 0, 0)
       else if dogfood_phase == "still_over_text" ||
           dogfood_phase == "scroll" ||
           dogfood_phase == "type" then
-        glfw_gl_input_test_set(dogfood_text_x, dogfood_text_y, 0, 0)
+        glfw_gl_input_test_set(dogfood_probe_x, dogfood_probe_y, 0, 0)
       end
       if dogfood_phase == "type" && dogfood_type_chars < 20 then
         glfw_gl_text_test_push("x")
@@ -998,13 +1027,19 @@ fn main() -> i32 = do
       i32_to_f64(zoom_font_size) * glfw_gl_window_content_scale_y()
     )
 
+    const context_menu_visible_now = editor_ux_context_menu_is_visible(context_menu)
+    const overlay_visible_now = dirty_close_overlay_is_visible(app.overlay)
     const frame_in = frame_input_poll(
       last_width, last_height,
       last_mouse_x, last_mouse_y, last_mouse_down, last_mouse_right_down,
       last_backspace, last_enter,
-      editor_ux_context_menu_is_visible(context_menu),
-      dirty_close_overlay_is_visible(app.overlay)
+      context_menu_visible_now,
+      overlay_visible_now,
+      last_context_menu_visible,
+      last_overlay_visible
     )
+    last_context_menu_visible = context_menu_visible_now
+    last_overlay_visible = overlay_visible_now
     const input = frame_in.input
     if input.escape != 0 then
       if editor_ux_context_menu_is_visible(context_menu) then
@@ -1073,6 +1108,10 @@ fn main() -> i32 = do
     else if content_dirty != 0 then
       last_chrome_hit_id = chrome_hit_id
     end
+    if wake_probe && chrome_hit_id != wake_last_hit_id then
+      println("[wake] hit=" + chrome_hit_id)
+      wake_last_hit_id = chrome_hit_id
+    end
 
     let mut paint_dirty = 0
     // Idle before layout/chrome work — stable-hit pointer does not paint.
@@ -1083,6 +1122,12 @@ fn main() -> i32 = do
         clock_ms, caret_blink_period_ms(), last_blink_visible
       )
       if paint_dirty == 0 then
+        perf_counters = editor_perf_note_idle_wait(perf_counters)
+        if wake_probe then
+          wake_emit_sink = wake_emit_counters(
+            wake_counters_file, perf_counters, last_chrome_hit_id
+          )
+        end
         continue
       end
       // Paint-only blink: app.overlay carets without clearing / reshaping the frame.
@@ -1134,10 +1179,22 @@ fn main() -> i32 = do
           return overlay_status
         end
         glfw_gl_context_swap_poll()
+        perf_counters = editor_perf_note_present_frame(perf_counters)
+        if wake_probe then
+          wake_emit_sink = wake_emit_counters(
+            wake_counters_file, perf_counters, last_chrome_hit_id
+          )
+        end
         continue
       end
       // Blink phase changed but no cached caret overlay yet — wait for a
       // content frame; do not fall through into a full wrap retick.
+      perf_counters = editor_perf_note_idle_wait(perf_counters)
+      if wake_probe then
+        wake_emit_sink = wake_emit_counters(
+          wake_counters_file, perf_counters, last_chrome_hit_id
+        )
+      end
       continue
     else
       clock_ms = clock_ms + 16
@@ -1230,6 +1287,11 @@ fn main() -> i32 = do
     const text_rect = minimap_layout.text_rect
     const minimap_rect = minimap_layout.minimap_rect
     const minimap_enabled = minimap_layout.enabled
+    // §109b — refresh dogfood/wake probe to live text-rect center for next frame.
+    if text_rect.width > 0 && text_rect.height > 0 then
+      dogfood_probe_x = text_rect.x + text_rect.width / 2
+      dogfood_probe_y = text_rect.y + text_rect.height / 2
+    end
     const content_clip = editor_ux_content_clip_rect(editor_rect, minimap_layout)
     const gutter_rect = panes.gutter
     const wrap_columns = wrap_max_columns(text_rect.width - 8, metrics.char_width)
@@ -3146,6 +3208,16 @@ fn main() -> i32 = do
     end
 
     glfw_gl_context_swap_poll()
+    if content_dirty != 0 then
+      perf_counters = editor_perf_note_content_frame(perf_counters)
+    else
+      perf_counters = editor_perf_note_chrome_frame(perf_counters)
+    end
+    if wake_probe then
+      wake_emit_sink = wake_emit_counters(
+        wake_counters_file, perf_counters, chrome_hit_id
+      )
+    end
     app = editor_app_commit_session(
       app, app.history, app.clipboard, app.overlay, app.editor_focused, app.last_command,
       app.mouse_was_down, app.backspace_was_down, app.enter_was_down, app.selecting_text

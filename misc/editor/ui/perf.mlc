@@ -2,6 +2,7 @@
 // TRACK_EDITOR_HYGIENE §107j — visible_collect_count (one collect per content frame).
 // TRACK_EDITOR_RETAINED_PAINT §108a — content/text rebuild counters.
 // TRACK_EDITOR_RETAINED_PAINT §108c — chrome_rebuild_count.
+// TRACK_EDITOR_PERF_DOGFOOD §109b — per-iteration frame reason tallies.
 extern fn editor_perf_monotonic_us() -> i32
   = "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp"
 
@@ -16,7 +17,11 @@ export type EditorPerfCounters = {
   visible_collect_count: i32,
   content_rebuild_count: i32,
   text_layer_rebuild_count: i32,
-  chrome_rebuild_count: i32
+  chrome_rebuild_count: i32,
+  content_frame_count: i32,
+  chrome_frame_count: i32,
+  present_frame_count: i32,
+  idle_wait_count: i32
 }
 
 export fn editor_perf_now_us() -> i32 =
@@ -34,7 +39,11 @@ export fn editor_perf_new() -> EditorPerfCounters =
     visible_collect_count: 0,
     content_rebuild_count: 0,
     text_layer_rebuild_count: 0,
-    chrome_rebuild_count: 0
+    chrome_rebuild_count: 0,
+    content_frame_count: 0,
+    chrome_frame_count: 0,
+    present_frame_count: 0,
+    idle_wait_count: 0
   }
 
 export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCounters =
@@ -49,7 +58,11 @@ export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCoun
     visible_collect_count: counters.visible_collect_count,
     content_rebuild_count: counters.content_rebuild_count,
     text_layer_rebuild_count: counters.text_layer_rebuild_count,
-    chrome_rebuild_count: counters.chrome_rebuild_count
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
   }
 
 export fn editor_perf_accumulate_frame(
@@ -70,7 +83,11 @@ export fn editor_perf_accumulate_frame(
     visible_collect_count: counters.visible_collect_count + visible_collect_count,
     content_rebuild_count: counters.content_rebuild_count,
     text_layer_rebuild_count: counters.text_layer_rebuild_count,
-    chrome_rebuild_count: counters.chrome_rebuild_count
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
   }
 
 export fn editor_perf_note_content_rebuild(
@@ -87,7 +104,11 @@ export fn editor_perf_note_content_rebuild(
     visible_collect_count: counters.visible_collect_count,
     content_rebuild_count: counters.content_rebuild_count + 1,
     text_layer_rebuild_count: counters.text_layer_rebuild_count,
-    chrome_rebuild_count: counters.chrome_rebuild_count
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
   }
 
 export fn editor_perf_note_text_layer_rebuild(
@@ -104,7 +125,11 @@ export fn editor_perf_note_text_layer_rebuild(
     visible_collect_count: counters.visible_collect_count,
     content_rebuild_count: counters.content_rebuild_count,
     text_layer_rebuild_count: counters.text_layer_rebuild_count + 1,
-    chrome_rebuild_count: counters.chrome_rebuild_count
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
   }
 
 export fn editor_perf_note_chrome_rebuild(
@@ -121,8 +146,107 @@ export fn editor_perf_note_chrome_rebuild(
     visible_collect_count: counters.visible_collect_count,
     content_rebuild_count: counters.content_rebuild_count,
     text_layer_rebuild_count: counters.text_layer_rebuild_count,
-    chrome_rebuild_count: counters.chrome_rebuild_count + 1
+    chrome_rebuild_count: counters.chrome_rebuild_count + 1,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
   }
+
+export fn editor_perf_note_content_frame(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count + 1,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
+  }
+
+export fn editor_perf_note_chrome_frame(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count + 1,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count
+  }
+
+export fn editor_perf_note_present_frame(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count + 1,
+    idle_wait_count: counters.idle_wait_count
+  }
+
+export fn editor_perf_note_idle_wait(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count + 1
+  }
+
+export fn editor_perf_format_wake_counters(counters: EditorPerfCounters, hit_id: string) -> string =
+  "content_rebuild_count=" + counters.content_rebuild_count.to_string()
+    + "\nchrome_rebuild_count=" + counters.chrome_rebuild_count.to_string()
+    + "\ntext_layer_rebuild_count=" + counters.text_layer_rebuild_count.to_string()
+    + "\ncontent_frame_count=" + counters.content_frame_count.to_string()
+    + "\nchrome_frame_count=" + counters.chrome_frame_count.to_string()
+    + "\npresent_frame_count=" + counters.present_frame_count.to_string()
+    + "\nidle_wait_count=" + counters.idle_wait_count.to_string()
+    + "\nhit=" + hit_id
+    + "\n"
 
 export fn editor_perf_format(counters: EditorPerfCounters) -> string =
   "[mlc-editor] perf frames=" + counters.frames.to_string()

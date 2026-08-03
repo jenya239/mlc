@@ -36,7 +36,9 @@ export fn frame_input_poll(
   last_backspace: i32,
   last_enter: i32,
   context_menu_visible: bool,
-  overlay_visible: bool
+  overlay_visible: bool,
+  last_context_menu_visible: bool,
+  last_overlay_visible: bool
 ) -> EditorFrameInput = do
   const input = gui_input_poll()
   const width = glfw_gl_window_width()
@@ -81,10 +83,11 @@ export fn frame_input_poll(
   if pending_drop_path.byte_size() > 0 then
     content_dirty = 1
   end
-  if context_menu_visible then
+  // §109b H11: overlay/menu mark chrome only on visibility transition.
+  if context_menu_visible != last_context_menu_visible then
     chrome_dirty = 1
   end
-  if overlay_visible then
+  if overlay_visible != last_overlay_visible then
     chrome_dirty = 1
   end
   EditorFrameInput {
