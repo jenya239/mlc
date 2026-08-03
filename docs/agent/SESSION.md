@@ -168,3 +168,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103c STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103c — audit verifier codes; then §103d or close §103c) |
+
+### Turn 2026-08-03 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103c)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Audited §103c verifier: independent unit out-dir + mid-wide JUMP→trailing probe (`branch`); sabotages distinct from Driver register-drop: `branch_target_ok`→true, skip constant check, skip unknown_opcode |
+| verify  | unit ok; probe `critic_103c_probe ok`; sab exits 1 (branch/constant/unknown); restore ok; `dev_gate_fast` 1471/0 |
+| result  | **§103c CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103d `SCRIPT_VM_INTERPRETER_ARITHMETIC` — Decision freeze) |
