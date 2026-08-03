@@ -1,0 +1,46 @@
+// TRACK_EDITOR_RETAINED_PAINT §108b — retain/replay text+gutter StaticTextLine batch.
+import { StaticTextLine } from '../ui/static_text'
+
+export type TextLayerBatch = {
+  lines: [StaticTextLine],
+  valid: i32,
+  rebuild_count: i32
+}
+
+export fn editor_ux_text_layer_batch_new() -> TextLayerBatch =
+  TextLayerBatch {
+    lines: [],
+    valid: 0,
+    rebuild_count: 0
+  }
+
+export fn editor_ux_text_layer_batch_can_replay(
+  batch: TextLayerBatch,
+  layout_skip: i32
+) -> i32 = do
+  if layout_skip != 0 then
+    if batch.valid != 0 then
+      return 1
+    end
+  end
+  0
+end
+
+export fn editor_ux_text_layer_batch_store(
+  batch: TextLayerBatch,
+  lines: [StaticTextLine]
+) -> TextLayerBatch =
+  TextLayerBatch {
+    lines: lines,
+    valid: 1,
+    rebuild_count: batch.rebuild_count + 1
+  }
+
+export fn editor_ux_text_layer_batch_invalidate(
+  batch: TextLayerBatch
+) -> TextLayerBatch =
+  TextLayerBatch {
+    lines: batch.lines,
+    valid: 0,
+    rebuild_count: batch.rebuild_count
+  }

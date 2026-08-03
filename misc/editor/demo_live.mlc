@@ -257,6 +257,12 @@ import {
   editor_ux_chrome_hit_pointer_plan
 } from './ux/chrome_hit'
 import {
+  editor_ux_text_layer_batch_new,
+  editor_ux_text_layer_batch_can_replay,
+  editor_ux_text_layer_batch_store,
+  editor_ux_text_layer_batch_invalidate
+} from './ux/text_layer_batch'
+import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
 } from './ux/multi_click'
@@ -854,6 +860,7 @@ fn main() -> i32 = do
   let mut cached_visual_rows: [VisualRow] = []
   let mut cached_visual_rows_valid = 0
   let mut last_chrome_hit_id = "none"
+  let mut text_layer_batch = editor_ux_text_layer_batch_new()
 
   while glfw_gl_context_should_close() == 0 do
     const scaled_font_size = f64_to_i32(
@@ -1005,9 +1012,6 @@ fn main() -> i32 = do
     end
     if content_dirty != 0 then
       perf_counters = editor_perf_note_content_rebuild(perf_counters)
-    end
-    if layout_skip == 0 then
-      perf_counters = editor_perf_note_text_layer_rebuild(perf_counters)
     end
 
     last_width = width
@@ -2777,6 +2781,7 @@ fn main() -> i32 = do
 
     let mut editor_lines: [StaticTextLine] = []
     if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
+      text_layer_batch = editor_ux_text_layer_batch_invalidate(text_layer_batch)
       const terminal_origin_x = text_rect.x + 4
       const terminal_origin_y = text_rect.y + 2
       const terminal_default_red = f64_to_i32(theme.background_red * 255.0)
@@ -2812,6 +2817,8 @@ fn main() -> i32 = do
       end
       solid = solid_renderer_begin(solid)
       editor_lines = app.terminal.cached_text_lines
+    else if editor_ux_text_layer_batch_can_replay(text_layer_batch, layout_skip) != 0 then
+      editor_lines = text_layer_batch.lines
     else
       let mut draw_row = 0
       while draw_row < visual_rows.length() do
@@ -2839,6 +2846,8 @@ fn main() -> i32 = do
         )
         draw_row = draw_row + 1
       end
+      text_layer_batch = editor_ux_text_layer_batch_store(text_layer_batch, editor_lines)
+      perf_counters = editor_perf_note_text_layer_rebuild(perf_counters)
     end
 
     editor_gl_scissor_enable_rect(height, content_clip)

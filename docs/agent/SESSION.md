@@ -438,3 +438,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108b STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b Green — retain/replay text+gutter batch; gate; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=2, §108b Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | `ux/text_layer_batch.mlc` retain/replay; `demo_live` chrome-only uses `text_layer_batch.lines`; gate `run_ux_hover_no_text_layer_rebuild` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 134/134 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108b STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b — independent rebuild+rerun; sabotage: invalidate/drop retained batch every frame; `run_ux_gate` ×2; close §108b → §108c Decision) |

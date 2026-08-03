@@ -1,0 +1,96 @@
+// TRACK_EDITOR_RETAINED_PAINT §108b — chrome-only must not rebuild text layer.
+import {
+  editor_ux_text_layer_batch_new,
+  editor_ux_text_layer_batch_can_replay,
+  editor_ux_text_layer_batch_store,
+  editor_ux_text_layer_batch_invalidate
+} from '../ux/text_layer_batch'
+import { StaticTextLine } from '../ui/static_text'
+import { editor_perf_new } from '../ui/perf'
+
+fn sample_line(label: string, pen_y: i32) -> StaticTextLine =
+  StaticTextLine {
+    text: label,
+    pixel_size: 14,
+    pen_x: 0,
+    pen_y: pen_y,
+    red: 1.0,
+    green: 1.0,
+    blue: 1.0,
+    alpha: 1.0
+  }
+
+fn main() -> i32 = do
+  let mut batch = editor_ux_text_layer_batch_new()
+  let mut counters = editor_perf_new()
+  let mut status = 0
+
+  let mut content_lines: [StaticTextLine] = []
+  content_lines.push(sample_line("1", 20))
+  content_lines.push(sample_line("fn", 20))
+  batch = editor_ux_text_layer_batch_store(batch, content_lines)
+  if batch.rebuild_count != 1 then
+    status = 1
+  end
+  if batch.valid == 0 then
+    status = 1
+  end
+
+  // N chrome-only frames (layout_skip=1): replay, no rebuild.
+  let mut hover_index = 0
+  while hover_index < 8 do
+    if editor_ux_text_layer_batch_can_replay(batch, 1) == 0 then
+      status = 2
+    end
+    if batch.rebuild_count != 1 then
+      status = 3
+    end
+    hover_index = hover_index + 1
+  end
+
+  // Content frame rebuilds once more.
+  let mut edited_lines: [StaticTextLine] = []
+  edited_lines.push(sample_line("2", 20))
+  batch = editor_ux_text_layer_batch_store(batch, edited_lines)
+  if batch.rebuild_count != 2 then
+    status = 4
+  end
+
+  // Sabotage shape: invalidate every chrome frame → cannot replay.
+  batch = editor_ux_text_layer_batch_invalidate(batch)
+  if editor_ux_text_layer_batch_can_replay(batch, 1) != 0 then
+    status = 5
+  end
+
+  if counters.text_layer_rebuild_count != 0 then
+    status = 6
+  end
+
+  if status == 1 then
+    println("ux_fail hover_no_text_layer_rebuild content_store")
+    return 1
+  end
+  if status == 2 then
+    println("ux_fail hover_no_text_layer_rebuild chrome_replay")
+    return 2
+  end
+  if status == 3 then
+    println("ux_fail hover_no_text_layer_rebuild chrome_rebuild")
+    return 3
+  end
+  if status == 4 then
+    println("ux_fail hover_no_text_layer_rebuild content_bump")
+    return 4
+  end
+  if status == 5 then
+    println("ux_fail hover_no_text_layer_rebuild invalidate")
+    return 5
+  end
+  if status == 6 then
+    println("ux_fail hover_no_text_layer_rebuild counter_drift")
+    return 6
+  end
+
+  println("ux_ok hover_no_text_layer_rebuild")
+  0
+end
