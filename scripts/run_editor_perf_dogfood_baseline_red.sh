@@ -39,9 +39,7 @@ if grep -A2 '### Baseline (measured)' "$TRACK" | grep -Eq 'idle_away_cpu_percent
   fail "TRACK already has measured baseline numbers (expected gap until Green)"
 fi
 
-# Red: report path should not already claim a green run in-tree.
-if [ -f "$REPORT_DIR/report.txt" ]; then
-  fail "report.txt already present under .tmp (expected gap until Green)"
-fi
+# Red: report path should not be required absent (.tmp is ephemeral after Green runs).
+# Load-bearing gaps: green harness + dogfood probe.
 
 fail "no editor perf dogfood baseline harness (Red expected)"

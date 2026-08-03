@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109a** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109a** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -97,7 +97,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | Visible | `MLC_GLFW_VISIBLE=1` **mandatory**. No invisible skip path (unlike §108d L2 `VISIBLE=0`). Missing glfw/font/`/proc` → **fail**, not skip-green |
 | Open path | Existing `MLC_EDITOR_PERF_OPEN` only. Harness sets it to `$ROOT/misc/editor/demo_live.mlc`. **No** new `MLC_EDITOR_OPEN` in §109a (defer to §109j) |
 | Open fail | Exit ≠ 0 if env empty, path missing, or basename matches `README*` (case-sensitive prefix `README`) |
-| Input drive | Internal demo env `MLC_EDITOR_PERF_DOGFOOD=1`: sequential phases with synthetic pointer/wheel/keys (same class as `MLC_EDITOR_HOVER_CPU_PROBE`). No xdotool / manual launch |
+| Input drive | Internal demo env `MLC_EDITOR_PERF_DOGFOOD=1` + shell CMD file `MLC_EDITOR_PERF_DOGFOOD_CMD_FILE` (phase names); demo acks on `PHASE_FILE` + stdout `[dogfood] phase=<name>`. Synthetic pointer/wheel/keys (no xdotool). Green: shell advances phases after each sample window |
 | Phases (order) | (1) `idle_away` (2) `still_over_text` (3) `text_jitter` (4) `scroll` (5) `type` — stdout markers `[dogfood] phase=<name>` |
 | CPU sample | `/proc/$pid/stat` utime+stime jiffies; `cpu_percent = delta * 100 / (HZ * SAMPLE_SEC)`; same reader pattern as `run_ux_hover_cpu_budget.sh` L2 |
 | Windows | `WARMUP_SEC=4`. idle / still / jitter: `SAMPLE_SEC=5`, `SAMPLE_ROUNDS=3`, report **min** `cpu_percent`. scroll: `SAMPLE_SEC=2`, `SAMPLE_ROUNDS=3`, report **max**. type: after 20-char burst, `SAMPLE_SEC=2`, report **max** `cpu_percent` **and** `type_stall_ms` (wall ms from last key to first phase-end marker; Green defines marker) |
@@ -113,12 +113,27 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: harness absent / opens README | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_baseline_red.sh` exit 1 |
-| 2 | Green: harness + numbers in track | pending |
+| 2 | Green: harness + numbers in track | **done** 2026-08-04 |
 | 3 | Critic | pending |
 
 ### Baseline (measured)
 
-_pending Green_
+Measured 2026-08-04 via `scripts/run_editor_perf_dogfood_baseline.sh`
+(`MLC_GLFW_VISIBLE=1`, open=`misc/editor/demo_live.mlc`):
+
+| metric | value |
+|--------|------:|
+| idle_away_cpu_percent | 0 |
+| still_over_text_cpu_percent | 0 |
+| text_jitter_cpu_percent | 0 |
+| scroll_cpu_percent | 105 |
+| type_cpu_percent | 100 |
+| type_stall_ms | 16 |
+
+Notes: scroll/type saturate a core under synthetic load. idle/still/jitter at 0% under
+test-pointer injection — conflicts with interactive dogfood (~32% still); §109b must
+reconcile probe geometry / hit-stable vs real OS pointer. README open sabotage: harness
+exit 1 before launch.
 
 ---
 

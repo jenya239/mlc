@@ -12,7 +12,9 @@ import {
   glfw_gl_mod_ctrl_down,
   glfw_gl_mod_shift_down,
   glfw_gl_mod_alt_down,
-  glfw_gl_take_drop_path
+  glfw_gl_take_drop_path,
+  glfw_gl_input_test_set,
+  glfw_gl_text_test_push
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
 import { editor_ux_chrome_hover_draw_entry } from './ux/chrome_hover'
@@ -483,6 +485,19 @@ fn toolbar_height() -> i32 = editor_app_toolbar_height()
 fn status_height() -> i32 = editor_app_status_height()
 fn session_path() -> string = ".tmp/editor_live_session.txt"
 
+// §109a — phase markers for dogfood harness (stdout + optional phase file).
+extern fn dogfood_phase_file_write(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn dogfood_phase_file_read(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn dogfood_trim_newline(text: string) -> string = do
+  if text.byte_size() > 0 && text.byte_at(text.byte_size() - 1) == "\n" then
+    return text.byte_substring(0, text.byte_size() - 1)
+  end
+  text
+end
+
 fn push_line(
   lines: [StaticTextLine],
   text: string,
@@ -742,6 +757,35 @@ fn ensure_tabs(tabs: TabSet, panels: ShellPanels) -> TabSet = do
   open_mock_starter()
 end
 
+fn dogfood_path_basename(path: string) -> string = do
+  let mut index = path.byte_size()
+  while index > 0 do
+    index = index - 1
+    if path.byte_at(index) == "/" then
+      return path.byte_substring(index + 1, path.byte_size() - index - 1)
+    end
+  end
+  path
+end
+
+fn dogfood_open_forbidden(path: string) -> bool = do
+  if path.byte_size() == 0 then
+    return true
+  end
+  dogfood_path_basename(path).starts_with("README")
+end
+
+fn dogfood_emit(phase_file: string, marker: string) -> i32 = do
+  println("[dogfood] " + marker)
+  if phase_file.byte_size() > 0 then
+    const written = dogfood_phase_file_write(phase_file, marker + "\n")
+    if !written then
+      println("[dogfood] FAIL: cannot write phase file")
+    end
+  end
+  0
+end
+
 fn main() -> i32 = do
   const begin_status = glfw_gl_context_begin(1100, 760)
   if begin_status != 0 then
@@ -790,6 +834,10 @@ fn main() -> i32 = do
   const perf_baseline_enabled = has("MLC_EDITOR_PERF")
   // §108d L2: same-hit pointer jitter without GLFW mouse (measure harness).
   const hover_cpu_probe = has("MLC_EDITOR_HOVER_CPU_PROBE")
+  // §109a: visible dogfood baseline phases (not PERF skip-heavy).
+  const dogfood_probe = has("MLC_EDITOR_PERF_DOGFOOD")
+  const dogfood_phase_file = get_or("MLC_EDITOR_PERF_DOGFOOD_PHASE_FILE", "")
+  const dogfood_cmd_file = get_or("MLC_EDITOR_PERF_DOGFOOD_CMD_FILE", "")
   // Counters run for baseline, terminal, or full. Heavy skips only on baseline/terminal
   // when PERF_FULL is not set (FULL overrides skips).
   const perf_enabled =
@@ -807,8 +855,12 @@ fn main() -> i32 = do
     // Full path is far costlier per frame; default 5 (script FRAMES default matches).
     perf_frame_limit = 5
   end
-  if perf_enabled && !terminal_perf_enabled then
+  if (perf_enabled && !terminal_perf_enabled) || dogfood_probe then
     const perf_open = get_or("MLC_EDITOR_PERF_OPEN", "")
+    if dogfood_probe && dogfood_open_forbidden(perf_open) then
+      println("[mlc-editor] FAIL: MLC_EDITOR_PERF_OPEN missing or README*")
+      return 1
+    end
     if perf_open.byte_size() > 0 then
       tabs = try_open_path(tabs, perf_open)
     end
@@ -816,6 +868,12 @@ fn main() -> i32 = do
   const startup_view = load_demo_session_view(tabs)
   if tab_set_has_active(tabs) then
     println("[mlc-editor] open " + tab_set_active(tabs).path)
+  end
+  if dogfood_probe && tab_set_has_active(tabs) then
+    if dogfood_open_forbidden(tab_set_active(tabs).path) then
+      println("[mlc-editor] FAIL: dogfood open path is README*")
+      return 1
+    end
   end
 
   let mut app = editor_app_state_new(
@@ -874,8 +932,68 @@ fn main() -> i32 = do
   let mut last_chrome_hit_id = "none"
   let mut text_layer_batch = editor_ux_text_layer_batch_new()
   let mut chrome_layer_batch = editor_ux_chrome_layer_batch_new()
+  // §109a dogfood — shell drives phases via CMD_FILE (ack on PHASE_FILE).
+  let mut dogfood_phase = ""
+  let mut dogfood_type_chars = 0
+  let mut dogfood_burst_done_ms = 0
+  let mut dogfood_jitter_flip = 0
+  let mut dogfood_stall_printed = 0
+  let mut dogfood_emit_sink = 0
+  const dogfood_text_x = 420
+  const dogfood_text_y = chrome_top + 80
 
   while glfw_gl_context_should_close() == 0 do
+    if dogfood_probe then
+      if dogfood_phase.byte_size() == 0 then
+        dogfood_phase = "warmup"
+        dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "phase=warmup")
+      end
+      if dogfood_cmd_file.byte_size() > 0 then
+        const raw_cmd = dogfood_trim_newline(dogfood_phase_file_read(dogfood_cmd_file))
+        if raw_cmd == "quit" then
+          dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "done")
+          break
+        else if raw_cmd.byte_size() > 0 && raw_cmd != dogfood_phase then
+          if raw_cmd == "idle_away" || raw_cmd == "still_over_text" ||
+              raw_cmd == "text_jitter" || raw_cmd == "scroll" ||
+              raw_cmd == "type" then
+            dogfood_phase = raw_cmd
+            dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "phase=" + raw_cmd)
+            if raw_cmd == "type" then
+              dogfood_type_chars = 0
+              dogfood_stall_printed = 0
+            end
+          end
+        end
+      end
+      if dogfood_phase == "warmup" || dogfood_phase == "idle_away" then
+        glfw_gl_input_test_set(1200, 800, 0, 0)
+      else if dogfood_phase == "text_jitter" then
+        dogfood_jitter_flip = 1 - dogfood_jitter_flip
+        glfw_gl_input_test_set(dogfood_text_x + dogfood_jitter_flip, dogfood_text_y, 0, 0)
+      else if dogfood_phase == "still_over_text" ||
+          dogfood_phase == "scroll" ||
+          dogfood_phase == "type" then
+        glfw_gl_input_test_set(dogfood_text_x, dogfood_text_y, 0, 0)
+      end
+      if dogfood_phase == "type" && dogfood_type_chars < 20 then
+        glfw_gl_text_test_push("x")
+        dogfood_type_chars = dogfood_type_chars + 1
+        if dogfood_type_chars == 20 then
+          dogfood_burst_done_ms = app.frame_index
+          dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "type_burst_done")
+        end
+      end
+      // Emit stall before idle-continue can skip the bottom of the loop.
+      if dogfood_type_chars >= 20 && dogfood_stall_printed == 0 &&
+          app.frame_index > dogfood_burst_done_ms then
+        const stall_ms = (app.frame_index - dogfood_burst_done_ms) * 16
+        dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "type_stall_ms=" + stall_ms.to_string())
+        dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "phase=type_end")
+        dogfood_stall_printed = 1
+      end
+    end
+
     const scaled_font_size = f64_to_i32(
       i32_to_f64(zoom_font_size) * glfw_gl_window_content_scale_y()
     )
@@ -900,12 +1018,16 @@ fn main() -> i32 = do
 
     const width = frame_in.width
     const height = frame_in.height
-    const pending_scroll_y = frame_in.pending_scroll_y
+    let mut pending_scroll_y = frame_in.pending_scroll_y
     let mut pending_binding_key = frame_in.pending_binding_key
     let mut pending_drop_path = frame_in.pending_drop_path
     let mut content_dirty = frame_in.content_dirty
     let mut pointer_dirty = frame_in.pointer_dirty
     let mut chrome_dirty = frame_in.chrome_dirty
+    if dogfood_probe && dogfood_phase == "scroll" then
+      pending_scroll_y = 1.0
+      content_dirty = 1
+    end
     // §108d: raise pointer_dirty every tick; hit-stable plan clears it (same-hit hover).
     if hover_cpu_probe then
       pointer_dirty = 1
