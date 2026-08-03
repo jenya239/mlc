@@ -13,24 +13,11 @@ import {
 import { document_content_height } from '../layout/visible_range'
 import { editor_scrollbar_thumb } from '../layout/word_wrap'
 import { EditorTextMetrics } from './overflow'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 fn state_with_scroll_y(state: EditorUxState, scroll_offset_y: i32) -> EditorUxState =
   { ...state, scroll_offset_y: scroll_offset_y }
@@ -84,7 +71,7 @@ export fn editor_ux_clamp_scroll_y(
   end
   const line_count = line_index_line_count(line_index)
   const content_height = document_content_height(line_count, line_height_or_one(metrics))
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   editor_ux_clamp_scroll_offset(scroll_offset_y, content_height, viewport.height)
 end
 
@@ -105,7 +92,7 @@ export fn editor_ux_caret_in_viewport(
   const line_height = line_height_or_one(metrics)
   const caret_top = position.line * line_height
   const caret_bottom = caret_top + line_height
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   const scroll_y = state.scroll_offset_y
   if caret_bottom <= scroll_y then
     return 0
@@ -131,7 +118,7 @@ export fn editor_ux_ensure_caret_visible(
   )
   const line_height = line_height_or_one(metrics)
   const caret_top = position.line * line_height
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   let mut scroll_y = state.scroll_offset_y
   if caret_top < scroll_y then
     scroll_y = caret_top

@@ -8,7 +8,10 @@ import {
   line_index_offset_to_position
 } from '../document/line_index'
 import { EditorTextMetrics } from './overflow'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 
 export type CurrentLineHighlight = {
   line: i32,
@@ -22,22 +25,6 @@ export type CurrentLineDrawReport = {
   highlights: [CurrentLineHighlight]
 }
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 export fn editor_ux_current_line_draw_report(
   state: EditorUxState,
@@ -57,7 +44,7 @@ export fn editor_ux_current_line_draw_report(
     line_index.text,
     selection_caret(state.selection)
   )
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   const top = viewport.y + caret_pos.line * line_height - state.scroll_offset_y
   const bottom = top + line_height
   if bottom <= viewport.y || top >= viewport.y + viewport.height then

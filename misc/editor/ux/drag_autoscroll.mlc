@@ -2,27 +2,14 @@
 import { Rect, rect_new } from '../../gui/layout'
 import { shell_panels_editor_rect } from '../ui/shell_panels'
 import { EditorTextMetrics } from './overflow'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 import { editor_ux_drag_text } from './selection_apply'
 import { editor_ux_clamp_scroll_y } from './scroll'
 import { LineIndex } from '../document/line_index'
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 fn state_with_scroll_y(
   state: EditorUxState,
@@ -50,7 +37,7 @@ export fn editor_ux_drag_text_autoscroll(
   pixel_y: i32,
   line_index: LineIndex
 ) -> EditorUxState = do
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   let mut line_height = metrics.line_height
   if line_height <= 0 then
     line_height = 1

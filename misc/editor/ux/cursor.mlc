@@ -5,29 +5,16 @@ import {
   shell_panels_editor_rect,
   shell_panels_tree_rect
 } from '../ui/shell_panels'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 
 export fn ux_cursor_arrow() -> i32 = 0
 export fn ux_cursor_ew_resize() -> i32 = 1
 export fn ux_cursor_ibeam() -> i32 = 2
 export fn ux_cursor_hand() -> i32 = 3
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 fn state_with_cursor(state: EditorUxState, cursor_shape: i32) -> EditorUxState =
   EditorUxState {
@@ -54,7 +41,7 @@ export fn editor_ux_cursor_shape_at(
   if shell_panels_divider_hit(state.panels, point_x, point_y) != 0 then
     return ux_cursor_ew_resize()
   end
-  const text_rect = text_viewport_rect(state)
+  const text_rect = editor_ux_text_viewport_rect(state)
   if point_in_rect(point_new(point_x, point_y), text_rect) != 0 then
     return ux_cursor_ibeam()
   end

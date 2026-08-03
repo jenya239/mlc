@@ -16,7 +16,10 @@ import {
   utf8_count_display_columns
 } from '../document/line_index'
 import { document_content_height } from '../layout/visible_range'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 
 export type EditorTextMetrics = {
   line_height: i32,
@@ -100,22 +103,6 @@ export fn max_line_columns_cache_tick(
   }
 end
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 fn content_rect_for_state(
   state: EditorUxState,
@@ -135,7 +122,7 @@ fn content_rect_for_state(
   if char_width <= 0 then
     char_width = 1
   end
-  const viewport = text_viewport_rect(state)
+  const viewport = editor_ux_text_viewport_rect(state)
   rect_new(
     viewport.x - state.scroll_offset_x,
     viewport.y - state.scroll_offset_y,
@@ -151,7 +138,7 @@ export fn editor_ux_collect_overflows(
   line_index: LineIndex
 ) -> [UxOverflow] = do
   let mut overflows: [UxOverflow] = []
-  const clip = text_viewport_rect(state)
+  const clip = editor_ux_text_viewport_rect(state)
   const content = content_rect_for_state(state, metrics, line_index)
   if content.width <= 0 && content.height <= 0 then
     return overflows

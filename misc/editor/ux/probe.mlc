@@ -1,5 +1,5 @@
 // TRACK_UX_HEADLESS STEP=3 — editor probe port (fixture → UxSnapshot).
-import { Rect } from '../../gui/layout'
+import { Rect, rect_new } from '../../gui/layout'
 import {
   UxSnapshot,
   UxRect,
@@ -50,6 +50,23 @@ fn rect_to_ux(rect: Rect) -> UxRect =
 
 // Live chrome draws tabs above the shell editor pane → in-pane strip height is 0.
 export fn editor_tab_strip_height_live() -> i32 = 0
+
+export fn editor_ux_text_viewport_rect(state: EditorUxState) -> Rect = do
+  const editor_rect = shell_panels_editor_rect(state.panels)
+  let mut strip_height = state.tab_strip_height
+  if strip_height < 0 then
+    strip_height = 0
+  end
+  if strip_height > editor_rect.height then
+    strip_height = editor_rect.height
+  end
+  rect_new(
+    editor_rect.x,
+    editor_rect.y + strip_height,
+    editor_rect.width,
+    editor_rect.height - strip_height
+  )
+end
 
 export fn editor_ux_state_new(
   window_width: i32,
@@ -113,25 +130,14 @@ export fn editor_ux_snapshot(
   const tree_rect = rect_to_ux(shell_panels_tree_rect(state.panels))
   const editor_rect = rect_to_ux(shell_panels_editor_rect(state.panels))
   const divider_rect = rect_to_ux(state.panels.panes.divider)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
+  const text_viewport = editor_ux_text_viewport_rect(state)
   const tab_strip_rect = ux_rect_new(
     editor_rect.x,
     editor_rect.y,
     editor_rect.width,
-    strip_height
+    text_viewport.y - editor_rect.y
   )
-  const text_rect = ux_rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
+  const text_rect = rect_to_ux(text_viewport)
 
   UxSnapshot {
     window_width: state.window_width,

@@ -21,7 +21,10 @@ import {
   editor_ux_refresh_overflows,
   editor_ux_clear_overflows_after_scissor
 } from './overflow'
-import { EditorUxState } from './probe'
+import {
+  EditorUxState,
+  editor_ux_text_viewport_rect
+} from './probe'
 import { LineIndex } from '../document/line_index'
 
 export type EditorDrawFrameResult = {
@@ -30,22 +33,6 @@ export type EditorDrawFrameResult = {
   ops: [UxDrawOp]
 }
 
-fn text_viewport_rect(state: EditorUxState) -> Rect = do
-  const editor_rect = shell_panels_editor_rect(state.panels)
-  let mut strip_height = state.tab_strip_height
-  if strip_height < 0 then
-    strip_height = 0
-  end
-  if strip_height > editor_rect.height then
-    strip_height = editor_rect.height
-  end
-  rect_new(
-    editor_rect.x,
-    editor_rect.y + strip_height,
-    editor_rect.width,
-    editor_rect.height - strip_height
-  )
-end
 
 fn push_panel_op(
   ops: [UxDrawOp],
@@ -80,7 +67,7 @@ export fn editor_ux_draw_frame(
   ops = push_panel_op(ops, "divider", divider, 0)
   ops = push_panel_op(ops, "editor", editor, 0)
 
-  const text_clip = text_viewport_rect(state)
+  const text_clip = editor_ux_text_viewport_rect(state)
   let mut text_draw = text_clip
   let mut text_clipped = 0
   if use_scissor != 0 then

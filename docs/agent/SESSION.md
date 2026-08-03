@@ -153,3 +153,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107o STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107o Green — export + delete copies + `run_ux_viewport_rect_single`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107o Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `editor_ux_text_viewport_rect` in `probe.mlc`; deleted 8 private copies; snapshot uses export; `run_ux_viewport_rect_single` |
+| verify  | arch `ux_ok`; probe/divider/drag ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 130/130 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107o STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107o — independent arch rebuild; sabotage: restore private `fn text_viewport_rect`; `run_ux_gate` ×2; close §107o → §107p Decision) |
