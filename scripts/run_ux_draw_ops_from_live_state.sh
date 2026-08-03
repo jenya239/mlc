@@ -60,9 +60,9 @@ if grep -qE '0, toolbar_y, width, toolbar_height\(\)' "$DEMO"; then
   fail "demo_live still has direct toolbar strip solid_renderer_rect"
 fi
 
-# q2: tab strip slots via ops, not direct solid_renderer_rect(tab_fill...).
-if ! grep -q 'tab_slot_ops' "$DEMO"; then
-  fail "demo_live missing tab_slot_ops (q2)"
+# q2: tab strip slots via ops (standalone tab_slot_ops or §108c chrome_layer_ops).
+if ! grep -Eq 'tab_slot_ops|chrome_layer_ops' "$DEMO"; then
+  fail "demo_live missing tab_slot_ops/chrome_layer_ops (q2)"
 fi
 if ! grep -q '"tab_slot"' "$DEMO"; then
   fail "demo_live missing tab_slot paint op id (q2)"
@@ -71,9 +71,9 @@ if grep -q 'tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height' "$DEMO"; th
   fail "demo_live still paints tab_fill via direct solid_renderer_rect (q2)"
 fi
 
-# q3: tree / breadcrumb / folder-nav via ops.
-if ! grep -q 'nav_chrome_ops' "$DEMO"; then
-  fail "demo_live missing nav_chrome_ops (q3)"
+# q3: tree / breadcrumb / folder-nav via ops (nav_chrome_ops or §108c chrome_layer_ops).
+if ! grep -Eq 'nav_chrome_ops|chrome_layer_ops' "$DEMO"; then
+  fail "demo_live missing nav_chrome_ops/chrome_layer_ops (q3)"
 fi
 if ! grep -q '"tree_panel"' "$DEMO"; then
   fail "demo_live missing tree_panel paint op id (q3)"

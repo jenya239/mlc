@@ -263,6 +263,10 @@ import {
   editor_ux_text_layer_batch_invalidate
 } from './ux/text_layer_batch'
 import {
+  editor_ux_chrome_layer_batch_new,
+  editor_ux_chrome_layer_batch_store
+} from './ux/chrome_layer_batch'
+import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
 } from './ux/multi_click'
@@ -367,6 +371,7 @@ import {
   editor_perf_accumulate_frame,
   editor_perf_note_content_rebuild,
   editor_perf_note_text_layer_rebuild,
+  editor_perf_note_chrome_rebuild,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
   editor_perf_format_demo_live_full
@@ -861,6 +866,7 @@ fn main() -> i32 = do
   let mut cached_visual_rows_valid = 0
   let mut last_chrome_hit_id = "none"
   let mut text_layer_batch = editor_ux_text_layer_batch_new()
+  let mut chrome_layer_batch = editor_ux_chrome_layer_batch_new()
 
   while glfw_gl_context_should_close() == 0 do
     const scaled_font_size = f64_to_i32(
@@ -2054,7 +2060,10 @@ fn main() -> i32 = do
       perf_draw_t0 = editor_perf_now_us()
     end
     solid = solid_renderer_begin(solid)
-    const chrome_band_ops = editor_paint_ops_chrome_bands(
+    // §108c — rebuild chrome EditorPaintOp layer (bands+tabs+nav), store, count.
+    // present_only caret path above must not reach here / must not note chrome rebuild.
+    let mut chrome_layer_ops: [EditorPaintOp] = []
+    chrome_layer_ops = editor_paint_ops_chrome_bands(
       width,
       height,
       header_height(),
@@ -2069,8 +2078,6 @@ fn main() -> i32 = do
       theme.panel_green,
       theme.panel_blue
     )
-    solid = editor_paint_ops_flatten(solid, width, height, chrome_band_ops)
-    let mut tab_slot_ops: [EditorPaintOp] = []
     let mut hover_tab_index = 0
     while hover_tab_index < tab_widths.length() do
       const tab_ux = tab_strip_title_rect_from_widths(
@@ -2088,7 +2095,7 @@ fn main() -> i32 = do
       const tab_fill = editor_ux_chrome_hover_draw_entry(
         input, tab_slot, tab_base_red, tab_base_green, tab_base_blue
       )
-      tab_slot_ops.push(editor_paint_op_rect(
+      chrome_layer_ops.push(editor_paint_op_rect(
         "tab_slot",
         tab_fill.x,
         tab_fill.y,
@@ -2101,23 +2108,7 @@ fn main() -> i32 = do
       ))
       hover_tab_index = hover_tab_index + 1
     end
-    solid = editor_paint_ops_flatten(solid, width, height, tab_slot_ops)
-    let mut hover_tool_index = 0
-    const hover_toolbar_count = editor_app_toolbar_count()
-    while hover_tool_index < hover_toolbar_count do
-      const tool_slot = toolbar_button_rect(hover_tool_index, toolbar_y)
-      const tool_fill = editor_ux_chrome_hover_draw_entry(
-        input, tool_slot, theme.panel_red, theme.panel_green, theme.panel_blue
-      )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        tool_fill.x, tool_fill.y, tool_fill.width, tool_fill.height,
-        tool_fill.red, tool_fill.green, tool_fill.blue, 1.0
-      )
-      hover_tool_index = hover_tool_index + 1
-    end
-    let mut nav_chrome_ops: [EditorPaintOp] = []
-    nav_chrome_ops.push(editor_paint_op_rect(
+    chrome_layer_ops.push(editor_paint_op_rect(
       "tree_panel",
       tree_rect.x,
       tree_rect.y,
@@ -2131,7 +2122,7 @@ fn main() -> i32 = do
     const breadcrumb_fill = editor_ux_chrome_hover_draw_entry(
       input, breadcrumb_rect, theme.panel_red, theme.panel_green, theme.panel_blue
     )
-    nav_chrome_ops.push(editor_paint_op_rect(
+    chrome_layer_ops.push(editor_paint_op_rect(
       "breadcrumb",
       breadcrumb_fill.x,
       breadcrumb_fill.y,
@@ -2146,7 +2137,7 @@ fn main() -> i32 = do
       const nav_back_fill = editor_ux_chrome_hover_draw_entry(
         input, nav_back_rect, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      nav_chrome_ops.push(editor_paint_op_rect(
+      chrome_layer_ops.push(editor_paint_op_rect(
         "nav_back",
         nav_back_fill.x,
         nav_back_fill.y,
@@ -2162,7 +2153,7 @@ fn main() -> i32 = do
       const nav_forward_fill = editor_ux_chrome_hover_draw_entry(
         input, nav_forward_rect, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      nav_chrome_ops.push(editor_paint_op_rect(
+      chrome_layer_ops.push(editor_paint_op_rect(
         "nav_forward",
         nav_forward_fill.x,
         nav_forward_fill.y,
@@ -2174,7 +2165,25 @@ fn main() -> i32 = do
         1.0
       ))
     end
-    solid = editor_paint_ops_flatten(solid, width, height, nav_chrome_ops)
+    chrome_layer_batch = editor_ux_chrome_layer_batch_store(
+      chrome_layer_batch, chrome_layer_ops
+    )
+    perf_counters = editor_perf_note_chrome_rebuild(perf_counters)
+    solid = editor_paint_ops_flatten(solid, width, height, chrome_layer_batch.ops)
+    let mut hover_tool_index = 0
+    const hover_toolbar_count = editor_app_toolbar_count()
+    while hover_tool_index < hover_toolbar_count do
+      const tool_slot = toolbar_button_rect(hover_tool_index, toolbar_y)
+      const tool_fill = editor_ux_chrome_hover_draw_entry(
+        input, tool_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
+      solid = solid_renderer_rect(
+        solid, width, height,
+        tool_fill.x, tool_fill.y, tool_fill.width, tool_fill.height,
+        tool_fill.red, tool_fill.green, tool_fill.blue, 1.0
+      )
+      hover_tool_index = hover_tool_index + 1
+    end
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8

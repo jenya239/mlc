@@ -1,0 +1,55 @@
+// TRACK_EDITOR_RETAINED_PAINT §108c — retain chrome EditorPaintOp batch; compose order.
+import { EditorPaintOp } from './paint_ops'
+
+export type ChromeLayerBatch = {
+  ops: [EditorPaintOp],
+  valid: i32,
+  rebuild_count: i32
+}
+
+export fn editor_ux_chrome_layer_batch_new() -> ChromeLayerBatch =
+  ChromeLayerBatch {
+    ops: [],
+    valid: 0,
+    rebuild_count: 0
+  }
+
+export fn editor_ux_chrome_layer_batch_can_replay(
+  batch: ChromeLayerBatch,
+  present_only: i32
+) -> i32 = do
+  if present_only != 0 then
+    if batch.valid != 0 then
+      return 1
+    end
+  end
+  0
+end
+
+export fn editor_ux_chrome_layer_batch_store(
+  batch: ChromeLayerBatch,
+  ops: [EditorPaintOp]
+) -> ChromeLayerBatch =
+  ChromeLayerBatch {
+    ops: ops,
+    valid: 1,
+    rebuild_count: batch.rebuild_count + 1
+  }
+
+export fn editor_ux_chrome_layer_batch_invalidate(
+  batch: ChromeLayerBatch
+) -> ChromeLayerBatch =
+  ChromeLayerBatch {
+    ops: batch.ops,
+    valid: 0,
+    rebuild_count: batch.rebuild_count
+  }
+
+// Compose order: text → chrome → overlay (Decision §108c).
+export fn editor_ux_compose_present_layer_names() -> [string] = do
+  let mut names: [string] = []
+  names.push("text")
+  names.push("chrome")
+  names.push("overlay")
+  names
+end

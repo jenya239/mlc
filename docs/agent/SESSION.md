@@ -498,3 +498,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108c STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c Green — chrome layer retain + `chrome_rebuild_count` + present_only gate + compose-order unit; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=2, §108c Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | `ux/chrome_layer_batch.mlc`; `chrome_rebuild_count`; demo store/flatten chrome ops; gate `run_ux_present_only_caret_no_chrome_rebuild`; draw_ops accepts `chrome_layer_ops` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 135/135 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108c STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c — independent rebuild+rerun; sabotage: chrome rebuild on present_only path; `run_ux_gate` ×2; close §108c → §108d Decision) |

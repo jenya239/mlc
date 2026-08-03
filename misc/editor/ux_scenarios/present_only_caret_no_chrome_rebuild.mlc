@@ -1,0 +1,118 @@
+// TRACK_EDITOR_RETAINED_PAINT §108c — present_only must not rebuild chrome.
+import {
+  editor_ux_chrome_layer_batch_new,
+  editor_ux_chrome_layer_batch_can_replay,
+  editor_ux_chrome_layer_batch_store,
+  editor_ux_chrome_layer_batch_invalidate,
+  editor_ux_compose_present_layer_names
+} from '../ux/chrome_layer_batch'
+import { editor_paint_op_rect, EditorPaintOp } from '../ux/paint_ops'
+import {
+  editor_perf_new,
+  editor_perf_note_chrome_rebuild
+} from '../ui/perf'
+
+fn main() -> i32 = do
+  let mut batch = editor_ux_chrome_layer_batch_new()
+  let mut counters = editor_perf_new()
+  let mut status = 0
+
+  const layers = editor_ux_compose_present_layer_names()
+  if layers.length() != 3 then
+    status = 1
+  end
+  if layers[0] != "text" then
+    status = 1
+  end
+  if layers[1] != "chrome" then
+    status = 1
+  end
+  if layers[2] != "overlay" then
+    status = 1
+  end
+
+  let mut chrome_ops: [EditorPaintOp] = []
+  chrome_ops.push(editor_paint_op_rect(
+    "chrome_background", 0, 0, 800, 600, 0.1, 0.1, 0.1, 1.0
+  ))
+  chrome_ops.push(editor_paint_op_rect(
+    "chrome_header", 0, 0, 800, 18, 0.2, 0.2, 0.2, 1.0
+  ))
+  batch = editor_ux_chrome_layer_batch_store(batch, chrome_ops)
+  counters = editor_perf_note_chrome_rebuild(counters)
+  if batch.rebuild_count != 1 then
+    status = 2
+  end
+  if batch.valid == 0 then
+    status = 2
+  end
+  if counters.chrome_rebuild_count != 1 then
+    status = 2
+  end
+
+  // N present_only ticks: replay retained chrome, no rebuild / no counter bump.
+  let mut present_index = 0
+  while present_index < 8 do
+    if editor_ux_chrome_layer_batch_can_replay(batch, 1) == 0 then
+      status = 3
+    end
+    if batch.rebuild_count != 1 then
+      status = 4
+    end
+    if counters.chrome_rebuild_count != 1 then
+      status = 4
+    end
+    if batch.ops.length() != 2 then
+      status = 3
+    end
+    present_index = present_index + 1
+  end
+
+  // chrome_dirty rebuilds once more.
+  let mut dirty_ops: [EditorPaintOp] = []
+  dirty_ops.push(editor_paint_op_rect(
+    "chrome_background", 0, 0, 800, 600, 0.3, 0.3, 0.3, 1.0
+  ))
+  batch = editor_ux_chrome_layer_batch_store(batch, dirty_ops)
+  counters = editor_perf_note_chrome_rebuild(counters)
+  if batch.rebuild_count != 2 then
+    status = 5
+  end
+  if counters.chrome_rebuild_count != 2 then
+    status = 5
+  end
+
+  // Sabotage shape: invalidate → present_only cannot replay.
+  batch = editor_ux_chrome_layer_batch_invalidate(batch)
+  if editor_ux_chrome_layer_batch_can_replay(batch, 1) != 0 then
+    status = 6
+  end
+
+  if status == 1 then
+    println("ux_fail present_only_caret_no_chrome_rebuild compose_order")
+    return 1
+  end
+  if status == 2 then
+    println("ux_fail present_only_caret_no_chrome_rebuild chrome_store")
+    return 2
+  end
+  if status == 3 then
+    println("ux_fail present_only_caret_no_chrome_rebuild present_replay")
+    return 3
+  end
+  if status == 4 then
+    println("ux_fail present_only_caret_no_chrome_rebuild present_rebuild")
+    return 4
+  end
+  if status == 5 then
+    println("ux_fail present_only_caret_no_chrome_rebuild chrome_dirty_bump")
+    return 5
+  end
+  if status == 6 then
+    println("ux_fail present_only_caret_no_chrome_rebuild invalidate")
+    return 6
+  end
+
+  println("ux_ok present_only_caret_no_chrome_rebuild")
+  0
+end
