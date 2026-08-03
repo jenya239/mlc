@@ -263,6 +263,61 @@ export fn line_index_from_string(text: string) -> LineIndex = do
   LineIndex { starts: starts, text_length: length, text: text }
 end
 
+// TRACK_EDITOR_HYGIENE §107f — incremental starts[] + text splice (no piece-table flatten).
+export fn line_index_apply_edit(
+  index: LineIndex,
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+) -> LineIndex = do
+  let mut start = byte_start
+  let mut removed = removed_len
+  if start < 0 then
+    start = 0
+  end
+  if start > index.text_length then
+    start = index.text_length
+  end
+  if removed < 0 then
+    removed = 0
+  end
+  if start + removed > index.text_length then
+    removed = index.text_length - start
+  end
+  const inserted_len = inserted.byte_size()
+  const delta = inserted_len - removed
+  const prefix = index.text.byte_substring(0, start)
+  const suffix = index.text.byte_substring(
+    start + removed,
+    index.text_length - (start + removed)
+  )
+  const new_text = prefix + inserted + suffix
+  const new_length = new_text.byte_size()
+
+  let mut starts: [i32] = []
+  let mut index_cursor = 0
+  const old_count = index.starts.length()
+  while index_cursor < old_count && index.starts[index_cursor] <= start do
+    starts.push(index.starts[index_cursor])
+    index_cursor = index_cursor + 1
+  end
+  while index_cursor < old_count && index.starts[index_cursor] <= start + removed do
+    index_cursor = index_cursor + 1
+  end
+  let mut local = 0
+  while local < inserted_len do
+    if inserted.byte_at(local) == "\n" then
+      starts.push(start + local + 1)
+    end
+    local = local + 1
+  end
+  while index_cursor < old_count do
+    starts.push(index.starts[index_cursor] + delta)
+    index_cursor = index_cursor + 1
+  end
+  LineIndex { starts: starts, text_length: new_length, text: new_text }
+end
+
 export fn line_index_from_document(document: TextDocument) -> LineIndex =
   line_index_from_string(document_to_string(document))
 

@@ -1,11 +1,13 @@
 // TRACK_EDITOR_LARGE_FILE_NO_FULL_STRINGIFY STEP=2 — one flatten per snapshot.
+// TRACK_EDITOR_HYGIENE §107f — incremental apply_edit without bumping flatten_count.
 import {
   TextDocument,
   document_to_string
 } from './piece_table'
 import {
   LineIndex,
-  line_index_from_string
+  line_index_from_string,
+  line_index_apply_edit
 } from './line_index'
 
 export type DocumentFrameSnapshot = {
@@ -20,5 +22,21 @@ export fn document_frame_snapshot(document: TextDocument) -> DocumentFrameSnapsh
     text: text,
     line_index: line_index_from_string(text),
     flatten_count: 1
+  }
+end
+
+export fn document_frame_snapshot_apply_edit(
+  previous: DocumentFrameSnapshot,
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+) -> DocumentFrameSnapshot = do
+  const line_index = line_index_apply_edit(
+    previous.line_index, byte_start, removed_len, inserted
+  )
+  DocumentFrameSnapshot {
+    text: line_index.text,
+    line_index: line_index,
+    flatten_count: previous.flatten_count
   }
 end

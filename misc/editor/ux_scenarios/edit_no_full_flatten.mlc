@@ -1,0 +1,69 @@
+// TRACK_EDITOR_HYGIENE §107f — N insertions via apply_edit must not grow flatten_count.
+import {
+  document_from_string,
+  document_insert,
+  document_to_string
+} from '../document/piece_table'
+import {
+  line_index_from_string,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_matches_document
+} from '../document/line_index'
+import {
+  frame_snapshot_cache_new,
+  frame_snapshot_cache_apply_edit
+} from '../document/frame_snapshot_cache'
+
+fn main() -> i32 = do
+  const seed = "line_0\nline_1\nline_2\n"
+  let mut document = document_from_string(seed)
+  let mut cache = frame_snapshot_cache_new(document)
+  const warm_flatten = cache.snapshot.flatten_count
+  if warm_flatten != 1 then
+    println("ux_fail edit_no_full_flatten warm flatten")
+    return 1
+  end
+
+  let mut step = 0
+  while step < 8 do
+    const caret = document_to_string(document).byte_size()
+    const chunk = "x" + step.to_string() + "\n"
+    document = document_insert(document, caret, chunk)
+    cache = frame_snapshot_cache_apply_edit(cache, caret, 0, chunk)
+    if cache.snapshot.flatten_count != warm_flatten then
+      println(
+        "ux_fail edit_no_full_flatten flatten grew got " +
+          cache.snapshot.flatten_count.to_string()
+      )
+      return 2
+    end
+    if !line_index_matches_document(cache.snapshot.line_index, document) then
+      println("ux_fail edit_no_full_flatten length mismatch")
+      return 3
+    end
+    const expected = line_index_from_string(document_to_string(document))
+    if line_index_line_count(cache.snapshot.line_index) !=
+        line_index_line_count(expected) then
+      println("ux_fail edit_no_full_flatten line count")
+      return 4
+    end
+    let mut line = 0
+    while line < line_index_line_count(expected) do
+      if line_index_line_start(cache.snapshot.line_index, line) !=
+          line_index_line_start(expected, line) then
+        println("ux_fail edit_no_full_flatten starts")
+        return 5
+      end
+      line = line + 1
+    end
+    if cache.snapshot.text != expected.text then
+      println("ux_fail edit_no_full_flatten text")
+      return 6
+    end
+    step = step + 1
+  end
+
+  println("ux_ok edit_no_full_flatten")
+  0
+end

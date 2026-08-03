@@ -259,3 +259,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107f STEP=0/1 done (Decision+Red).** Green next |
 | issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107f Green — apply_edit APIs + wire edit sites; scenario `edit_no_full_flatten`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107f Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `line_index_apply_edit`; `document_frame_snapshot_apply_edit` / `frame_snapshot_cache_apply_edit` / `frame_layout_tick_snapshot_edit` (flatten_count unchanged). Wired single-caret insert in `demo_live` (length mismatch → full tick). Scenario `edit_no_full_flatten` + green script |
+| verify  | `run_ux_edit_no_full_flatten.sh` → `ux_ok`; idle/large_file + `demo_live_fs_compile` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 120/120 |
+| result  | **§107f STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue`. Autoclose may expand typed bytes — demo falls back to full flatten on length mismatch |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107f — independent rebuild+rerun; sabotage: force full flatten / bump flatten_count on apply_edit → gate fails; `run_ux_gate` ×2; close §107f → §107g Decision) |

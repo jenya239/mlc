@@ -236,6 +236,7 @@ import {
   frame_layout_new_pixel,
   frame_layout_tick_pixel,
   frame_layout_tick_snapshot,
+  frame_layout_tick_snapshot_edit,
   frame_layout_tick_spans,
   frame_layout_tick_minimap,
   frame_layout_tick_max_columns
@@ -1867,19 +1868,38 @@ fn main() -> i32 = do
         pending_binding_key = ""
       else if input.text_buffer.length() > 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
+        // §107f — single-caret insert knows the edit span; keep full tick for multi.
+        // Autoclose may expand/skip the typed bytes — length mismatch falls back.
+        const insert_byte_start = selection_start(app.ux.selection)
+        const insert_removed_len =
+          selection_end(app.ux.selection) - insert_byte_start
+        const insert_text = input.text_buffer
+        let mut insert_used_apply_edit = 0
         if multi_selection_count(multi) > 1 then
           const multi_insert = editor_app_insert_text_with_multi(
-            app, multi, input.text_buffer
+            app, multi, insert_text
           )
           app = multi_insert.app
           multi = multi_insert.multi
         else
-          app = editor_app_insert_text(app, input.text_buffer)
+          app = editor_app_insert_text(app, insert_text)
           multi = multi_selection_from_single(app.ux.selection)
+          insert_used_apply_edit = 1
         end
         active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
-        frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+        if insert_used_apply_edit != 0 then
+          frame_layout = frame_layout_tick_snapshot_edit(
+            frame_layout, insert_byte_start, insert_removed_len, insert_text
+          )
+          if !line_index_matches_document(
+            frame_layout.snapshot_cache.snapshot.line_index, document
+          ) then
+            frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+          end
+        else
+          frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+        end
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text

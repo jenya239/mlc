@@ -10,7 +10,8 @@ import {
 import {
   DocumentFrameSnapshotCache,
   frame_snapshot_cache_new,
-  frame_snapshot_cache_tick
+  frame_snapshot_cache_tick,
+  frame_snapshot_cache_apply_edit
 } from '../document/frame_snapshot_cache'
 import {
   DocumentWrapCountCache,
@@ -139,6 +140,24 @@ export fn frame_layout_tick_snapshot(
     wrapped_content_height: layout.wrapped_content_height,
     snapshot_cache: frame_snapshot_cache_tick(
       layout.snapshot_cache, document, dirty
+    ),
+    span_cache: layout.span_cache,
+    minimap_cache: layout.minimap_cache,
+    max_columns_cache: layout.max_columns_cache
+  }
+
+export fn frame_layout_tick_snapshot_edit(
+  layout: EditorFrameLayout,
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+) -> EditorFrameLayout =
+  EditorFrameLayout {
+    wrap_count_cache: layout.wrap_count_cache,
+    visual_row_count: layout.visual_row_count,
+    wrapped_content_height: layout.wrapped_content_height,
+    snapshot_cache: frame_snapshot_cache_apply_edit(
+      layout.snapshot_cache, byte_start, removed_len, inserted
     ),
     span_cache: layout.span_cache,
     minimap_cache: layout.minimap_cache,

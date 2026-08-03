@@ -1,11 +1,13 @@
 // TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2 —
 // Idle dirty=false reuses snapshot; dirty tick re-flattens (+ Profile scopes).
+// TRACK_EDITOR_HYGIENE §107f — apply_edit path keeps flatten_count.
 import {
   TextDocument
 } from './piece_table'
 import {
   DocumentFrameSnapshot,
-  document_frame_snapshot
+  document_frame_snapshot,
+  document_frame_snapshot_apply_edit
 } from './frame_snapshot'
 
 export type DocumentFrameSnapshotCache = {
@@ -42,5 +44,23 @@ export fn frame_snapshot_cache_tick(
     snapshot: snapshot,
     snapshot_count: state.snapshot_count + 1,
     dirty: dirty
+  }
+end
+
+export fn frame_snapshot_cache_apply_edit(
+  state: DocumentFrameSnapshotCache,
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+) -> DocumentFrameSnapshotCache = do
+  Profile.scope_begin("frame_snapshot_edit")
+  const snapshot = document_frame_snapshot_apply_edit(
+    state.snapshot, byte_start, removed_len, inserted
+  )
+  Profile.scope_end("frame_snapshot_edit")
+  DocumentFrameSnapshotCache {
+    snapshot: snapshot,
+    snapshot_count: state.snapshot_count + 1,
+    dirty: 1
   }
 end
