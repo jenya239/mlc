@@ -123,3 +123,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107n STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107n — independent rebuild+rerun; sabotage: hardcode strip 28 / diverge from live helper; `run_ux_gate` ×2; close §107n → §107o Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107n CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107n Green `6d88bdd0`. Fresh `.tmp/critic_107n_*` `ux_ok`. Sabotages: hardcode `tab_strip_height: 28` → arch fail; app pass 28 vs live 0 → `strip=28 live=0`; restored. Closed §107n |
+| verify  | critic green ok; sab1/sab2 exit 1; restore ok; `run_ux_gate` ×2 = 129/129 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107n CLOSED.** Advances to §107o |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107o `EDITOR_VIEWPORT_RECT_SINGLE` — freeze Decision; red: 8 local `text_viewport_rect` copies) |
