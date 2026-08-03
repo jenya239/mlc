@@ -453,3 +453,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=12 done (Green q6).** Critic q6 next |
 | issues  | none |
 | next    | ROLE=Critic STEP=13 TRACK=TRACK_EDITOR_HYGIENE (§107q q6 — independent rebuild+rerun; sabotage: restore packed `minimap_rect`; `run_ux_gate` ×2; close §107q → §107r Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=13, §107q q6 CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 13 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green of §107q q6 `b975a453` (`UX_DRAW_OPS_OUT` fresh). Sabotage: packed `minimap_rect.x, minimap_rect.y, minimap_rect.width, minimap_rect.height` → FAIL; restored. Closed §107q (q1–q6). Residual disclosed: toolbar/folder-row hover still direct |
+| verify  | green ok; sab exit 1; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q CLOSED.** Advances to §107r |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107r `EDITOR_UX_GATE_BEHAVIORAL` — freeze Decision; red first) |

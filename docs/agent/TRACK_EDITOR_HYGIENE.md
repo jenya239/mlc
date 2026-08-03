@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q mid (Green q6 done; Critic q6 next); queue head
+## Status: **open** 2026-08-03 — §107a–§107q **CLOSED**; queue head **§107r `EDITOR_UX_GATE_BEHAVIORAL`** (Decision next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -646,7 +646,9 @@ restore; tree clean of Critic mutations):
 | 10 | Green q5: text pane + under-glyph fills via ops | **done** 2026-08-03 — `text_pane_ops` + `text_content_ops` (current_line/trailing_ws/find/selection/caret); gate extended |
 | 11 | Critic q5 | **done** 2026-08-03 — independent green; sabotage packed `editor_rect` → FAIL; restored; UX 136/136 ×2 |
 | 12 | Green q6: overlays / minimap / scrollbars / status | **done** 2026-08-03 — `chrome_tail_ops`/`scrollbar_ops`/`overlay_ops`/`caret_overlay_ops`; gate extended |
-| 13 | Critic q6 | pending |
+| 13 | Critic q6 | **done** 2026-08-03 — independent green; sabotage packed `minimap_rect` → FAIL; restored; UX 136/136 ×2 |
+
+**§107q CLOSED** 2026-08-03 (q1–q6 Critic-audited). Residual disclosed: toolbar-button + folder-row hover still direct `solid_renderer_rect` (outside Decision regions). Next: §107r `EDITOR_UX_GATE_BEHAVIORAL`.
 
 ## §107r `EDITOR_UX_GATE_BEHAVIORAL` (EHA-19)
 `run_ux_wheel_hover_focus_independent_stable.sh`, `run_editor_frame_layout_*_stable.sh`
