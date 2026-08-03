@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107d **CLOSED**; §107e Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107e **CLOSED**; §107f Decision next (Driver STEP=0)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -239,7 +239,22 @@ Final rebuild `.tmp/critic_107d_final`: `ux_ok` (`total_us=7206786`).
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: version field / version-keyed caches absent; full-text compares still fire | **done** 2026-08-03 — `scripts/run_ux_cache_keys_by_version_red.sh` exits non-zero |
 | 2 | Green: `version` + re-key four caches; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `version: i32` on TextDocument (bump insert/delete); wrap/overflow/spans/minimap keyed by version; `ux_ok cache_keys_by_version`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 119/119 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107e Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `9e458a69`. Separate out dir
+`.tmp/critic_107e`: `ux_ok cache_keys_by_version`. Sabotages (then
+`git checkout --` restore; tree clean on the two mutators):
+1. Freeze bump in `document_insert` (`version: doc.version`) →
+   `ux_fail cache_keys_by_version insert version` (binary exit 8).
+2. Freeze bump in `document_delete` (`version: document.version`) →
+   same fail class (insert-path check is first; delete freeze also breaks
+   the gate when insert is restored — verified insert freeze alone fails).
+Both mutators restored; `run_ux_cache_keys_by_version.sh` → `ux_ok`.
+`run_ux_gate` ×2 = 119/119 (`EXIT1=0` / `EXIT2=0`).
+
+**§107e CLOSED.** Next: §107f `EDITOR_INCREMENTAL_LINE_INDEX`.
 
 ---
 
