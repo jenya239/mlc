@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Green done; STEP=3 Critic next)
+## Status: **open** 2026-08-03 — queue head **§103c `SCRIPT_VM_VERIFIER`** (§103b CLOSED Critic-audited; STEP=0 Decision next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -69,7 +69,7 @@ release backend — не цель никогда (третий путь испо
 | Problem | No Script VM instruction encoding; design §4 leaves ABC layout + extension path unspecified in code |
 | Fix | `script_vm/bytecode.mlc`: `Instruction { word: i32 }` holding **u32 bit pattern** `[opcode:8 \| A:8 \| B:8 \| C:8]` (opcode bits 0–7 … C 24–31; MLC/codegen has no usable C++ `u32` mapping). Encode/decode helpers. **Wide form**: primary with **B=0, C=1** (C=1 = wide marker) + trailing `i32` immediate — used for wide `LOAD_CONST` const index and long `JUMP`/`JUMP_IF_FALSE` offsets. Little-endian helpers for word↔bytes |
 | Opcode set (§103b) | Frozen numeric tags (gaps reserved for later Phase 1): `LOAD_CONST=1`, `MOVE=2`, `ADD=3`, `SUB=4`, `MUL=5`, `DIV=6`, `RETURN=7`, `JUMP=8`, `JUMP_IF_FALSE=9`. Heap/call/`GET_PROP` etc. **not** in §103b enum (added in §103g/§103h). Semantics of arithmetic/jumps are **not** executed here — format + disasm only |
-| Operand conventions | `LOAD_CONST`: A=dst, B=const_index if ≤255 else B=0 and trailing u32 = index. `MOVE`: A=dst, B=src. `ADD`/`SUB`/`MUL`/`DIV`: A=dst, B=lhs, C=rhs. `RETURN`: A=src. `JUMP`: PC-relative offset in B:C as signed 16-bit if in range, else trailing i32. `JUMP_IF_FALSE`: A=cond reg; offset same as `JUMP` |
+| Operand conventions | `LOAD_CONST`: A=dst, B=const_index if ≤255 (C=0); else B=0,C=1 + trailing index. `MOVE`: A=dst, B=src. `ADD`/`SUB`/`MUL`/`DIV`: A=dst, B=lhs, C=rhs. `RETURN`: A=src. `JUMP`: PC-relative offset in B:C as signed 16-bit if in range; else B=0,C=1 + trailing i32. `JUMP_IF_FALSE`: A=cond reg; offset same as `JUMP` |
 | Disassembler | `instruction_disassemble(words, index) -> string` text dump (not a UI). Fixed expected-string fixtures per opcode (narrow + one wide example for `LOAD_CONST` and `JUMP`) |
 | Build / test | `scripts/run_script_vm_bytecode_format_unit.sh` → `script_vm/tests/bytecode_format_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate` this sub-track. Same pattern as §103a |
 | Gate | encode→decode round-trip for every opcode in the §103b set (narrow operands); wide `LOAD_CONST`/`JUMP` round-trip including trailing word; disasm output matches frozen fixture strings. Red: green runner / `bytecode.mlc` / unit absent |
@@ -83,8 +83,10 @@ release backend — не цель никогда (третий путь испо
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: bytecode format / unit runner absent | **done** 2026-08-03 — `run_script_vm_bytecode_format_unit_red.sh` exits 1 (`no script_vm bytecode format / unit`) |
-| 2 | Green: `bytecode.mlc` + unit + fixtures; `dev_gate_fast` | **open** |
-| 3 | Critic | **open** |
+| 2 | Green: `bytecode.mlc` + unit + fixtures; `dev_gate_fast` | **done** 2026-08-03 — unit ok; wide-truncate sabotage fails; `dev_gate_fast` 1471/0 |
+| 3 | Critic | **done** 2026-08-03 — independent unit + bit-layout probe; sabotages (ADD disasm commas; JUMP wide truncate) load-bearing |
+
+**§103b CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: opcode-tag swap alone is not a load-bearing sabotage when all paths use the same getters — use disasm/wide-decode breaks.
 
 ### §103c `SCRIPT_VM_VERIFIER`
 

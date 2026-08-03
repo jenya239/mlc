@@ -108,3 +108,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103b STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103b — audit encode/decode/disasm; then §103c or close §103b) |
+
+### Turn 2026-08-03 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103b)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Audited §103b: independent unit out-dir + bit-layout probe (ABC bits + wide + LE); sabotages ADD disasm commas (exit 18) and JUMP wide truncate (exit 29); opcode-swap noted non-load-bearing when getters shared |
+| verify  | unit ok; probe `critic_103b_bits ok`; both sabotages fail; restore ok; `dev_gate_fast` exit 0 |
+| result  | **§103b CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103c `SCRIPT_VM_VERIFIER` — Decision freeze) |
