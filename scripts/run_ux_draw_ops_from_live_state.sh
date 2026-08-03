@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_HYGIENE §107q q1 — chrome bands via EditorPaintOp + flatten.
+# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1 chrome bands + q2 tab slots).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -44,12 +44,7 @@ if ! grep -q 'editor_paint_ops_flatten' "$DEMO"; then
 fi
 
 # q1: no direct chrome-band quartet after paint begin (bg/header/tab_bar/toolbar strips).
-if grep -n 'solid_renderer_begin(solid)' "$DEMO" | head -5 >/dev/null; then
-  :
-fi
-# Background full-window direct fill must not remain in the main paint block.
 if grep -qE 'solid_renderer_rect\(\s*$' "$DEMO"; then
-  # Detect the old bg pattern: 0, 0, width, height with theme.background_
   if awk '
     /solid = solid_renderer_begin\(solid\)/ { in_begin=1; next }
     in_begin && /solid_renderer_rect/ { rect=1 }
@@ -63,6 +58,17 @@ if grep -qE 'solid_renderer_rect\(\s*$' "$DEMO"; then
 fi
 if grep -qE '0, toolbar_y, width, toolbar_height\(\)' "$DEMO"; then
   fail "demo_live still has direct toolbar strip solid_renderer_rect"
+fi
+
+# q2: tab strip slots via ops, not direct solid_renderer_rect(tab_fill...).
+if ! grep -q 'tab_slot_ops' "$DEMO"; then
+  fail "demo_live missing tab_slot_ops (q2)"
+fi
+if ! grep -q '"tab_slot"' "$DEMO"; then
+  fail "demo_live missing tab_slot paint op id (q2)"
+fi
+if grep -q 'tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height' "$DEMO"; then
+  fail "demo_live still paints tab_fill via direct solid_renderer_rect (q2)"
 fi
 
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"

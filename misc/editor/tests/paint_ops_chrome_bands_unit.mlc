@@ -1,6 +1,7 @@
-// TRACK_EDITOR_HYGIENE §107q q1 — chrome band paint ops unit (no GL).
+// TRACK_EDITOR_HYGIENE §107q — chrome bands + tab_slot paint ops unit (no GL).
 import {
-  editor_paint_ops_chrome_bands
+  editor_paint_ops_chrome_bands,
+  editor_paint_op_rect
 } from '../ux/paint_ops'
 
 fn main() -> i32 = do
@@ -30,7 +31,16 @@ fn main() -> i32 = do
   if ops[3].y != 36 || ops[3].height != 18 then
     return 7
   end
-  // Flatten is exercised by demo_live + arch grep for editor_paint_ops_flatten.
+  // q2: tab slot op shape
+  const tab_slot = editor_paint_op_rect(
+    "tab_slot", 10, 20, 80, 18, 0.5, 0.5, 0.5, 1.0
+  )
+  if tab_slot.widget_id != "tab_slot" then
+    return 8
+  end
+  if tab_slot.x != 10 || tab_slot.width != 80 then
+    return 9
+  end
   print("[ux] draw_ops_from_live_state ok")
   0
 end

@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q q1 Critic done (Green q2 next)
+## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q Green q2 done (Critic q2 next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -625,7 +625,7 @@ restore; tree clean of Critic mutations):
 | Fix | Behaviour-preserving, **one paint region per Green commit**. Do **not** overload scenario `UxDrawOp`. New editor-local `EditorPaintOp` + flatten in `misc/editor/ux/paint_ops.mlc`. Region order: **(q1)** chrome band fills only — window background + header + tab_bar strip + toolbar strip (`solid_renderer_rect` at the top of the live paint block before tab-slot/hover loops) → **(q2)** tab strip slots/active/hover fills → **(q3)** tree / breadcrumb / folder-nav chrome fills → **(q4)** gutter → **(q5)** text/glyphs → **(q6)** overlays / minimap / scrollbars / status. Each Green: that region builds `[EditorPaintOp]`, one flatten to GL, remove the region's direct `solid_renderer_rect` calls. Critic after each region Green before the next region |
 | Module touch (q1) | new `misc/editor/ux/paint_ops.mlc` + `paint_ops_flatten.mlc`; `misc/editor/demo_live.mlc` (chrome-band paint only); new `scripts/run_ux_draw_ops_from_live_state.sh` (+ unit). Later regions extend the same module + gate family |
 | Gate | `run_ux_draw_ops_from_live_state` (q1): arch — `EditorPaintOp` / flatten present; demo chrome-band paint goes through ops (no direct bg/header/tab_bar/toolbar strip `solid_renderer_rect` quartet at paint start); unit or scenario builds chrome-band ops and flattens (≥4 rect ops). Plus `dev_gate_fast`. Later regions extend the same gate (or `_qN` siblings auto-picked by `run_ux_gate`) |
-| Sabotage (required before close of each region) | q1: restore direct chrome-band `solid_renderer_rect` quartet bypassing ops/flatten → gate fail |
+| Sabotage (required before close of each region) | q1: restore direct chrome-band `solid_renderer_rect` quartet bypassing ops/flatten → gate fail. q2: restore direct `solid_renderer_rect` with `tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height` → gate fail |
 | REG | no (`misc/editor/**` + `misc/gui` untouched; scenario `UxDrawOp` unchanged) |
 | Out of scope | Migrating all regions in one Green; SceneNode / `GUI_ARCHITECTURE` Deviation; changing scenario `editor_ux_draw_frame` semantics; §107r behavioural gate rewrite |
 
@@ -637,7 +637,7 @@ restore; tree clean of Critic mutations):
 | 1 | Red: live paint not via paint ops; green absent | **done** 2026-08-03 — `scripts/run_ux_draw_ops_from_live_state_red.sh` exits non-zero |
 | 2 | Green q1: chrome band fills via `EditorPaintOp` + flatten; gates; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `paint_ops.mlc` + `paint_ops_flatten.mlc`; `run_ux_draw_ops_from_live_state` |
 | 3 | Critic q1 | **done** 2026-08-03 — independent green; sabotage direct chrome-band quartet → FAIL; restored; UX ×2 |
-| 4 | Green q2: tab strip slots/active/hover fills via ops | pending |
+| 4 | Green q2: tab strip slots/active/hover fills via ops | **done** 2026-08-03 — `tab_slot_ops` + flatten; gate extended |
 | 5 | Critic q2 | pending |
 | 6+ | Green/Critic q3…q6 (tree/nav → gutter → text → overlays) | pending |
 

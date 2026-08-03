@@ -273,3 +273,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q q1 Critic done.** Advances to Green q2 |
 | issues  | none |
 | next    | ROLE=Driver STEP=4 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q2 — tab strip slots/active/hover fills via `EditorPaintOp`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q2) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=4, §107q Green q2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 4 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Tab strip slots via `tab_slot_ops` + `editor_paint_op_rect`/`flatten`; gate q2 arch extended; unit covers `tab_slot` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 132/132 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q STEP=4 done (Green q2).** Critic q2 next |
+| issues  | none |
+| next    | ROLE=Critic STEP=5 TRACK=TRACK_EDITOR_HYGIENE (§107q q2 — independent rebuild+rerun; sabotage: restore direct `tab_fill` solid_renderer_rect; `run_ux_gate` ×2; then Green q3) |
