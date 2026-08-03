@@ -513,3 +513,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107r STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107r — independent rebuild+rerun; sabotage: focus-gate / wrong hover target; `run_ux_gate` ×2; close §107r → §103a) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107r + epic CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green of §107r `10b7f09c`. Sabotages: swap targets; `editor_focused` in wheel_route; bypass helper; focus&& in tree branch — all FAIL; restored. Closed §107r + epic §107 |
+| verify  | green ok; sab1–4 exit 1; restore ok; `run_ux_gate` ×2 = 137/137 (`EXIT1=0`/`EXIT2=0`; prior UX2 flake re-run clean) |
+| result  | **§107r CLOSED. TRACK_EDITOR_HYGIENE CLOSED.** Advances to §103a |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103a `SCRIPT_VM_VALUE_REP` — freeze Decision; red first) |

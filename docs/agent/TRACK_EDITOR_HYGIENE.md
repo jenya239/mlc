@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107q **CLOSED**; queue head **§107r `EDITOR_UX_GATE_BEHAVIORAL`** (Green done; Critic next)
+## Status: **CLOSED** 2026-08-03 — §107a–§107r Critic-audited; P2 backlog B1–B11 remains (not PLAN rows)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -678,7 +678,20 @@ do **not** re-implement closed sub-track gates.
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: behavioural wheel gate absent | **done** 2026-08-03 — `run_ux_wheel_hover_focus_independent_red.sh` exits 1 (`no behavioural L1 … gate`) |
 | 2 | Green: L1 scenario + arch-lint classification; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `wheel_route.mlc` + scenario; demo_live via `editor_wheel_hover_target`; ARCH-LINT headers; green `ux_ok`; `dev_gate_fast` 1471/0; UX 137/137 ×2 |
-| 3 | Critic | **open** |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107r Critic (closed 2026-08-03)
+
+Independent re-audit of Green `10b7f09c`. Fresh out dir
+`.tmp/critic_107r_wheel`: `ux_ok wheel_hover_focus_independent`; arch-lint stable ok.
+Sabotages (then `git checkout --` restore):
+1. Swap tree/editor targets in `wheel_route.mlc` → scenario exit 2.
+2. Append `editor_focused` stub into `wheel_route.mlc` → gate FAIL (must not reference).
+3. Bypass helper in `demo_live` (focus-only `wheel_target`) → FAIL missing `editor_wheel_hover_target(`.
+4. Add `app.editor_focused != 0 &&` into tree wheel branch → FAIL wheel block must not reference `editor_focused`.
+Restored; green ok. `run_ux_gate` ×2 = 137/137 (`EXIT1=0`/`EXIT2=0`; first Critic UX2 flake missing `dirty_close_button_hover_stable` ok-line / disk 98% — clean rerun green).
+
+**§107r CLOSED.** **TRACK_EDITOR_HYGIENE epic CLOSED** (P0+P1 §107a–§107r). Next queue: §103a `SCRIPT_VM_VALUE_REP`.
 
 ---
 
