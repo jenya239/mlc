@@ -1,7 +1,9 @@
 #include "mlc/terminal/pty_abi.hpp"
 
+#include <dirent.h>
 #include <pty.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -17,6 +19,8 @@ std::unordered_map<int, pid_t>& pty_child_pids() {
   static thread_local std::unordered_map<int, pid_t> pids;
   return pids;
 }
+
+thread_local bool pty_last_close_was_reaped = false;
 
 bool poll_readable(std::int32_t master_fd, std::int32_t timeout_ms) {
   struct pollfd poll_descriptor{};
@@ -79,13 +83,49 @@ String pty_read_until_eof(std::int32_t master_fd, std::int32_t max_total_bytes, 
 }
 
 std::int32_t pty_close(std::int32_t master_fd) {
+  pty_last_close_was_reaped = false;
   auto& pids = pty_child_pids();
   auto found = pids.find(master_fd);
   if (found != pids.end()) {
-    ::waitpid(found->second, nullptr, WNOHANG);
+    const pid_t child_pid = found->second;
+    ::kill(child_pid, SIGHUP);
+    int wait_status = 0;
+    bool reaped = false;
+    for (int attempt = 0; attempt < 50; attempt = attempt + 1) {
+      const pid_t waited = ::waitpid(child_pid, &wait_status, WNOHANG);
+      if (waited == child_pid) {
+        reaped = true;
+        break;
+      }
+      ::usleep(10000);
+    }
+    if (!reaped) {
+      ::kill(child_pid, SIGKILL);
+      if (::waitpid(child_pid, &wait_status, 0) == child_pid) {
+        reaped = true;
+      }
+    }
+    pty_last_close_was_reaped = reaped;
     pids.erase(found);
   }
   return ::close(master_fd) == 0 ? 0 : -1;
+}
+
+std::int32_t pty_open_fd_count() {
+  DIR* directory = ::opendir("/proc/self/fd");
+  if (directory == nullptr) {
+    return -1;
+  }
+  std::int32_t count = 0;
+  while (::readdir(directory) != nullptr) {
+    count = count + 1;
+  }
+  ::closedir(directory);
+  return count;
+}
+
+std::int32_t pty_last_close_reaped() {
+  return pty_last_close_was_reaped ? 1 : 0;
 }
 
 std::int32_t pty_resize(std::int32_t master_fd, std::int32_t rows, std::int32_t columns) {

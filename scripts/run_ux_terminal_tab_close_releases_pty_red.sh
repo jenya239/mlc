@@ -23,11 +23,15 @@ done
 
 # Red: tab-strip close arm does not tear down the terminal session.
 click_block="$(
-  awk '/export fn editor_app_click_tab_strip\(/,/^export fn /' "$STATE" | head -n -1
+  ruby -e '
+    source = File.read(ARGV[0])
+    start_at = source.index("export fn editor_app_click_tab_strip(")
+    abort "missing click_tab_strip" if start_at.nil?
+    end_at = source.index("\nexport fn ", start_at + 1)
+    abort "missing next export" if end_at.nil?
+    print source[start_at...end_at]
+  ' "$STATE"
 )"
-if [ -z "$click_block" ]; then
-  click_block="$(awk '/export fn editor_app_click_tab_strip\(/,/^end$/' "$STATE")"
-fi
 if printf '%s\n' "$click_block" | grep -Eq 'editor_app_close_terminal|terminal_panel_session_close'; then
   fail "editor_app_click_tab_strip already tears down terminal (expected gap until Green)"
 fi

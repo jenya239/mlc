@@ -1,0 +1,107 @@
+// TRACK_EDITOR_HYGIENE §107g — tab-strip close releases PTY/vterm (not only CmdCloseTab).
+import { ux_rect_new } from '../../gui/ux/snapshot'
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new } from '../ui/shell_panels'
+import { tab_set_new, tab_set_count } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import {
+  editor_app_state_new,
+  editor_app_open_terminal,
+  editor_app_click_tab_strip
+} from '../app/state'
+import { terminal_panel_tab_path } from '../app/terminal_panel'
+import {
+  tab_strip_layout_from_titles,
+  tab_strip_close_rect_from_widths
+} from '../ux/tab_strip'
+import {
+  pty_terminal_open_fd_count,
+  pty_terminal_last_close_reaped
+} from '../terminal/pty_ffi'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(200, 100)
+  if begin_status != 0 then
+    println("ux_fail terminal_tab_close_releases_pty begin=" + begin_status.to_string())
+    return 1
+  end
+
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  const strip = ux_rect_new(0, 0, 400, 28)
+  const fd_before = pty_terminal_open_fd_count()
+  if fd_before < 0 then
+    glfw_gl_context_end()
+    println("ux_fail terminal_tab_close_releases_pty fd_before")
+    return 2
+  end
+
+  let mut cycle = 0
+  while cycle < 4 do
+    let mut app = editor_app_state_new(
+      800, 600, panels, tab_set_new(), selection_collapsed(0)
+    )
+    app = editor_app_open_terminal(app, 8, 40, "sh")
+    if app.terminal.active == 0 then
+      glfw_gl_context_end()
+      println("ux_fail terminal_tab_close_releases_pty open")
+      return 3
+    end
+    if tab_set_count(app.ux.tabs) < 1 then
+      glfw_gl_context_end()
+      println("ux_fail terminal_tab_close_releases_pty no_tab")
+      return 4
+    end
+
+    let mut titles: [string] = []
+    titles.push("Terminal")
+    const widths = tab_strip_layout_from_titles(strip.width, titles, 8)
+    const close_rect = tab_strip_close_rect_from_widths(strip, widths, 0)
+    const click = editor_app_click_tab_strip(
+      app,
+      strip,
+      widths,
+      close_rect.x + close_rect.width / 2,
+      close_rect.y + close_rect.height / 2
+    )
+    if click.handled == 0 then
+      glfw_gl_context_end()
+      println("ux_fail terminal_tab_close_releases_pty click_unhandled")
+      return 5
+    end
+    app = click.app
+    if app.terminal.active != 0 then
+      glfw_gl_context_end()
+      println("ux_fail terminal_tab_close_releases_pty still_active")
+      return 6
+    end
+    if pty_terminal_last_close_reaped() == 0 then
+      glfw_gl_context_end()
+      println("ux_fail terminal_tab_close_releases_pty not_reaped")
+      return 7
+    end
+    cycle = cycle + 1
+  end
+
+  const fd_after = pty_terminal_open_fd_count()
+  glfw_gl_context_end()
+  if fd_after < 0 then
+    println("ux_fail terminal_tab_close_releases_pty fd_after")
+    return 8
+  end
+  // Allow a small absolute drift (GLFW/runtime internals); forbid unbounded growth.
+  if fd_after > fd_before + 8 then
+    println(
+      "ux_fail terminal_tab_close_releases_pty fd_leak before=" +
+        fd_before.to_string() + " after=" + fd_after.to_string()
+    )
+    return 9
+  end
+
+  println("ux_ok terminal_tab_close_releases_pty")
+  0
+end

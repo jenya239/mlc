@@ -304,3 +304,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107g STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107g Green — wire tab-strip/window teardown + signaled `pty_close`; scenario `terminal_tab_close_releases_pty`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107g Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Tab-strip close + demo exit call `editor_app_close_terminal`. `pty_close` SIGHUP→short wait→SIGKILL. FFI `pty_open_fd_count` / `pty_last_close_reaped`. Scenario `terminal_tab_close_releases_pty` + green script |
+| verify  | `run_ux_terminal_tab_close_releases_pty.sh` → `ux_ok`; related terminal + `demo_live_fs_compile` ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 121/121 |
+| result  | **§107g STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107g — independent rebuild+rerun; sabotages: strip tab-strip teardown, revert pty_close to WNOHANG-only; `run_ux_gate` ×2; close §107g → §107h Decision) |

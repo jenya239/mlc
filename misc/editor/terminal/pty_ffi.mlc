@@ -12,6 +12,10 @@ extern fn pty_read_until_eof(master_fd: i32, max_total_bytes: i32, timeout_ms: i
   "mlc::terminal::pty_read_until_eof" from "mlc/terminal/pty_abi.hpp" thread_affine
 extern fn pty_close(master_fd: i32) -> i32 =
   "mlc::terminal::pty_close" from "mlc/terminal/pty_abi.hpp" thread_affine
+extern fn pty_open_fd_count() -> i32 =
+  "mlc::terminal::pty_open_fd_count" from "mlc/terminal/pty_abi.hpp" thread_affine
+extern fn pty_last_close_reaped() -> i32 =
+  "mlc::terminal::pty_last_close_reaped" from "mlc/terminal/pty_abi.hpp" thread_affine
 extern fn pty_resize(master_fd: i32, rows: i32, columns: i32) -> i32 =
   "mlc::terminal::pty_resize" from "mlc/terminal/pty_abi.hpp" thread_affine
 
@@ -22,5 +26,7 @@ export fn pty_terminal_read(master_fd: i32, max_bytes: i32, timeout_ms: i32) -> 
 export fn pty_terminal_read_until_eof(master_fd: i32, max_total_bytes: i32, timeout_ms: i32) -> string =
   pty_read_until_eof(master_fd, max_total_bytes, timeout_ms)
 export fn pty_terminal_close(master_fd: i32) -> i32 = pty_close(master_fd)
+export fn pty_terminal_open_fd_count() -> i32 = pty_open_fd_count()
+export fn pty_terminal_last_close_reaped() -> i32 = pty_last_close_reaped()
 export fn pty_terminal_resize(master_fd: i32, rows: i32, columns: i32) -> i32 =
   pty_resize(master_fd, rows, columns)

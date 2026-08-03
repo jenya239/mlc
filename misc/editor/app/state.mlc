@@ -817,6 +817,8 @@ export fn editor_app_click_tab_strip(
     strip, widths, point_x, point_y
   )
   if close_hit >= 0 then
+    const closing_path = app.ux.tabs.tabs[close_hit].path
+    const closing_terminal = terminal_panel_is_tab_path(closing_path)
     const outcome = tab_set_request_close(app.ux.tabs, close_hit)
     let mut next_ux = editor_ux_with_tabs_and_selection(
       app.ux, outcome.tabs, app.ux.selection
@@ -828,10 +830,15 @@ export fn editor_app_click_tab_strip(
       )
       next_history = history_new()
     end
+    let mut next_app = editor_app_replace_session(
+      app, next_ux, next_history, outcome.overlay, "close_tab"
+    )
+    // §107g — tab-strip "x" must tear down PTY/vterm (CmdCloseTab already does).
+    if closing_terminal && !dirty_close_overlay_is_visible(outcome.overlay) then
+      next_app = editor_app_close_terminal(next_app)
+    end
     return EditorAppTabClickResult {
-      app: editor_app_replace_session(
-        app, next_ux, next_history, outcome.overlay, "close_tab"
-      ),
+      app: next_app,
       handled: 1
     }
   end

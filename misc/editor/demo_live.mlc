@@ -2810,6 +2810,8 @@ fn main() -> i32 = do
 
   static_text_destroy(text_state)
   solid_renderer_destroy(solid)
+  // §107g — window close must release PTY/vterm (tab-strip/"CmdCloseTab" alone are not enough).
+  app = editor_app_close_terminal(app)
   glfw_gl_context_end()
   println("[mlc-editor] live closed")
   0
