@@ -93,3 +93,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103b STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103b Green — `bytecode.mlc` + unit/fixtures; `dev_gate_fast`; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103b Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `script_vm/bytecode.mlc` (ABC i32 word, wide C=1+trailing), unit + `run_script_vm_bytecode_format_unit.sh`; Decision note: i32 word / C=1 marker |
+| verify  | green ok; red fails (green present); wide-truncate sabotage → FAIL exit 15; restore ok; `dev_gate_fast` 1471/0 |
+| result  | **§103b STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103b — audit encode/decode/disasm; then §103c or close §103b) |

@@ -1,0 +1,234 @@
+// TRACK_MLC_SCRIPT_VM §103b — ABC instruction word + wide trailing immediate.
+// Bit layout [opcode:8|A:8|B:8|C:8] in an i32 word (u32 bits; MLC/codegen has
+// no usable C++ `u32` mapping). Wide form: primary with B=0,C=1 + trailing i32
+// (C=1 is the wide marker — disambiguates narrow LOAD_CONST/JUMP with zero).
+
+export type Instruction = { word: i32 }
+
+export type DecodedAbc = {
+  opcode: i32,
+  a: i32,
+  b: i32,
+  c: i32
+}
+
+fn opcode_load_const() -> i32 = 1
+fn opcode_move() -> i32 = 2
+fn opcode_add() -> i32 = 3
+fn opcode_sub() -> i32 = 4
+fn opcode_mul() -> i32 = 5
+fn opcode_div() -> i32 = 6
+fn opcode_return() -> i32 = 7
+fn opcode_jump() -> i32 = 8
+fn opcode_jump_if_false() -> i32 = 9
+
+export fn instruction_opcode_load_const() -> i32 = opcode_load_const()
+export fn instruction_opcode_move() -> i32 = opcode_move()
+export fn instruction_opcode_add() -> i32 = opcode_add()
+export fn instruction_opcode_sub() -> i32 = opcode_sub()
+export fn instruction_opcode_mul() -> i32 = opcode_mul()
+export fn instruction_opcode_div() -> i32 = opcode_div()
+export fn instruction_opcode_return() -> i32 = opcode_return()
+export fn instruction_opcode_jump() -> i32 = opcode_jump()
+export fn instruction_opcode_jump_if_false() -> i32 = opcode_jump_if_false()
+
+export fn instruction_encode(opcode: i32, a: i32, b: i32, c: i32) -> Instruction =
+  Instruction {
+    word: (opcode & 255) | ((a & 255) << 8) | ((b & 255) << 16) | ((c & 255) << 24)
+  }
+
+export fn instruction_decode(instruction: Instruction) -> DecodedAbc =
+  DecodedAbc {
+    opcode: instruction.word & 255,
+    a: (instruction.word >> 8) & 255,
+    b: (instruction.word >> 16) & 255,
+    c: (instruction.word >> 24) & 255
+  }
+
+fn fits_u8(value: i32) -> bool = value >= 0 && value <= 255
+
+fn fits_i16(value: i32) -> bool = value >= (0 - 32768) && value <= 32767
+
+fn pack_i16_high_low(offset: i32) -> DecodedAbc = do
+  const masked = offset & 65535
+  DecodedAbc {
+    opcode: 0,
+    a: 0,
+    b: (masked >> 8) & 255,
+    c: masked & 255
+  }
+end
+
+fn unpack_i16_high_low(b: i32, c: i32) -> i32 = do
+  const rebuilt = ((b & 255) << 8) | (c & 255)
+  if (rebuilt & 32768) != 0 then
+    rebuilt - 65536
+  else
+    rebuilt
+  end
+end
+
+export fn instruction_is_wide(decoded: DecodedAbc) -> bool =
+  (decoded.opcode == opcode_load_const() || decoded.opcode == opcode_jump() || decoded.opcode == opcode_jump_if_false()) && decoded.b == 0 && decoded.c == 1
+
+export fn instruction_word_span(words: [i32], index: i32) -> i32 = do
+  if index < 0 then
+    0
+  else if index >= words.length() then
+    0
+  else
+    const word_value = words[index]
+    const decoded = instruction_decode(Instruction { word: word_value })
+    if instruction_is_wide(decoded) then
+      2
+    else
+      1
+    end
+  end
+end
+
+export fn instruction_words_load_const(destination: i32, constant_index: i32) -> [i32] = do
+  let mut words: [i32] = []
+  if fits_u8(constant_index) then
+    words.push(instruction_encode(opcode_load_const(), destination, constant_index, 0).word)
+  else
+    words.push(instruction_encode(opcode_load_const(), destination, 0, 1).word)
+    words.push(constant_index)
+  end
+  words
+end
+
+export fn instruction_words_move(destination: i32, source: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_move(), destination, source, 0).word)
+  words
+end
+
+export fn instruction_words_binary(opcode: i32, destination: i32, left: i32, right: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode, destination, left, right).word)
+  words
+end
+
+export fn instruction_words_return(source: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_return(), source, 0, 0).word)
+  words
+end
+
+export fn instruction_words_jump(offset: i32) -> [i32] = do
+  let mut words: [i32] = []
+  if fits_i16(offset) then
+    const packed = pack_i16_high_low(offset)
+    words.push(instruction_encode(opcode_jump(), 0, packed.b, packed.c).word)
+  else
+    words.push(instruction_encode(opcode_jump(), 0, 0, 1).word)
+    words.push(offset)
+  end
+  words
+end
+
+export fn instruction_words_jump_if_false(condition: i32, offset: i32) -> [i32] = do
+  let mut words: [i32] = []
+  if fits_i16(offset) then
+    const packed = pack_i16_high_low(offset)
+    words.push(instruction_encode(opcode_jump_if_false(), condition, packed.b, packed.c).word)
+  else
+    words.push(instruction_encode(opcode_jump_if_false(), condition, 0, 1).word)
+    words.push(offset)
+  end
+  words
+end
+
+export fn instruction_word_to_le_bytes(word: i32) -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes.push(word & 255)
+  bytes.push((word >> 8) & 255)
+  bytes.push((word >> 16) & 255)
+  bytes.push((word >> 24) & 255)
+  bytes
+end
+
+export fn instruction_word_from_le_bytes(bytes: [i32]) -> i32 =
+  (bytes[0] & 255) | ((bytes[1] & 255) << 8) | ((bytes[2] & 255) << 16) | ((bytes[3] & 255) << 24)
+
+fn register_name(register_index: i32) -> string = "r" + register_index.to_string()
+
+fn format_signed_offset(offset: i32) -> string =
+  if offset >= 0 then
+    "+" + offset.to_string()
+  else
+    offset.to_string()
+  end
+
+export fn instruction_disassemble(words: [i32], index: i32) -> string = do
+  if index < 0 || index >= words.length() then
+    "<out-of-range>"
+  else
+    const decoded = instruction_decode(Instruction { word: words[index] })
+    if decoded.opcode == opcode_load_const() then
+      if instruction_is_wide(decoded) then
+        if index + 1 >= words.length() then
+          "<truncated-wide-LOAD_CONST>"
+        else
+          "LOAD_CONST " + register_name(decoded.a) + ", #" + words[index + 1].to_string()
+        end
+      else
+        "LOAD_CONST " + register_name(decoded.a) + ", #" + decoded.b.to_string()
+      end
+    else if decoded.opcode == opcode_move() then
+      "MOVE " + register_name(decoded.a) + ", " + register_name(decoded.b)
+    else if decoded.opcode == opcode_add() then
+      "ADD " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_sub() then
+      "SUB " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_mul() then
+      "MUL " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_div() then
+      "DIV " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_return() then
+      "RETURN " + register_name(decoded.a)
+    else if decoded.opcode == opcode_jump() then
+      if instruction_is_wide(decoded) then
+        if index + 1 >= words.length() then
+          "<truncated-wide-JUMP>"
+        else
+          "JUMP " + format_signed_offset(words[index + 1])
+        end
+      else
+        "JUMP " + format_signed_offset(unpack_i16_high_low(decoded.b, decoded.c))
+      end
+    else if decoded.opcode == opcode_jump_if_false() then
+      if instruction_is_wide(decoded) then
+        if index + 1 >= words.length() then
+          "<truncated-wide-JUMP_IF_FALSE>"
+        else
+          "JUMP_IF_FALSE " + register_name(decoded.a) + ", " + format_signed_offset(words[index + 1])
+        end
+      else
+        "JUMP_IF_FALSE " + register_name(decoded.a) + ", " +
+          format_signed_offset(unpack_i16_high_low(decoded.b, decoded.c))
+      end
+    else
+      "<unknown-opcode " + decoded.opcode.to_string() + ">"
+    end
+  end
+end
+
+export fn instruction_load_const_index(words: [i32], index: i32) -> i32 = do
+  const decoded = instruction_decode(Instruction { word: words[index] })
+  if instruction_is_wide(decoded) then
+    words[index + 1]
+  else
+    decoded.b
+  end
+end
+
+export fn instruction_jump_offset(words: [i32], index: i32) -> i32 = do
+  const decoded = instruction_decode(Instruction { word: words[index] })
+  if instruction_is_wide(decoded) then
+    words[index + 1]
+  else
+    unpack_i16_high_low(decoded.b, decoded.c)
+  end
+end

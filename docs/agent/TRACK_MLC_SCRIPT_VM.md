@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Red done; STEP=2 Green next)
+## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Green done; STEP=3 Critic next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -67,7 +67,7 @@ release backend — не цель никогда (третий путь испо
 | Item | Choice |
 |------|--------|
 | Problem | No Script VM instruction encoding; design §4 leaves ABC layout + extension path unspecified in code |
-| Fix | `script_vm/bytecode.mlc`: `Instruction { word: u32 }` with packed **`[opcode:8 \| A:8 \| B:8 \| C:8]`** (opcode in bits 0–7, A 8–15, B 16–23, C 24–31). Encode/decode helpers. **Wide form**: primary ABC word + **trailing `u32` immediate** (not a second opcode) when an operand does not fit in 8 bits — used for wide `LOAD_CONST` const index and long `JUMP`/`JUMP_IF_FALSE` signed offsets (`i32` bit pattern in the trailing word). Little-endian when serializing words to a byte buffer |
+| Fix | `script_vm/bytecode.mlc`: `Instruction { word: i32 }` holding **u32 bit pattern** `[opcode:8 \| A:8 \| B:8 \| C:8]` (opcode bits 0–7 … C 24–31; MLC/codegen has no usable C++ `u32` mapping). Encode/decode helpers. **Wide form**: primary with **B=0, C=1** (C=1 = wide marker) + trailing `i32` immediate — used for wide `LOAD_CONST` const index and long `JUMP`/`JUMP_IF_FALSE` offsets. Little-endian helpers for word↔bytes |
 | Opcode set (§103b) | Frozen numeric tags (gaps reserved for later Phase 1): `LOAD_CONST=1`, `MOVE=2`, `ADD=3`, `SUB=4`, `MUL=5`, `DIV=6`, `RETURN=7`, `JUMP=8`, `JUMP_IF_FALSE=9`. Heap/call/`GET_PROP` etc. **not** in §103b enum (added in §103g/§103h). Semantics of arithmetic/jumps are **not** executed here — format + disasm only |
 | Operand conventions | `LOAD_CONST`: A=dst, B=const_index if ≤255 else B=0 and trailing u32 = index. `MOVE`: A=dst, B=src. `ADD`/`SUB`/`MUL`/`DIV`: A=dst, B=lhs, C=rhs. `RETURN`: A=src. `JUMP`: PC-relative offset in B:C as signed 16-bit if in range, else trailing i32. `JUMP_IF_FALSE`: A=cond reg; offset same as `JUMP` |
 | Disassembler | `instruction_disassemble(words, index) -> string` text dump (not a UI). Fixed expected-string fixtures per opcode (narrow + one wide example for `LOAD_CONST` and `JUMP`) |

@@ -1,0 +1,183 @@
+// TRACK_MLC_SCRIPT_VM §103b — bytecode format encode/decode + disasm fixtures.
+import {
+  Instruction,
+  instruction_opcode_load_const,
+  instruction_opcode_move,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_return,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false,
+  instruction_encode,
+  instruction_decode,
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_words_jump,
+  instruction_words_jump_if_false,
+  instruction_word_span,
+  instruction_disassemble,
+  instruction_load_const_index,
+  instruction_jump_offset,
+  instruction_word_to_le_bytes,
+  instruction_word_from_le_bytes
+} from '../bytecode'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm bytecode_format_unit] FAIL: " + message)
+  code
+end
+
+fn expect_eq_i32(actual: i32, expected: i32, message: string, code: i32) -> i32 = do
+  if actual != expected then
+    fail(message + " actual=" + actual.to_string() + " expected=" + expected.to_string(), code)
+  else
+    0
+  end
+end
+
+fn expect_eq_string(actual: string, expected: string, message: string, code: i32) -> i32 = do
+  if actual != expected then
+    fail(message + " actual=[" + actual + "] expected=[" + expected + "]", code)
+  else
+    0
+  end
+end
+
+fn round_trip_abc(opcode: i32, a: i32, b: i32, c: i32) -> bool = do
+  const encoded = instruction_encode(opcode, a, b, c)
+  const decoded = instruction_decode(encoded)
+  decoded.opcode == opcode && decoded.a == a && decoded.b == b && decoded.c == c
+end
+
+fn main() -> i32 = do
+  if !round_trip_abc(instruction_opcode_load_const(), 0, 12, 0) then
+    return fail("LOAD_CONST abc round-trip", 1)
+  end
+  if !round_trip_abc(instruction_opcode_move(), 1, 2, 0) then
+    return fail("MOVE abc round-trip", 2)
+  end
+  if !round_trip_abc(instruction_opcode_add(), 0, 1, 2) then
+    return fail("ADD abc round-trip", 3)
+  end
+  if !round_trip_abc(instruction_opcode_sub(), 0, 1, 2) then
+    return fail("SUB abc round-trip", 4)
+  end
+  if !round_trip_abc(instruction_opcode_mul(), 0, 1, 2) then
+    return fail("MUL abc round-trip", 5)
+  end
+  if !round_trip_abc(instruction_opcode_div(), 0, 1, 2) then
+    return fail("DIV abc round-trip", 6)
+  end
+  if !round_trip_abc(instruction_opcode_return(), 0, 0, 0) then
+    return fail("RETURN abc round-trip", 7)
+  end
+  if !round_trip_abc(instruction_opcode_jump(), 0, 0, 3) then
+    return fail("JUMP abc round-trip", 8)
+  end
+  if !round_trip_abc(instruction_opcode_jump_if_false(), 1, 0, 2) then
+    return fail("JUMP_IF_FALSE abc round-trip", 9)
+  end
+
+  const load_narrow = instruction_words_load_const(0, 12)
+  if expect_eq_i32(load_narrow.length(), 1, "LOAD_CONST narrow length", 10) != 0 then
+    return 10
+  end
+  if expect_eq_i32(instruction_load_const_index(load_narrow, 0), 12, "LOAD_CONST narrow index", 11) != 0 then
+    return 11
+  end
+  if expect_eq_string(instruction_disassemble(load_narrow, 0), "LOAD_CONST r0, #12", "LOAD_CONST narrow disasm", 12) != 0 then
+    return 12
+  end
+
+  const load_wide = instruction_words_load_const(0, 1000)
+  if expect_eq_i32(load_wide.length(), 2, "LOAD_CONST wide length", 13) != 0 then
+    return 13
+  end
+  if expect_eq_i32(instruction_word_span(load_wide, 0), 2, "LOAD_CONST wide span", 14) != 0 then
+    return 14
+  end
+  if expect_eq_i32(instruction_load_const_index(load_wide, 0), 1000, "LOAD_CONST wide index", 15) != 0 then
+    return 15
+  end
+  if expect_eq_string(instruction_disassemble(load_wide, 0), "LOAD_CONST r0, #1000", "LOAD_CONST wide disasm", 16) != 0 then
+    return 16
+  end
+
+  const move_words = instruction_words_move(1, 2)
+  if expect_eq_string(instruction_disassemble(move_words, 0), "MOVE r1, r2", "MOVE disasm", 17) != 0 then
+    return 17
+  end
+
+  const add_words = instruction_words_binary(instruction_opcode_add(), 0, 1, 2)
+  if expect_eq_string(instruction_disassemble(add_words, 0), "ADD r0, r1, r2", "ADD disasm", 18) != 0 then
+    return 18
+  end
+  const sub_words = instruction_words_binary(instruction_opcode_sub(), 0, 1, 2)
+  if expect_eq_string(instruction_disassemble(sub_words, 0), "SUB r0, r1, r2", "SUB disasm", 19) != 0 then
+    return 19
+  end
+  const mul_words = instruction_words_binary(instruction_opcode_mul(), 0, 1, 2)
+  if expect_eq_string(instruction_disassemble(mul_words, 0), "MUL r0, r1, r2", "MUL disasm", 20) != 0 then
+    return 20
+  end
+  const div_words = instruction_words_binary(instruction_opcode_div(), 0, 1, 2)
+  if expect_eq_string(instruction_disassemble(div_words, 0), "DIV r0, r1, r2", "DIV disasm", 21) != 0 then
+    return 21
+  end
+
+  const return_words = instruction_words_return(0)
+  if expect_eq_string(instruction_disassemble(return_words, 0), "RETURN r0", "RETURN disasm", 22) != 0 then
+    return 22
+  end
+
+  const jump_narrow = instruction_words_jump(3)
+  if expect_eq_i32(jump_narrow.length(), 1, "JUMP narrow length", 23) != 0 then
+    return 23
+  end
+  if expect_eq_i32(instruction_jump_offset(jump_narrow, 0), 3, "JUMP narrow offset", 24) != 0 then
+    return 24
+  end
+  if expect_eq_string(instruction_disassemble(jump_narrow, 0), "JUMP +3", "JUMP narrow disasm", 25) != 0 then
+    return 25
+  end
+
+  const jump_back = instruction_words_jump(0 - 2)
+  if expect_eq_i32(instruction_jump_offset(jump_back, 0), 0 - 2, "JUMP back offset", 26) != 0 then
+    return 26
+  end
+  if expect_eq_string(instruction_disassemble(jump_back, 0), "JUMP -2", "JUMP back disasm", 27) != 0 then
+    return 27
+  end
+
+  const jump_wide = instruction_words_jump(100000)
+  if expect_eq_i32(jump_wide.length(), 2, "JUMP wide length", 28) != 0 then
+    return 28
+  end
+  if expect_eq_i32(instruction_jump_offset(jump_wide, 0), 100000, "JUMP wide offset", 29) != 0 then
+    return 29
+  end
+  if expect_eq_string(instruction_disassemble(jump_wide, 0), "JUMP +100000", "JUMP wide disasm", 30) != 0 then
+    return 30
+  end
+
+  const jump_if = instruction_words_jump_if_false(1, 0 - 2)
+  if expect_eq_string(instruction_disassemble(jump_if, 0), "JUMP_IF_FALSE r1, -2", "JUMP_IF_FALSE disasm", 31) != 0 then
+    return 31
+  end
+
+  const sample = instruction_encode(instruction_opcode_add(), 3, 4, 5).word
+  const bytes = instruction_word_to_le_bytes(sample)
+  if expect_eq_i32(bytes.length(), 4, "le bytes length", 32) != 0 then
+    return 32
+  end
+  if expect_eq_i32(instruction_word_from_le_bytes(bytes), sample, "le bytes round-trip", 33) != 0 then
+    return 33
+  end
+
+  println("[script_vm] bytecode_format_unit ok")
+  0
+end
