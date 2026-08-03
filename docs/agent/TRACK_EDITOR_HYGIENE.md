@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107m **CLOSED**; §107n Decision next
+## Status: **open** 2026-08-03 — §107a–§107m **CLOSED**; §107n Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -541,12 +541,27 @@ restore; tree clean of Critic mutations):
 **§107m CLOSED.** Next: §107n `EDITOR_PROBE_GEOMETRY_PARITY`.
 
 ## §107n `EDITOR_PROBE_GEOMETRY_PARITY` (EHA-14)
-`editor_app_state_new` uses `tab_strip_height: 0`, `editor_ux_state_new` uses `28`,
-so every scenario built on `text_viewport_rect` validates geometry the product does
-not have (class: false-green). **Fix:** one state constructor with an explicit
-`tab_strip_height`, used by both product and scenarios. **Gate:**
-`run_ux_probe_geometry_matches_live` + revision of the ~10 affected scenarios.
-Residual of 2026-07-15 #7.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `editor_ux_state_new` (`ux/probe.mlc`) hardcodes `tab_strip_height: 28`. `editor_app_state_new` / `editor_app_sync_shell` (`app/state.mlc`) then overwrite to `0` ("Live chrome tabs sit above shell panels"). Scenarios built on `editor_ux_state_new` therefore validate `text_viewport` / hit geometry the product does not use — class: false-green (2026-07-15 #7 residual) |
+| Fix | (1) Export `editor_tab_strip_height_live() -> i32 = 0` (single source for the live chrome contract; do **not** change live layout in this sub-track). (2) Add explicit `tab_strip_height: i32` parameter to `editor_ux_state_new` — no hardcoded `28` in the constructor body. (3) `editor_app_state_new` / `editor_app_sync_shell` call `editor_ux_state_new(..., editor_tab_strip_height_live())` and drop the post-construct overwrite to `0`. (4) Update call sites: product/live-matching scenarios pass `editor_tab_strip_height_live()`; scenarios that need an in-pane strip for hit-tests (e.g. tab-strip click) pass an explicit non-zero height |
+| Module touch | `misc/editor/ux/probe.mlc`, `misc/editor/app/state.mlc`, call sites of `editor_ux_state_new` under `misc/editor/` (scenarios/tests/demo); new `misc/editor/ux_scenarios/probe_geometry_matches_live.mlc` + `scripts/run_ux_probe_geometry_matches_live.sh` |
+| Gate | `run_ux_probe_geometry_matches_live`: build via `editor_app_state_new` → `app.ux.tab_strip_height == editor_tab_strip_height_live()`; probe/`text` top equals `editor_rect.y + live_height`. Arch: `editor_ux_state_new` takes `tab_strip_height`; constructor body has no `tab_strip_height: 28`; app constructors do not assign `tab_strip_height: 0` outside the shared helper path |
+| Sabotage (required before close) | Restore hardcoded `tab_strip_height: 28` in `editor_ux_state_new` (ignore/drop param) and/or diverge app height from `editor_tab_strip_height_live` → gate fails |
+| REG | no |
+| Out of scope | Unifying the 8 `text_viewport_rect` copies (§107o); changing live chrome so tabs sit inside the editor pane; toolbar table (§107p) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: hardcoded 28 vs app 0; green absent | **done** 2026-08-03 — `scripts/run_ux_probe_geometry_matches_live_red.sh` exits non-zero |
+| 2 | Green: explicit strip param + live helper; scenario; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107o `EDITOR_VIEWPORT_RECT_SINGLE` (EHA-15)
 8 copies of `fn text_viewport_rect(state)` across `ux/*` (was 5 in 2026-07-17 — got
