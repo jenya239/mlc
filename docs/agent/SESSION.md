@@ -379,3 +379,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107h CLOSED.** Advances to §107i |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` — freeze Decision; red: spans tick still outside layout_skip) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107i Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107i Decision (paint `frame_layout_tick_spans` under `layout_skip == 0`; gate `run_ux_hover_no_full_compare`). Red: `scripts/run_ux_hover_no_full_compare_red.sh` |
+| verify  | `bash scripts/run_ux_hover_no_full_compare_red.sh` → FAIL exit 1 (`spans tick still outside layout_skip`) |
+| result  | **§107i STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107i Green — gate spans tick under `layout_skip`; scenario `hover_no_full_compare`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |

@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; queue head §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP`
+## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; §107i Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -370,11 +370,28 @@ Restored; `run_ux_gate` ×2 = 122/122 (`EXIT1=0` / `EXIT2=0`).
 
 **§107h CLOSED.** Next: §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP`.
 
-## §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` (EHA-05 hover half)
-`frame_layout_tick_spans` is called in the paint phase outside `layout_skip`, so
-every hover frame pays a full-buffer comparison (and a full `highlight_range` when
-it fires). **Fix:** move it under `layout_skip` / key it on the §107e version.
-**Gate:** `run_ux_hover_no_full_compare`. Residual of §97c and of §106.
+## §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` (EHA-05 hover half) — residual of §97c / §106
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | Paint-phase `frame_layout_tick_spans` in `demo_live.mlc` runs under `!perf_skip_heavy` only — **not** under `layout_skip == 0`. Pointer-only hover (§106) skips wrap/max_columns but still enters the spans tick every frame. §107e already keys the cache by `document.version` (no full-text memcmp), but the tick call itself remains outside the skip path |
+| Fix | Gate the paint `frame_layout_tick_spans` with `layout_skip == 0` (same condition as `frame_layout_tick_pixel` / `frame_layout_tick_max_columns`). When `layout_skip != 0`, reuse `frame_layout.span_cache.spans` without ticking. Keep the existing `!perf_skip_heavy` / PERF_FULL behaviour |
+| Module touch | `misc/editor/demo_live.mlc` (paint spans block); new `misc/editor/ux_scenarios/hover_no_full_compare.mlc` + `scripts/run_ux_hover_no_full_compare.sh` |
+| Gate | `run_ux_hover_no_full_compare`: arch — paint `frame_layout_tick_spans` is inside a `layout_skip == 0` (or equivalent) guard; scenario asserts same-version retick does not bump `rebuild_count` (version key load-bearing). Green artifacts absent until Green |
+| Sabotage (required before close) | (1) Drop `layout_skip` guard around spans tick → arch fail. (2) Make span cache ignore version (always rebuild) → scenario `rebuild_count` fail |
+| REG | no |
+| Out of scope | Moving minimap tick; §107j visible-row collect; changing highlighter; SceneNode |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: spans tick outside `layout_skip`; green gate absent | **done** 2026-08-03 — `scripts/run_ux_hover_no_full_compare_red.sh` exits non-zero |
+| 2 | Green: gate spans tick under `layout_skip`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` (EHA-18)
 `collect_visible_visual_rows_pixel_budget` runs up to 3× per content frame
