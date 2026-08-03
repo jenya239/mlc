@@ -228,3 +228,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107p CLOSED.** Advances to §107q |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107q `EDITOR_DRAW_OPS` — freeze Decision; red: live paint not via `UxDrawOp`) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107q Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107q Decision (`EditorPaintOp` + flatten; regions q1…q6; Critic per region). Red: `scripts/run_ux_draw_ops_from_live_state_red.sh` |
+| verify  | `bash scripts/run_ux_draw_ops_from_live_state_red.sh` → FAIL exit 1 (`live paint still direct solid_renderer_rect; no EditorPaintOp flatten`) |
+| result  | **§107q STEP=0/1 done (Decision+Red).** Green q1 next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q1 — chrome band fills via `EditorPaintOp` + flatten; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q1) |

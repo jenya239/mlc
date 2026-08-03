@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q Decision next
+## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q Decision+Red done (Green q1 next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -616,12 +616,28 @@ restore; tree clean of Critic mutations):
 **§107p CLOSED.** Next: §107q `EDITOR_DRAW_OPS`.
 
 ## §107q `EDITOR_DRAW_OPS` (EHA-17) — largest, strictly incremental
-Paint lives as direct `solid_renderer_rect` / `push_line` calls in `demo_live`,
-while `ux/draw_frame.mlc::editor_ux_draw_frame` → `UxDrawOp` exists and is used only
-by scenarios. Nothing can assert what the product actually draws.
-**Fix:** paint builds `[UxDrawOp]`, one flatten pass to GL. **Behaviour-preserving,
-one region per commit** (chrome → tab strip → gutter → text → overlays), each with
-its own green. **Gate:** `run_ux_draw_ops_from_live_state`. Residual of 2026-07-15 #4/#6.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `demo_live` paints with direct `solid_renderer_rect` / `push_line` (~49 rect call sites). `ux/draw_frame.mlc::editor_ux_draw_frame` → scenario `UxDrawOp` (geometry-only widget_id+rect) is unused by the product. Nothing can assert what live actually draws (2026-07-15 #4/#6 residual) |
+| Fix | Behaviour-preserving, **one paint region per Green commit**. Do **not** overload scenario `UxDrawOp`. New editor-local `EditorPaintOp` + flatten in `misc/editor/ux/paint_ops.mlc`. Region order: **(q1)** chrome band fills only — window background + header + tab_bar strip + toolbar strip (`solid_renderer_rect` at the top of the live paint block before tab-slot/hover loops) → **(q2)** tab strip slots/active/hover fills → **(q3)** tree / breadcrumb / folder-nav chrome fills → **(q4)** gutter → **(q5)** text/glyphs → **(q6)** overlays / minimap / scrollbars / status. Each Green: that region builds `[EditorPaintOp]`, one flatten to GL, remove the region's direct `solid_renderer_rect` calls. Critic after each region Green before the next region |
+| Module touch (q1) | new `misc/editor/ux/paint_ops.mlc`; `misc/editor/demo_live.mlc` (chrome-band paint only); new `scripts/run_ux_draw_ops_from_live_state.sh` (+ optional small unit/scenario). Later regions extend the same module + gate family |
+| Gate | `run_ux_draw_ops_from_live_state` (q1): arch — `EditorPaintOp` / flatten present; demo chrome-band paint goes through ops (no direct bg/header/tab_bar/toolbar strip `solid_renderer_rect` quartet at paint start); unit or scenario builds chrome-band ops and flattens (≥4 rect ops). Plus `dev_gate_fast`. Later regions extend the same gate (or `_qN` siblings auto-picked by `run_ux_gate`) |
+| Sabotage (required before close of each region) | q1: restore direct chrome-band `solid_renderer_rect` quartet bypassing ops/flatten → gate fail |
+| REG | no (`misc/editor/**` + `misc/gui` untouched; scenario `UxDrawOp` unchanged) |
+| Out of scope | Migrating all regions in one Green; SceneNode / `GUI_ARCHITECTURE` Deviation; changing scenario `editor_ux_draw_frame` semantics; §107r behavioural gate rewrite |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: live paint not via paint ops; green absent | **done** 2026-08-03 — `scripts/run_ux_draw_ops_from_live_state_red.sh` exits non-zero |
+| 2 | Green q1: chrome band fills via `EditorPaintOp` + flatten; gates; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic q1 | pending |
+| 4+ | Green/Critic q2…q6 (tab slots → … → overlays) | pending |
 
 ## §107r `EDITOR_UX_GATE_BEHAVIORAL` (EHA-19)
 `run_ux_wheel_hover_focus_independent_stable.sh`, `run_editor_frame_layout_*_stable.sh`
