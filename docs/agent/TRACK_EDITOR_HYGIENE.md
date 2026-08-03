@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107j **CLOSED**; queue head §107k `EDITOR_TERMINAL_DAMAGE_REPAINT`
+## Status: **open** 2026-08-03 — §107a–§107j **CLOSED**; §107k Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -442,11 +442,28 @@ Restored; `run_ux_gate` ×2 = 124/124 (`EXIT1=0` / `EXIT2=0`).
 
 **§107j CLOSED.** Next: §107k `EDITOR_TERMINAL_DAMAGE_REPAINT`.
 
-## §107k `EDITOR_TERMINAL_DAMAGE_REPAINT` (EHA-11)
-`terminal_grid_text_lines` / `terminal_grid_draw_backgrounds` rebuild every frame
-(60×200 → up to 12000 string concats + 12000 rects) while `vterm_damage_count`
-(§102a) is never consumed. **Fix:** cache `[StaticTextLine]` + the rect batch,
-invalidate on `vterm_damage_count`. **Gate:** `run_ux_terminal_idle_no_rebuild`.
+## §107k `EDITOR_TERMINAL_DAMAGE_REPAINT` (EHA-11) — residual of §102a/§102f
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | With the terminal tab active, `demo_live.mlc` calls `terminal_grid_draw_backgrounds` + `terminal_grid_text_lines` every frame (full `rows×columns` `vterm_cell_at` walks + string concats). `vterm_damage_count` / `vterm_terminal_damage_count` (§102a) exists and is exercised only in the FFI unit test — never consulted for paint invalidation |
+| Fix | (1) Extend `TerminalPanelSession` with a paint cache: `cached_text_lines: [StaticTextLine]`, `cached_bg_rects` (new small record or parallel arrays), `cached_damage_count: i32`, `grid_rebuild_count: i32`, plus cached geometry (`rows`/`columns`/cell size/origin) used as secondary keys. (2) Before paint: `damage = vterm_terminal_damage_count(screen_handle)`; rebuild caches only when `damage != cached_damage_count` or geometry changed; always **draw** from cache (framebuffer is cleared each frame). (3) Expose rebuild via `terminal_panel_session_grid_cache_tick` (or equivalent) so demo_live does not inline the policy |
+| Module touch | `misc/editor/app/terminal_panel.mlc`, `misc/editor/terminal/terminal_grid_render.mlc` (bg rect list helper if needed), `misc/editor/demo_live.mlc`; new `misc/editor/ux_scenarios/terminal_idle_no_rebuild.mlc` + `scripts/run_ux_terminal_idle_no_rebuild.sh` |
+| Gate | `run_ux_terminal_idle_no_rebuild`: open a terminal session, force one paint/tick so cache fills (`grid_rebuild_count == 1`), then N idle frames with no PTY write and unchanged damage → `grid_rebuild_count` stays 1. Arch: demo paint path consults `vterm_terminal_damage_count` / cache tick (not bare unconditional rebuild only) |
+| Sabotage (required before close) | (1) Always rebuild (ignore damage) → idle gate `grid_rebuild_count` grows. (2) Strip damage/cache wiring from demo → arch fail |
+| REG | no |
+| Out of scope | Changing libvterm damage callback; §107g teardown; PTY spawn shell contract (B11); non-terminal editor paint |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: unconditional grid rebuild; damage unused; green absent | **done** 2026-08-03 — `scripts/run_ux_terminal_idle_no_rebuild_red.sh` exits non-zero |
+| 2 | Green: damage-keyed cache + scenario; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY` (EHA-12)
 `edit_indent_tab` / `edit_outdent_lines` (`document/indent.mlc`) do

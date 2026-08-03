@@ -469,3 +469,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107j CLOSED.** Advances to §107k |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107k `EDITOR_TERMINAL_DAMAGE_REPAINT` — freeze Decision; red: terminal grid still rebuilt every frame without vterm_damage_count) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107k Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107k Decision (damage-keyed terminal grid cache on `TerminalPanelSession`; gate `run_ux_terminal_idle_no_rebuild`). Red: `scripts/run_ux_terminal_idle_no_rebuild_red.sh` |
+| verify  | `bash scripts/run_ux_terminal_idle_no_rebuild_red.sh` → FAIL exit 1 (`terminal grid still rebuilt every frame without vterm_damage_count`) |
+| result  | **§107k STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107k Green — damage-keyed grid cache + scenario `terminal_idle_no_rebuild`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
