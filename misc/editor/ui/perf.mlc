@@ -1,5 +1,6 @@
 // TRACK_EDITOR_RENDER_ARCHITECTURE §97a — wall-clock counters for demo_live.
 // TRACK_EDITOR_HYGIENE §107j — visible_collect_count (one collect per content frame).
+// TRACK_EDITOR_RETAINED_PAINT §108a — content/text rebuild counters.
 extern fn editor_perf_monotonic_us() -> i32
   = "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp"
 
@@ -11,7 +12,9 @@ export type EditorPerfCounters = {
   total_us: i32,
   lines_touched: i32,
   primitives: i32,
-  visible_collect_count: i32
+  visible_collect_count: i32,
+  content_rebuild_count: i32,
+  text_layer_rebuild_count: i32
 }
 
 export fn editor_perf_now_us() -> i32 =
@@ -26,7 +29,9 @@ export fn editor_perf_new() -> EditorPerfCounters =
     total_us: 0,
     lines_touched: 0,
     primitives: 0,
-    visible_collect_count: 0
+    visible_collect_count: 0,
+    content_rebuild_count: 0,
+    text_layer_rebuild_count: 0
   }
 
 export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCounters =
@@ -38,7 +43,9 @@ export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCoun
     total_us: counters.total_us,
     lines_touched: counters.lines_touched,
     primitives: counters.primitives,
-    visible_collect_count: counters.visible_collect_count
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count
   }
 
 export fn editor_perf_accumulate_frame(
@@ -56,7 +63,41 @@ export fn editor_perf_accumulate_frame(
     total_us: counters.total_us + total_us,
     lines_touched: counters.lines_touched,
     primitives: counters.primitives,
-    visible_collect_count: counters.visible_collect_count + visible_collect_count
+    visible_collect_count: counters.visible_collect_count + visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count
+  }
+
+export fn editor_perf_note_content_rebuild(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count + 1,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count
+  }
+
+export fn editor_perf_note_text_layer_rebuild(
+  counters: EditorPerfCounters
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count + 1
   }
 
 export fn editor_perf_format(counters: EditorPerfCounters) -> string =

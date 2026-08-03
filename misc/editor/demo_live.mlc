@@ -252,6 +252,11 @@ import {
 } from './app/frame_layout'
 import { frame_input_poll } from './app/frame_input'
 import {
+  editor_ux_chrome_hit_slots_basic,
+  editor_ux_chrome_hit_style_id,
+  editor_ux_chrome_hit_pointer_plan
+} from './ux/chrome_hit'
+import {
   editor_ux_multi_click_new,
   editor_ux_apply_multi_click
 } from './ux/multi_click'
@@ -354,6 +359,8 @@ import {
   editor_perf_new,
   editor_perf_now_us,
   editor_perf_accumulate_frame,
+  editor_perf_note_content_rebuild,
+  editor_perf_note_text_layer_rebuild,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
   editor_perf_format_demo_live_full
@@ -846,6 +853,7 @@ fn main() -> i32 = do
   let mut last_caret_rects: [CaretOverlayRect] = caret_overlay_empty()
   let mut cached_visual_rows: [VisualRow] = []
   let mut cached_visual_rows_valid = 0
+  let mut last_chrome_hit_id = "none"
 
   while glfw_gl_context_should_close() == 0 do
     const scaled_font_size = f64_to_i32(
@@ -876,7 +884,8 @@ fn main() -> i32 = do
     let mut pending_binding_key = frame_in.pending_binding_key
     let mut pending_drop_path = frame_in.pending_drop_path
     let mut content_dirty = frame_in.content_dirty
-    const pointer_dirty = frame_in.pointer_dirty
+    let mut pointer_dirty = frame_in.pointer_dirty
+    let mut chrome_dirty = frame_in.chrome_dirty
     if app.ux.tabs.active_index != last_active_index then
       content_dirty = 1
     end
@@ -888,9 +897,40 @@ fn main() -> i32 = do
     last_backspace = input.backspace
     last_enter = input.enter
 
+    // §108a — hit-stable pointer: same chrome hit-style id → no frame.
+    const content_top = header_height() + tab_bar_height() + toolbar_height()
+    const content_height = height - content_top - status_height()
+    panels = shell_panels_set_bounds(
+      panels, rect_new(0, content_top, width, content_height)
+    )
+    const tab_bar_y = header_height()
+    const toolbar_y = header_height() + tab_bar_height()
+    const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
+    const hit_slots = editor_ux_chrome_hit_slots_basic(
+      width, height,
+      header_height(), tab_bar_height(), toolbar_height(), status_height(),
+      panels.panes.first, panels.panes.second
+    )
+    const chrome_hit_id = editor_ux_chrome_hit_style_id(
+      input.mouse_x, input.mouse_y, hit_slots
+    )
+    if content_dirty == 0 && pointer_dirty != 0 then
+      const hit_plan = editor_ux_chrome_hit_pointer_plan(
+        pointer_dirty, last_chrome_hit_id, chrome_hit_id
+      )
+      if hit_plan.schedule_frame == 0 then
+        pointer_dirty = 0
+      else
+        chrome_dirty = 1
+        last_chrome_hit_id = hit_plan.next_hit_id
+      end
+    else if content_dirty != 0 then
+      last_chrome_hit_id = chrome_hit_id
+    end
+
     let mut paint_dirty = 0
-    // Idle before layout/chrome work — pointer-only still paints (layout_skip).
-    if content_dirty == 0 && pointer_dirty == 0 && !perf_enabled then
+    // Idle before layout/chrome work — stable-hit pointer does not paint.
+    if content_dirty == 0 && pointer_dirty == 0 && chrome_dirty == 0 && !perf_enabled then
       glfw_gl_context_wait_events_timeout(0.05)
       clock_ms = clock_ms + caret_blink_idle_wait_ms()
       paint_dirty = caret_blink_paint_dirty(
@@ -943,14 +983,6 @@ fn main() -> i32 = do
       clock_ms = clock_ms + 16
     end
 
-    const content_top = header_height() + tab_bar_height() + toolbar_height()
-    const content_height = height - content_top - status_height()
-    panels = shell_panels_set_bounds(
-      panels, rect_new(0, content_top, width, content_height)
-    )
-    const tab_bar_y = header_height()
-    const toolbar_y = header_height() + tab_bar_height()
-    const tab_strip = ux_rect_new(0, tab_bar_y, width, tab_bar_height())
 
     app = editor_app_set_tabs(app, ensure_tabs(app.ux.tabs, panels))
     let mut active = tab_set_active(app.ux.tabs)
@@ -964,10 +996,18 @@ fn main() -> i32 = do
       app = editor_app_wheel_scroll(app, metrics, 3, line_index)
     end
 
-    // Pointer-only hover: reuse last visual rows / skip HarfBuzz wrap retick.
+    // Pointer/chrome-only hover: reuse last visual rows / skip HarfBuzz wrap retick.
     let mut layout_skip = 0
-    if content_dirty == 0 && pointer_dirty != 0 && cached_visual_rows_valid != 0 then
+    if content_dirty == 0 &&
+        (pointer_dirty != 0 || chrome_dirty != 0) &&
+        cached_visual_rows_valid != 0 then
       layout_skip = 1
+    end
+    if content_dirty != 0 then
+      perf_counters = editor_perf_note_content_rebuild(perf_counters)
+    end
+    if layout_skip == 0 then
+      perf_counters = editor_perf_note_text_layer_rebuild(perf_counters)
     end
 
     last_width = width

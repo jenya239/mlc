@@ -1,0 +1,90 @@
+// TRACK_EDITOR_RETAINED_PAINT §108a — chrome hit-style id + pointer frame plan.
+import { Rect, rect_new, point_new, point_in_rect } from '../../gui/layout'
+
+export type ChromeHitStyleSlot = {
+  id: string,
+  rect: Rect
+}
+
+export type ChromeHitPointerPlan = {
+  schedule_frame: i32,
+  chrome_dirty: i32,
+  next_hit_id: string
+}
+
+export fn editor_ux_chrome_hit_style_id(
+  mouse_x: i32,
+  mouse_y: i32,
+  slots: [ChromeHitStyleSlot]
+) -> string = do
+  const point = point_new(mouse_x, mouse_y)
+  let mut index = 0
+  while index < slots.length() do
+    const slot = slots[index]
+    if point_in_rect(point, slot.rect) != 0 then
+      return slot.id
+    end
+    index = index + 1
+  end
+  "none"
+end
+
+export fn editor_ux_chrome_hit_pointer_plan(
+  mouse_moved: i32,
+  last_hit_id: string,
+  next_hit_id: string
+) -> ChromeHitPointerPlan = do
+  if mouse_moved == 0 then
+    return ChromeHitPointerPlan {
+      schedule_frame: 0,
+      chrome_dirty: 0,
+      next_hit_id: last_hit_id
+    }
+  end
+  if next_hit_id == last_hit_id then
+    return ChromeHitPointerPlan {
+      schedule_frame: 0,
+      chrome_dirty: 0,
+      next_hit_id: last_hit_id
+    }
+  end
+  ChromeHitPointerPlan {
+    schedule_frame: 1,
+    chrome_dirty: 1,
+    next_hit_id: next_hit_id
+  }
+end
+
+export fn editor_ux_chrome_hit_slots_basic(
+  window_width: i32,
+  window_height: i32,
+  header_height: i32,
+  tab_bar_height: i32,
+  toolbar_height: i32,
+  status_height: i32,
+  tree_rect: Rect,
+  text_rect: Rect
+) -> [ChromeHitStyleSlot] = do
+  let mut slots: [ChromeHitStyleSlot] = []
+  const tab_bar_y = header_height
+  const toolbar_y = header_height + tab_bar_height
+  slots.push(ChromeHitStyleSlot {
+    id: "header",
+    rect: rect_new(0, 0, window_width, header_height)
+  })
+  slots.push(ChromeHitStyleSlot {
+    id: "tab_bar",
+    rect: rect_new(0, tab_bar_y, window_width, tab_bar_height)
+  })
+  slots.push(ChromeHitStyleSlot {
+    id: "toolbar",
+    rect: rect_new(0, toolbar_y, window_width, toolbar_height)
+  })
+  slots.push(ChromeHitStyleSlot { id: "tree", rect: tree_rect })
+  slots.push(ChromeHitStyleSlot { id: "text", rect: text_rect })
+  slots.push(ChromeHitStyleSlot {
+    id: "status",
+    rect: rect_new(0, window_height - status_height, window_width, status_height)
+  })
+  slots
+end

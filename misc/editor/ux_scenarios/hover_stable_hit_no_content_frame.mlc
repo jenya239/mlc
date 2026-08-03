@@ -1,0 +1,107 @@
+// TRACK_EDITOR_RETAINED_PAINT §108a — stable chrome hit must not rebuild content/text.
+import { rect_new } from '../../gui/layout'
+import {
+  editor_ux_chrome_hit_slots_basic,
+  editor_ux_chrome_hit_style_id,
+  editor_ux_chrome_hit_pointer_plan
+} from '../ux/chrome_hit'
+import {
+  editor_perf_new,
+  editor_perf_note_content_rebuild,
+  editor_perf_note_text_layer_rebuild
+} from '../ui/perf'
+
+fn main() -> i32 = do
+  const tree = rect_new(0, 54, 200, 500)
+  const text = rect_new(204, 54, 600, 500)
+  const slots = editor_ux_chrome_hit_slots_basic(
+    800, 600, 18, 18, 18, 16, tree, text
+  )
+  let mut counters = editor_perf_new()
+  let mut last_hit = "none"
+  let mut move_index = 0
+  let mut status = 0
+  while move_index < 8 do
+    const mouse_x = 40 + move_index
+    const hit_id = editor_ux_chrome_hit_style_id(mouse_x, 20, slots)
+    const plan = editor_ux_chrome_hit_pointer_plan(1, last_hit, hit_id)
+    if hit_id != "tab_bar" then
+      status = 1
+    end
+    if move_index == 0 then
+      if plan.schedule_frame == 0 then
+        status = 2
+      end
+      if plan.chrome_dirty == 0 then
+        status = 2
+      end
+      last_hit = plan.next_hit_id
+    end
+    if move_index > 0 then
+      if plan.schedule_frame != 0 then
+        status = 3
+      end
+      if plan.chrome_dirty != 0 then
+        status = 3
+      end
+    end
+    move_index = move_index + 1
+  end
+  if status == 1 then
+    println("ux_fail hover_stable_hit_no_content_frame expected_tab_bar")
+    return 1
+  end
+  if status == 2 then
+    println("ux_fail hover_stable_hit_no_content_frame first_hit_chrome")
+    return 2
+  end
+  if status == 3 then
+    println("ux_fail hover_stable_hit_no_content_frame stable_scheduled")
+    return 3
+  end
+  if counters.content_rebuild_count != 0 then
+    println("ux_fail hover_stable_hit_no_content_frame stable_rebuild")
+    return 4
+  end
+  if counters.text_layer_rebuild_count != 0 then
+    println("ux_fail hover_stable_hit_no_content_frame stable_rebuild")
+    return 4
+  end
+
+  const tree_hit = editor_ux_chrome_hit_style_id(20, 100, slots)
+  if tree_hit != "tree" then
+    println("ux_fail hover_stable_hit_no_content_frame expected_tree")
+    return 5
+  end
+  const change_plan = editor_ux_chrome_hit_pointer_plan(1, last_hit, tree_hit)
+  if change_plan.schedule_frame == 0 then
+    println("ux_fail hover_stable_hit_no_content_frame hit_change")
+    return 6
+  end
+  if change_plan.chrome_dirty == 0 then
+    println("ux_fail hover_stable_hit_no_content_frame hit_change")
+    return 6
+  end
+  if counters.content_rebuild_count != 0 then
+    println("ux_fail hover_stable_hit_no_content_frame change_rebuild")
+    return 7
+  end
+  if counters.text_layer_rebuild_count != 0 then
+    println("ux_fail hover_stable_hit_no_content_frame change_rebuild")
+    return 7
+  end
+
+  counters = editor_perf_note_content_rebuild(counters)
+  counters = editor_perf_note_text_layer_rebuild(counters)
+  if counters.content_rebuild_count != 1 then
+    println("ux_fail hover_stable_hit_no_content_frame content_bump")
+    return 8
+  end
+  if counters.text_layer_rebuild_count != 1 then
+    println("ux_fail hover_stable_hit_no_content_frame content_bump")
+    return 8
+  end
+
+  println("ux_ok hover_stable_hit_no_content_frame")
+  0
+end

@@ -1,4 +1,5 @@
 // TRACK_EDITOR_RENDER_ARCHITECTURE §97b — poll → intent snapshot (no paint).
+// TRACK_EDITOR_RETAINED_PAINT §108a — chrome_dirty; overlay/menu ≠ content_dirty.
 import {
   glfw_gl_window_width,
   glfw_gl_window_height,
@@ -19,8 +20,10 @@ export type EditorFrameInput = {
   pending_binding_key: string,
   pending_drop_path: string,
   content_dirty: i32,
-  // Mouse move alone — chrome/hover paint, not full wrap/layout retick.
-  pointer_dirty: i32
+  // Mouse move (raw). demo_live hit-filters via chrome_hit before idle.
+  pointer_dirty: i32,
+  // Overlay / context menu / hit-style change — chrome path, not content.
+  chrome_dirty: i32
 }
 
 export fn frame_input_poll(
@@ -43,6 +46,7 @@ export fn frame_input_poll(
   const pending_drop_path = glfw_gl_take_drop_path()
   let mut content_dirty = 0
   let mut pointer_dirty = 0
+  let mut chrome_dirty = 0
   if width != last_width || height != last_height then
     content_dirty = 1
   end
@@ -78,10 +82,10 @@ export fn frame_input_poll(
     content_dirty = 1
   end
   if context_menu_visible then
-    content_dirty = 1
+    chrome_dirty = 1
   end
   if overlay_visible then
-    content_dirty = 1
+    chrome_dirty = 1
   end
   EditorFrameInput {
     input: input,
@@ -91,6 +95,7 @@ export fn frame_input_poll(
     pending_binding_key: pending_binding_key,
     pending_drop_path: pending_drop_path,
     content_dirty: content_dirty,
-    pointer_dirty: pointer_dirty
+    pointer_dirty: pointer_dirty,
+    chrome_dirty: chrome_dirty
   }
 end

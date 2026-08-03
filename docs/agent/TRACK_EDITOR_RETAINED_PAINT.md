@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (STEP=0/1 Decision+Red done; Driver STEP=2 Green next)
+## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (STEP=0/1/2 Decision+Red+Green done; Critic STEP=3 next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -51,7 +51,7 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 | Frame classes | **`content_dirty`**: document edit / scroll / zoom / wrap / resize / key/text/drop that changes buffer or viewport layout. **`chrome_dirty`**: tabs/tree/toolbar/breadcrumb/scrollbar-thumb hover style, panel open that only restyles chrome. **`present_only`**: caret blink / overlay blit with no chrome restyle. Mutually exclusive priority when combining: content > chrome > present_only |
 | Hit-stable no-frame | Compute a stable **chrome hit-style id** (string or i32 enum covering none/tab/tool/tree_row/breadcrumb/nav/scrollbar_*/overlay_item — same regions that already call `editor_ux_chrome_hover_draw_entry`). Pointer move with **unchanged** id → schedule **no** editor frame (GLFW cursor update only; both dirty flags stay 0). Id change → `chrome_dirty=1` only |
 | Overlay / context menu | Open/visible must **not** raise `content_dirty` — `chrome_dirty` or `present_only` only (fixes the §106 residual / B7) |
-| `pointer_dirty` | Retire as the sole hover signal: either rename to `chrome_dirty` or keep as alias that is set only when hit-style id changes (Green picks one; Red may assert today's always-on `pointer_dirty`) |
+| `pointer_dirty` | **Green:** keep as raw mouse-moved; `demo_live` hit-filters via `editor_ux_chrome_hit_pointer_plan` before idle (stable id → clear `pointer_dirty`) |
 | Module touch | `misc/editor/app/frame_input.mlc`, `misc/editor/demo_live.mlc` (loop branch + idle wait), hit-id helper near `ux/chrome_hover.mlc` (or small sibling), `misc/editor/ui/perf.mlc` (two counters) |
 | Counters | `content_rebuild_count`, `text_layer_rebuild_count` on `EditorPerfCounters` — bumped only on the corresponding rebuild paths (Green wires them; Red gate reads them) |
 | Gate | `run_ux_hover_stable_hit_no_content_frame`: N pointer moves over the same chrome hit → `content_rebuild_count == 0` and `text_layer_rebuild_count == 0`; move that changes hover target → chrome path once (no content bump) |
@@ -65,7 +65,7 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_hover_stable_hit_no_content_frame_red.sh` | **done** 2026-08-03 — FAIL exit 1 (`pointer_dirty` always-on; no counters/green gate) |
-| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — hit-stable + chrome_dirty + counters; green `ux_ok`; UX 133/133 ×2 |
 | 3 | Critic | pending |
 
 ---
