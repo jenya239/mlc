@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107l **CLOSED**; queue head §107m Decision
+## Status: **open** 2026-08-03 — §107a–§107l **CLOSED**; §107m Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -516,10 +516,27 @@ restore; tree clean of Critic mutations):
 **§107l CLOSED.** Next: §107m `EDITOR_OPEN_SIZE_GUARD`.
 
 ## §107m `EDITOR_OPEN_SIZE_GUARD` (EHA-13)
-`open_buffer_from_path` reads any size, then makes 4 more full passes
-(`text_contains_nul`, `utf8_text_is_valid`, 2× `replace` for newline normalisation).
-**Fix:** `MLC_EDITOR_MAX_OPEN_BYTES` (default ~64MB) with an explicit refusal;
-merge the guard passes into one. **Gate:** `run_ux_oversized_file_refused`.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `open_buffer_from_path` (`document/save.mlc`) calls `file_read_to_string` with no size cap, then walks the whole buffer separately for NUL (`text_contains_nul`), UTF-8 (`utf8_text_is_valid`), and newline detect/normalize (`detect_line_ending` + `normalize_newlines_to_lf` with 2× `replace`) — arbitrary-size open DoS / multi-pass cost |
+| Fix | (1) Cap: `editor_max_open_bytes()` via `get_or("MLC_EDITOR_MAX_OPEN_BYTES", …)` default **67108864** (64 MiB); refuse with `open_buffer_refuse` / `last_error` containing `Oversized` when the file exceeds the cap. Pre-read size via new thin FFI `file_byte_size` on `file_abi` (`std::filesystem::file_size` or equivalent) so oversized files are not loaded into a string. (2) Merge the NUL + UTF-8 walks into **one** byte pass over the loaded body (BOM strip stays a prefix check). Keep line-ending detect/normalize after validation (still needed for document identity) — do not invent a second document path |
+| Module touch | `runtime/include/mlc/io/file_abi.hpp` (+ impl if needed), `misc/editor/document/save.mlc`; new `misc/editor/ux_scenarios/oversized_file_refused.mlc` + `scripts/run_ux_oversized_file_refused.sh` |
+| Gate | `run_ux_oversized_file_refused`: with `MLC_EDITOR_MAX_OPEN_BYTES` set low (e.g. 32), a larger fixture → `open_buffer_from_path` refuses (`open_buffer_has_error`, empty document, error contains `Oversized`). Arch: `editor_max_open_bytes` / `file_byte_size` present; separate `text_contains_nul`+`utf8_text_is_valid` dual walk gone from the open path |
+| Sabotage (required before close) | Skip/remove the size check in `open_buffer_from_path` → oversized fixture accepted / gate fails |
+| REG | no (runtime abi + editor only; no `lib/mlc/**` product semantics change beyond env read already used elsewhere) |
+| Out of scope | Streaming open / piece-table partial load; changing binary/UTF-8 refuse messages beyond adding Oversized; CRLF preserve semantics |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: no size cap / no merged validation; green absent | **done** 2026-08-03 — `scripts/run_ux_oversized_file_refused_red.sh` exits non-zero |
+| 2 | Green: size cap + merged pass; scenario; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107n `EDITOR_PROBE_GEOMETRY_PARITY` (EHA-14)
 `editor_app_state_new` uses `tab_strip_height: 0`, `editor_ux_state_new` uses `28`,

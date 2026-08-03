@@ -559,3 +559,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107l CLOSED.** Advances to §107m |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107m `EDITOR_OPEN_SIZE_GUARD` — freeze Decision; red: open_buffer_from_path still accepts arbitrary size + multi-pass normalize) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107m Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107m Decision (`MLC_EDITOR_MAX_OPEN_BYTES` default 64MiB + `file_byte_size` pre-read refuse; merge NUL+UTF-8 into one pass). Red: `scripts/run_ux_oversized_file_refused_red.sh` |
+| verify  | `bash scripts/run_ux_oversized_file_refused_red.sh` → FAIL exit 1 (`open_buffer_from_path still accepts arbitrary size + multi-pass normalize`) |
+| result  | **§107m STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107m Green — size cap + merged validation + scenario `oversized_file_refused`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
