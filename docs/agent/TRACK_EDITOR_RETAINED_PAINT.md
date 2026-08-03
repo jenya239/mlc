@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — queue head **§108a `EDITOR_DIRTY_TAXONOMY`** (STEP=0/1/2 Decision+Red+Green done; Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §108a **CLOSED**; queue head **§108b `EDITOR_RETAIN_TEXT_LAYER`** (Driver STEP=0 Decision next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -39,7 +39,7 @@ layers. MLC still immediate-paints the full window on hover.
 
 ---
 
-## §108a `EDITOR_DIRTY_TAXONOMY` — **queue head**
+## §108a `EDITOR_DIRTY_TAXONOMY` — **CLOSED** 2026-08-03 (Critic)
 
 ### Decision (**frozen** 2026-08-03, Driver STEP=0)
 
@@ -66,11 +66,11 @@ Baseline today (`app/frame_input.mlc` + `demo_live.mlc`): mouse move → `pointe
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_hover_stable_hit_no_content_frame_red.sh` | **done** 2026-08-03 — FAIL exit 1 (`pointer_dirty` always-on; no counters/green gate) |
 | 2 | Green + `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — hit-stable + chrome_dirty + counters; green `ux_ok`; UX 133/133 ×2 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — Decision sabotage was not load-bearing; gate strengthened (mouse-move ≠ `content_dirty`); sab1/sab2 fail; UX 133/133 ×2 |
 
 ---
 
-## §108b `EDITOR_RETAIN_TEXT_LAYER`
+## §108b `EDITOR_RETAIN_TEXT_LAYER` — **queue head**
 
 | Item | Choice |
 |------|--------|

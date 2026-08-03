@@ -393,3 +393,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108a STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a — independent rebuild+rerun; sabotage: force `content_dirty=1` on every pointer move; `run_ux_gate` ×2; close §108a → §108b Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_RETAINED_PAINT STEP=3, §108a)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green ok for `929deba0`. Decision sabotage (pointer→`content_dirty`) was **not** load-bearing — strengthened `run_ux_hover_stable_hit_no_content_frame.sh` mouse-block arch check. Sab1: content_dirty on pointer → FAIL; sab2: stable hit always-schedule → FAIL; both restored. Closed §108a |
+| verify  | critic green ok; sab1/sab2 exit 1; restore ok; `run_ux_gate` ×2 = 133/133 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108a CLOSED.** Advances to §108b |
+| issues  | none (gate gap fixed this turn) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108b `EDITOR_RETAIN_TEXT_LAYER` — freeze Decision: batch reuse vs FBO; red first) |

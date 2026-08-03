@@ -30,6 +30,24 @@ grep -q 'chrome_dirty' "$FRAME_INPUT" || fail "frame_input missing chrome_dirty"
 grep -q 'editor_ux_chrome_hit_pointer_plan' "$DEMO" || fail "demo_live missing hit pointer plan"
 grep -q 'last_chrome_hit_id' "$DEMO" || fail "demo_live missing last_chrome_hit_id"
 
+# Pointer move must not raise content_dirty (Decision sabotage).
+mouse_block="$(
+  ruby -e '
+    source = File.read(ARGV[0])
+    start_at = source.index("if input.mouse_x != last_mouse_x || input.mouse_y != last_mouse_y then")
+    abort "missing mouse-move dirty block" if start_at.nil?
+    window_end = source.index("\n  end\n  if input.mouse_down", start_at)
+    abort "missing mouse-move block end" if window_end.nil?
+    print source[start_at...window_end]
+  ' "$FRAME_INPUT"
+)"
+if printf '%s\n' "$mouse_block" | grep -q 'content_dirty = 1'; then
+  fail "mouse-move raises content_dirty"
+fi
+if ! printf '%s\n' "$mouse_block" | grep -q 'pointer_dirty = 1'; then
+  fail "mouse-move missing pointer_dirty = 1"
+fi
+
 # Overlay / context menu must not raise content_dirty.
 context_block="$(
   ruby -e '
