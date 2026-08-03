@@ -468,3 +468,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q CLOSED.** Advances to §107r |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107r `EDITOR_UX_GATE_BEHAVIORAL` — freeze Decision; red first) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0, §107r Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §107r Decision: L1 `wheel_hover_focus_independent` scenario; keep named greps as arch-lint; absorb checklist via §107a–h/§108d (no re-gate); P2/B7 out of scope |
+| verify  | Decision text in `TRACK_EDITOR_HYGIENE.md` STEP=0=done; PLAN §107r → STEP=1 Red; docs-only — no code gate |
+| result  | **§107r STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_HYGIENE (§107r Red — `run_ux_wheel_hover_focus_independent` behavioural gate fails on today's tree) |

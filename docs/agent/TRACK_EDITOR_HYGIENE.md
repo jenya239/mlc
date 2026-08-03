@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107q **CLOSED**; queue head **§107r `EDITOR_UX_GATE_BEHAVIORAL`** (Decision next)
+## Status: **open** 2026-08-03 — §107a–§107q **CLOSED**; queue head **§107r `EDITOR_UX_GATE_BEHAVIORAL`** (Decision frozen; STEP=1 Red next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -651,15 +651,34 @@ restore; tree clean of Critic mutations):
 **§107q CLOSED** 2026-08-03 (q1–q6 Critic-audited). Residual disclosed: toolbar-button + folder-row hover still direct `solid_renderer_rect` (outside Decision regions). Next: §107r `EDITOR_UX_GATE_BEHAVIORAL`.
 
 ## §107r `EDITOR_UX_GATE_BEHAVIORAL` (EHA-19)
-`run_ux_wheel_hover_focus_independent_stable.sh`, `run_editor_frame_layout_*_stable.sh`
-grep the source (`zero editor_focused in block`, `exactly 1 frame_layout_tick_pixel(`):
-they pin code shape, not behaviour — refactors go red, real regressions pass.
-**Fix:** replace with behavioural L1/L2 where possible; keep grep as arch-lint only.
-Also add the gate types the audit lists as missing: idle-CPU **under pointer load**
-(the §106 gap), deep-scroll perf (§107c), untrusted-content DoS (§107h), resource
-lifecycle (§107g), filesystem side effects (§107a/b), path/UTF-8 security (P2),
-multi-frame L1.5 for hover-paint and overlay-idle.
-**Gate:** revised `run_ux_gate.sh` composition, ×2 stable.
+
+### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+Day-1 Planner sketch listed many "missing gate types". Most landed in §107a–h / §108d.
+§107r ships the **remaining EHA-19 core**: convert the load-bearing **grep-as-UX** exemplar
+to behavioural L1, classify pure structure greps as arch-lint, absorb the checklist —
+do **not** re-implement closed sub-track gates.
+
+| Item | Choice |
+|------|--------|
+| Problem | `run_ux_wheel_hover_focus_independent_stable.sh` (and peers) **grep** `demo_live` for `tree_hovered` / `editor_rect` / absence of `editor_focused` in the wheel block. Refactors that keep hover-routed scroll go red; regressions that restore focus-gated wheel can pass if the grepped tokens remain. `run_editor_frame_layout_*_stable.sh` similarly pin imports/`frame_layout_tick_*` call shape (§97b ownership), not frame behaviour |
+| Fix (Green) | (1) New behavioural L1: `misc/editor/ux_scenarios/wheel_hover_focus_independent.mlc` + `scripts/run_ux_wheel_hover_focus_independent.sh` — assert scroll target follows **hover hit** (tree vs editor), not `editor_focused` (tree hover + unfocused editor still scrolls tree; editor hover scrolls editor; focus flag must not be the sole gate). Prefer probing existing `editor_ux_*` / app helpers; touch `demo_live` only if a measure hook is required. (2) Keep `run_ux_wheel_hover_focus_independent_stable.sh` as **arch-lint** (header comment `# ARCH-LINT:` + Decision class) — may stay in `run_ux_gate` auto-discover. (3) Classify `run_editor_frame_layout_*_stable.sh` as arch-lint only — **no** behavioural twin for SRP/import structure |
+| Absorb (already shipped — do not re-gate) | idle-CPU under pointer → §108d `hover_cpu_budget` L1+L2; deep-scroll / full-path → §107c prefix-jump + §107d `PERF_FULL`; untrusted-content DoS → §107h `long_single_line_budget`; resource lifecycle → §107g `terminal_tab_close_releases_pty`; filesystem side effects → §107a/b; multi-frame hover-paint counters → §108d L1 |
+| Out of scope absorb | path/UTF-8 security → P2 B1/B2; overlay-idle retick → B7; rewriting **all** `*_stable.sh` in one Green; inventing new L2 CPU ceilings; SceneNode |
+| Module touch | `misc/editor/ux_scenarios/wheel_hover_focus_independent.mlc`; `scripts/run_ux_wheel_hover_focus_independent.sh` (+ `_red.sh`); comment headers on the named `*_stable.sh` / `run_editor_frame_layout_*_stable.sh` files; `demo_live` only if probe requires it |
+| Gate | Red: behavioural runner absent / fails on today's tree. Green: L1 `ux_ok wheel_hover_focus_independent`; arch-lint greps still pass; `dev_gate_fast`; `run_ux_gate` ×2 (includes new L1) |
+| Sabotage (required before close) | Restore wheel routing gated only on `editor_focused` (or tree-hover wheel scrolls editor) → L1 fails; arch-lint alone must **not** be the sole close signal |
+| REG | no |
+| Depends on | §107q CLOSED; §108d hover half absorbed |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: behavioural wheel gate absent | **open** — `run_ux_wheel_hover_focus_independent_red.sh` must fail |
+| 2 | Green: L1 scenario + arch-lint classification; `dev_gate_fast`; `run_ux_gate` ×2 | **open** |
+| 3 | Critic | **open** |
 
 ---
 
