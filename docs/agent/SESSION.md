@@ -349,3 +349,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107h STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107h Green — caps + chunked mismatch in `line_codepoint_advances_px`; scenario `long_single_line_budget`; measure then write `TOTAL_US_MAX`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107h Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `line_codepoint_advances_px`: byte cap 65536 + segment 64; mono beyond cap; mismatch chunked. Scenario `long_single_line_budget` + green script; measured `elapsed_us=121158` → `TOTAL_US_MAX=500000` |
+| verify  | `run_ux_long_single_line_budget.sh` → `ux_ok`; wrap_selection ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 122/122 |
+| result  | **§107h STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | ALL_CAPS locals codegen as Type{} — used snake_case locals; Decision names kept in comments for arch grep |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107h — independent rebuild+rerun; sabotages: drop byte cap, restore per-codepoint mismatch loop; `run_ux_gate` ×2; close §107h → §107i Decision) |

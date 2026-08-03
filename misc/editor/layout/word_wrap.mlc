@@ -11,6 +11,7 @@ import {
 } from '../document/line_index'
 import { Rect, rect_new } from '../../gui/layout'
 import {
+  TextShapingState,
   text_shaping_new,
   text_shaping_shape,
   text_shaping_glyph_advance_at
@@ -151,6 +152,110 @@ export fn visual_rows_for_line(
   rows
 end
 
+// §107h — wrap-shape byte/segment caps (untrusted long-line DoS).
+// SHAPE_LINE_BYTE_CAP = 65536; SHAPE_SEGMENT_CODEPOINT_MAX = 64 (locals in advances).
+
+fn append_mono_advances_for_range(
+  advances: [i32],
+  text: string,
+  range_start: i32,
+  range_finish: i32
+) -> [i32] = do
+  let mut next = advances
+  let mut byte_index = range_start
+  while byte_index < range_finish do
+    const lead = string_byte_u8(text, byte_index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if byte_index + step > range_finish then
+      step = range_finish - byte_index
+    end
+    next.push(1)
+    byte_index = byte_index + step
+  end
+  next
+end
+
+fn byte_end_after_codepoints(
+  text: string,
+  range_start: i32,
+  range_finish: i32,
+  codepoint_limit: i32
+) -> i32 = do
+  let mut byte_index = range_start
+  let mut codepoint_index = 0
+  while byte_index < range_finish && codepoint_index < codepoint_limit do
+    const lead = string_byte_u8(text, byte_index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if byte_index + step > range_finish then
+      step = range_finish - byte_index
+    end
+    byte_index = byte_index + step
+    codepoint_index = codepoint_index + 1
+  end
+  byte_index
+end
+
+fn append_shaped_advances_from_glyphs(
+  advances: [i32],
+  glyph_count: i32
+) -> [i32] = do
+  let mut next = advances
+  let mut glyph_index = 0
+  while glyph_index < glyph_count do
+    let mut width = text_shaping_glyph_advance_at(glyph_index) / 64
+    if width < 1 then
+      width = 1
+    end
+    next.push(width)
+    glyph_index = glyph_index + 1
+  end
+  next
+end
+
+// Per-codepoint within one segment (bounded by SHAPE_SEGMENT_CODEPOINT_MAX).
+fn append_per_codepoint_shaped_advances(
+  advances: [i32],
+  text: string,
+  range_start: i32,
+  range_finish: i32,
+  font_path: string,
+  pixel_size: i32,
+  shaping_state: TextShapingState
+) -> [i32] = do
+  let mut next = advances
+  let mut state = shaping_state
+  let mut byte_index = range_start
+  while byte_index < range_finish do
+    const lead = string_byte_u8(text, byte_index)
+    let mut step = utf8_codepoint_byte_length(lead)
+    if step < 1 then
+      step = 1
+    end
+    if byte_index + step > range_finish then
+      step = range_finish - byte_index
+    end
+    const piece = text.byte_substring(byte_index, step)
+    const piece_shaped = text_shaping_shape(state, font_path, pixel_size, piece)
+    state = piece_shaped.state
+    let mut width = 1
+    if piece_shaped.error_code == 0 && piece_shaped.glyph_count > 0 then
+      width = text_shaping_glyph_advance_at(0) / 64
+      if width < 1 then
+        width = 1
+      end
+    end
+    next.push(width)
+    byte_index = byte_index + step
+  end
+  next
+end
+
 // Per-codepoint advance in pixels (shaped). Empty on shape failure → caller falls back.
 fn line_codepoint_advances_px(
   text: string,
@@ -159,52 +264,61 @@ fn line_codepoint_advances_px(
   font_path: string,
   pixel_size: i32
 ) -> [i32] = do
+  // Decision §107h names: SHAPE_LINE_BYTE_CAP=65536, SHAPE_SEGMENT_CODEPOINT_MAX=64.
+  const shape_line_byte_cap = 65536
+  const shape_segment_codepoint_max = 64
   let mut advances: [i32] = []
   if line_finish <= line_start then
     return advances
   end
-  const line_slice = text.byte_substring(line_start, line_finish - line_start)
+  let mut shape_finish = line_finish
+  if shape_finish - line_start > shape_line_byte_cap then
+    shape_finish = line_start + shape_line_byte_cap
+  end
+  const line_slice = text.byte_substring(line_start, shape_finish - line_start)
   let mut state = text_shaping_new()
   const shaped = text_shaping_shape(state, font_path, pixel_size, line_slice)
   if shaped.error_code != 0 then
     return advances
   end
-  const codepoint_count = utf8_count_codepoints(text, line_start, line_finish)
-  if shaped.glyph_count != codepoint_count || shaped.glyph_count < 1 then
-    // Ligature / cluster mismatch: shape each codepoint alone.
+  const capped_codepoint_count = utf8_count_codepoints(text, line_start, shape_finish)
+  if shaped.glyph_count == capped_codepoint_count && shaped.glyph_count >= 1 then
+    advances = append_shaped_advances_from_glyphs(advances, shaped.glyph_count)
+  else
+    // Ligature / cluster mismatch: shape in SHAPE_SEGMENT_CODEPOINT_MAX chunks.
     let mut byte_index = line_start
-    while byte_index < line_finish do
-      const lead = string_byte_u8(text, byte_index)
-      let mut step = utf8_codepoint_byte_length(lead)
-      if step < 1 then
-        step = 1
+    state = shaped.state
+    while byte_index < shape_finish do
+      const segment_finish = byte_end_after_codepoints(
+        text, byte_index, shape_finish, shape_segment_codepoint_max
+      )
+      if segment_finish <= byte_index then
+        break
       end
-      if byte_index + step > line_finish then
-        step = line_finish - byte_index
+      const segment = text.byte_substring(byte_index, segment_finish - byte_index)
+      const segment_shaped = text_shaping_shape(state, font_path, pixel_size, segment)
+      state = segment_shaped.state
+      const segment_codepoint_count = utf8_count_codepoints(
+        text, byte_index, segment_finish
+      )
+      if segment_shaped.error_code == 0 &&
+        segment_shaped.glyph_count == segment_codepoint_count &&
+        segment_shaped.glyph_count >= 1 then
+        advances = append_shaped_advances_from_glyphs(
+          advances, segment_shaped.glyph_count
+        )
+      else
+        advances = append_per_codepoint_shaped_advances(
+          advances, text, byte_index, segment_finish, font_path, pixel_size, state
+        )
       end
-      const piece = text.byte_substring(byte_index, step)
-      const piece_shaped = text_shaping_shape(state, font_path, pixel_size, piece)
-      state = piece_shaped.state
-      let mut width = 1
-      if piece_shaped.error_code == 0 && piece_shaped.glyph_count > 0 then
-        width = text_shaping_glyph_advance_at(0) / 64
-        if width < 1 then
-          width = 1
-        end
-      end
-      advances.push(width)
-      byte_index = byte_index + step
+      byte_index = segment_finish
     end
-    return advances
   end
-  let mut glyph_index = 0
-  while glyph_index < shaped.glyph_count do
-    let mut width = text_shaping_glyph_advance_at(glyph_index) / 64
-    if width < 1 then
-      width = 1
-    end
-    advances.push(width)
-    glyph_index = glyph_index + 1
+  if shape_finish < line_finish then
+    advances = append_mono_advances_for_range(
+      advances, text, shape_finish, line_finish
+    )
   end
   advances
 end
