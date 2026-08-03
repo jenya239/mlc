@@ -1,45 +1,35 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_RENDER_ARCHITECTURE §97c §96 STEP=1 — no green L0 harness yet.
+# TRACK_EDITOR_HYGIENE §107r — Red: no behavioural L1 wheel_hover_focus gate.
+# Excluded from run_ux_gate.sh (*_red.sh). Green adds
+# scripts/run_ux_wheel_hover_focus_independent.sh + scenario.
+# ARCH-LINT grep stable may already exist (EHA-19: that is the gap, not the fix).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DEMO="$ROOT_DIR/misc/editor/demo_live.mlc"
-STABLE="$ROOT_DIR/scripts/run_ux_wheel_hover_focus_independent_stable.sh"
+ARCH_LINT="$ROOT_DIR/scripts/run_ux_wheel_hover_focus_independent_stable.sh"
+GREEN="$ROOT_DIR/scripts/run_ux_wheel_hover_focus_independent.sh"
+SCENARIO="$ROOT_DIR/misc/editor/ux_scenarios/wheel_hover_focus_independent.mlc"
 
-if [ ! -f "$DEMO" ]; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: missing $DEMO" >&2
+fail() {
+  echo "[ux wheel_hover_focus_independent_red] FAIL: $1" >&2
   exit 1
-fi
+}
 
-# Behavior already correct — gap is missing protective harness.
-wheel_block="$(
-  awk '/const scroll_ticks = f64_to_i32\(pending_scroll_y/,/visible = visible_line_range\(line_count, app\.ux\.scroll_offset_y/' "$DEMO"
-)"
-if ! printf '%s\n' "$wheel_block" | grep -q 'tree_hovered'; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: wheel block missing tree_hovered gate" >&2
-  exit 1
-fi
-if ! printf '%s\n' "$wheel_block" | grep -q 'point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)'; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: wheel block missing editor_rect hover gate" >&2
-  exit 1
-fi
-if printf '%s\n' "$wheel_block" | grep -q 'editor_focused'; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: wheel block already gates on editor_focused (unexpected)" >&2
-  exit 1
+[ -f "$DEMO" ] || fail "missing $DEMO"
+
+# Sanity: arch-lint grep gate still present (today's false-green class).
+[ -f "$ARCH_LINT" ] || fail "missing arch-lint stable (unexpected drift)"
+if ! grep -q 'tree_hovered' "$ARCH_LINT"; then
+  fail "arch-lint stable missing tree_hovered grep (unexpected drift)"
 fi
 
-if [ ! -f "$STABLE" ]; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: missing stable stub $STABLE" >&2
-  exit 1
+# Red: behavioural L1 artifacts must be absent.
+if [ -f "$GREEN" ]; then
+  fail "green behavioural runner already present (expected gap until Green)"
 fi
-if grep -qE 'ux_ok wheel_hover_focus_independent$' "$STABLE"; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: stable already green (expected gap)" >&2
-  exit 1
-fi
-if ! grep -q 'not implemented' "$STABLE"; then
-  echo "[ux wheel_hover_focus_independent_red] FAIL: stable stub missing not-implemented marker" >&2
-  exit 1
+if [ -f "$SCENARIO" ]; then
+  fail "behavioural scenario already present (expected gap until Green)"
 fi
 
-echo "ux_ok wheel_hover_focus_independent_red"
-echo "[ux wheel_hover_focus_independent_red] ok (harness gap; demo already hover-only)" >&2
+fail "no behavioural L1 wheel_hover_focus_independent gate (Red expected)"

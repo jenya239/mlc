@@ -483,3 +483,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107r STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_HYGIENE (§107r Red — `run_ux_wheel_hover_focus_independent` behavioural gate fails on today's tree) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=1, §107r Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Rewrote `scripts/run_ux_wheel_hover_focus_independent_red.sh` for §107r: fail while behavioural L1 runner/scenario absent; arch-lint `*_stable` may exist |
+| verify  | `bash scripts/run_ux_wheel_hover_focus_independent_red.sh` → FAIL exit 1 (`no behavioural L1 wheel_hover_focus_independent gate`) |
+| result  | **§107r STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107r Green — L1 scenario + arch-lint headers; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
