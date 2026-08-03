@@ -468,3 +468,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108b CLOSED.** Advances to §108c |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c `EDITOR_COMPOSE_PRESENT` — freeze Decision: compose text/chrome/overlay; caret present_only; red first) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=0, §108c Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §108c Decision: layers text→chrome→overlay; retain chrome `EditorPaintOp` batch (not FBO); present_only overlay-only; `chrome_rebuild_count`; gate `run_ux_present_only_caret_no_chrome_rebuild` |
+| verify  | Decision text in `TRACK_EDITOR_RETAINED_PAINT.md` STEP=0=done; PLAN §108c → STEP=1 Red; docs-only — no code gate |
+| result  | **§108c STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c Red — `run_ux_present_only_caret_no_chrome_rebuild` fails on today's tree: present_only ungated / no chrome retain counter) |

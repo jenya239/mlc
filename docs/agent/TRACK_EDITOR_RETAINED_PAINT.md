@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a–§108b **CLOSED**; queue head **§108c `EDITOR_COMPOSE_PRESENT`** (Decision next)
+## Status: **open** 2026-08-03 — §108a–§108b **CLOSED**; queue head **§108c `EDITOR_COMPOSE_PRESENT`** (STEP=0 Decision done; Red next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -102,14 +102,39 @@ Baseline after §108a: chrome-only / `layout_skip` frames still rebuild gutter+e
 
 ## §108c `EDITOR_COMPOSE_PRESENT` — **queue head**
 
+### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+Baseline after §108b: text+gutter batch is retained across chrome-only frames, and idle caret blink already early-continues with `solid_renderer_*` overlay rects (`demo_live.mlc` ~938–988) without layout. Gaps: (1) chrome `EditorPaintOp` lists are still rebuilt every chrome/content paint (`editor_paint_ops_chrome_bands` / tab / nav flatten) — no chrome retain + no `chrome_rebuild_count`; (2) present_only is an ad-hoc branch, not a named compose step with a gate that fails if chrome rebuild runs; (3) chrome-only still redraws chrome from scratch even when only overlay carets should change.
+
 | Item | Choice |
 |------|--------|
-| Problem | Present still means «re-run the whole paint block» |
-| Fix | Compose three layers: text+gutter / chrome / overlay. Caret blink stays on the present_only path already started in §106 idle overlay |
-| Gate | `run_ux_present_only_caret_no_chrome_rebuild` + unit on compose order |
+| Problem | Present / chrome-only still means «rebuild chrome paint ops + full present path»; present_only caret is ungated |
+| Layers | **text** = retained §108b `TextLayerBatch`; **chrome** = `EditorPaintOp` chrome bands + tab/nav fills (+ chrome label draws already in the paint block); **overlay** = caret rects / dirty-close / context menu |
+| Compose order | text → chrome → overlay (single immediate GL path; **no** FBO / render-to-texture) |
+| present_only | Overlay blit only (existing caret blink XOR erase/draw on `last_caret_rects`). Must **not** rebuild chrome ops, must **not** bump `chrome_rebuild_count`, must **not** invalidate / rebuild text batch |
+| chrome_dirty | Rebuild chrome layer + replay text batch; overlay cache may refresh. No content / text-batch rebuild |
+| content_dirty | Rebuild text + chrome; refresh overlay caret cache |
+| Mechanism | **Retain last chrome `[EditorPaintOp]` batch** (bands + tab slots + nav fills that §107q already builds) across present_only frames — mirror `text_layer_batch`. Replay on present_only if a full frame is forced; preferred path stays early-continue overlay-only. **Not** FBO |
+| Why not FBO | Same as §108b; overlay blit already works without a texture; FBO deferred |
+| Counter | `chrome_rebuild_count` on `EditorPerfCounters` — bump only when chrome op lists are freshly built (not on replay / present_only) |
+| Gate | `run_ux_present_only_caret_no_chrome_rebuild`: after chrome layer exists, N present_only caret blink ticks → `chrome_rebuild_count` delta == 0; one chrome_dirty → count bumps once. Plus small unit asserting compose order text→chrome→overlay |
+| Sabotage | Call chrome band builder / bump chrome rebuild on the present_only path → gate fails |
+| Module touch | `misc/editor/demo_live.mlc`, `misc/editor/ui/perf.mlc`, small helper under `misc/editor/ux/` (chrome layer batch), gate + unit under `scripts/` / `ux_scenarios/` / `tests/` |
+| REG | no |
+| Out of scope | FBO; SceneNode chrome; finishing remaining §107q paint regions; numeric CPU ceilings (§108d) |
 | Depends on | §108b |
 
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: `run_ux_present_only_caret_no_chrome_rebuild_red.sh` | pending |
+| 2 | Green + unit compose order + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 3 | Critic | pending |
+
 ---
+
 
 ## §108d `EDITOR_HOVER_CPU_GATE`
 
