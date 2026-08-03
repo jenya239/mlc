@@ -1,8 +1,8 @@
 // TRACK_MLC_SCRIPT_VM §103d — arithmetic interpreter (verify-first, no control flow).
 import {
   Value,
-  ValueRep,
   ValueNil,
+  ValueBool,
   ValueInt32,
   ValueFloat64,
   value_encode,
@@ -13,6 +13,7 @@ import {
   instruction_decode,
   instruction_word_span,
   instruction_load_const_index,
+  instruction_jump_offset,
   instruction_opcode_load_const,
   instruction_opcode_move,
   instruction_opcode_add,
@@ -21,7 +22,13 @@ import {
   instruction_opcode_div,
   instruction_opcode_return,
   instruction_opcode_jump,
-  instruction_opcode_jump_if_false
+  instruction_opcode_jump_if_false,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge
 } from './bytecode'
 import {
   VerifyOk,
@@ -155,6 +162,86 @@ fn apply_binary(opcode: i32, left_value: Value, right_value: Value) -> ArithOpRe
   ArithOpResult { err_code: code, value: out }
 end
 
+fn value_is_falsy(value: Value) -> bool =
+  match value_decode(value) {
+    ValueNil => true,
+    ValueBool(flag) => !flag,
+    ValueInt32(number) => number == 0,
+    ValueFloat64(number) => number == 0.0
+  }
+
+fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+  const left_rep = value_decode(left_value)
+  const right_rep = value_decode(right_value)
+  let mut code = ""
+  let mut out = value_encode(ValueNil)
+
+  match left_rep {
+    ValueInt32(left_number) =>
+      match right_rep {
+        ValueInt32(right_number) => do
+          let mut flag = false
+          if opcode == instruction_opcode_eq() then
+            flag = left_number == right_number
+          else if opcode == instruction_opcode_ne() then
+            flag = left_number != right_number
+          else if opcode == instruction_opcode_lt() then
+            flag = left_number < right_number
+          else if opcode == instruction_opcode_le() then
+            flag = left_number <= right_number
+          else if opcode == instruction_opcode_gt() then
+            flag = left_number > right_number
+          else if opcode == instruction_opcode_ge() then
+            flag = left_number >= right_number
+          else
+            code = run_err_unsupported_opcode()
+          end
+          if code == "" then
+            out = value_encode(ValueBool(flag))
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    ValueFloat64(left_number) =>
+      match right_rep {
+        ValueFloat64(right_number) => do
+          let mut flag = false
+          if opcode == instruction_opcode_eq() then
+            flag = left_number == right_number
+          else if opcode == instruction_opcode_ne() then
+            flag = left_number != right_number
+          else if opcode == instruction_opcode_lt() then
+            flag = left_number < right_number
+          else if opcode == instruction_opcode_le() then
+            flag = left_number <= right_number
+          else if opcode == instruction_opcode_gt() then
+            flag = left_number > right_number
+          else if opcode == instruction_opcode_ge() then
+            flag = left_number >= right_number
+          else
+            code = run_err_unsupported_opcode()
+          end
+          if code == "" then
+            out = value_encode(ValueBool(flag))
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    _ => do
+      code = run_err_type()
+    end
+  }
+
+  ArithOpResult { err_code: code, value: out }
+end
+
+fn jump_target(words: [i32], primary: i32, span: i32) -> i32 =
+  primary + span + instruction_jump_offset(words, primary)
+
 fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
   let mut registers = make_registers(register_count)
   let mut program_counter = 0
@@ -210,15 +297,71 @@ fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> 
         registers = registers_set(registers, decoded.a, div_result.value)
         program_counter = program_counter + span
       end
+    else if decoded.opcode == instruction_opcode_eq() then
+      const eq_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if eq_result.err_code != "" then
+        err_code = eq_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, eq_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_ne() then
+      const ne_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if ne_result.err_code != "" then
+        err_code = ne_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, ne_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_lt() then
+      const lt_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if lt_result.err_code != "" then
+        err_code = lt_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, lt_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_le() then
+      const le_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if le_result.err_code != "" then
+        err_code = le_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, le_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_gt() then
+      const gt_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if gt_result.err_code != "" then
+        err_code = gt_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, gt_result.value)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_ge() then
+      const ge_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+      if ge_result.err_code != "" then
+        err_code = ge_result.err_code
+        err_at = primary
+      else
+        registers = registers_set(registers, decoded.a, ge_result.value)
+        program_counter = program_counter + span
+      end
     else if decoded.opcode == instruction_opcode_return() then
       return_value = registers[decoded.a]
       returned = true
     else if decoded.opcode == instruction_opcode_jump() then
-      err_code = run_err_unsupported_opcode()
-      err_at = primary
+      program_counter = jump_target(words, primary, span)
     else if decoded.opcode == instruction_opcode_jump_if_false() then
-      err_code = run_err_unsupported_opcode()
-      err_at = primary
+      if value_is_falsy(registers[decoded.a]) then
+        program_counter = jump_target(words, primary, span)
+      else
+        program_counter = program_counter + span
+      end
     else
       err_code = run_err_unsupported_opcode()
       err_at = primary

@@ -21,6 +21,12 @@ fn opcode_div() -> i32 = 6
 fn opcode_return() -> i32 = 7
 fn opcode_jump() -> i32 = 8
 fn opcode_jump_if_false() -> i32 = 9
+fn opcode_eq() -> i32 = 10
+fn opcode_ne() -> i32 = 11
+fn opcode_lt() -> i32 = 12
+fn opcode_le() -> i32 = 13
+fn opcode_gt() -> i32 = 14
+fn opcode_ge() -> i32 = 15
 
 export fn instruction_opcode_load_const() -> i32 = opcode_load_const()
 export fn instruction_opcode_move() -> i32 = opcode_move()
@@ -31,6 +37,12 @@ export fn instruction_opcode_div() -> i32 = opcode_div()
 export fn instruction_opcode_return() -> i32 = opcode_return()
 export fn instruction_opcode_jump() -> i32 = opcode_jump()
 export fn instruction_opcode_jump_if_false() -> i32 = opcode_jump_if_false()
+export fn instruction_opcode_eq() -> i32 = opcode_eq()
+export fn instruction_opcode_ne() -> i32 = opcode_ne()
+export fn instruction_opcode_lt() -> i32 = opcode_lt()
+export fn instruction_opcode_le() -> i32 = opcode_le()
+export fn instruction_opcode_gt() -> i32 = opcode_gt()
+export fn instruction_opcode_ge() -> i32 = opcode_ge()
 
 export fn instruction_encode(opcode: i32, a: i32, b: i32, c: i32) -> Instruction =
   Instruction {
@@ -120,7 +132,12 @@ export fn instruction_words_jump(offset: i32) -> [i32] = do
   let mut words: [i32] = []
   if fits_i16(offset) then
     const packed = pack_i16_high_low(offset)
-    words.push(instruction_encode(opcode_jump(), 0, packed.b, packed.c).word)
+    if packed.b == 0 && packed.c == 1 then
+      words.push(instruction_encode(opcode_jump(), 0, 0, 1).word)
+      words.push(offset)
+    else
+      words.push(instruction_encode(opcode_jump(), 0, packed.b, packed.c).word)
+    end
   else
     words.push(instruction_encode(opcode_jump(), 0, 0, 1).word)
     words.push(offset)
@@ -132,7 +149,12 @@ export fn instruction_words_jump_if_false(condition: i32, offset: i32) -> [i32] 
   let mut words: [i32] = []
   if fits_i16(offset) then
     const packed = pack_i16_high_low(offset)
-    words.push(instruction_encode(opcode_jump_if_false(), condition, packed.b, packed.c).word)
+    if packed.b == 0 && packed.c == 1 then
+      words.push(instruction_encode(opcode_jump_if_false(), condition, 0, 1).word)
+      words.push(offset)
+    else
+      words.push(instruction_encode(opcode_jump_if_false(), condition, packed.b, packed.c).word)
+    end
   else
     words.push(instruction_encode(opcode_jump_if_false(), condition, 0, 1).word)
     words.push(offset)
@@ -209,6 +231,18 @@ export fn instruction_disassemble(words: [i32], index: i32) -> string = do
         "JUMP_IF_FALSE " + register_name(decoded.a) + ", " +
           format_signed_offset(unpack_i16_high_low(decoded.b, decoded.c))
       end
+    else if decoded.opcode == opcode_eq() then
+      "EQ " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_ne() then
+      "NE " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_lt() then
+      "LT " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_le() then
+      "LE " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_gt() then
+      "GT " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_ge() then
+      "GE " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
     else
       "<unknown-opcode " + decoded.opcode.to_string() + ">"
     end

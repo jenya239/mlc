@@ -1,0 +1,183 @@
+// TRACK_MLC_SCRIPT_VM §103e — control-flow unit (sum-1-to-N + JUMP/compare).
+import {
+  Value,
+  ValueInt32,
+  ValueFloat64,
+  ValueBool,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_words_jump,
+  instruction_words_jump_if_false,
+  instruction_opcode_add,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  RunResult,
+  RunOk,
+  RunErr,
+  run_arithmetic,
+  run_err_type,
+  run_err_verify
+} from '../interpreter'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm control_flow_unit] FAIL: " + message)
+  code
+end
+
+fn err_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn ok_int(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) =>
+      match value_decode(value) {
+        ValueInt32(number) => number,
+        _ => 0 - 999999
+      },
+    RunErr(_c, _a) => 0 - 999999
+  }
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn sum_one_to_ten_words() -> [i32] = do
+  // 0 LOAD sum=#0  1 LOAD i=#1  2 LOAD n=#2  3 LOAD one=#1
+  // 4 LE cond,i,n  5 JUMP_IF_FALSE +3 → RETURN
+  // 6 ADD sum,sum,i  7 ADD i,i,one  8 JUMP -5 → LE  9 RETURN sum
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_load_const(2, 2))
+  words = append_words(words, instruction_words_load_const(4, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 0, 0, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 1, 1, 4))
+  words = append_words(words, instruction_words_jump(0 - 5))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn sum_one_to_ten_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(0)))
+  constants.push(value_encode(ValueInt32(1)))
+  constants.push(value_encode(ValueInt32(10)))
+  constants
+end
+
+fn main() -> i32 = do
+  const sum_result = run_arithmetic(sum_one_to_ten_words(), sum_one_to_ten_constants(), 5)
+  if !is_run_ok(sum_result) then
+    return fail("sum-1-to-10 expected RunOk got=" + err_code(sum_result), 1)
+  end
+  if ok_int(sum_result) != 55 then
+    return fail("sum-1-to-10 expected 55 got=" + ok_int(sum_result).to_string(), 2)
+  end
+
+  // Forward JUMP skips middle LOAD
+  let mut skip_words: [i32] = []
+  skip_words = append_words(skip_words, instruction_words_load_const(0, 0))
+  skip_words = append_words(skip_words, instruction_words_jump(1))
+  skip_words = append_words(skip_words, instruction_words_load_const(0, 1))
+  skip_words = append_words(skip_words, instruction_words_return(0))
+  let mut skip_constants: [Value] = []
+  skip_constants.push(value_encode(ValueInt32(1)))
+  skip_constants.push(value_encode(ValueInt32(999)))
+  if ok_int(run_arithmetic(skip_words, skip_constants, 1)) != 1 then
+    return fail("forward JUMP skip", 3)
+  end
+
+  // JUMP_IF_FALSE taken on Bool false → skip ADD, keep 0
+  let mut taken_words: [i32] = []
+  taken_words = append_words(taken_words, instruction_words_load_const(0, 0))
+  taken_words = append_words(taken_words, instruction_words_load_const(1, 1))
+  taken_words = append_words(taken_words, instruction_words_jump_if_false(1, 1))
+  taken_words = append_words(taken_words, instruction_words_load_const(0, 2))
+  taken_words = append_words(taken_words, instruction_words_return(0))
+  let mut taken_constants: [Value] = []
+  taken_constants.push(value_encode(ValueInt32(0)))
+  taken_constants.push(value_encode(ValueBool(false)))
+  taken_constants.push(value_encode(ValueInt32(7)))
+  if ok_int(run_arithmetic(taken_words, taken_constants, 2)) != 0 then
+    return fail("JUMP_IF_FALSE taken", 4)
+  end
+
+  // JUMP_IF_FALSE not taken on Bool true → load 7
+  let mut not_taken_words: [i32] = []
+  not_taken_words = append_words(not_taken_words, instruction_words_load_const(0, 0))
+  not_taken_words = append_words(not_taken_words, instruction_words_load_const(1, 1))
+  not_taken_words = append_words(not_taken_words, instruction_words_jump_if_false(1, 1))
+  not_taken_words = append_words(not_taken_words, instruction_words_load_const(0, 2))
+  not_taken_words = append_words(not_taken_words, instruction_words_return(0))
+  let mut not_taken_constants: [Value] = []
+  not_taken_constants.push(value_encode(ValueInt32(0)))
+  not_taken_constants.push(value_encode(ValueBool(true)))
+  not_taken_constants.push(value_encode(ValueInt32(7)))
+  if ok_int(run_arithmetic(not_taken_words, not_taken_constants, 2)) != 7 then
+    return fail("JUMP_IF_FALSE not-taken", 5)
+  end
+
+  // compare type error: LE Int32 vs Float64
+  let mut type_words: [i32] = []
+  type_words = append_words(type_words, instruction_words_load_const(0, 0))
+  type_words = append_words(type_words, instruction_words_load_const(1, 1))
+  type_words = append_words(type_words, instruction_words_binary(instruction_opcode_le(), 2, 0, 1))
+  type_words = append_words(type_words, instruction_words_return(2))
+  let mut type_constants: [Value] = []
+  type_constants.push(value_encode(ValueInt32(1)))
+  type_constants.push(value_encode(ValueFloat64(2.0)))
+  const type_result = run_arithmetic(type_words, type_constants, 3)
+  if is_run_ok(type_result) then
+    return fail("expected type error", 6)
+  end
+  if err_code(type_result) != run_err_type() then
+    return fail("expected type code got=" + err_code(type_result), 7)
+  end
+
+  // verify branch passthrough
+  let mut branch_words: [i32] = []
+  branch_words = append_words(branch_words, instruction_words_jump(100))
+  let mut branch_constants: [Value] = []
+  const branch_result = run_arithmetic(branch_words, branch_constants, 1)
+  if is_run_ok(branch_result) then
+    return fail("expected verify error", 8)
+  end
+  if err_code(branch_result) != run_err_verify() then
+    return fail("expected verify code got=" + err_code(branch_result), 9)
+  end
+
+  // §103d Int32 ADD fixture still ok
+  let mut add_words: [i32] = []
+  add_words = append_words(add_words, instruction_words_load_const(0, 0))
+  add_words = append_words(add_words, instruction_words_load_const(1, 1))
+  add_words = append_words(add_words, instruction_words_binary(instruction_opcode_add(), 2, 0, 1))
+  add_words = append_words(add_words, instruction_words_return(2))
+  let mut add_constants: [Value] = []
+  add_constants.push(value_encode(ValueInt32(1)))
+  add_constants.push(value_encode(ValueInt32(2)))
+  if ok_int(run_arithmetic(add_words, add_constants, 3)) != 3 then
+    return fail("§103d ADD fixture", 10)
+  end
+
+  println("[script_vm] control_flow_unit ok")
+  0
+end

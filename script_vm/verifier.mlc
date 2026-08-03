@@ -17,7 +17,13 @@ import {
   instruction_opcode_div,
   instruction_opcode_return,
   instruction_opcode_jump,
-  instruction_opcode_jump_if_false
+  instruction_opcode_jump_if_false,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge
 } from './bytecode'
 
 export type VerifyResult =
@@ -55,6 +61,18 @@ fn is_known_opcode(opcode: i32) -> bool = do
     true
   else if opcode == instruction_opcode_jump_if_false() then
     true
+  else if opcode == instruction_opcode_eq() then
+    true
+  else if opcode == instruction_opcode_ne() then
+    true
+  else if opcode == instruction_opcode_lt() then
+    true
+  else if opcode == instruction_opcode_le() then
+    true
+  else if opcode == instruction_opcode_gt() then
+    true
+  else if opcode == instruction_opcode_ge() then
+    true
   else
     false
   end
@@ -89,6 +107,18 @@ fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
     register_in_range(decoded.a, register_count)
   else if decoded.opcode == instruction_opcode_jump_if_false() then
     register_in_range(decoded.a, register_count)
+  else if decoded.opcode == instruction_opcode_eq() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_ne() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_lt() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_le() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_gt() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_ge() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && register_in_range(decoded.c, register_count)
   else
     true
   end

@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103e `SCRIPT_VM_CONTROL_FLOW`** (Red done; STEP=2 Green next)
+## Status: **open** 2026-08-03 — queue head **§103e `SCRIPT_VM_CONTROL_FLOW`** (Green done; STEP=3 Critic next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -174,7 +174,7 @@ release backend — не цель никогда (третий путь испо
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: control-flow unit runner absent | **done** 2026-08-03 — `run_script_vm_control_flow_unit_red.sh` exits 1 (`no script_vm control_flow unit`) |
-| 2 | Green: compare ops + JUMP exec + unit; `dev_gate_fast` | **open** |
+| 2 | Green: compare ops + JUMP exec + unit; `dev_gate_fast` | **done** 2026-08-03 — unit ok (sum=55); JUMP_IF_FALSE sabotage fails; `dev_gate_fast` 1471/0 |
 | 3 | Critic | **open** |
 
 ### §103f `SCRIPT_VM_HEAP_GC_ARENA`

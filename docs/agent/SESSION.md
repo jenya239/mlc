@@ -273,3 +273,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103e STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103e Green — JUMP/compare + unit; `dev_gate_fast`; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103e Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | EQ..GE opcodes; JUMP/JUMP_IF_FALSE exec; JUMP±1 wide-escape in encoder; `control_flow_unit` + green runner; arithmetic unit JUMP→no_return |
+| verify  | control_flow ok (sum=55); JUMP_IF_FALSE always-fallthrough sabotage → overflow FAIL; red fails (green present); arith/bytecode/verifier units ok; `dev_gate_fast` 1471/0 |
+| result  | **§103e STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103e — audit JUMP/compare/sum loop; then §103f or close §103e) |

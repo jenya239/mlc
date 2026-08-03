@@ -24,8 +24,7 @@ import {
   run_err_type,
   run_err_overflow,
   run_err_div_zero,
-  run_err_no_return,
-  run_err_unsupported_opcode
+  run_err_no_return
 } from '../interpreter'
 
 extern fn script_vm_perf_now_us() -> i32 =
@@ -166,16 +165,16 @@ fn main() -> i32 = do
     return fail("expected no_return code got=" + err_code(no_return_result), 11)
   end
 
-  // unsupported_opcode: verify-ok JUMP alone (target = end)
+  // JUMP alone to end → fall off → no_return (JUMP now executed; §103e)
   let mut jump_words: [i32] = []
   jump_words = append_words(jump_words, instruction_words_jump(0))
   let mut jump_constants: [Value] = []
   const jump_result = run_arithmetic(jump_words, jump_constants, 1)
   if is_run_ok(jump_result) then
-    return fail("expected unsupported_opcode error", 12)
+    return fail("expected no_return after JUMP to end", 12)
   end
-  if err_code(jump_result) != run_err_unsupported_opcode() then
-    return fail("expected unsupported_opcode code got=" + err_code(jump_result), 13)
+  if err_code(jump_result) != run_err_no_return() then
+    return fail("expected no_return code got=" + err_code(jump_result), 13)
   end
 
   // verify passthrough: bad register
