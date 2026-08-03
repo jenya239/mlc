@@ -318,3 +318,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109 OPEN head. §103 SUSPENDED.** |
 | issues  | Disk ~99% may skew interactive feel; baseline must use VISIBLE=1 + real file |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a `EDITOR_PERF_BASELINE_DOGFOOD` — freeze Decision; red: no baseline harness for visible demo_live.mlc open) |
+
+### Turn 2026-08-04 (Planner — §109 expanded epic a–k)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (plan expansion, no code, no editor launch) |
+| track   | docs (TRACK_EDITOR_PERF_DOGFOOD / PLAN / CONTINUITY / SESSION) |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | User: stop launching; plan large track for find/fix/improve all suspect perf sites. Expanded §109 from a–d to **a–k** with inventory H1–H15 (wake-on-hover 32% over text on demo_live.mlc, false-green gates, glyph/spans/snapshot/tree/minimap/startup). §103 remains suspended. No editor process started this turn |
+| verify  | Docs-only |
+| result  | **§109 epic plan written.** Queue head still §109a |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a `EDITOR_PERF_BASELINE_DOGFOOD` — Decision freeze; Red: no honest visible baseline harness) |
