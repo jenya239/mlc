@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109c** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109d** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -196,7 +196,7 @@ for §109a measure-only gate).
 
 Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_DOGFOOD=1`, `MLC_EDITOR_PERF_WAKE_PROBE=1`, no PERF skip-heavy). H11: overlay/menu `chrome_dirty` only on visibility transition (`frame_input.mlc`).
 
-## §109c `EDITOR_PERF_GATE_HONESTY` — **Critic**
+## §109c `EDITOR_PERF_GATE_HONESTY` — **CLOSED** 2026-08-04 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -227,7 +227,7 @@ Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: honesty gap / false-green paths present | **done** 2026-08-04 — `scripts/run_editor_perf_gate_honesty_red.sh` exit 1 |
 | 2 | Green: rewrite gates + honesty harness | **done** 2026-08-04 — honesty exit 0; still=0% jitter=0%; `TOTAL_US_MAX=16357201`; red “already present” |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — sab VISIBLE=0 honesty fail; sab content_dirty→wake content_rebuild fail; sab TOTAL_US_MAX=1000 PERF_FULL fail; red already present; clean wake still/jitter 0% |
 
 ### Gate honesty (measured)
 
@@ -244,14 +244,23 @@ then wake still/jitter via honesty harness:
 
 `TOTAL_US_MAX` = measured × 1.25 (integer). Hover L2: `VISIBLE=1` + wake still ≤8%; idle gate labeled mouse-away-only.
 
-## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET`
+## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET` — **queue head**
 
 | Item | Choice |
 |------|--------|
 | Problem | H3/H12: scroll/type frames too expensive |
 | Fix | Profile `layout_us`/`draw_us`/phase counters on content frames after §109a; cut dominant phase until close criteria 4–5. Prefer visible-line work only |
-| Depends on | §109a, §109b (wake fixed so content is measurable) |
+| Depends on | §109a, §109b (wake fixed so content is measurable); §109c (honest PERF_FULL ceiling) |
 | Gate | Dogfood 4–5 + measured-then-written content-frame ceiling that fails today’s tree |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | pending |
+| 1 | Red | pending |
+| 2 | Green | pending |
+| 3 | Critic | pending |
 
 ---
 

@@ -498,3 +498,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109c STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c — audit honesty/hover L2/PERF_FULL ceiling; sab VISIBLE=0 / inflate total) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109c)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109c: sab VISIBLE=0→honesty FAIL; sab content_dirty every poll→wake L1 content_rebuild FAIL; sab TOTAL_US_MAX=1000→PERF_FULL FAIL; clean wake still=0%/jitter=0%; red already present; ceiling=measured×1.25 |
+| verify  | sab_visible0 exit 1; sab_content exit 1 (delta_content_rebuild=10); sab_inflate exit 1 (13856761>1000); wake_clean exit 0; red exit 1 |
+| result  | **§109c CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d `EDITOR_PERF_CONTENT_FRAME_BUDGET` — Decision freeze) |
