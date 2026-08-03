@@ -378,3 +378,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q q3 Critic CLOSED.** Advances to Green q4 |
 | issues  | none |
 | next    | ROLE=Driver STEP=8 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q4 — gutter fills via `EditorPaintOp`; gate extend; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q4) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=8, §107q Green q4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 8 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Gutter fill via `gutter_ops` + `editor_paint_ops_flatten`; removed direct `gutter_rect` `solid_renderer_rect`; gate q4 + unit `gutter` id |
+| verify  | green `ux_ok`; sab packed gutter_rect → FAIL (pre-commit check); `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q STEP=8 done (Green q4).** Critic q4 next |
+| issues  | none |
+| next    | ROLE=Critic STEP=9 TRACK=TRACK_EDITOR_HYGIENE (§107q q4 — independent rebuild+rerun; sabotage: restore direct `gutter_rect` packed args; `run_ux_gate` ×2; then Green q5) |

@@ -54,6 +54,16 @@ fn main() -> i32 = do
   if breadcrumb.widget_id != "breadcrumb" then
     return 11
   end
+  // q4: gutter fill op
+  const gutter = editor_paint_op_rect(
+    "gutter", 200, 40, 40, 400, 0.2, 0.2, 0.25, 1.0
+  )
+  if gutter.widget_id != "gutter" then
+    return 12
+  end
+  if gutter.width != 40 || gutter.height != 400 then
+    return 13
+  end
   print("[ux] draw_ops_from_live_state ok")
   0
 end

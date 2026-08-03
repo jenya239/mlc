@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1 chrome bands + q2 tab slots).
+# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1–q4: chrome/tabs/nav/gutter).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -86,6 +86,17 @@ if grep -q 'tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height' "$DEMO"
 fi
 if grep -q 'breadcrumb_fill.x, breadcrumb_fill.y, breadcrumb_fill.width, breadcrumb_fill.height' "$DEMO"; then
   fail "demo_live still paints breadcrumb_fill via direct solid_renderer_rect (q3)"
+fi
+
+# q4: gutter fill via ops.
+if ! grep -Eq 'gutter_ops|editor_paint_op_rect\(\s*"gutter"' "$DEMO"; then
+  fail "demo_live missing gutter paint ops (q4)"
+fi
+if ! grep -q '"gutter"' "$DEMO"; then
+  fail "demo_live missing gutter paint op id (q4)"
+fi
+if grep -q 'gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height' "$DEMO"; then
+  fail "demo_live still paints gutter_rect via direct solid_renderer_rect (q4)"
 fi
 
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"

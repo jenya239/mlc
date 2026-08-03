@@ -2243,11 +2243,19 @@ fn main() -> i32 = do
         theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
       )
     end
-    solid = solid_renderer_rect(
-      solid, width, height,
-      gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height,
-      theme.gutter_red, theme.gutter_green, theme.gutter_blue, 1.0
-    )
+    let mut gutter_ops: [EditorPaintOp] = []
+    gutter_ops.push(editor_paint_op_rect(
+      "gutter",
+      gutter_rect.x,
+      gutter_rect.y,
+      gutter_rect.width,
+      gutter_rect.height,
+      theme.gutter_red,
+      theme.gutter_green,
+      theme.gutter_blue,
+      1.0
+    ))
+    solid = editor_paint_ops_flatten(solid, width, height, gutter_ops)
     solid = solid_renderer_rect(
       solid, width, height,
       divider.x, divider.y, divider.width, divider.height,
