@@ -10,11 +10,10 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a–§108c **CLOSED**; queue head **§108d `EDITOR_HOVER_CPU_GATE`** (STEP=0/1/2 Decision+Red+Green done; Critic STEP=3 next)
+## Status: **CLOSED** 2026-08-03 — §108a–§108d all Critic-audited; epic complete
 
-Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
-**after** §108d closes (or on a new explicit override). §107q q3 Critic remains
-disk-blocked unfinished — do not silently mark it closed.
+Strict order was §108a → §108b → §108c → §108d. Resume §107q (q3 Critic disk-verify → q4–q6) and §107r.
+§107q q3 was disk-blocked unfinished during §108 — do not silently mark it closed.
 
 ## Why
 
@@ -135,7 +134,7 @@ Baseline after §108b: text+gutter batch is retained across chrome-only frames, 
 
 ---
 
-## §108d `EDITOR_HOVER_CPU_GATE` — **queue head**
+## §108d `EDITOR_HOVER_CPU_GATE` — **CLOSED**
 
 ### Decision (**frozen** 2026-08-03, Driver STEP=0)
 
@@ -161,11 +160,11 @@ Baseline after §108a–c: hit-stable hover skips frames; chrome-only reuses tex
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_hover_cpu_budget_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no green gate / no L2 ceiling; idle gate ignores pointer) |
-| 2 | Green: L1 + measure-then-write L2 ceiling; `run_ux_gate` ×2 + `dev_gate_fast` | pending |
-| 3 | Critic | pending |
+| 2 | Green: L1 + measure-then-write L2 ceiling; `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — L1 `hover_cpu_budget`; L2 measured min_cpu=0 → `HOVER_CPU_BUDGET_PERCENT=10`; probe `MLC_EDITOR_HOVER_CPU_PROBE`; UX 136/136 ×2 |
+| 3 | Critic | **done** 2026-08-03 — sab1 content_dirty on mouse-move fails L1; sab2 `HOVER_CPU_BUDGET_PERCENT=1` was not load-bearing (cpu=0) → gate strengthened with committed floor 10; sab3 scenario content-rebuild note fails L1; UX 136/136 ×2 (first UX2 flake `overlay_theme_tint_stable` / disk 98%, rerun green) |
 
 ---
 
 ## After §108
 
-Resume **§107q** from Critic q3 / disk-verify (or Green q4 if Critic q3 already closed by then) → q5 → q6 → **§107r**, then §103a → §104 Wave 2.
+**§108 CLOSED.** Resume **§107q** from Critic q3 / disk-verify → q4 → q5 → q6 → **§107r**, then §103a → §104 Wave 2.

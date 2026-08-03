@@ -16,7 +16,9 @@ DEMO_BIN="$DEMO_OUT/bin"
 
 # Measured under MLC_EDITOR_HOVER_CPU_PROBE=1 (min of 3×2s windows): cpu_percent=0.
 # Headroom → 10 (same order as idle_cpu_budget_stable default).
-HOVER_CPU_BUDGET_PERCENT="${HOVER_CPU_BUDGET_PERCENT:-10}"
+# Committed floor: env may raise budget, not lower (ceiling=1 would false-green at cpu=0).
+COMMITTED_HOVER_CPU_BUDGET_PERCENT=10
+HOVER_CPU_BUDGET_PERCENT="${HOVER_CPU_BUDGET_PERCENT:-$COMMITTED_HOVER_CPU_BUDGET_PERCENT}"
 WARMUP_SEC="${HOVER_CPU_WARMUP_SEC:-4}"
 SAMPLE_SEC="${HOVER_CPU_SAMPLE_SEC:-2}"
 SAMPLE_ROUNDS="${HOVER_CPU_SAMPLE_ROUNDS:-3}"
@@ -25,6 +27,10 @@ fail() {
   echo "[ux hover_cpu_budget] FAIL: $1" >&2
   exit 1
 }
+
+if [ "$HOVER_CPU_BUDGET_PERCENT" -lt "$COMMITTED_HOVER_CPU_BUDGET_PERCENT" ]; then
+  fail "HOVER_CPU_BUDGET_PERCENT=$HOVER_CPU_BUDGET_PERCENT below committed measured ceiling $COMMITTED_HOVER_CPU_BUDGET_PERCENT (Decision sabotage)"
+fi
 
 [ -x "$MLCC" ] || fail "mlcc not found at $MLCC"
 [ -f "$ENTRY" ] || fail "missing $ENTRY"

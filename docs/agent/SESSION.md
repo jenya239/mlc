@@ -573,3 +573,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108d STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d — independent rebuild+rerun; sabotage: content_dirty on pointer / L2 ceiling=1; `run_ux_gate` ×2; close §108d → resume §107q) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_RETAINED_PAINT STEP=3, §108d)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green L1+L2 `ux_ok`. Sab1: mouse-move→`content_dirty` fails L1. Sab2: `HOVER_CPU_BUDGET_PERCENT=1` was not load-bearing (cpu=0) → strengthened committed floor 10 in `run_ux_hover_cpu_budget.sh`; sab2 then FAIL. Sab3: scenario content-rebuild note fails L1; restored. Closed §108d + epic §108 |
+| verify  | green ok; sab1/sab2/sab3 exit 1; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`; first UX2 flake `overlay_theme_tint_stable` at disk 98%, rerun green) |
+| result  | **§108d CLOSED. §108 epic CLOSED.** Resume §107q |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107q q3 — finish UX ×2 disk-verify; close q3 → Green q4 gutter) |
