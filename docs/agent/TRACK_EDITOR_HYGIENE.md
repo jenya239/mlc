@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107f **CLOSED**; §107g Decision next (Driver STEP=0)
+## Status: **open** 2026-08-03 — §107a–§107f **CLOSED**; §107g Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -298,17 +298,28 @@ Restored; `run_ux_edit_no_full_flatten.sh` → `ux_ok`.
 
 ---
 
-## §107g `EDITOR_TERMINAL_TEARDOWN` (EHA-08 + EHA-09)
-`terminal_panel_session_close` is reached only from `CmdCloseTab`; the tab-strip
-"x" (`editor_app_click_tab_strip` → `tab_set_request_close`) and window close both
-skip it, leaking the master fd and the `vterm`. `pty_close` does
-`waitpid(WNOHANG)` + `close` with no signal, so `sh` is orphaned, never reaped.
-**Fix:** teardown in `editor_app_click_tab_strip` when
-`terminal_panel_is_tab_path`; `editor_app_close_terminal` before
-`glfw_gl_context_end`; `pty_close` → `SIGHUP` → short `waitpid` → `SIGKILL`
-fallback. **Gate:** `run_ux_terminal_tab_close_releases_pty` — `/proc/self/fd`
-count before/after, plus a `waitpid` check that the child is reaped.
-Residual of §102f/§102b.
+## §107g `EDITOR_TERMINAL_TEARDOWN` (EHA-08 + EHA-09) — residual of §102f/§102b
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | (1) `terminal_panel_session_close` / `editor_app_close_terminal` run on `CmdCloseTab` only (`demo_live.mlc`). Tab-strip "x" goes through `editor_app_click_tab_strip` → `tab_set_request_close` with **no** terminal teardown — master fd + `vterm` leak. (2) Live `main` ends with `glfw_gl_context_end()` and never closes an active terminal session. (3) `pty_close` (`runtime/src/terminal/pty_abi.cpp`) does `waitpid(WNOHANG)` + `close` with **no** signal — child `sh` can orphan and never reap |
+| Fix | (1) In `editor_app_click_tab_strip` close-hit arm: if the closed tab's path is `terminal_panel_is_tab_path` and the overlay is not confirming dirty, call `editor_app_close_terminal`. (2) Before the final `glfw_gl_context_end` in `demo_live`, call `editor_app_close_terminal`. (3) `pty_close`: `kill(SIGHUP)` → short blocking `waitpid` → `SIGKILL` fallback → erase pid map → `close(master_fd)` |
+| Module touch | `misc/editor/app/state.mlc` (`editor_app_click_tab_strip`), `misc/editor/demo_live.mlc` (exit path), `runtime/src/terminal/pty_abi.cpp` (+ `#include <signal.h>` if needed); new `misc/editor/ux_scenarios/terminal_tab_close_releases_pty.mlc` + `scripts/run_ux_terminal_tab_close_releases_pty.sh` |
+| Gate | `run_ux_terminal_tab_close_releases_pty`: open a terminal session, close via the tab-strip close path (not only `CmdCloseTab`); assert `/proc/self/fd` count does not grow across N open/close cycles, and that the child pid is reaped (`waitpid` / no live child). Separately assert the demo exit path source calls `editor_app_close_terminal` before final `glfw_gl_context_end`, and that `pty_close` contains `SIGHUP` |
+| Sabotage (required before close) | (1) Strip tab-strip teardown → fd/child gate fails. (2) Revert `pty_close` to WNOHANG-only → reap/signal assertion fails |
+| REG | no |
+| Out of scope | §107k damage-driven repaint; changing `pty_spawn` shell-exec contract (backlog B11); second toolkit |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: tab-strip/window teardown + signaled `pty_close` absent | **done** 2026-08-03 — `scripts/run_ux_terminal_tab_close_releases_pty_red.sh` exits non-zero |
+| 2 | Green: wire teardown + signaled `pty_close`; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107h `EDITOR_SHAPE_SEGMENT_BUDGET` (EHA-07)
 `line_codepoint_advances_px` falls back, on HarfBuzz cluster mismatch (ligatures),
