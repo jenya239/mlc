@@ -513,3 +513,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108c STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108c — independent rebuild+rerun; sabotage: chrome rebuild on present_only path; `run_ux_gate` ×2; close §108c → §108d Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_RETAINED_PAINT STEP=3, §108c)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green `ux_ok`. Sab1 present_only `note_chrome_rebuild` → fail. Sab2 `can_replay→0` → fail. Restored. Closed §108c |
+| verify  | green ok; sab1/sab2 exit 1; `run_ux_gate` ×2 = 135/135 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108c CLOSED.** Advances to §108d |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d `EDITOR_HOVER_CPU_GATE` — freeze Decision: measure then write idle/hover/scroll CPU ceilings; red first) |

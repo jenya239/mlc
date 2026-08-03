@@ -10,7 +10,7 @@ Implements the present-pipeline already frozen in
 (`invalidate → dirty views → layout → scene fragments → flatten → render`).
 Design note: Cursor plan `editor_paint_damage` (2026-08-03).
 
-## Status: **open** 2026-08-03 — §108a–§108b **CLOSED**; queue head **§108c `EDITOR_COMPOSE_PRESENT`** (STEP=0/1/2 Decision+Red+Green done; Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §108a–§108c **CLOSED**; queue head **§108d `EDITOR_HOVER_CPU_GATE`** (Decision next)
 
 Strict order: §108a → §108b → §108c → §108d. §107q (q4–q6) and §107r resume
 **after** §108d closes (or on a new explicit override). §107q q3 Critic remains
@@ -130,7 +130,7 @@ Baseline after §108b: text+gutter batch is retained across chrome-only frames, 
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: `run_ux_present_only_caret_no_chrome_rebuild_red.sh` | **done** 2026-08-03 — FAIL exit 1 (no `chrome_rebuild_count`; no chrome retain; green gate absent) |
-| 2 | Green + unit compose order + `run_ux_gate` ×2 + `dev_gate_fast` | pending |
+| 2 | Green + unit compose order + `run_ux_gate` ×2 + `dev_gate_fast` | **done** 2026-08-03 — `chrome_layer_batch` + `chrome_rebuild_count`; present_only arch; green `ux_ok`; UX 135/135 ×2 |
 | 3 | Critic | pending |
 
 ---
