@@ -558,3 +558,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§103a STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103a Green — `script_vm/value.mlc` + unit round-trip; `dev_gate_fast`; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103a Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Added `script_vm/value.mlc` + `runtime/include/mlc/script_vm/value_rep_abi.hpp` (NaN-box Nil/Bool/Int32/Float64); unit + `run_script_vm_value_rep_unit.sh` |
+| verify  | green ok; red fails (green present); sabotage `value_byte_size`→4 → FAIL; restore → ok; `dev_gate_fast` 1471/0 |
+| result  | **§103a STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103a — audit ValueRep round-trip / size gate; then §103b or close §103a) |

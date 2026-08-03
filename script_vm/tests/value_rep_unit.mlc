@@ -1,0 +1,108 @@
+// TRACK_MLC_SCRIPT_VM §103a — ValueRep round-trip unit.
+import {
+  Value,
+  ValueRep,
+  ValueNil,
+  ValueBool,
+  ValueInt32,
+  ValueFloat64,
+  value_encode,
+  value_decode,
+  value_byte_size,
+  value_raw_equal
+} from '../value'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm value_rep_unit] FAIL: " + message)
+  code
+end
+
+fn expect_nil(rep: ValueRep) -> bool =
+  match rep { ValueNil => true, _ => false }
+
+fn expect_bool(rep: ValueRep, expected: bool) -> bool =
+  match rep { ValueBool(flag) => flag == expected, _ => false }
+
+fn expect_int32(rep: ValueRep, expected: i32) -> bool =
+  match rep { ValueInt32(number) => number == expected, _ => false }
+
+fn expect_float64(rep: ValueRep, expected: f64) -> bool =
+  match rep {
+    ValueFloat64(number) => value_raw_equal(
+      value_encode(ValueFloat64(number)),
+      value_encode(ValueFloat64(expected))
+    ),
+    _ => false
+  }
+
+fn round_trip(rep: ValueRep) -> ValueRep =
+  value_decode(value_encode(rep))
+
+fn main() -> i32 = do
+  if value_byte_size() != 8 then
+    return fail("value_byte_size != 8", 1)
+  end
+
+  if !expect_nil(round_trip(ValueNil)) then
+    return fail("Nil round-trip", 2)
+  end
+
+  if !expect_bool(round_trip(ValueBool(true)), true) then
+    return fail("Bool(true) round-trip", 3)
+  end
+  if !expect_bool(round_trip(ValueBool(false)), false) then
+    return fail("Bool(false) round-trip", 4)
+  end
+
+  const nil_value = value_encode(ValueNil)
+  const false_value = value_encode(ValueBool(false))
+  if value_raw_equal(nil_value, false_value) then
+    return fail("Nil must be distinct from Bool(false)", 5)
+  end
+
+  if !expect_int32(round_trip(ValueInt32(0)), 0) then
+    return fail("Int32(0) round-trip", 6)
+  end
+  if !expect_int32(round_trip(ValueInt32(1)), 1) then
+    return fail("Int32(1) round-trip", 7)
+  end
+  if !expect_int32(round_trip(ValueInt32(-1)), -1) then
+    return fail("Int32(-1) round-trip", 8)
+  end
+  const int32_max = 2147483647
+  const int32_min = 0 - int32_max - 1
+  if !expect_int32(round_trip(ValueInt32(int32_max)), int32_max) then
+    return fail("Int32(MAX) round-trip", 9)
+  end
+  if !expect_int32(round_trip(ValueInt32(int32_min)), int32_min) then
+    return fail("Int32(MIN) round-trip", 10)
+  end
+
+  if !expect_float64(round_trip(ValueFloat64(0.0)), 0.0) then
+    return fail("Float64(0.0) round-trip", 11)
+  end
+  if !expect_float64(round_trip(ValueFloat64(1.5)), 1.5) then
+    return fail("Float64(1.5) round-trip", 12)
+  end
+  const neg_two_point_two_five = 0.0 - 2.25
+  if !expect_float64(round_trip(ValueFloat64(neg_two_point_two_five)), neg_two_point_two_five) then
+    return fail("Float64(-2.25) round-trip", 13)
+  end
+
+  // Bit-identical: encode → decode → encode must preserve raw bits.
+  const float_source = value_encode(ValueFloat64(3.141592653589793))
+  const float_again = value_encode(round_trip(ValueFloat64(3.141592653589793)))
+  if !value_raw_equal(float_source, float_again) then
+    return fail("Float64 bit-identical round-trip", 14)
+  end
+
+  const neg_zero = 0.0 - 0.0
+  const neg_zero_a = value_encode(ValueFloat64(neg_zero))
+  const neg_zero_b = value_encode(value_decode(neg_zero_a))
+  if !value_raw_equal(neg_zero_a, neg_zero_b) then
+    return fail("Float64(-0.0) bit-identical", 15)
+  end
+
+  println("[script_vm] value_rep_unit ok")
+  0
+end

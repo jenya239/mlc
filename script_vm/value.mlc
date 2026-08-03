@@ -1,0 +1,57 @@
+// TRACK_MLC_SCRIPT_VM §103a — 8-byte NaN-boxed Value + ValueRep encode/decode.
+// Top-level script_vm/ (not compiler/vm/ — that is MIR VM).
+
+export type Value = { raw: i64 }
+
+export type ValueRep =
+  | ValueNil
+  | ValueBool(bool)
+  | ValueInt32(i32)
+  | ValueFloat64(f64)
+
+extern fn script_vm_encode_nil() -> i64 =
+  "mlc::script_vm::encode_nil" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_bool(flag: i32) -> i64 =
+  "mlc::script_vm::encode_bool" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_int32(value: i32) -> i64 =
+  "mlc::script_vm::encode_int32" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_float64(value: f64) -> i64 =
+  "mlc::script_vm::encode_float64" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_decode_kind(raw: i64) -> i32 =
+  "mlc::script_vm::decode_kind" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_decode_bool(raw: i64) -> i32 =
+  "mlc::script_vm::decode_bool" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_decode_int32(raw: i64) -> i32 =
+  "mlc::script_vm::decode_int32" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_decode_float64(raw: i64) -> f64 =
+  "mlc::script_vm::decode_float64" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_value_byte_size() -> i32 =
+  "mlc::script_vm::value_byte_size" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+
+export fn value_encode(rep: ValueRep) -> Value =
+  match rep {
+    ValueNil => Value { raw: script_vm_encode_nil() },
+    ValueBool(flag) => Value {
+      raw: script_vm_encode_bool(if flag then 1 else 0)
+    },
+    ValueInt32(number) => Value { raw: script_vm_encode_int32(number) },
+    ValueFloat64(number) => Value { raw: script_vm_encode_float64(number) }
+  }
+
+export fn value_decode(value: Value) -> ValueRep = do
+  const kind = script_vm_decode_kind(value.raw)
+  if kind == 1 then
+    ValueNil
+  else if kind == 2 then
+    ValueBool(script_vm_decode_bool(value.raw) != 0)
+  else if kind == 3 then
+    ValueInt32(script_vm_decode_int32(value.raw))
+  else
+    ValueFloat64(script_vm_decode_float64(value.raw))
+  end
+end
+
+export fn value_byte_size() -> i32 = script_vm_value_byte_size()
+
+export fn value_raw_equal(left: Value, right: Value) -> bool =
+  left.raw == right.raw
