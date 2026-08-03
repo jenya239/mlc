@@ -303,3 +303,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103e CLOSED (Critic OK).** No false-done |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103f `SCRIPT_VM_HEAP_GC_ARENA` — Decision freeze) |
+
+### Turn 2026-08-03 (Planner — §109 perf dogfood hard stop)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (queue hard stop) |
+| track   | docs (PLAN / CONTINUITY / SESSION / TRACK_EDITOR_PERF_DOGFOOD / TRACK_MLC_SCRIPT_VM) |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-perf-dogfood-hard-stop |
+| done    | User: lag unchanged — stop §103 until fixed. Opened §109 `TRACK_EDITOR_PERF_DOGFOOD` as queue head; suspended §103f+; INSTRUCTIONS_REV bump; override (h). No editor code this turn |
+| verify  | Docs-only |
+| result  | **§109 OPEN head. §103 SUSPENDED.** |
+| issues  | Disk ~99% may skew interactive feel; baseline must use VISIBLE=1 + real file |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109a `EDITOR_PERF_BASELINE_DOGFOOD` — freeze Decision; red: no baseline harness for visible demo_live.mlc open) |

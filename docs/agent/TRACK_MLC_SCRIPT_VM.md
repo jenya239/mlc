@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103f `SCRIPT_VM_HEAP_GC_ARENA`** (§103e CLOSED; STEP=0 Decision next)
+## Status: **SUSPENDED** 2026-08-03 — §103a–§103e CLOSED; §103f+ frozen behind §109 `TRACK_EDITOR_PERF_DOGFOOD` (user hard stop on editor lag)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
