@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (§103a CLOSED Critic-audited; STEP=0 Decision next)
+## Status: **open** 2026-08-03 — queue head **§103b `SCRIPT_VM_BYTECODE_FORMAT`** (Decision frozen; STEP=1 Red next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -62,11 +62,29 @@ release backend — не цель никогда (третий путь испо
 
 ### §103b `SCRIPT_VM_BYTECODE_FORMAT`
 
-Opcode enum + `[opcode:8|A:8|B:8|C:8]` instruction encode/decode +
-extension-instruction path for wide constants/long jumps; minimal
-disassembler (text dump, not a UI). Gate: encode→decode round-trip test per
-opcode; disassembler output matches a fixed expected-string fixture per
-opcode.
+#### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | No Script VM instruction encoding; design §4 leaves ABC layout + extension path unspecified in code |
+| Fix | `script_vm/bytecode.mlc`: `Instruction { word: u32 }` with packed **`[opcode:8 \| A:8 \| B:8 \| C:8]`** (opcode in bits 0–7, A 8–15, B 16–23, C 24–31). Encode/decode helpers. **Wide form**: primary ABC word + **trailing `u32` immediate** (not a second opcode) when an operand does not fit in 8 bits — used for wide `LOAD_CONST` const index and long `JUMP`/`JUMP_IF_FALSE` signed offsets (`i32` bit pattern in the trailing word). Little-endian when serializing words to a byte buffer |
+| Opcode set (§103b) | Frozen numeric tags (gaps reserved for later Phase 1): `LOAD_CONST=1`, `MOVE=2`, `ADD=3`, `SUB=4`, `MUL=5`, `DIV=6`, `RETURN=7`, `JUMP=8`, `JUMP_IF_FALSE=9`. Heap/call/`GET_PROP` etc. **not** in §103b enum (added in §103g/§103h). Semantics of arithmetic/jumps are **not** executed here — format + disasm only |
+| Operand conventions | `LOAD_CONST`: A=dst, B=const_index if ≤255 else B=0 and trailing u32 = index. `MOVE`: A=dst, B=src. `ADD`/`SUB`/`MUL`/`DIV`: A=dst, B=lhs, C=rhs. `RETURN`: A=src. `JUMP`: PC-relative offset in B:C as signed 16-bit if in range, else trailing i32. `JUMP_IF_FALSE`: A=cond reg; offset same as `JUMP` |
+| Disassembler | `instruction_disassemble(words, index) -> string` text dump (not a UI). Fixed expected-string fixtures per opcode (narrow + one wide example for `LOAD_CONST` and `JUMP`) |
+| Build / test | `scripts/run_script_vm_bytecode_format_unit.sh` → `script_vm/tests/bytecode_format_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate` this sub-track. Same pattern as §103a |
+| Gate | encode→decode round-trip for every opcode in the §103b set (narrow operands); wide `LOAD_CONST`/`JUMP` round-trip including trailing word; disasm output matches frozen fixture strings. Red: green runner / `bytecode.mlc` / unit absent |
+| Sabotage | Swap two opcode tag numbers, or truncate wide immediate on decode → unit fails |
+| REG | no (`script_vm/**` only; no `lib/mlc/**` / `compiler/**` `.mlc`) |
+| Out of scope | Verifier; interpreter; heap opcodes; JIT; changing §103a `Value` |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: bytecode format / unit runner absent | **open** |
+| 2 | Green: `bytecode.mlc` + unit + fixtures; `dev_gate_fast` | **open** |
+| 3 | Critic | **open** |
 
 ### §103c `SCRIPT_VM_VERIFIER`
 
