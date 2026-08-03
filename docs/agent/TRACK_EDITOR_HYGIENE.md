@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107o **CLOSED**; §107p Decision next
+## Status: **open** 2026-08-03 — §107a–§107o **CLOSED**; §107p Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -591,10 +591,27 @@ restore; tree clean of Critic mutations):
 **§107o CLOSED.** Next: §107p `EDITOR_TOOLBAR_COMMAND_TABLE`.
 
 ## §107p `EDITOR_TOOLBAR_COMMAND_TABLE` (EHA-16)
-`demo_live` hit-tests `while tool < 10` plus a magic index 10 for SessLd, while
-`editor_app_toolbar_command_at` covers 0..9 and the `tools` array has 11 entries.
-**Fix:** one `[(label, CommandId)]` table driving both hit-test and draw.
-**Gate:** `run_ux_toolbar_table_single_source`. Residual of 2026-07-15 #5.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `demo_live` draw uses an 11-entry `tools` label array (`SessSv`/`SessLd` included). Hit-test loops `while tool < 10` then special-cases index **10** (`SessLd`) with an inline `load_demo_session()` path. `editor_app_toolbar_command_at` (`app/chrome.mlc`) only maps **0..9** (9→`CmdSaveSession`) and returns `CmdNone` for 10 — draw/hit-test/command tables disagree (2026-07-15 #5 residual) |
+| Fix | (1) Add `CmdLoadSession` to `CommandId` (+ `command_id_tag`). (2) Single toolbar table in `app/chrome.mlc`: `ToolbarEntry { label: string, command: CommandId }` (11 rows matching today's labels/commands; index 10 → `CmdLoadSession`). Export `editor_app_toolbar_count`, `editor_app_toolbar_label_at`, keep/replace `editor_app_toolbar_command_at` to read the table. (3) `demo_live`: hit-test `0..count` only (delete `tool < 10` + index-10 special case); draw labels from the table; `| CmdLoadSession =>` runs today's load-session body |
+| Module touch | `misc/editor/commands/bus.mlc`, `misc/editor/app/chrome.mlc`, `misc/editor/demo_live.mlc`; new `scripts/run_ux_toolbar_table_single_source.sh` (+ optional small scenario if needed for load-via-command) |
+| Gate | `run_ux_toolbar_table_single_source`: arch — `ToolbarEntry` / table present; no `while tool < 10` in `demo_live`; no local `tools = [` label array in `demo_live`; `CmdLoadSession` in bus; `editor_app_toolbar_command_at(10)` is `CmdLoadSession` (unit or scenario). Plus `dev_gate_fast` |
+| Sabotage (required before close) | Restore `while tool < 10` + index-10 special case, or drop table-driven count → arch/gate fail |
+| REG | no (`CommandId` editor-local; no `lib/mlc/**`) |
+| Out of scope | §107q paint→`UxDrawOp`; changing session file format / `load_demo_session` semantics; toolbar layout metrics |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: hit-test `< 10` + magic 10; table/CmdLoadSession absent | **done** 2026-08-03 — `scripts/run_ux_toolbar_table_single_source_red.sh` exits non-zero |
+| 2 | Green: table + CmdLoadSession; hit-test/draw unified; gates; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107q `EDITOR_DRAW_OPS` (EHA-17) — largest, strictly incremental
 Paint lives as direct `solid_renderer_rect` / `push_line` calls in `demo_live`,
