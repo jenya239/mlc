@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q mid (q3 Critic: resume after §108 CLOSED — UX ×2 disk-verify); queue head again
+## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q mid (q3 Critic **done**; Green q4 gutter next); queue head
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -640,7 +640,7 @@ restore; tree clean of Critic mutations):
 | 4 | Green q2: tab strip slots/active/hover fills via ops | **done** 2026-08-03 — `tab_slot_ops` + flatten; gate extended |
 | 5 | Critic q2 | **done** 2026-08-03 — independent green; sabotage direct `tab_fill` rect → FAIL; restored; UX ×2 |
 | 6 | Green q3: tree / breadcrumb / folder-nav chrome fills via ops | **done** 2026-08-03 — `nav_chrome_ops` + flatten; gate extended |
-| 7 | Critic q3 | **resume** 2026-08-03 — green+sabotage ok earlier; UX ×2 was disk-blocked; §108 CLOSED — finish UX ×2 then close q3 → Green q4 |
+| 7 | Critic q3 | **done** 2026-08-03 — green+sab (tree_rect packed) load-bearing; UX ×2 = 136/136 after §108 (disk recovered) |
 | 8 | Green q4: gutter fills via ops | pending |
 | 9 | Critic q4 | pending |
 | 10+ | Green/Critic q5…q6 (text → overlays) | pending |
