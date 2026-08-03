@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107n **CLOSED**; §107o Decision next
+## Status: **open** 2026-08-03 — §107a–§107n **CLOSED**; §107o Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -566,10 +566,27 @@ restore; tree clean of Critic mutations):
 **§107n CLOSED.** Next: §107o `EDITOR_VIEWPORT_RECT_SINGLE`.
 
 ## §107o `EDITOR_VIEWPORT_RECT_SINGLE` (EHA-15)
-8 copies of `fn text_viewport_rect(state)` across `ux/*` (was 5 in 2026-07-17 — got
-worse). **Fix:** one exported `editor_ux_text_viewport_rect` in `ux/probe.mlc`,
-delete the rest. **Gate:** `dev_gate_fast` + a grep arch-lint on the duplicate name
-(arch-lint only, not a UX scenario — see §107r).
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | Eight private copies of `fn text_viewport_rect(state: EditorUxState) -> Rect` under `misc/editor/ux/` (`scroll`, `cursor`, `draw_frame`, `selection_apply`, `drag_autoscroll`, `overflow`, `trailing_ws`, `current_line_hl`) — same strip-clamp + `editor_rect` math, duplicated (was 5 in 2026-07-17; got worse). Drift risk; §107n geometry fix must not be re-copied |
+| Fix | (1) Export `editor_ux_text_viewport_rect(state: EditorUxState) -> Rect` from `ux/probe.mlc` (single strip-clamp + `shell_panels_editor_rect` formula). (2) Delete every private `fn text_viewport_rect` in `ux/*` and import/call the export. (3) `editor_ux_snapshot` builds `text_rect` via the same export (UxRect wrap) — no second inline copy |
+| Module touch | `misc/editor/ux/probe.mlc`; the eight `ux/*.mlc` call sites above; new `scripts/run_ux_viewport_rect_single.sh` (arch-lint only — no new UX scenario; see §107r) |
+| Gate | `run_ux_viewport_rect_single`: arch — `export fn editor_ux_text_viewport_rect` present in `probe.mlc`; zero matches for `fn text_viewport_rect` under `misc/editor/ux/`; at least one call site uses `editor_ux_text_viewport_rect(`. Plus `dev_gate_fast` |
+| Sabotage (required before close) | Restore a private `fn text_viewport_rect` in any `ux/*.mlc` → arch fail |
+| REG | no |
+| Out of scope | Changing the viewport formula / live strip height (§107n); consolidating other rect helpers; replacing grep arch-lints with behavioural L2 (§107r) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: 8 private copies; export/green absent | **done** 2026-08-03 — `scripts/run_ux_viewport_rect_single_red.sh` exits non-zero |
+| 2 | Green: single export; delete copies; arch gate; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107p `EDITOR_TOOLBAR_COMMAND_TABLE` (EHA-16)
 `demo_live` hit-tests `while tool < 10` plus a magic index 10 for SessLd, while

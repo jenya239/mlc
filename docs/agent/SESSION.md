@@ -138,3 +138,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107n CLOSED.** Advances to §107o |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107o `EDITOR_VIEWPORT_RECT_SINGLE` — freeze Decision; red: 8 local `text_viewport_rect` copies) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107o Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107o Decision (single `editor_ux_text_viewport_rect` in `probe.mlc`; delete 8 private copies; arch-lint gate). Red: `scripts/run_ux_viewport_rect_single_red.sh` |
+| verify  | `bash scripts/run_ux_viewport_rect_single_red.sh` → FAIL exit 1 (`8 private text_viewport_rect copies in ux/*`) |
+| result  | **§107o STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107o Green — export + delete copies + `run_ux_viewport_rect_single`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
