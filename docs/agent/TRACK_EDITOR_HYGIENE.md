@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107e **CLOSED**; §107f Decision next (Driver STEP=0)
+## Status: **open** 2026-08-03 — §107a–§107e **CLOSED**; §107f Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -260,14 +260,28 @@ Both mutators restored; `run_ux_cache_keys_by_version.sh` → `ux_ok`.
 
 # P1 sub-tracks (audit roadmap order)
 
-## §107f `EDITOR_INCREMENTAL_LINE_INDEX` (EHA-06)
-`document_frame_snapshot` = `document_to_string` + `line_index_from_string`;
-`frame_layout_tick_snapshot(..., 1)` from 25+ sites — every keystroke flattens
-the piece table and rebuilds `starts[]`.
-**Fix:** `line_index_apply_edit(start, removed, inserted)`; snapshot without
-flatten (`document_byte_slice` / lazy `byte_at` already exist).
-**Gate:** `run_ux_edit_no_full_flatten` — a `flatten_count` counter must not grow
-across N insertions. Residual of §46 #1d.
+## §107f `EDITOR_INCREMENTAL_LINE_INDEX` (EHA-06) — residual of §46 #1d
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `document_frame_snapshot` always does `document_to_string` + `line_index_from_string`. Every dirty `frame_snapshot_cache_tick` / `frame_layout_tick_snapshot(..., 1)` (25+ `demo_live` sites) pays full piece-table flatten + full newline scan to rebuild `starts[]`. Honest residual left by `#1d` ("each edit still resnapshots") |
+| Fix | (1) `line_index_apply_edit(index, byte_start, removed_len, inserted)` — adjust `starts[]` for the edit span and splice `index.text` for that range (no piece-table flatten, no full-buffer newline scan). (2) `document_frame_snapshot_apply_edit(prev, byte_start, removed_len, inserted)` — incremental snapshot; **`flatten_count` does not increase**. (3) `frame_snapshot_cache_apply_edit` + `frame_layout_tick_snapshot_edit` for known edits; keep full `frame_snapshot_cache_tick(..., dirty=1)` as fallback (open/replace/unknown dirty). (4) Wire edit sites in `demo_live` that already know the byte range to the apply_edit path |
+| Module touch | `misc/editor/document/line_index.mlc`, `frame_snapshot.mlc`, `frame_snapshot_cache.mlc`, `app/frame_layout.mlc`, edit call sites in `demo_live.mlc`; new `misc/editor/ux_scenarios/edit_no_full_flatten.mlc` + `scripts/run_ux_edit_no_full_flatten.sh` |
+| Gate | `run_ux_edit_no_full_flatten`: warm snapshot then N insertions via apply_edit; assert `flatten_count` stays at the warm value (does not grow); assert `line_index_matches_document` after the edits |
+| Sabotage (required before close) | Force apply_edit path to full `document_frame_snapshot` / bump `flatten_count` each edit → gate fails |
+| REG | no |
+| Out of scope | Dropping `snapshot.text` / paint fully lazy over the piece table; §107l indent stringify; zero-allocation rope; converting non-edit dirty reasons off the full rebuild fallback |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: `line_index_apply_edit` / apply_edit snapshot path absent; edit still full-flattens | **done** 2026-08-03 — `scripts/run_ux_edit_no_full_flatten_red.sh` exits non-zero |
+| 2 | Green: apply_edit APIs + wire; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107g `EDITOR_TERMINAL_TEARDOWN` (EHA-08 + EHA-09)
 `terminal_panel_session_close` is reached only from `CmdCloseTab`; the tab-strip

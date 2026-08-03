@@ -244,3 +244,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107e CLOSED.** Advances to §107f |
 | issues  | Prompt INSTRUCTIONS_REV still 2026-07-28; followed CONTINUITY `2026-08-01-editor-hygiene-queue`. Disk hit 100% mid-turn; freed via tmp/ccache before clean gate ×2 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107f `EDITOR_INCREMENTAL_LINE_INDEX` — freeze Decision; red: edit path still full-flatten / `flatten_count` grows) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107f Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107f Decision (`line_index_apply_edit` + `document_frame_snapshot_apply_edit` / cache apply_edit; gate `run_ux_edit_no_full_flatten`; sabotage: force full flatten on apply_edit). Red: `scripts/run_ux_edit_no_full_flatten_red.sh` |
+| verify  | `bash scripts/run_ux_edit_no_full_flatten_red.sh` → FAIL exit 1 (`line_index_apply_edit absent; edit snapshot still full-flattens`) |
+| result  | **§107f STEP=0/1 done (Decision+Red).** Green next |
+| issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107f Green — apply_edit APIs + wire edit sites; scenario `edit_no_full_flatten`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
