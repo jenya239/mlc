@@ -306,6 +306,11 @@ import {
   text_pen_x_scrolled
 } from './ux/scroll'
 import {
+  editor_wheel_hover_target,
+  editor_wheel_target_tree,
+  editor_wheel_target_editor
+} from './ux/wheel_route'
+import {
   editor_ux_minimap_pixel_size_for_font,
   editor_ux_minimap_layout_for_font,
   editor_ux_content_clip_rect,
@@ -1154,13 +1159,19 @@ fn main() -> i32 = do
     )
 
     const scroll_ticks = f64_to_i32(pending_scroll_y * 3.0)
-    if scroll_ticks != 0 && tree_hovered then
+    const wheel_editor_hovered =
+      point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)
+    const wheel_target = editor_wheel_hover_target(
+      if tree_hovered then 1 else 0,
+      wheel_editor_hovered
+    )
+    if scroll_ticks != 0 && wheel_target == editor_wheel_target_tree() then
       tree_scroll_y = folder_clamp_scroll(
         tree_scroll_y - scroll_ticks * folder_row_height(),
         folder_rows.length(),
         tree_list_rect.height
       )
-    else if scroll_ticks != 0 && point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect) != 0 then
+    else if scroll_ticks != 0 && wheel_target == editor_wheel_target_editor() then
       if glfw_gl_mod_ctrl_down() != 0 then
         const zoomed = editor_ux_font_zoom(zoom_font_size, scroll_ticks)
         zoom_font_size = zoomed.font_size

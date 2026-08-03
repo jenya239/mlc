@@ -498,3 +498,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107r STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107r Green — L1 scenario + arch-lint headers; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107r Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | `ux/wheel_route.mlc` + L1 scenario/runner; `demo_live` routes via `editor_wheel_hover_target`; ARCH-LINT headers on wheel+frame_layout `*_stable` |
+| verify  | green `ux_ok`; sab swapped tree/editor targets → FAIL; restore ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 137/137 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107r STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107r — independent rebuild+rerun; sabotage: focus-gate / wrong hover target; `run_ux_gate` ×2; close §107r → §103a) |

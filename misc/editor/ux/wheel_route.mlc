@@ -1,0 +1,20 @@
+// TRACK_EDITOR_HYGIENE §107r — wheel scroll target follows hover, not focus.
+// Targets: 0 = none, 1 = tree/folder, 2 = editor text pane.
+
+export fn editor_wheel_target_none() -> i32 = 0
+export fn editor_wheel_target_tree() -> i32 = 1
+export fn editor_wheel_target_editor() -> i32 = 2
+
+// Route by hover hit only. Callers must not also gate on focus flags.
+export fn editor_wheel_hover_target(
+  tree_hovered: i32,
+  editor_hovered: i32
+) -> i32 = do
+  if tree_hovered != 0 then
+    return editor_wheel_target_tree()
+  end
+  if editor_hovered != 0 then
+    return editor_wheel_target_editor()
+  end
+  editor_wheel_target_none()
+end

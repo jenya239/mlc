@@ -1,0 +1,44 @@
+// TRACK_EDITOR_HYGIENE §107r — wheel target follows hover, not editor_focused.
+import {
+  editor_wheel_hover_target,
+  editor_wheel_target_none,
+  editor_wheel_target_tree,
+  editor_wheel_target_editor
+} from '../ux/wheel_route'
+
+fn expect_target(
+  tree_hovered: i32,
+  editor_hovered: i32,
+  want: i32,
+  label: string
+) -> i32 = do
+  const got = editor_wheel_hover_target(tree_hovered, editor_hovered)
+  if got != want then
+    println("ux_fail wheel_hover_focus_independent " + label)
+    return 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  if expect_target(0, 0, editor_wheel_target_none(), "none") != 0 then
+    return 1
+  end
+  // Tree hover wins even when editor is also "hovered" (live checks tree first).
+  if expect_target(1, 1, editor_wheel_target_tree(), "tree_over_editor") != 0 then
+    return 2
+  end
+  if expect_target(1, 0, editor_wheel_target_tree(), "tree_only") != 0 then
+    return 3
+  end
+  if expect_target(0, 1, editor_wheel_target_editor(), "editor_only") != 0 then
+    return 4
+  end
+  // Focus independence is structural: helper has no focus parameter.
+  // Repeated editor-hover must stay EDITOR (same as focused or not).
+  if expect_target(0, 1, editor_wheel_target_editor(), "editor_repeat") != 0 then
+    return 5
+  end
+  println("ux_ok wheel_hover_focus_independent")
+  0
+end

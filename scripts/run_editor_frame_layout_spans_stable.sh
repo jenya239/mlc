@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ARCH-LINT: source-shape / ownership only (TRACK_EDITOR_HYGIENE §107r). Not a behavioural UX scenario.
 # TRACK_EDITOR_RENDER_ARCHITECTURE §97b shared_span_cache STEP=2 — spans owned by frame_layout.
 set -euo pipefail
 
