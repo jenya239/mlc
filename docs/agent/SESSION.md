@@ -303,3 +303,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q q2 Critic done.** Advances to Green q3 |
 | issues  | none |
 | next    | ROLE=Driver STEP=6 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q3 — tree/breadcrumb/folder-nav chrome fills via `EditorPaintOp`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q3) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=6, §107q Green q3)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 6 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Tree/breadcrumb/nav via `nav_chrome_ops` + flatten; gate q3 arch extended; unit covers `tree_panel`/`breadcrumb` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 132/132 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q STEP=6 done (Green q3).** Critic q3 next |
+| issues  | first `run_ux_gate` flaked `idle_cpu_budget_stable` + `overlay_theme_tint_stable` under disk pressure; both pass alone; re-run ×2 = 132/132 |
+| next    | ROLE=Critic STEP=7 TRACK=TRACK_EDITOR_HYGIENE (§107q q3 — independent rebuild+rerun; sabotage: restore direct `tree_rect` solid_renderer_rect; `run_ux_gate` ×2; then Green q4) |

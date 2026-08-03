@@ -2072,39 +2072,65 @@ fn main() -> i32 = do
       )
       hover_tool_index = hover_tool_index + 1
     end
-    solid = solid_renderer_rect(
-      solid, width, height,
-      tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height,
-      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-    )
+    let mut nav_chrome_ops: [EditorPaintOp] = []
+    nav_chrome_ops.push(editor_paint_op_rect(
+      "tree_panel",
+      tree_rect.x,
+      tree_rect.y,
+      tree_rect.width,
+      tree_rect.height,
+      theme.panel_red,
+      theme.panel_green,
+      theme.panel_blue,
+      1.0
+    ))
     const breadcrumb_fill = editor_ux_chrome_hover_draw_entry(
       input, breadcrumb_rect, theme.panel_red, theme.panel_green, theme.panel_blue
     )
-    solid = solid_renderer_rect(
-      solid, width, height,
-      breadcrumb_fill.x, breadcrumb_fill.y, breadcrumb_fill.width, breadcrumb_fill.height,
-      breadcrumb_fill.red, breadcrumb_fill.green, breadcrumb_fill.blue, 1.0
-    )
+    nav_chrome_ops.push(editor_paint_op_rect(
+      "breadcrumb",
+      breadcrumb_fill.x,
+      breadcrumb_fill.y,
+      breadcrumb_fill.width,
+      breadcrumb_fill.height,
+      breadcrumb_fill.red,
+      breadcrumb_fill.green,
+      breadcrumb_fill.blue,
+      1.0
+    ))
     if folder_nav_can_back(folder_nav) != 0 then
       const nav_back_fill = editor_ux_chrome_hover_draw_entry(
         input, nav_back_rect, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        nav_back_fill.x, nav_back_fill.y, nav_back_fill.width, nav_back_fill.height,
-        nav_back_fill.red, nav_back_fill.green, nav_back_fill.blue, 1.0
-      )
+      nav_chrome_ops.push(editor_paint_op_rect(
+        "nav_back",
+        nav_back_fill.x,
+        nav_back_fill.y,
+        nav_back_fill.width,
+        nav_back_fill.height,
+        nav_back_fill.red,
+        nav_back_fill.green,
+        nav_back_fill.blue,
+        1.0
+      ))
     end
     if folder_nav_can_forward(folder_nav) != 0 then
       const nav_forward_fill = editor_ux_chrome_hover_draw_entry(
         input, nav_forward_rect, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        nav_forward_fill.x, nav_forward_fill.y, nav_forward_fill.width, nav_forward_fill.height,
-        nav_forward_fill.red, nav_forward_fill.green, nav_forward_fill.blue, 1.0
-      )
+      nav_chrome_ops.push(editor_paint_op_rect(
+        "nav_forward",
+        nav_forward_fill.x,
+        nav_forward_fill.y,
+        nav_forward_fill.width,
+        nav_forward_fill.height,
+        nav_forward_fill.red,
+        nav_forward_fill.green,
+        nav_forward_fill.blue,
+        1.0
+      ))
     end
+    solid = editor_paint_ops_flatten(solid, width, height, nav_chrome_ops)
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8

@@ -41,6 +41,19 @@ fn main() -> i32 = do
   if tab_slot.x != 10 || tab_slot.width != 80 then
     return 9
   end
+  // q3: nav chrome op ids
+  const tree_panel = editor_paint_op_rect(
+    "tree_panel", 0, 40, 200, 400, 0.4, 0.5, 0.6, 1.0
+  )
+  if tree_panel.widget_id != "tree_panel" then
+    return 10
+  end
+  const breadcrumb = editor_paint_op_rect(
+    "breadcrumb", 8, 40, 180, 16, 0.4, 0.5, 0.6, 1.0
+  )
+  if breadcrumb.widget_id != "breadcrumb" then
+    return 11
+  end
   print("[ux] draw_ops_from_live_state ok")
   0
 end

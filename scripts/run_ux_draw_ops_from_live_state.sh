@@ -71,6 +71,23 @@ if grep -q 'tab_fill.x, tab_fill.y, tab_fill.width, tab_fill.height' "$DEMO"; th
   fail "demo_live still paints tab_fill via direct solid_renderer_rect (q2)"
 fi
 
+# q3: tree / breadcrumb / folder-nav via ops.
+if ! grep -q 'nav_chrome_ops' "$DEMO"; then
+  fail "demo_live missing nav_chrome_ops (q3)"
+fi
+if ! grep -q '"tree_panel"' "$DEMO"; then
+  fail "demo_live missing tree_panel paint op id (q3)"
+fi
+if ! grep -q '"breadcrumb"' "$DEMO"; then
+  fail "demo_live missing breadcrumb paint op id (q3)"
+fi
+if grep -q 'tree_rect.x, tree_rect.y, tree_rect.width, tree_rect.height' "$DEMO"; then
+  fail "demo_live still paints tree_rect via direct solid_renderer_rect (q3)"
+fi
+if grep -q 'breadcrumb_fill.x, breadcrumb_fill.y, breadcrumb_fill.width, breadcrumb_fill.height' "$DEMO"; then
+  fail "demo_live still paints breadcrumb_fill via direct solid_renderer_rect (q3)"
+fi
+
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"
 export MLCC_OBJ_CLEAN="${MLCC_OBJ_CLEAN:-1}"
 export MLCC_PCH="${MLCC_PCH:-0}"
