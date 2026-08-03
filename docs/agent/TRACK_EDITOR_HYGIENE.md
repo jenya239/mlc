@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; queue head §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT`
+## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; §107j Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -406,12 +406,28 @@ Restored; `run_ux_gate` ×2 = 123/123 (`EXIT1=0` / `EXIT2=0`).
 
 **§107i CLOSED.** Next: §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT`.
 
-## §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` (EHA-18)
-`collect_visible_visual_rows_pixel_budget` runs up to 3× per content frame
-(early / scroll branch / late). **Fix:** one call after the final
-`frame_layout_tick_pixel`; the early phase reuses `cached_visual_rows`.
-**Gate:** a counter in `ui/perf.mlc` asserted == 1 in the perf smoke.
-Residual of §97b.
+## §107j `EDITOR_VISIBLE_ROWS_SINGLE_COLLECT` (EHA-18) — residual of §97b
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | `demo_live.mlc` calls `collect_visible_visual_rows_pixel_budget_cached` **3×** per content frame: early (~input), scroll-wheel branch, and late (post-`frame_layout_tick_pixel`, pre-paint). Paint is the only consumer of `visual_rows` after the late call — early/scroll collects are wasted work |
+| Fix | (1) Keep a **single** collect after the final `frame_layout_tick_pixel` (today's late site). (2) Early phase: `visual_rows = cached_visual_rows` only (no collect). (3) Scroll branch: update scroll offsets only — do **not** recollect; late collect refreshes for paint. (4) Add `visible_collect_count: i32` on `EditorPerfCounters` (`ui/perf.mlc`); increment once per collect at the remaining site when `MLC_EDITOR_PERF` is on; perf smoke asserts `visible_collect_count / frames == 1` (or ≤1) |
+| Module touch | `misc/editor/demo_live.mlc`, `misc/editor/ui/perf.mlc`; may extend `scripts/run_editor_demo_live_perf_smoke.sh`; new `scripts/run_ux_visible_rows_single_collect.sh` (+ optional scenario) for arch assert of exactly one collect call site |
+| Gate | `run_ux_visible_rows_single_collect`: arch — exactly one `collect_visible_visual_rows_pixel_budget_cached(` in `demo_live.mlc`; `visible_collect_count` field + increment wiring present. Perf smoke (or same script under `MLC_EDITOR_PERF=1`) asserts per-frame collect count == 1 |
+| Sabotage (required before close) | (1) Restore a second collect call site → arch fail. (2) Stop incrementing / drop `visible_collect_count` → perf/arch fail |
+| REG | no |
+| Out of scope | Changing collect algorithm / prefix jump (§107c); layout_skip semantics (§106/§107i); minimap |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: 3 collect sites; counter/green absent | **done** 2026-08-03 — `scripts/run_ux_visible_rows_single_collect_red.sh` exits non-zero |
+| 2 | Green: single late collect + counter; gates green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107k `EDITOR_TERMINAL_DAMAGE_REPAINT` (EHA-11)
 `terminal_grid_text_lines` / `terminal_grid_draw_backgrounds` rebuild every frame
