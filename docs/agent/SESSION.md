@@ -573,3 +573,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§103a STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103a — audit ValueRep round-trip / size gate; then §103b or close §103a) |
+
+### Turn 2026-08-03 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103a)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Audited §103a ValueRep: independent unit out-dir + C++ header probe; sabotages f32 decode truncate (bit-identical FAIL) and Nil→Bool tag (Nil round-trip FAIL); MIR `compiler/vm/value.mlc` separate |
+| verify  | unit ok ×2 (critic out + restore); probe ok; both sabotages exit≠0; restore ok; `dev_gate_fast` exit 0 |
+| result  | **§103a CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103b `SCRIPT_VM_BYTECODE_FORMAT` — Decision freeze) |
