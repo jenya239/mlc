@@ -393,3 +393,18 @@ Turns before §107q (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=8 done (Green q4).** Critic q4 next |
 | issues  | none |
 | next    | ROLE=Critic STEP=9 TRACK=TRACK_EDITOR_HYGIENE (§107q q4 — independent rebuild+rerun; sabotage: restore direct `gutter_rect` packed args; `run_ux_gate` ×2; then Green q5) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=9, §107q q4 CLOSED)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 9 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Independent green of §107q q4 `5f60e135` (`UX_DRAW_OPS_OUT` fresh). Sabotage: packed `gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height` → FAIL; restored |
+| verify  | green ok; sab exit 1; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q q4 Critic CLOSED.** Advances to Green q5 |
+| issues  | none |
+| next    | ROLE=Driver STEP=10 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q5 — text/glyphs via `EditorPaintOp`; gate extend; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q5) |
