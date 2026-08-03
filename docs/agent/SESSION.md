@@ -468,3 +468,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109c STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c Red — honesty gap / VISIBLE=0 L2 / PERF_FULL 20e6) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109c Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_gate_honesty_red.sh`: fail while honesty harness absent and VISIBLE=0/cpu=0 hover L2 + PERF_FULL 20e6 still present |
+| verify  | `bash scripts/run_editor_perf_gate_honesty_red.sh` → FAIL exit 1 (`no editor perf gate honesty`) |
+| result  | **§109c STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c Green — rewrite hover L2 + PERF_FULL ceiling + honesty harness) |

@@ -225,7 +225,7 @@ Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: honesty gap / false-green paths present | pending |
+| 1 | Red: honesty gap / false-green paths present | **done** 2026-08-04 — `scripts/run_editor_perf_gate_honesty_red.sh` exit 1 |
 | 2 | Green: rewrite gates + honesty harness | pending |
 | 3 | Critic | pending |
 
