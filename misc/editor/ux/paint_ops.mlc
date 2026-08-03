@@ -1,0 +1,75 @@
+// TRACK_EDITOR_HYGIENE §107q — editor-local paint ops (not scenario UxDrawOp).
+export type EditorPaintOp = {
+  widget_id: string,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export fn editor_paint_op_rect(
+  widget_id: string,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> EditorPaintOp =
+  EditorPaintOp {
+    widget_id: widget_id,
+    x: x,
+    y: y,
+    width: width,
+    height: height,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  }
+
+// q1 chrome bands: window bg + header + tab_bar strip + toolbar strip.
+export fn editor_paint_ops_chrome_bands(
+  window_width: i32,
+  window_height: i32,
+  header_height: i32,
+  tab_bar_y: i32,
+  tab_bar_height: i32,
+  toolbar_y: i32,
+  toolbar_height: i32,
+  background_red: f64,
+  background_green: f64,
+  background_blue: f64,
+  panel_red: f64,
+  panel_green: f64,
+  panel_blue: f64
+) -> [EditorPaintOp] = do
+  let mut ops: [EditorPaintOp] = []
+  ops.push(editor_paint_op_rect(
+    "chrome_background",
+    0, 0, window_width, window_height,
+    background_red, background_green, background_blue, 1.0
+  ))
+  ops.push(editor_paint_op_rect(
+    "chrome_header",
+    0, 0, window_width, header_height,
+    panel_red, panel_green, panel_blue, 1.0
+  ))
+  ops.push(editor_paint_op_rect(
+    "chrome_tab_bar",
+    0, tab_bar_y, window_width, tab_bar_height,
+    panel_red, panel_green, panel_blue, 1.0
+  ))
+  ops.push(editor_paint_op_rect(
+    "chrome_toolbar",
+    0, toolbar_y, window_width, toolbar_height,
+    panel_red, panel_green, panel_blue, 1.0
+  ))
+  ops
+end

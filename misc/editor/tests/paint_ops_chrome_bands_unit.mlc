@@ -1,0 +1,36 @@
+// TRACK_EDITOR_HYGIENE §107q q1 — chrome band paint ops unit (no GL).
+import {
+  editor_paint_ops_chrome_bands
+} from '../ux/paint_ops'
+
+fn main() -> i32 = do
+  const ops = editor_paint_ops_chrome_bands(
+    800, 600, 18, 18, 18, 36, 18,
+    0.1, 0.2, 0.3,
+    0.4, 0.5, 0.6
+  )
+  if ops.length() < 4 then
+    return 1
+  end
+  if ops[0].widget_id != "chrome_background" then
+    return 2
+  end
+  if ops[1].widget_id != "chrome_header" then
+    return 3
+  end
+  if ops[2].widget_id != "chrome_tab_bar" then
+    return 4
+  end
+  if ops[3].widget_id != "chrome_toolbar" then
+    return 5
+  end
+  if ops[0].width != 800 || ops[0].height != 600 then
+    return 6
+  end
+  if ops[3].y != 36 || ops[3].height != 18 then
+    return 7
+  end
+  // Flatten is exercised by demo_live + arch grep for editor_paint_ops_flatten.
+  print("[ux] draw_ops_from_live_state ok")
+  0
+end

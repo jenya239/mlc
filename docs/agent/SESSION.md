@@ -243,3 +243,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=0/1 done (Decision+Red).** Green q1 next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q1 — chrome band fills via `EditorPaintOp` + flatten; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q1) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107q Green q1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `EditorPaintOp` + chrome bands in `paint_ops.mlc`; flatten in `paint_ops_flatten.mlc`; demo_live chrome bands via ops; `run_ux_draw_ops_from_live_state` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 132/132 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q STEP=2 done (Green q1).** Critic q1 next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107q q1 — independent rebuild+rerun; sabotage: restore direct chrome-band `solid_renderer_rect` quartet; `run_ux_gate` ×2; then Green q2) |

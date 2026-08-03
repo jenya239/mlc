@@ -17,6 +17,12 @@ import {
 import { Rect, rect_new, point_new, point_in_rect } from '../gui/layout'
 import { editor_ux_chrome_hover_draw_entry } from './ux/chrome_hover'
 import {
+  editor_paint_ops_chrome_bands
+} from './ux/paint_ops'
+import {
+  editor_paint_ops_flatten
+} from './ux/paint_ops_flatten'
+import {
   solid_renderer_create,
   solid_renderer_begin,
   solid_renderer_rect,
@@ -2002,18 +2008,22 @@ fn main() -> i32 = do
       perf_draw_t0 = editor_perf_now_us()
     end
     solid = solid_renderer_begin(solid)
-    solid = solid_renderer_rect(
-      solid, width, height, 0, 0, width, height,
-      theme.background_red, theme.background_green, theme.background_blue, 1.0
+    const chrome_band_ops = editor_paint_ops_chrome_bands(
+      width,
+      height,
+      header_height(),
+      tab_bar_y,
+      tab_bar_height(),
+      toolbar_y,
+      toolbar_height(),
+      theme.background_red,
+      theme.background_green,
+      theme.background_blue,
+      theme.panel_red,
+      theme.panel_green,
+      theme.panel_blue
     )
-    solid = solid_renderer_rect(
-      solid, width, height, 0, 0, width, header_height(),
-      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-    )
-    solid = solid_renderer_rect(
-      solid, width, height, 0, tab_bar_y, width, tab_bar_height(),
-      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-    )
+    solid = editor_paint_ops_flatten(solid, width, height, chrome_band_ops)
     let mut hover_tab_index = 0
     while hover_tab_index < tab_widths.length() do
       const tab_ux = tab_strip_title_rect_from_widths(
@@ -2038,10 +2048,6 @@ fn main() -> i32 = do
       )
       hover_tab_index = hover_tab_index + 1
     end
-    solid = solid_renderer_rect(
-      solid, width, height, 0, toolbar_y, width, toolbar_height(),
-      theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
-    )
     let mut hover_tool_index = 0
     const hover_toolbar_count = editor_app_toolbar_count()
     while hover_tool_index < hover_toolbar_count do

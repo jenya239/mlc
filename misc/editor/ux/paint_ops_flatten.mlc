@@ -1,0 +1,34 @@
+// TRACK_EDITOR_HYGIENE §107q — flatten EditorPaintOp → solid_renderer.
+import {
+  SolidRenderer,
+  solid_renderer_rect
+} from '../../gui/solid_renderer'
+import { EditorPaintOp } from './paint_ops'
+
+export fn editor_paint_ops_flatten(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  ops: [EditorPaintOp]
+) -> SolidRenderer = do
+  let mut solid = renderer
+  let mut index = 0
+  while index < ops.length() do
+    const op = ops[index]
+    solid = solid_renderer_rect(
+      solid,
+      window_width,
+      window_height,
+      op.x,
+      op.y,
+      op.width,
+      op.height,
+      op.red,
+      op.green,
+      op.blue,
+      op.alpha
+    )
+    index = index + 1
+  end
+  solid
+end
