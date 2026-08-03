@@ -183,3 +183,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103c CLOSED (Critic OK).** No false-done |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103d `SCRIPT_VM_INTERPRETER_ARITHMETIC` — Decision freeze) |
+
+### Turn 2026-08-03 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103d Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §103d Decision: `run_arithmetic` + verify-first; LOAD_CONST/MOVE/arith/RETURN; same-kind Int32/Float64; RunErr codes; host-loop perf baseline; unit via `run_script_vm_interpreter_arithmetic_unit.sh` |
+| verify  | Decision text in TRACK STEP=0=done; PLAN/CONTINUITY → Red; docs-only — no code gate |
+| result  | **§103d STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103d Red — `run_script_vm_interpreter_arithmetic_unit` fails: no `interpreter.mlc` / unit) |

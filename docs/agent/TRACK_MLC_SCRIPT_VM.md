@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-03 — queue head **§103d `SCRIPT_VM_INTERPRETER_ARITHMETIC`** (§103c CLOSED; STEP=0 Decision next)
+## Status: **open** 2026-08-03 — queue head **§103d `SCRIPT_VM_INTERPRETER_ARITHMETIC`** (Decision frozen; STEP=1 Red next)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -119,13 +119,32 @@ release backend — не цель никогда (третий путь испо
 
 ### §103d `SCRIPT_VM_INTERPRETER_ARITHMETIC`
 
-Dispatch loop for `LOAD_CONST`/arithmetic (`ADD`/`SUB`/`MUL`/`DIV` on
-int/float)/`RETURN` only — no heap, no calls, no control flow yet, runs only
-verifier-accepted bytecode (§103c). Gate: hand-assembled program for a fixed
-arithmetic expression produces the correct `Value`; perf smoke measuring
-dispatch overhead per instruction on a fixed-iteration-count tight loop —
-this is the Phase 1 performance baseline, document the honest measured
-number the same way §97a/§101 did, no unverified claims.
+#### Decision (**frozen** 2026-08-03, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Verifier exists (§103c) but nothing executes §103b arithmetic; design §5 tier-0 / §12 phase-1 need a register interpreter before control flow / heap |
+| Fix | `script_vm/interpreter.mlc`: `run_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult`. Builds a register file of `register_count` `Value`s (init Nil). **Always** calls `verify_function(words, register_count, constants.length())` first; on `VerifyErr` → `RunErr("verify", word_index)` (no execute). Then linear PC walk with §103b `instruction_word_span` / decode helpers |
+| Opcode execute set | `LOAD_CONST`, `MOVE`, `ADD`, `SUB`, `MUL`, `DIV`, `RETURN` only. Encountering `JUMP` / `JUMP_IF_FALSE` (or any other tag) after verify → `RunErr("unsupported_opcode", primary)`. No heap, no calls, no GC |
+| Numeric semantics (§103a ValueRep; design §7 narrowed for §103d) | Same-kind only: Int32⊛Int32 → Int32; Float64⊛Float64 → Float64. Mixed kinds / Nil/Bool operands → `RunErr("type", primary)`. Int32 overflow (checked add/sub/mul outside i32 range) → `RunErr("overflow", primary)` — no boxed i64 yet (§103f+). Float ops use IEEE f64 (no overflow trap). `DIV`: Int32 trunc toward zero; divisor 0 (int or float ±0.0) → `RunErr("div_zero", primary)` |
+| Control / termination | No backward PC without JUMP (§103e). Fall off end without `RETURN` → `RunErr("no_return", words.length())`. `RETURN A` → `RunOk(registers[A])` |
+| Result type | `RunResult = RunOk(Value) \| RunErr(string, i32)` — codes: `verify`, `type`, `overflow`, `div_zero`, `no_return`, `unsupported_opcode` |
+| Arithmetic fixture | constants `[ValueInt32(1), ValueInt32(2)]`; words: narrow `LOAD_CONST r0,#0` + `LOAD_CONST r1,#1` + `ADD r2,r0,r1` + `RETURN r2`; `register_count=3` → `RunOk` Int32(3). Second fixture: Float64 `1.5`/`2.25` → ADD → Float64 `3.75` (bit-identical via `value_raw_equal`) |
+| Perf smoke | Host loop: run the Int32 ADD fixture `N=100000` times; record wall ns total and **ns per instruction** = total_ns / (N × instruction_count). Print one line; no ceiling fail in §103d (baseline document only, honest number). In-bytecode loops wait for §103e |
+| Build / test | `scripts/run_script_vm_interpreter_arithmetic_unit.sh` → `script_vm/tests/interpreter_arithmetic_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `dev_gate_fast` / `run_ux_gate`. Same pattern as §103a–c |
+| Gate | Unit: Int32 + Float64 fixtures `RunOk`; one crafted case each for `type` / `overflow` / `div_zero` / `no_return` / `unsupported_opcode` (JUMP after verify-ok shape) / verify-fail passthrough; perf line printed. Red: green runner / `interpreter.mlc` / unit absent |
+| Sabotage | Force ADD Int32 path to ignore rhs (always `lhs`) → fixture expects 3, gets 1 → unit fails |
+| REG | no (`script_vm/**` only) |
+| Out of scope | JUMP/comparisons (§103e); heap/GC (§103f); quickening/JIT; opcode DSL; embedding ABI |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: interpreter / unit runner absent | **open** |
+| 2 | Green: `interpreter.mlc` + unit + perf smoke; `dev_gate_fast` | **open** |
+| 3 | Critic | **open** |
 
 ### §103e `SCRIPT_VM_CONTROL_FLOW`
 
