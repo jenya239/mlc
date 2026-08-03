@@ -1,11 +1,13 @@
 // TRACK_EDITOR_ENCODING_GUARD STEP=2 — BOM strip/preserve + NUL/UTF-8 refuse.
 // TRACK_EDITOR_CRLF_PRESERVE — detect/normalize line endings + preserve on save.
+// TRACK_EDITOR_HYGIENE §107m — open size cap + merged NUL/UTF-8 validation.
 import {
   TextDocument,
   document_from_string,
   document_to_string
 } from './piece_table'
 import { utf8_codepoint_byte_length } from './line_index'
+import { get_or } from '../../../lib/mlc/common/stdlib/env/env.mlc'
 
 extern fn file_read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
@@ -15,6 +17,8 @@ extern fn file_exists(path: string) -> bool
   = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_remove(path: string) -> bool
   = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
 extern fn string_byte_u8(text: string, index: i32) -> i32 =
   "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" blocking
 extern fn string_from_byte_u8(value: i32) -> string =
@@ -56,47 +60,96 @@ fn encode_for_save(text: string, line_ending: i32) -> string = do
   text
 end
 
-fn text_contains_nul(text: string) -> bool = do
+fn digit_value(ch: string) -> i32 = do
+  if ch == "0" then
+    return 0
+  else if ch == "1" then
+    return 1
+  else if ch == "2" then
+    return 2
+  else if ch == "3" then
+    return 3
+  else if ch == "4" then
+    return 4
+  else if ch == "5" then
+    return 5
+  else if ch == "6" then
+    return 6
+  else if ch == "7" then
+    return 7
+  else if ch == "8" then
+    return 8
+  else if ch == "9" then
+    return 9
+  end
+  0 - 1
+end
+
+fn parse_positive_i32(text: string) -> i32 = do
+  if text.byte_size() == 0 then
+    return 0 - 1
+  end
   let mut index = 0
-  const length = text.byte_size()
-  while index < length do
-    if string_byte_u8(text, index) == 0 then
-      return true
+  let mut value = 0
+  while index < text.byte_size() do
+    const digit = digit_value(text.byte_at(index))
+    if digit < 0 then
+      return 0 - 1
     end
+    value = value * 10 + digit
     index = index + 1
   end
-  false
+  value
+end
+
+// Default 64 MiB. Env MLC_EDITOR_MAX_OPEN_BYTES overrides when a positive integer.
+export fn editor_max_open_bytes() -> i32 = do
+  const from_env = get_or("MLC_EDITOR_MAX_OPEN_BYTES", "")
+  if from_env.byte_size() > 0 then
+    const parsed = parse_positive_i32(from_env)
+    if parsed > 0 then
+      return parsed
+    end
+  end
+  67108864
 end
 
 fn is_utf8_continuation_byte(value: i32) -> bool =
   value >= 128 && value < 192
 
-export fn utf8_text_is_valid(text: string) -> bool = do
+// One pass: NUL → 1, invalid UTF-8 → 2, ok → 0.
+fn open_text_validate(text: string) -> i32 = do
   let mut index = 0
   const length = text.byte_size()
   while index < length do
     const lead = string_byte_u8(text, index)
+    if lead == 0 then
+      return 1
+    end
     if lead < 128 then
       index = index + 1
     else if lead < 192 then
-      return false
+      return 2
     else
       const step = utf8_codepoint_byte_length(lead)
       if step < 2 || index + step > length then
-        return false
+        return 2
       end
       let mut offset = 1
       while offset < step do
         if !is_utf8_continuation_byte(string_byte_u8(text, index + offset)) then
-          return false
+          return 2
         end
         offset = offset + 1
       end
       index = index + step
     end
   end
-  true
+  0
 end
+
+export fn utf8_text_is_valid(text: string) -> bool =
+  open_text_validate(text) == 0
 
 fn strip_utf8_bom(text: string) -> string = do
   if text.byte_size() < 3 then
@@ -146,17 +199,29 @@ export fn open_buffer_from_path(path: string) -> OpenBuffer = do
   if !file_exists(path) then
     return open_buffer_refuse(path, "File not found: " + path)
   end
-  const raw = file_read_to_string(path)
-  if text_contains_nul(raw) then
-    return open_buffer_refuse(path, "Binary file refused: " + path)
+  const max_bytes = editor_max_open_bytes()
+  const byte_size = file_byte_size(path)
+  if byte_size < 0 then
+    return open_buffer_refuse(path, "Failed to size file: " + path)
   end
+  if byte_size > max_bytes then
+    return open_buffer_refuse(
+      path,
+      "Oversized file refused (" + byte_size.to_string() + " > " + max_bytes.to_string() + "): " + path
+    )
+  end
+  const raw = file_read_to_string(path)
   let mut had_bom = 0
   let mut body = raw
   if raw_starts_with_utf8_bom(raw) then
     had_bom = 1
     body = strip_utf8_bom(raw)
   end
-  if !utf8_text_is_valid(body) then
+  const validation = open_text_validate(body)
+  if validation == 1 then
+    return open_buffer_refuse(path, "Binary file refused: " + path)
+  end
+  if validation == 2 then
     return open_buffer_refuse(path, "Invalid UTF-8: " + path)
   end
   const ending = detect_line_ending(body)

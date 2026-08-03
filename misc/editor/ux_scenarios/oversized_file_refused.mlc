@@ -1,0 +1,44 @@
+// TRACK_EDITOR_HYGIENE §107m — oversized open refused under MLC_EDITOR_MAX_OPEN_BYTES.
+import { document_to_string } from '../document/piece_table'
+import {
+  open_buffer_from_text,
+  open_buffer_from_path,
+  open_buffer_has_error,
+  open_buffer_save,
+  editor_max_open_bytes
+} from '../document/save'
+
+fn main() -> i32 = do
+  const max_bytes = editor_max_open_bytes()
+  if max_bytes != 32 then
+    println("ux_fail oversized_file_refused env_max=" + max_bytes.to_string())
+    return 1
+  end
+
+  const path = ".tmp/ux_oversized_file_refused/fixture.txt"
+  // 40 bytes > cap 32.
+  const payload = "0123456789012345678901234567890123456789"
+  let mut seed = open_buffer_from_text(path, payload)
+  seed = open_buffer_save(seed)
+  if open_buffer_has_error(seed) then
+    println("ux_fail oversized_file_refused seed_write")
+    return 2
+  end
+
+  const buffer = open_buffer_from_path(path)
+  if !open_buffer_has_error(buffer) then
+    println("ux_fail oversized_file_refused not_refused")
+    return 3
+  end
+  if !buffer.last_error.contains("Oversized") then
+    println("ux_fail oversized_file_refused error_text")
+    return 4
+  end
+  if document_to_string(buffer.document) != "" then
+    println("ux_fail oversized_file_refused document_not_empty")
+    return 5
+  end
+
+  println("ux_ok oversized_file_refused")
+  0
+end

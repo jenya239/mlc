@@ -574,3 +574,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107m STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107m Green — size cap + merged validation + scenario `oversized_file_refused`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107m Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `file_byte_size` FFI; `editor_max_open_bytes` + pre-read refuse; `open_text_validate` merged NUL/UTF-8; scenario + `run_ux_oversized_file_refused` |
+| verify  | green gate `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 128/128 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107m STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107m — independent rebuild+rerun; sabotage: remove size check in `open_buffer_from_path`; `run_ux_gate` ×2; close §107m → §107n Decision) |

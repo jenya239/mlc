@@ -4,6 +4,8 @@
 // Wraps mlc::file::* which take const String&.
 
 #include "mlc/io/file.hpp"
+#include <cstdint>
+#include <system_error>
 
 namespace mlc {
 namespace file {
@@ -58,6 +60,26 @@ inline bool create_directories_value(String path) {
 
 inline bool remove_file_value(String path) {
   return remove_file(path);
+}
+
+// TRACK_EDITOR_HYGIENE §107m — pre-read size so oversized opens refuse without loading.
+// Returns byte size, or -1 on error / non-regular / overflow past i32.
+inline int32_t file_byte_size_value(String path) {
+  try {
+    std::error_code error_code;
+    const auto size = std::filesystem::file_size(
+      path.as_std_string(), error_code
+    );
+    if (error_code) {
+      return -1;
+    }
+    if (size > static_cast<std::uintmax_t>(INT32_MAX)) {
+      return -1;
+    }
+    return static_cast<int32_t>(size);
+  } catch (...) {
+    return -1;
+  }
 }
 
 inline Array<String> list_dir_names_value(String path) {
