@@ -73,8 +73,13 @@ frames="$(printf '%s\n' "$line" | sed -n 's/.*frames=\([0-9][0-9]*\).*/\1/p')"
 layout_us="$(printf '%s\n' "$line" | sed -n 's/.*layout_us=\([0-9][0-9]*\).*/\1/p')"
 draw_us="$(printf '%s\n' "$line" | sed -n 's/.*draw_us=\([0-9][0-9]*\).*/\1/p')"
 total_us="$(printf '%s\n' "$line" | sed -n 's/.*total_us=\([0-9][0-9]*\).*/\1/p')"
+visible_collect_count="$(printf '%s\n' "$line" | sed -n 's/.*visible_collect_count=\([0-9][0-9]*\).*/\1/p')"
 if [ -z "$frames" ] || [ -z "$layout_us" ] || [ -z "$draw_us" ] || [ -z "$total_us" ]; then
   echo "[editor demo_live_perf] FAIL: could not parse timings from: $line" >&2
+  exit 1
+fi
+if [ -z "$visible_collect_count" ]; then
+  echo "[editor demo_live_perf] FAIL: missing visible_collect_count in: $line" >&2
   exit 1
 fi
 if [ "$frames" -lt "$FRAMES" ]; then
@@ -85,6 +90,15 @@ if [ "$layout_us" -le 0 ] && [ "$draw_us" -le 0 ] && [ "$total_us" -le 0 ]; then
   echo "[editor demo_live_perf] FAIL: all timings zero: $line" >&2
   exit 1
 fi
+# §107j — at most one collect per frame (layout_skip frames may be 0).
+if [ "$visible_collect_count" -gt "$frames" ]; then
+  echo "[editor demo_live_perf] FAIL: visible_collect_count=$visible_collect_count > frames=$frames" >&2
+  exit 1
+fi
+if [ "$visible_collect_count" -lt 1 ]; then
+  echo "[editor demo_live_perf] FAIL: visible_collect_count=$visible_collect_count (expected ≥1 on scroll smoke)" >&2
+  exit 1
+fi
 
 echo "ux_ok demo_live_perf"
-echo "[editor demo_live_perf] ok frames=$frames layout_us=$layout_us draw_us=$draw_us total_us=$total_us" >&2
+echo "[editor demo_live_perf] ok frames=$frames layout_us=$layout_us draw_us=$draw_us total_us=$total_us visible_collect_count=$visible_collect_count" >&2

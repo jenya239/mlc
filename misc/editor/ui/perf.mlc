@@ -1,4 +1,5 @@
 // TRACK_EDITOR_RENDER_ARCHITECTURE §97a — wall-clock counters for demo_live.
+// TRACK_EDITOR_HYGIENE §107j — visible_collect_count (one collect per content frame).
 extern fn editor_perf_monotonic_us() -> i32
   = "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp"
 
@@ -9,7 +10,8 @@ export type EditorPerfCounters = {
   draw_us: i32,
   total_us: i32,
   lines_touched: i32,
-  primitives: i32
+  primitives: i32,
+  visible_collect_count: i32
 }
 
 export fn editor_perf_now_us() -> i32 =
@@ -23,7 +25,8 @@ export fn editor_perf_new() -> EditorPerfCounters =
     draw_us: 0,
     total_us: 0,
     lines_touched: 0,
-    primitives: 0
+    primitives: 0,
+    visible_collect_count: 0
   }
 
 export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCounters =
@@ -34,14 +37,16 @@ export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCoun
     draw_us: counters.draw_us,
     total_us: counters.total_us,
     lines_touched: counters.lines_touched,
-    primitives: counters.primitives
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count
   }
 
 export fn editor_perf_accumulate_frame(
   counters: EditorPerfCounters,
   layout_us: i32,
   draw_us: i32,
-  total_us: i32
+  total_us: i32,
+  visible_collect_count: i32
 ) -> EditorPerfCounters =
   EditorPerfCounters {
     frames: counters.frames + 1,
@@ -50,7 +55,8 @@ export fn editor_perf_accumulate_frame(
     draw_us: counters.draw_us + draw_us,
     total_us: counters.total_us + total_us,
     lines_touched: counters.lines_touched,
-    primitives: counters.primitives
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count + visible_collect_count
   }
 
 export fn editor_perf_format(counters: EditorPerfCounters) -> string =
@@ -60,12 +66,14 @@ export fn editor_perf_format(counters: EditorPerfCounters) -> string =
     + " draw_us=" + counters.draw_us.to_string()
     + " lines_touched=" + counters.lines_touched.to_string()
     + " primitives=" + counters.primitives.to_string()
+    + " visible_collect_count=" + counters.visible_collect_count.to_string()
 
 export fn editor_perf_format_demo_live(counters: EditorPerfCounters) -> string =
   "[mlc-editor] demo_live_perf frames=" + counters.frames.to_string()
     + " layout_us=" + counters.layout_us.to_string()
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
+    + " visible_collect_count=" + counters.visible_collect_count.to_string()
 
 // TRACK_EDITOR_TERMINAL §102g — same counters, distinct tag for the gate.
 export fn editor_perf_format_demo_live_terminal(counters: EditorPerfCounters) -> string =
@@ -73,6 +81,7 @@ export fn editor_perf_format_demo_live_terminal(counters: EditorPerfCounters) ->
     + " layout_us=" + counters.layout_us.to_string()
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
+    + " visible_collect_count=" + counters.visible_collect_count.to_string()
 
 // TRACK_EDITOR_HYGIENE §107d — full path (no skip branches), distinct tag.
 export fn editor_perf_format_demo_live_full(counters: EditorPerfCounters) -> string =
@@ -80,3 +89,4 @@ export fn editor_perf_format_demo_live_full(counters: EditorPerfCounters) -> str
     + " layout_us=" + counters.layout_us.to_string()
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
+    + " visible_collect_count=" + counters.visible_collect_count.to_string()

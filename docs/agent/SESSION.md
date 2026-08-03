@@ -439,3 +439,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107j STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107j Green — single late collect + `visible_collect_count`; arch/perf gate; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107j Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Removed early/scroll collects; single late collect. `visible_collect_count` on `EditorPerfCounters` + accumulate/format; smoke assert. Green arch script |
+| verify  | `run_ux_visible_rows_single_collect.sh` → `ux_ok`; perf smoke `frames=30 visible_collect_count=30`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 124/124 |
+| result  | **§107j STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107j — independent rebuild+rerun; sabotages: restore second collect site, drop visible_collect_count; `run_ux_gate` ×2; close §107j → §107k Decision) |

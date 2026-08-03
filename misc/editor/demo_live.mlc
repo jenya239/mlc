@@ -1034,19 +1034,12 @@ fn main() -> i32 = do
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height, text_rect.height
     )
-    const first_visual_row = app.ux.scroll_offset_y / metrics.line_height
     let mut visible_row_budget = text_rect.height / metrics.line_height + 3
     if visible_row_budget < 1 then
       visible_row_budget = 1
     end
     let mut visual_rows = cached_visual_rows
-    if layout_skip == 0 then
-      visual_rows = collect_visible_visual_rows_pixel_budget_cached(
-        draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-        frame_layout.wrap_count_cache.prefix_visual_rows,
-        first_visual_row, visible_row_budget
-      ).rows
-    end
+    // §107j — early phase reuses cache; single collect is late (post tick_pixel).
     const tree_list_rect = folder_list_rect(tree_rect)
     const folder_rows = folder_tree_browser_rows(panels.tree)
     const crumbs_origin_x = folder_nav_crumbs_origin_x(tree_rect)
@@ -1122,13 +1115,7 @@ fn main() -> i32 = do
           app.ux.scroll_offset_x, app.ux.scroll_offset_y,
           text_rect.height / metrics.line_height
         )
-        visual_rows = collect_visible_visual_rows_pixel_budget_cached(
-          draw_text, line_index, wrap_viewport_width, font_path, zoom_font_size,
-          frame_layout.wrap_count_cache.prefix_visual_rows,
-          app.ux.scroll_offset_y / metrics.line_height, visible_row_budget
-        ).rows
-        cached_visual_rows = visual_rows
-        cached_visual_rows_valid = 1
+        // §107j — no mid-frame collect; late path refreshes visual_rows for paint.
       end
     end
 
@@ -1956,6 +1943,7 @@ fn main() -> i32 = do
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
     let mut perf_layout_t0 = 0
+    let mut frame_visible_collect_count = 0
     if perf_enabled then
       perf_layout_t0 = editor_perf_now_us()
     end
@@ -1980,6 +1968,7 @@ fn main() -> i32 = do
     )
     visible = visible_line_range(line_index_line_count(line_index), app.ux.scroll_offset_y, viewport)
     if layout_skip == 0 then
+      // §107j — single visible-row collect per content frame.
       visual_rows = collect_visible_visual_rows_pixel_budget_cached(
         draw_text, line_index, wrap_viewport_width_now, font_path, zoom_font_size,
         frame_layout.wrap_count_cache.prefix_visual_rows,
@@ -1987,6 +1976,9 @@ fn main() -> i32 = do
       ).rows
       cached_visual_rows = visual_rows
       cached_visual_rows_valid = 1
+      if perf_enabled then
+        frame_visible_collect_count = 1
+      end
     end
     if perf_enabled then
       perf_layout_us = editor_perf_now_us() - perf_layout_t0
@@ -2786,7 +2778,8 @@ fn main() -> i32 = do
       const perf_draw_us = editor_perf_now_us() - perf_draw_t0
       const perf_total_us = editor_perf_now_us() - perf_frame_t0
       perf_counters = editor_perf_accumulate_frame(
-        perf_counters, perf_layout_us, perf_draw_us, perf_total_us
+        perf_counters, perf_layout_us, perf_draw_us, perf_total_us,
+        frame_visible_collect_count
       )
       if perf_counters.frames >= perf_frame_limit then
         if terminal_perf_enabled then

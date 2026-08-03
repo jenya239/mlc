@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; §107j Decision+Red done (Green next)
+## Status: **open** 2026-08-03 — §107a–§107i **CLOSED**; §107j Green done (Critic STEP=3 next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -426,7 +426,7 @@ Restored; `run_ux_gate` ×2 = 123/123 (`EXIT1=0` / `EXIT2=0`).
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: 3 collect sites; counter/green absent | **done** 2026-08-03 — `scripts/run_ux_visible_rows_single_collect_red.sh` exits non-zero |
-| 2 | Green: single late collect + counter; gates green; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 2 | Green: single late collect + counter; gates green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — early/scroll collects removed; late collect only; `visible_collect_count` on perf; smoke `frames=30 visible_collect_count=30`; `ux_ok visible_rows_single_collect`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 124/124 |
 | 3 | Critic | pending |
 
 ## §107k `EDITOR_TERMINAL_DAMAGE_REPAINT` (EHA-11)
