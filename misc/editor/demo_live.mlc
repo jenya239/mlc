@@ -2231,11 +2231,19 @@ fn main() -> i32 = do
         )
       end
     end
-    solid = solid_renderer_rect(
-      solid, width, height,
-      editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height,
-      theme.background_red, theme.background_green, theme.background_blue, 1.0
-    )
+    let mut text_pane_ops: [EditorPaintOp] = []
+    text_pane_ops.push(editor_paint_op_rect(
+      "text_pane",
+      editor_rect.x,
+      editor_rect.y,
+      editor_rect.width,
+      editor_rect.height,
+      theme.background_red,
+      theme.background_green,
+      theme.background_blue,
+      1.0
+    ))
+    solid = editor_paint_ops_flatten(solid, width, height, text_pane_ops)
     if minimap_enabled != 0 then
       solid = solid_renderer_rect(
         solid, width, height,
@@ -2300,16 +2308,22 @@ fn main() -> i32 = do
     const current_line_report = editor_ux_current_line_draw_report(
       app.ux, current_line_metrics, line_index
     )
+    let mut text_content_ops: [EditorPaintOp] = []
     let mut current_line_index = 0
     while current_line_index < current_line_report.highlights.length() do
       const current_line_highlight = current_line_report.highlights[current_line_index]
       if current_line_highlight.width > 0 then
-        solid = solid_renderer_rect(
-          solid, width, height,
-          current_line_highlight.x, current_line_highlight.y,
-          current_line_highlight.width, current_line_highlight.height,
-          theme.panel_red, theme.panel_green, theme.panel_blue, 0.55
-        )
+        text_content_ops.push(editor_paint_op_rect(
+          "current_line",
+          current_line_highlight.x,
+          current_line_highlight.y,
+          current_line_highlight.width,
+          current_line_highlight.height,
+          theme.panel_red,
+          theme.panel_green,
+          theme.panel_blue,
+          0.55
+        ))
       end
       current_line_index = current_line_index + 1
     end
@@ -2322,12 +2336,17 @@ fn main() -> i32 = do
     while trailing_ws_index < trailing_ws_report.highlights.length() do
       const trailing_ws_highlight = trailing_ws_report.highlights[trailing_ws_index]
       if trailing_ws_highlight.width > 0 then
-        solid = solid_renderer_rect(
-          solid, width, height,
-          trailing_ws_highlight.x, trailing_ws_highlight.y,
-          trailing_ws_highlight.width, trailing_ws_highlight.height,
-          theme.selection_red, theme.selection_green, theme.selection_blue, 0.35
-        )
+        text_content_ops.push(editor_paint_op_rect(
+          "trailing_ws",
+          trailing_ws_highlight.x,
+          trailing_ws_highlight.y,
+          trailing_ws_highlight.width,
+          trailing_ws_highlight.height,
+          theme.selection_red,
+          theme.selection_green,
+          theme.selection_blue,
+          0.35
+        ))
       end
       trailing_ws_index = trailing_ws_index + 1
     end
@@ -2352,19 +2371,29 @@ fn main() -> i32 = do
         const find_highlight = find_report.highlights[find_index]
         if find_highlight.width > 0 then
           if find_highlight.is_active != 0 then
-            solid = solid_renderer_rect(
-              solid, width, height,
-              find_highlight.x, find_highlight.y,
-              find_highlight.width, find_highlight.height,
-              theme.accent_red, theme.accent_green, theme.accent_blue, 0.45
-            )
+            text_content_ops.push(editor_paint_op_rect(
+              "find_active",
+              find_highlight.x,
+              find_highlight.y,
+              find_highlight.width,
+              find_highlight.height,
+              theme.accent_red,
+              theme.accent_green,
+              theme.accent_blue,
+              0.45
+            ))
           else
-            solid = solid_renderer_rect(
-              solid, width, height,
-              find_highlight.x, find_highlight.y,
-              find_highlight.width, find_highlight.height,
-              theme.muted_red, theme.muted_green, theme.muted_blue, 0.35
-            )
+            text_content_ops.push(editor_paint_op_rect(
+              "find_match",
+              find_highlight.x,
+              find_highlight.y,
+              find_highlight.width,
+              find_highlight.height,
+              theme.muted_red,
+              theme.muted_green,
+              theme.muted_blue,
+              0.35
+            ))
           end
         end
         find_index = find_index + 1
@@ -2387,13 +2416,17 @@ fn main() -> i32 = do
           const span = fill_spans[span_index]
           const highlight_width = span.x1 - span.x0
           if highlight_width > 0 then
-            solid = solid_renderer_rect(
-              solid, width, height,
+            text_content_ops.push(editor_paint_op_rect(
+              "selection",
               text_pen_x + span.x0,
               text_rect.y + 2 + span.visual_row_index * metrics.line_height,
-              highlight_width, metrics.line_height,
-              theme.selection_red, theme.selection_green, theme.selection_blue, 1.0
-            )
+              highlight_width,
+              metrics.line_height,
+              theme.selection_red,
+              theme.selection_green,
+              theme.selection_blue,
+              1.0
+            ))
           end
           span_index = span_index + 1
         end
@@ -2442,11 +2475,17 @@ fn main() -> i32 = do
           last_caret_rects, caret_x, caret_y, caret_w, caret_h
         )
         if blink_on then
-          solid = solid_renderer_rect(
-            solid, width, height,
-            caret_x, caret_y, caret_w, caret_h,
-            theme.caret_red, theme.caret_green, theme.caret_blue, 1.0
-          )
+          text_content_ops.push(editor_paint_op_rect(
+            "caret",
+            caret_x,
+            caret_y,
+            caret_w,
+            caret_h,
+            theme.caret_red,
+            theme.caret_green,
+            theme.caret_blue,
+            1.0
+          ))
         end
         if caret_multi_index == multi.primary_index then
           last_caret_x = caret_x
@@ -2458,6 +2497,7 @@ fn main() -> i32 = do
       end
       caret_multi_index = caret_multi_index + 1
     end
+    solid = editor_paint_ops_flatten(solid, width, height, text_content_ops)
 
     const editor_hovered =
       point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)

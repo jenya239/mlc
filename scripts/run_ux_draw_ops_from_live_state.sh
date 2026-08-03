@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1–q4: chrome/tabs/nav/gutter).
+# TRACK_EDITOR_HYGIENE §107q — EditorPaintOp live paint (q1–q5: chrome/tabs/nav/gutter/text).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -97,6 +97,26 @@ if ! grep -q '"gutter"' "$DEMO"; then
 fi
 if grep -q 'gutter_rect.x, gutter_rect.y, gutter_rect.width, gutter_rect.height' "$DEMO"; then
   fail "demo_live still paints gutter_rect via direct solid_renderer_rect (q4)"
+fi
+
+# q5: text pane + under-glyph fills via ops.
+if ! grep -q 'text_pane_ops' "$DEMO"; then
+  fail "demo_live missing text_pane_ops (q5)"
+fi
+if ! grep -q '"text_pane"' "$DEMO"; then
+  fail "demo_live missing text_pane paint op id (q5)"
+fi
+if ! grep -q 'text_content_ops' "$DEMO"; then
+  fail "demo_live missing text_content_ops (q5)"
+fi
+if ! grep -q '"current_line"' "$DEMO"; then
+  fail "demo_live missing current_line paint op id (q5)"
+fi
+if ! grep -q '"selection"' "$DEMO"; then
+  fail "demo_live missing selection paint op id (q5)"
+fi
+if grep -q 'editor_rect.x, editor_rect.y, editor_rect.width, editor_rect.height' "$DEMO"; then
+  fail "demo_live still paints editor_rect via direct solid_renderer_rect (q5)"
 fi
 
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"

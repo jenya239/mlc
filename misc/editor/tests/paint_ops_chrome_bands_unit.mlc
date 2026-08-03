@@ -64,6 +64,25 @@ fn main() -> i32 = do
   if gutter.width != 40 || gutter.height != 400 then
     return 13
   end
+  // q5: text pane + under-glyph fills
+  const text_pane = editor_paint_op_rect(
+    "text_pane", 240, 40, 500, 400, 0.1, 0.1, 0.12, 1.0
+  )
+  if text_pane.widget_id != "text_pane" then
+    return 14
+  end
+  const current_line = editor_paint_op_rect(
+    "current_line", 248, 60, 480, 16, 0.4, 0.5, 0.6, 0.55
+  )
+  if current_line.widget_id != "current_line" then
+    return 15
+  end
+  const selection = editor_paint_op_rect(
+    "selection", 248, 80, 40, 16, 0.3, 0.4, 0.5, 1.0
+  )
+  if selection.widget_id != "selection" then
+    return 16
+  end
   print("[ux] draw_ops_from_live_state ok")
   0
 end
