@@ -528,3 +528,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108c CLOSED.** Advances to §108d |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d `EDITOR_HOVER_CPU_GATE` — freeze Decision: measure then write idle/hover/scroll CPU ceilings; red first) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=0, §108d Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §108d Decision: L1 counter gate `run_ux_hover_cpu_budget` + L2 /proc hover CPU% with ceiling measured-then-written at Green (no invent); keep idle gate; sabotage content paint on hover |
+| verify  | Decision text in `TRACK_EDITOR_RETAINED_PAINT.md` STEP=0=done; PLAN §108d → STEP=1 Red; docs-only — no code gate |
+| result  | **§108d STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d Red — `run_ux_hover_cpu_budget` fails on today's tree: no hover-under-pointer gate / no L2 ceiling path) |
