@@ -408,3 +408,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109b STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b Red — no wake harness / miss-geometry) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109b Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_wake_on_hover_red.sh`: fail while wake harness / reason counters / WAKE_PROBE absent and `dogfood_text_x = 420` still present |
+| verify  | `bash scripts/run_editor_perf_wake_on_hover_red.sh` → FAIL exit 1 (`no editor perf wake-on-hover gate`) |
+| result  | **§109b STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109b Green — text-rect geometry + reason counters + L1/L2) |
