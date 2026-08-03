@@ -558,3 +558,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108d STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d Green — L1 `hover_cpu_budget` + measure-then-write L2 ceiling; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=2, §108d Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | L1 `hover_cpu_budget.mlc`; L2 /proc under `MLC_EDITOR_HOVER_CPU_PROBE`; measured min_cpu=0 → `HOVER_CPU_BUDGET_PERCENT=10`; gate script |
+| verify  | green `ux_ok` L1+L2; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 136/136 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108d STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108d — independent rebuild+rerun; sabotage: content_dirty on pointer / L2 ceiling=1; `run_ux_gate` ×2; close §108d → resume §107q) |

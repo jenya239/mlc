@@ -1,0 +1,111 @@
+// TRACK_EDITOR_RETAINED_PAINT 108d - hover-under-pointer must not rebuild content/text.
+import { rect_new } from '../../gui/layout'
+import {
+  editor_ux_chrome_hit_slots_basic,
+  editor_ux_chrome_hit_style_id,
+  editor_ux_chrome_hit_pointer_plan
+} from '../ux/chrome_hit'
+import {
+  editor_perf_new,
+  editor_perf_note_content_rebuild,
+  editor_perf_note_text_layer_rebuild,
+  editor_perf_note_chrome_rebuild
+} from '../ui/perf'
+
+fn main() -> i32 = do
+  const tree = rect_new(0, 54, 200, 500)
+  const text = rect_new(204, 54, 600, 500)
+  const slots = editor_ux_chrome_hit_slots_basic(
+    800, 600, 18, 18, 18, 16, tree, text
+  )
+  let mut counters = editor_perf_new()
+  let mut status = 0
+
+  counters = editor_perf_note_content_rebuild(counters)
+  counters = editor_perf_note_text_layer_rebuild(counters)
+  if counters.content_rebuild_count != 1 then
+    status = 1
+  end
+  if counters.text_layer_rebuild_count != 1 then
+    status = 1
+  end
+
+  let mut last_hit = "none"
+  let mut hover_index = 0
+  while hover_index < 8 do
+    const mouse_x = 40 + hover_index
+    const hit_id = editor_ux_chrome_hit_style_id(mouse_x, 20, slots)
+    const plan = editor_ux_chrome_hit_pointer_plan(1, last_hit, hit_id)
+    if hover_index == 0 then
+      if plan.chrome_dirty == 0 then
+        status = 2
+      end
+      last_hit = plan.next_hit_id
+      counters = editor_perf_note_chrome_rebuild(counters)
+    end
+    if hover_index > 0 then
+      if plan.schedule_frame != 0 then
+        status = 3
+      end
+      if counters.content_rebuild_count != 1 then
+        status = 4
+      end
+      if counters.text_layer_rebuild_count != 1 then
+        status = 4
+      end
+      if counters.chrome_rebuild_count != 1 then
+        status = 4
+      end
+    end
+    hover_index = hover_index + 1
+  end
+
+  const tree_hit = editor_ux_chrome_hit_style_id(20, 100, slots)
+  const change_plan = editor_ux_chrome_hit_pointer_plan(1, last_hit, tree_hit)
+  if change_plan.chrome_dirty == 0 then
+    status = 5
+  end
+  counters = editor_perf_note_chrome_rebuild(counters)
+  if counters.content_rebuild_count != 1 then
+    status = 5
+  end
+  if counters.text_layer_rebuild_count != 1 then
+    status = 5
+  end
+  if counters.chrome_rebuild_count != 2 then
+    status = 5
+  end
+
+  counters = editor_perf_note_content_rebuild(counters)
+  if counters.content_rebuild_count != 2 then
+    status = 6
+  end
+
+  if status == 1 then
+    println("ux_fail hover_cpu_budget content_baseline")
+    return 1
+  end
+  if status == 2 then
+    println("ux_fail hover_cpu_budget first_hit_chrome")
+    return 2
+  end
+  if status == 3 then
+    println("ux_fail hover_cpu_budget stable_scheduled")
+    return 3
+  end
+  if status == 4 then
+    println("ux_fail hover_cpu_budget stable_rebuild")
+    return 4
+  end
+  if status == 5 then
+    println("ux_fail hover_cpu_budget hit_change")
+    return 5
+  end
+  if status == 6 then
+    println("ux_fail hover_cpu_budget scroll_bump")
+    return 6
+  end
+
+  println("ux_ok hover_cpu_budget")
+  0
+end

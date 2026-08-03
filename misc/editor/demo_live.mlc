@@ -783,6 +783,8 @@ fn main() -> i32 = do
   const terminal_perf_enabled = has("MLC_EDITOR_TERMINAL_PERF")
   const perf_full_enabled = has("MLC_EDITOR_PERF_FULL")
   const perf_baseline_enabled = has("MLC_EDITOR_PERF")
+  // §108d L2: same-hit pointer jitter without GLFW mouse (measure harness).
+  const hover_cpu_probe = has("MLC_EDITOR_HOVER_CPU_PROBE")
   // Counters run for baseline, terminal, or full. Heavy skips only on baseline/terminal
   // when PERF_FULL is not set (FULL overrides skips).
   const perf_enabled =
@@ -899,6 +901,10 @@ fn main() -> i32 = do
     let mut content_dirty = frame_in.content_dirty
     let mut pointer_dirty = frame_in.pointer_dirty
     let mut chrome_dirty = frame_in.chrome_dirty
+    // §108d: raise pointer_dirty every tick; hit-stable plan clears it (same-hit hover).
+    if hover_cpu_probe then
+      pointer_dirty = 1
+    end
     if app.ux.tabs.active_index != last_active_index then
       content_dirty = 1
     end
