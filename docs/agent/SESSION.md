@@ -544,3 +544,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107l STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107l — independent rebuild+rerun; sabotages: restore flatten indent / restore demo `document_from_string` on replace; `run_ux_gate` ×2; close §107l → §107m Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107l)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107l Green `7fa077a9`. Fresh `.tmp/critic_107l_*`: both gates `ux_ok`. Sabotages: flatten marker in indent → fail; `document_from_string(replace_*.text)` in demo → fail; both restored. Closed §107l |
+| verify  | critic gates ok; sab1/sab2 exit 1; `run_ux_gate` ×2 = 127/127 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107l CLOSED.** Advances to §107m |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107m `EDITOR_OPEN_SIZE_GUARD` — freeze Decision; red: open_buffer_from_path still accepts arbitrary size + multi-pass normalize) |

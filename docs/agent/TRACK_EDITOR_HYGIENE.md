@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; §107l Green done (Critic next)
+## Status: **open** 2026-08-03 — §107a–§107l **CLOSED**; queue head §107m Decision
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -499,7 +499,21 @@ Independent re-audit of Green commit `9caf45cc`. Gate
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: indent/outdent still flatten; replace still `document_from_string`; green absent | **done** 2026-08-03 — `run_ux_indent_no_full_stringify_red.sh` + `run_ux_replace_no_full_stringify_red.sh` exit non-zero |
 | 2 | Green: range edits; both gates; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — indent range-edit; find replace via `document_delete`/`insert`; both `*_no_full_stringify` gates |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107l Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `7fa077a9`. Gates:
+`run_ux_indent_no_full_stringify` / `run_ux_replace_no_full_stringify` →
+fresh `.tmp/critic_107l_*` both `ux_ok`. Sabotages (then `git checkout --`
+restore; tree clean of Critic mutations):
+1. Restore flatten marker (`document_to_string`) in `indent.mlc` →
+   FAIL (`indent.mlc still full-flattens`).
+2. Restore `document_from_string(replace_one_result.text)` in `demo_live` →
+   FAIL (`demo_live still document_from_string(replace_*.text)`).
+`run_ux_gate` ×2 = 127/127.
+
+**§107l CLOSED.** Next: §107m `EDITOR_OPEN_SIZE_GUARD`.
 
 ## §107m `EDITOR_OPEN_SIZE_GUARD` (EHA-13)
 `open_buffer_from_path` reads any size, then makes 4 more full passes
