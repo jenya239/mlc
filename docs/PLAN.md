@@ -1073,7 +1073,6 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
         → §107p EDITOR_TOOLBAR_COMMAND_TABLE (CLOSED)
         → §107q EDITOR_DRAW_OPS (CLOSED)
         → §107r EDITOR_UX_GATE_BEHAVIORAL (Decision next)
-        → §107r EDITOR_UX_GATE_BEHAVIORAL
       (P2 backlog B1–B11 lives in the track file, not in this queue)
       → [agent/TRACK_EDITOR_HYGIENE](agent/TRACK_EDITOR_HYGIENE.md))**
   → MLC_SCRIPT_VM Phase 1 (§103a `SCRIPT_VM_VALUE_REP` — authorized, **queued behind §107**;
