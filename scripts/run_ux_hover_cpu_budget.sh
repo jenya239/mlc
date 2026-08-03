@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# TRACK_EDITOR_RETAINED_PAINT §108d — L1 counter gate + L2 /proc hover CPU%.
-# L2 ceiling HOVER_CPU_BUDGET_PERCENT measured 2026-08-03 then written (honesty).
+# TRACK_EDITOR_RETAINED_PAINT §108d L1 + TRACK_EDITOR_PERF_DOGFOOD §109c L2.
+# L1: deterministic counter scenario (unchanged).
+# L2: visible dogfood still-over-text (§109c honesty) — NOT sufficient alone for
+# epic hover close; load-bearing proof is scripts/run_editor_perf_wake_on_hover.sh.
+# Committed L2 ceiling = epic still budget 8% (env may raise, not lower).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,15 +16,11 @@ DEMO="$ROOT_DIR/misc/editor/demo_live.mlc"
 PERF="$ROOT_DIR/misc/editor/ui/perf.mlc"
 DEMO_OUT="${EDITOR_DEMO_LIVE_FS_OUT:-$ROOT_DIR/tmp/editor_demo_live_fs_compile}"
 DEMO_BIN="$DEMO_OUT/bin"
+WAKE="$ROOT_DIR/scripts/run_editor_perf_wake_on_hover.sh"
 
-# Measured under MLC_EDITOR_HOVER_CPU_PROBE=1 (min of 3×2s windows): cpu_percent=0.
-# Headroom → 10 (same order as idle_cpu_budget_stable default).
-# Committed floor: env may raise budget, not lower (ceiling=1 would false-green at cpu=0).
-COMMITTED_HOVER_CPU_BUDGET_PERCENT=10
+# §109c: epic still-over-text budget (replaces false-green cpu=0 → ceiling 10).
+COMMITTED_HOVER_CPU_BUDGET_PERCENT=8
 HOVER_CPU_BUDGET_PERCENT="${HOVER_CPU_BUDGET_PERCENT:-$COMMITTED_HOVER_CPU_BUDGET_PERCENT}"
-WARMUP_SEC="${HOVER_CPU_WARMUP_SEC:-4}"
-SAMPLE_SEC="${HOVER_CPU_SAMPLE_SEC:-2}"
-SAMPLE_ROUNDS="${HOVER_CPU_SAMPLE_ROUNDS:-3}"
 
 fail() {
   echo "[ux hover_cpu_budget] FAIL: $1" >&2
@@ -29,19 +28,20 @@ fail() {
 }
 
 if [ "$HOVER_CPU_BUDGET_PERCENT" -lt "$COMMITTED_HOVER_CPU_BUDGET_PERCENT" ]; then
-  fail "HOVER_CPU_BUDGET_PERCENT=$HOVER_CPU_BUDGET_PERCENT below committed measured ceiling $COMMITTED_HOVER_CPU_BUDGET_PERCENT (Decision sabotage)"
+  fail "HOVER_CPU_BUDGET_PERCENT=$HOVER_CPU_BUDGET_PERCENT below committed ceiling $COMMITTED_HOVER_CPU_BUDGET_PERCENT"
 fi
 
 [ -x "$MLCC" ] || fail "mlcc not found at $MLCC"
 [ -f "$ENTRY" ] || fail "missing $ENTRY"
 [ -f "$DEMO" ] || fail "missing demo_live.mlc"
 [ -f "$PERF" ] || fail "missing perf.mlc"
+[ -f "$WAKE" ] || fail "missing wake harness (hover L2 authority dependency)"
 
 grep -q 'content_rebuild_count' "$PERF" || fail "perf missing content_rebuild_count"
 grep -q 'text_layer_rebuild_count' "$PERF" || fail "perf missing text_layer_rebuild_count"
 grep -q 'chrome_rebuild_count' "$PERF" || fail "perf missing chrome_rebuild_count"
-grep -q 'MLC_EDITOR_HOVER_CPU_PROBE' "$DEMO" || fail "demo_live missing hover CPU probe"
 grep -q 'editor_ux_chrome_hit_pointer_plan' "$DEMO" || fail "demo_live missing hit pointer plan"
+grep -q 'dogfood_probe_x' "$DEMO" || fail "demo_live missing text-rect probe"
 
 # Decision sabotage: mouse-move must not raise content_dirty.
 FRAME_INPUT="$ROOT_DIR/misc/editor/app/frame_input.mlc"
@@ -81,92 +81,37 @@ if ! printf '%s\n' "$output" | grep -q 'ux_ok hover_cpu_budget'; then
 fi
 echo "[ux hover_cpu_budget] L1 ok" >&2
 
-# --- L2: /proc CPU% under same-hit hover probe ---
+# --- L2: visible still-over-text via wake harness (no VISIBLE=0 skip-green) ---
 if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists glfw3; then
-  echo "[ux hover_cpu_budget] SKIP L2: glfw3 not found" >&2
-  echo "ux_ok hover_cpu_budget"
-  exit 0
+  fail "glfw3 not found — Decision: no L2 skip-green"
 fi
 if [ ! -f /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf ]; then
-  echo "[ux hover_cpu_budget] SKIP L2: DejaVuSansMono.ttf not found" >&2
-  echo "ux_ok hover_cpu_budget"
-  exit 0
+  fail "DejaVuSansMono.ttf not found — Decision: no L2 skip-green"
 fi
 if [ ! -r /proc/self/stat ]; then
-  echo "[ux hover_cpu_budget] SKIP L2: /proc not available" >&2
-  echo "ux_ok hover_cpu_budget"
-  exit 0
+  fail "/proc not available — Decision: no L2 skip-green"
 fi
 
-if [ ! -x "$DEMO_BIN" ]; then
-  bash "$ROOT_DIR/scripts/run_editor_demo_live_fs_compile.sh"
-fi
-[ -x "$DEMO_BIN" ] || fail "missing demo binary $DEMO_BIN"
-
-read_utime_stime_jiffies() {
-  local pid="$1"
-  local line rest
-  if [ ! -r "/proc/$pid/stat" ]; then
-    echo ""
-    return 1
-  fi
-  line="$(cat "/proc/$pid/stat")"
-  rest="${line#*) }"
-  set -- $rest
-  echo $((${12} + ${13}))
-}
-
-HZ="$(getconf CLK_TCK 2>/dev/null || echo 100)"
-if [ "$HZ" -le 0 ]; then
-  HZ=100
-fi
-
-export MLC_GLFW_VISIBLE=0
+export MLC_GLFW_VISIBLE=1
+export MLC_EDITOR_PERF_OPEN="$DEMO"
 export MLC_EDITOR_ROOT="${MLC_EDITOR_ROOT:-$ROOT_DIR}"
-export MLC_EDITOR_HOVER_CPU_PROBE=1
+# Short windows for hover L2; wake still asserts hit=text + ceiling ≤8.
+export WAKE_SAMPLE_SEC="${HOVER_CPU_SAMPLE_SEC:-2}"
+export WAKE_SAMPLE_ROUNDS="${HOVER_CPU_SAMPLE_ROUNDS:-2}"
+export WAKE_SETTLE_SEC="${HOVER_CPU_SETTLE_SEC:-2}"
+export WAKE_WARMUP_SEC="${HOVER_CPU_WARMUP_SEC:-3}"
+export WAKE_STILL_CPU_MAX="$HOVER_CPU_BUDGET_PERCENT"
+export WAKE_JITTER_CPU_MAX="${HOVER_CPU_JITTER_MAX:-15}"
+export EDITOR_PERF_WAKE_OUT="${UX_HOVER_CPU_BUDGET_WAKE_OUT:-$ROOT_DIR/.tmp/ux_hover_cpu_budget_wake}"
 
-"$DEMO_BIN" >/dev/null 2>&1 &
-pid=$!
-cleanup() {
-  kill "$pid" 2>/dev/null || true
-  wait "$pid" 2>/dev/null || true
-}
-trap cleanup EXIT
-
-sleep "$WARMUP_SEC"
-if ! kill -0 "$pid" 2>/dev/null; then
-  fail "demo exited during hover warmup"
+bash "$WAKE"
+report="$EDITOR_PERF_WAKE_OUT/report.txt"
+[ -f "$report" ] || fail "missing wake report after L2"
+still="$(grep -E '^still_over_text_cpu_percent=' "$report" | cut -d= -f2)"
+[ -n "$still" ] || fail "missing still_over_text_cpu_percent in wake report"
+if [ "$still" -gt "$HOVER_CPU_BUDGET_PERCENT" ]; then
+  fail "hover still_over_text cpu=${still}% > budget=${HOVER_CPU_BUDGET_PERCENT}%"
 fi
 
-min_percent=100
-round=0
-while [ "$round" -lt "$SAMPLE_ROUNDS" ]; do
-  start_jiffies="$(read_utime_stime_jiffies "$pid")"
-  if [ -z "$start_jiffies" ]; then
-    fail "cannot read /proc/$pid/stat"
-  fi
-  sleep "$SAMPLE_SEC"
-  if ! kill -0 "$pid" 2>/dev/null; then
-    fail "demo exited during hover sample"
-  fi
-  end_jiffies="$(read_utime_stime_jiffies "$pid")"
-  if [ -z "$end_jiffies" ]; then
-    fail "cannot read /proc/$pid/stat after sample"
-  fi
-  delta=$((end_jiffies - start_jiffies))
-  if [ "$delta" -lt 0 ]; then
-    delta=0
-  fi
-  cpu_percent=$((delta * 100 / (HZ * SAMPLE_SEC)))
-  if [ "$cpu_percent" -lt "$min_percent" ]; then
-    min_percent=$cpu_percent
-  fi
-  round=$((round + 1))
-done
-
-if [ "$min_percent" -gt "$HOVER_CPU_BUDGET_PERCENT" ]; then
-  fail "hover min_cpu_percent=${min_percent} (budget=${HOVER_CPU_BUDGET_PERCENT} rounds=${SAMPLE_ROUNDS} sample=${SAMPLE_SEC}s)"
-fi
-
-echo "ux_ok hover_cpu_budget cpu_percent=${min_percent}"
-echo "[ux hover_cpu_budget] ok L1+L2 cpu_percent=${min_percent} budget=${HOVER_CPU_BUDGET_PERCENT}" >&2
+echo "ux_ok hover_cpu_budget cpu_percent=${still}"
+echo "[ux hover_cpu_budget] ok L1+L2 still=${still}% budget=${HOVER_CPU_BUDGET_PERCENT} (wake authority; not sole epic hover green)" >&2

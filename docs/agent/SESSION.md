@@ -483,3 +483,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109c STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c Green — rewrite hover L2 + PERF_FULL ceiling + honesty harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109c Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Hover L2→wake VISIBLE=1+OPEN ceiling 8; idle mouse-away disclaimer; PERF_FULL `TOTAL_US_MAX=16357201`; `run_editor_perf_gate_honesty.sh` green |
+| verify  | honesty exit 0 (still=0% jitter=0% remasure_total_us=13156194 ceiling=16357201); red FAIL already present; no VISIBLE=0/cpu=0 L2 |
+| result  | **§109c STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109c — audit honesty/hover L2/PERF_FULL ceiling; sab VISIBLE=0 / inflate total) |

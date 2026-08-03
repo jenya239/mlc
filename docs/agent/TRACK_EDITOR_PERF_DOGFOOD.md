@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109c** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109c** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -196,7 +196,7 @@ for §109a measure-only gate).
 
 Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_DOGFOOD=1`, `MLC_EDITOR_PERF_WAKE_PROBE=1`, no PERF skip-heavy). H11: overlay/menu `chrome_dirty` only on visibility transition (`frame_input.mlc`).
 
-## §109c `EDITOR_PERF_GATE_HONESTY` — **queue head**
+## §109c `EDITOR_PERF_GATE_HONESTY` — **Critic**
 
 | Item | Choice |
 |------|--------|
@@ -226,12 +226,23 @@ Harness: `scripts/run_editor_perf_wake_on_hover.sh` (`MLC_GLFW_VISIBLE=1`, `MLC_
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: honesty gap / false-green paths present | **done** 2026-08-04 — `scripts/run_editor_perf_gate_honesty_red.sh` exit 1 |
-| 2 | Green: rewrite gates + honesty harness | pending |
+| 2 | Green: rewrite gates + honesty harness | **done** 2026-08-04 — honesty exit 0; still=0% jitter=0%; `TOTAL_US_MAX=16357201`; red “already present” |
 | 3 | Critic | pending |
 
 ### Gate honesty (measured)
 
-_pending Green_
+Measured 2026-08-04 via `scripts/run_editor_demo_live_perf_full_smoke.sh` (10k×5)
+then wake still/jitter via honesty harness:
+
+| metric | value |
+|--------|------:|
+| measured_total_us | 13085761 |
+| TOTAL_US_MAX | 16357201 |
+| still_over_text_cpu_percent | 0 |
+| text_jitter_cpu_percent | 0 |
+| remasure_total_us (honesty run) | 13156194 |
+
+`TOTAL_US_MAX` = measured × 1.25 (integer). Hover L2: `VISIBLE=1` + wake still ≤8%; idle gate labeled mouse-away-only.
 
 ## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET`
 

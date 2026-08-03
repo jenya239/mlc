@@ -3,6 +3,8 @@
 # STEP=2: paint-only caret overlay (no full-frame clear) + live /proc sample.
 # CPU% = 100 * delta(utime+stime) / (HZ * SAMPLE_SEC); budget default ≤10%.
 # Uses min of SAMPLE_ROUNDS windows after warmup (host noise / startup spikes).
+# §109c: mouse-away only — must not be cited as still-over-text / hover green.
+# Load-bearing hover/still proof: scripts/run_editor_perf_wake_on_hover.sh.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
