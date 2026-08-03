@@ -514,3 +514,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107k CLOSED.** Advances to §107l |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY` — freeze Decision; red: indent/outdent and replace still full-stringify) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=0+1, §107l Decision+Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0+1 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Froze §107l Decision (indent/outdent range-edit like §100; replace via document_delete/insert, no `document_from_string` on replace). Red: `run_ux_indent_no_full_stringify_red.sh`, `run_ux_replace_no_full_stringify_red.sh` |
+| verify  | both red scripts → FAIL exit 1 (flatten/rebuild + demo `document_from_string(replace_*.text)` gaps) |
+| result  | **§107l STEP=0/1 done (Decision+Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107l Green — range indent/outdent + document replace apply; both no_full_stringify gates; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |

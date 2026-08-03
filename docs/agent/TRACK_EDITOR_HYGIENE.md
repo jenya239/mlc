@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; queue head §107l Decision
+## Status: **open** 2026-08-03 — §107a–§107k **CLOSED**; §107l Decision+Red done (Green next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -479,12 +479,27 @@ Independent re-audit of Green commit `9caf45cc`. Gate
 **§107k CLOSED.** Next: §107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY`.
 
 ## §107l `EDITOR_INDENT_REPLACE_NO_STRINGIFY` (EHA-12)
-`edit_indent_tab` / `edit_outdent_lines` (`document/indent.mlc`) do
-`document_to_string` + full `rebuild_lines_with_transform` + `document_from_string`;
-`find_replace_one` / `_all` (`ux/find.mlc`) splice on the full string.
-**Fix:** route through `document_line_start_before` / range edits, as §93/§98/§99/§100
-already did for `edit.mlc`. **Gates:** `run_ux_indent_no_full_stringify`,
-`run_ux_replace_no_full_stringify`.
+
+### Decision (frozen 2026-08-03)
+
+| Item | Choice |
+|------|--------|
+| Problem | (1) `edit_indent_tab` (multi-line range) and `edit_outdent_lines` (`document/indent.mlc`) do `document_to_string` → `rebuild_lines_with_transform` (full line rebuild) → `document_from_string`. (2) `find_replace_one` / `find_replace_all` (`ux/find.mlc`) splice the full string; `demo_live` CmdReplace* applies via `document_from_string(replace_*.text)`, rebuilding the whole piece table from the spliced buffer |
+| Fix | (1) Indent/outdent: same shape as `edit_toggle_line_comment` (§100) — `document_line_start_before` / line-end scan / `document_byte_slice` on affected lines only, then one `document_delete`+`document_insert` of the rewritten span. Drop `rebuild_lines_with_transform` and the flatten/rebuild path. Collapsed Tab stays `edit_insert_text`. (2) Replace: apply each match via `document_delete`+`document_insert` at match byte ranges (last→first for all); remove `document_from_string(replace_*.text)` from `demo_live`. Session match list may rescan text after the edit, but the `TextDocument` must not be rebuilt from a full spliced string |
+| Module touch | `misc/editor/document/indent.mlc`, `misc/editor/ux/find.mlc` and/or `misc/editor/demo_live.mlc` (CmdReplace*); keep `ux/indent_apply.mlc` as thin wrappers; gates `scripts/run_ux_indent_no_full_stringify.sh`, `scripts/run_ux_replace_no_full_stringify.sh` (reuse `tab_shift_tab_indents` / `replace_one_and_all` behaviour + arch checks) |
+| Gate | `run_ux_indent_no_full_stringify`: `edit_indent_tab`/`edit_outdent_lines` have no `document_to_string`/`document_from_string`; `run_ux_tab_shift_tab_indents` still `ux_ok`. `run_ux_replace_no_full_stringify`: product replace path uses `document_delete`/`document_insert` (no `document_from_string` on replace result); `run_ux_replace_one_and_all` still `ux_ok` |
+| Sabotage (required before close) | (1) Restore flatten path in indent → indent gate fails. (2) Restore `document_from_string` on replace in demo → replace gate fails |
+| REG | no |
+| Out of scope | Incremental line index (§107f); open-size guard (§107m); find highlight/query scan cost; changing Tab-collapsed insert semantics |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-03 |
+| 1 | Red: indent/outdent still flatten; replace still `document_from_string`; green absent | **done** 2026-08-03 — `run_ux_indent_no_full_stringify_red.sh` + `run_ux_replace_no_full_stringify_red.sh` exit non-zero |
+| 2 | Green: range edits; both gates; `dev_gate_fast`; `run_ux_gate` ×2 | pending |
+| 3 | Critic | pending |
 
 ## §107m `EDITOR_OPEN_SIZE_GUARD` (EHA-13)
 `open_buffer_from_path` reads any size, then makes 4 more full passes
