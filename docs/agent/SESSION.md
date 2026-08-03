@@ -228,3 +228,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§103d STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103d — audit run_arithmetic / numeric errs / perf line; then §103e or close §103d) |
+
+### Turn 2026-08-03 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103d)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Audited §103d: independent unit out-dir + MOVE/SUB/MUL/float-div_zero probe; sabotages distinct from Driver ADD-ignore-rhs: skip verify, skip int div_zero, JUMP as no-op |
+| verify  | unit ok; probe `critic_103d_probe ok`; sab exits 1 (verify/div_zero/unsupported→no_return); restore ok; `dev_gate_fast` exit 0 |
+| result  | **§103d CLOSED (Critic OK).** No false-done |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103e `SCRIPT_VM_CONTROL_FLOW` — Decision freeze) |
