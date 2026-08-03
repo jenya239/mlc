@@ -24,8 +24,8 @@ for path in "$PIECE" "$DELETE" "$WRAP" "$OVERFLOW" "$SPANS" "$MINIMAP"; do
 done
 
 # Red: TextDocument has no monotonic version field yet.
-if grep -Eq 'version[[:space:]]*:[[:space:]]*i64' "$PIECE"; then
-  fail "TextDocument already has version: i64 (expected gap until Green)"
+if grep -Eq 'version[[:space:]]*:[[:space:]]*i(32|64)' "$PIECE"; then
+  fail "TextDocument already has version field (expected gap until Green)"
 fi
 
 # Red: insert/delete do not bump a document version.

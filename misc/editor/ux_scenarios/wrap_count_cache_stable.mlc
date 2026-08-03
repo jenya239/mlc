@@ -1,5 +1,5 @@
 // TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2 —
-// L2: idle/scroll ticks do not recompute; text/wrap_columns change does.
+// L2: idle/scroll ticks do not recompute; version/wrap_columns change does.
 import { line_index_from_string } from '../document/line_index'
 import { document_visual_row_count } from '../layout/word_wrap'
 import {
@@ -22,7 +22,7 @@ fn main() -> i32 = do
   const fixture = build_fixture(80)
   const line_index = line_index_from_string(fixture)
   const wrap_columns = 40
-  let mut cache = wrap_count_cache_new(fixture, line_index, wrap_columns)
+  let mut cache = wrap_count_cache_new(0, fixture, line_index, wrap_columns)
 
   if cache.recompute_count != 1 then
     println("ux_fail wrap_count_cache_stable warm count")
@@ -37,7 +37,7 @@ fn main() -> i32 = do
   let mut idle = 0
   while idle < 5 do
     const after_idle = wrap_count_cache_tick(
-      cache, fixture, line_index, wrap_columns
+      cache, 0, fixture, line_index, wrap_columns
     )
     if after_idle.recompute_count != cache.recompute_count then
       println("ux_fail wrap_count_cache_stable idle recompute")
@@ -52,14 +52,14 @@ fn main() -> i32 = do
   end
 
   const edited = fixture + "extra line for edit invalidate\n"
-  const after_edit = wrap_count_cache_tick_text(cache, edited, wrap_columns)
+  const after_edit = wrap_count_cache_tick_text(cache, 1, edited, wrap_columns)
   if after_edit.recompute_count != cache.recompute_count + 1 then
     println("ux_fail wrap_count_cache_stable edit recompute")
     return 5
   end
   cache = after_edit
 
-  const after_columns = wrap_count_cache_tick_text(cache, edited, wrap_columns + 8)
+  const after_columns = wrap_count_cache_tick_text(cache, 1, edited, wrap_columns + 8)
   if after_columns.recompute_count != cache.recompute_count + 1 then
     println("ux_fail wrap_count_cache_stable columns recompute")
     return 6

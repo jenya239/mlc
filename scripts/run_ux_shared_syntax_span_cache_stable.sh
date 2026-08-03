@@ -34,7 +34,7 @@ if grep -q 'syntax_span_cache, draw_text, range_start, range_end' "$DEMO"; then
   echo "[ux shared_syntax_span_cache_stable] FAIL: demo still visible-range ticks" >&2
   exit 1
 fi
-if ! grep -q 'frame_layout, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
+if ! grep -q 'frame_layout, document.version, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
   echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing full-buffer span tick via layout" >&2
   exit 1
 fi

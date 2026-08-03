@@ -61,7 +61,7 @@ fn main() -> i32 = do
   const max_rows = 12
 
   const cache = wrap_count_cache_new_pixel(
-    fixture, line_index, viewport_width_px, font_path, pixel_size
+    0, fixture, line_index, viewport_width_px, font_path, pixel_size
   )
   if cache.prefix_visual_rows.length() < 40 then
     println("ux_fail visible_rows_prefix_jump prefix_short")

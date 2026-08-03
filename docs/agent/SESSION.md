@@ -214,3 +214,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107e STEP=0/1 done (Decision+Red).** Green next |
 | issues  | Prompt INSTRUCTIONS_REV stale; followed CONTINUITY `2026-08-01-editor-hygiene-queue` |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107e Green — `version` + re-key wrap/overflow/spans/minimap; scenario `cache_keys_by_version`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107e Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Added `version: i32` on `TextDocument`; bump in `document_insert`/`document_delete`. Re-keyed wrap/overflow/spans/minimap caches on `(version, params)` (dropped stored `text`). Wired `document.version` through `frame_layout` ticks + `demo_live`. Scenario `cache_keys_by_version` + green script. Updated related stable scenarios. |
+| verify  | `run_ux_cache_keys_by_version.sh` → `ux_ok`; related cache stables ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 119/119 |
+| result  | **§107e STEP=2 done (Green), awaiting Critic before CLOSE** |
+| issues  | Prompt INSTRUCTIONS_REV stale (2026-07-28); followed CONTINUITY `2026-08-01-editor-hygiene-queue`. Decision said i64; used i32 (`checked_add` i64+int codegen fail). Freed disk mid-turn (tmp/ccache) after /tmp full. |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107e — independent rebuild+rerun; sabotage: freeze version bump on insert/delete → gate fails; `run_ux_gate` ×2; close §107e → §107f Decision) |

@@ -42,7 +42,8 @@ export type MinimapLayout = {
 }
 
 export type MinimapCacheState = {
-  text: string,
+  // TRACK_EDITOR_HYGIENE §107e — key on document version, not full text.
+  version: i32,
   rebuild_count: i32
 }
 
@@ -104,28 +105,28 @@ export fn editor_ux_content_clip_rect(
   end
 end
 
-export fn editor_ux_minimap_needs_rebuild(prev_text: string, next_text: string) -> i32 = do
-  if prev_text.byte_size() != next_text.byte_size() then
-    return 1
-  end
-  if prev_text != next_text then
+export fn editor_ux_minimap_needs_rebuild(
+  prev_version: i32,
+  next_version: i32
+) -> i32 = do
+  if prev_version != next_version then
     return 1
   end
   0
 end
 
-export fn editor_ux_minimap_cache_new(text: string) -> MinimapCacheState =
-  MinimapCacheState { text: text, rebuild_count: 1 }
+export fn editor_ux_minimap_cache_new(document_version: i32) -> MinimapCacheState =
+  MinimapCacheState { version: document_version, rebuild_count: 1 }
 
 export fn editor_ux_minimap_cache_tick(
   state: MinimapCacheState,
-  next_text: string
+  document_version: i32
 ) -> MinimapCacheState = do
-  if editor_ux_minimap_needs_rebuild(state.text, next_text) == 0 then
+  if editor_ux_minimap_needs_rebuild(state.version, document_version) == 0 then
     return state
   end
   MinimapCacheState {
-    text: next_text,
+    version: document_version,
     rebuild_count: state.rebuild_count + 1
   }
 end

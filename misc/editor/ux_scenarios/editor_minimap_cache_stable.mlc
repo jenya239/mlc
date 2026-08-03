@@ -36,14 +36,14 @@ fn main() -> i32 = do
     return 5
   end
 
-  let mut cache = editor_ux_minimap_cache_new("line one\n")
-  const after_same = editor_ux_minimap_cache_tick(cache, "line one\n")
+  let mut cache = editor_ux_minimap_cache_new(0)
+  const after_same = editor_ux_minimap_cache_tick(cache, 0)
   if after_same.rebuild_count != cache.rebuild_count then
     println("ux_fail editor_minimap_cache_stable same-frame rebuild")
     return 6
   end
   cache = after_same
-  const after_edit = editor_ux_minimap_cache_tick(cache, "line one\nline two\n")
+  const after_edit = editor_ux_minimap_cache_tick(cache, 1)
   if after_edit.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail editor_minimap_cache_stable edit rebuild")
     return 7

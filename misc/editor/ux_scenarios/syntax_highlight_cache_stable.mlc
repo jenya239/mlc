@@ -7,7 +7,7 @@ import {
 fn main() -> i32 = do
   let mut cache = editor_ux_syntax_span_cache_new()
   const source = "fn main() -> i32 = 1\n"
-  cache = editor_ux_syntax_span_cache_tick(cache, source, 0, source.byte_size())
+  cache = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, source.byte_size())
   if cache.rebuild_count != 1 then
     println("ux_fail syntax_highlight_cache_stable first rebuild")
     return 1
@@ -17,21 +17,21 @@ fn main() -> i32 = do
     return 2
   end
   const after_same = editor_ux_syntax_span_cache_tick(
-    cache, source, 0, source.byte_size()
+    cache, 0, source, 0, source.byte_size()
   )
   if after_same.rebuild_count != cache.rebuild_count then
     println("ux_fail syntax_highlight_cache_stable same-key rebuild")
     return 3
   end
   cache = after_same
-  const after_range = editor_ux_syntax_span_cache_tick(cache, source, 0, 2)
+  const after_range = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, 2)
   if after_range.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail syntax_highlight_cache_stable range rebuild")
     return 4
   end
   cache = after_range
   const edited = "fn main() -> i32 = 2\n"
-  const after_edit = editor_ux_syntax_span_cache_tick(cache, edited, 0, 2)
+  const after_edit = editor_ux_syntax_span_cache_tick(cache, 1, edited, 0, 2)
   if after_edit.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail syntax_highlight_cache_stable edit rebuild")
     return 5

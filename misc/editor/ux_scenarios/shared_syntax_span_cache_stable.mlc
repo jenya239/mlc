@@ -1,4 +1,4 @@
-// TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=2 — L2: one full-buffer cache; same text no rebuild.
+// TRACK_EDITOR_SHARED_SYNTAX_SPAN_CACHE STEP=2 — L2: one full-buffer cache; same version no rebuild.
 import {
   editor_ux_syntax_span_cache_new,
   editor_ux_syntax_span_cache_tick
@@ -7,14 +7,14 @@ import {
 fn main() -> i32 = do
   let mut cache = editor_ux_syntax_span_cache_new()
   const source = "fn main() -> i32 = 1\nlet x = 2\n"
-  cache = editor_ux_syntax_span_cache_tick(cache, source, 0, source.byte_size())
+  cache = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, source.byte_size())
   if cache.rebuild_count != 1 then
     println("ux_fail shared_syntax_span_cache_stable first rebuild")
     return 1
   end
   // Simulate scroll: same full-buffer key must not re-lex.
   const after_scroll = editor_ux_syntax_span_cache_tick(
-    cache, source, 0, source.byte_size()
+    cache, 0, source, 0, source.byte_size()
   )
   if after_scroll.rebuild_count != cache.rebuild_count then
     println("ux_fail shared_syntax_span_cache_stable scroll rebuild")
@@ -23,7 +23,7 @@ fn main() -> i32 = do
   cache = after_scroll
   const edited = "fn main() -> i32 = 1\nlet x = 3\n"
   const after_edit = editor_ux_syntax_span_cache_tick(
-    cache, edited, 0, edited.byte_size()
+    cache, 1, edited, 0, edited.byte_size()
   )
   if after_edit.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail shared_syntax_span_cache_stable edit rebuild")

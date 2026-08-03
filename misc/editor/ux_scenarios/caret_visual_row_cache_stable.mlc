@@ -57,7 +57,7 @@ fn main() -> i32 = do
   const viewport_width_px = 220
 
   let mut cache = wrap_count_cache_new_pixel(
-    fixture, line_index, viewport_width_px, font_path, pixel_size
+    0, fixture, line_index, viewport_width_px, font_path, pixel_size
   )
   if cache.recompute_count != 1 then
     println("ux_fail caret_visual_row_cache_stable warm count")
@@ -101,7 +101,7 @@ fn main() -> i32 = do
   let mut idle = 0
   while idle < 5 do
     const after_idle = wrap_count_cache_tick_pixel(
-      cache, fixture, line_index, viewport_width_px, font_path, pixel_size
+      cache, 0, fixture, line_index, viewport_width_px, font_path, pixel_size
     )
     if after_idle.recompute_count != cache.recompute_count then
       println("ux_fail caret_visual_row_cache_stable idle recompute")
@@ -114,7 +114,7 @@ fn main() -> i32 = do
   const edited = fixture + "extra line for edit invalidate\n"
   const edited_line_index = line_index_from_string(edited)
   const after_edit = wrap_count_cache_tick_pixel(
-    cache, edited, edited_line_index, viewport_width_px, font_path, pixel_size
+    cache, 1, edited, edited_line_index, viewport_width_px, font_path, pixel_size
   )
   if after_edit.recompute_count != cache.recompute_count + 1 then
     println("ux_fail caret_visual_row_cache_stable edit recompute")

@@ -1,18 +1,18 @@
 // TRACK_EDITOR_WRAP_PER_FRAME_ON_LARGE_FILE STEP=2 —
-// Cache full-document visual row count; invalidate on text / wrap_columns change.
+// Cache full-document visual row count; invalidate on version / wrap_columns.
 // §52: pixel-budget tick when viewport_width_px > 0.
+// TRACK_EDITOR_HYGIENE §107e — key on document version, not full text.
 import {
   LineIndex,
   line_index_from_string
 } from '../document/line_index'
 import {
   document_visual_row_count,
-  document_visual_row_count_pixel_budget,
   document_visual_row_prefix_pixel_budget
 } from './word_wrap'
 
 export type DocumentWrapCountCache = {
-  text: string,
+  version: i32,
   wrap_columns: i32,
   viewport_width_px: i32,
   font_path: string,
@@ -26,16 +26,13 @@ export type DocumentWrapCountCache = {
 
 fn wrap_count_cache_needs_recompute(
   state: DocumentWrapCountCache,
-  next_text: string,
+  next_version: i32,
   next_wrap_columns: i32
 ) -> i32 = do
   if state.wrap_columns != next_wrap_columns then
     return 1
   end
-  if state.text.byte_size() != next_text.byte_size() then
-    return 1
-  end
-  if state.text != next_text then
+  if state.version != next_version then
     return 1
   end
   0
@@ -43,7 +40,7 @@ end
 
 fn wrap_count_cache_needs_recompute_pixel(
   state: DocumentWrapCountCache,
-  next_text: string,
+  next_version: i32,
   next_viewport_width_px: i32,
   next_font_path: string,
   next_pixel_size: i32
@@ -57,22 +54,20 @@ fn wrap_count_cache_needs_recompute_pixel(
   if state.font_path != next_font_path then
     return 1
   end
-  if state.text.byte_size() != next_text.byte_size() then
-    return 1
-  end
-  if state.text != next_text then
+  if state.version != next_version then
     return 1
   end
   0
 end
 
 export fn wrap_count_cache_new(
+  document_version: i32,
   text: string,
   line_index: LineIndex,
   wrap_columns: i32
 ) -> DocumentWrapCountCache =
   DocumentWrapCountCache {
-    text: text,
+    version: document_version,
     wrap_columns: wrap_columns,
     viewport_width_px: 0,
     font_path: "",
@@ -83,6 +78,7 @@ export fn wrap_count_cache_new(
   }
 
 export fn wrap_count_cache_new_pixel(
+  document_version: i32,
   text: string,
   line_index: LineIndex,
   viewport_width_px: i32,
@@ -97,7 +93,7 @@ export fn wrap_count_cache_new_pixel(
     count = prefix[prefix.length() - 1]
   end
   DocumentWrapCountCache {
-    text: text,
+    version: document_version,
     wrap_columns: 0,
     viewport_width_px: viewport_width_px,
     font_path: font_path,
@@ -110,15 +106,18 @@ end
 
 export fn wrap_count_cache_tick(
   state: DocumentWrapCountCache,
+  document_version: i32,
   next_text: string,
   next_line_index: LineIndex,
   next_wrap_columns: i32
 ) -> DocumentWrapCountCache = do
-  if wrap_count_cache_needs_recompute(state, next_text, next_wrap_columns) == 0 then
+  if wrap_count_cache_needs_recompute(
+    state, document_version, next_wrap_columns
+  ) == 0 then
     return state
   end
   DocumentWrapCountCache {
-    text: next_text,
+    version: document_version,
     wrap_columns: next_wrap_columns,
     viewport_width_px: 0,
     font_path: "",
@@ -133,6 +132,7 @@ end
 
 export fn wrap_count_cache_tick_pixel(
   state: DocumentWrapCountCache,
+  document_version: i32,
   next_text: string,
   next_line_index: LineIndex,
   next_viewport_width_px: i32,
@@ -140,7 +140,8 @@ export fn wrap_count_cache_tick_pixel(
   next_pixel_size: i32
 ) -> DocumentWrapCountCache = do
   if wrap_count_cache_needs_recompute_pixel(
-    state, next_text, next_viewport_width_px, next_font_path, next_pixel_size
+    state, document_version, next_viewport_width_px,
+    next_font_path, next_pixel_size
   ) == 0 then
     return state
   end
@@ -153,7 +154,7 @@ export fn wrap_count_cache_tick_pixel(
     count = prefix[prefix.length() - 1]
   end
   DocumentWrapCountCache {
-    text: next_text,
+    version: document_version,
     wrap_columns: 0,
     viewport_width_px: next_viewport_width_px,
     font_path: next_font_path,
@@ -167,11 +168,13 @@ end
 // Convenience when caller only has the flat string (rebuilds line_index).
 export fn wrap_count_cache_tick_text(
   state: DocumentWrapCountCache,
+  document_version: i32,
   next_text: string,
   next_wrap_columns: i32
 ) -> DocumentWrapCountCache =
   wrap_count_cache_tick(
     state,
+    document_version,
     next_text,
     line_index_from_string(next_text),
     next_wrap_columns

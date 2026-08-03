@@ -57,47 +57,44 @@ end
 
 // §101/§105 residual — editor_ux_max_line_columns_from_index is an O(document)
 // full rescan; caching keeps the horizontal-scrollbar draw path from re-walking
-// every line every frame when text has not changed (same invalidation shape
-// as layout/wrap_cache.mlc's DocumentWrapCountCache).
+// every line every frame when the document version is unchanged.
+// TRACK_EDITOR_HYGIENE §107e — key on document version, not full text.
 export type MaxLineColumnsCache = {
-  text: string,
+  version: i32,
   max_columns: i32,
   recompute_count: i32
 }
 
 fn max_line_columns_cache_needs_recompute(
   state: MaxLineColumnsCache,
-  next_text: string
+  next_version: i32
 ) -> i32 = do
-  if state.text.byte_size() != next_text.byte_size() then
-    return 1
-  end
-  if state.text != next_text then
+  if state.version != next_version then
     return 1
   end
   0
 end
 
 export fn max_line_columns_cache_new(
-  text: string,
+  document_version: i32,
   line_index: LineIndex
 ) -> MaxLineColumnsCache =
   MaxLineColumnsCache {
-    text: text,
+    version: document_version,
     max_columns: editor_ux_max_line_columns_from_index(line_index),
     recompute_count: 1
   }
 
 export fn max_line_columns_cache_tick(
   state: MaxLineColumnsCache,
-  next_text: string,
+  document_version: i32,
   next_line_index: LineIndex
 ) -> MaxLineColumnsCache = do
-  if max_line_columns_cache_needs_recompute(state, next_text) == 0 then
+  if max_line_columns_cache_needs_recompute(state, document_version) == 0 then
     return state
   end
   MaxLineColumnsCache {
-    text: next_text,
+    version: document_version,
     max_columns: editor_ux_max_line_columns_from_index(next_line_index),
     recompute_count: state.recompute_count + 1
   }

@@ -1,0 +1,164 @@
+// TRACK_EDITOR_HYGIENE §107e — caches key on document.version, not full text.
+import {
+  document_from_string,
+  document_insert,
+  document_to_string
+} from '../document/piece_table'
+import { document_delete } from '../document/document_delete'
+import { line_index_from_string } from '../document/line_index'
+import {
+  wrap_count_cache_new,
+  wrap_count_cache_tick
+} from '../layout/wrap_cache'
+import {
+  max_line_columns_cache_new,
+  max_line_columns_cache_tick
+} from '../ux/overflow'
+import {
+  editor_ux_syntax_span_cache_new,
+  editor_ux_syntax_span_cache_tick
+} from '../ux/syntax_span_cache'
+import {
+  editor_ux_minimap_cache_new,
+  editor_ux_minimap_cache_tick
+} from '../ux/minimap'
+
+fn main() -> i32 = do
+  let mut document = document_from_string("line one\n")
+  if document.version != 0 then
+    println("ux_fail cache_keys_by_version from_string version")
+    return 1
+  end
+  const text0 = document_to_string(document)
+  const index0 = line_index_from_string(text0)
+
+  let mut wrap = wrap_count_cache_new(document.version, text0, index0, 40)
+  let mut columns = max_line_columns_cache_new(document.version, index0)
+  let mut spans = editor_ux_syntax_span_cache_new()
+  spans = editor_ux_syntax_span_cache_tick(
+    spans, document.version, text0, 0, text0.byte_size()
+  )
+  let mut minimap = editor_ux_minimap_cache_new(document.version)
+
+  if wrap.recompute_count != 1 || columns.recompute_count != 1 then
+    println("ux_fail cache_keys_by_version warm wrap/columns")
+    return 2
+  end
+  if spans.rebuild_count != 1 || minimap.rebuild_count != 1 then
+    println("ux_fail cache_keys_by_version warm spans/minimap")
+    return 3
+  end
+
+  // Idle / hover: same version → no recompute across four caches.
+  let mut idle = 0
+  while idle < 5 do
+    const wrap_idle = wrap_count_cache_tick(
+      wrap, document.version, text0, index0, 40
+    )
+    const columns_idle = max_line_columns_cache_tick(
+      columns, document.version, index0
+    )
+    const spans_idle = editor_ux_syntax_span_cache_tick(
+      spans, document.version, text0, 0, text0.byte_size()
+    )
+    const minimap_idle = editor_ux_minimap_cache_tick(minimap, document.version)
+    if wrap_idle.recompute_count != wrap.recompute_count then
+      println("ux_fail cache_keys_by_version idle wrap")
+      return 4
+    end
+    if columns_idle.recompute_count != columns.recompute_count then
+      println("ux_fail cache_keys_by_version idle columns")
+      return 5
+    end
+    if spans_idle.rebuild_count != spans.rebuild_count then
+      println("ux_fail cache_keys_by_version idle spans")
+      return 6
+    end
+    if minimap_idle.rebuild_count != minimap.rebuild_count then
+      println("ux_fail cache_keys_by_version idle minimap")
+      return 7
+    end
+    wrap = wrap_idle
+    columns = columns_idle
+    spans = spans_idle
+    minimap = minimap_idle
+    idle = idle + 1
+  end
+
+  // One edit → version bump → exactly one recompute each.
+  document = document_insert(document, document_to_string(document).byte_size(), "x\n")
+  if document.version != 1 then
+    println("ux_fail cache_keys_by_version insert version")
+    return 8
+  end
+  const text1 = document_to_string(document)
+  const index1 = line_index_from_string(text1)
+  const wrap_edit = wrap_count_cache_tick(wrap, document.version, text1, index1, 40)
+  const columns_edit = max_line_columns_cache_tick(columns, document.version, index1)
+  const spans_edit = editor_ux_syntax_span_cache_tick(
+    spans, document.version, text1, 0, text1.byte_size()
+  )
+  const minimap_edit = editor_ux_minimap_cache_tick(minimap, document.version)
+  if wrap_edit.recompute_count != wrap.recompute_count + 1 then
+    println("ux_fail cache_keys_by_version edit wrap")
+    return 9
+  end
+  if columns_edit.recompute_count != columns.recompute_count + 1 then
+    println("ux_fail cache_keys_by_version edit columns")
+    return 10
+  end
+  if spans_edit.rebuild_count != spans.rebuild_count + 1 then
+    println("ux_fail cache_keys_by_version edit spans")
+    return 11
+  end
+  if minimap_edit.rebuild_count != minimap.rebuild_count + 1 then
+    println("ux_fail cache_keys_by_version edit minimap")
+    return 12
+  end
+  wrap = wrap_edit
+  columns = columns_edit
+  spans = spans_edit
+  minimap = minimap_edit
+
+  // Same bytes, different history: insert then delete restores text0, version=2.
+  document = document_insert(document_from_string(text0), text0.byte_size(), "z")
+  document = document_delete(document, text0.byte_size(), text0.byte_size() + 1)
+  if document_to_string(document) != text0 then
+    println("ux_fail cache_keys_by_version same_bytes restore")
+    return 13
+  end
+  if document.version != 2 then
+    println("ux_fail cache_keys_by_version same_bytes version")
+    return 14
+  end
+  const index_same = line_index_from_string(text0)
+  const wrap_same = wrap_count_cache_tick(
+    wrap, document.version, text0, index_same, 40
+  )
+  const columns_same = max_line_columns_cache_tick(
+    columns, document.version, index_same
+  )
+  const spans_same = editor_ux_syntax_span_cache_tick(
+    spans, document.version, text0, 0, text0.byte_size()
+  )
+  const minimap_same = editor_ux_minimap_cache_tick(minimap, document.version)
+  if wrap_same.recompute_count != wrap.recompute_count + 1 then
+    println("ux_fail cache_keys_by_version same_bytes wrap")
+    return 15
+  end
+  if columns_same.recompute_count != columns.recompute_count + 1 then
+    println("ux_fail cache_keys_by_version same_bytes columns")
+    return 16
+  end
+  if spans_same.rebuild_count != spans.rebuild_count + 1 then
+    println("ux_fail cache_keys_by_version same_bytes spans")
+    return 17
+  end
+  if minimap_same.rebuild_count != minimap.rebuild_count + 1 then
+    println("ux_fail cache_keys_by_version same_bytes minimap")
+    return 18
+  end
+
+  println("ux_ok cache_keys_by_version")
+  0
+end

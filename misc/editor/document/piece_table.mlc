@@ -13,7 +13,10 @@ export type Piece = {
 export type TextDocument = {
   original: string,
   added: string,
-  pieces: [Piece]
+  pieces: [Piece],
+  // TRACK_EDITOR_HYGIENE §107e — monotonic; bump on insert/delete (not on bytes).
+  // i32: editor counters are i32; i64 + literal 1 fails checked_add codegen.
+  version: i32
 }
 
 fn piece_new(source: PieceSource, start: i32, length: i32) -> Piece =
@@ -31,7 +34,7 @@ export fn document_from_string(text: string) -> TextDocument = do
   if text.length() > 0 then
     pieces.push(piece_new(Original, 0, text.length()))
   end
-  TextDocument { original: text, added: "", pieces: pieces }
+  TextDocument { original: text, added: "", pieces: pieces, version: 0 }
 end
 
 export fn document_byte_length(doc: TextDocument) -> i32 = do
@@ -160,6 +163,7 @@ export fn document_insert(
   TextDocument {
     original: doc.original,
     added: doc.added + text,
-    pieces: pieces
+    pieces: pieces,
+    version: doc.version + 1
   }
 end

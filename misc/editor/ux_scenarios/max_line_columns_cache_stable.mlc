@@ -1,5 +1,5 @@
 // TRACK_EDITOR_HORIZONTAL_SCROLLBAR_MAX_COLUMNS_CACHE STEP=2 —
-// L1: idle ticks do not recompute; text change does; value matches the
+// L1: idle ticks do not recompute; version change does; value matches the
 // uncached editor_ux_max_line_columns_from_index scan.
 import { line_index_from_string } from '../document/line_index'
 import {
@@ -21,7 +21,7 @@ end
 fn main() -> i32 = do
   const fixture = build_fixture(80)
   const line_index = line_index_from_string(fixture)
-  let mut cache = max_line_columns_cache_new(fixture, line_index)
+  let mut cache = max_line_columns_cache_new(0, line_index)
 
   if cache.recompute_count != 1 then
     println("ux_fail max_line_columns_cache_stable warm count")
@@ -35,7 +35,7 @@ fn main() -> i32 = do
 
   let mut idle = 0
   while idle < 5 do
-    const after_idle = max_line_columns_cache_tick(cache, fixture, line_index)
+    const after_idle = max_line_columns_cache_tick(cache, 0, line_index)
     if after_idle.recompute_count != cache.recompute_count then
       println("ux_fail max_line_columns_cache_stable idle recompute")
       return 3
@@ -50,7 +50,7 @@ fn main() -> i32 = do
 
   const edited = fixture + "a much much much longer trailing line for edit invalidate\n"
   const edited_index = line_index_from_string(edited)
-  const after_edit = max_line_columns_cache_tick(cache, edited, edited_index)
+  const after_edit = max_line_columns_cache_tick(cache, 1, edited_index)
   if after_edit.recompute_count != cache.recompute_count + 1 then
     println("ux_fail max_line_columns_cache_stable edit recompute")
     return 5

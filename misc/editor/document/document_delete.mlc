@@ -66,6 +66,7 @@ export fn document_delete(
   TextDocument {
     original: document.original,
     added: document.added,
-    pieces: pieces
+    pieces: pieces,
+    version: document.version + 1
   }
 end

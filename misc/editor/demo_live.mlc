@@ -1945,11 +1945,13 @@ fn main() -> i32 = do
     end
     if layout_skip == 0 then
       frame_layout = frame_layout_tick_pixel(
-        frame_layout, draw_text, line_index,
+        frame_layout, document.version, draw_text, line_index,
         wrap_viewport_width_now, font_path, zoom_font_size, metrics.line_height,
         skip_full_pixel_wrap_now
       )
-      frame_layout = frame_layout_tick_max_columns(frame_layout, draw_text, line_index)
+      frame_layout = frame_layout_tick_max_columns(
+        frame_layout, document.version, line_index
+      )
     end
     const visual_row_count_now = frame_layout.visual_row_count
     let mut wrapped_content_height_now = frame_layout.wrapped_content_height
@@ -2164,7 +2166,7 @@ fn main() -> i32 = do
     let mut syntax_spans = frame_layout.span_cache.spans
     if !perf_skip_heavy then
       frame_layout = frame_layout_tick_spans(
-        frame_layout, draw_text, 0, draw_text.byte_size()
+        frame_layout, document.version, draw_text, 0, draw_text.byte_size()
       )
       syntax_spans = frame_layout.span_cache.spans
     end
@@ -2622,7 +2624,7 @@ fn main() -> i32 = do
 
     if minimap_enabled != 0 && !perf_skip_heavy then
       const prev_rebuild = frame_layout.minimap_cache.rebuild_count
-      frame_layout = frame_layout_tick_minimap(frame_layout, draw_text)
+      frame_layout = frame_layout_tick_minimap(frame_layout, document.version)
       if frame_layout.minimap_cache.rebuild_count != prev_rebuild ||
           minimap_cached_height != minimap_rect.height ||
           minimap_cached_font_size != zoom_font_size then

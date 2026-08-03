@@ -1,4 +1,4 @@
-// TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=2 — L2: full-buffer span cache hit on same text.
+// TRACK_EDITOR_MINIMAP_HIGHLIGHT_CACHE STEP=2 — L2: full-buffer span cache hit on same version.
 import {
   editor_ux_syntax_span_cache_new,
   editor_ux_syntax_span_cache_tick
@@ -7,13 +7,13 @@ import {
 fn main() -> i32 = do
   let mut cache = editor_ux_syntax_span_cache_new()
   const source = "fn main() -> i32 = 1\nlet x = 2\n"
-  cache = editor_ux_syntax_span_cache_tick(cache, source, 0, source.byte_size())
+  cache = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, source.byte_size())
   if cache.rebuild_count != 1 then
     println("ux_fail minimap_highlight_cache_stable first rebuild")
     return 1
   end
   const after_same = editor_ux_syntax_span_cache_tick(
-    cache, source, 0, source.byte_size()
+    cache, 0, source, 0, source.byte_size()
   )
   if after_same.rebuild_count != cache.rebuild_count then
     println("ux_fail minimap_highlight_cache_stable same-text rebuild")
@@ -22,7 +22,7 @@ fn main() -> i32 = do
   cache = after_same
   const edited = "fn main() -> i32 = 1\nlet x = 3\n"
   const after_edit = editor_ux_syntax_span_cache_tick(
-    cache, edited, 0, edited.byte_size()
+    cache, 1, edited, 0, edited.byte_size()
   )
   if after_edit.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail minimap_highlight_cache_stable edit rebuild")
