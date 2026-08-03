@@ -258,3 +258,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=2 done (Green q1).** Critic q1 next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107q q1 — independent rebuild+rerun; sabotage: restore direct chrome-band `solid_renderer_rect` quartet; `run_ux_gate` ×2; then Green q2) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107q q1)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107q q1 Green `c91a8552`. Fresh green ok. Sabotage: direct chrome-band quartet → FAIL; restored. q1 Critic done |
+| verify  | critic green ok; sab exit 1; restore ok; `run_ux_gate` ×2 = 132/132 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q q1 Critic done.** Advances to Green q2 |
+| issues  | none |
+| next    | ROLE=Driver STEP=4 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q2 — tab strip slots/active/hover fills via `EditorPaintOp`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q2) |
