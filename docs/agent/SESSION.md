@@ -364,3 +364,18 @@ Turns before 2026-08-01 (Planner §107 open) archived — see [../archive/SESSIO
 | result  | **§107h STEP=2 done (Green), awaiting Critic before CLOSE** |
 | issues  | ALL_CAPS locals codegen as Type{} — used snake_case locals; Decision names kept in comments for arch grep |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107h — independent rebuild+rerun; sabotages: drop byte cap, restore per-codepoint mismatch loop; `run_ux_gate` ×2; close §107h → §107i Decision) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=3, §107h close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107h Green `8635b313`. Fresh `.tmp/critic_107h`: `ux_ok` (`elapsed_us=127019`). Sabotages: drop byte cap → exit 1; restore per-codepoint-alone loop → exit 1; both restored. Closed §107h |
+| verify  | critic scenario ok; sabotage1 exit 1; sabotage2 exit 1; `run_ux_gate` ×2 = 122/122 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107h CLOSED.** Advances to §107i |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_HYGIENE (§107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` — freeze Decision; red: spans tick still outside layout_skip) |

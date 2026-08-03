@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107g **CLOSED**; §107h Green done (Critic STEP=3 next)
+## Status: **open** 2026-08-03 — §107a–§107h **CLOSED**; queue head §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP`
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -355,7 +355,20 @@ Restored; `run_ux_gate` ×2 = 121/121 (`EXIT1=0` / `EXIT2=0`).
 | 0 | Decision freeze | **done** 2026-08-03 |
 | 1 | Red: caps / chunked mismatch path / green gate absent | **done** 2026-08-03 — `scripts/run_ux_long_single_line_budget_red.sh` exits non-zero |
 | 2 | Green: caps + chunked mismatch; scenario green; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `shape_line_byte_cap=65536` + `shape_segment_codepoint_max=64` in `line_codepoint_advances_px`; mono beyond cap; mismatch in 64-cp chunks; measured `elapsed_us=121158` → `TOTAL_US_MAX=500000`; `ux_ok long_single_line_budget`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 122/122 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-03 — see Critic section below |
+
+### §107h Critic (closed 2026-08-03)
+
+Independent re-audit of Green commit `8635b313`. Separate out dir
+`.tmp/critic_107h`: `ux_ok long_single_line_budget` (`elapsed_us=127019`).
+Sabotages (then `git checkout --` restore; tree clean of Critic mutations):
+1. Drop `SHAPE_LINE_BYTE_CAP` / shape full line → FAIL exit 1
+   (`SHAPE_LINE_BYTE_CAP missing`).
+2. Restore per-codepoint-alone mismatch loop → FAIL exit 1
+   (`per-codepoint-alone mismatch loop still present`).
+Restored; `run_ux_gate` ×2 = 122/122 (`EXIT1=0` / `EXIT2=0`).
+
+**§107h CLOSED.** Next: §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP`.
 
 ## §107i `EDITOR_SPANS_TICK_UNDER_LAYOUT_SKIP` (EHA-05 hover half)
 `frame_layout_tick_spans` is called in the paint phase outside `layout_skip`, so
