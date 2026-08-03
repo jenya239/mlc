@@ -378,3 +378,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108a STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a Green — hit-stable chrome id + counters + gate; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=2, §108a Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | `ux/chrome_hit.mlc` hit-style id + pointer plan; `frame_input` `chrome_dirty` (overlay/menu ≠ content); `perf` rebuild counters; `demo_live` hit-stable idle filter; gate `run_ux_hover_stable_hit_no_content_frame` |
+| verify  | green `ux_ok`; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 133/133 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§108a STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a — independent rebuild+rerun; sabotage: force `content_dirty=1` on every pointer move; `run_ux_gate` ×2; close §108a → §108b Decision) |
