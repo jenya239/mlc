@@ -348,3 +348,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§108 OPEN as queue head.** §107 remainder deferred |
 | issues  | Disk pressure may still block UX ×2; §108a gates should stay small/unit-first where possible |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a `EDITOR_DIRTY_TAXONOMY` — read track file; freeze Decision; red first: hover with stable hit must not bump content/text rebuild counters) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_RETAINED_PAINT STEP=0, §108a Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_RETAINED_PAINT |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-03-retained-paint-priority |
+| done    | Froze §108a Decision: frame classes `content_dirty` / `chrome_dirty` / `present_only`; hit-stable chrome id → no frame; overlay/context_menu must not raise `content_dirty`; counters `content_rebuild_count`/`text_layer_rebuild_count`; gate `run_ux_hover_stable_hit_no_content_frame`. Baseline: `pointer_dirty` still full-paints. Disk reclaim side-effect: ~10G free (caches + `.tmp_selfhost*`) |
+| verify  | Decision text in `TRACK_EDITOR_RETAINED_PAINT.md` STEP=0=done; PLAN §108 status → STEP=1 Red; docs-only — no code gate |
+| result  | **§108a STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_RETAINED_PAINT (§108a Red — `run_ux_hover_stable_hit_no_content_frame` fails on today's tree: stable-hit hover still bumps content/text rebuild) |
