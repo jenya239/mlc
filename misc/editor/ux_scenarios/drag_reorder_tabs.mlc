@@ -11,7 +11,8 @@ import {
 } from '../workspace/tabs'
 import { selection_collapsed } from '../document/selection'
 import {
-  editor_ux_state_new
+  editor_ux_state_new,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 import { editor_ux_tab_strip_drag_to } from '../ux/tab_strip'
 
@@ -57,8 +58,8 @@ fn main() -> i32 = do
   const bounds = rect_new(0, 0, 800, 600)
   const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
   let mut state = editor_ux_state_new(
-    800, 600, panels, again, selection_collapsed(0)
-  )
+    800, 600, panels, again, selection_collapsed(0),
+    editor_tab_strip_height_live())
   state = editor_ux_tab_strip_drag_to(state, 0, 2)
   if state.tabs.tabs[2].path != "/proj/a.mlc" then
     println("ux_fail drag_reorder ux helper")

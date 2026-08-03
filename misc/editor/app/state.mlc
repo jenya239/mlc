@@ -1,7 +1,8 @@
 // TRACK_EDITOR_LIVE_POLISH STEP=7 — single live app state (ux shell + session).
 import {
   EditorUxState,
-  editor_ux_state_new
+  editor_ux_state_new,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 import {
   editor_ux_wheel_scroll,
@@ -113,22 +114,14 @@ export fn editor_app_state_new(
   tabs: TabSet,
   selection: EditorSelection
 ) -> EditorAppState = do
-  let mut ux = editor_ux_state_new(window_width, window_height, panels, tabs, selection)
-  // Live chrome tabs sit above shell panels → strip height 0 for hit/scroll/cursor.
-  ux = EditorUxState {
-    window_width: ux.window_width,
-    window_height: ux.window_height,
-    focus: ux.focus,
-    panels: ux.panels,
-    tabs: ux.tabs,
-    selection: ux.selection,
-    scroll_offset_x: ux.scroll_offset_x,
-    scroll_offset_y: ux.scroll_offset_y,
-    cursor_shape: ux.cursor_shape,
-    clock_ms: ux.clock_ms,
-    tab_strip_height: 0,
-    overflows: ux.overflows
-  }
+  const ux = editor_ux_state_new(
+    window_width,
+    window_height,
+    panels,
+    tabs,
+    selection,
+    editor_tab_strip_height_live()
+  )
   EditorAppState {
     ux: ux,
     history: history_new(),
@@ -165,7 +158,7 @@ export fn editor_app_sync_shell(
       scroll_offset_y: app.ux.scroll_offset_y,
       cursor_shape: app.ux.cursor_shape,
       clock_ms: app.ux.clock_ms,
-      tab_strip_height: 0,
+      tab_strip_height: editor_tab_strip_height_live(),
       overflows: app.ux.overflows
     },
     history: app.history,

@@ -975,7 +975,7 @@ fn main() -> i32 = do
       const before_count = tab_set_count(app.ux.tabs)
       const before_active = app.ux.tabs.active_index
       const drop_state = editor_ux_open_dropped_path(
-        editor_ux_state_new(width, height, panels, app.ux.tabs, app.ux.selection),
+        editor_ux_state_new(width, height, panels, app.ux.tabs, app.ux.selection, app.ux.tab_strip_height),
         drop_path
       )
       app = editor_app_set_tabs(app, drop_state.tabs)

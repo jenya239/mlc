@@ -37,7 +37,7 @@ fn main() -> i32 = do
   tabs = tab_set_open(tabs, "/proj/b.mlc", "bbb")
   tabs = tab_set_set_active(tabs, 0)
 
-  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection_collapsed(0))
+  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection_collapsed(0), 28)
   state = EditorUxState {
     window_width: state.window_width,
     window_height: state.window_height,

@@ -29,7 +29,8 @@ import { document_from_string } from '../document/piece_table'
 import {
   editor_ux_state_new,
   editor_ux_snapshot,
-  EditorUxState
+  EditorUxState,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 
 fn main() -> i32 = do
@@ -49,7 +50,7 @@ fn main() -> i32 = do
 
   // selection [6,10); caret=focus at byte 6 → Ln1 Col0
   const selection = selection_new(10, 6)
-  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection)
+  let mut state = editor_ux_state_new(800, 600, panels, tabs, selection, editor_tab_strip_height_live())
   state = EditorUxState {
     window_width: state.window_width,
     window_height: state.window_height,
@@ -100,7 +101,7 @@ fn main() -> i32 = do
   if snapshot.tree_rect.width <= 0 || snapshot.editor_rect.width <= 0 then
     return 11
   end
-  if snapshot.tab_strip_rect.height != 28 then
+  if snapshot.tab_strip_rect.height != editor_tab_strip_height_live() then
     return 12
   end
   if snapshot.divider_rect.width != 4 then

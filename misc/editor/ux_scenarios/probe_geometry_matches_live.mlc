@@ -1,0 +1,61 @@
+// TRACK_EDITOR_HYGIENE §107n — live app geometry matches editor_tab_strip_height_live.
+import { rect_new } from '../../gui/layout'
+import { shell_panels_new, shell_panels_editor_rect } from '../ui/shell_panels'
+import { tab_set_new, tab_set_open, tab_set_active } from '../workspace/tabs'
+import { selection_collapsed } from '../document/selection'
+import { line_index_from_document } from '../document/line_index'
+import {
+  editor_app_state_new
+} from '../app/state'
+import {
+  editor_tab_strip_height_live,
+  editor_ux_snapshot
+} from '../ux/probe'
+
+fn main() -> i32 = do
+  const live_height = editor_tab_strip_height_live()
+  const bounds = rect_new(0, 0, 800, 600)
+  const panels = shell_panels_new(bounds, 1, 4, 4, "/proj", "proj")
+  let mut tabs = tab_set_new()
+  tabs = tab_set_open(tabs, "/proj/a.mlc", "hello\n")
+  const app = editor_app_state_new(
+    800, 600, panels, tabs, selection_collapsed(0)
+  )
+
+  if app.ux.tab_strip_height != live_height then
+    println(
+      "ux_fail probe_geometry_matches_live strip=" +
+        app.ux.tab_strip_height.to_string() +
+        " live=" +
+        live_height.to_string()
+    )
+    return 1
+  end
+
+  const active = tab_set_active(app.ux.tabs)
+  const snap = editor_ux_snapshot(
+    app.ux,
+    line_index_from_document(active.buffer.document)
+  )
+  const editor_rect = shell_panels_editor_rect(app.ux.panels)
+  const expected_text_y = editor_rect.y + live_height
+  if snap.text_rect.y != expected_text_y then
+    println(
+      "ux_fail probe_geometry_matches_live text_y=" +
+        snap.text_rect.y.to_string() +
+        " expected=" +
+        expected_text_y.to_string()
+    )
+    return 2
+  end
+  if snap.tab_strip_rect.height != live_height then
+    println(
+      "ux_fail probe_geometry_matches_live strip_h=" +
+        snap.tab_strip_rect.height.to_string()
+    )
+    return 3
+  end
+
+  println("ux_ok probe_geometry_matches_live")
+  0
+end

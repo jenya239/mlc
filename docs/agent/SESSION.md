@@ -108,3 +108,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107n STEP=0/1 done (Decision+Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_HYGIENE (§107n Green — explicit strip param + live helper + `probe_geometry_matches_live`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic) |
+
+### Turn 2026-08-03 (Driver TRACK_EDITOR_HYGIENE STEP=2, §107n Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | `editor_tab_strip_height_live` + explicit `tab_strip_height` on `editor_ux_state_new`; app uses helper; call sites updated; `probe_geometry_matches_live`; probe_unit expects live height |
+| verify  | green gate `ux_ok`; tab_strip_click ok; `dev_gate_fast` 1471/0; `run_ux_gate` ×2 = 129/129 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107n STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_HYGIENE (§107n — independent rebuild+rerun; sabotage: hardcode strip 28 / diverge from live helper; `run_ux_gate` ×2; close §107n → §107o Decision) |

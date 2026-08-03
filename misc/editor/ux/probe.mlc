@@ -48,12 +48,16 @@ export type EditorUxState = {
 fn rect_to_ux(rect: Rect) -> UxRect =
   ux_rect_new(rect.x, rect.y, rect.width, rect.height)
 
+// Live chrome draws tabs above the shell editor pane → in-pane strip height is 0.
+export fn editor_tab_strip_height_live() -> i32 = 0
+
 export fn editor_ux_state_new(
   window_width: i32,
   window_height: i32,
   panels: ShellPanels,
   tabs: TabSet,
-  selection: EditorSelection
+  selection: EditorSelection,
+  tab_strip_height: i32
 ) -> EditorUxState =
   EditorUxState {
     window_width: window_width,
@@ -66,7 +70,7 @@ export fn editor_ux_state_new(
     scroll_offset_y: 0,
     cursor_shape: 0,
     clock_ms: 0,
-    tab_strip_height: 28,
+    tab_strip_height: tab_strip_height,
     overflows: []
   }
 

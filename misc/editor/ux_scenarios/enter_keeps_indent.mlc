@@ -17,7 +17,8 @@ import { selection_collapsed } from '../document/selection'
 import {
   editor_ux_state_new,
   editor_ux_snapshot,
-  EditorUxState
+  EditorUxState,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 import {
   editor_ux_insert_text,
@@ -35,8 +36,8 @@ fn main() -> i32 = do
     600,
     panels,
     tabs,
-    selection_collapsed(0)
-  )
+    selection_collapsed(0),
+    editor_tab_strip_height_live())
   state = EditorUxState {
     window_width: state.window_width,
     window_height: state.window_height,

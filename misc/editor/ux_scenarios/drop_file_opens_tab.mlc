@@ -17,7 +17,8 @@ import {
 } from '../document/save'
 import {
   editor_ux_state_new,
-  EditorUxState
+  EditorUxState,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 import { editor_ux_open_dropped_path } from '../ux/drop_file'
 import {
@@ -43,8 +44,8 @@ fn main() -> i32 = do
     600,
     panels,
     tabs,
-    selection_collapsed(0)
-  )
+    selection_collapsed(0),
+    editor_tab_strip_height_live())
 
   glfw_gl_drop_path_test_push(path)
   const taken = glfw_gl_take_drop_path()

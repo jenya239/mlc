@@ -17,7 +17,8 @@ import {
 } from '../document/save'
 import {
   editor_ux_state_new,
-  EditorUxState
+  EditorUxState,
+  editor_tab_strip_height_live
 } from '../ux/probe'
 import { editor_ux_open_dropped_path } from '../ux/drop_file'
 
@@ -39,8 +40,8 @@ fn main() -> i32 = do
     600,
     panels,
     tabs,
-    selection_collapsed(0)
-  )
+    selection_collapsed(0),
+    editor_tab_strip_height_live())
   state = editor_ux_open_dropped_path(state, path)
 
   if tab_set_count(state.tabs) < 1 then
