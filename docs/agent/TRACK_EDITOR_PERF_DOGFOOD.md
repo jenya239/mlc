@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109d** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109d** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -248,18 +248,35 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H3/H12: scroll/type frames too expensive |
-| Fix | Profile `layout_us`/`draw_us`/phase counters on content frames after §109a; cut dominant phase until close criteria 4–5. Prefer visible-line work only |
-| Depends on | §109a, §109b (wake fixed so content is measurable); §109c (honest PERF_FULL ceiling) |
-| Gate | Dogfood 4–5 + measured-then-written content-frame ceiling that fails today’s tree |
+| Problem | H3/H12: content frames ~2.6s class on PERF_FULL 10k×5 (`total_us≈13.1e6`, draw≈90%); dogfood scroll/type saturate a core (`scroll_cpu=105`, `type_cpu=100`) |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109a, §109b (wake measurable); §109c (honest PERF_FULL ceiling) |
+| Gate | Content-frame budget harness green; dogfood criteria 4–5; new PERF_FULL ceiling measured-then-written **below** §109c and fails today’s tree / sabotage |
+| Sabotage | (1) Reinstate pre-fix draw class (or double draw work) → PERF_FULL / budget harness fails new ceiling. (2) Force O(doc) work every scroll frame → scroll gate fails |
+| Out of scope | SceneNode chrome; wake/honesty (§109b–c done); chrome tree (§109h); minimap (§109i); full glyph retain architecture (§109e — §109d may land a bounded hot-path cut if diagnosis names glyphs, but retain/reuse design stays §109e) |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_content_frame_budget.sh` — load-bearing content-frame proof. Reuses §109c PERF_FULL smoke + §109a dogfood scroll/type phases (`MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_OPEN`→`misc/editor/demo_live.mlc`, no `MLC_EDITOR_PERF` skip-heavy) |
+| PERF_FULL metrics | Parse `demo_live_perf_full frames=… layout_us=… draw_us=… total_us=…`. Fixture unchanged: 10k lines × 5 frames |
+| Dogfood metrics | From dogfood baseline (or harness-internal same probe): `scroll_cpu_percent` (max over 3×2s), `type_cpu_percent` (max), `type_stall_ms` |
+| Diagnosis (before cut) | Green must paste under this §109d a **Dominance (measured)** table: `layout_us`, `draw_us`, `total_us`, `draw_share_percent = round(100*draw/total)` from a PERF_FULL run on the pre-cut tree. Dominant phase = larger of layout/draw. Prefer visible-line-only cuts on that phase |
+| Pre-cut baseline (frozen reference) | §109c honesty remasure: `layout_us=1263108` `draw_us=11890959` `total_us=13156194` (draw_share≈90%). Dogfood §109a: `scroll_cpu=105` `type_cpu=100` `type_stall_ms=16` |
+| Green cut | Cut the written dominant phase until all of: (1) remasured PERF_FULL `total_us` **<** §109c `measured_total_us` `13085761` (prove improvement); (2) rewrite `TOTAL_US_MAX` default to remasured×**≤1.25** and paste under §109d; new ceiling **must** be `< 16357201`; (3) dogfood `scroll_cpu_percent` ≤ **50**; (4) `type_stall_ms` ≤ **500** (epic: no multi-second stall after last key). If diagnosis shows glyphs/spans/snapshot dominate draw, §109d Green may ship a bounded hot-path fix; residual retain/visible-only work stays §109e–g |
+| Counter evidence | Prefer existing `visible_collect_count` / rebuild counters: scroll burst must not imply full-doc rebuild every frame (`content_rebuild_count` growth bounded; document in harness/report). Exact counter asserts written at Green with numbers |
+| Harness exit | Fail if glfw/font/`/proc` missing (no skip-green). Fail if PERF_FULL or dogfood scroll/type missing/README open |
+| Red | No `run_editor_perf_content_frame_budget.sh`; content-frame budgets not enforced (today’s tree only gated by §109c honesty ceiling) |
+| Green | Budget harness green + Dominance table + new PERF_FULL ceiling pasted; dogfood scroll≤50 / type_stall≤500; red fails “already present” |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | pending |
-| 1 | Red | pending |
-| 2 | Green | pending |
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no content-frame budget harness | pending |
+| 2 | Green: diagnose + cut dominant + harness/ceilings | pending |
 | 3 | Critic | pending |
 
 ---
