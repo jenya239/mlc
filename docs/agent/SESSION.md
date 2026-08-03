@@ -288,3 +288,18 @@ Turns before §107l (2026-08-03) archived — see [../archive/SESSION_HISTORY.md
 | result  | **§107q STEP=4 done (Green q2).** Critic q2 next |
 | issues  | none |
 | next    | ROLE=Critic STEP=5 TRACK=TRACK_EDITOR_HYGIENE (§107q q2 — independent rebuild+rerun; sabotage: restore direct `tab_fill` solid_renderer_rect; `run_ux_gate` ×2; then Green q3) |
+
+### Turn 2026-08-03 (Critic TRACK_EDITOR_HYGIENE STEP=5, §107q q2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 5 |
+| track   | TRACK_EDITOR_HYGIENE |
+| started | 2026-08-03 |
+| instructions_rev | 2026-08-01-editor-hygiene-queue |
+| done    | Independent re-audit of §107q q2 Green `f6ea6d4e`. Fresh green ok. Sabotage: direct `tab_fill` solid_renderer_rect → FAIL; restored. q2 Critic done |
+| verify  | critic green ok; sab exit 1; restore ok; `run_ux_gate` ×2 = 132/132 (`EXIT1=0`/`EXIT2=0`) |
+| result  | **§107q q2 Critic done.** Advances to Green q3 |
+| issues  | none |
+| next    | ROLE=Driver STEP=6 TRACK=TRACK_EDITOR_HYGIENE (§107q Green q3 — tree/breadcrumb/folder-nav chrome fills via `EditorPaintOp`; `dev_gate_fast` + `run_ux_gate` ×2; then Critic q3) |

@@ -6,7 +6,7 @@ Source audit: `mlc-support/responses/editor_hygiene_audit_20260801_103839.md`
 Authorized 2026-08-01 as queue head, ahead of §103a Script VM and §104 Wave 2
 (standing directive: производительность / архитектура / тестирование — приоритет).
 
-## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q Green q2 done (Critic q2 next)
+## Status: **open** 2026-08-03 — §107a–§107p **CLOSED**; §107q q2 Critic done (Green q3 next)
 
 Sub-track order is strict: §107a → §107b → §107c → §107d → §107e (P0),
 then §107f … §107r (P1, audit roadmap order). P2 is a backlog table at the
@@ -638,8 +638,10 @@ restore; tree clean of Critic mutations):
 | 2 | Green q1: chrome band fills via `EditorPaintOp` + flatten; gates; `dev_gate_fast`; `run_ux_gate` ×2 | **done** 2026-08-03 — `paint_ops.mlc` + `paint_ops_flatten.mlc`; `run_ux_draw_ops_from_live_state` |
 | 3 | Critic q1 | **done** 2026-08-03 — independent green; sabotage direct chrome-band quartet → FAIL; restored; UX ×2 |
 | 4 | Green q2: tab strip slots/active/hover fills via ops | **done** 2026-08-03 — `tab_slot_ops` + flatten; gate extended |
-| 5 | Critic q2 | pending |
-| 6+ | Green/Critic q3…q6 (tree/nav → gutter → text → overlays) | pending |
+| 5 | Critic q2 | **done** 2026-08-03 — independent green; sabotage direct `tab_fill` rect → FAIL; restored; UX ×2 |
+| 6 | Green q3: tree / breadcrumb / folder-nav chrome fills via ops | pending |
+| 7 | Critic q3 | pending |
+| 8+ | Green/Critic q4…q6 (gutter → text → overlays) | pending |
 
 ## §107r `EDITOR_UX_GATE_BEHAVIORAL` (EHA-19)
 `run_ux_wheel_hover_focus_independent_stable.sh`, `run_editor_frame_layout_*_stable.sh`
