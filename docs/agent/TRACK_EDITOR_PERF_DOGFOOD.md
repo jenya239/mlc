@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=2 Green)
 
 ## Why (facts)
 
@@ -585,7 +585,7 @@ then wake still/jitter via honesty harness:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: no startup-open harness | pending |
+| 1 | Red: no startup-open harness | **done** 2026-08-04 — `scripts/run_editor_perf_startup_open_red.sh` exit 1 |
 | 2 | Green: open resolve + first-present defer + harness | pending |
 | 3 | Critic | pending |
 
