@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109d** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109e** (Driver STEP=0)
 
 ## Why (facts)
 
@@ -262,7 +262,9 @@ then wake still/jitter via honesty harness:
 
 `TOTAL_US_MAX` = measured × 1.25 (integer). Hover L2: `VISIBLE=1` + wake still ≤8%; idle gate labeled mouse-away-only.
 
-## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET` — **queue head**
+**Superseded for PERF_FULL script default:** §109d rewrote `TOTAL_US_MAX` to `13259730`. `run_editor_perf_gate_honesty.sh` prefers the §109d Content-frame Green table for ceiling authority (Critic 2026-08-04); this §109c table stays as historical Gate-honesty measured numbers.
+
+## §109d `EDITOR_PERF_CONTENT_FRAME_BUDGET` — **CLOSED** 2026-08-04
 
 | Item | Choice |
 |------|--------|
@@ -315,15 +317,15 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no content-frame budget harness | **done** 2026-08-04 — `scripts/run_editor_perf_content_frame_budget_red.sh` exit 1 |
 | 2 | Green: retained minimap batch + harness/ceilings | **done** 2026-08-04 — budget ok; red “already present”; `TOTAL_US_MAX=13259730` |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — independent budget ok (total=6817487 scroll=59 delta=0); sab always-rebuild → shape delta≫256; sab TOTAL_US_MAX=1000 PERF_FULL fail; red already present; fixed honesty to prefer §109d ceiling table (was mismatched vs script) |
 
 ---
 
-## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET`
+## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — **queue head**
 
 | Item | Choice |
 |------|--------|
-| Problem | H4: **видимый** текст редактора — `static_text_draw_lines_colored` шейпит сегменты каждый кадр; §108b retain только список ops, не GL/glyphs. Opus: после §109d это следующий слой scroll/type |
+| Problem | H4: **видимый** текст редактора — `static_text_draw_lines_colored` шейпит сегменты каждый кадр; §108b retain только список ops, не GL/glyphs. Opus: после §109d это следующий слой scroll/type. Critic §109d: scroll residual ~56–59% with minimap reshape gone |
 | Fix | Retained glyph batch для editor text + damage/visible-range на скролле (не миникарта — она в §109d) |
 | Depends on | §109d |
 | Gate | На чистом скролле без смены doc: shape/rebuild O(newly visible), не O(all visible) каждый кадр если unchanged |

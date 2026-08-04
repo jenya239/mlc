@@ -573,3 +573,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109d STEP=2 done (Green).** Critic next |
 | issues  | scroll_cpu 56>original-50; Decision amended ≤60 — editor reshape residual is §109e |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d — audit minimap batch / budget / ceiling) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109d)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109d: independent budget (total=6817487 scroll=59 delta=0 batch_draws=10); sab always-rebuild → scroll shape delta≫256; sab TOTAL_US_MAX=1000 PERF_FULL fail; red already present. Fixed `run_editor_perf_gate_honesty.sh` to prefer §109d Content-frame ceiling (was mismatched vs script after Green rewrite) |
+| verify  | critic budget exit 0; sab delta load-bearing; sab ceiling exit 1; red exit 1; honesty parse → 13259730; demo restored |
+| result  | **§109d CLOSED (Critic OK).** No false-done; 1 honesty regression fixed |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — Decision freeze) |

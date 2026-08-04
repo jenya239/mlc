@@ -58,6 +58,8 @@ if [ -f "$PERF_SMOKE" ]; then
 fi
 
 # (3) PERF_FULL default TOTAL_US_MAX < 20000000 and ≤ measured×1.25 (TRACK).
+# Prefer §109d Content-frame Green table when present (current ceiling authority);
+# else §109c Gate honesty table. Do not let an older TOTAL_US_MAX row shadow the script.
 default_max="$(
   grep -E 'TOTAL_US_MAX=.*:-' "$PERF_FULL" | head -1 | sed -n 's/.*:-\([0-9][0-9]*\)}.*/\1/p'
 )"
@@ -66,12 +68,28 @@ if [ "$default_max" -ge 20000000 ]; then
   fail "PERF_FULL TOTAL_US_MAX default=$default_max still ≥ 20000000"
 fi
 
-measured_line="$(grep -E '^\| measured_total_us \|' "$TRACK" | head -1 || true)"
-ceiling_line="$(grep -E '^\| TOTAL_US_MAX \|' "$TRACK" | head -1 || true)"
+measured_line="$(grep -E '^\| measured_total_us \(ceiling basis\) \|' "$TRACK" | head -1 || true)"
+ceiling_line="$(
+  awk '
+    /^### Content-frame Green/ { in_section=1 }
+    /^### / && !/^### Content-frame Green/ { in_section=0 }
+    in_section && /^\| TOTAL_US_MAX \|/ { print; exit }
+  ' "$TRACK" || true
+)"
+if [ -z "$measured_line" ] || [ -z "$ceiling_line" ]; then
+  measured_line="$(grep -E '^\| measured_total_us \|' "$TRACK" | head -1 || true)"
+  ceiling_line="$(
+    awk '
+      /^### Gate honesty/ { in_section=1 }
+      /^### / && !/^### Gate honesty/ { in_section=0 }
+      in_section && /^\| TOTAL_US_MAX \|/ { print; exit }
+    ' "$TRACK" || true
+  )"
+fi
 measured_us="$(printf '%s\n' "$measured_line" | grep -Eo '[0-9]{6,}' | head -1 || true)"
 track_ceiling="$(printf '%s\n' "$ceiling_line" | grep -Eo '[0-9]{6,}' | head -1 || true)"
-[ -n "$measured_us" ] || fail "TRACK missing measured_total_us under Gate honesty"
-[ -n "$track_ceiling" ] || fail "TRACK missing TOTAL_US_MAX under Gate honesty"
+[ -n "$measured_us" ] || fail "TRACK missing measured_total_us for current PERF_FULL ceiling"
+[ -n "$track_ceiling" ] || fail "TRACK missing TOTAL_US_MAX for current PERF_FULL ceiling"
 if [ "$track_ceiling" -ne "$default_max" ]; then
   fail "TRACK TOTAL_US_MAX=$track_ceiling != script default $default_max"
 fi
