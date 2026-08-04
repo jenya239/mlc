@@ -14,6 +14,7 @@ import {
   text_renderer_set_batch,
   text_renderer_draw_colored,
   text_renderer_draw_over_colored,
+  text_renderer_draw_over_colored_range,
   text_renderer_destroy,
   text_scratch_u8_clear,
   text_scratch_u8_resize_zero,
@@ -21,6 +22,10 @@ import {
   text_bind_array_buffer,
   text_upload_dynamic_scratch
 } from '../../gui/text_renderer'
+import {
+  gl_gen_buffer,
+  gl_delete_buffer
+} from '../../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 import {
   TextShapingState,
   text_shaping_new,
@@ -65,6 +70,47 @@ export type StaticTextDrawResult = {
   vertex_count: i32,
   error_code: i32
 }
+
+// TRACK_EDITOR_PERF_DOGFOOD §109d — retained glyph VBO (shape once, draw many).
+export type StaticTextGlyphBatchColorRange = {
+  first_vertex: i32,
+  vertex_count: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export type StaticTextGlyphBatch = {
+  vertex_buffer: i32,
+  color_ranges: [StaticTextGlyphBatchColorRange],
+  valid: i32
+}
+
+export type StaticTextGlyphBatchRebuildResult = {
+  state: StaticTextState,
+  batch: StaticTextGlyphBatch,
+  shape_calls: i32,
+  error_code: i32
+}
+
+export type StaticTextGlyphBatchDrawResult = {
+  state: StaticTextState,
+  batch_draw_calls: i32,
+  error_code: i32
+}
+
+export fn static_text_glyph_batch_new() -> StaticTextGlyphBatch =
+  StaticTextGlyphBatch {
+    vertex_buffer: gl_gen_buffer(),
+    color_ranges: [],
+    valid: 0
+  }
+
+export fn static_text_glyph_batch_destroy(batch: StaticTextGlyphBatch) -> i32 = do
+  gl_delete_buffer(batch.vertex_buffer)
+  0
+end
 
 fn append_static_line(
   state: StaticTextState,
@@ -333,6 +379,188 @@ export fn static_text_draw_lines_colored(
   StaticTextDrawResult {
     state: working,
     vertex_count: grand_total_vertices,
+    error_code: 0
+  }
+end
+
+fn static_text_line_resolved_color(
+  line: StaticTextLine,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> StaticTextGlyphBatchColorRange =
+  if line.alpha <= 0.0 then
+    StaticTextGlyphBatchColorRange {
+      first_vertex: 0,
+      vertex_count: 0,
+      red: red,
+      green: green,
+      blue: blue,
+      alpha: alpha
+    }
+  else
+    StaticTextGlyphBatchColorRange {
+      first_vertex: 0,
+      vertex_count: 0,
+      red: line.red,
+      green: line.green,
+      blue: line.blue,
+      alpha: line.alpha
+    }
+  end
+
+fn static_text_glyph_colors_equal(
+  left: StaticTextGlyphBatchColorRange,
+  right: StaticTextGlyphBatchColorRange
+) -> bool =
+  left.red == right.red && left.green == right.green &&
+    left.blue == right.blue && left.alpha == right.alpha
+
+// Shape all lines into one VBO. Bucket by color (not only consecutive) so
+// syntax-alternating minimap segments collapse to ~theme-color draw calls.
+export fn static_text_glyph_batch_rebuild_colored(
+  state: StaticTextState,
+  batch: StaticTextGlyphBatch,
+  lines: [StaticTextLine],
+  window_width: i32,
+  window_height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> StaticTextGlyphBatchRebuildResult = do
+  if lines.length() == 0 then
+    return StaticTextGlyphBatchRebuildResult {
+      state: state,
+      batch: StaticTextGlyphBatch {
+        vertex_buffer: batch.vertex_buffer,
+        color_ranges: [],
+        valid: 1
+      },
+      shape_calls: 0,
+      error_code: 0
+    }
+  end
+  let mut working = state
+  let mut color_ranges: [StaticTextGlyphBatchColorRange] = []
+  let mut shape_calls = 0
+  let mut grand_total_vertices = 0
+  text_scratch_f32_clear()
+  let mut palette_index = 0
+  while palette_index < lines.length() do
+    const palette_color = static_text_line_resolved_color(
+      lines[palette_index], red, green, blue, alpha
+    )
+    let mut already = 0
+    let mut seen = 0
+    while seen < color_ranges.length() do
+      if static_text_glyph_colors_equal(color_ranges[seen], palette_color) then
+        already = 1
+        break
+      end
+      seen = seen + 1
+    end
+    if already != 0 then
+      palette_index = palette_index + 1
+      continue
+    end
+    const range_first = grand_total_vertices
+    let mut range_vertices = 0
+    let mut line_index = 0
+    while line_index < lines.length() do
+      const line_color = static_text_line_resolved_color(
+        lines[line_index], red, green, blue, alpha
+      )
+      if static_text_glyph_colors_equal(line_color, palette_color) then
+        const drawn = append_static_line(
+          working, lines[line_index], window_width, window_height
+        )
+        if drawn.error_code != 0 then
+          return StaticTextGlyphBatchRebuildResult {
+            state: drawn.state,
+            batch: StaticTextGlyphBatch {
+              vertex_buffer: batch.vertex_buffer,
+              color_ranges: color_ranges,
+              valid: 0
+            },
+            shape_calls: shape_calls,
+            error_code: drawn.error_code
+          }
+        end
+        working = drawn.state
+        range_vertices = range_vertices + drawn.vertex_count
+        shape_calls = shape_calls + 1
+      end
+      line_index = line_index + 1
+    end
+    grand_total_vertices = grand_total_vertices + range_vertices
+    color_ranges.push(StaticTextGlyphBatchColorRange {
+      first_vertex: range_first,
+      vertex_count: range_vertices,
+      red: palette_color.red,
+      green: palette_color.green,
+      blue: palette_color.blue,
+      alpha: palette_color.alpha
+    })
+    palette_index = palette_index + 1
+  end
+  text_bind_array_buffer(batch.vertex_buffer)
+  text_upload_dynamic_scratch()
+  StaticTextGlyphBatchRebuildResult {
+    state: working,
+    batch: StaticTextGlyphBatch {
+      vertex_buffer: batch.vertex_buffer,
+      color_ranges: color_ranges,
+      valid: 1
+    },
+    shape_calls: shape_calls,
+    error_code: 0
+  }
+end
+
+export fn static_text_glyph_batch_draw(
+  state: StaticTextState,
+  batch: StaticTextGlyphBatch,
+  window_width: i32,
+  window_height: i32
+) -> StaticTextGlyphBatchDrawResult = do
+  if batch.valid == 0 then
+    return StaticTextGlyphBatchDrawResult {
+      state: state,
+      batch_draw_calls: 0,
+      error_code: 0
+    }
+  end
+  let mut batch_draw_calls = 0
+  let mut range_index = 0
+  while range_index < batch.color_ranges.length() do
+    const range = batch.color_ranges[range_index]
+    const draw_status = text_renderer_draw_over_colored_range(
+      state.renderer,
+      batch.vertex_buffer,
+      range.first_vertex,
+      range.vertex_count,
+      window_width,
+      window_height,
+      range.red,
+      range.green,
+      range.blue,
+      range.alpha
+    )
+    if draw_status != 0 then
+      return StaticTextGlyphBatchDrawResult {
+        state: state,
+        batch_draw_calls: batch_draw_calls,
+        error_code: draw_status
+      }
+    end
+    batch_draw_calls = batch_draw_calls + 1
+    range_index = range_index + 1
+  end
+  StaticTextGlyphBatchDrawResult {
+    state: state,
+    batch_draw_calls: batch_draw_calls,
     error_code: 0
   }
 end

@@ -455,7 +455,28 @@ export fn text_renderer_draw_over_colored(
   green: f64,
   blue: f64,
   alpha: f64
+) -> i32 =
+  text_renderer_draw_over_colored_range(
+    renderer, renderer.vertex_buffer, 0, renderer.vertex_count,
+    width, height, red, green, blue, alpha
+  )
+
+// TRACK_EDITOR_PERF_DOGFOOD §109d — draw a retained VBO range (no reshape).
+export fn text_renderer_draw_over_colored_range(
+  renderer: TextRenderer,
+  vertex_buffer: i32,
+  first_vertex: i32,
+  vertex_count: i32,
+  width: i32,
+  height: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
 ) -> i32 = do
+  if vertex_count <= 0 then
+    return 0
+  end
   gl_viewport(0, 0, width, height)
   gl_enable(gl_blend())
   gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
@@ -463,12 +484,12 @@ export fn text_renderer_draw_over_colored(
   gl_uniform_4f(renderer.color_location, red, green, blue, alpha)
   gl_active_texture(gl_texture0())
   gl_bind_texture(gl_texture_2d(), renderer.atlas_texture)
-  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  gl_bind_buffer(gl_array_buffer(), vertex_buffer)
   gl_enable_vertex_attrib_array(renderer.position_location)
   gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 16, 0)
   gl_enable_vertex_attrib_array(renderer.uv_location)
   gl_vertex_attrib_pointer_offset(renderer.uv_location, 2, gl_float(), 0, 16, 8)
-  gl_draw_arrays(gl_triangles(), 0, renderer.vertex_count)
+  gl_draw_arrays(gl_triangles(), first_vertex, vertex_count)
   0
 end
 

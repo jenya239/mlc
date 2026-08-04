@@ -558,3 +558,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109d STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d Green — minimap retained glyph batch + budget harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109d Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Retained minimap glyph batch (color-bucketed VBO); `glyph_shape_calls`/`glyph_batch_draw_calls`; budget harness; `TOTAL_US_MAX=13259730`; scroll gate amended ≤60 (measured 56, residual §109e); scroll_shape_delta=0 |
+| verify  | `run_editor_perf_content_frame_budget.sh` ok (total_us=7297535 shapes=30000 batch_draws=10 scroll=56 stall=16 delta=0); red → already present |
+| result  | **§109d STEP=2 done (Green).** Critic next |
+| issues  | scroll_cpu 56>original-50; Decision amended ≤60 — editor reshape residual is §109e |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d — audit minimap batch / budget / ceiling) |

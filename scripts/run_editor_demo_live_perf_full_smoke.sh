@@ -16,9 +16,9 @@ FIX_FILE="$FIX_DIR/perf_full.txt"
 LINES="${MLC_EDITOR_PERF_LINES:-10000}"
 # Full path is far costlier per frame; default 5 (baseline keeps 30).
 FRAMES="${MLC_EDITOR_PERF_FRAMES:-5}"
-# Ceiling: measured 2026-08-04 §109c Green total_us=13085761 / 5 frames on 10k-line
-# fixture (wrap+spans+minimap live). Default = measured × 1.25 (replaces false-green 20e6).
-TOTAL_US_MAX="${MLC_EDITOR_PERF_FULL_TOTAL_US_MAX:-16357201}"
+# Ceiling: measured 2026-08-04 §109d Green total_us=10607784 / 5 frames on 10k-line
+# fixture (wrap+spans+minimap retained batch). Default = measured × 1.25 (< §109c 16357201).
+TOTAL_US_MAX="${MLC_EDITOR_PERF_FULL_TOTAL_US_MAX:-13259730}"
 
 if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists glfw3; then
   echo "[editor demo_live_perf_full] SKIP: glfw3 not found (pkg-config)" >&2

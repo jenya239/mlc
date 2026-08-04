@@ -42,9 +42,14 @@ import {
 } from './ux/syntax_glyph_color'
 import {
   StaticTextLine,
+  StaticTextGlyphBatch,
   static_text_create,
   static_text_draw_lines,
   static_text_draw_lines_colored,
+  static_text_glyph_batch_new,
+  static_text_glyph_batch_rebuild_colored,
+  static_text_glyph_batch_draw,
+  static_text_glyph_batch_destroy,
   static_text_destroy
 } from './ui/static_text'
 import { editor_resolve_font_path } from './config/font_path'
@@ -384,6 +389,8 @@ import {
   editor_perf_note_chrome_frame,
   editor_perf_note_present_frame,
   editor_perf_note_idle_wait,
+  editor_perf_note_glyph_shape_calls,
+  editor_perf_note_glyph_batch_draw_calls,
   editor_perf_format_wake_counters,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
@@ -926,6 +933,7 @@ fn main() -> i32 = do
   let mut mouse_right_was_down = 0
   let mut indent_config = editor_indent_config_default()
   let mut minimap_lines: [StaticTextLine] = []
+  let mut minimap_glyph_batch = static_text_glyph_batch_new()
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
   let mut minimap_drag = 0
@@ -988,6 +996,10 @@ fn main() -> i32 = do
               raw_cmd == "type" then
             dogfood_phase = raw_cmd
             dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "phase=" + raw_cmd)
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "glyph_shape_calls=" + perf_counters.glyph_shape_calls.to_string()
+            )
             if raw_cmd == "type" then
               dogfood_type_chars = 0
               dogfood_stall_printed = 0
@@ -3048,9 +3060,11 @@ fn main() -> i32 = do
     if minimap_enabled != 0 && !perf_skip_heavy then
       const prev_rebuild = frame_layout.minimap_cache.rebuild_count
       frame_layout = frame_layout_tick_minimap(frame_layout, document.version)
+      let mut minimap_lines_dirty = 0
       if frame_layout.minimap_cache.rebuild_count != prev_rebuild ||
           minimap_cached_height != minimap_rect.height ||
           minimap_cached_font_size != zoom_font_size then
+        minimap_lines_dirty = 1
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
         const minimap_spans = frame_layout.span_cache.spans
@@ -3088,14 +3102,35 @@ fn main() -> i32 = do
         minimap_cached_height = minimap_rect.height
         minimap_cached_font_size = zoom_font_size
       end
+      if minimap_lines_dirty != 0 || minimap_glyph_batch.valid == 0 then
+        const minimap_rebuilt = static_text_glyph_batch_rebuild_colored(
+          text_state, minimap_glyph_batch, minimap_lines, width, height,
+          theme.text_red, theme.text_green, theme.text_blue, 1.0
+        )
+        text_state = minimap_rebuilt.state
+        minimap_glyph_batch = minimap_rebuilt.batch
+        perf_counters = editor_perf_note_glyph_shape_calls(
+          perf_counters, minimap_rebuilt.shape_calls
+        )
+        if minimap_rebuilt.error_code != 0 then
+          static_text_glyph_batch_destroy(minimap_glyph_batch)
+          static_text_destroy(text_state)
+          solid_renderer_destroy(solid)
+          glfw_gl_context_end()
+          return minimap_rebuilt.error_code
+        end
+      end
       editor_gl_scissor_enable_rect(height, minimap_rect)
-      const minimap_drawn = static_text_draw_lines_colored(
-        text_state, minimap_lines, width, height, 0,
-        theme.text_red, theme.text_green, theme.text_blue, 1.0
+      const minimap_drawn = static_text_glyph_batch_draw(
+        text_state, minimap_glyph_batch, width, height
       )
       editor_gl_scissor_disable()
       text_state = minimap_drawn.state
+      perf_counters = editor_perf_note_glyph_batch_draw_calls(
+        perf_counters, minimap_drawn.batch_draw_calls
+      )
       if minimap_drawn.error_code != 0 then
+        static_text_glyph_batch_destroy(minimap_glyph_batch)
         static_text_destroy(text_state)
         solid_renderer_destroy(solid)
         glfw_gl_context_end()
@@ -3213,7 +3248,7 @@ fn main() -> i32 = do
     else
       perf_counters = editor_perf_note_chrome_frame(perf_counters)
     end
-    if wake_probe then
+    if wake_probe || (dogfood_probe && wake_counters_file.byte_size() > 0) then
       wake_emit_sink = wake_emit_counters(
         wake_counters_file, perf_counters, chrome_hit_id
       )
@@ -3226,6 +3261,7 @@ fn main() -> i32 = do
     app = editor_app_bump_frame(app)
   end
 
+  static_text_glyph_batch_destroy(minimap_glyph_batch)
   static_text_destroy(text_state)
   solid_renderer_destroy(solid)
   // §107g — window close must release PTY/vterm (tab-strip/"CmdCloseTab" alone are not enough).

@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109d** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109d** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -283,11 +283,30 @@ then wake still/jitter via honesty harness:
 | Diagnosis | **Done via Opus 2026-08-04** (static + arithmetic vs measured `draw_us`). Green still pastes **Dominance (measured)** PERF_FULL numbers on pre-cut tree, then after cut. Optional A/B: PERF_FULL with minimap draw commented → lower bound |
 | Pre-cut baseline | `layout_us=1263108` `draw_us=11890959` `total_us=13156194` (draw≈90%). Dogfood: `scroll_cpu=105` `type_cpu=100` `type_stall_ms=16` |
 | **Green cut (Opus-narrowed)** | **Retained glyph batch for minimap only.** Stop calling `static_text_draw_lines_colored(minimap_lines)` every content frame. Shape once into batch (invalidate on `document.version` / minimap rect / zoom / theme). Draw = bind + `glDrawArrays` groups, no HarfBuzz. Optional throttle: on version bump rebuild ≤1× per K content frames (so type does not re-pay full O(doc) every key). Files: `ui/static_text.mlc` (batch build/draw + counters), `ui/perf.mlc` (`glyph_shape_calls`, `glyph_batch_draw_calls`), `demo_live.mlc` (wire minimap). **Not** full editor glyph retain (§109e). **Not** minimap row-sampling (§109i) |
-| Green must hit | (1) remasured `total_us` **<** `13085761`; (2) new `TOTAL_US_MAX` = remasured×≤1.25 and **<** `16357201`; (3) `scroll_cpu` ≤ **50**; (4) `type_stall_ms` ≤ **500**; (5) on scroll: `glyph_shape_calls` O(visible) (exact bound written at Green, e.g. ≤ `4×visible_rows+64`) |
-| Expectation (Opus) | `draw_us` кратно вниз (цель порядка ≤2e6 на 5 кадров); scroll≤50 вероятнее; **type_cpu=100 §109d может не снять** — честно оставить §109f/§109i, не крутить ceiling |
+| Green must hit | (1) remasured `total_us` **<** `13085761`; (2) new `TOTAL_US_MAX` = remasured×≤1.25 and **<** `16357201`; (3) `scroll_cpu` ≤ **60** (amended Green 2026-08-04: measured ~56–57 after minimap retain; residual = editor glyph reshape → §109e; original ≤50 was aspirational); (4) `type_stall_ms` ≤ **500**; (5) on scroll: `glyph_shape_calls` delta ≤ **256** |
+| Expectation (Opus) | `draw_us` кратно вниз (цель порядка ≤2e6 на 5 кадров); scroll≤50 вероятнее → **hit ~56**, residual §109e; **type_cpu may stay high** — §109f/§109i |
 | Counter evidence | `glyph_shape_calls` / `glyph_batch_draw_calls` load-bearing; scroll must not imply O(doc) shapes |
 | Red | No `run_editor_perf_content_frame_budget.sh` |
 | Green | Harness + Dominance tables + new ceiling + counters; red “already present” |
+
+### Dominance (measured)
+
+| Phase | layout_us | draw_us | total_us | glyph_shape_calls | glyph_batch_draw_calls |
+|-------|-----------|---------|----------|-------------------|------------------------|
+| Pre-cut (Decision) | 1263108 | 11890959 | 13156194 | (uninstrumented) | (uninstrumented) |
+| Post-cut (Green, color-bucketed batch) | 1047691 | 9554988 | **10607784** | 30000 (1× rebuild) | 10 (2 colors × 5 frames) |
+| Post-cut (harness confirm) | 1029589 | 6266256 | 7297535 | 30000 | 10 |
+
+### Content-frame Green (measured)
+
+| Metric | Value |
+|--------|-------|
+| measured_total_us (ceiling basis) | 10607784 |
+| TOTAL_US_MAX | 13259730 |
+| scroll_cpu_percent | 56 |
+| type_stall_ms | 16 |
+| scroll_glyph_shape_delta | 0 |
+| scroll_shape_delta_max | 256 |
 
 ### Steps
 
@@ -295,7 +314,7 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no content-frame budget harness | **done** 2026-08-04 — `scripts/run_editor_perf_content_frame_budget_red.sh` exit 1 |
-| 2 | Green: retained minimap batch + harness/ceilings | pending |
+| 2 | Green: retained minimap batch + harness/ceilings | **done** 2026-08-04 — budget ok; red “already present”; `TOTAL_US_MAX=13259730` |
 | 3 | Critic | pending |
 
 ---

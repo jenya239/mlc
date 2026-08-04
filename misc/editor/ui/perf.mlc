@@ -3,6 +3,7 @@
 // TRACK_EDITOR_RETAINED_PAINT §108a — content/text rebuild counters.
 // TRACK_EDITOR_RETAINED_PAINT §108c — chrome_rebuild_count.
 // TRACK_EDITOR_PERF_DOGFOOD §109b — per-iteration frame reason tallies.
+// TRACK_EDITOR_PERF_DOGFOOD §109d — glyph_shape_calls / glyph_batch_draw_calls.
 extern fn editor_perf_monotonic_us() -> i32
   = "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp"
 
@@ -21,7 +22,9 @@ export type EditorPerfCounters = {
   content_frame_count: i32,
   chrome_frame_count: i32,
   present_frame_count: i32,
-  idle_wait_count: i32
+  idle_wait_count: i32,
+  glyph_shape_calls: i32,
+  glyph_batch_draw_calls: i32
 }
 
 export fn editor_perf_now_us() -> i32 =
@@ -43,7 +46,9 @@ export fn editor_perf_new() -> EditorPerfCounters =
     content_frame_count: 0,
     chrome_frame_count: 0,
     present_frame_count: 0,
-    idle_wait_count: 0
+    idle_wait_count: 0,
+    glyph_shape_calls: 0,
+    glyph_batch_draw_calls: 0
   }
 
 export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCounters =
@@ -62,7 +67,9 @@ export fn editor_perf_tick_frame(counters: EditorPerfCounters) -> EditorPerfCoun
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_accumulate_frame(
@@ -87,7 +94,9 @@ export fn editor_perf_accumulate_frame(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_content_rebuild(
@@ -108,7 +117,9 @@ export fn editor_perf_note_content_rebuild(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_text_layer_rebuild(
@@ -129,7 +140,9 @@ export fn editor_perf_note_text_layer_rebuild(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_chrome_rebuild(
@@ -150,7 +163,9 @@ export fn editor_perf_note_chrome_rebuild(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_content_frame(
@@ -171,7 +186,9 @@ export fn editor_perf_note_content_frame(
     content_frame_count: counters.content_frame_count + 1,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_chrome_frame(
@@ -192,7 +209,9 @@ export fn editor_perf_note_chrome_frame(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count + 1,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_present_frame(
@@ -213,7 +232,9 @@ export fn editor_perf_note_present_frame(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count + 1,
-    idle_wait_count: counters.idle_wait_count
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
   }
 
 export fn editor_perf_note_idle_wait(
@@ -234,7 +255,57 @@ export fn editor_perf_note_idle_wait(
     content_frame_count: counters.content_frame_count,
     chrome_frame_count: counters.chrome_frame_count,
     present_frame_count: counters.present_frame_count,
-    idle_wait_count: counters.idle_wait_count + 1
+    idle_wait_count: counters.idle_wait_count + 1,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
+  }
+
+export fn editor_perf_note_glyph_shape_calls(
+  counters: EditorPerfCounters,
+  shape_calls: i32
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls + shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls
+  }
+
+export fn editor_perf_note_glyph_batch_draw_calls(
+  counters: EditorPerfCounters,
+  batch_draw_calls: i32
+) -> EditorPerfCounters =
+  EditorPerfCounters {
+    frames: counters.frames,
+    layout_us: counters.layout_us,
+    shaping_us: counters.shaping_us,
+    draw_us: counters.draw_us,
+    total_us: counters.total_us,
+    lines_touched: counters.lines_touched,
+    primitives: counters.primitives,
+    visible_collect_count: counters.visible_collect_count,
+    content_rebuild_count: counters.content_rebuild_count,
+    text_layer_rebuild_count: counters.text_layer_rebuild_count,
+    chrome_rebuild_count: counters.chrome_rebuild_count,
+    content_frame_count: counters.content_frame_count,
+    chrome_frame_count: counters.chrome_frame_count,
+    present_frame_count: counters.present_frame_count,
+    idle_wait_count: counters.idle_wait_count,
+    glyph_shape_calls: counters.glyph_shape_calls,
+    glyph_batch_draw_calls: counters.glyph_batch_draw_calls + batch_draw_calls
   }
 
 export fn editor_perf_format_wake_counters(counters: EditorPerfCounters, hit_id: string) -> string =
@@ -245,6 +316,8 @@ export fn editor_perf_format_wake_counters(counters: EditorPerfCounters, hit_id:
     + "\nchrome_frame_count=" + counters.chrome_frame_count.to_string()
     + "\npresent_frame_count=" + counters.present_frame_count.to_string()
     + "\nidle_wait_count=" + counters.idle_wait_count.to_string()
+    + "\nglyph_shape_calls=" + counters.glyph_shape_calls.to_string()
+    + "\nglyph_batch_draw_calls=" + counters.glyph_batch_draw_calls.to_string()
     + "\nhit=" + hit_id
     + "\n"
 
@@ -279,3 +352,5 @@ export fn editor_perf_format_demo_live_full(counters: EditorPerfCounters) -> str
     + " draw_us=" + counters.draw_us.to_string()
     + " total_us=" + counters.total_us.to_string()
     + " visible_collect_count=" + counters.visible_collect_count.to_string()
+    + " glyph_shape_calls=" + counters.glyph_shape_calls.to_string()
+    + " glyph_batch_draw_calls=" + counters.glyph_batch_draw_calls.to_string()

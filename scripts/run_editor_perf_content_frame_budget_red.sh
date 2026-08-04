@@ -26,13 +26,17 @@ fail() {
 [ -f "$DOGFOOD" ] || fail "missing dogfood baseline (unexpected drift — §109a required)"
 [ -f "$TRACK" ] || fail "missing TRACK_EDITOR_PERF_DOGFOOD.md (unexpected drift)"
 
-# Sanity: §109c ceiling still the standing PERF_FULL gate until §109d Green rewrites.
-grep -q 'TOTAL_US_MAX=.*16357201' "$PERF_FULL" || \
-  fail "PERF_FULL missing §109c TOTAL_US_MAX=16357201 (unexpected drift)"
-
 # Red: green content-frame budget harness absent until Green.
 if [ -f "$GREEN" ]; then
   fail "green run_editor_perf_content_frame_budget.sh already present (expected gap until Green)"
+fi
+
+# Sanity: §109c ceiling was the standing PERF_FULL gate until §109d Green rewrites.
+# After Green, this red script is only expected to fail on "already present" above.
+if grep -q 'TOTAL_US_MAX=.*16357201' "$PERF_FULL"; then
+  :
+elif grep -q 'glyph_shape_calls' "$PERF"; then
+  fail "green markers present without green harness file (unexpected drift)"
 fi
 
 # Red: glyph shape/batch counters not wired yet (§109d Green).
