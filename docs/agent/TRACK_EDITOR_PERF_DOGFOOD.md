@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -613,10 +613,34 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | Epic regressions must not hide behind skip flags |
-| Fix | Compose dogfood baseline + visible hover + content ceiling + minimap/tree counters into `run_editor_perf_dogfood_gate.sh` (or fold into `run_ux_gate` with clear tags); ×2 before epic Critic close |
-| Depends on | §109a–j |
-| Gate | Full dogfood gate green ×2; sabotage of any load-bearing fix fails |
+| Problem | Epic close criteria live only in TRACK prose; each §109a–j harness is run in isolation — regressions can pass a narrow script while epic budgets slip. Dogfood baseline is **measure-only** (no CPU ceilings). No single entry that Critic can run ×2 |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109a–j CLOSED |
+| Gate | `run_editor_perf_dogfood_gate.sh` green ×2; sabotage of any load-bearing member fails the suite |
+| Sabotage | (1) Drop wake / honesty from the suite while claiming epic hover green → fail. (2) Raise `scroll_cpu` max to ≥100 or route content budget through skip-heavy `MLC_EDITOR_PERF` only → fail. (3) Allow README / missing `MLC_EDITOR_PERF_OPEN` on dogfood member → fail. (4) Omit minimap-sample or chrome-tree member while suite reports OK → fail |
+| Out of scope | SceneNode; new perf cuts; folding into `run_ux_gate.sh` (L1 scenarios stay separate); resuming §103 / §104 Wave 2 inside this STEP |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_perf_dogfood_gate.sh` (+ `_red.sh`). Composite report: `.tmp/editor_perf_dogfood_gate/report.txt`. `MLC_GLFW_VISIBLE=1`; open `$ROOT/misc/editor/demo_live.mlc`; **no** `MLC_EDITOR_PERF` skip-heavy as content proof. Missing glfw/font/`/proc` → **fail**, not skip-green |
+| Pre-cut (audit 2026-08-04) | (1) **No** `run_editor_perf_dogfood_gate.sh`. (2) `run_editor_perf_dogfood_baseline.sh` records metrics but does **not** fail on epic CPU ceilings (idle≲5 / still≲8 / jitter≲15 / scroll≲60 / stall≲500). (3) Epic **Global close criteria** (TRACK top) are not invoked as one fail-fast suite. (4) `run_ux_gate.sh` has **zero** `run_editor_perf_*` members — L1 UX ≠ visible dogfood |
+| **Green cut** | **Compose, do not rewrite**, existing load-bearing scripts into one fail-fast suite (reuse `EDITOR_DEMO_LIVE_FS_OUT` binary across members when possible). **Order:** (1) `run_editor_perf_gate_honesty.sh` (§109c — wake authority + hover L2 VISIBLE=1 + PERF_FULL `TOTAL_US_MAX`≤8206442). (2) `run_editor_perf_wake_on_hover.sh` (§109b — still≲**8**, jitter≲**15**; text-rect probe). (3) `run_editor_perf_dogfood_baseline.sh` **plus gate asserts** on its `report.txt`: `idle_away_cpu_percent`≤**5**, `still_over_text_cpu_percent`≤**8**, `text_jitter_cpu_percent`≤**15**, `scroll_cpu_percent`≤**60** (median-of-3 if first >max, same as §109e/j), `type_stall_ms`≤**500**; basename not README*. (4) `run_editor_perf_glyph_layer_budget.sh` (§109e — scroll shape + PERF_FULL content ceiling). (5) `run_editor_perf_chrome_tree_visible.sh` (§109h). (6) `run_editor_perf_minimap_sample.sh` (§109i). (7) `run_editor_perf_startup_open.sh` (§109j). Optional env `EDITOR_PERF_DOGFOOD_GATE_SKIP=` comma-list **forbidden in CI / Critic** (Green must fail if skip used without explicit `EDITOR_PERF_DOGFOOD_GATE_ALLOW_SKIP=1` for local debug only). **Not** folded into `run_ux_gate.sh`. Spans/snapshot harnesses stay callable alone — not required in §109k suite (covered by glyph/dogfood stall + existing L1) |
+| Epic close mapping | Global criteria 1–3 → wake + dogfood idle/still/jitter asserts. Criterion 4–5 → dogfood scroll≤60 + type_stall≤500 + glyph_layer. Criterion 6 → honesty + glyph PERF_FULL ceiling. H7/H8/H9 → tree / minimap / startup members |
+| Counters / report | Suite writes `member=<name> status=ok\|fail` lines + copies key metrics (`still_over_text_cpu_percent`, `scroll_cpu_percent`, `type_stall_ms`, `total_us` / `TOTAL_US_MAX`, startup `time_to_first_present_ms`). Exit 0 only if **all** members ok |
+| Green must hit | (1) Gate script exits 0 once. (2) Second consecutive run exits 0 (×2 — required before §109k Critic close / epic close). (3) Red “already present”. (4) Sabotages (1)–(4) each fail. (5) Composite report lists all seven members |
+| Red | No `run_editor_perf_dogfood_gate.sh` |
+| Green | Gate + `_red.sh` already-present; paste ×2 timestamps / key metrics under this §109k |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no dogfood-gate harness | pending |
+| 2 | Green: compose suite + ceilings + ×2 | pending |
+| 3 | Critic | pending |
 
 ---
 

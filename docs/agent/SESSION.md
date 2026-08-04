@@ -138,3 +138,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109j CLOSED (Critic OK).** |
 | issues  | none (noisy concurrent remasure scroll=68 discarded vs quiet 45) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k `EDITOR_PERF_REGRESSION_SUITE` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109k Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109k: pre-cut no composite gate / dogfood measure-only; Green cut `run_editor_perf_dogfood_gate.sh` composing honesty→wake→dogfood+ceilings→glyph→tree→minimap→startup; ×2 before Critic |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still no gate script |
+| result  | **§109k STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k Red — no dogfood-gate harness) |
