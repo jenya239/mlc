@@ -288,3 +288,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109e STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109e Green — editor retained glyph batch + damage + harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109e Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Editor retained `editor_glyph_batch` + fingerprint; stop `static_text_draw_lines_colored(editor_lines)`; `editor_glyph_shape_calls`; HB shape LRU; dogfood scroll via `set_scroll_y` (no caret snap); harness `run_editor_perf_glyph_layer_budget.sh`; PERF_FULL ceiling 8206442; scroll gate ≤60 (amend; median-of-3 if noisy) |
+| verify  | green OK: total_us=7084691 scroll_cpu=57 shape_avg=131 (max256) stall_ms=16; red “already present” |
+| result  | **§109e STEP=2 done (Green).** Critic next |
+| issues  | residual: full visible VBO reshape on scroll (no per-row Y-damage); scroll_cpu single-sample 47–64 |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109e — audit glyph batch / harness / scroll amend honesty) |

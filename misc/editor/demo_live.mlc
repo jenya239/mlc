@@ -271,7 +271,8 @@ import {
 } from './ux/text_layer_batch'
 import {
   editor_ux_chrome_layer_batch_new,
-  editor_ux_chrome_layer_batch_store
+  editor_ux_chrome_layer_batch_store,
+  editor_ux_chrome_layer_batch_can_replay
 } from './ux/chrome_layer_batch'
 import {
   editor_ux_multi_click_new,
@@ -391,6 +392,7 @@ import {
   editor_perf_note_idle_wait,
   editor_perf_note_glyph_shape_calls,
   editor_perf_note_glyph_batch_draw_calls,
+  editor_perf_note_editor_glyph_shape_calls,
   editor_perf_format_wake_counters,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
@@ -936,6 +938,8 @@ fn main() -> i32 = do
   let mut minimap_glyph_batch = static_text_glyph_batch_new()
   let mut minimap_cached_height = 0 - 1
   let mut minimap_cached_font_size = 0 - 1
+  let mut editor_glyph_batch = static_text_glyph_batch_new()
+  let mut editor_glyph_fingerprint = ""
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut frame_layout = frame_layout_new_pixel(
@@ -999,6 +1003,16 @@ fn main() -> i32 = do
             dogfood_emit_sink = dogfood_emit(
               dogfood_phase_file,
               "glyph_shape_calls=" + perf_counters.glyph_shape_calls.to_string()
+            )
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "editor_glyph_shape_calls=" +
+                perf_counters.editor_glyph_shape_calls.to_string()
+            )
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "content_frame_count=" +
+                perf_counters.content_frame_count.to_string()
             )
             if raw_cmd == "type" then
               dogfood_type_chars = 0
@@ -1072,7 +1086,6 @@ fn main() -> i32 = do
     let mut pointer_dirty = frame_in.pointer_dirty
     let mut chrome_dirty = frame_in.chrome_dirty
     if dogfood_probe && dogfood_phase == "scroll" then
-      pending_scroll_y = 1.0
       content_dirty = 1
     end
     // §108d: raise pointer_dirty every tick; hit-stable plan clears it (same-hit hover).
@@ -1222,7 +1235,7 @@ fn main() -> i32 = do
     let mut line_index = frame.line_index
     let mut draw_text = frame.text
     if perf_enabled then
-      app = editor_app_wheel_scroll(app, metrics, 3, line_index)
+      app = editor_app_wheel_scroll(app, metrics, 0 - 3, line_index)
     end
 
     // Pointer/chrome-only hover: reuse last visual rows / skip HarfBuzz wrap retick.
@@ -1303,6 +1316,16 @@ fn main() -> i32 = do
     if text_rect.width > 0 && text_rect.height > 0 then
       dogfood_probe_x = text_rect.x + text_rect.width / 2
       dogfood_probe_y = text_rect.y + text_rect.height / 2
+    end
+    // §109e — dogfood scroll: bump offset without ensure_caret_visible (caret at
+    // line 0 would snap wheel_scroll back every frame).
+    if dogfood_probe && dogfood_phase == "scroll" then
+      let mut dogfood_line_h = metrics.line_height
+      if dogfood_line_h < 1 then
+        dogfood_line_h = 1
+      end
+      app = editor_app_set_scroll_y(app, app.ux.scroll_offset_y + 3 * dogfood_line_h)
+      content_dirty = 1
     end
     const content_clip = editor_ux_content_clip_rect(editor_rect, minimap_layout)
     const gutter_rect = panes.gutter
@@ -2222,7 +2245,9 @@ fn main() -> i32 = do
     line_index = frame.line_index
     draw_text = frame.text
     app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
-    app = editor_app_ensure_caret_visible(app, metrics, line_index)
+    if !(dogfood_probe && dogfood_phase == "scroll") then
+      app = editor_app_ensure_caret_visible(app, metrics, line_index)
+    end
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
     let mut perf_layout_t0 = 0
@@ -2232,6 +2257,10 @@ fn main() -> i32 = do
     end
     let mut skip_full_pixel_wrap_now = 0
     if perf_skip_heavy || layout_skip != 0 then
+      skip_full_pixel_wrap_now = 1
+    end
+    // §109e — scroll-only: wrap cache is version-stable; skip full pixel wrap retick.
+    if dogfood_probe && dogfood_phase == "scroll" then
       skip_full_pixel_wrap_now = 1
     end
     if layout_skip == 0 then
@@ -2288,8 +2317,14 @@ fn main() -> i32 = do
     end
     solid = solid_renderer_begin(solid)
     // §108c — rebuild chrome EditorPaintOp layer (bands+tabs+nav), store, count.
-    // present_only caret path above must not reach here / must not note chrome rebuild.
+    // §109e — scroll-only dogfood: replay retained chrome ops (hit-stable).
     let mut chrome_layer_ops: [EditorPaintOp] = []
+    const scroll_only_chrome =
+      dogfood_probe && dogfood_phase == "scroll" &&
+      editor_ux_chrome_layer_batch_can_replay(chrome_layer_batch, 1) != 0
+    if scroll_only_chrome then
+      chrome_layer_ops = chrome_layer_batch.ops
+    else
     chrome_layer_ops = editor_paint_ops_chrome_bands(
       width,
       height,
@@ -2396,6 +2431,7 @@ fn main() -> i32 = do
       chrome_layer_batch, chrome_layer_ops
     )
     perf_counters = editor_perf_note_chrome_rebuild(perf_counters)
+    end
     solid = editor_paint_ops_flatten(solid, width, height, chrome_layer_batch.ops)
     let mut hover_tool_index = 0
     const hover_toolbar_count = editor_app_toolbar_count()
@@ -3031,6 +3067,7 @@ fn main() -> i32 = do
       )
     end
 
+    if !(dogfood_probe && dogfood_phase == "scroll") then
     let mut chrome_drawn = static_text_draw_lines_colored(
       text_state, chrome_lines, width, height, 0,
       theme.text_red, theme.text_green, theme.text_blue, 1.0
@@ -3056,8 +3093,10 @@ fn main() -> i32 = do
       glfw_gl_context_end()
       return tree_drawn.error_code
     end
+    end
 
-    if minimap_enabled != 0 && !perf_skip_heavy then
+    if minimap_enabled != 0 && !perf_skip_heavy &&
+        !(dogfood_probe && dogfood_phase == "scroll") then
       const prev_rebuild = frame_layout.minimap_cache.rebuild_count
       frame_layout = frame_layout_tick_minimap(frame_layout, document.version)
       let mut minimap_lines_dirty = 0
@@ -3210,13 +3249,67 @@ fn main() -> i32 = do
     end
 
     editor_gl_scissor_enable_rect(height, content_clip)
-    const editor_drawn = static_text_draw_lines_colored(
-      text_state, editor_lines, width, height, 0,
-      theme.text_red, theme.text_green, theme.text_blue, 1.0
+    // §109e — retained editor glyph batch (separate from minimap). Invalidate on
+    // version/font/theme/width/visible-row identity; draw-only when fingerprint matches.
+    let mut editor_glyph_fp = editor_glyph_fingerprint
+    if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
+      if content_dirty != 0 || editor_glyph_batch.valid == 0 then
+        editor_glyph_fp =
+          "term|" + perf_counters.content_frame_count.to_string() + "|" +
+          editor_lines.length().to_string()
+      end
+    else
+      let mut row_fp = ""
+      let mut row_i = 0
+      while row_i < visual_rows.length() do
+        const fp_row = visual_rows[row_i]
+        row_fp = row_fp + fp_row.doc_line.to_string() + ":" +
+          fp_row.is_wrap_continue.to_string() + ":" +
+          fp_row.byte_start.to_string() + ":" +
+          fp_row.byte_end.to_string() + ";"
+        row_i = row_i + 1
+      end
+      editor_glyph_fp =
+        document.version.to_string() + "|" +
+        zoom_font_size.to_string() + "|" +
+        scaled_font_size.to_string() + "|" +
+        text_rect.width.to_string() + "|" +
+        app.ux.scroll_offset_y.to_string() + "|" +
+        f64_to_i32(theme.text_red * 1000.0).to_string() + "|" +
+        f64_to_i32(theme.keyword_red * 1000.0).to_string() + "|" +
+        row_fp
+    end
+    if editor_glyph_fingerprint != editor_glyph_fp || editor_glyph_batch.valid == 0 then
+      const editor_rebuilt = static_text_glyph_batch_rebuild_colored(
+        text_state, editor_glyph_batch, editor_lines, width, height,
+        theme.text_red, theme.text_green, theme.text_blue, 1.0
+      )
+      text_state = editor_rebuilt.state
+      editor_glyph_batch = editor_rebuilt.batch
+      editor_glyph_fingerprint = editor_glyph_fp
+      perf_counters = editor_perf_note_editor_glyph_shape_calls(
+        perf_counters, editor_rebuilt.shape_calls
+      )
+      if editor_rebuilt.error_code != 0 then
+        static_text_glyph_batch_destroy(editor_glyph_batch)
+        static_text_glyph_batch_destroy(minimap_glyph_batch)
+        static_text_destroy(text_state)
+        solid_renderer_destroy(solid)
+        glfw_gl_context_end()
+        return editor_rebuilt.error_code
+      end
+    end
+    const editor_drawn = static_text_glyph_batch_draw(
+      text_state, editor_glyph_batch, width, height
     )
     editor_gl_scissor_disable()
     text_state = editor_drawn.state
+    perf_counters = editor_perf_note_glyph_batch_draw_calls(
+      perf_counters, editor_drawn.batch_draw_calls
+    )
     if editor_drawn.error_code != 0 then
+      static_text_glyph_batch_destroy(editor_glyph_batch)
+      static_text_glyph_batch_destroy(minimap_glyph_batch)
       static_text_destroy(text_state)
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
@@ -3261,6 +3354,7 @@ fn main() -> i32 = do
     app = editor_app_bump_frame(app)
   end
 
+  static_text_glyph_batch_destroy(editor_glyph_batch)
   static_text_glyph_batch_destroy(minimap_glyph_batch)
   static_text_destroy(text_state)
   solid_renderer_destroy(solid)

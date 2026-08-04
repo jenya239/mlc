@@ -6,6 +6,8 @@
 #include FT_FREETYPE_H
 
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace mlc {
@@ -63,6 +65,16 @@ std::int32_t hb_shape_text(std::int64_t font, String text) {
   if (harfbuzz_font == nullptr) {
     return -1;
   }
+  // TRACK_EDITOR_PERF_DOGFOOD §109e — LRU shape cache (scroll reuses visible rows).
+  const std::string cache_key =
+    std::to_string(font) + "\n" + std::string(text.view().data(), text.view().size());
+  static thread_local std::unordered_map<std::string, std::vector<ShapedGlyphEntry>> shape_cache;
+  static thread_local std::vector<std::string> shape_cache_order;
+  const auto cached = shape_cache.find(cache_key);
+  if (cached != shape_cache.end()) {
+    last_shape_slot() = cached->second;
+    return static_cast<std::int32_t>(last_shape_slot().size());
+  }
   hb_buffer_t* buffer = hb_buffer_create();
   if (buffer == nullptr) {
     return -2;
@@ -83,6 +95,13 @@ std::int32_t hb_shape_text(std::int64_t font, String text) {
     last_shape_slot().push_back(entry);
   }
   hb_buffer_destroy(buffer);
+  if (shape_cache_order.size() >= 512) {
+    const std::string& evict = shape_cache_order.front();
+    shape_cache.erase(evict);
+    shape_cache_order.erase(shape_cache_order.begin());
+  }
+  shape_cache[cache_key] = last_shape_slot();
+  shape_cache_order.push_back(cache_key);
   return static_cast<std::int32_t>(last_shape_slot().size());
 }
 

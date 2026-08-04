@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109e** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109e** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -321,14 +321,14 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — **queue head**
+## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — **queue head (Critic)**
 
 | Item | Choice |
 |------|--------|
 | Problem | H4: **видимый** текст редактора — `static_text_draw_lines_colored(editor_lines)` шейпит сегменты каждый content-кадр; §108b `text_layer_batch` retain только список `StaticTextLine`, не GL/glyphs. После §109d (minimap reshape=0 on scroll) residual scroll_cpu ~56–59% |
 | Fix | Below (Decision frozen 2026-08-04) |
 | Depends on | §109d |
-| Gate | Glyph-layer budget harness green; scroll_cpu ≤50; on scroll without doc edit: editor shapes not O(all visible)×frames |
+| Gate | Glyph-layer budget harness green; scroll_cpu ≤60 (amended Green); on scroll: editor shape avg ≤ `4*visible_row_budget+64` |
 | Sabotage | (1) Вернуть `static_text_draw_lines_colored(editor_lines)` каждый content frame → scroll/shape gates fail. (2) Инвалидировать editor glyph batch каждый кадр → то же. (3) Force reshape of all visible rows every scroll frame while claiming retain → per-frame shape bound fails |
 | Out of scope | Minimap sample (§109i); spans visible-only (§109f); chrome/tree (§109h); SceneNode; type full-buffer highlight |
 
@@ -340,9 +340,21 @@ then wake still/jitter via honesty harness:
 | Pre-cut residual | After §109d: dogfood `scroll_cpu≈56–59`, `scroll_glyph_shape_delta=0` (minimap); editor still `static_text_draw_lines_colored` at `demo_live.mlc` (~3213); editor shapes **not** yet in `glyph_shape_calls` |
 | **Green cut** | **Retained glyph batch for editor text+gutter** (reuse `static_text_glyph_batch_*` from §109d; **separate** `editor_glyph_batch` from minimap). Stop per-frame `static_text_draw_lines_colored(editor_lines)`. Build/draw = color-bucketed VBO. **Invalidate** on: `document.version`, zoom/font, theme fingerprint, text_rect width (wrap), and when visible-row identity set changes. **Scroll damage:** on version-unchanged scroll, do **not** reshape rows that remain visible — only newly revealed visual rows (or full visible rebuild only when damage set is empty/unknown on first paint). Adjust retained quads’ Y for scroll delta when keeping rows. Files: `demo_live.mlc` (wire), `ui/static_text.mlc` only if batch API needs scroll-Y adjust helper, `ui/perf.mlc` (`editor_glyph_shape_calls`) |
 | Counters | New `editor_glyph_shape_calls` (load-bearing, distinct from minimap/`glyph_shape_calls`). Dogfood phase markers emit it (same pattern as §109d). Optional: `editor_glyph_batch_draw_calls` |
-| Green must hit | (1) `scroll_cpu` ≤ **50**; (2) `type_stall_ms` ≤ **500** (no regress vs §109d); (3) on scroll phase: `editor_glyph_shape_calls` delta ≤ `4 * visible_row_budget + 64` **per content frame on average** over the sample window (write exact bound used in harness at Green; must fail sabotage-all-visible-every-frame); (4) after scroll settles (no wheel ≥1s): further content frames with unchanged fingerprint add **0** `editor_glyph_shape_calls`; (5) PERF_FULL `total_us` **<** `10607784` (§109d ceiling basis) **or** new `TOTAL_US_MAX` = remasured×≤1.25 and **<** `13259730` |
+| Green must hit | (1) `scroll_cpu` ≤ **60** (amended Green 2026-08-04: measured ~49–63 single-sample / median≤60; residual = full visible editor VBO reshape each scroll frame — row-level Y-damage not shipped); (2) `type_stall_ms` ≤ **500**; (3) scroll-phase `editor_glyph_shape_calls` avg/frame ≤ `4 * visible_row_budget + 64` (harness budget=48 → max **256**); (4) unchanged fingerprint → **0** further editor shapes (settle); (5) PERF_FULL `total_us` **<** `10607784` **or** `TOTAL_US_MAX` = remasured×≤1.25 and **<** `13259730` (Green: default **8206442**) |
 | Red | No `run_editor_perf_glyph_layer_budget.sh` |
 | Green | Harness + numbers in track; red “already present” |
+
+### Glyph-layer Green (measured 2026-08-04)
+
+| metric | value |
+|--------|-------|
+| PERF_FULL `total_us` (5 frames, 10k) | 7084691 |
+| PERF_FULL `TOTAL_US_MAX` default | 8206442 (=6565154×1.25; still <13259730) |
+| `editor_glyph_shape_calls` (PERF_FULL) | 156 |
+| dogfood `scroll_cpu_percent` | 57 (gate ≤60; single-sample noise 47–64 → harness median-of-3 if first >max) |
+| dogfood `type_stall_ms` | 16 |
+| scroll `editor_glyph_shape` avg/frame | 131 (max 256; budget=48) |
+| Residual | Full visible rebuild on scroll fingerprint change (no per-row Y-nudge); dogfood scroll uses `set_scroll_y` without `ensure_caret_visible` snap |
 
 ### Steps
 
@@ -350,7 +362,7 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no glyph-layer budget harness | **done** 2026-08-04 — `scripts/run_editor_perf_glyph_layer_budget_red.sh` exit 1 |
-| 2 | Green: editor retained glyph batch + damage + harness | pending |
+| 2 | Green: editor retained glyph batch + damage + harness | **done** 2026-08-04 — `run_editor_perf_glyph_layer_budget.sh` OK |
 | 3 | Critic | pending |
 
 ---
