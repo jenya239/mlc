@@ -40,8 +40,14 @@ export fn frame_snapshot_cache_tick(
   Profile.scope_begin("frame_snapshot")
   const snapshot = document_frame_snapshot(document)
   Profile.scope_end("frame_snapshot")
+  // §109g Critic — full dirty rebuild must bump flatten_count so L2 cannot
+  // false-green when apply_edit is replaced by tick(..., 1).
   DocumentFrameSnapshotCache {
-    snapshot: snapshot,
+    snapshot: DocumentFrameSnapshot {
+      text: snapshot.text,
+      line_index: snapshot.line_index,
+      flatten_count: state.snapshot.flatten_count + 1
+    },
     snapshot_count: state.snapshot_count + 1,
     dirty: dirty
   }

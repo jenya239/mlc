@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109g** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -415,7 +415,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109g `EDITOR_PERF_SNAPSHOT_EDIT_COVERAGE` — **queue head**
+## §109g `EDITOR_PERF_SNAPSHOT_EDIT_COVERAGE` — **CLOSED** 2026-08-04 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -445,7 +445,7 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no snapshot-edit coverage harness | **done** 2026-08-04 — `scripts/run_editor_perf_snapshot_edit_coverage_red.sh` exit 1 |
 | 2 | Green: wire paste/cut/backspace/newline + L2 extend + harness | **done** 2026-08-04 — `run_editor_perf_snapshot_edit_coverage.sh` OK; red “already present” |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — remasure OK; sab1 L2 tick→flatten fail; sab2 paste force-1 static fail; sab3 FORCE_ONE_MAX=5 fail; false-green fix: dirty `frame_snapshot_cache_tick` bumps `flatten_count` |
 
 ### Snapshot-edit Green (measured 2026-08-04)
 
@@ -453,13 +453,15 @@ then wake still/jitter via honesty harness:
 |--------|-------|
 | L2 `snapshot_edit_coverage` | ux_ok (insert/backspace/paste/cut/newline, flatten stable) |
 | `type_stall_ms` | 16 |
-| `scroll_cpu_percent` | 48 |
+| `scroll_cpu_percent` | 48 (Critic remasure 54) |
 | `force_one_count` | 22 (max allowlist 24) |
 | Cut | paste/cut/backspace/newline → `frame_layout_after_span_edit`; word-delete/open/tab/undo remain force-1 |
 
+**Critic 2026-08-04:** Independent green OK (stall=16 scroll=54 force_one=22); red already present. Sabotage (1) replace L2 `apply_edit` with `tick(...,1)` → `ux_fail … insert flatten` exit 2 — only after dirty tick bumps `flatten_count` (`document_frame_snapshot` alone always sets `flatten_count: 1`, so pre-fix L2 could false-green). Sabotage (2) paste→force-1 → harness static fail. Sabotage (3) `FORCE_ONE_MAX=5` → fail force_one=22. Sibling UX `edit_no_full_flatten` + `idle_frame_snapshot_stable` still green.
+
 ---
 
-## §109h `EDITOR_PERF_CHROME_TREE_VISIBLE`
+## §109h `EDITOR_PERF_CHROME_TREE_VISIBLE` — **queue head**
 
 | Item | Choice |
 |------|--------|

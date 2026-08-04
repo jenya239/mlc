@@ -423,3 +423,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109g STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g — audit snapshot edit coverage) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109g)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109g: remasure green (stall=16 scroll=54 force_one=22); red already present; false-green fix — dirty `frame_snapshot_cache_tick` bumps `flatten_count`; sab1 L2 tick→flatten fail exit 2; sab2 paste force-1 static fail; sab3 FORCE_ONE_MAX=5 fail; edit_no_full_flatten+idle stable OK |
+| verify  | green exit 0; red exit 1; sab1/2/3 fail; scenario restored; only `frame_snapshot_cache.mlc` + docs in Critic commit |
+| result  | **§109g CLOSED (Critic OK).** |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h `EDITOR_PERF_CHROME_TREE_VISIBLE` — Decision freeze) |
