@@ -1240,7 +1240,11 @@ fn main() -> i32 = do
 
     let mut paint_dirty = 0
     // Idle before layout/chrome work — stable-hit pointer does not paint.
-    if content_dirty == 0 && pointer_dirty == 0 && chrome_dirty == 0 && !perf_enabled then
+    // §109j residual: do not idle-continue while a forced warm wrap is pending —
+    // otherwise frame-0 defer clears content_dirty and never reaches
+    // startup_need_full_wrap (glyph settle still=0 / scroll retain false-fail).
+    if content_dirty == 0 && pointer_dirty == 0 && chrome_dirty == 0 &&
+        startup_need_full_wrap == 0 && !perf_enabled then
       glfw_gl_context_wait_events_timeout(0.05)
       clock_ms = clock_ms + caret_blink_idle_wait_ms()
       paint_dirty = caret_blink_paint_dirty(

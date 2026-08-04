@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=3 Critic)
 
 ## Why (facts)
 
@@ -633,13 +633,27 @@ then wake still/jitter via honesty harness:
 | Red | No `run_editor_perf_dogfood_gate.sh` |
 | Green | Gate + `_red.sh` already-present; paste ×2 timestamps / key metrics under this §109k |
 
+### Green measured (2026-08-04)
+
+`scripts/run_editor_perf_dogfood_gate.sh` + honesty ceiling prefers §109e
+`TOTAL_US_MAX=8206442`. Residual fix in `demo_live.mlc`: idle-continue must not
+skip while `startup_need_full_wrap!=0` (§109j defer otherwise left
+`editor_glyph_shape_calls` settle still=0).
+
+| Pass | log mtime (+0400) | scroll | stall | present_ms | remeasure_total_us | exit |
+|------|-------------------|--------|-------|------------|--------------------|------|
+| 1 | 2026-08-04 18:36:40 | 39 | 16 | 111 | 1088567 | 0 |
+| 2 | 2026-08-04 18:55:46 | 31 | 16 | 113 | 804775 | 0 |
+
+Red after Green: `already present` exit 1. All seven `member=* status=ok`.
+
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no dogfood-gate harness | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_gate_red.sh` exit 1 |
-| 2 | Green: compose suite + ceilings + ×2 | pending |
+| 2 | Green: compose suite + ceilings + ×2 | **done** 2026-08-04 — gate ×2 exit 0; red already present |
 | 3 | Critic | pending |
 
 ---

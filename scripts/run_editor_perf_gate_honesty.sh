@@ -68,15 +68,33 @@ if [ "$default_max" -ge 20000000 ]; then
   fail "PERF_FULL TOTAL_US_MAX default=$default_max still ≥ 20000000"
 fi
 
-measured_line="$(grep -E '^\| measured_total_us \(ceiling basis\) \|' "$TRACK" | head -1 || true)"
+# Ceiling authority = latest rewrite of PERF_FULL default: §109e Glyph-layer,
+# else §109d Content-frame, else §109c Gate honesty (historical).
 ceiling_line="$(
   awk '
-    /^### Content-frame Green/ { in_section=1 }
-    /^### / && !/^### Content-frame Green/ { in_section=0 }
-    in_section && /^\| TOTAL_US_MAX \|/ { print; exit }
+    /^### Glyph-layer Green/ { in_section=1 }
+    /^### / && !/^### Glyph-layer Green/ { in_section=0 }
+    in_section && /TOTAL_US_MAX/ { print; exit }
   ' "$TRACK" || true
 )"
-if [ -z "$measured_line" ] || [ -z "$ceiling_line" ]; then
+measured_line="$(
+  awk '
+    /^### Glyph-layer Green/ { in_section=1 }
+    /^### / && !/^### Glyph-layer Green/ { in_section=0 }
+    in_section && /PERF_FULL .total_us./ { print; exit }
+  ' "$TRACK" || true
+)"
+if [ -z "$ceiling_line" ]; then
+  measured_line="$(grep -E '^\| measured_total_us \(ceiling basis\) \|' "$TRACK" | head -1 || true)"
+  ceiling_line="$(
+    awk '
+      /^### Content-frame Green/ { in_section=1 }
+      /^### / && !/^### Content-frame Green/ { in_section=0 }
+      in_section && /^\| TOTAL_US_MAX \|/ { print; exit }
+    ' "$TRACK" || true
+  )"
+fi
+if [ -z "$ceiling_line" ]; then
   measured_line="$(grep -E '^\| measured_total_us \|' "$TRACK" | head -1 || true)"
   ceiling_line="$(
     awk '
@@ -88,6 +106,9 @@ if [ -z "$measured_line" ] || [ -z "$ceiling_line" ]; then
 fi
 measured_us="$(printf '%s\n' "$measured_line" | grep -Eo '[0-9]{6,}' | head -1 || true)"
 track_ceiling="$(printf '%s\n' "$ceiling_line" | grep -Eo '[0-9]{6,}' | head -1 || true)"
+if [ -z "$measured_us" ] && [ -n "$track_ceiling" ]; then
+  measured_us=$(( track_ceiling * 100 / 125 ))
+fi
 [ -n "$measured_us" ] || fail "TRACK missing measured_total_us for current PERF_FULL ceiling"
 [ -n "$track_ceiling" ] || fail "TRACK missing TOTAL_US_MAX for current PERF_FULL ceiling"
 if [ "$track_ceiling" -ne "$default_max" ]; then

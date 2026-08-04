@@ -168,3 +168,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109k STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k Green — compose suite + ceilings + ×2) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109k Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-harness-agents |
+| done    | `run_editor_perf_dogfood_gate.sh` compose honesty→wake→dogfood+ceilings→glyph→tree→minimap→startup; honesty prefers §109e TOTAL_US_MAX; demo_live idle skip blocked while `startup_need_full_wrap` (glyph settle); gate ×2 |
+| verify  | pass1 18:36 exit 0 scroll=39 stall=16; pass2 18:55 exit 0 scroll=31; red already present exit 1 |
+| result  | **§109k STEP=2 done (Green ×2).** Critic next |
+| issues  | none (glyph settle still=0 was §109j warm-wrap skipped by idle-continue) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — audit dogfood gate) |
