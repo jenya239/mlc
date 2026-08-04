@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109i** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -511,7 +511,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109i `EDITOR_PERF_MINIMAP_SAMPLE` — **queue head**
+## §109i `EDITOR_PERF_MINIMAP_SAMPLE` — **CLOSED** 2026-08-04
 
 | Item | Choice |
 |------|--------|
@@ -541,7 +541,7 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no minimap-sample harness | **done** 2026-08-04 — `scripts/run_editor_perf_minimap_sample_red.sh` exit 1 |
 | 2 | Green: sample-to-height + harness | **done** 2026-08-04 — helpers + demo sample loop; L1 `minimap_sample.mlc`; `run_editor_perf_minimap_sample.sh` |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — closed |
 
 ### Minimap-sample Green (measured 2026-08-04)
 
@@ -553,9 +553,11 @@ then wake still/jitter via honesty harness:
 | Static | no `while map_line < line_index_line_count`; `while sample_index < sample_count` + helpers |
 | Red | `already present` |
 
+**Critic 2026-08-04:** Quiet remasure green OK (L1 ux_ok; scroll=45 then 39; stall=16). Red already present. Sab1 full `line_count` loop → static fail. Sab2 helper returns `lines` → L1 `sample_count` fail. Sab3 post-helper `sample_count = map_line_count` initially **passed** green (false-green) — harness tightened (`const sample_count = editor_ux_minimap_sample_count` + ban override); sab3b then fails; green re-OK scroll=39.
+
 ---
 
-## §109j `EDITOR_PERF_STARTUP_OPEN`
+## §109j `EDITOR_PERF_STARTUP_OPEN` — **queue head**
 
 | Item | Choice |
 |------|--------|

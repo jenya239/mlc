@@ -558,3 +558,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109i STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i — audit minimap sample) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109i)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109i: remasure green (scroll=45/39 stall=16); red already present; sab1 full loop static fail; sab2 helper→lines L1 fail; sab3 override initially green — harness const+no-override fix; sab3b fail; green re-OK |
+| verify  | green2 exit 0; red exit 1; sab1/2/3b fail; demo/minimap restored |
+| result  | **§109i CLOSED (Critic OK).** |
+| issues  | none (false-green sab3 fixed in harness) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j `EDITOR_PERF_STARTUP_OPEN` — Decision freeze) |

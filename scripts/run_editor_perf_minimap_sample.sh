@@ -38,6 +38,12 @@ grep -q 'editor_ux_minimap_sample_source_line' "$MINIMAP" || \
   fail "minimap.mlc missing editor_ux_minimap_sample_source_line"
 grep -q 'editor_ux_minimap_sample_count' "$DEMO" || \
   fail "demo_live missing sample_count wire"
+# Bound must come from helper as const (no post-override to line_count).
+grep -q 'const sample_count = editor_ux_minimap_sample_count' "$DEMO" || \
+  fail "demo_live sample_count not const from editor_ux_minimap_sample_count"
+if grep -qE 'sample_count[[:space:]]*=[[:space:]]*map_line_count|sample_count[[:space:]]*=[[:space:]]*line_index_line_count' "$DEMO"; then
+  fail "demo_live overrides sample_count to full line_count"
+fi
 
 # Must not full-walk document lines for minimap_lines rebuild.
 if grep -q 'while map_line < line_index_line_count(line_index)' "$DEMO"; then
