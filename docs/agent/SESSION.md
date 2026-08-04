@@ -543,3 +543,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109d Green target = minimap batch, not vague “cut draw”** |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d Red — no content-frame budget harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109d Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_content_frame_budget_red.sh`: fail while budget harness / glyph counters / minimap retain absent |
+| verify  | `bash scripts/run_editor_perf_content_frame_budget_red.sh` → FAIL exit 1 (`no editor perf content-frame budget harness`) |
+| result  | **§109d STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d Green — minimap retained glyph batch + budget harness) |
