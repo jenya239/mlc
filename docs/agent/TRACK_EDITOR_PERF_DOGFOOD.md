@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109g** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109g** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -63,8 +63,8 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | H2 | §108d L2 false-green (cpu=0 probe) | **CLOSED** §109c | §109c |
 | H3 | Content scroll frame cost | draw≈90%; Opus 2026-08-04: **minimap glyph draw каждый кадр** ≈ весь `draw_us` | **§109d** |
 | H4 | Visible editor text reshape every paint | **CLOSED** §109e — retained `editor_glyph_batch`; residual full-visible reshape on scroll | §109e |
-| H5 | Syntax spans / highlight full buffer | Dominates **type**; `demo_live` ticks `0..byte_size()` every content frame | **§109f** |
-| H6 | Snapshot / flatten on non-incremental dirty | Open/paste/undo class; not scroll steady-state | §109g |
+| H5 | Syntax spans / highlight full buffer | **CLOSED** §109f — visible-range + cover | §109f |
+| H6 | Snapshot / flatten on non-incremental dirty | Open/paste/undo class; insert already apply_edit (§107f); ~27× `tick_snapshot(...,1)` remain | **§109g** |
 | H7 | Tree: folder rows + hover every chrome paint | O(tree rows) | §109h |
 | H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
 | H9 | First open / session → README; cold wrap | Explains most of `layout_us` once | §109j |
@@ -369,7 +369,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109f `EDITOR_PERF_SPANS_VISIBLE_ONLY` — **queue head**
+## §109f `EDITOR_PERF_SPANS_VISIBLE_ONLY` — **CLOSED** 2026-08-04
 
 | Item | Choice |
 |------|--------|
@@ -411,18 +411,41 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no spans-visible harness | **done** 2026-08-04 — `scripts/run_editor_perf_spans_visible_only_red.sh` exit 1 |
 | 2 | Green: visible-range tick + cover/reuse + harness | **done** 2026-08-04 — `run_editor_perf_spans_visible_only.sh` OK; red “already present” |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — independent remasure OK; sab1 full-buffer lex avg fail; sab2 no-cover scroll_rebuild fail; sab3 static `0..byte_size` fail; red already present |
 
 ---
 
-## §109g `EDITOR_PERF_SNAPSHOT_EDIT_COVERAGE`
+## §109g `EDITOR_PERF_SNAPSHOT_EDIT_COVERAGE` — **queue head**
 
 | Item | Choice |
 |------|--------|
-| Problem | H6: many dirty paths still full `document_frame_snapshot` flatten |
-| Fix | Audit remaining `frame_layout_tick_snapshot(..., 1)` / `document_to_string` call sites in editor; route known edits through apply_edit; document unavoidable full rebuilds |
-| Depends on | §109d |
-| Gate | Extend `edit_no_full_flatten` (or sibling) to cover typed insert/delete and paste; sabotage full flatten |
+| Problem | H6: after §107f, **single-caret insert** uses `frame_layout_tick_snapshot_edit` (flatten_count stable), but **~27** `demo_live` sites still force `frame_layout_tick_snapshot(..., 1)` — including paste/cut (×2), undo/redo, backspace/delete-word, newline, open/tab-switch, multi-caret insert. Each force-1 is a full `document_frame_snapshot` flatten (O(doc) stringify + line index) |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §107f apply_edit API; §109d/e/f for dogfood non-regress |
+| Gate | Snapshot-edit coverage harness green; typed insert/delete/paste/newline keep flatten_count; allowlisted full rebuilds only |
+| Sabotage | (1) Route insert back through `tick_snapshot(..., 1)` → scenario/harness flatten growth fail. (2) Claim coverage while paste/backspace/newline still force-1 → static allowlist / scenario fail. (3) Drop allowlist check and leave open/tab as “covered” without documenting → Critic fail |
+| Out of scope | Undo/redo span reconstruction; multi-caret incremental; open/tab/drop full rebuild (documented allowlist); scroll steady-state; SceneNode; minimap (§109i) |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_snapshot_edit_coverage.sh` — extends/runs L2 `edit_no_full_flatten` (+ sibling ops) and static demo wire checks; dogfood `type_stall_ms`≤500 + §109e scroll non-regress (`scroll_cpu`≤60) as side gates; `VISIBLE=1`, open `misc/editor/demo_live.mlc` |
+| Pre-cut (audit 2026-08-04) | `demo_live.mlc`: **1** live `frame_layout_tick_snapshot_edit` (single-caret insert ~2209); **~27** `frame_layout_tick_snapshot(..., 1)` including paste/cut (~1504/~1521/~2003/~2018), undo/redo (~1886/~1900), newline (~2230), backspace (~2246), multi-insert else (~2218), open/tab/drop/mismatch fallback. Unit `edit_no_full_flatten` covers **insert-only** apply_edit |
+| **Green cut** | Wire **known single-span** edits through `frame_layout_tick_snapshot_edit` (same args shape as insert: `byte_start`, `removed_len`, `inserted`): **backspace** (1-byte or selection delete), **newline** (insert `"\n"` / indent string at caret), **paste** (selection replace with clipboard text), **cut** (selection delete). Keep mismatch fallback to force-1 when `line_index_matches_document` fails (same as insert). **Allowlist** remaining force-1 (must stay documented in harness comments + TRACK): open path / tab activate / drop / undo / redo / multi-caret insert / autoclose length-mismatch fallback / ensure-tabs document swap. Files: `demo_live.mlc` (wire), extend `misc/editor/ux_scenarios/edit_no_full_flatten.mlc` **or** sibling `snapshot_edit_coverage.mlc` for delete+paste+newline flatten stability, `scripts/run_editor_perf_snapshot_edit_coverage.sh` (+ `_red.sh`) |
+| Counters | L2: `flatten_count` must not grow across covered ops. Optional dogfood emit of `snapshot_flatten_count` — not required if L2+static wire are load-bearing |
+| Green must hit | (1) L2: after warm snapshot, **N≥8** ops spanning **insert + backspace/delete + paste + newline** leave `flatten_count` unchanged and text/line_index match full rebuild oracle; (2) `demo_live` paste/cut/backspace/newline paths call `frame_layout_tick_snapshot_edit` (static grep); (3) force-1 sites ⊆ documented allowlist (harness enumerates or fails on new unmarked `tick_snapshot(..., 1)`); (4) `type_stall_ms`≤**500**; (5) §109e scroll gate still green (`scroll_cpu`≤60) |
+| Red | No `run_editor_perf_snapshot_edit_coverage.sh` |
+| Green | Harness + numbers/notes in track; red “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no snapshot-edit coverage harness | pending |
+| 2 | Green: wire paste/cut/backspace/newline + L2 extend + harness | pending |
+| 3 | Critic | pending |
 
 ---
 
