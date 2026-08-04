@@ -1,0 +1,151 @@
+// TRACK_EDITOR_PERF_DOGFOOD §109g — insert/delete/paste/newline keep flatten_count.
+import {
+  document_from_string,
+  document_to_string
+} from '../document/piece_table'
+import {
+  line_index_from_string,
+  line_index_line_count,
+  line_index_line_start,
+  line_index_matches_document
+} from '../document/line_index'
+import {
+  selection_collapsed,
+  selection_new
+} from '../document/selection'
+import {
+  edit_insert_text,
+  edit_backspace,
+  edit_insert_newline,
+  edit_apply_span_replace_selection,
+  edit_apply_span_backspace,
+  edit_apply_span_newline
+} from '../document/edit'
+import {
+  frame_snapshot_cache_new,
+  frame_snapshot_cache_apply_edit
+} from '../document/frame_snapshot_cache'
+
+fn main() -> i32 = do
+  const seed = "line_0\n  line_1\nline_2\n"
+  let mut document = document_from_string(seed)
+  let mut cache = frame_snapshot_cache_new(document)
+  const warm_flatten = cache.snapshot.flatten_count
+  if warm_flatten != 1 then
+    println("ux_fail snapshot_edit_coverage warm flatten")
+    return 1
+  end
+
+  // 1–2: inserts at end
+  let mut step = 0
+  while step < 2 do
+    const caret = document_to_string(document).byte_size()
+    const chunk = "x" + step.to_string()
+    const span = edit_apply_span_replace_selection(
+      selection_collapsed(caret), chunk
+    )
+    document = edit_insert_text(document, selection_collapsed(caret), chunk).document
+    cache = frame_snapshot_cache_apply_edit(
+      cache, span.byte_start, span.removed_len, span.inserted
+    )
+    if cache.snapshot.flatten_count != warm_flatten then
+      println("ux_fail snapshot_edit_coverage insert flatten")
+      return 2
+    end
+    step = step + 1
+  end
+
+  // 3–4: backspace twice
+  step = 0
+  while step < 2 do
+    const caret = document_to_string(document).byte_size()
+    const sel = selection_collapsed(caret)
+    const span = edit_apply_span_backspace(document, sel)
+    document = edit_backspace(document, sel).document
+    cache = frame_snapshot_cache_apply_edit(
+      cache, span.byte_start, span.removed_len, span.inserted
+    )
+    if cache.snapshot.flatten_count != warm_flatten then
+      println("ux_fail snapshot_edit_coverage backspace flatten")
+      return 3
+    end
+    step = step + 1
+  end
+
+  // 5: paste-style replace (selection + insert)
+  const mid = 6
+  const paste_text = "PASTE"
+  const paste_sel = selection_new(mid, mid + 1)
+  const paste_span = edit_apply_span_replace_selection(paste_sel, paste_text)
+  document = edit_insert_text(document, paste_sel, paste_text).document
+  cache = frame_snapshot_cache_apply_edit(
+    cache, paste_span.byte_start, paste_span.removed_len, paste_span.inserted
+  )
+  if cache.snapshot.flatten_count != warm_flatten then
+    println("ux_fail snapshot_edit_coverage paste flatten")
+    return 4
+  end
+
+  // 6: cut-style delete selection
+  const cut_sel = selection_new(mid, mid + paste_text.byte_size())
+  const cut_span = edit_apply_span_replace_selection(cut_sel, "")
+  document = edit_backspace(document, cut_sel).document
+  cache = frame_snapshot_cache_apply_edit(
+    cache, cut_span.byte_start, cut_span.removed_len, cut_span.inserted
+  )
+  if cache.snapshot.flatten_count != warm_flatten then
+    println("ux_fail snapshot_edit_coverage cut flatten")
+    return 5
+  end
+
+  // 7–8: newline (indented caret first) then at end
+  const indented_caret = 14
+  const newline_sel0 = selection_collapsed(indented_caret)
+  const span0 = edit_apply_span_newline(document, newline_sel0)
+  document = edit_insert_newline(document, newline_sel0).document
+  cache = frame_snapshot_cache_apply_edit(
+    cache, span0.byte_start, span0.removed_len, span0.inserted
+  )
+  if cache.snapshot.flatten_count != warm_flatten then
+    println("ux_fail snapshot_edit_coverage newline0 flatten")
+    return 6
+  end
+  const end_caret = document_to_string(document).byte_size()
+  const newline_sel1 = selection_collapsed(end_caret)
+  const span1 = edit_apply_span_newline(document, newline_sel1)
+  document = edit_insert_newline(document, newline_sel1).document
+  cache = frame_snapshot_cache_apply_edit(
+    cache, span1.byte_start, span1.removed_len, span1.inserted
+  )
+  if cache.snapshot.flatten_count != warm_flatten then
+    println("ux_fail snapshot_edit_coverage newline1 flatten")
+    return 7
+  end
+
+  if !line_index_matches_document(cache.snapshot.line_index, document) then
+    println("ux_fail snapshot_edit_coverage length mismatch")
+    return 8
+  end
+  const expected = line_index_from_string(document_to_string(document))
+  if line_index_line_count(cache.snapshot.line_index) !=
+      line_index_line_count(expected) then
+    println("ux_fail snapshot_edit_coverage line count")
+    return 9
+  end
+  let mut line = 0
+  while line < line_index_line_count(expected) do
+    if line_index_line_start(cache.snapshot.line_index, line) !=
+        line_index_line_start(expected, line) then
+      println("ux_fail snapshot_edit_coverage starts")
+      return 10
+    end
+    line = line + 1
+  end
+  if cache.snapshot.text != expected.text then
+    println("ux_fail snapshot_edit_coverage text")
+    return 11
+  end
+
+  println("ux_ok snapshot_edit_coverage")
+  0
+end

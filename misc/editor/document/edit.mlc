@@ -25,6 +25,47 @@ export type EditResult = {
   selection: EditorSelection
 }
 
+// §109g — single-span args for frame_layout_tick_snapshot_edit.
+export type EditApplySpan = {
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+}
+
+export fn edit_apply_span_replace_selection(
+  selection: EditorSelection,
+  inserted: string
+) -> EditApplySpan = do
+  const range_start = selection_start(selection)
+  EditApplySpan {
+    byte_start: range_start,
+    removed_len: selection_end(selection) - range_start,
+    inserted: inserted
+  }
+end
+
+export fn edit_apply_span_backspace(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditApplySpan = do
+  if !selection_is_empty(selection) then
+    return edit_apply_span_replace_selection(selection, "")
+  end
+  const caret = selection_start(selection)
+  if caret <= 0 then
+    return EditApplySpan {
+      byte_start: 0,
+      removed_len: 0,
+      inserted: ""
+    }
+  end
+  EditApplySpan {
+    byte_start: caret - 1,
+    removed_len: 1,
+    inserted: ""
+  }
+end
+
 fn delete_selection(
   document: TextDocument,
   selection: EditorSelection
@@ -160,6 +201,26 @@ fn document_line_start_before(document: TextDocument, offset: i32) -> i32 = do
     index = previous
   end
   0
+end
+
+export fn edit_apply_span_newline(
+  document: TextDocument,
+  selection: EditorSelection
+) -> EditApplySpan = do
+  const caret = selection_start(selection)
+  let mut removed_len = 0
+  if !selection_is_empty(selection) then
+    removed_len = selection_end(selection) - caret
+  end
+  // Indent prefix is before caret; selection delete after caret does not change it.
+  const line_start = document_line_start_before(document, caret)
+  const prefix = document_byte_slice(document, line_start, caret)
+  const indent = leading_indent_of_line(prefix, 0)
+  EditApplySpan {
+    byte_start: caret,
+    removed_len: removed_len,
+    inserted: "\n" + indent
+  }
 end
 
 export fn edit_insert_newline(

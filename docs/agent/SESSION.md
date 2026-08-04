@@ -408,3 +408,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109g STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g Green — wire paste/cut/backspace/newline + L2 + harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109g Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `EditApplySpan` helpers in `edit.mlc`; demo paste/cut/backspace/newline → `frame_layout_after_span_edit`; L2 `snapshot_edit_coverage.mlc`; green `run_editor_perf_snapshot_edit_coverage.sh` |
+| verify  | green OK (stall=16 scroll=48 force_one=22); red “already present”; L2 ux_ok |
+| result  | **§109g STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g — audit snapshot edit coverage) |

@@ -226,6 +226,12 @@ import {
   edit_cut,
   edit_paste
 } from './document/clipboard_edit'
+import {
+  EditApplySpan,
+  edit_apply_span_replace_selection,
+  edit_apply_span_backspace,
+  edit_apply_span_newline
+} from './document/edit'
 import { HighlightSpan } from './syntax/highlighter'
 import {
   viewport_metrics_new,
@@ -249,6 +255,7 @@ import {
   VisualRow
 } from './layout/word_wrap'
 import {
+  EditorFrameLayout,
   frame_layout_new_pixel,
   frame_layout_tick_pixel,
   frame_layout_tick_snapshot,
@@ -659,6 +666,23 @@ fn apply_edit(tabs: TabSet, next_document: TextDocument) -> TabSet = do
   const active = tab_set_active(tabs)
   const buffer = open_buffer_set_document(active.buffer, next_document)
   tab_set_update_active_buffer(tabs, buffer)
+end
+
+// §109g — apply_edit snapshot path with mismatch fallback to full flatten.
+fn frame_layout_after_span_edit(
+  layout: EditorFrameLayout,
+  document: TextDocument,
+  span: EditApplySpan
+) -> EditorFrameLayout = do
+  let mut next = frame_layout_tick_snapshot_edit(
+    layout, span.byte_start, span.removed_len, span.inserted
+  )
+  if !line_index_matches_document(
+    next.snapshot_cache.snapshot.line_index, document
+  ) then
+    next = frame_layout_tick_snapshot(next, document, 1)
+  end
+  next
 end
 
 fn toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
@@ -1497,11 +1521,12 @@ fn main() -> i32 = do
         else if context_menu_action_is_cut(menu_click.action) then
           if !selection_is_empty(app.ux.selection) then
             app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const cut_span = edit_apply_span_replace_selection(app.ux.selection, "")
             const cut_result = edit_cut(document, app.ux.selection, app.clipboard)
             app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, cut_result.document))
             active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
-            frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+            frame_layout = frame_layout_after_span_edit(frame_layout, document, cut_span)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
@@ -1514,11 +1539,14 @@ fn main() -> i32 = do
         else if context_menu_action_is_paste(menu_click.action) then
           app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
           app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+          const paste_span = edit_apply_span_replace_selection(
+            app.ux.selection, clipboard_get(app.clipboard)
+          )
           const paste_result = edit_paste(document, app.ux.selection, app.clipboard)
           app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, paste_result.document))
           active = tab_set_active(app.ux.tabs)
           document = active.buffer.document
-          frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+          frame_layout = frame_layout_after_span_edit(frame_layout, document, paste_span)
           frame = frame_layout.snapshot_cache.snapshot
           line_index = frame.line_index
           draw_text = frame.text
@@ -1996,11 +2024,12 @@ fn main() -> i32 = do
           end
         | CmdCut => do
             app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const cut_span = edit_apply_span_replace_selection(app.ux.selection, "")
             const cut_result = edit_cut(document, app.ux.selection, app.clipboard)
             app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, cut_result.document))
             active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
-            frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+            frame_layout = frame_layout_after_span_edit(frame_layout, document, cut_span)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
@@ -2011,11 +2040,14 @@ fn main() -> i32 = do
         | CmdPaste => do
             app = editor_app_set_clipboard(app, clipboard_pull_from_os(app.clipboard))
             app = editor_app_set_history(app, history_push_before_edit(app.history, document, app.ux.selection))
+            const paste_span = edit_apply_span_replace_selection(
+              app.ux.selection, clipboard_get(app.clipboard)
+            )
             const paste_result = edit_paste(document, app.ux.selection, app.clipboard)
             app = editor_app_set_tabs(app, apply_edit(app.ux.tabs, paste_result.document))
             active = tab_set_active(app.ux.tabs)
             document = active.buffer.document
-            frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+            frame_layout = frame_layout_after_span_edit(frame_layout, document, paste_span)
             frame = frame_layout.snapshot_cache.snapshot
             line_index = frame.line_index
             draw_text = frame.text
@@ -2223,11 +2255,12 @@ fn main() -> i32 = do
       end
       if !editor_app_terminal_tab_active(app) && input.enter != 0 && app.enter_was_down == 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
+        const newline_span = edit_apply_span_newline(document, app.ux.selection)
         app = editor_app_insert_newline(app)
         multi = multi_selection_from_single(app.ux.selection)
         active = tab_set_active(app.ux.tabs)
         document = active.buffer.document
-        frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
+        frame_layout = frame_layout_after_span_edit(frame_layout, document, newline_span)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text
@@ -2237,13 +2270,19 @@ fn main() -> i32 = do
         if glfw_gl_mod_ctrl_down() != 0 then
           app = editor_app_delete_word_backward(app)
           app = editor_app_set_last_command(app, "delete_word_backward")
+          multi = multi_selection_from_single(app.ux.selection)
+          active = tab_set_active(app.ux.tabs)
+          document = active.buffer.document
+          // Allowlist: word-delete span not in §109g cut — full flatten.
+          frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         else
+          const backspace_span = edit_apply_span_backspace(document, app.ux.selection)
           app = editor_app_backspace(app)
+          multi = multi_selection_from_single(app.ux.selection)
+          active = tab_set_active(app.ux.tabs)
+          document = active.buffer.document
+          frame_layout = frame_layout_after_span_edit(frame_layout, document, backspace_span)
         end
-        multi = multi_selection_from_single(app.ux.selection)
-        active = tab_set_active(app.ux.tabs)
-        document = active.buffer.document
-        frame_layout = frame_layout_tick_snapshot(frame_layout, document, 1)
         frame = frame_layout.snapshot_cache.snapshot
         line_index = frame.line_index
         draw_text = frame.text

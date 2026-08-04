@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109g** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109g** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -444,8 +444,18 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no snapshot-edit coverage harness | **done** 2026-08-04 — `scripts/run_editor_perf_snapshot_edit_coverage_red.sh` exit 1 |
-| 2 | Green: wire paste/cut/backspace/newline + L2 extend + harness | pending |
+| 2 | Green: wire paste/cut/backspace/newline + L2 extend + harness | **done** 2026-08-04 — `run_editor_perf_snapshot_edit_coverage.sh` OK; red “already present” |
 | 3 | Critic | pending |
+
+### Snapshot-edit Green (measured 2026-08-04)
+
+| Metric | Value |
+|--------|-------|
+| L2 `snapshot_edit_coverage` | ux_ok (insert/backspace/paste/cut/newline, flatten stable) |
+| `type_stall_ms` | 16 |
+| `scroll_cpu_percent` | 48 |
+| `force_one_count` | 22 (max allowlist 24) |
+| Cut | paste/cut/backspace/newline → `frame_layout_after_span_edit`; word-delete/open/tab/undo remain force-1 |
 
 ---
 
