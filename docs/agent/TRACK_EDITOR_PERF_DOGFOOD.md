@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109f** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109f** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -389,9 +389,20 @@ then wake still/jitter via honesty harness:
 | **Green cut** | Pass **visible** byte range from current `visual_rows` (first `byte_start` … last `byte_end`, optional ±1 line margin) into `frame_layout_tick_spans`. **Scroll rule:** if `document.version` unchanged and cached span range **covers** the new visible window → **no** retick (reuse spans; preserves §79 scroll-no-relex). Retick visible only when version changes (type/edit) or visible ⊈ cached range (first paint / large jump). Files: `demo_live.mlc` (range args + cover check), `ui/perf.mlc` optional `span_lex_bytes` / expose `span_cache.rebuild_count` in dogfood markers. Do **not** require full-buffer lex for editor paint |
 | Minimap | May keep using `span_cache.spans` (partial coverage / stale outside window) or plain text tint until §109i; **not** a Green must-hit that type still full-lexes for minimap |
 | Counters | Load-bearing: dogfood markers emit `span_rebuild_count` and/or `span_lex_bytes` (= `range_end-range_start` summed on rebuilds). Distinct from glyph counters |
-| Green must hit | (1) `type_stall_ms` ≤ **500**; (2) on **type** phase: avg `span_lex_bytes` per content frame ≤ `8 * visible_row_budget * max_line_bytes_estimate + 4096` (write exact bound used in harness; must fail sabotage-full-buffer); (3) on **scroll** phase: `span_rebuild_count` delta ≤ **2** (or 0 preferred) over sample — version-unchanged scroll must not re-lex every frame; (4) §109e scroll gate still green (`scroll_cpu`≤60, settle still=scroll shapes); (5) no return of `frame_layout_tick_spans(..., 0, byte_size())` on the type/edit path |
+| Green must hit | (1) `type_stall_ms` ≤ **500**; (2) on **type** phase: avg `span_lex_bytes` per content frame ≤ `8 * visible_row_budget * max_line_bytes_estimate + 4096` (harness: budget=48, max_line_bytes=256 → **102400**; must fail sabotage-full-buffer); (3) on **scroll** phase: `span_rebuild_count` delta ≤ **2** (or 0 preferred) over sample — version-unchanged scroll must not re-lex every frame; (4) §109e scroll gate still green (`scroll_cpu`≤60, settle still=scroll shapes); (5) no return of `frame_layout_tick_spans(..., 0, byte_size())` on the type/edit path |
 | Red | No `run_editor_perf_spans_visible_only.sh` |
 | Green | Harness + numbers in track; red “already present” |
+
+### Spans-visible Green (measured 2026-08-04)
+
+| Metric | Value |
+|--------|-------|
+| `type_stall_ms` | 16 |
+| `scroll_cpu_percent` | 60 |
+| `scroll_span_rebuild_delta` | **0** |
+| `type_span_lex_bytes_avg` | 16201 (max 102400) |
+| Bound | `8*48*256+4096` |
+| Cut | visible `visual_rows` bytes → `frame_layout_tick_spans`; cover/reuse + rebuild pad `window*16` in `syntax_span_cache_tick` |
 
 ### Steps
 
@@ -399,7 +410,7 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no spans-visible harness | **done** 2026-08-04 — `scripts/run_editor_perf_spans_visible_only_red.sh` exit 1 |
-| 2 | Green: visible-range tick + cover/reuse + harness | pending |
+| 2 | Green: visible-range tick + cover/reuse + harness | **done** 2026-08-04 — `run_editor_perf_spans_visible_only.sh` OK; red “already present” |
 | 3 | Critic | pending |
 
 ---

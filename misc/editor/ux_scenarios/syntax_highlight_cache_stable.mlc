@@ -1,4 +1,4 @@
-// TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=2 — L2: same key skip; edit/range rebuild.
+// TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=2 — L2: same key skip; cover reuse; expand/edit rebuild.
 import {
   editor_ux_syntax_span_cache_new,
   editor_ux_syntax_span_cache_tick
@@ -6,8 +6,12 @@ import {
 
 fn main() -> i32 = do
   let mut cache = editor_ux_syntax_span_cache_new()
-  const source = "fn main() -> i32 = 1\n"
-  cache = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, source.byte_size())
+  // Long enough that rebuild pad (window*16) on (0,2) does not cover the tail.
+  const source =
+    "fn main() -> i32 = 1\n" +
+    "let aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1\n" +
+    "let bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2\n"
+  cache = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, 2)
   if cache.rebuild_count != 1 then
     println("ux_fail syntax_highlight_cache_stable first rebuild")
     return 1
@@ -16,25 +20,33 @@ fn main() -> i32 = do
     println("ux_fail syntax_highlight_cache_stable empty spans")
     return 2
   end
-  const after_same = editor_ux_syntax_span_cache_tick(
-    cache, 0, source, 0, source.byte_size()
-  )
+  const after_same = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, 2)
   if after_same.rebuild_count != cache.rebuild_count then
     println("ux_fail syntax_highlight_cache_stable same-key rebuild")
     return 3
   end
   cache = after_same
-  const after_range = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, 2)
-  if after_range.rebuild_count != cache.rebuild_count + 1 then
-    println("ux_fail syntax_highlight_cache_stable range rebuild")
+  // Nested request inside cached (padded) range — no re-lex (§109f cover).
+  const after_cover = editor_ux_syntax_span_cache_tick(cache, 0, source, 0, 1)
+  if after_cover.rebuild_count != cache.rebuild_count then
+    println("ux_fail syntax_highlight_cache_stable cover rebuild")
     return 4
   end
-  cache = after_range
-  const edited = "fn main() -> i32 = 2\n"
+  cache = after_cover
+  // Expand past padded cached end — must rebuild.
+  const after_expand = editor_ux_syntax_span_cache_tick(
+    cache, 0, source, 0, source.byte_size()
+  )
+  if after_expand.rebuild_count != cache.rebuild_count + 1 then
+    println("ux_fail syntax_highlight_cache_stable expand rebuild")
+    return 5
+  end
+  cache = after_expand
+  const edited = source + "x"
   const after_edit = editor_ux_syntax_span_cache_tick(cache, 1, edited, 0, 2)
   if after_edit.rebuild_count != cache.rebuild_count + 1 then
     println("ux_fail syntax_highlight_cache_stable edit rebuild")
-    return 5
+    return 6
   end
   println("ux_ok syntax_highlight_cache_stable")
   0

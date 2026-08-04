@@ -977,6 +977,8 @@ fn main() -> i32 = do
   let mut dogfood_jitter_flip = 0
   let mut dogfood_stall_printed = 0
   let mut dogfood_emit_sink = 0
+  // §109f — cumulative span lex bytes for dogfood markers.
+  let mut span_lex_bytes = 0
   // §109b — prior-frame text-rect center (updated after layout; kill fixed 420).
   let mut dogfood_probe_x = 420
   let mut dogfood_probe_y = chrome_top + 80
@@ -1014,6 +1016,15 @@ fn main() -> i32 = do
               "content_frame_count=" +
                 perf_counters.content_frame_count.to_string()
             )
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "span_lex_bytes=" + span_lex_bytes.to_string()
+            )
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "span_rebuild_count=" +
+                frame_layout.span_cache.rebuild_count.to_string()
+            )
             if raw_cmd == "type" then
               dogfood_type_chars = 0
               dogfood_stall_printed = 0
@@ -1037,6 +1048,19 @@ fn main() -> i32 = do
         if dogfood_type_chars == 20 then
           dogfood_burst_done_ms = app.frame_index
           dogfood_emit_sink = dogfood_emit(dogfood_phase_file, "type_burst_done")
+          dogfood_emit_sink = dogfood_emit(
+            dogfood_phase_file,
+            "span_lex_bytes=" + span_lex_bytes.to_string()
+          )
+          dogfood_emit_sink = dogfood_emit(
+            dogfood_phase_file,
+            "span_rebuild_count=" + frame_layout.span_cache.rebuild_count.to_string()
+          )
+          dogfood_emit_sink = dogfood_emit(
+            dogfood_phase_file,
+            "content_frame_count=" +
+              perf_counters.content_frame_count.to_string()
+          )
         end
       end
       // Emit stall before idle-continue can skip the bottom of the loop.
@@ -2574,16 +2598,33 @@ fn main() -> i32 = do
     editor_gl_scissor_enable_rect(height, content_clip)
 
     // Glyph colors carry Solarized tags; app.ux.selection highlight rects stay below.
-    // One full-buffer span cache for paint + minimap (scroll does not re-lex).
-    // Baseline/terminal perf smoke: skip O(n) full-buffer lex on 100k fixtures.
+    // §109f — visible-range span tick; cover/reuse + rebuild prefetch pad
+    // live in syntax_span_cache_tick (caller passes unpadded visible bytes).
+    // Baseline/terminal perf smoke: skip O(n) lex on 100k fixtures.
     // PERF_FULL keeps spans live (TRACK_EDITOR_HYGIENE §107d).
     // §107i — pointer-only hover (layout_skip) reuses span_cache; no retick.
     let mut syntax_spans = frame_layout.span_cache.spans
     if layout_skip == 0 && !perf_skip_heavy then
+      let mut span_range_start = 0
+      let mut span_range_end = 0
+      if visual_rows.length() > 0 then
+        span_range_start = visual_rows[0].byte_start
+        span_range_end = visual_rows[visual_rows.length() - 1].byte_end
+      end
+      const span_rebuild_before = frame_layout.span_cache.rebuild_count
       frame_layout = frame_layout_tick_spans(
-        frame_layout, document.version, draw_text, 0, draw_text.byte_size()
+        frame_layout, document.version, draw_text,
+        span_range_start, span_range_end
       )
       syntax_spans = frame_layout.span_cache.spans
+      if frame_layout.span_cache.rebuild_count != span_rebuild_before then
+        let mut lex_bytes = frame_layout.span_cache.range_end -
+          frame_layout.span_cache.range_start
+        if lex_bytes < 0 then
+          lex_bytes = 0
+        end
+        span_lex_bytes = span_lex_bytes + lex_bytes
+      end
     end
 
     // Current-line band under find/app.ux.selection (Decision: panel tint ~0.55).

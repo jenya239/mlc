@@ -348,3 +348,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109f STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f Green — visible-range spans + cover/reuse + harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109f Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Visible-range `frame_layout_tick_spans` from `visual_rows`; cover/reuse + rebuild pad `window*16` in `syntax_span_cache_tick`; dogfood `span_lex_bytes`/`span_rebuild_count`; green `run_editor_perf_spans_visible_only.sh`; updated shared-span UX gate + `syntax_highlight_cache_stable` for cover semantics |
+| verify  | green OK (stall=16 scroll_rebuild_delta=0 type_lex_avg=16201≤102400); red “already present”; ux syntax/hover/shared span OK |
+| result  | **§109f STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f — audit visible-range spans / cover / harness) |

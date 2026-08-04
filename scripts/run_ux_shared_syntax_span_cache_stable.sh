@@ -34,8 +34,13 @@ if grep -q 'syntax_span_cache, draw_text, range_start, range_end' "$DEMO"; then
   echo "[ux shared_syntax_span_cache_stable] FAIL: demo still visible-range ticks" >&2
   exit 1
 fi
-if ! grep -q 'frame_layout, document.version, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
-  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing full-buffer span tick via layout" >&2
+# §109f — visible-range tick via layout (not full-buffer 0..byte_size()).
+if grep -q 'frame_layout, document.version, draw_text, 0, draw_text.byte_size()' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: demo still full-buffer span tick" >&2
+  exit 1
+fi
+if ! grep -q 'span_range_start\|visual_rows\[0\].byte_start' "$DEMO"; then
+  echo "[ux shared_syntax_span_cache_stable] FAIL: demo missing visible-range span tick" >&2
   exit 1
 fi
 if ! grep -q 'const minimap_spans = frame_layout.span_cache.spans' "$DEMO"; then

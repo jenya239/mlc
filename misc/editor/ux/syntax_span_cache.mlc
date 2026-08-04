@@ -1,6 +1,8 @@
 // TRACK_EDITOR_SYNTAX_HIGHLIGHT_CACHE STEP=2 —
 // Cache visible-range highlight_range across paints (key = version + range).
 // TRACK_EDITOR_HYGIENE §107e — key on document version, not full text.
+// TRACK_EDITOR_PERF_DOGFOOD §109f — cover/reuse: version-unchanged scroll does
+// not re-lex when cached range already covers the visible window.
 import {
   HighlightSpan,
   highlight_range
@@ -35,11 +37,33 @@ export fn editor_ux_syntax_span_cache_tick(
       state.range_end == range_end then
     return state
   end
+  // §109f — same version + cached window covers request → reuse (scroll).
+  if state.version == document_version &&
+      state.range_start >= 0 &&
+      state.range_start <= range_start &&
+      state.range_end >= range_end then
+    return state
+  end
+  // Prefetch pad on rebuild so version-unchanged scroll stays covered.
+  let mut window = range_end - range_start
+  if window < 1 then
+    window = 1
+  end
+  const pad = window * 16
+  let mut store_start = range_start - pad
+  if store_start < 0 then
+    store_start = 0
+  end
+  let mut store_end = range_end + pad
+  const text_end = text.byte_size()
+  if store_end > text_end then
+    store_end = text_end
+  end
   SyntaxSpanCacheState {
     version: document_version,
-    range_start: range_start,
-    range_end: range_end,
-    spans: highlight_range(text, range_start, range_end),
+    range_start: store_start,
+    range_end: store_end,
+    spans: highlight_range(text, store_start, store_end),
     rebuild_count: state.rebuild_count + 1
   }
 end
