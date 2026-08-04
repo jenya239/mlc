@@ -443,7 +443,7 @@ then wake still/jitter via honesty harness:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: no snapshot-edit coverage harness | pending |
+| 1 | Red: no snapshot-edit coverage harness | **done** 2026-08-04 — `scripts/run_editor_perf_snapshot_edit_coverage_red.sh` exit 1 |
 | 2 | Green: wire paste/cut/backspace/newline + L2 extend + harness | pending |
 | 3 | Critic | pending |
 
