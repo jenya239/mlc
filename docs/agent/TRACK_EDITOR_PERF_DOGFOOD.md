@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -64,7 +64,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | H3 | Content scroll frame cost | draw≈90%; Opus 2026-08-04: **minimap glyph draw каждый кадр** ≈ весь `draw_us` | **§109d** |
 | H4 | Visible editor text reshape every paint | **CLOSED** §109e — retained `editor_glyph_batch`; residual full-visible reshape on scroll | §109e |
 | H5 | Syntax spans / highlight full buffer | **CLOSED** §109f — visible-range + cover | §109f |
-| H6 | Snapshot / flatten on non-incremental dirty | Open/paste/undo class; insert already apply_edit (§107f); ~27× `tick_snapshot(...,1)` remain | **§109g** |
+| H6 | Snapshot / flatten on non-incremental dirty | **CLOSED** §109g — paste/cut/backspace/newline span-edit; allowlisted force-1 | §109g |
 | H7 | Tree: folder rows + hover every chrome paint | O(tree rows) | §109h |
 | H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
 | H9 | First open / session → README; cold wrap | Explains most of `layout_us` once | §109j |
@@ -465,12 +465,36 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H7/H13: chrome paint walks all folder rows + toolbar slots every chrome/content paint |
-| Fix | Visible-row-only tree hover fills; toolbar/tree hover inside retained chrome layer; no row walk on present_only / hit-stable text |
-| Depends on | §109b |
-| Gate | `chrome_rebuild_count == 0` on stable text hover; tree paint row visits ≤ visible slots |
+| Problem | H7/H13: after §108c retained chrome (bands+tabs+nav), every full paint still walks **all** toolbar slots + **all** folder rows for hover fills and tree glyph collect |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109b (wake/chrome_rebuild); §108c chrome layer |
+| Gate | Chrome-tree-visible harness green; tree row visits ≤ visible slots; toolbar/tree hover not O(full tree) outside retained layer on hit-stable text |
+| Sabotage | (1) Restore full `length()` tree hover/glyph loops → visit bound fail. (2) Leave toolbar hover outside chrome layer every paint while claiming retain → static/counter fail. (3) present_only / hit-stable text still calls full `folder_tree_browser_rows` walk → visit≠0 fail |
+| Out of scope | SceneNode chrome; minimap sample (§109i); startup open (§109j); folder listing rebuild on disk change (must still refresh when tree mutates) |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_chrome_tree_visible.sh` — L1/L2 visit bounds + static wire; dogfood side: §109b still `chrome_rebuild` delta==0 + §109e `scroll_cpu`≤60; `VISIBLE=1`, open `misc/editor/demo_live.mlc`, no skip-heavy |
+| Pre-cut (audit 2026-08-04) | `demo_live.mlc` after chrome_layer store (~2496): (1) toolbar hover ~2499–2511 walks **all 11** `editor_app_toolbar_count` slots every paint; (2) `folder_tree_browser_rows` rebuild ~2513 every paint; (3) hover fills ~2520–2537 loop `draw_folder_rows.length()` (viewport clip only on draw); (4) tree glyphs ~3105–3128 same full-length loop, push only visible. §108c retain covers bands+tabs+nav only — **not** toolbar/tree hover |
+| **Green cut** | (1) **Visible-row index range** from `tree_scroll_y` + `tree_list_rect.height` / `folder_row_height()` (±1 row margin): hover fills + tree glyph collect iterate **only** that range, not `rows.length()`. (2) **Toolbar hover fills** move into `chrome_layer_ops` (rebuild when hovered tool index changes or `chrome_dirty`); hit-stable text / present_only must not re-walk all 11 slots outside the layer. (3) **Tree hover fills** either fold into chrome_layer (invalidate on hover_row / scroll / tree mutate) **or** stay immediate but visible-range-only — Decision prefers fold-in if same file touch is small; visible-range alone is the load-bearing must-hit. (4) Cache or reuse `folder_tree_browser_rows` across paints until tree/nav mutates (optional if visit bound already load-bearing). Files: `demo_live.mlc`, `ui/perf.mlc` (`tree_row_visit_count`), optional tiny helper in `folder_panel.mlc` for visible index range, L1 scenario + harness (+ `_red.sh`) |
+| Counters | `tree_row_visit_count` on `EditorPerfCounters` — increment **once per row index visited** in tree hover + tree glyph loops (sum per chrome/content paint). Emit in dogfood/wake markers. Visible slots = `tree_list_rect.height / folder_row_height()` (integer) |
+| Green must hit | (1) On a chrome paint with N≫visible rows: `tree_row_visit_count` ≤ **visible_slots + 2** (margin); sabotage full-length loop fails. (2) present_only caret / hit-stable text path: `tree_row_visit_count` delta **0** across blink-only frames (extend or sibling of `present_only_caret_no_chrome_rebuild`). (3) §109b still-over-text: `chrome_rebuild_count` delta still **0**. (4) §109e scroll gate non-regress (`scroll_cpu`≤60). (5) Static: no `while … < draw_folder_rows.length()` / `draw_tree_rows.length()` for hover/glyph without visible-range bounds (harness grep or L1) |
+| Red | No `run_editor_perf_chrome_tree_visible.sh` |
+| Green | Harness + numbers/notes in track; red “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no chrome-tree-visible harness | pending |
+| 2 | Green: visible-range + toolbar/tree retain wire + harness | pending |
+| 3 | Critic | pending |
 
 ---
+
 
 ## §109i `EDITOR_PERF_MINIMAP_SAMPLE`
 

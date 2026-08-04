@@ -438,3 +438,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109g CLOSED (Critic OK).** |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h `EDITOR_PERF_CHROME_TREE_VISIBLE` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109h Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109h: pre-cut toolbar×11 + full folder-row hover/glyph loops outside §108c retain; Green cut visible-range (±1) + toolbar hover into chrome_layer; `tree_row_visit_count`; harness `run_editor_perf_chrome_tree_visible.sh` |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still full-length walks |
+| result  | **§109h STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h Red — no chrome-tree-visible harness) |
