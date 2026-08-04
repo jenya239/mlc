@@ -513,3 +513,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109i STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i Red — no minimap-sample harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109i Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_minimap_sample_red.sh`: fail while green harness / L1 / sample helpers absent; requires full `line_count` minimap rebuild loop |
+| verify  | `bash scripts/run_editor_perf_minimap_sample_red.sh` → FAIL exit 1 (`no editor perf minimap-sample harness`) |
+| result  | **§109i STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i Green — sample-to-height + harness) |
