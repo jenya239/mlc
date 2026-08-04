@@ -318,3 +318,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109e CLOSED (Critic OK).** Residual full-visible scroll reshape documented; sabotage-3 shape-avg alone not load-bearing |
 | issues  | none |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f `EDITOR_PERF_SPANS_VISIBLE_ONLY` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109f Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109f: visible-range `frame_layout_tick_spans` from `visual_rows`; scroll cover/reuse (no re-lex every wheel); type lex-bytes bound; harness `run_editor_perf_spans_visible_only.sh`; minimap full-lex OOS→§109i |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still `0..byte_size()` at demo_live ~2583 |
+| result  | **§109f STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f Red — no spans-visible harness) |

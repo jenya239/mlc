@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109f** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109f** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -62,8 +62,8 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | H1 | Mouse over text still schedules frames | **CLOSED** §109b — gate still/jitter ~0% | §109b |
 | H2 | §108d L2 false-green (cpu=0 probe) | **CLOSED** §109c | §109c |
 | H3 | Content scroll frame cost | draw≈90%; Opus 2026-08-04: **minimap glyph draw каждый кадр** ≈ весь `draw_us` | **§109d** |
-| H4 | Visible editor text reshape every paint | §108b retains list only; HarfBuzz still every frame on visible lines | §109e |
-| H5 | Syntax spans / highlight full buffer | Dominates **type**, not scroll steady-state | §109f |
+| H4 | Visible editor text reshape every paint | **CLOSED** §109e — retained `editor_glyph_batch`; residual full-visible reshape on scroll | §109e |
+| H5 | Syntax spans / highlight full buffer | Dominates **type**; `demo_live` ticks `0..byte_size()` every content frame | **§109f** |
 | H6 | Snapshot / flatten on non-incremental dirty | Open/paste/undo class; not scroll steady-state | §109g |
 | H7 | Tree: folder rows + hover every chrome paint | O(tree rows) | §109h |
 | H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
@@ -369,14 +369,38 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109f `EDITOR_PERF_SPANS_VISIBLE_ONLY`
+## §109f `EDITOR_PERF_SPANS_VISIBLE_ONLY` — **queue head**
 
 | Item | Choice |
 |------|--------|
-| Problem | H5: при **type** `highlight_range` на весь буфер — Opus: это главный type-cost после/рядом с minimap rebuild |
-| Fix | Highlight / span tick только visible range (или cache version+window) |
-| Depends on | §109d |
-| Gate | После N content frames post-scroll span work bounded by visible lines; type path not full-buffer every key |
+| Problem | H5: при **type** `demo_live` вызывает `frame_layout_tick_spans(..., 0, draw_text.byte_size())` → `highlight_range` на **весь** буфер каждый content-кадр с `layout_skip==0` (`demo_live.mlc` ~2583). Кэш (§77/§107e) keyed `version+range`, поэтому version bump = полный O(doc) lex. Opus: главный type-cost после/рядом с minimap rebuild |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109d, §109e (type_stall / dogfood authority) |
+| Gate | Spans-visible harness green; type path lex bytes O(visible); scroll does not re-lex every wheel tick |
+| Sabotage | (1) Вернуть tick `0..byte_size()` на каждый version bump → type lex-bytes / stall gate fail. (2) Visible-range tick on **every** scroll frame with version unchanged → scroll shape/CPU or dedicated scroll-span gate fail. (3) Claim visible-only while still passing full end → byte bound fails |
+| Out of scope | Minimap row-sample (§109i); full-doc minimap re-lex cost (residual → §109i; minimap may keep last spans / plain tint); snapshot flatten (§109g); SceneNode |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_spans_visible_only.sh` — dogfood **type** (+ `type_stall_ms`) + scroll non-regress vs §109e scroll gate (`scroll_cpu`≤60, settle); `VISIBLE=1`, open `misc/editor/demo_live.mlc`, no skip-heavy |
+| Pre-cut | `demo_live` ~2583: `frame_layout_tick_spans(frame_layout, document.version, draw_text, 0, draw_text.byte_size())` whenever `layout_skip==0 && !perf_skip_heavy`. Cache hit only if version+full range unchanged — **type always misses** |
+| **Green cut** | Pass **visible** byte range from current `visual_rows` (first `byte_start` … last `byte_end`, optional ±1 line margin) into `frame_layout_tick_spans`. **Scroll rule:** if `document.version` unchanged and cached span range **covers** the new visible window → **no** retick (reuse spans; preserves §79 scroll-no-relex). Retick visible only when version changes (type/edit) or visible ⊈ cached range (first paint / large jump). Files: `demo_live.mlc` (range args + cover check), `ui/perf.mlc` optional `span_lex_bytes` / expose `span_cache.rebuild_count` in dogfood markers. Do **not** require full-buffer lex for editor paint |
+| Minimap | May keep using `span_cache.spans` (partial coverage / stale outside window) or plain text tint until §109i; **not** a Green must-hit that type still full-lexes for minimap |
+| Counters | Load-bearing: dogfood markers emit `span_rebuild_count` and/or `span_lex_bytes` (= `range_end-range_start` summed on rebuilds). Distinct from glyph counters |
+| Green must hit | (1) `type_stall_ms` ≤ **500**; (2) on **type** phase: avg `span_lex_bytes` per content frame ≤ `8 * visible_row_budget * max_line_bytes_estimate + 4096` (write exact bound used in harness; must fail sabotage-full-buffer); (3) on **scroll** phase: `span_rebuild_count` delta ≤ **2** (or 0 preferred) over sample — version-unchanged scroll must not re-lex every frame; (4) §109e scroll gate still green (`scroll_cpu`≤60, settle still=scroll shapes); (5) no return of `frame_layout_tick_spans(..., 0, byte_size())` on the type/edit path |
+| Red | No `run_editor_perf_spans_visible_only.sh` |
+| Green | Harness + numbers in track; red “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no spans-visible harness | pending |
+| 2 | Green: visible-range tick + cover/reuse + harness | pending |
+| 3 | Critic | pending |
 
 ---
 
