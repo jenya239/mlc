@@ -393,3 +393,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109g STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g Red — no snapshot-edit coverage harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109g Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_snapshot_edit_coverage_red.sh`: fail while green harness / sibling L2 absent; requires force-1 on paste/backspace/newline and insert-only `edit_no_full_flatten` |
+| verify  | `bash scripts/run_editor_perf_snapshot_edit_coverage_red.sh` → FAIL exit 1 (`no editor perf snapshot-edit coverage harness`) |
+| result  | **§109g STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g Green — wire paste/cut/backspace/newline + L2 + harness) |
