@@ -123,3 +123,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109j STEP=2 done (Green).** Critic next |
 | issues  | none (defer via `tick_pixel(skip=1)` on cold cache regressed scroll_cpu~70 — fixed by layout_skip present-only) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j — audit startup open) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109j)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109j: quiet remasure green (present=147 scroll=45 stall=16); red already present; sab1–4 fail; fixed present-emit hang when defer=0 (`startup_wrap_deferred_flag`) |
+| verify  | green3 exit 0; red exit 1; sab1 static README-first fail; sab2/4 OPEN→README binary exit 1; sab3 deferred≠1 |
+| result  | **§109j CLOSED (Critic OK).** |
+| issues  | none (noisy concurrent remasure scroll=68 discarded vs quiet 45) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k `EDITOR_PERF_REGRESSION_SUITE` — Decision freeze) |

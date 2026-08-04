@@ -78,7 +78,7 @@ run_startup() {
   set -e
   [ "$status" -eq 0 ] || fail "$label binary exit=$status (see $log)"
   grep -q 'time_to_first_present_ms=' "$log" || fail "$label missing time_to_first_present_ms"
-  grep -q 'startup_full_wrap_deferred=1' "$log" || fail "$label missing startup_full_wrap_deferred"
+  grep -q 'startup_full_wrap_deferred=1' "$log" || fail "$label missing startup_full_wrap_deferred=1"
   grep -q '^open_path=' "$log" || fail "$label missing open_path"
   local open_path present_ms
   open_path="$(sed -n 's/^open_path=//p' "$log" | tail -n1)"
