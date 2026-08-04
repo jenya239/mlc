@@ -59,21 +59,39 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 
 | ID | Area | Evidence / residual | Owned by |
 |----|------|---------------------|----------|
-| H1 | Mouse over text still schedules frames | 32% CPU still | §109b |
-| H2 | §108d L2 false-green (cpu=0 probe) | track §108d Critic notes | §109c |
-| H3 | Content scroll/type frame cost | 55%+ scroll; PERF_FULL ~1.5s/frame | §109d |
-| H4 | Glyph / `StaticTextLine` rebuild every content paint | paint path; §108b retain only chrome-only | §109e |
-| H5 | Syntax spans / highlight full buffer | §107i residual class | §109f |
-| H6 | Snapshot / flatten on non-incremental dirty | §107f fallbacks; open/replace | §109g |
-| H7 | Tree: `folder_tree_browser_rows` + per-row hover every chrome paint | demo_live loops | §109h |
-| H8 | Minimap full-doc sampling | EHA-28 / B9; `frame_layout_tick_minimap` | §109i |
-| H9 | First open / session → README; cold wrap of large file | starter order; sync wrap | §109j |
-| H10 | Coarse hit slots (header/tab/toolbar) thrash at boundaries | measured header_tab_cross | §109b |
-| H11 | `chrome_dirty` while overlay/menu visible every poll | frame_input §108a | §109b |
-| H12 | Paint-ops flatten cost vs direct GL | §107q | §109d/e |
-| H13 | Toolbar/tree hover still outside retained chrome batch | demo_live after flatten | §109h |
-| H14 | Gate honesty (PERF skip, idle-without-pointer, cpu=0) | §107d/§108d | §109c, §109k |
-| H15 | P2 perf: overlay idle retick B7, minimap B9 | hygiene backlog | §109b/i (pull in) |
+| H1 | Mouse over text still schedules frames | **CLOSED** §109b — gate still/jitter ~0% | §109b |
+| H2 | §108d L2 false-green (cpu=0 probe) | **CLOSED** §109c | §109c |
+| H3 | Content scroll frame cost | draw≈90%; Opus 2026-08-04: **minimap glyph draw каждый кадр** ≈ весь `draw_us` | **§109d** |
+| H4 | Visible editor text reshape every paint | §108b retains list only; HarfBuzz still every frame on visible lines | §109e |
+| H5 | Syntax spans / highlight full buffer | Dominates **type**, not scroll steady-state | §109f |
+| H6 | Snapshot / flatten on non-incremental dirty | Open/paste/undo class; not scroll steady-state | §109g |
+| H7 | Tree: folder rows + hover every chrome paint | O(tree rows) | §109h |
+| H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
+| H9 | First open / session → README; cold wrap | Explains most of `layout_us` once | §109j |
+| H10 | Coarse hit slots thrash | **CLOSED** with §109b geometry | §109b |
+| H11 | `chrome_dirty` overlay every poll | **CLOSED** §109b | §109b |
+| H12 | Paint-ops flatten vs direct GL | Opus: **не гнаться** (дешево vs glyphs) | — |
+| H13 | Toolbar/tree hover outside retained chrome | residual | §109h |
+| H14 | Gate honesty | **CLOSED** §109c; suite in §109k | §109c, §109k |
+| H15 | P2 overlay idle / minimap B9 | pull into §109b done / §109i | §109i |
+
+### Opus draw dominance (2026-08-04) — plain summary
+
+Source: `mlc-support/responses/editor_perf_draw_dominance_20260804_111935.md` (Opus 5, ~$1.75).
+
+**Простыми словами:** почти весь дорогой кадр — это **отрисовка миникарты**: каждый кадр шейпит все строки документа через HarfBuzz (`static_text_draw_lines_colored(minimap_lines)`), хотя на экране миникарта ~700 px. Видимый текст редактора дешевле (только видимые строки). Набор текста отдельно упрётся в подсветку всего буфера и пересборку миникарты — это не один cut §109d.
+
+| Rank | Что | Куда |
+|------|-----|------|
+| 1 | Minimap: HarfBuzz + draw **каждый** content-кадр, O(doc) | **§109d Green** |
+| 2 | Много цветовых батчей на сегменты миникарты | тот же cut §109d |
+| 3 | Rebuild массива миникарты при каждом edit | §109i |
+| 4 | `highlight_range` на весь буфер при type | §109f |
+| 5 | Visible text: reshape каждый кадр | §109e |
+| 6 | Tree rows / hover | §109h |
+| 7 | Cold full wrap → `layout_us` | §109j |
+| 8 | Snapshot flatten на «грязных» командах | §109g |
+| 9–10 | paint_ops / chrome rect | не приоритет |
 
 ---
 
@@ -248,27 +266,28 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H3/H12: content frames ~2.6s class on PERF_FULL 10k×5 (`total_us≈13.1e6`, draw≈90%); dogfood scroll/type saturate a core (`scroll_cpu=105`, `type_cpu=100`) |
-| Fix | Below (Decision frozen 2026-08-04) |
-| Depends on | §109a, §109b (wake measurable); §109c (honest PERF_FULL ceiling) |
-| Gate | Content-frame budget harness green; dogfood criteria 4–5; new PERF_FULL ceiling measured-then-written **below** §109c and fails today’s tree / sabotage |
-| Sabotage | (1) Reinstate pre-fix draw class (or double draw work) → PERF_FULL / budget harness fails new ceiling. (2) Force O(doc) work every scroll frame → scroll gate fails |
-| Out of scope | SceneNode chrome; wake/honesty (§109b–c done); chrome tree (§109h); minimap (§109i); full glyph retain architecture (§109e — §109d may land a bounded hot-path cut if diagnosis names glyphs, but retain/reuse design stays §109e) |
+| Problem | Скролл жрёт ядро: PERF_FULL `draw_us≈11.9e6` из `total≈13.1e6`; dogfood `scroll_cpu=105`. Opus: почти всё это — **миникарта каждый кадр через HarfBuzz**, не «весь редактор» |
+| Fix | Below (Decision frozen 2026-08-04; **Green cut narrowed 2026-08-04** after Opus) |
+| Depends on | §109a–c |
+| Gate | Content-frame budget harness green; dogfood criteria 4–5; new PERF_FULL ceiling below §109c; scroll O(visible) glyph shapes |
+| Sabotage | (1) Вернуть `static_text_draw_lines_colored(minimap_lines)` каждый кадр → ceiling/counters fail. (2) Инвалидировать minimap batch каждый кадр → то же. (3) Force O(doc) shape на scroll → scroll gate fails |
+| Out of scope | SceneNode; wake/honesty; **полный** retained text editor (§109e); spans visible-only (§109f); snapshot audit (§109g); tree (§109h); **sampling** minimap to height (§109i — после retain-draw); startup (§109j) |
 
 ### Decision (frozen 2026-08-04)
 
 | Choice | Freeze |
 |--------|--------|
-| Measure authority | `scripts/run_editor_perf_content_frame_budget.sh` — load-bearing content-frame proof. Reuses §109c PERF_FULL smoke + §109a dogfood scroll/type phases (`MLC_GLFW_VISIBLE=1`, `MLC_EDITOR_PERF_OPEN`→`misc/editor/demo_live.mlc`, no `MLC_EDITOR_PERF` skip-heavy) |
-| PERF_FULL metrics | Parse `demo_live_perf_full frames=… layout_us=… draw_us=… total_us=…`. Fixture unchanged: 10k lines × 5 frames |
-| Dogfood metrics | From dogfood baseline (or harness-internal same probe): `scroll_cpu_percent` (max over 3×2s), `type_cpu_percent` (max), `type_stall_ms` |
-| Diagnosis (before cut) | Green must paste under this §109d a **Dominance (measured)** table: `layout_us`, `draw_us`, `total_us`, `draw_share_percent = round(100*draw/total)` from a PERF_FULL run on the pre-cut tree. Dominant phase = larger of layout/draw. Prefer visible-line-only cuts on that phase |
-| Pre-cut baseline (frozen reference) | §109c honesty remasure: `layout_us=1263108` `draw_us=11890959` `total_us=13156194` (draw_share≈90%). Dogfood §109a: `scroll_cpu=105` `type_cpu=100` `type_stall_ms=16` |
-| Green cut | Cut the written dominant phase until all of: (1) remasured PERF_FULL `total_us` **<** §109c `measured_total_us` `13085761` (prove improvement); (2) rewrite `TOTAL_US_MAX` default to remasured×**≤1.25** and paste under §109d; new ceiling **must** be `< 16357201`; (3) dogfood `scroll_cpu_percent` ≤ **50**; (4) `type_stall_ms` ≤ **500** (epic: no multi-second stall after last key). If diagnosis shows glyphs/spans/snapshot dominate draw, §109d Green may ship a bounded hot-path fix; residual retain/visible-only work stays §109e–g |
-| Counter evidence | Prefer existing `visible_collect_count` / rebuild counters: scroll burst must not imply full-doc rebuild every frame (`content_rebuild_count` growth bounded; document in harness/report). Exact counter asserts written at Green with numbers |
-| Harness exit | Fail if glfw/font/`/proc` missing (no skip-green). Fail if PERF_FULL or dogfood scroll/type missing/README open |
-| Red | No `run_editor_perf_content_frame_budget.sh`; content-frame budgets not enforced (today’s tree only gated by §109c honesty ceiling) |
-| Green | Budget harness green + Dominance table + new PERF_FULL ceiling pasted; dogfood scroll≤50 / type_stall≤500; red fails “already present” |
+| Measure authority | `scripts/run_editor_perf_content_frame_budget.sh` — PERF_FULL + dogfood scroll/type, `VISIBLE=1`, open `demo_live.mlc`, no skip-heavy |
+| PERF_FULL metrics | `layout_us` / `draw_us` / `total_us` (10k×5) |
+| Dogfood metrics | `scroll_cpu_percent`, `type_cpu_percent`, `type_stall_ms` |
+| Diagnosis | **Done via Opus 2026-08-04** (static + arithmetic vs measured `draw_us`). Green still pastes **Dominance (measured)** PERF_FULL numbers on pre-cut tree, then after cut. Optional A/B: PERF_FULL with minimap draw commented → lower bound |
+| Pre-cut baseline | `layout_us=1263108` `draw_us=11890959` `total_us=13156194` (draw≈90%). Dogfood: `scroll_cpu=105` `type_cpu=100` `type_stall_ms=16` |
+| **Green cut (Opus-narrowed)** | **Retained glyph batch for minimap only.** Stop calling `static_text_draw_lines_colored(minimap_lines)` every content frame. Shape once into batch (invalidate on `document.version` / minimap rect / zoom / theme). Draw = bind + `glDrawArrays` groups, no HarfBuzz. Optional throttle: on version bump rebuild ≤1× per K content frames (so type does not re-pay full O(doc) every key). Files: `ui/static_text.mlc` (batch build/draw + counters), `ui/perf.mlc` (`glyph_shape_calls`, `glyph_batch_draw_calls`), `demo_live.mlc` (wire minimap). **Not** full editor glyph retain (§109e). **Not** minimap row-sampling (§109i) |
+| Green must hit | (1) remasured `total_us` **<** `13085761`; (2) new `TOTAL_US_MAX` = remasured×≤1.25 and **<** `16357201`; (3) `scroll_cpu` ≤ **50**; (4) `type_stall_ms` ≤ **500**; (5) on scroll: `glyph_shape_calls` O(visible) (exact bound written at Green, e.g. ≤ `4×visible_rows+64`) |
+| Expectation (Opus) | `draw_us` кратно вниз (цель порядка ≤2e6 на 5 кадров); scroll≤50 вероятнее; **type_cpu=100 §109d может не снять** — честно оставить §109f/§109i, не крутить ceiling |
+| Counter evidence | `glyph_shape_calls` / `glyph_batch_draw_calls` load-bearing; scroll must not imply O(doc) shapes |
+| Red | No `run_editor_perf_content_frame_budget.sh` |
+| Green | Harness + Dominance tables + new ceiling + counters; red “already present” |
 
 ### Steps
 
@@ -285,10 +304,10 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H4: text/glyph batch rebuilt on every content paint; retain only helped chrome-only |
-| Fix | Retain/reuse glyph/`StaticTextLine` (or atlas) across scroll when line set unchanged; invalidate on version/zoom/wrap/theme; damage visible range on scroll |
-| Depends on | §109d diagnosis (if glyphs not dominant, Decision may narrow/skip with written proof) |
-| Gate | Counter `text_layer_rebuild_count` on pure scroll of unchanged doc stays flat or grows O(newly visible) only |
+| Problem | H4: **видимый** текст редактора — `static_text_draw_lines_colored` шейпит сегменты каждый кадр; §108b retain только список ops, не GL/glyphs. Opus: после §109d это следующий слой scroll/type |
+| Fix | Retained glyph batch для editor text + damage/visible-range на скролле (не миникарта — она в §109d) |
+| Depends on | §109d |
+| Gate | На чистом скролле без смены doc: shape/rebuild O(newly visible), не O(all visible) каждый кадр если unchanged |
 
 ---
 
@@ -296,10 +315,10 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H5: syntax highlight / spans still pay for offscreen work |
-| Fix | Highlight / span tick only visible line range (or cached by version+visible window) |
+| Problem | H5: при **type** `highlight_range` на весь буфер — Opus: это главный type-cost после/рядом с minimap rebuild |
+| Fix | Highlight / span tick только visible range (или cache version+window) |
 | Depends on | §109d |
-| Gate | Scenario: N idle content frames after scroll → span work bounded by visible lines |
+| Gate | После N content frames post-scroll span work bounded by visible lines; type path not full-buffer every key |
 
 ---
 
@@ -329,10 +348,10 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H8/H15-B9: minimap rebuild scales with document lines |
-| Fix | Sample rows to strip height (EHA-28); invalidate on version/height/zoom only |
+| Problem | H8: после §109d (не шейпить миникарту каждый кадр) остаётся **rebuild** списка строк миникарты O(doc) на version — Opus/EHA-28 |
+| Fix | Sample rows to strip height; invalidate on version/height/zoom only |
 | Depends on | §109d |
-| Gate | `run_ux_minimap_rows_bounded_by_height` (or name from Decision); sabotage full-line loop |
+| Gate | `run_ux_minimap_rows_bounded_by_height` (or Decision name); sabotage full-line loop |
 
 ---
 
@@ -364,4 +383,4 @@ Resume **§103f** `SCRIPT_VM_HEAP_GC_ARENA` → … → §104 Wave 2.
 
 ## Diff vs prior §109 draft
 
-Expanded from 4 sub-tracks (a–d) to **a–k**: wake-on-hover, gate honesty, glyph, spans, snapshot coverage, minimap, startup, regression suite — covering inventory H1–H15.
+Expanded from 4 sub-tracks (a–d) to **a–k**. **2026-08-04:** Opus draw-dominance folded into inventory + §109d Green cut (minimap retained batch); H12 demoted; §109e/f/i roles clarified.

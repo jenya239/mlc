@@ -528,3 +528,18 @@ Turns before TRACK_MLC_SCRIPT_VM §103a (2026-08-03) archived — see [../archiv
 | result  | **§109d STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d Red — no content-frame budget harness) |
+
+### Turn 2026-08-04 (Planner — Opus draw dominance → §109d)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (docs) |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Folded Opus review `mlc-support/responses/editor_perf_draw_dominance_20260804_111935.md` into TRACK: plain summary + dominance table; §109d Green cut narrowed to minimap retained glyph batch; inventory H3/H8/H12/H4–H5/H9 updated; §109e/f/i problem lines clarified |
+| verify  | Docs-only |
+| result  | **§109d Green target = minimap batch, not vague “cut draw”** |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109d Red — no content-frame budget harness) |
