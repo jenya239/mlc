@@ -333,3 +333,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109f STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f Red — no spans-visible harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109f Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_spans_visible_only_red.sh`: fail while green harness / `span_lex_bytes` absent; requires live `frame_layout_tick_spans(..., 0, byte_size())` |
+| verify  | `bash scripts/run_editor_perf_spans_visible_only_red.sh` → FAIL exit 1 (`no editor perf spans-visible-only harness`) |
+| result  | **§109f STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f Green — visible-range spans + cover/reuse + harness) |
