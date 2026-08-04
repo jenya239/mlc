@@ -198,3 +198,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110 path frozen** |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — audit dogfood gate) |
+
+### Turn 2026-08-05 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109k — blocked)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Audited §109k: sab1–4 fail; red already present; harden sab2 guards + harness OUT + tree scroll from glyph report + dogfood scroll median-of-rounds; consecutive Critic ×2 not green (scroll often 61–72) |
+| verify  | C1=0 scroll=60; C7=0 scroll=58; C2/C3/C5/C8/C9/C11 fail scroll; sab2a/b/3/1/4 exit 1; red exit 1 |
+| result  | **§109k Critic BLOCKED** (no consecutive ×2). Epic not closed. |
+| issues  | scroll_cpu% at Decision ceiling under host load; §110a Xvfb may isolate — but STEPs gated on §109 close |
+| next    | ROLE=Driver STEP=debug-verify TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — quiet consecutive gate ×2 / scroll sample) |

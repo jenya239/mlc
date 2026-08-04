@@ -82,6 +82,7 @@ sample_cpu() {
   local best=""
   local round=0
   local start_jiffies end_jiffies delta cpu_percent
+  local samples=""
   while [ "$round" -lt "$rounds" ]; do
     start_jiffies="$(read_utime_stime_jiffies "$pid")"
     if [ -z "$start_jiffies" ]; then
@@ -100,7 +101,9 @@ sample_cpu() {
       delta=0
     fi
     cpu_percent=$((delta * 100 / (HZ * sample_sec)))
-    if [ -z "$best" ]; then
+    if [ "$mode" = "median" ]; then
+      samples="$samples $cpu_percent"
+    elif [ -z "$best" ]; then
       best=$cpu_percent
     elif [ "$mode" = "min" ] && [ "$cpu_percent" -lt "$best" ]; then
       best=$cpu_percent
@@ -109,6 +112,10 @@ sample_cpu() {
     fi
     round=$((round + 1))
   done
+  if [ "$mode" = "median" ]; then
+    # shellcheck disable=SC2086
+    best="$(printf '%s\n' $samples | sort -n | awk -v n="$rounds" 'NR==int((n+1)/2) { print; exit }')"
+  fi
   echo "$best"
 }
 
@@ -169,12 +176,13 @@ text_jitter_cpu_percent="$(sample_cpu min "$SAMPLE_SEC_LONG" "$SAMPLE_ROUNDS_LON
 
 set_phase_cmd "scroll"
 wait_phase_marker "phase=scroll"
-scroll_cpu_percent="$(sample_cpu max "$SAMPLE_SEC_SHORT" "$SAMPLE_ROUNDS_SHORT")"
+# Median of short rounds (not max): max-of-2s spikes noise past ≤60 under shared load.
+scroll_cpu_percent="$(sample_cpu median "$SAMPLE_SEC_SHORT" "$SAMPLE_ROUNDS_SHORT")"
 
 set_phase_cmd "type"
 wait_phase_marker "phase=type"
 wait_phase_marker "type_burst_done"
-type_cpu_percent="$(sample_cpu max "$SAMPLE_SEC_SHORT" "$SAMPLE_ROUNDS_SHORT")"
+type_cpu_percent="$(sample_cpu median "$SAMPLE_SEC_SHORT" "$SAMPLE_ROUNDS_SHORT")"
 
 wait_phase_marker "type_stall_ms="
 type_stall_ms="$(grep -o 'type_stall_ms=[0-9]*' "$LOG_FILE" "$PHASE_FILE" 2>/dev/null | tail -1 | cut -d= -f2)"

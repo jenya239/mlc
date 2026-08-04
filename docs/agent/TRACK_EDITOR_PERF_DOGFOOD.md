@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=3 Critic)
+## Status: **open** 2026-08-05 — queue head **§109k** (Critic STEP=3 **blocked** — scroll ×2)
 
 ## Why (facts)
 
@@ -654,7 +654,18 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no dogfood-gate harness | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_gate_red.sh` exit 1 |
 | 2 | Green: compose suite + ceilings + ×2 | **done** 2026-08-04 — gate ×2 exit 0; red already present |
-| 3 | Critic | pending |
+| 3 | Critic | **blocked** 2026-08-05 — sab1–4 fail OK; harden (sab2 guards, harness OUT, tree scroll report, dogfood scroll median-of-rounds); independent consecutive ×2 not green: scroll_cpu often 61–72 vs ≤60 (solo C1=60 C7=58; Driver Green 39/31). Host load_avg often 4–8. Do not close until quiet consecutive ×2 or measurement isolate (§110a) |
+
+### Critic notes (2026-08-05)
+
+| Check | Result |
+|-------|--------|
+| Sab1 drop honesty/wake | fail missing `status=ok` |
+| Sab2 SCROLL_MAX=100 / `MLC_EDITOR_PERF=1` | fail (guards added) |
+| Sab3 README open | fail basename |
+| Sab4 omit minimap | fail missing `status=ok` |
+| Red already present | exit 1 |
+| Quiet consecutive ×2 | **not met** — C2/C3/C5/C8/C9/C11 scroll fail; C1/C7 solo OK |
 
 ---
 

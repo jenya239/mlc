@@ -29,6 +29,18 @@ fail() {
   exit 1
 }
 
+# Decision sab2: epic ceilings / content proof must not be greenwashed.
+if [ -n "${MLC_EDITOR_PERF:-}" ]; then
+  fail "MLC_EDITOR_PERF set — skip-heavy forbidden as content proof"
+fi
+if [ "$SCROLL_CPU_MAX" -gt 60 ]; then
+  fail "SCROLL_CPU_MAX=$SCROLL_CPU_MAX > 60 (Decision epic scroll ceiling)"
+fi
+if [ "$IDLE_AWAY_CPU_MAX" -gt 5 ] || [ "$STILL_CPU_MAX" -gt 8 ] || \
+    [ "$JITTER_CPU_MAX" -gt 15 ] || [ "$TYPE_STALL_MS_MAX" -gt 500 ]; then
+  fail "epic CPU/stall ceiling raised above Decision defaults"
+fi
+
 [ -f "$DEMO" ] || fail "missing demo_live.mlc"
 [ -f "$HONESTY" ] || fail "missing gate honesty (§109c)"
 [ -f "$WAKE" ] || fail "missing wake (§109b)"
@@ -157,29 +169,29 @@ assert_dogfood_ceilings() {
 }
 
 run_member honesty \
-  env EDITOR_PERF_HONESTY_OUT="$REPORT_DIR/honesty" \
-      EDITOR_PERF_WAKE_OUT="$REPORT_DIR/honesty/wake" \
-      EDITOR_DEMO_LIVE_PERF_FULL_OUT="$REPORT_DIR/honesty/perf_full" \
+  env EDITOR_PERF_HONESTY_OUT="$REPORT_DIR/honesty/harness" \
+      EDITOR_PERF_WAKE_OUT="$REPORT_DIR/honesty/harness/wake" \
+      EDITOR_DEMO_LIVE_PERF_FULL_OUT="$REPORT_DIR/honesty/harness/perf_full" \
       bash "$HONESTY"
-if [ -f "$REPORT_DIR/honesty/report.txt" ]; then
+if [ -f "$REPORT_DIR/honesty/harness/report.txt" ]; then
   grep -E '^(still_over_text_cpu_percent|text_jitter_cpu_percent|TOTAL_US_MAX|remeasure_total_us)=' \
-    "$REPORT_DIR/honesty/report.txt" >>"$REPORT_FILE" || true
+    "$REPORT_DIR/honesty/harness/report.txt" >>"$REPORT_FILE" || true
 fi
 
 run_member wake \
-  env EDITOR_PERF_WAKE_OUT="$REPORT_DIR/wake" \
+  env EDITOR_PERF_WAKE_OUT="$REPORT_DIR/wake/harness" \
       bash "$WAKE"
-if [ -f "$REPORT_DIR/wake/report.txt" ]; then
+if [ -f "$REPORT_DIR/wake/harness/report.txt" ]; then
   grep -E '^(still_over_text_cpu_percent|text_jitter_cpu_percent)=' \
-    "$REPORT_DIR/wake/report.txt" | sed 's/^/wake_/' >>"$REPORT_FILE" || true
+    "$REPORT_DIR/wake/harness/report.txt" | sed 's/^/wake_/' >>"$REPORT_FILE" || true
 fi
 
 if should_skip dogfood; then
   member_skip dogfood
 else
-  export EDITOR_PERF_DOGFOOD_OUT="$REPORT_DIR/dogfood"
+  export EDITOR_PERF_DOGFOOD_OUT="$REPORT_DIR/dogfood/harness"
   rm -rf "$EDITOR_PERF_DOGFOOD_OUT"
-  mkdir -p "$EDITOR_PERF_DOGFOOD_OUT"
+  mkdir -p "$REPORT_DIR/dogfood" "$EDITOR_PERF_DOGFOOD_OUT"
   echo "[editor_perf_dogfood_gate] RUN dogfood" >&2
   set +e
   bash "$DOGFOOD" >"$REPORT_DIR/dogfood/log.txt" 2>&1
@@ -190,34 +202,34 @@ else
     tail -n 40 "$REPORT_DIR/dogfood/log.txt" >&2 || true
     fail "member dogfood failed (exit=$dog_status)"
   fi
-  assert_dogfood_ceilings "$REPORT_DIR/dogfood/report.txt"
+  assert_dogfood_ceilings "$REPORT_DIR/dogfood/harness/report.txt"
   member_ok dogfood
   export MLCC_OBJ_CLEAN=0
 fi
 
 run_member glyph \
-  env EDITOR_PERF_GLYPH_LAYER_OUT="$REPORT_DIR/glyph" \
+  env EDITOR_PERF_GLYPH_LAYER_OUT="$REPORT_DIR/glyph/harness" \
       bash "$GLYPH"
 
 run_member tree \
-  env EDITOR_PERF_CHROME_TREE_OUT="$REPORT_DIR/tree" \
+  env EDITOR_PERF_CHROME_TREE_OUT="$REPORT_DIR/tree/harness" \
       bash "$TREE"
 
 run_member minimap \
-  env EDITOR_PERF_MINIMAP_SAMPLE_OUT="$REPORT_DIR/minimap" \
+  env EDITOR_PERF_MINIMAP_SAMPLE_OUT="$REPORT_DIR/minimap/harness" \
       bash "$MINIMAP"
 
 run_member startup \
-  env EDITOR_PERF_STARTUP_OPEN_OUT="$REPORT_DIR/startup" \
+  env EDITOR_PERF_STARTUP_OPEN_OUT="$REPORT_DIR/startup/harness" \
       bash "$STARTUP"
-if [ -f "$REPORT_DIR/startup/report.txt" ]; then
+if [ -f "$REPORT_DIR/startup/harness/report.txt" ]; then
   grep -E '^(open_path|time_to_first_present_ms|scroll_cpu_percent|type_stall_ms)=' \
-    "$REPORT_DIR/startup/report.txt" | sed 's/^/startup_/' >>"$REPORT_FILE" || true
+    "$REPORT_DIR/startup/harness/report.txt" | sed 's/^/startup_/' >>"$REPORT_FILE" || true
 fi
 
 for required in honesty wake dogfood glyph tree minimap startup; do
-  grep -q "member=$required status=" "$REPORT_FILE" || \
-    fail "composite report missing member=$required"
+  grep -q "member=$required status=ok" "$REPORT_FILE" || \
+    fail "composite report missing member=$required status=ok"
 done
 
 echo "open_path=$OPEN_PATH" >>"$REPORT_FILE"

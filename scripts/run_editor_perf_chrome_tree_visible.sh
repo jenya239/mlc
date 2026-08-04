@@ -97,7 +97,14 @@ set -e
 printf '%s\n' "$glyph_output" | tee "$OUT_DIR/glyph_layer.log"
 [ "$glyph_status" -eq 0 ] || fail "glyph-layer budget failed (exit=$glyph_status)"
 
-scroll_cpu="$(printf '%s\n' "$glyph_output" | sed -n 's/.*scroll_cpu_percent=\([0-9][0-9]*\).*/\1/p' | tail -n1)"
+scroll_cpu="$(
+  if [ -f "$OUT_DIR/glyph_layer/report.txt" ]; then
+    grep -E '^scroll_cpu_percent=' "$OUT_DIR/glyph_layer/report.txt" | cut -d= -f2 | tail -n1
+  fi
+)"
+if [ -z "$scroll_cpu" ]; then
+  scroll_cpu="$(printf '%s\n' "$glyph_output" | sed -n 's/.*\[editor_perf_glyph_layer_budget\] OK .*scroll_cpu=\([0-9][0-9]*\).*/\1/p' | tail -n1)"
+fi
 [ -n "$scroll_cpu" ] || fail "missing scroll_cpu_percent"
 [ "$scroll_cpu" -le 60 ] || fail "scroll_cpu=$scroll_cpu > 60"
 
