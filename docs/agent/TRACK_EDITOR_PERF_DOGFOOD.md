@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109j** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -586,8 +586,24 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no startup-open harness | **done** 2026-08-04 — `scripts/run_editor_perf_startup_open_red.sh` exit 1 |
-| 2 | Green: open resolve + first-present defer + harness | pending |
+| 2 | Green: open resolve + first-present defer + harness | **done** 2026-08-04 |
 | 3 | Critic | pending |
+
+### Green measured (2026-08-04)
+
+| Metric | Value |
+|--------|-------|
+| `open_path` (OPEN) | `…/misc/editor/demo_live.mlc` |
+| `time_to_first_present_ms` (OPEN) | 132 |
+| `starter_open_path` | `…/misc/editor/demo_live.mlc` |
+| `starter_time_to_first_present_ms` | 146 |
+| `time_to_first_present_ms_ceiling` | 165 (`measured×1.25`) |
+| `startup_full_wrap_deferred` | 1 |
+| `scroll_cpu_percent` (side) | 36 (≤60) |
+| `type_stall_ms` (side) | 16 (≤500) |
+| Red after Green | already present (exit 1) |
+
+**Cut:** `resolve_startup_tabs` (`MLC_EDITOR_OPEN` → session → starter); `open_disk_starter` demo_live before README*; first frame `layout_skip=1` (no `tick_pixel(skip=1)` cold-cache stamp) + present markers; next frame forced full wrap (`startup_need_full_wrap`). Harness `scripts/run_editor_perf_startup_open.sh`.
 
 ---
 

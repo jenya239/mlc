@@ -108,3 +108,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109j STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j Green — open resolve + first-present defer + harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109j Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `resolve_startup_tabs` + `MLC_EDITOR_OPEN`; starter demo_live-before-README; first present skips pixel tick then forced warm wrap; harness `run_editor_perf_startup_open.sh` |
+| verify  | green OK present=132ms ceiling=165 scroll=36 stall=16; red already present |
+| result  | **§109j STEP=2 done (Green).** Critic next |
+| issues  | none (defer via `tick_pixel(skip=1)` on cold cache regressed scroll_cpu~70 — fixed by layout_skip present-only) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j — audit startup open) |

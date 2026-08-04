@@ -744,16 +744,9 @@ fn open_path_into_tabs(tabs: TabSet, path: string) -> TabSet = do
 end
 
 // Disk root + empty session used to leave zero tabs → first frame break.
+// §109j — prefer non-README candidates (demo_live) before any README*.
 fn open_disk_starter(root: string) -> TabSet = do
   let mut tabs = tab_set_new()
-  tabs = try_open_path(tabs, root + "/README.md")
-  if tab_set_has_active(tabs) then
-    return tabs
-  end
-  tabs = try_open_path(tabs, root + "/misc/editor/README.md")
-  if tab_set_has_active(tabs) then
-    return tabs
-  end
   tabs = try_open_path(tabs, root + "/misc/editor/demo_live.mlc")
   if tab_set_has_active(tabs) then
     return tabs
@@ -767,13 +760,24 @@ fn open_disk_starter(root: string) -> TabSet = do
   while index < entries.length() do
     const entry = entries[index]
     if entry.is_directory == 0 then
-      const path = root + "/" + entry.name
-      tabs = try_open_path(tabs, path)
-      if tab_set_has_active(tabs) then
-        return tabs
+      const name = entry.name
+      if !name.starts_with("README") then
+        const path = root + "/" + name
+        tabs = try_open_path(tabs, path)
+        if tab_set_has_active(tabs) then
+          return tabs
+        end
       end
     end
     index = index + 1
+  end
+  tabs = try_open_path(tabs, root + "/README.md")
+  if tab_set_has_active(tabs) then
+    return tabs
+  end
+  tabs = try_open_path(tabs, root + "/misc/editor/README.md")
+  if tab_set_has_active(tabs) then
+    return tabs
   end
   tab_set_open(
     tabs,
@@ -798,6 +802,24 @@ fn ensure_tabs(tabs: TabSet, panels: ShellPanels) -> TabSet = do
     return open_disk_starter(panels.tree.nodes[panels.tree.root_id].path)
   end
   open_mock_starter()
+end
+
+// §109j — OPEN env → else session → else starter (non-README-first).
+fn resolve_startup_tabs(session_tabs: TabSet, panels: ShellPanels) -> TabSet = do
+  const editor_open = get_or("MLC_EDITOR_OPEN", "")
+  if editor_open.byte_size() > 0 then
+    if !(file_exists(editor_open) && is_regular_file(editor_open)) then
+      println("[mlc-editor] FAIL: MLC_EDITOR_OPEN missing: " + editor_open)
+      return tab_set_new()
+    end
+    let mut tabs = try_open_path(tab_set_new(), editor_open)
+    if !tab_set_has_active(tabs) then
+      println("[mlc-editor] FAIL: MLC_EDITOR_OPEN open failed: " + editor_open)
+      return tab_set_new()
+    end
+    return tabs
+  end
+  ensure_tabs(session_tabs, panels)
 end
 
 fn dogfood_path_basename(path: string) -> string = do
@@ -886,10 +908,20 @@ fn main() -> i32 = do
   panels = browse_panels_to(panels, tree_root)
   let mut folder_nav = folder_nav_new(folder_current_path(panels.tree))
 
-  let mut tabs = ensure_tabs(load_demo_session(), panels)
+  // §109j — OPEN / session / non-README starter.
+  let mut tabs = resolve_startup_tabs(load_demo_session(), panels)
+  if !tab_set_has_active(tabs) then
+    println("[mlc-editor] FAIL: no startup tabs")
+    solid_renderer_destroy(solid)
+    static_text_destroy(text_state)
+    glfw_gl_context_end()
+    return 1
+  end
   const terminal_perf_enabled = has("MLC_EDITOR_TERMINAL_PERF")
   const perf_full_enabled = has("MLC_EDITOR_PERF_FULL")
   const perf_baseline_enabled = has("MLC_EDITOR_PERF")
+  // §109j: exit after first present (startup harness).
+  const startup_probe = has("MLC_EDITOR_PERF_STARTUP")
   // §108d L2: same-hit pointer jitter without GLFW mouse (measure harness).
   const hover_cpu_probe = has("MLC_EDITOR_HOVER_CPU_PROBE")
   // §109a: visible dogfood baseline phases (not PERF skip-heavy).
@@ -935,6 +967,21 @@ fn main() -> i32 = do
       println("[mlc-editor] FAIL: dogfood open path is README*")
       return 1
     end
+  end
+  if startup_probe && tab_set_has_active(tabs) then
+    if dogfood_open_forbidden(tab_set_active(tabs).path) then
+      println("[mlc-editor] FAIL: startup open path is README*")
+      return 1
+    end
+  end
+
+  let mut startup_t0_us = editor_perf_now_us()
+  let mut startup_defer_full_wrap = 1
+  let mut startup_need_full_wrap = 0
+  let mut startup_present_emitted = 0
+  let mut startup_last_path = ""
+  if tab_set_has_active(tabs) then
+    startup_last_path = tab_set_active(tabs).path
   end
 
   let mut app = editor_app_state_new(
@@ -1296,6 +1343,14 @@ fn main() -> i32 = do
         (pointer_dirty != 0 || chrome_dirty != 0) &&
         cached_visual_rows_valid != 0 then
       layout_skip = 1
+    end
+    // §109j — first present: skip pixel tick entirely (do not tick_pixel(skip=1),
+    // which stamps visual_row_count=line_count over a cold wrap cache). Next frame
+    // forces one full wrap so dogfood scroll retain matches pre-defer steady state.
+    if startup_defer_full_wrap != 0 then
+      layout_skip = 1
+    else if startup_need_full_wrap != 0 then
+      layout_skip = 0
     end
     if content_dirty != 0 then
       perf_counters = editor_perf_note_content_rebuild(perf_counters)
@@ -2330,6 +2385,16 @@ fn main() -> i32 = do
     if dogfood_probe && dogfood_phase == "scroll" then
       skip_full_pixel_wrap_now = 1
     end
+    // §109j — consume defer after layout_skip=1 above; warm wrap on the next frame.
+    let mut startup_emit_present = 0
+    if startup_defer_full_wrap != 0 then
+      startup_defer_full_wrap = 0
+      startup_emit_present = 1
+      startup_need_full_wrap = 1
+    else if startup_need_full_wrap != 0 then
+      // Do not honor scroll/layout skip until wrap cache is warmed once.
+      skip_full_pixel_wrap_now = 0
+    end
     if layout_skip == 0 then
       frame_layout = frame_layout_tick_pixel(
         frame_layout, document.version, draw_text, line_index,
@@ -2339,6 +2404,9 @@ fn main() -> i32 = do
       frame_layout = frame_layout_tick_max_columns(
         frame_layout, document.version, line_index
       )
+      if startup_need_full_wrap != 0 && skip_full_pixel_wrap_now == 0 then
+        startup_need_full_wrap = 0
+      end
     end
     const visual_row_count_now = frame_layout.visual_row_count
     let mut wrapped_content_height_now = frame_layout.wrapped_content_height
@@ -3440,6 +3508,25 @@ fn main() -> i32 = do
     end
 
     glfw_gl_context_swap_poll()
+    if startup_emit_present != 0 && startup_present_emitted == 0 then
+      let mut present_us = editor_perf_now_us() - startup_t0_us
+      if present_us < 0 then
+        present_us = 0
+      end
+      const present_ms = present_us / 1000
+      println("open_path=" + startup_last_path)
+      println("time_to_first_present_ms=" + present_ms.to_string())
+      println("startup_full_wrap_deferred=1")
+      startup_present_emitted = 1
+      if startup_probe then
+        static_text_glyph_batch_destroy(editor_glyph_batch)
+        static_text_glyph_batch_destroy(minimap_glyph_batch)
+        static_text_destroy(text_state)
+        solid_renderer_destroy(solid)
+        glfw_gl_context_end()
+        return 0
+      end
+    end
     if content_dirty != 0 then
       perf_counters = editor_perf_note_content_frame(perf_counters)
     else
