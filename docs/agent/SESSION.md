@@ -573,3 +573,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109i CLOSED (Critic OK).** |
 | issues  | none (false-green sab3 fixed in harness) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j `EDITOR_PERF_STARTUP_OPEN` — Decision freeze) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=0, §109j Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Froze §109j: pre-cut README-first `open_disk_starter` + no `MLC_EDITOR_OPEN` + full wrap before present; Green cut OPEN/session/starter order + first-present skip wrap; harness `run_editor_perf_startup_open.sh` |
+| verify  | Decision table in TRACK STEP=0=done; PLAN/CONTINUITY → STEP=1 Red; docs-only |
+| result  | **§109j STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109j Red — no startup-open harness) |

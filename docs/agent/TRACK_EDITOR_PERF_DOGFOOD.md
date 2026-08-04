@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109j** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -562,9 +562,32 @@ then wake still/jitter via honesty harness:
 | Item | Choice |
 |------|--------|
 | Problem | H9: README-first starter + sync full wrap on first large open |
-| Fix | Prefer last session / `MLC_EDITOR_OPEN`; defer or budget first-frame wrap (progressive or visible-only) so open of `demo_live.mlc` does not freeze for seconds |
-| Depends on | §109a |
-| Gate | Scripted open of `demo_live.mlc`: time-to-first-present under documented budget; must not silently open README when OPEN/session set |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109a (PERF_OPEN / open markers); wrap cache §97/§107c |
+| Gate | Startup-open harness green; time-to-first-present under ceiling; OPEN/session must not silently land on README* |
+| Sabotage | (1) Keep `open_disk_starter` README-first while claiming OPEN/session prefer → open-path fail. (2) Ignore `MLC_EDITOR_OPEN` when set → path fail. (3) First content frame always full pixel wrap with no present-before-wrap / budget → time-to-first-present fail. (4) Open README when OPEN points at `demo_live.mlc` → forbidden-path fail |
+| Out of scope | SceneNode; changing session file format beyond path preference; full scroll/type budgets (§109e/f); §109k gate composition |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_startup_open.sh` — scripted open of `$ROOT/misc/editor/demo_live.mlc`; `MLC_GLFW_VISIBLE=1`; no `MLC_EDITOR_PERF` skip-heavy; report `.tmp/editor_perf_startup_open/report.txt` |
+| Pre-cut (audit 2026-08-04) | (1) **Starter:** `open_disk_starter` (`demo_live.mlc` ~747) tries `root/README.md` then `misc/editor/README.md` **before** `misc/editor/demo_live.mlc`. Used by `ensure_tabs` when session tabs empty. (2) **Session:** `ensure_tabs(load_demo_session(), …)` keeps non-empty session; interactive root session often already `demo_live.mlc` — empty-session / fresh clone still README-first. (3) **Env:** only `MLC_EDITOR_PERF_OPEN` (perf/dogfood) forces a path; **no** `MLC_EDITOR_OPEN` for interactive (§109a deferred). (4) **Cold wrap:** first content frame runs `frame_layout_tick_pixel(..., skip=0)` unless PERF skip / dogfood scroll — full-doc HarfBuzz wrap before meaningful present on large open. PERF_FULL class: first frames multi-second on 10k; `layout_us` historically ~1e6+ µs |
+| **Green cut** | **(A) Open resolve order** (single helper, e.g. `resolve_startup_tabs`): (1) if `MLC_EDITOR_OPEN` set and file exists → `try_open_path` / activate that path (fail harness if missing); (2) else if session tabs non-empty → keep session (already via `load_demo_session`+`ensure_tabs`); (3) else `open_disk_starter` **without README preference** — try `misc/editor/demo_live.mlc` (and other non-`README*` candidates) **before** any `README*`. Keep `MLC_EDITOR_PERF_OPEN` for perf probes (may alias or remain parallel; must not regress dogfood). **(B) First present before full wrap:** on **document open / active-tab path change** (startup + tree/open), first content frame(s) may `skip_full_pixel_wrap_now=1` (or equivalent present-only) so chrome+text pane swap **before** full-doc pixel wrap; then tick full wrap on subsequent frame(s) until cache warm. Visible-row / prefix path (§107c) remains for scroll after warm. Do **not** leave skip permanently. Files: `demo_live.mlc` (resolve + first-present skip), optional tiny helper module, harness (+ `_red.sh`); markers below |
+| Counters / markers | Load-bearing stdout/report: `open_path=…`, `time_to_first_present_ms=…` (wall from process start or harness-defined t0 to first present/swap marker). Optional: `startup_full_wrap_deferred=1`. Green writes measured ms + ceiling (`measured×≤1.25`, aspirational interactive ≤**3000** ms for `demo_live.mlc` ~3k lines under VISIBLE=1) |
+| Green must hit | (1) With `MLC_EDITOR_OPEN=$ROOT/misc/editor/demo_live.mlc` and **empty** session fixture: active `open_path` ends with `demo_live.mlc`, not `README*`. (2) With OPEN unset and empty session: starter must not open `README*` if `demo_live.mlc` exists under root. (3) `time_to_first_present_ms` ≤ Green ceiling. (4) Sabotage full wrap before first present (remove defer) fails time gate. (5) Side: dogfood `type_stall_ms`≤500 + `scroll_cpu`≤60 non-regress (short sample OK) |
+| Red | No `run_editor_perf_startup_open.sh` |
+| Green | Harness + numbers/notes in track; red “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no startup-open harness | pending |
+| 2 | Green: open resolve + first-present defer + harness | pending |
+| 3 | Critic | pending |
 
 ---
 
