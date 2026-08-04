@@ -528,3 +528,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109i STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i Green — sample-to-height + harness) |
+
+### Turn 2026-08-04 (Planner — AGENTS perf workflow)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (docs) |
+| track   | docs (AGENTS + TRACK_EDITOR_PERF_DOGFOOD) |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-harness-agents |
+| done    | User pasted harness-first / one-bottleneck / measure-before-fix guidance. Added short **Performance workflow** to `AGENTS.md`; note under §109 track. No code; queue unchanged (§109i Green) |
+| verify  | Docs-only |
+| result  | **Agent perf rules in AGENTS.md** |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i Green — sample-to-height + harness) |

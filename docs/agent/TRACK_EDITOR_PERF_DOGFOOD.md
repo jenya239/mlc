@@ -10,6 +10,11 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
+**Harness-first (2026-08-04):** same rule as [AGENTS.md](../../AGENTS.md) Performance
+workflow — agent must see pass/fail or concrete counters. §109a–c built the
+dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
+before/after). Do not “optimize GUI broadly”.
+
 ## Status: **open** 2026-08-04 — queue head **§109i** (Driver STEP=2 Green)
 
 ## Why (facts)
