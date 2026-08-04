@@ -468,3 +468,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109h STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h Green — visible-range + toolbar/tree retain + harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=2, §109h Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `folder_visible_row_range` + `tree_row_visit_count`; demo toolbar→chrome_layer; visible-range hover/glyph; L1 `chrome_tree_visible.mlc`; green `run_editor_perf_chrome_tree_visible.sh` |
+| verify  | green OK (L1 ux_ok; wake chrome Δ=0; scroll=55); red “already present” |
+| result  | **§109h STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h — audit chrome tree visible) |

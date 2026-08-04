@@ -87,6 +87,7 @@ import {
   folder_breadcrumb_segments,
   folder_list_rect,
   folder_row_rect,
+  folder_visible_row_range,
   folder_clamp_scroll,
   folder_scrollbar_thumb,
   folder_scrollbar_track,
@@ -400,6 +401,7 @@ import {
   editor_perf_note_glyph_shape_calls,
   editor_perf_note_glyph_batch_draw_calls,
   editor_perf_note_editor_glyph_shape_calls,
+  editor_perf_note_tree_row_visits,
   editor_perf_format_wake_counters,
   editor_perf_format_demo_live,
   editor_perf_format_demo_live_terminal,
@@ -2490,12 +2492,7 @@ fn main() -> i32 = do
         1.0
       ))
     end
-    chrome_layer_batch = editor_ux_chrome_layer_batch_store(
-      chrome_layer_batch, chrome_layer_ops
-    )
-    perf_counters = editor_perf_note_chrome_rebuild(perf_counters)
-    end
-    solid = editor_paint_ops_flatten(solid, width, height, chrome_layer_batch.ops)
+    // §109h — toolbar hover fills inside retained chrome layer.
     let mut hover_tool_index = 0
     const hover_toolbar_count = editor_app_toolbar_count()
     while hover_tool_index < hover_toolbar_count do
@@ -2503,13 +2500,25 @@ fn main() -> i32 = do
       const tool_fill = editor_ux_chrome_hover_draw_entry(
         input, tool_slot, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
-        tool_fill.x, tool_fill.y, tool_fill.width, tool_fill.height,
-        tool_fill.red, tool_fill.green, tool_fill.blue, 1.0
-      )
+      chrome_layer_ops.push(editor_paint_op_rect(
+        "toolbar_hover",
+        tool_fill.x,
+        tool_fill.y,
+        tool_fill.width,
+        tool_fill.height,
+        tool_fill.red,
+        tool_fill.green,
+        tool_fill.blue,
+        1.0
+      ))
       hover_tool_index = hover_tool_index + 1
     end
+    chrome_layer_batch = editor_ux_chrome_layer_batch_store(
+      chrome_layer_batch, chrome_layer_ops
+    )
+    perf_counters = editor_perf_note_chrome_rebuild(perf_counters)
+    end
+    solid = editor_paint_ops_flatten(solid, width, height, chrome_layer_batch.ops)
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8
@@ -2517,24 +2526,28 @@ fn main() -> i32 = do
     tree_scroll_y = folder_clamp_scroll(
       tree_scroll_y, draw_folder_rows.length(), tree_list_rect.height
     )
-    let mut hover_row_index = 0
-    while hover_row_index < draw_folder_rows.length() do
+    // §109h — visible-range tree hover (+1 row margin); count visits.
+    const tree_hover_range = folder_visible_row_range(
+      tree_scroll_y, tree_list_rect.height, draw_folder_rows.length(), 1
+    )
+    let mut hover_row_index = tree_hover_range.first_index
+    let mut tree_row_visits = 0
+    while hover_row_index < tree_hover_range.end_index do
+      tree_row_visits = tree_row_visits + 1
       const row_slot = folder_row_rect(
         tree_list_rect, hover_row_index, tree_scroll_y
       )
-      if row_slot.y + row_slot.height > tree_list_rect.y &&
-          row_slot.y < tree_list_rect.y + tree_list_rect.height then
-        const row_fill = editor_ux_chrome_hover_draw_entry(
-          input, row_slot, theme.panel_red, theme.panel_green, theme.panel_blue
-        )
-        solid = solid_renderer_rect(
-          solid, width, height,
-          row_fill.x, row_fill.y, row_fill.width, row_fill.height,
-          row_fill.red, row_fill.green, row_fill.blue, 1.0
-        )
-      end
+      const row_fill = editor_ux_chrome_hover_draw_entry(
+        input, row_slot, theme.panel_red, theme.panel_green, theme.panel_blue
+      )
+      solid = solid_renderer_rect(
+        solid, width, height,
+        row_fill.x, row_fill.y, row_fill.width, row_fill.height,
+        row_fill.red, row_fill.green, row_fill.blue, 1.0
+      )
       hover_row_index = hover_row_index + 1
     end
+    perf_counters = editor_perf_note_tree_row_visits(perf_counters, tree_row_visits)
     if tree_hovered then
       const thumb = folder_scrollbar_thumb(
         tree_list_rect, draw_folder_rows.length(), tree_scroll_y
@@ -3101,8 +3114,13 @@ fn main() -> i32 = do
     )
 
     let mut tree_lines: [StaticTextLine] = []
-    let mut row_index = 0
-    while row_index < draw_tree_rows.length() do
+    const tree_glyph_range = folder_visible_row_range(
+      tree_scroll_y, tree_list_rect.height, draw_tree_rows.length(), 1
+    )
+    let mut row_index = tree_glyph_range.first_index
+    let mut tree_glyph_visits = 0
+    while row_index < tree_glyph_range.end_index do
+      tree_glyph_visits = tree_glyph_visits + 1
       const folder_row = draw_tree_rows[row_index]
       let mut label = folder_row.name
       if folder_row.kind == folder_row_directory() then
@@ -3118,14 +3136,12 @@ fn main() -> i32 = do
       const pen_y =
         tree_list_rect.y + 14 + row_index * folder_row_height() - tree_scroll_y
       const pen_x = tree_list_rect.x + 8 + folder_row.depth * 10
-      if pen_y >= tree_list_rect.y - folder_row_height() &&
-          pen_y <= tree_list_rect.y + tree_list_rect.height + folder_row_height() then
-        tree_lines = push_line(
-          tree_lines, label, 13, pen_x, pen_y
-        )
-      end
+      tree_lines = push_line(
+        tree_lines, label, 13, pen_x, pen_y
+      )
       row_index = row_index + 1
     end
+    perf_counters = editor_perf_note_tree_row_visits(perf_counters, tree_glyph_visits)
 
     const status = status_bar_format(
       status_bar_from_buffer(

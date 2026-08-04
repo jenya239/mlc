@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109h** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -65,7 +65,7 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | H4 | Visible editor text reshape every paint | **CLOSED** §109e — retained `editor_glyph_batch`; residual full-visible reshape on scroll | §109e |
 | H5 | Syntax spans / highlight full buffer | **CLOSED** §109f — visible-range + cover | §109f |
 | H6 | Snapshot / flatten on non-incremental dirty | **CLOSED** §109g — paste/cut/backspace/newline span-edit; allowlisted force-1 | §109g |
-| H7 | Tree: folder rows + hover every chrome paint | O(tree rows) | §109h |
+| H7 | Tree: folder rows + hover every chrome paint | **CLOSED** §109h Green — visible-range + toolbar in chrome_layer (Critic pending) | §109h |
 | H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
 | H9 | First open / session → README; cold wrap | Explains most of `layout_us` once | §109j |
 | H10 | Coarse hit slots thrash | **CLOSED** with §109b geometry | §109b |
@@ -490,8 +490,17 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no chrome-tree-visible harness | **done** 2026-08-04 — `scripts/run_editor_perf_chrome_tree_visible_red.sh` exit 1 |
-| 2 | Green: visible-range + toolbar/tree retain wire + harness | pending |
+| 2 | Green: visible-range + toolbar/tree retain wire + harness | **done** 2026-08-04 — `run_editor_perf_chrome_tree_visible.sh` OK; red “already present” |
 | 3 | Critic | pending |
+
+### Chrome-tree Green (measured 2026-08-04)
+
+| Metric | Value |
+|--------|-------|
+| L1 `chrome_tree_visible` | ux_ok (visits≤slots+2; counter) |
+| wake `delta_chrome_rebuild_count` | 0 |
+| `scroll_cpu_percent` | 55 |
+| Cut | `folder_visible_row_range` hover+glyph; toolbar → `toolbar_hover` in chrome_layer; `tree_row_visit_count` |
 
 ---
 

@@ -1,0 +1,54 @@
+// TRACK_EDITOR_PERF_DOGFOOD §109h — visible-range tree visits ≤ slots+2.
+import {
+  folder_visible_row_range,
+  folder_row_height
+} from '../ux/folder_panel'
+import {
+  editor_perf_new,
+  editor_perf_note_tree_row_visits
+} from '../ui/perf'
+
+fn main() -> i32 = do
+  const row_height = folder_row_height()
+  const viewport_height = row_height * 10
+  const row_count = 200
+  const scroll_y = row_height * 40
+  const range = folder_visible_row_range(scroll_y, viewport_height, row_count, 1)
+  if range.visible_slots != 10 then
+    println("ux_fail chrome_tree_visible visible_slots")
+    return 1
+  end
+  let mut visits = 0
+  let mut index = range.first_index
+  while index < range.end_index do
+    visits = visits + 1
+    index = index + 1
+  end
+  const visit_max = range.visible_slots + 2
+  if visits > visit_max then
+    println("ux_fail chrome_tree_visible visit_bound")
+    return 2
+  end
+  if visits < range.visible_slots then
+    println("ux_fail chrome_tree_visible visit_too_small")
+    return 3
+  end
+  // Sabotage shape: full-length walk would exceed bound.
+  if row_count <= visit_max then
+    println("ux_fail chrome_tree_visible fixture_too_small")
+    return 4
+  end
+  let mut counters = editor_perf_new()
+  counters = editor_perf_note_tree_row_visits(counters, visits)
+  if counters.tree_row_visit_count != visits then
+    println("ux_fail chrome_tree_visible counter")
+    return 5
+  end
+  // present_only / no paint: visit delta stays 0 when not noted.
+  if editor_perf_new().tree_row_visit_count != 0 then
+    println("ux_fail chrome_tree_visible present_zero")
+    return 6
+  end
+  println("ux_ok chrome_tree_visible")
+  0
+end

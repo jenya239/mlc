@@ -541,6 +541,58 @@ export fn folder_row_rect(
   )
 end
 
+// TRACK_EDITOR_PERF_DOGFOOD §109h — visible tree-row index range (±margin).
+export type FolderVisibleRowRange = {
+  first_index: i32,
+  end_index: i32,
+  visible_slots: i32
+}
+
+export fn folder_visible_row_range(
+  scroll_y: i32,
+  viewport_height: i32,
+  row_count: i32,
+  margin_rows: i32
+) -> FolderVisibleRowRange = do
+  const row_height = folder_row_height()
+  let mut visible_slots = 0
+  if row_height > 0 then
+    visible_slots = viewport_height / row_height
+  end
+  if row_count <= 0 then
+    return FolderVisibleRowRange {
+      first_index: 0,
+      end_index: 0,
+      visible_slots: visible_slots
+    }
+  end
+  let mut scroll = scroll_y
+  if scroll < 0 then
+    scroll = 0
+  end
+  let mut first_index = 0
+  let mut raw_first = 0
+  if row_height > 0 then
+    raw_first = scroll / row_height
+  end
+  first_index = raw_first - margin_rows
+  if first_index < 0 then
+    first_index = 0
+  end
+  let mut end_index = raw_first + visible_slots + margin_rows
+  if end_index > row_count then
+    end_index = row_count
+  end
+  if end_index < first_index then
+    end_index = first_index
+  end
+  FolderVisibleRowRange {
+    first_index: first_index,
+    end_index: end_index,
+    visible_slots: visible_slots
+  }
+end
+
 // Live folder chrome click resolve (nav / crumb / listing). Apply browse/open in caller.
 export fn folder_click_none() -> i32 = 0
 export fn folder_click_nav_back() -> i32 = 1
