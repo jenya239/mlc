@@ -163,6 +163,14 @@ fi
 
 phase_log="$DOGFOOD_REPORT_DIR/phase.txt"
 dog_log="$DOGFOOD_REPORT_DIR/demo.log"
+shapes_at_still="$(
+  awk '
+    /phase=still_over_text/ { want=1; next }
+    want && match($0, /editor_glyph_shape_calls=[0-9]+/) {
+      print substr($0, RSTART + 25, RLENGTH - 25); exit
+    }
+  ' "$phase_log" "$dog_log" 2>/dev/null || true
+)"
 shapes_at_scroll="$(
   awk '
     /phase=scroll/ { want=1; next }
@@ -195,10 +203,18 @@ frames_at_type="$(
     }
   ' "$phase_log" "$dog_log" 2>/dev/null || true
 )"
+[ -n "$shapes_at_still" ] || fail "missing editor_glyph_shape_calls at still_over_text phase enter"
 [ -n "$shapes_at_scroll" ] || fail "missing editor_glyph_shape_calls at scroll phase enter"
 [ -n "$shapes_at_type" ] || fail "missing editor_glyph_shape_calls at type phase enter"
 [ -n "$frames_at_scroll" ] || fail "missing content_frame_count at scroll phase enter"
 [ -n "$frames_at_type" ] || fail "missing content_frame_count at type phase enter"
+
+# Decision settle (4): still→scroll without doc edit must not add editor shapes
+# (fingerprint retain). Sabotage: clear fingerprint every paint + force content_dirty
+# on still → shapes_at_scroll > shapes_at_still.
+if [ "$shapes_at_scroll" -ne "$shapes_at_still" ]; then
+  fail "settle broken: editor_glyph_shape_calls still=$shapes_at_still scroll=$shapes_at_scroll (expected equal)"
+fi
 
 scroll_shape_delta=$((shapes_at_type - shapes_at_scroll))
 scroll_frame_delta=$((frames_at_type - frames_at_scroll))
@@ -213,12 +229,7 @@ if [ "$scroll_shape_avg" -gt "$SCROLL_SHAPE_AVG_MAX" ]; then
   fail "scroll editor_glyph_shape_calls avg/frame=$scroll_shape_avg > $SCROLL_SHAPE_AVG_MAX (4*budget+64, budget=$VISIBLE_ROW_BUDGET)"
 fi
 
-# Settle: after scroll→type transition, type phase should not keep reshaping forever
-# without edits. Emit at type enter already captured; require avg gate as load-bearing
-# for sabotage-all-visible. Settle-zero is checked by: if fingerprint stable, shapes
-# stop — type_stall path still opens editor; allow non-zero shapes for type edits.
-# Decision settle: no wheel ≥1s → 0 more shapes. Approximate via wake counters file
-# after a short still phase is not in this harness; require avg gate + retain wire.
+# Settle checked above: still→scroll editor_glyph_shape_calls equal (fingerprint retain).
 
 {
   echo "layout_us=$layout_us"
@@ -233,6 +244,8 @@ fi
   echo "scroll_editor_glyph_shape_avg=$scroll_shape_avg"
   echo "scroll_shape_avg_max=$SCROLL_SHAPE_AVG_MAX"
   echo "visible_row_budget=$VISIBLE_ROW_BUDGET"
+  echo "settle_shapes_still=$shapes_at_still"
+  echo "settle_shapes_scroll=$shapes_at_scroll"
 } >"$REPORT_DIR/report.txt"
 
-echo "[editor_perf_glyph_layer_budget] OK total_us=$total_us scroll_cpu=$scroll_cpu shape_avg=$scroll_shape_avg (max $SCROLL_SHAPE_AVG_MAX) stall_ms=$type_stall" >&2
+echo "[editor_perf_glyph_layer_budget] OK total_us=$total_us scroll_cpu=$scroll_cpu shape_avg=$scroll_shape_avg (max $SCROLL_SHAPE_AVG_MAX) stall_ms=$type_stall settle=$shapes_at_still" >&2

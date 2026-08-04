@@ -303,3 +303,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109e STEP=2 done (Green).** Critic next |
 | issues  | residual: full visible VBO reshape on scroll (no per-row Y-damage); scroll_cpu single-sample 47–64 |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109e — audit glyph batch / harness / scroll amend honesty) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109e)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109e: independent budget (total=6635077 scroll=59 shape_avg=130); sab colored `editor_lines` draw → harness static fail; sab TOTAL_US_MAX=1000 PERF_FULL fail; sab always-rebuild+still content_dirty → settle still=164 scroll=42476; red already present. Added settle still→scroll assert to green harness (Decision gate 4 was untested) |
+| verify  | critic budget exit 0; sab colored exit 1; sab ceiling exit 1; sab settle unequal; red exit 1; demo/PERF_FULL restored |
+| result  | **§109e CLOSED (Critic OK).** Residual full-visible scroll reshape documented; sabotage-3 shape-avg alone not load-bearing |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f `EDITOR_PERF_SPANS_VISIBLE_ONLY` — Decision freeze) |

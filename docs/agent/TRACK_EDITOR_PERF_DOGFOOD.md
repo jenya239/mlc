@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109e** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109f** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -321,7 +321,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — **queue head (Critic)**
+## §109e `EDITOR_PERF_GLYPH_LAYER_BUDGET` — **CLOSED** 2026-08-04 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -363,7 +363,9 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no glyph-layer budget harness | **done** 2026-08-04 — `scripts/run_editor_perf_glyph_layer_budget_red.sh` exit 1 |
 | 2 | Green: editor retained glyph batch + damage + harness | **done** 2026-08-04 — `run_editor_perf_glyph_layer_budget.sh` OK |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — independent budget ok (total=6635077 scroll=59 shape_avg=130); sab colored-draw → static fail; sab TOTAL_US_MAX=1000 PERF_FULL fail; sab always-rebuild+still-dirty → settle still≠scroll; red already present; harness gained settle still→scroll assert |
+
+**Critic 2026-08-04:** Independent remeasure OK. Sabotage (3) «force all-visible every scroll frame» alone is **not** distinguishable on shape-avg (Green residual already full-visible reshape on scroll; avg~130≤256) — load-bearing retain checks are settle still→scroll equal + no `static_text_draw_lines_colored(editor_lines)`. Harness settle assert added same turn.
 
 ---
 
