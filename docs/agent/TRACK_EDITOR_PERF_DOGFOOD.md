@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109h** (Critic STEP=3)
+## Status: **open** 2026-08-04 — queue head **§109i** (Driver STEP=0 Decision)
 
 ## Why (facts)
 
@@ -65,13 +65,13 @@ On **scripted** visible measure (`MLC_GLFW_VISIBLE=1`) with
 | H4 | Visible editor text reshape every paint | **CLOSED** §109e — retained `editor_glyph_batch`; residual full-visible reshape on scroll | §109e |
 | H5 | Syntax spans / highlight full buffer | **CLOSED** §109f — visible-range + cover | §109f |
 | H6 | Snapshot / flatten on non-incremental dirty | **CLOSED** §109g — paste/cut/backspace/newline span-edit; allowlisted force-1 | §109g |
-| H7 | Tree: folder rows + hover every chrome paint | **CLOSED** §109h Green — visible-range + toolbar in chrome_layer (Critic pending) | §109h |
+| H7 | Tree: folder rows + hover every chrome paint | **CLOSED** §109h — visible-range + toolbar in chrome_layer | §109h |
 | H8 | Minimap **rebuild** O(doc) on version / sample | After §109d retain-draw; sample to height = EHA-28 | §109i |
 | H9 | First open / session → README; cold wrap | Explains most of `layout_us` once | §109j |
 | H10 | Coarse hit slots thrash | **CLOSED** with §109b geometry | §109b |
 | H11 | `chrome_dirty` overlay every poll | **CLOSED** §109b | §109b |
 | H12 | Paint-ops flatten vs direct GL | Opus: **не гнаться** (дешево vs glyphs) | — |
-| H13 | Toolbar/tree hover outside retained chrome | residual | §109h |
+| H13 | Toolbar/tree hover outside retained chrome | **CLOSED** §109h | §109h |
 | H14 | Gate honesty | **CLOSED** §109c; suite in §109k | §109c, §109k |
 | H15 | P2 overlay idle / minimap B9 | pull into §109b done / §109i | §109i |
 
@@ -461,7 +461,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109h `EDITOR_PERF_CHROME_TREE_VISIBLE` — **queue head**
+## §109h `EDITOR_PERF_CHROME_TREE_VISIBLE` — **CLOSED** 2026-08-04 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -491,7 +491,7 @@ then wake still/jitter via honesty harness:
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no chrome-tree-visible harness | **done** 2026-08-04 — `scripts/run_editor_perf_chrome_tree_visible_red.sh` exit 1 |
 | 2 | Green: visible-range + toolbar/tree retain wire + harness | **done** 2026-08-04 — `run_editor_perf_chrome_tree_visible.sh` OK; red “already present” |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-04 — quiet remasure OK (scroll=54 wake chrome Δ=0); sab1 full-length L1 fail; sab2 post-flatten toolbar static fail; sab3 full-range helper fail; blink path skips tree |
 
 ### Chrome-tree Green (measured 2026-08-04)
 
@@ -499,13 +499,14 @@ then wake still/jitter via honesty harness:
 |--------|-------|
 | L1 `chrome_tree_visible` | ux_ok (visits≤slots+2; counter) |
 | wake `delta_chrome_rebuild_count` | 0 |
-| `scroll_cpu_percent` | 55 |
+| `scroll_cpu_percent` | 55 (Critic quiet remasure 54; noisy concurrent remasure hit 63 once) |
 | Cut | `folder_visible_row_range` hover+glyph; toolbar → `toolbar_hover` in chrome_layer; `tree_row_visit_count` |
+
+**Critic 2026-08-04:** Quiet independent green OK (L1 ux_ok; wake chrome Δ=0; scroll=54). Red already present. Sabotage (1) L1 full `row_count` walk → `visit_bound` exit 2. Sabotage (2) toolbar walk after chrome flatten → harness static fail. Sabotage (3) `folder_visible_row_range` returns full doc → L1 `visit_bound` fail. Blink/present_only path continues before tree paint (demo ~1208–1263). First remasure under concurrent sab load saw scroll=63 — not load-bearing vs quiet 54.
 
 ---
 
-
-## §109i `EDITOR_PERF_MINIMAP_SAMPLE`
+## §109i `EDITOR_PERF_MINIMAP_SAMPLE` — **queue head**
 
 | Item | Choice |
 |------|--------|

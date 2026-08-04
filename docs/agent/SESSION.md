@@ -483,3 +483,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109h STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h — audit chrome tree visible) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109h)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109h: quiet remasure green (L1 ux_ok; wake chrome Δ=0; scroll=54); red already present; sab1 full-length L1 visit_bound fail; sab2 post-flatten toolbar static fail; sab3 full-range helper fail; blink skips tree |
+| verify  | green2 exit 0; red exit 1; sab1/2/3 fail; sources restored |
+| result  | **§109h CLOSED (Critic OK).** |
+| issues  | none (first remasure scroll=63 under concurrent sab load — discarded; quiet 54) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109i `EDITOR_PERF_MINIMAP_SAMPLE` — Decision freeze) |
