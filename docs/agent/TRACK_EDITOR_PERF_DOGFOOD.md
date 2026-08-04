@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109e** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109e** (Driver STEP=2 Green)
 
 ## Why (facts)
 
@@ -349,7 +349,7 @@ then wake still/jitter via honesty harness:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: no glyph-layer budget harness | pending |
+| 1 | Red: no glyph-layer budget harness | **done** 2026-08-04 — `scripts/run_editor_perf_glyph_layer_budget_red.sh` exit 1 |
 | 2 | Green: editor retained glyph batch + damage + harness | pending |
 | 3 | Critic | pending |
 
