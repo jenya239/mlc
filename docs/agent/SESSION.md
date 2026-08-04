@@ -183,3 +183,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109k STEP=2 done (Green ×2).** Critic next |
 | issues  | none (glyph settle still=0 was §109j warm-wrap skipped by idle-continue) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — audit dogfood gate) |
+
+### Turn 2026-08-04 (Planner — §110 frame architecture path)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (path only) |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE / PLAN / CONTINUITY |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | User: want the path, not immediate rewrite. Opened §110 path track (phases 0→A–G); PLAN row; CONTINUITY queue after §109 Critic; §109 After points to §110. No code; §109k Critic still next |
+| verify  | Docs-only |
+| result  | **§110 path frozen** |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — audit dogfood gate) |

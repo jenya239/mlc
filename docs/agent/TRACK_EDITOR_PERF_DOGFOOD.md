@@ -660,7 +660,9 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 
 ## After §109
 
-Resume **§103f** `SCRIPT_VM_HEAP_GC_ARENA` → … → §104 Wave 2.
+Next editor architecture priority: **§110** [TRACK_EDITOR_FRAME_ARCHITECTURE](TRACK_EDITOR_FRAME_ARCHITECTURE.md) (path: Xvfb → frame ownership → paint list → batch → glyph residual).
+
+Then resume **§103f** `SCRIPT_VM_HEAP_GC_ARENA` → … → §104 Wave 2.
 
 ## Diff vs prior §109 draft
 
