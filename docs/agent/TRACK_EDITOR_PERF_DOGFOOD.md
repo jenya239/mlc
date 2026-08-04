@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109k** (Driver STEP=2 Green)
 
 ## Why (facts)
 
@@ -638,7 +638,7 @@ then wake still/jitter via honesty harness:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: no dogfood-gate harness | pending |
+| 1 | Red: no dogfood-gate harness | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_gate_red.sh` exit 1 |
 | 2 | Green: compose suite + ceilings + ×2 | pending |
 | 3 | Critic | pending |
 
