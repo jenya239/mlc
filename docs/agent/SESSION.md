@@ -363,3 +363,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109f STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109f — audit visible-range spans / cover / harness) |
+
+### Turn 2026-08-04 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109f)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Audited §109f: independent spans harness (stall=16 scroll_rebuild_delta=0 type_lex_avg=16201); sab1 full-buffer via vars → lex avg 129909>102400; sab2 cover broken+pad0 → rebuild_delta=257; sab3 literal 0..byte_size → static fail; red already present |
+| verify  | critic green exit 0; sab1/2/3 exit 1; red exit 1; demo/span_cache restored |
+| result  | **§109f CLOSED (Critic OK).** |
+| issues  | none |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109g `EDITOR_PERF_SNAPSHOT_EDIT_COVERAGE` — Decision freeze) |

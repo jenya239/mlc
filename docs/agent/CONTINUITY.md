@@ -136,7 +136,7 @@ INSTRUCTIONS_REV=2026-08-04-perf-dogfood-epic
 | **`TRACK_EDITOR_RENDER_ARCHITECTURE` (PLAN §97)** | **closed** 2026-07-25 (Critic OK). P0 §97a/b/c+§96 done. Residual later folds not queued. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **§109 `TRACK_EDITOR_PERF_DOGFOOD` QUEUE HEAD** — §109a–e CLOSED; §109f Green done; Critic next. **§103 SUSPENDED**. §102/§106/§107/§108 CLOSED. |
+| **Authorized queue** | **§109 `TRACK_EDITOR_PERF_DOGFOOD` QUEUE HEAD** — §109a–f CLOSED; §109g Decision next. **§103 SUSPENDED**. §102/§106/§107/§108 CLOSED. |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
