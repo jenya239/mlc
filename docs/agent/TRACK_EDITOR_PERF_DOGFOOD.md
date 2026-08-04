@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109i** (Driver STEP=0 Decision)
+## Status: **open** 2026-08-04 — queue head **§109i** (Driver STEP=1 Red)
 
 ## Why (facts)
 
@@ -510,10 +510,33 @@ then wake still/jitter via honesty harness:
 
 | Item | Choice |
 |------|--------|
-| Problem | H8: после §109d (не шейпить миникарту каждый кадр) остаётся **rebuild** списка строк миникарты O(doc) на version — Opus/EHA-28 |
-| Fix | Sample rows to strip height; invalidate on version/height/zoom only |
-| Depends on | §109d |
-| Gate | `run_ux_minimap_rows_bounded_by_height` (or Decision name); sabotage full-line loop |
+| Problem | H8/EHA-28: after §109d retained minimap **glyph draw**, rebuild of `minimap_lines` still walks **every document line** on version/height/font change (`demo_live` ~3211) → O(doc) `append_syntax_colored_row` + O(doc) glyph reshape on type |
+| Fix | Below (Decision frozen 2026-08-04) |
+| Depends on | §109d (retained minimap batch); §109e/f non-regress side gates |
+| Gate | Minimap-sample harness green; sampled row count ≤ strip height; sabotage full-line loop fails |
+| Sabotage | (1) Restore `while map_line < line_count` full walk → row-bound / shape gate fail. (2) Sample count = line_count while claiming bounded → bound fail. (3) Rebuild sampled lines every content frame with version unchanged → type/scroll gate or rebuild-delta fail |
+| Out of scope | SceneNode; changing minimap click/scroll mapping semantics beyond sampled Y; full-buffer syntax lex for editor (§109f done); startup open (§109j) |
+
+### Decision (frozen 2026-08-04)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | `scripts/run_editor_perf_minimap_sample.sh` — L1 row-bound + static wire; dogfood side `type_stall_ms`≤500 + §109e `scroll_cpu`≤60; `VISIBLE=1`, open `misc/editor/demo_live.mlc`, no skip-heavy |
+| Pre-cut (audit 2026-08-04) | `demo_live.mlc` ~3194–3257: on `minimap_cache` rebuild **or** height/font change, loop `while map_line < line_index_line_count(line_index)` builds one colored row per **document** line into `minimap_lines`, then `static_text_glyph_batch_rebuild_colored`. Invalidate keys already version/height/font. §109d only stopped per-frame **draw** reshape — rebuild path still O(doc) |
+| **Green cut** | Sample source lines to **strip pixel height**: `sample_count = min(line_count, max(1, minimap_rect.height))` (≤1 sample row per strip pixel). For `sample_index` in `0 .. sample_count-1`, `source_line = (sample_index * line_count) / sample_count` (integer). Build `minimap_lines` only for those samples; `pen_y = minimap_rect.y + sample_index + 2` (or evenly spaced in height). Keep invalidate on version/height/font only (no per-frame rebuild). Prefer helper in `ux/minimap.mlc` (`editor_ux_minimap_sample_count` / `editor_ux_minimap_sample_source_line`). Spans: use `span_cache` for sampled byte ranges only (may be partial/plain outside §109f window — OK). Files: `minimap.mlc`, `demo_live.mlc`, optional `ui/perf.mlc` counter, L1 + harness (+ `_red.sh`) |
+| Counters | Load-bearing: on rebuild, `minimap_sample_row_count` (= `minimap_lines.length()` after build) must be ≤ `minimap_rect.height` (+0; allow +1 only if harness documents off-by-one). Emit in dogfood markers or L1-only if static+L1 suffice. Optional: `minimap_line_rebuild_count` already via cache |
+| Green must hit | (1) L1: fixture with `line_count` ≫ `strip_height` → built sample rows ≤ `strip_height`; full-line sabotage fails. (2) Static: demo minimap rebuild must not loop `map_line < line_index_line_count` without sample helper / bounded `sample_count`. (3) `type_stall_ms` ≤ **500**. (4) §109e scroll gate non-regress (`scroll_cpu`≤60). (5) Version-unchanged content frames: no minimap line rebuild (cache tick stable; same as pre-cut invalidate rules) |
+| Red | No `run_editor_perf_minimap_sample.sh` |
+| Green | Harness + numbers/notes in track; red “already present” |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-04 |
+| 1 | Red: no minimap-sample harness | pending |
+| 2 | Green: sample-to-height + harness | pending |
+| 3 | Critic | pending |
 
 ---
 
