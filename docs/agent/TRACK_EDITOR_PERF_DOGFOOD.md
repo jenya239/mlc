@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-04 — queue head **§109i** (Driver STEP=2 Green)
+## Status: **open** 2026-08-04 — queue head **§109i** (Critic STEP=3)
 
 ## Why (facts)
 
@@ -540,8 +540,18 @@ then wake still/jitter via honesty harness:
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no minimap-sample harness | **done** 2026-08-04 — `scripts/run_editor_perf_minimap_sample_red.sh` exit 1 |
-| 2 | Green: sample-to-height + harness | pending |
+| 2 | Green: sample-to-height + harness | **done** 2026-08-04 — helpers + demo sample loop; L1 `minimap_sample.mlc`; `run_editor_perf_minimap_sample.sh` |
 | 3 | Critic | pending |
+
+### Minimap-sample Green (measured 2026-08-04)
+
+| Metric | Value |
+|--------|-------|
+| L1 | `ux_ok minimap_sample` (`line_count=10000` → `sample_count=strip_height=200`) |
+| `scroll_cpu_percent` | 45 (gate ≤60; dogfood median-of-3 if first >max) |
+| `type_stall_ms` | 16 (gate ≤500) |
+| Static | no `while map_line < line_index_line_count`; `while sample_index < sample_count` + helpers |
+| Red | `already present` |
 
 ---
 

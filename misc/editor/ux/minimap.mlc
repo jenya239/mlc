@@ -131,6 +131,47 @@ export fn editor_ux_minimap_cache_tick(
   }
 end
 
+// TRACK_EDITOR_PERF_DOGFOOD §109i — ≤1 sample row per strip pixel.
+export fn editor_ux_minimap_sample_count(
+  line_count: i32,
+  strip_height: i32
+) -> i32 = do
+  let mut height = strip_height
+  if height < 1 then
+    height = 1
+  end
+  let mut lines = line_count
+  if lines < 1 then
+    lines = 1
+  end
+  if lines <= height then
+    return lines
+  end
+  height
+end
+
+export fn editor_ux_minimap_sample_source_line(
+  sample_index: i32,
+  sample_count: i32,
+  line_count: i32
+) -> i32 = do
+  if sample_count <= 0 || line_count <= 0 then
+    return 0
+  end
+  let mut index = sample_index
+  if index < 0 then
+    index = 0
+  end
+  let mut source = (index * line_count) / sample_count
+  if source >= line_count then
+    source = line_count - 1
+  end
+  if source < 0 then
+    source = 0
+  end
+  source
+end
+
 export fn editor_ux_minimap_viewport_indicator(
   minimap_rect: Rect,
   content_height: i32,

@@ -1,0 +1,49 @@
+// TRACK_EDITOR_PERF_DOGFOOD §109i — sample rows ≤ strip height.
+import {
+  editor_ux_minimap_sample_count,
+  editor_ux_minimap_sample_source_line
+} from '../ux/minimap'
+
+fn main() -> i32 = do
+  const strip_height = 200
+  const line_count = 10000
+  const sample_count = editor_ux_minimap_sample_count(line_count, strip_height)
+  if sample_count != strip_height then
+    println("ux_fail minimap_sample sample_count")
+    return 1
+  end
+  if sample_count > strip_height then
+    println("ux_fail minimap_sample over_height")
+    return 2
+  end
+  let mut sample_index = 0
+  let mut last_source = 0 - 1
+  while sample_index < sample_count do
+    const source = editor_ux_minimap_sample_source_line(
+      sample_index, sample_count, line_count
+    )
+    if source < 0 || source >= line_count then
+      println("ux_fail minimap_sample source_range")
+      return 3
+    end
+    if source < last_source then
+      println("ux_fail minimap_sample non_monotonic")
+      return 4
+    end
+    last_source = source
+    sample_index = sample_index + 1
+  end
+  // Sabotage shape: full line_count would exceed strip height.
+  if line_count <= strip_height then
+    println("ux_fail minimap_sample fixture_too_small")
+    return 5
+  end
+  // Small doc: sample_count == line_count.
+  const small_count = editor_ux_minimap_sample_count(40, strip_height)
+  if small_count != 40 then
+    println("ux_fail minimap_sample small_doc")
+    return 6
+  end
+  println("ux_ok minimap_sample")
+  0
+end

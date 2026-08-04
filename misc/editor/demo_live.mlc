@@ -330,6 +330,8 @@ import {
   editor_ux_minimap_pixel_size_for_font,
   editor_ux_minimap_layout_for_font,
   editor_ux_content_clip_rect,
+  editor_ux_minimap_sample_count,
+  editor_ux_minimap_sample_source_line,
   editor_ux_minimap_viewport_indicator,
   editor_ux_minimap_scroll_at_y
 } from './ux/minimap'
@@ -3203,12 +3205,19 @@ fn main() -> i32 = do
         minimap_lines = []
         const minimap_pixel = editor_ux_minimap_pixel_size_for_font(zoom_font_size)
         const minimap_spans = frame_layout.span_cache.spans
-        let mut map_line = 0
         let mut map_line_count = line_index_line_count(line_index)
         if map_line_count < 1 then
           map_line_count = 1
         end
-        while map_line < line_index_line_count(line_index) do
+        // §109i — sample to strip height (≤1 row per pixel).
+        const sample_count = editor_ux_minimap_sample_count(
+          map_line_count, minimap_rect.height
+        )
+        let mut sample_index = 0
+        while sample_index < sample_count do
+          const map_line = editor_ux_minimap_sample_source_line(
+            sample_index, sample_count, map_line_count
+          )
           const map_byte_start = line_index_line_start(line_index, map_line)
           let mut map_byte_end = line_index.text_length
           if map_line + 1 < line_index_line_count(line_index) then
@@ -3218,8 +3227,7 @@ fn main() -> i32 = do
               draw_text.byte_at(map_byte_end - 1) == "\n" then
             map_byte_end = map_byte_end - 1
           end
-          const pen_y =
-            minimap_rect.y + (map_line * minimap_rect.height) / map_line_count + 2
+          const pen_y = minimap_rect.y + sample_index + 2
           minimap_lines = editor_ux_append_syntax_colored_row(
             minimap_lines,
             theme,
@@ -3232,7 +3240,7 @@ fn main() -> i32 = do
             pen_y,
             1
           )
-          map_line = map_line + 1
+          sample_index = sample_index + 1
         end
         minimap_cached_height = minimap_rect.height
         minimap_cached_font_size = zoom_font_size
