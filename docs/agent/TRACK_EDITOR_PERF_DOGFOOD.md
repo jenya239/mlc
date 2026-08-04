@@ -10,7 +10,7 @@ Authorized **2026-08-03** as **queue head** by user hard stop:
 Critic-audited. No interactive `demo_live` launches as a substitute for gates
 in Driver/Critic turns — measure via scripts only.
 
-## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=1 Red)
+## Status: **open** 2026-08-04 — queue head **§109h** (Driver STEP=2 Green)
 
 ## Why (facts)
 
@@ -489,7 +489,7 @@ then wake still/jitter via honesty harness:
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-04 |
-| 1 | Red: no chrome-tree-visible harness | pending |
+| 1 | Red: no chrome-tree-visible harness | **done** 2026-08-04 — `scripts/run_editor_perf_chrome_tree_visible_red.sh` exit 1 |
 | 2 | Green: visible-range + toolbar/tree retain wire + harness | pending |
 | 3 | Critic | pending |
 

@@ -453,3 +453,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109a (2026-08-04) archived — see [../
 | result  | **§109h STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h Red — no chrome-tree-visible harness) |
+
+### Turn 2026-08-04 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=1, §109h Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-04 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `scripts/run_editor_perf_chrome_tree_visible_red.sh`: fail while green harness / L1 scenario / `tree_row_visit_count` absent; requires full-length tree hover+glyph + toolbar hover walks |
+| verify  | `bash scripts/run_editor_perf_chrome_tree_visible_red.sh` → FAIL exit 1 (`no editor perf chrome-tree-visible harness`) |
+| result  | **§109h STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109h Green — visible-range + toolbar/tree retain + harness) |
