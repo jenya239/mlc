@@ -543,3 +543,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110e CLOSED (Critic OK).** §110f Decision next |
 | issues  | residual: live paint-list rebuild every frame → §110f/G |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110f Decision — optional overlay metrics) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110f Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110f: pre-cut (no OVERLAY env/HUD; counters file-only); Green cut env-gated paint-list HUD + default-off non-regress; paint-list-every-frame residual out of scope |
+| verify  | Decision table in TRACK STEP=0=done; PLAN → Red; docs-only — gap still no on-screen overlay |
+| result  | **§110f STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110f Red — no overlay-metrics harness) |

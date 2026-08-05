@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110f** (STEP=0 Decision next; §110e CLOSED)
+## Status: **open** 2026-08-06 — queue head **§110f** (STEP=0 Decision done; Red next)
 
 ## Destination (plain)
 
@@ -323,20 +323,32 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 
 | Item | Choice |
 |------|--------|
-| Problem | Path phase F: in-process counters exist in perf scripts; optional on-screen overlay behind env flag for dogfood diagnosis — must not replace script gates |
-| Fix | Decision freeze next |
-| Depends on | §110e CLOSED |
-| Gate | Overlay (if shipped) env-gated; dogfood/wake/glyph-damage harnesses remain authority; no ceiling weaken |
-| Sabotage | TBD in Decision |
-| Out of scope | SceneNode; replacing dogfood gate with visual-only metrics; raising §109/§110e ceilings without measure |
+| Problem | Path phase F: in-process counters already exist in wake/dogfood/PERF scripts, but there is **no** env-gated on-screen HUD — interactive dogfood cannot see gens/shape without reading files; optional overlay must not become a substitute for script gates |
+| Fix | Below (Decision frozen 2026-08-06) |
+| Depends on | §110e CLOSED (glyph damage + SCROLL_CPU_MAX=50) |
+| Gate | Overlay harness green; default (env unset) identical to pre-cut for dogfood/wake/glyph-damage; with overlay env set, HUD lines present via paint-list text; no ceiling weaken |
+| Sabotage | (1) Overlay draws when env unset/0 while claiming default-off → harness fail. (2) Claim green while dogfood/wake/glyph-damage regress or ceilings raised. (3) Overlay path issues GL outside paint-list submit (forbidden direct `static_text_draw*` / `solid_renderer_rect` from overlay helper in live) |
+| Out of scope | SceneNode; replacing dogfood/wake/glyph gates with visual-only pass/fail; raising §109/§110e ceilings; fixing live paint-list rebuild-every-frame residual (→ §110g notes / future phase if authorized); wholesale demo_live delete |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_overlay_metrics.sh` (+ `_red.sh`). Report: `.tmp/editor_overlay_metrics/report.txt`. Opt-in env **`MLC_EDITOR_PERF_OVERLAY=1`**. Side: wake gen deltas still 0; `run_editor_perf_dogfood_gate.sh` + `run_editor_glyph_damage.sh` exit 0 with overlay **unset** (default path). L1: pure helper formats overlay lines without GL |
+| Pre-cut (audit 2026-08-06) | (1) **No** `run_editor_overlay_metrics.sh`. (2) **No** `MLC_EDITOR_PERF_OVERLAY` (or equivalent) in `demo_live.mlc`. (3) Frame gens + shape counters already emitted to **files/stdout** only (`editor_perf_format_wake_counters`, dogfood phase markers, PERF_FULL lines) — no on-screen chrome text HUD for them. (4) §110e Critic residual: live still rebuilds paint list every frame — **not** this STEP’s cut |
+| **Green cut** | (A) Env-gated HUD: when `MLC_EDITOR_PERF_OVERLAY=1`, emit a small paint-list text overlay (corner) showing at least `layout_generation`, `paint_generation`, `editor_glyph_shape_calls` (and optionally `content_frame_count`) from existing `EditorFrame` + `EditorPerfCounters` — format helper in `ux/perf_overlay.mlc` (or `ui/perf.mlc` export). (B) Default env unset/0: **no** overlay lines pushed; dogfood/wake/glyph paths byte-identical in behavior to pre-cut (no extra text ops). (C) Overlay uses paint-list text path only (submit remains sole GL). Files: helper + minimal `demo_live` wire + L1 + harness (+ `_red.sh`). Do **not** raise ceilings; do **not** “fix” paint-list rebuild |
+| Green must hit | (1) Red “already present” after Green. (2) L1 formats expected overlay strings. (3) Static/harness: overlay helper has no direct widget GL; demo pushes overlay text only under env=1. (4) With env unset: wake gen deltas 0; dogfood gate + glyph-damage exit 0. (5) Sabotages (1)/(2)/(3) fail green. (6) Paste one quiet dogfood scroll_cpu ≤50 under default (overlay off) |
+| Counters / report | `overlay_env=0\|1`; overlay line count or `overlay_text_ops`; wake deltas; dogfood_gate; glyph_damage |
+| Red | No `run_editor_overlay_metrics.sh` / no `MLC_EDITOR_PERF_OVERLAY` wire / no overlay format helper |
+| Green | Env-gated HUD + harness; default-off non-regress |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | **open** |
-| 1 | Red | pending |
-| 2 | Green | pending |
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no overlay-metrics harness / no env HUD | pending |
+| 2 | Green: env-gated paint-list HUD + default-off non-regress | pending |
 | 3 | Critic | pending |
 
 ## Diff / notes
@@ -359,3 +371,4 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 2026-08-06: §110e Red — `scripts/run_editor_glyph_damage_red.sh` (exit 1: no green harness / scroll_offset_y in fp).
 2026-08-06: §110e Green — adjust_y + newly-visible append; shape avg 10; SCROLL_CPU_MAX=50; `run_editor_glyph_damage.sh`.
 2026-08-06: §110e CLOSED (Critic OK); queue → §110f Decision (optional overlay metrics).
+2026-08-06: §110f Decision frozen (env-gated overlay HUD; default-off; gates stay authority).
