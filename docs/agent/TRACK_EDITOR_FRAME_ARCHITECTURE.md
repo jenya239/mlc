@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110c** (STEP=0 Decision frozen; Red next)
+## Status: **open** 2026-08-06 — queue head **§110c** (STEP=1 Red done; Green next)
 
 ## Destination (plain)
 
@@ -207,7 +207,7 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: no paint-list harness / direct GL sites remain | **open** |
+| 1 | Red: no paint-list harness / direct GL sites remain | **done** 2026-08-06 |
 | 2 | Green: paint list + single submit + dogfood non-regress | **open** |
 | 3 | Critic | **open** |
 
@@ -220,3 +220,4 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 2026-08-06: §110b Green — `app/editor_frame.mlc` + live tick route + `run_editor_frame_ownership.sh`; gens dump in wake counters.
 2026-08-06: §110b CLOSED (Critic OK); queue → §110c Decision.
 2026-08-06: §110c Decision frozen (paint list / single GL submit).
+2026-08-06: §110c Red — `scripts/run_editor_paint_list_red.sh` (exit 1: no green harness / direct GL sites).
