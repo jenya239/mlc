@@ -243,3 +243,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109k CLOSED (Critic OK). Epic §109 CLOSED.** |
 | issues  | none (C2 fail under load_avg~7 discarded per §109j quiet-remasure precedent) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a Decision freeze — Xvfb wrapper) |
+
+### Turn 2026-08-05 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110a Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110a: `run_editor_perf_xvfb.sh` + `MLC_EDITOR_PERF_XVFB=1`; missing Xvfb → fail not skip; default child = dogfood gate; ceilings unchanged. Pre-cut: no wrapper; host has no Xvfb/`xvfb-run` |
+| verify  | Decision table + Steps in TRACK; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still no xvfb script |
+| result  | **§110a STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a Red — no xvfb harness) |
