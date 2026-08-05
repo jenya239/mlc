@@ -363,3 +363,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110b CLOSED (Critic OK).** |
 | issues  | retained layers still `layout_skip`/booleans not gens; no single `editor_frame_tick` (wrappers OK); dogfood not Critic-×2 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c Decision freeze — paint list) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110c Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110c: `EditorPaintList` + single `editor_paint_list_submit`; rect/scissor/text/glyph commands; demo_live emits only; harness `run_editor_paint_list.sh`. Pre-cut: rect-only EditorPaintOp; 1 direct solid_rect; ~13 scissors; direct text/glyph draws; no paint-list script |
+| verify  | Decision table + Steps in TRACK; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still direct GL sites / no list submit |
+| result  | **§110c STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c Red — no paint-list harness) |

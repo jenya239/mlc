@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110c** (§110b CLOSED; Decision next)
+## Status: **open** 2026-08-06 — queue head **§110c** (STEP=0 Decision frozen; Red next)
 
 ## Destination (plain)
 
@@ -183,19 +183,32 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 
 | Item | Choice |
 |------|--------|
-| Problem | Path phase C: chrome/text/overlays still mix immediate GL with retained batches; no single paint-command list; widget paths can still issue GL |
-| Fix | Decision not frozen — Driver STEP=0 next |
-| Depends on | §110b CLOSED (generations + tick ownership) |
-| Gate | TBD in Decision (path table: `gl_call_from_widget == 0`; paint_ops reported; dogfood non-regress) |
-| Out of scope | SceneNode; batch/stream merge (§110d); glyph row-Y (§110e); raising §109 ceilings |
+| Problem | Path phase C: chrome/text/overlays still mix immediate GL with retained batches; no single paint-command list; widget/`demo_live` branches still issue GL (scissor, solid rect, glyph/text draw) outside one submit |
+| Fix | Below (Decision frozen 2026-08-06) |
+| Depends on | §110b CLOSED (`EditorFrame` generations + tick ownership); §108 retained chrome/text batches stay |
+| Gate | Paint-list harness green; load-bearing live GL draws only from one submit; `paint_ops` (and draw_calls if shipped) reported; wake + ownership gens non-regress; dogfood gate non-regress |
+| Sabotage | (1) Direct `solid_renderer_rect` / `static_text_glyph_batch_draw` / `static_text_draw_lines*` / `editor_gl_scissor_*` from `demo_live` (outside submit module) while claiming green → static/harness fail. (2) Claim green with `gl_call_from_widget != 0` (or equivalent static proxy still red). (3) Claim green while wake rebuild/gen deltas or `run_editor_perf_dogfood_gate.sh` regress |
+| Out of scope | SceneNode; batch/stream merge / orphaning / multi-buffer upload (§110d); glyph row-Y damage (§110e); wholesale delete of `demo_live`; raising §109 CPU ceilings; Xvfb dogfood scroll residual (§110a) |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_paint_list.sh` (+ `_red.sh`). L1: build/submit a paint list and report `paint_ops` (and `draw_calls` / glyph batch draws if counted). Static: load-bearing GL-issuing calls absent from `demo_live.mlc` (only via submit). Side: `run_editor_perf_wake_on_hover.sh` + ownership gen deltas still 0. Dogfood: `run_editor_perf_dogfood_gate.sh` non-regress (ceilings unchanged). Report: `.tmp/editor_paint_list/report.txt` |
+| Pre-cut (audit 2026-08-06) | (1) `EditorPaintOp` exists (`ux/paint_ops.mlc`) but is **rect-only**; `editor_paint_ops_flatten` → `solid_renderer_rect` only. (2) No type `EditorPaintList` / no single `editor_paint_list_submit`. (3) `demo_live.mlc` (~3651 lines) still orchestrates paint: chrome bands + caret overlay via paint_ops/flatten; **1** direct `solid_renderer_rect(`; **~13** `editor_gl_scissor_*`; chrome/tree via `static_text_draw_lines_colored`; editor+minimap via `static_text_glyph_batch_rebuild_colored` / `_draw`. (4) Multiple `solid_renderer_begin` / `flush` / `flush_over` sites interleaved with widget work. (5) Retained `ChromeLayerBatch` stores `[EditorPaintOp]`; `TextLayerBatch` stores lines — replay still not a unified CPU paint list → one submit. (6) Perf has `glyph_batch_draw_calls` but **no** `gl_call_from_widget` / `paint_ops` frame counter. (7) No `run_editor_paint_list.sh` |
+| **Green cut** | Introduce an **`EditorPaintList`** (name flexible) of CPU paint commands covering at least **rect + scissor + text/glyph draw** (extend `EditorPaintOp` or tagged commands). Live frame **appends** chrome/content/overlay commands to one list; **`editor_paint_list_submit`** (or equivalent) is the **only** live path that calls `solid_renderer_*` rect/flush, `editor_gl_scissor_*`, `static_text_draw_lines*`, `static_text_glyph_batch_draw`. Widget/`demo_live` branches emit commands only. Wire invalidate/rebuild of the list from §110b `paint_generation` where practical (unchanged UI may replay retained batches without rebuilding the list). Keep §108 retained batches as command sources; **do not** merge/stream VBOs (§110d). Files: extend `ux/paint_ops*.mlc` and/or new `ux/paint_list.mlc` (preferred) + minimal `demo_live` wire; L1 scenario + harness (+ `_red.sh`) |
+| Green must hit | (1) Static/harness: `demo_live.mlc` has **zero** load-bearing direct calls to `solid_renderer_rect(`, `static_text_glyph_batch_draw(`, `static_text_draw_lines(`, `static_text_draw_lines_colored(`, `editor_gl_scissor_enable_rect(`, `editor_gl_scissor_disable(` — those live only in the submit module (blink overlay / terminal exceptions must be listed in Decision notes if any remain, else zero). (2) L1 reports `paint_ops=…` (non-zero on a sample frame) and `gl_call_from_widget=0` (runtime counter **or** static proxy named in report). (3) Sabotage (1)/(2) fail green. (4) Wake still/jitter + rebuild deltas still 0; ownership still-window layout/paint gen deltas still 0 if ownership harness run. (5) `run_editor_perf_dogfood_gate.sh` exit 0 (one quiet pass OK for Green; Critic may ×2). (6) Red “already present” after Green |
+| Counters / report | `paint_ops=…`, `gl_call_from_widget=0` (or `gl_call_from_widget_static=0`); optional `draw_calls` / `glyph_batch_draw_calls`; wake deltas; dogfood `scroll_cpu_percent` / `type_stall_ms` when run |
+| Red | No `run_editor_paint_list.sh` / no `EditorPaintList` (or equivalent submit) / demo still has direct GL draw/scissor sites |
+| Green | Paint list + submit + harness; paste L1 counters + wake/dogfood side metrics under this §110c |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | **open** |
-| 1 | Red | **open** |
-| 2 | Green | **open** |
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no paint-list harness / direct GL sites remain | **open** |
+| 2 | Green: paint list + single submit + dogfood non-regress | **open** |
 | 3 | Critic | **open** |
 
 ## Diff / notes
@@ -206,3 +219,4 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 2026-08-06: §110b Red — `scripts/run_editor_frame_ownership_red.sh` (exit 1: no green harness / no gens).
 2026-08-06: §110b Green — `app/editor_frame.mlc` + live tick route + `run_editor_frame_ownership.sh`; gens dump in wake counters.
 2026-08-06: §110b CLOSED (Critic OK); queue → §110c Decision.
+2026-08-06: §110c Decision frozen (paint list / single GL submit).
