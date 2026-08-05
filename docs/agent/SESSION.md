@@ -438,3 +438,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110d STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Red — no batch-stream harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=1, §110d Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `scripts/run_editor_batch_stream_red.sh`: fail while green harness / upload counters / orphan markers absent; requires terminal `solid_renderer_rect` + demo `terminal_grid_draw_cached_backgrounds`; ux_gate unwired; no §110d measured paste |
+| verify  | `bash scripts/run_editor_batch_stream_red.sh` → FAIL exit 1 (`no editor batch stream harness`); touch green → `already present` |
+| result  | **§110d STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Green — orphan/stream + idle upload 0) |

@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110d** (STEP=0 Decision done; Red next)
+## Status: **open** 2026-08-06 — queue head **§110d** (STEP=1 Red done; Green next)
 
 ## Destination (plain)
 
@@ -252,8 +252,8 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: no batch-stream harness / terminal solids outside list | **open** |
-| 2 | Green: orphan/stream + idle upload 0 + dogfood non-regress | pending |
+| 1 | Red: no batch-stream harness / terminal solids outside list | **done** 2026-08-06 |
+| 2 | Green: orphan/stream + idle upload 0 + dogfood non-regress | **open** |
 | 3 | Critic | pending |
 
 ## Diff / notes
@@ -269,3 +269,4 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 2026-08-06: §110c Green — `ux/paint_list.mlc` + demo_live emit-only + `run_editor_paint_list.sh`.
 2026-08-06: §110c CLOSED (Critic OK); queue → §110d Decision.
 2026-08-06: §110d Decision frozen (batch/stream solid upload + terminal emit-only).
+2026-08-06: §110d Red — `scripts/run_editor_batch_stream_red.sh` (exit 1: no green harness / terminal solids outside list).
