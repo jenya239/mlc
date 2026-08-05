@@ -5,15 +5,14 @@ Authorized **2026-08-04** as the **path** (not an instant rewrite): user —
 «так я не прошу сразу, главное путь» after asking why a maximally efficient
 and reliable architecture is hard.
 
-**Queue rule:** Do **not** start numbered STEPs until **§109** epic is
-Critic-closed. Then this track is the next editor architecture priority
-(ahead of §103f+ / §104 Wave 2 under the standing
+**Queue rule:** §109 epic **CLOSED** 2026-08-05. This track is the next editor
+architecture priority (ahead of §103f+ / §104 Wave 2 under the standing
 perf/architecture/testing directive), unless the user overrides.
 
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open (path frozen)** 2026-08-04 — STEPs blocked until §109 close
+## Status: **open** 2026-08-05 — queue head; §109 CLOSED; first STEP **§110a** Decision
 
 ## Destination (plain)
 

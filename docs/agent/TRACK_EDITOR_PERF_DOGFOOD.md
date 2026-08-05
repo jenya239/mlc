@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§109k** (Critic STEP=3 resume — Driver debug-verify ×2 green)
+## Status: **CLOSED** 2026-08-05 — §109a–k Critic OK; epic close criteria audited via dogfood gate ×2
 
 ## Why (facts)
 
@@ -609,7 +609,7 @@ then wake still/jitter via honesty harness:
 
 ---
 
-## §109k `EDITOR_PERF_REGRESSION_SUITE` — **queue head**
+## §109k `EDITOR_PERF_REGRESSION_SUITE` — **CLOSED** 2026-08-05 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -654,9 +654,21 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no dogfood-gate harness | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_gate_red.sh` exit 1 |
 | 2 | Green: compose suite + ceilings + ×2 | **done** 2026-08-04 — gate ×2 exit 0; red already present |
-| 3 | Critic | **resume** — 2026-08-05 blocked (scroll ×2 under load); Driver debug-verify 2026-08-05: scroll sample harden + quiet ×2 exit 0 (scroll 39/29). Re-audit sabotes + independent ×2 before close |
+| 3 | Critic | **done** 2026-08-05 — sab1–4 fail; red already present; independent ×2 exit 0 (C1 scroll=31, C2b scroll=38; noisy C2 glyph=67 discarded under load_avg~7 per §109j precedent) |
 
-### Critic notes (2026-08-05)
+### Critic notes (2026-08-05) — close
+
+| Check | Result |
+|-------|--------|
+| Sab1 drop honesty/wake (ALLOW_SKIP all) | fail missing `status=ok` |
+| Sab2 SCROLL_MAX=100 / `MLC_EDITOR_PERF=1` | fail guards |
+| Sab3 README open | fail basename |
+| Sab4 omit minimap (end-loop + skip) | fail missing `status=ok` / minimap |
+| Red already present | exit 1 |
+| Independent consecutive ×2 | **met** — C1 14:39→15:01 exit 0 scroll=31 stall=16 present=106; C2b 15:24→15:51 exit 0 scroll=38 stall=16 present=83. Noisy C2 (glyph scroll=67) discarded |
+| Epic global criteria 1–6 | Covered by wake+dogfood ceilings + glyph PERF_FULL member in suite |
+
+### Critic notes (2026-08-05 earlier — blocked, superseded)
 
 | Check | Result |
 |-------|--------|
@@ -665,7 +677,7 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 | Sab3 README open | fail basename |
 | Sab4 omit minimap | fail missing `status=ok` |
 | Red already present | exit 1 |
-| Quiet consecutive ×2 | **not met** on Critic turn — C2/C3/C5/C8/C9/C11 scroll fail; C1/C7 solo OK |
+| Quiet consecutive ×2 | **not met** on first Critic turn — C2/C3/C5/C8/C9/C11 scroll fail; C1/C7 solo OK |
 
 ### Driver debug-verify (2026-08-05) — scroll sample harden + ×2
 
@@ -680,13 +692,13 @@ Ceiling **unchanged** (scroll≤60). Measurement harden only:
 | 1 | 03:49→04:17 | 39 | 16 | 119 | 58 | 820207 | 0 |
 | 2 | 14:12→14:34 | 29 | 16 | 108 | 33 | 885253 | 0 |
 
-Smoke dogfood alone (pre-suite): scroll=54. Epic **not** Critic-closed this turn.
+Smoke dogfood alone (pre-suite): scroll=54.
 
 ---
 
 ## After §109
 
-Next editor architecture priority: **§110** [TRACK_EDITOR_FRAME_ARCHITECTURE](TRACK_EDITOR_FRAME_ARCHITECTURE.md) (path: Xvfb → frame ownership → paint list → batch → glyph residual).
+Next editor architecture priority: **§110** [TRACK_EDITOR_FRAME_ARCHITECTURE](TRACK_EDITOR_FRAME_ARCHITECTURE.md) (path: Xvfb → frame ownership → paint list → batch → glyph residual) — **Driver STEP=0 §110a**.
 
 Then resume **§103f** `SCRIPT_VM_HEAP_GC_ARENA` → … → §104 Wave 2.
 

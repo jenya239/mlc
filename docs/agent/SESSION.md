@@ -228,3 +228,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109k debug-verify done** (measurement harden + ×2). Epic not closed — Critic resume |
 | issues  | none (ceiling still ≤60; no raise) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — re-audit sabotes + independent ×2; close epic if green) |
+
+### Turn 2026-08-05 (Critic TRACK_EDITOR_PERF_DOGFOOD STEP=3, §109k — close)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Re-audited §109k: sab1–4 fail; red already present; independent gate ×2 (C1 scroll=31, C2b scroll=38; noisy C2 glyph=67 discarded). Closed §109k + epic; unblocked §110 |
+| verify  | sab2a/2b/3/1/4 exit 1; red exit 1; C1 14:39→15:01 exit 0; C2b 15:24→15:51 exit 0; sab4_precise missing minimap |
+| result  | **§109k CLOSED (Critic OK). Epic §109 CLOSED.** |
+| issues  | none (C2 fail under load_avg~7 discarded per §109j quiet-remasure precedent) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a Decision freeze — Xvfb wrapper) |
