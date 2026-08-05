@@ -348,3 +348,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110b STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b critique-audit) |
+
+### Turn 2026-08-06 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110b)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Audited §110b: independent L1; sab1 always-dirty strip exit 3; sab2 bare tick detect; sab3 gen-bump would fail harness; independent wake gens 7→7/2→2 still=1%; red already-present. Closed §110b |
+| verify  | L1=0; sab1=3; sab2=1; sab3=1; wake=0 gens stable; red=1 already present |
+| result  | **§110b CLOSED (Critic OK).** |
+| issues  | retained layers still `layout_skip`/booleans not gens; no single `editor_frame_tick` (wrappers OK); dogfood not Critic-×2 |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c Decision freeze — paint list) |

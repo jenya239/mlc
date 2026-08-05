@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110b** (STEP=0 Decision frozen; Red next)
+## Status: **open** 2026-08-06 — queue head **§110c** (§110b CLOSED; Decision next)
 
 ## Destination (plain)
 
@@ -49,8 +49,8 @@ unless a phase Decision explicitly replaces a member.
 |-------|------|------------|-----------|
 | **0** | Finish §109 | §109k Critic closes epic | **done** 2026-08-05 — dogfood gate ×2 + sabotages |
 | **A** | Headless-visible measure | All `MLC_GLFW_VISIBLE=1` dogfood/perf scripts runnable under **Xvfb** (or `DISPLAY` isolate) so agents do not steal `:0` keyboard/mouse | **done** §110a — wrapper + wake isolate; dogfood-under-xvfb scroll residual |
-| **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | L1: unchanged UI → layout_generation and paint_generation do not bump; sabotage always-dirty fails — **§110b** |
-| **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress |
+| **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | **done** §110b — L1/wake gen deltas 0; Critic OK |
+| **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress — **§110c** |
 | **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 |
 | **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) |
 | **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates |
@@ -136,7 +136,7 @@ Independent remasure (system `/usr/bin` Xvfb, not `.tmp` prefix):
 
 Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present-pace follow-up (runtime/`SwapInterval` under Xvfb).
 
-## §110b `EDITOR_FRAME_OWNERSHIP` — **queue head**
+## §110b `EDITOR_FRAME_OWNERSHIP` — **CLOSED** 2026-08-06 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -166,7 +166,7 @@ Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no ownership harness / no generations | **done** 2026-08-06 |
 | 2 | Green: EditorFrame + generation-stable L1 + dogfood non-regress | **done** 2026-08-06 |
-| 3 | Critic | **open** |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 ### Green measured (§110b)
 
@@ -175,6 +175,29 @@ Live wake still window: `layout_generation` 7→7, `paint_generation` 2→2 (del
 Dogfood gate (one quiet pass): exit 0; scroll_cpu_percent=45; type_stall_ms=16.
 Red after Green: `already present`.
 
+### Critic (2026-08-06)
+
+Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks → exit 3. Sab2: bare `frame_layout_tick_*` in demo copy detected by harness static check. Sab3: still-window gen bump would fail ownership delta gate. Independent wake remasure: layout/paint gens 7→7 / 2→2; still=1% jitter=1%; rebuild/frame deltas 0. Red `already present`. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110c: retained batches still keyed by `layout_skip`/booleans, not gens; no single `editor_frame_tick` entry (wrapper family OK per Decision “or equivalent”).
+
+## §110c `EDITOR_PAINT_LIST` — **queue head**
+
+| Item | Choice |
+|------|--------|
+| Problem | Path phase C: chrome/text/overlays still mix immediate GL with retained batches; no single paint-command list; widget paths can still issue GL |
+| Fix | Decision not frozen — Driver STEP=0 next |
+| Depends on | §110b CLOSED (generations + tick ownership) |
+| Gate | TBD in Decision (path table: `gl_call_from_widget == 0`; paint_ops reported; dogfood non-regress) |
+| Out of scope | SceneNode; batch/stream merge (§110d); glyph row-Y (§110e); raising §109 ceilings |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **open** |
+| 1 | Red | **open** |
+| 2 | Green | **open** |
+| 3 | Critic | **open** |
+
 ## Diff / notes
 
 2026-08-04: path written; no code.
@@ -182,3 +205,4 @@ Red after Green: `already present`.
 2026-08-06: §110b Decision frozen (frame ownership / dirty generations).
 2026-08-06: §110b Red — `scripts/run_editor_frame_ownership_red.sh` (exit 1: no green harness / no gens).
 2026-08-06: §110b Green — `app/editor_frame.mlc` + live tick route + `run_editor_frame_ownership.sh`; gens dump in wake counters.
+2026-08-06: §110b CLOSED (Critic OK); queue → §110c Decision.
