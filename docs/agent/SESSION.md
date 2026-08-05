@@ -423,3 +423,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110c CLOSED (Critic OK).** §110d Decision next |
 | issues  | residual: terminal_grid_draw_cached_backgrounds still solid_renderer_rect outside submit → §110d |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Decision — batch/stream) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110d Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110d: pre-cut (no batch-stream harness; per-flush BufferData no orphan; terminal solids outside submit; no upload counters); Green cut terminal emit-only + orphan/dual-VBO + idle upload 0 + rect coalesce + harness |
+| verify  | Decision table in TRACK STEP=0=done; PLAN → Red; docs-only — gap still terminal `solid_renderer_rect` + realloc BufferData |
+| result  | **§110d STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Red — no batch-stream harness) |

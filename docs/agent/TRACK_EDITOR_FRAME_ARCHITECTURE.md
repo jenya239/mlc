@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110d** (Decision next; §110c CLOSED)
+## Status: **open** 2026-08-06 — queue head **§110d** (STEP=0 Decision done; Red next)
 
 ## Destination (plain)
 
@@ -228,20 +228,32 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 
 | Item | Choice |
 |------|--------|
-| Problem | Path phase D: paint list submits still expand to many per-op GL uploads / draws; no merge of compatible rects/glyphs; orphaning / multi-buffer stream not owned |
-| Fix | Decision next (Driver STEP=0) |
+| Problem | Path phase D: after §110c, submit still does full `glBufferData` every solid flush; multiple begin/flush cycles per frame; terminal cell backgrounds still call `solid_renderer_rect` outside submit; no `bytes_uploaded` / orphan / multi-buffer; no CPU merge of compatible paint-list rects |
+| Fix | Below (Decision frozen 2026-08-06) |
 | Depends on | §110c CLOSED (`EditorPaintList` + submit); §108 retained batches stay as command sources |
-| Gate | TBD in Decision — draw_calls / bytes_uploaded ceilings measured-then-written; idle upload ≈0; wake + dogfood non-regress |
-| Sabotage | TBD in Decision |
-| Out of scope | SceneNode; glyph row-Y damage (§110e); wholesale delete of `demo_live`; raising §109 CPU ceilings; Xvfb dogfood scroll residual (§110a) |
+| Gate | Batch-stream harness green; `draw_calls` / `solid_upload_bytes` reported; idle/still `solid_upload_bytes==0`; content-frame ceilings measured-then-written; wake + dogfood non-regress |
+| Sabotage | (1) Terminal/`demo_live` still issues `solid_renderer_rect` outside submit while claiming green. (2) Still/idle L1 with `solid_upload_bytes>0` while claiming idle≈0. (3) Wake rebuild/gen deltas or dogfood gate regress. (4) Claim green with no orphan/multi-buffer change (single realloc `BufferData` only) |
+| Out of scope | SceneNode; glyph row-Y damage (§110e); wholesale delete of `demo_live`; raising §109 CPU ceilings; Xvfb dogfood scroll residual (§110a); inventing flush/byte ceilings before Green measure |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_batch_stream.sh` (+ `_red.sh`). L1: report `solid_flush_count`, `solid_upload_bytes`, `draw_calls`; still/idle window asserts `solid_upload_bytes==0`. Side: `run_editor_perf_wake_on_hover.sh` + ownership gen deltas still 0. Dogfood: `run_editor_perf_dogfood_gate.sh` non-regress (ceilings unchanged). Report: `.tmp/editor_batch_stream/report.txt`. Content-frame flush/byte ceilings: **measured-then-written** in Green paste (not frozen numerically here) |
+| Pre-cut (audit 2026-08-06) | (1) **No** `run_editor_batch_stream.sh`; **no** `solid_upload_bytes` / `bytes_uploaded` counter in editor perf/submit. (2) `solid_renderer_flush_over` always `gl_buffer_data_scratch` → `glBufferData` (DYNAMIC_DRAW) — one upload **per flush**, already not per-quad; **no orphan** (NULL resize) and **no** double-VBO. (3) Live paint list: multiple `begin`/`flush`/`flush_over` (demo solid submit then terminal inject then second submit ~3174–3542). (4) `terminal_grid_draw_cached_backgrounds` still loops `solid_renderer_rect` outside `editor_paint_list_submit` (§110c Critic residual). (5) No CPU coalesce of adjacent same-color paint-list/terminal rects. (6) Glyph VBO already fingerprint-retained (§108/§109); `glyph_batch_draw_calls` exists — solid stream is the gap. (7) `glad_gl` exposes `gl_buffer_data_scratch` only for this path — no orphan helper |
+| **Green cut** | (A) Terminal bg **emit-only** → paint list (`TerminalGridBgRect` / ops); retire live use of `terminal_grid_draw_cached_backgrounds` / `terminal_grid_draw_backgrounds` as GL issuers. (B) Solid upload path: **orphan** (`BufferData` NULL then data) **or** double-VBO swap in `solid_renderer_flush_over` — pick one, name it in Green notes. (C) Submit/flush counters: `solid_flush_count`, `solid_upload_bytes`, `draw_calls` (solid draws with verts + glyph batch draws). (D) Still/idle: unchanged paint payload / stable `paint_generation` → **skip** solid `BufferData` (`solid_upload_bytes==0`; replay prior VBO). (E) CPU merge: coalesce adjacent same-color axis-aligned rects before submit (report pre/post count or vertex count). Do **not** glyph row-Y (§110e). Files: `ux/paint_list.mlc` + `misc/gui/solid_renderer.mlc` (+ glad orphan helper if needed) + `terminal/terminal_grid_render.mlc` + minimal `demo_live` + L1 scenario + harness (+ `_red.sh`) |
+| Green must hit | (1) Static/harness: live path has **zero** `solid_renderer_rect(` outside submit module (demo + terminal draw-into-renderer helpers unused from live). (2) L1: sample paint frame reports `solid_flush_count`/`draw_calls`/`solid_upload_bytes`; still/idle sample `solid_upload_bytes==0`. (3) Sabotages (1)/(2)/(4) fail green. (4) Wake still/jitter + rebuild/gen deltas still 0. (5) Dogfood gate exit 0 (one quiet OK; Critic may ×2). (6) Red “already present” after Green. (7) Paste measured content-frame ceilings under Green measured |
+| Counters / report | `solid_flush_count=…`, `solid_upload_bytes=…`, `draw_calls=…`; optional `rects_before`/`rects_after` / `vertex_count`; wake deltas; dogfood `scroll_cpu_percent` / `type_stall_ms` |
+| Red | No `run_editor_batch_stream.sh` / no upload counters / terminal still draws solids outside list |
+| Green | Orphan-or-dual-VBO solid stream + terminal emit-only + coalesce + harness; paste L1 + wake/dogfood under this §110d |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | **open** |
-| 1 | Red | pending |
-| 2 | Green | pending |
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no batch-stream harness / terminal solids outside list | **open** |
+| 2 | Green: orphan/stream + idle upload 0 + dogfood non-regress | pending |
 | 3 | Critic | pending |
 
 ## Diff / notes
@@ -256,3 +268,4 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 2026-08-06: §110c Red — `scripts/run_editor_paint_list_red.sh` (exit 1: no green harness / direct GL sites).
 2026-08-06: §110c Green — `ux/paint_list.mlc` + demo_live emit-only + `run_editor_paint_list.sh`.
 2026-08-06: §110c CLOSED (Critic OK); queue → §110d Decision.
+2026-08-06: §110d Decision frozen (batch/stream solid upload + terminal emit-only).
