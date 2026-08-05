@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110c** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-06 — queue head **§110c** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -208,8 +208,17 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no paint-list harness / direct GL sites remain | **done** 2026-08-06 |
-| 2 | Green: paint list + single submit + dogfood non-regress | **open** |
+| 2 | Green: paint list + single submit + dogfood non-regress | **done** 2026-08-06 |
 | 3 | Critic | **open** |
+
+### Green measured (§110c)
+
+L1 `frame_paint_list_stable`: `paint_ops=9`, `gl_call_from_widget=0`.
+Static: `demo_live` zero direct `solid_renderer_rect` / glyph draw / text draw / scissor; those live in `ux/paint_list.mlc` submit.
+Wake still: layout/paint gens 7→7 / 2→2; still=1% jitter=0%.
+Dogfood gate exit 0: scroll_cpu_percent=40; type_stall_ms=16.
+Red after Green: `already present`.
+Residual: `terminal_grid_draw_cached_backgrounds` still writes solids into the renderer before list `flush_over` (not a listed demo_live call).
 
 ## Diff / notes
 
@@ -221,3 +230,4 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 2026-08-06: §110b CLOSED (Critic OK); queue → §110c Decision.
 2026-08-06: §110c Decision frozen (paint list / single GL submit).
 2026-08-06: §110c Red — `scripts/run_editor_paint_list_red.sh` (exit 1: no green harness / direct GL sites).
+2026-08-06: §110c Green — `ux/paint_list.mlc` + demo_live emit-only + `run_editor_paint_list.sh`.

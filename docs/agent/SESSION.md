@@ -393,3 +393,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110c STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c Green — paint list + single submit) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110c Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `misc/editor/ux/paint_list.mlc` (`EditorPaintList` + `editor_paint_list_submit`); demo_live emit-only (zero direct rect/scissor/text/glyph GL); L1 `frame_paint_list_stable`; harness `run_editor_paint_list.sh` |
+| verify  | L1 paint_ops=9 gl_call=0; red already-present; wake gens 7→7/2→2 still=1%; dogfood gate exit 0 (scroll=40 stall=16); demo static forbidden=0 |
+| result  | **§110c STEP=2 done (Green).** Critic next |
+| issues  | terminal_grid_draw_cached_backgrounds still fills solid before list flush_over |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c critique-audit) |

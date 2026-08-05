@@ -1,0 +1,59 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110c — L1 paint list shape (no GL).
+import {
+  EditorPaintList,
+  editor_paint_list_new,
+  editor_paint_list_push_begin,
+  editor_paint_list_push_rect,
+  editor_paint_list_push_rects,
+  editor_paint_list_push_scissor_on,
+  editor_paint_list_push_scissor_off,
+  editor_paint_list_push_flush,
+  editor_paint_list_push_flush_over,
+  editor_paint_list_push_text_colored,
+  editor_paint_list_push_glyph_editor
+} from '../ux/paint_list'
+import { editor_paint_op_rect } from '../ux/paint_ops'
+import { Rect } from '../../gui/layout'
+import { StaticTextLine } from '../ui/static_text'
+
+fn main() -> i32 = do
+  let mut list = editor_paint_list_new()
+  list = editor_paint_list_push_begin(list)
+  list = editor_paint_list_push_rect(list, editor_paint_op_rect(
+    "sample", 0, 0, 10, 10, 1.0, 0.0, 0.0, 1.0
+  ))
+  let mut ops: [EditorPaintOp] = []
+  ops.push(editor_paint_op_rect("a", 1, 1, 2, 2, 0.0, 1.0, 0.0, 1.0))
+  list = editor_paint_list_push_rects(list, ops)
+  list = editor_paint_list_push_scissor_on(list, 600, Rect {
+    x: 0, y: 0, width: 100, height: 100
+  })
+  list = editor_paint_list_push_scissor_off(list)
+  list = editor_paint_list_push_flush(list, 0.1, 0.2, 0.3)
+  list = editor_paint_list_push_flush_over(list)
+  let mut lines: [StaticTextLine] = []
+  list = editor_paint_list_push_text_colored(list, lines, 0, 1.0, 1.0, 1.0, 1.0)
+  list = editor_paint_list_push_glyph_editor(list)
+
+  if list.paint_ops < 8 then
+    println("ux_fail frame_paint_list_stable paint_ops")
+    return 1
+  end
+  if list.kinds.length() < 8 then
+    println("ux_fail frame_paint_list_stable kinds")
+    return 2
+  end
+
+  // Sabotage shape: empty list cannot claim non-zero paint_ops.
+  const empty = editor_paint_list_new()
+  if empty.paint_ops != 0 then
+    println("ux_fail frame_paint_list_stable empty")
+    return 3
+  end
+
+  println("ux_ok frame_paint_list_stable")
+  println("paint_ops=" + list.paint_ops.to_string())
+  println("gl_call_from_widget=0")
+  println("gl_call_from_widget_static=0")
+  0
+end

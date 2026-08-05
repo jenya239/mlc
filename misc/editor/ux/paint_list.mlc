@@ -1,0 +1,340 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110c — CPU paint list + single GL submit.
+import { Rect } from '../../gui/layout'
+import {
+  SolidRenderer,
+  solid_renderer_begin,
+  solid_renderer_rect,
+  solid_renderer_flush,
+  solid_renderer_flush_over
+} from '../../gui/solid_renderer'
+import {
+  StaticTextState,
+  StaticTextLine,
+  StaticTextGlyphBatch,
+  static_text_draw_lines_colored,
+  static_text_glyph_batch_draw
+} from '../ui/static_text'
+import {
+  editor_gl_scissor_enable_rect,
+  editor_gl_scissor_disable
+} from '../ui/gl_scissor'
+import { EditorPaintOp } from './paint_ops'
+
+export type EditorPaintTextRun = {
+  lines: [StaticTextLine],
+  clear_framebuffer: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export type EditorPaintList = {
+  kinds: [i32],
+  rects: [EditorPaintOp],
+  scissors: [Rect],
+  scissor_window_heights: [i32],
+  text_runs: [EditorPaintTextRun],
+  paint_ops: i32
+}
+
+export type EditorPaintListSubmitResult = {
+  solid: SolidRenderer,
+  text_state: StaticTextState,
+  error_code: i32,
+  glyph_batch_draw_calls: i32,
+  paint_ops: i32,
+  gl_call_from_widget: i32
+}
+
+fn paint_kind_begin() -> i32 = 1
+fn paint_kind_rect() -> i32 = 2
+fn paint_kind_flush() -> i32 = 3
+fn paint_kind_flush_over() -> i32 = 4
+fn paint_kind_scissor_on() -> i32 = 5
+fn paint_kind_scissor_off() -> i32 = 6
+fn paint_kind_text_colored() -> i32 = 7
+fn paint_kind_glyph_editor() -> i32 = 8
+fn paint_kind_glyph_minimap() -> i32 = 9
+
+export fn editor_paint_list_new() -> EditorPaintList =
+  EditorPaintList {
+    kinds: [],
+    rects: [],
+    scissors: [],
+    scissor_window_heights: [],
+    text_runs: [],
+    paint_ops: 0
+  }
+
+export fn editor_paint_list_push_begin(list: EditorPaintList) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  kinds.push(paint_kind_begin())
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_rect(
+  list: EditorPaintList,
+  op: EditorPaintOp
+) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  let mut rects = list.rects
+  kinds.push(paint_kind_rect())
+  rects.push(op)
+  EditorPaintList {
+    kinds: kinds,
+    rects: rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_rects(
+  list: EditorPaintList,
+  ops: [EditorPaintOp]
+) -> EditorPaintList = do
+  let mut next = list
+  let mut index = 0
+  while index < ops.length() do
+    next = editor_paint_list_push_rect(next, ops[index])
+    index = index + 1
+  end
+  next
+end
+
+export fn editor_paint_list_push_flush(
+  list: EditorPaintList,
+  clear_red: f64,
+  clear_green: f64,
+  clear_blue: f64
+) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  let mut rects = list.rects
+  kinds.push(paint_kind_flush())
+  // Pack clear color into a sentinel rect (widget_id unused).
+  rects.push(EditorPaintOp {
+    widget_id: "flush_clear",
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    red: clear_red,
+    green: clear_green,
+    blue: clear_blue,
+    alpha: 1.0
+  })
+  EditorPaintList {
+    kinds: kinds,
+    rects: rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_flush_over(list: EditorPaintList) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  kinds.push(paint_kind_flush_over())
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_scissor_on(
+  list: EditorPaintList,
+  window_height: i32,
+  rect: Rect
+) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  let mut scissors = list.scissors
+  let mut heights = list.scissor_window_heights
+  kinds.push(paint_kind_scissor_on())
+  scissors.push(rect)
+  heights.push(window_height)
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: scissors,
+    scissor_window_heights: heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_scissor_off(list: EditorPaintList) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  kinds.push(paint_kind_scissor_off())
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_text_colored(
+  list: EditorPaintList,
+  lines: [StaticTextLine],
+  clear_framebuffer: i32,
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  let mut text_runs = list.text_runs
+  kinds.push(paint_kind_text_colored())
+  text_runs.push(EditorPaintTextRun {
+    lines: lines,
+    clear_framebuffer: clear_framebuffer,
+    red: red,
+    green: green,
+    blue: blue,
+    alpha: alpha
+  })
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_glyph_editor(list: EditorPaintList) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  kinds.push(paint_kind_glyph_editor())
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+export fn editor_paint_list_push_glyph_minimap(list: EditorPaintList) -> EditorPaintList = do
+  let mut kinds = list.kinds
+  kinds.push(paint_kind_glyph_minimap())
+  EditorPaintList {
+    kinds: kinds,
+    rects: list.rects,
+    scissors: list.scissors,
+    scissor_window_heights: list.scissor_window_heights,
+    text_runs: list.text_runs,
+    paint_ops: list.paint_ops + 1
+  }
+end
+
+// Sole live GL issuer for paint_list commands (Decision §110c).
+export fn editor_paint_list_submit(
+  list: EditorPaintList,
+  solid_in: SolidRenderer,
+  text_state_in: StaticTextState,
+  editor_glyph_batch: StaticTextGlyphBatch,
+  minimap_glyph_batch: StaticTextGlyphBatch,
+  window_width: i32,
+  window_height: i32
+) -> EditorPaintListSubmitResult = do
+  let mut solid = solid_in
+  let mut text_state = text_state_in
+  let mut error_code = 0
+  let mut glyph_batch_draw_calls = 0
+  let mut rect_index = 0
+  let mut scissor_index = 0
+  let mut text_index = 0
+  let mut cmd_index = 0
+  while cmd_index < list.kinds.length() do
+    const kind = list.kinds[cmd_index]
+    if kind == paint_kind_begin() then
+      solid = solid_renderer_begin(solid)
+    else if kind == paint_kind_rect() then
+      const op = list.rects[rect_index]
+      rect_index = rect_index + 1
+      solid = solid_renderer_rect(
+        solid, window_width, window_height,
+        op.x, op.y, op.width, op.height,
+        op.red, op.green, op.blue, op.alpha
+      )
+    else if kind == paint_kind_flush() then
+      const clear_op = list.rects[rect_index]
+      rect_index = rect_index + 1
+      const flush_status = solid_renderer_flush(
+        solid, window_width, window_height,
+        clear_op.red, clear_op.green, clear_op.blue
+      )
+      if flush_status != 0 && error_code == 0 then
+        error_code = flush_status
+      end
+    else if kind == paint_kind_flush_over() then
+      const flush_over_status = solid_renderer_flush_over(solid, window_width, window_height)
+      if flush_over_status != 0 && error_code == 0 then
+        error_code = flush_over_status
+      end
+    else if kind == paint_kind_scissor_on() then
+      const scissor_rect = list.scissors[scissor_index]
+      const scissor_height = list.scissor_window_heights[scissor_index]
+      scissor_index = scissor_index + 1
+      editor_gl_scissor_enable_rect(scissor_height, scissor_rect)
+    else if kind == paint_kind_scissor_off() then
+      editor_gl_scissor_disable()
+    else if kind == paint_kind_text_colored() then
+      const run = list.text_runs[text_index]
+      text_index = text_index + 1
+      const drawn = static_text_draw_lines_colored(
+        text_state, run.lines, window_width, window_height, run.clear_framebuffer,
+        run.red, run.green, run.blue, run.alpha
+      )
+      text_state = drawn.state
+      if drawn.error_code != 0 && error_code == 0 then
+        error_code = drawn.error_code
+      end
+    else if kind == paint_kind_glyph_editor() then
+      const editor_drawn = static_text_glyph_batch_draw(
+        text_state, editor_glyph_batch, window_width, window_height
+      )
+      text_state = editor_drawn.state
+      glyph_batch_draw_calls = glyph_batch_draw_calls + editor_drawn.batch_draw_calls
+      if editor_drawn.error_code != 0 && error_code == 0 then
+        error_code = editor_drawn.error_code
+      end
+    else if kind == paint_kind_glyph_minimap() then
+      const minimap_drawn = static_text_glyph_batch_draw(
+        text_state, minimap_glyph_batch, window_width, window_height
+      )
+      text_state = minimap_drawn.state
+      glyph_batch_draw_calls = glyph_batch_draw_calls + minimap_drawn.batch_draw_calls
+      if minimap_drawn.error_code != 0 && error_code == 0 then
+        error_code = minimap_drawn.error_code
+      end
+    end
+    cmd_index = cmd_index + 1
+  end
+  EditorPaintListSubmitResult {
+    solid: solid,
+    text_state: text_state,
+    error_code: error_code,
+    glyph_batch_draw_calls: glyph_batch_draw_calls,
+    paint_ops: list.paint_ops,
+    gl_call_from_widget: 0
+  }
+end

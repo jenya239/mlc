@@ -24,14 +24,22 @@ import {
   EditorPaintOp
 } from './ux/paint_ops'
 import {
-  editor_paint_ops_flatten
-} from './ux/paint_ops_flatten'
+  EditorPaintList,
+  editor_paint_list_new,
+  editor_paint_list_push_begin,
+  editor_paint_list_push_rect,
+  editor_paint_list_push_rects,
+  editor_paint_list_push_flush,
+  editor_paint_list_push_flush_over,
+  editor_paint_list_push_scissor_on,
+  editor_paint_list_push_scissor_off,
+  editor_paint_list_push_text_colored,
+  editor_paint_list_push_glyph_editor,
+  editor_paint_list_push_glyph_minimap,
+  editor_paint_list_submit
+} from './ux/paint_list'
 import {
   solid_renderer_create,
-  solid_renderer_begin,
-  solid_renderer_rect,
-  solid_renderer_flush,
-  solid_renderer_flush_over,
   solid_renderer_destroy
 } from '../gui/solid_renderer'
 import {
@@ -44,19 +52,12 @@ import {
   StaticTextLine,
   StaticTextGlyphBatch,
   static_text_create,
-  static_text_draw_lines,
-  static_text_draw_lines_colored,
   static_text_glyph_batch_new,
   static_text_glyph_batch_rebuild_colored,
-  static_text_glyph_batch_draw,
   static_text_glyph_batch_destroy,
   static_text_destroy
 } from './ui/static_text'
 import { editor_resolve_font_path } from './config/font_path'
-import {
-  editor_gl_scissor_enable_rect,
-  editor_gl_scissor_disable
-} from './ui/gl_scissor'
 import {
   status_bar_from_buffer,
   status_bar_format,
@@ -1282,7 +1283,8 @@ fn main() -> i32 = do
         else
           last_blink_visible = 0
         end
-        solid = solid_renderer_begin(solid)
+        let mut blink_list = editor_paint_list_new()
+        blink_list = editor_paint_list_push_begin(blink_list)
         let mut caret_overlay_ops: [EditorPaintOp] = []
         let mut overlay_index = 0
         while overlay_index < caret_overlay_count(last_caret_rects) do
@@ -1313,13 +1315,18 @@ fn main() -> i32 = do
           end
           overlay_index = overlay_index + 1
         end
-        solid = editor_paint_ops_flatten(solid, width, height, caret_overlay_ops)
-        const overlay_status = solid_renderer_flush_over(solid, width, height)
-        if overlay_status != 0 then
+        blink_list = editor_paint_list_push_rects(blink_list, caret_overlay_ops)
+        blink_list = editor_paint_list_push_flush_over(blink_list)
+        const blink_submit = editor_paint_list_submit(
+          blink_list, solid, text_state, editor_glyph_batch, minimap_glyph_batch, width, height
+        )
+        solid = blink_submit.solid
+        text_state = blink_submit.text_state
+        if blink_submit.error_code != 0 then
           static_text_destroy(text_state)
           solid_renderer_destroy(solid)
           glfw_gl_context_end()
-          return overlay_status
+          return blink_submit.error_code
         end
         glfw_gl_context_swap_poll()
         perf_counters = editor_perf_note_present_frame(perf_counters)
@@ -2537,7 +2544,8 @@ fn main() -> i32 = do
     if perf_enabled then
       perf_draw_t0 = editor_perf_now_us()
     end
-    solid = solid_renderer_begin(solid)
+    let mut paint_list = editor_paint_list_new()
+    paint_list = editor_paint_list_push_begin(paint_list)
     // §108c — rebuild chrome EditorPaintOp layer (bands+tabs+nav), store, count.
     // §109e — scroll-only dogfood: replay retained chrome ops (hit-stable).
     let mut chrome_layer_ops: [EditorPaintOp] = []
@@ -2675,7 +2683,7 @@ fn main() -> i32 = do
     )
     perf_counters = editor_perf_note_chrome_rebuild(perf_counters)
     end
-    solid = editor_paint_ops_flatten(solid, width, height, chrome_layer_batch.ops)
+    paint_list = editor_paint_list_push_rects(paint_list, chrome_layer_batch.ops)
     const draw_folder_rows = folder_tree_browser_rows(panels.tree)
     const draw_crumbs = folder_breadcrumb_segments(
       folder_current_path(panels.tree), crumbs_origin_x, 8
@@ -2697,11 +2705,11 @@ fn main() -> i32 = do
       const row_fill = editor_ux_chrome_hover_draw_entry(
         input, row_slot, theme.panel_red, theme.panel_green, theme.panel_blue
       )
-      solid = solid_renderer_rect(
-        solid, width, height,
+      paint_list = editor_paint_list_push_rect(paint_list, editor_paint_op_rect(
+        "tree_row_hover",
         row_fill.x, row_fill.y, row_fill.width, row_fill.height,
         row_fill.red, row_fill.green, row_fill.blue, 1.0
-      )
+      ))
       hover_row_index = hover_row_index + 1
     end
     perf_counters = editor_perf_note_tree_row_visits(perf_counters, tree_row_visits)
@@ -2726,7 +2734,7 @@ fn main() -> i32 = do
           folder_thumb_fill.blue,
           1.0
         ))
-        solid = editor_paint_ops_flatten(solid, width, height, folder_scroll_ops)
+        paint_list = editor_paint_list_push_rects(paint_list, folder_scroll_ops)
       end
     end
     let mut text_pane_ops: [EditorPaintOp] = []
@@ -2741,7 +2749,7 @@ fn main() -> i32 = do
       theme.background_blue,
       1.0
     ))
-    solid = editor_paint_ops_flatten(solid, width, height, text_pane_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, text_pane_ops)
     let mut chrome_tail_ops: [EditorPaintOp] = []
     if minimap_enabled != 0 then
       chrome_tail_ops.push(editor_paint_op_rect(
@@ -2768,7 +2776,7 @@ fn main() -> i32 = do
       theme.gutter_blue,
       1.0
     ))
-    solid = editor_paint_ops_flatten(solid, width, height, gutter_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, gutter_ops)
     chrome_tail_ops.push(editor_paint_op_rect(
       "divider",
       divider.x,
@@ -2791,20 +2799,14 @@ fn main() -> i32 = do
       theme.status_blue,
       1.0
     ))
-    solid = editor_paint_ops_flatten(solid, width, height, chrome_tail_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, chrome_tail_ops)
 
-    let mut flush_status = solid_renderer_flush(
-      solid, width, height, theme.background_red, theme.background_green, theme.background_blue
+    paint_list = editor_paint_list_push_flush(
+      paint_list, theme.background_red, theme.background_green, theme.background_blue
     )
-    if flush_status != 0 then
-      solid_renderer_destroy(solid)
-      static_text_destroy(text_state)
-      glfw_gl_context_end()
-      return flush_status
-    end
 
-    solid = solid_renderer_begin(solid)
-    editor_gl_scissor_enable_rect(height, content_clip)
+    paint_list = editor_paint_list_push_begin(paint_list)
+    paint_list = editor_paint_list_push_scissor_on(paint_list, height, content_clip)
 
     // Glyph colors carry Solarized tags; app.ux.selection highlight rects stay below.
     // §109f — visible-range span tick; cover/reuse + rebuild prefetch pad
@@ -3035,7 +3037,7 @@ fn main() -> i32 = do
       end
       caret_multi_index = caret_multi_index + 1
     end
-    solid = editor_paint_ops_flatten(solid, width, height, text_content_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, text_content_ops)
 
     const editor_hovered =
       point_in_rect(point_new(input.mouse_x, input.mouse_y), editor_rect)
@@ -3091,9 +3093,9 @@ fn main() -> i32 = do
         1.0
       ))
     end
-    solid = editor_paint_ops_flatten(solid, width, height, scrollbar_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, scrollbar_ops)
     if minimap_enabled != 0 then
-      editor_gl_scissor_enable_rect(height, minimap_rect)
+      paint_list = editor_paint_list_push_scissor_on(paint_list, height, minimap_rect)
       const minimap_indicator = editor_ux_minimap_viewport_indicator(
         minimap_rect, wrapped_content_height_now, text_rect.height, app.ux.scroll_offset_y
       )
@@ -3110,13 +3112,13 @@ fn main() -> i32 = do
           theme.muted_blue,
           1.0
         ))
-        solid = editor_paint_ops_flatten(solid, width, height, minimap_indicator_ops)
+        paint_list = editor_paint_list_push_rects(paint_list, minimap_indicator_ops)
       end
     end
 
     let mut overlay_ops: [EditorPaintOp] = []
     if dirty_close_overlay_is_visible(app.overlay) then
-      editor_gl_scissor_disable()
+      paint_list = editor_paint_list_push_scissor_off(paint_list)
       overlay_ops.push(editor_paint_op_rect(
         "dirty_close_panel", width / 2 - 180, height / 2 - 70, 360, 140,
         theme.panel_red, theme.panel_green, theme.panel_blue, 1.0
@@ -3142,7 +3144,7 @@ fn main() -> i32 = do
     end
 
     if editor_ux_context_menu_is_visible(context_menu) then
-      editor_gl_scissor_disable()
+      paint_list = editor_paint_list_push_scissor_off(paint_list)
       const menu_panel = editor_ux_context_menu_panel_rect(context_menu)
       overlay_ops.push(editor_paint_op_rect(
         "context_menu",
@@ -3165,16 +3167,22 @@ fn main() -> i32 = do
         menu_item_index = menu_item_index + 1
       end
     end
-    solid = editor_paint_ops_flatten(solid, width, height, overlay_ops)
+    paint_list = editor_paint_list_push_rects(paint_list, overlay_ops)
 
-    flush_status = solid_renderer_flush_over(solid, width, height)
-    editor_gl_scissor_disable()
-    if flush_status != 0 then
+    paint_list = editor_paint_list_push_flush_over(paint_list)
+    paint_list = editor_paint_list_push_scissor_off(paint_list)
+    const solid_submit = editor_paint_list_submit(
+      paint_list, solid, text_state, editor_glyph_batch, minimap_glyph_batch, width, height
+    )
+    solid = solid_submit.solid
+    text_state = solid_submit.text_state
+    if solid_submit.error_code != 0 then
       static_text_destroy(text_state)
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
-      return flush_status
+      return solid_submit.error_code
     end
+    paint_list = editor_paint_list_new()
 
     let mut chrome_lines: [StaticTextLine] = []
     chrome_lines = push_line(
@@ -3323,31 +3331,16 @@ fn main() -> i32 = do
     end
 
     if !(dogfood_probe && dogfood_phase == "scroll") then
-    let mut chrome_drawn = static_text_draw_lines_colored(
-      text_state, chrome_lines, width, height, 0,
+    paint_list = editor_paint_list_push_text_colored(
+      paint_list, chrome_lines, 0,
       theme.text_red, theme.text_green, theme.text_blue, 1.0
     )
-    text_state = chrome_drawn.state
-    if chrome_drawn.error_code != 0 then
-      static_text_destroy(text_state)
-      solid_renderer_destroy(solid)
-      glfw_gl_context_end()
-      return chrome_drawn.error_code
-    end
-
-    editor_gl_scissor_enable_rect(height, tree_list_rect)
-    const tree_drawn = static_text_draw_lines_colored(
-      text_state, tree_lines, width, height, 0,
+    paint_list = editor_paint_list_push_scissor_on(paint_list, height, tree_list_rect)
+    paint_list = editor_paint_list_push_text_colored(
+      paint_list, tree_lines, 0,
       theme.text_red, theme.text_green, theme.text_blue, 1.0
     )
-    editor_gl_scissor_disable()
-    text_state = tree_drawn.state
-    if tree_drawn.error_code != 0 then
-      static_text_destroy(text_state)
-      solid_renderer_destroy(solid)
-      glfw_gl_context_end()
-      return tree_drawn.error_code
-    end
+    paint_list = editor_paint_list_push_scissor_off(paint_list)
     end
 
     if minimap_enabled != 0 && !perf_skip_heavy &&
@@ -3422,22 +3415,9 @@ fn main() -> i32 = do
           return minimap_rebuilt.error_code
         end
       end
-      editor_gl_scissor_enable_rect(height, minimap_rect)
-      const minimap_drawn = static_text_glyph_batch_draw(
-        text_state, minimap_glyph_batch, width, height
-      )
-      editor_gl_scissor_disable()
-      text_state = minimap_drawn.state
-      perf_counters = editor_perf_note_glyph_batch_draw_calls(
-        perf_counters, minimap_drawn.batch_draw_calls
-      )
-      if minimap_drawn.error_code != 0 then
-        static_text_glyph_batch_destroy(minimap_glyph_batch)
-        static_text_destroy(text_state)
-        solid_renderer_destroy(solid)
-        glfw_gl_context_end()
-        return minimap_drawn.error_code
-      end
+      paint_list = editor_paint_list_push_scissor_on(paint_list, height, minimap_rect)
+      paint_list = editor_paint_list_push_glyph_minimap(paint_list)
+      paint_list = editor_paint_list_push_scissor_off(paint_list)
     end
 
     let mut editor_lines: [StaticTextLine] = []
@@ -3469,14 +3449,8 @@ fn main() -> i32 = do
         width,
         height
       )
-      const terminal_bg_flush = solid_renderer_flush_over(solid, width, height)
-      if terminal_bg_flush != 0 then
-        solid_renderer_destroy(solid)
-        static_text_destroy(text_state)
-        glfw_gl_context_end()
-        return terminal_bg_flush
-      end
-      solid = solid_renderer_begin(solid)
+      paint_list = editor_paint_list_push_flush_over(paint_list)
+      paint_list = editor_paint_list_push_begin(paint_list)
       editor_lines = app.terminal.cached_text_lines
     else if editor_ux_text_layer_batch_can_replay(text_layer_batch, layout_skip) != 0 then
       editor_lines = text_layer_batch.lines
@@ -3511,7 +3485,7 @@ fn main() -> i32 = do
       perf_counters = editor_perf_note_text_layer_rebuild(perf_counters)
     end
 
-    editor_gl_scissor_enable_rect(height, content_clip)
+    paint_list = editor_paint_list_push_scissor_on(paint_list, height, content_clip)
     // §109e — retained editor glyph batch (separate from minimap). Invalidate on
     // version/font/theme/width/visible-row identity; draw-only when fingerprint matches.
     let mut editor_glyph_fp = editor_glyph_fingerprint
@@ -3562,21 +3536,24 @@ fn main() -> i32 = do
         return editor_rebuilt.error_code
       end
     end
-    const editor_drawn = static_text_glyph_batch_draw(
-      text_state, editor_glyph_batch, width, height
+    paint_list = editor_paint_list_push_glyph_editor(paint_list)
+    paint_list = editor_paint_list_push_scissor_off(paint_list)
+
+    const paint_submit = editor_paint_list_submit(
+      paint_list, solid, text_state, editor_glyph_batch, minimap_glyph_batch, width, height
     )
-    editor_gl_scissor_disable()
-    text_state = editor_drawn.state
+    solid = paint_submit.solid
+    text_state = paint_submit.text_state
     perf_counters = editor_perf_note_glyph_batch_draw_calls(
-      perf_counters, editor_drawn.batch_draw_calls
+      perf_counters, paint_submit.glyph_batch_draw_calls
     )
-    if editor_drawn.error_code != 0 then
+    if paint_submit.error_code != 0 then
       static_text_glyph_batch_destroy(editor_glyph_batch)
       static_text_glyph_batch_destroy(minimap_glyph_batch)
       static_text_destroy(text_state)
       solid_renderer_destroy(solid)
       glfw_gl_context_end()
-      return editor_drawn.error_code
+      return paint_submit.error_code
     end
 
     if perf_enabled then
