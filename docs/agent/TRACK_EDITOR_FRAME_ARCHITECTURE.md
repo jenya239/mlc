@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110e** (STEP=0 Decision done; Red next)
+## Status: **open** 2026-08-06 — queue head **§110e** (STEP=1 Red done; Green next)
 
 ## Destination (plain)
 
@@ -298,7 +298,7 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: no glyph-damage harness / scroll forces full reshape | **open** |
+| 1 | Red: no glyph-damage harness / scroll forces full reshape | **done** 2026-08-06 |
 | 2 | Green: Y-adjust / newly-visible reshape + scroll ceiling <60 | pending |
 | 3 | Critic | pending |
 
@@ -319,3 +319,4 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 2026-08-06: §110d Green — orphan solid stream + terminal emit-only + coalesce + `run_editor_batch_stream.sh`.
 2026-08-06: §110d CLOSED (Critic OK); queue → §110e Decision.
 2026-08-06: §110e Decision frozen (glyph damage / scroll Y-adjust + newly-visible reshape).
+2026-08-06: §110e Red — `scripts/run_editor_glyph_damage_red.sh` (exit 1: no green harness / scroll_offset_y in fp).

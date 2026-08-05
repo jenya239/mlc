@@ -498,3 +498,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110e STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Red — no glyph-damage harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=1, §110e Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `scripts/run_editor_glyph_damage_red.sh`: fail while green harness / Y-adjust helpers absent; requires `scroll_offset_y` in `editor_glyph_fp`; `SCROLL_CPU_MAX` still 60 |
+| verify  | `bash scripts/run_editor_glyph_damage_red.sh` → FAIL exit 1 (`no editor glyph damage harness`) |
+| result  | **§110e STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Green — Y-adjust/newly-visible + scroll ceiling <60) |
