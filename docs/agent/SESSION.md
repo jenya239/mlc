@@ -513,3 +513,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110e STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Green — Y-adjust/newly-visible + scroll ceiling <60) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110e Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Y-adjust + newly-visible append (`static_text`/`glyph_damage`/`demo_live`); `run_editor_glyph_damage.sh`; SCROLL_CPU_MAX 60→50; L1 shape bound |
+| verify  | green OK (shape_avg=10≤64; scroll=43≤50; wake deltas 0; dogfood_gate ok); red already-present |
+| result  | **§110e STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e — audit glyph damage) |

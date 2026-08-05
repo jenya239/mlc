@@ -213,6 +213,46 @@ inline int32_t buffer_data_orphan_scratch(int32_t target, int32_t usage) {
   return 0;
 }
 
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110e — download bound ARRAY_BUFFER into scratch.
+inline int32_t buffer_download_to_scratch(int32_t target, int32_t float_count) {
+  auto& values = scratch_f32();
+  if (float_count < 0) {
+    return -1;
+  }
+  values.resize(static_cast<size_t>(float_count));
+  if (float_count == 0) {
+    return 0;
+  }
+  glGetBufferSubData(
+    static_cast<GLenum>(target),
+    0,
+    static_cast<GLsizeiptr>(float_count) * static_cast<GLsizeiptr>(sizeof(float)),
+    values.data()
+  );
+  return 0;
+}
+
+// §110e — NDC Y is float index % 4 == 1 (pos.xy + uv).
+inline int32_t buffer_adjust_ndc_y(
+  int32_t target,
+  int32_t float_count,
+  double delta_ndc_y,
+  int32_t usage
+) {
+  if (float_count <= 0 || delta_ndc_y == 0.0) {
+    return 0;
+  }
+  if (buffer_download_to_scratch(target, float_count) != 0) {
+    return -1;
+  }
+  auto& values = scratch_f32();
+  const float delta = static_cast<float>(delta_ndc_y);
+  for (size_t index = 1; index < values.size(); index += 4) {
+    values[index] += delta;
+  }
+  return buffer_data_scratch(target, usage);
+}
+
 inline void scratch_u8_clear() { scratch_u8().clear(); }
 inline void scratch_u8_resize_zero(int32_t byte_count) {
   if (byte_count < 0) {

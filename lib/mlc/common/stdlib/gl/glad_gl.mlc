@@ -85,6 +85,15 @@ export extern fn gl_buffer_data_scratch(target: i32, usage: i32) -> i32
   = "mlc::gl::glad_abi::buffer_data_scratch" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_buffer_data_orphan_scratch(target: i32, usage: i32) -> i32
   = "mlc::gl::glad_abi::buffer_data_orphan_scratch" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_buffer_download_to_scratch(target: i32, float_count: i32) -> i32
+  = "mlc::gl::glad_abi::buffer_download_to_scratch" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_buffer_adjust_ndc_y(
+  target: i32,
+  float_count: i32,
+  delta_ndc_y: f64,
+  usage: i32
+) -> i32
+  = "mlc::gl::glad_abi::buffer_adjust_ndc_y" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
   = "mlc::gl::glad_abi::enable_vertex_attrib_array" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_vertex_attrib_pointer_offset(

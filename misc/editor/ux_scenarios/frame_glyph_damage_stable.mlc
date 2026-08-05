@@ -1,0 +1,46 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110e — L1 glyph damage helpers (no GL).
+import {
+  editor_glyph_visual_row_identity,
+  editor_glyph_newly_visible_rows,
+  editor_glyph_scroll_shape_bound,
+  editor_glyph_should_full_rebuild_scroll
+} from '../ux/glyph_damage'
+
+fn main() -> i32 = do
+  const id_a = editor_glyph_visual_row_identity(10, 0, 100, 120)
+  const id_b = editor_glyph_visual_row_identity(11, 0, 120, 140)
+  const id_c = editor_glyph_visual_row_identity(12, 0, 140, 160)
+  let mut previous: [string] = []
+  previous.push(id_a)
+  previous.push(id_b)
+  let mut next_ids: [string] = []
+  next_ids.push(id_b)
+  next_ids.push(id_c)
+  const newly_visible_rows = editor_glyph_newly_visible_rows(previous, next_ids)
+  if newly_visible_rows != 1 then
+    println("ux_fail frame_glyph_damage_stable newly_visible")
+    return 1
+  end
+  const shape_bound = editor_glyph_scroll_shape_bound(newly_visible_rows)
+  if shape_bound != 36 then
+    println("ux_fail frame_glyph_damage_stable shape_bound")
+    return 2
+  end
+  if shape_bound >= 256 then
+    println("ux_fail frame_glyph_damage_stable bound_not_tighter_than_109e")
+    return 3
+  end
+  if editor_glyph_should_full_rebuild_scroll(1, 40) != 0 then
+    println("ux_fail frame_glyph_damage_stable should_partial")
+    return 4
+  end
+  if editor_glyph_should_full_rebuild_scroll(20, 40) == 0 then
+    println("ux_fail frame_glyph_damage_stable should_full")
+    return 5
+  end
+  println("ux_ok frame_glyph_damage_stable")
+  println("newly_visible_rows=" + newly_visible_rows.to_string())
+  println("scroll_shape_bound=" + shape_bound.to_string())
+  println("editor_glyph_shape_avg_max=64")
+  0
+end

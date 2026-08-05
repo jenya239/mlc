@@ -21,7 +21,7 @@ STARTUP="$ROOT_DIR/scripts/run_editor_perf_startup_open.sh"
 IDLE_AWAY_CPU_MAX="${MLC_EDITOR_PERF_IDLE_AWAY_CPU_MAX:-5}"
 STILL_CPU_MAX="${MLC_EDITOR_PERF_STILL_OVER_CPU_MAX:-8}"
 JITTER_CPU_MAX="${MLC_EDITOR_PERF_JITTER_CPU_MAX:-15}"
-SCROLL_CPU_MAX="${MLC_EDITOR_PERF_SCROLL_CPU_MAX:-60}"
+SCROLL_CPU_MAX="${MLC_EDITOR_PERF_SCROLL_CPU_MAX:-50}"
 TYPE_STALL_MS_MAX="${MLC_EDITOR_PERF_TYPE_STALL_MS_MAX:-500}"
 
 fail() {
@@ -33,8 +33,8 @@ fail() {
 if [ -n "${MLC_EDITOR_PERF:-}" ]; then
   fail "MLC_EDITOR_PERF set — skip-heavy forbidden as content proof"
 fi
-if [ "$SCROLL_CPU_MAX" -gt 60 ]; then
-  fail "SCROLL_CPU_MAX=$SCROLL_CPU_MAX > 60 (Decision epic scroll ceiling)"
+if [ "$SCROLL_CPU_MAX" -gt 50 ]; then
+  fail "SCROLL_CPU_MAX=$SCROLL_CPU_MAX > 50 (§110e measured scroll ceiling)"
 fi
 if [ "$IDLE_AWAY_CPU_MAX" -gt 5 ] || [ "$STILL_CPU_MAX" -gt 8 ] || \
     [ "$JITTER_CPU_MAX" -gt 15 ] || [ "$TYPE_STALL_MS_MAX" -gt 500 ]; then

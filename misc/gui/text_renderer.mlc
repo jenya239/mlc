@@ -36,6 +36,8 @@ import {
   gl_scratch_f32_clear,
   gl_scratch_push_glyph_quad,
   gl_buffer_data_scratch,
+  gl_buffer_download_to_scratch,
+  gl_buffer_adjust_ndc_y,
   gl_enable_vertex_attrib_array,
   gl_vertex_attrib_pointer_offset,
   gl_draw_arrays,
@@ -523,6 +525,10 @@ export fn text_scratch_f32_clear() -> unit = gl_scratch_f32_clear()
 export fn text_bind_array_buffer(buffer: i32) -> unit = gl_bind_buffer(gl_array_buffer(), buffer)
 export fn text_upload_dynamic_scratch() -> i32 =
   gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw())
+export fn text_buffer_download_to_scratch(float_count: i32) -> i32 =
+  gl_buffer_download_to_scratch(gl_array_buffer(), float_count)
+export fn text_buffer_adjust_ndc_y(float_count: i32, delta_ndc_y: f64) -> i32 =
+  gl_buffer_adjust_ndc_y(gl_array_buffer(), float_count, delta_ndc_y, gl_dynamic_draw())
 export fn text_context_begin(width: i32, height: i32) -> i32 = glfw_gl_context_begin(width, height)
 export fn text_context_should_close() -> i32 = glfw_gl_context_should_close()
 export fn text_context_swap_poll() -> unit = glfw_gl_context_swap_poll()

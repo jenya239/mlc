@@ -14,7 +14,7 @@ REPORT_DIR="${EDITOR_PERF_GLYPH_LAYER_OUT:-$ROOT_DIR/.tmp/editor_perf_glyph_laye
 DOGFOOD_REPORT_DIR="$REPORT_DIR/dogfood"
 PERF_FULL_OUT="$REPORT_DIR/perf_full_compile"
 
-SCROLL_CPU_MAX="${MLC_EDITOR_PERF_SCROLL_CPU_MAX:-60}"
+SCROLL_CPU_MAX="${MLC_EDITOR_PERF_SCROLL_CPU_MAX:-50}"
 TYPE_STALL_MS_MAX="${MLC_EDITOR_PERF_TYPE_STALL_MS_MAX:-500}"
 # Decision: avg editor shapes/content-frame ≤ 4*visible_row_budget+64.
 # Window 1100×760 → content ≈630px / ~18px ≈ 35+3 → budget 38; harness default 48.
@@ -23,8 +23,7 @@ SCROLL_SHAPE_AVG_MAX=$((4 * VISIBLE_ROW_BUDGET + 64))
 # §109d measured basis; §109e Green may rewrite ceiling (measured×≤1.25 < 13259730).
 PREV_TOTAL_US_MAX=10607784
 PREV_CEILING=13259730
-# Decision amend 2026-08-04: scroll≤60 (measured ~49–63; residual = full visible
-# editor VBO reshape each scroll frame without row-level Y-damage).
+# Decision amend 2026-08-06 §110e: scroll≤50 (measured ~41; Y-adjust + newly-visible).
 COMMITTED_MEASURED_TOTAL_US=6565154
 
 fail() {

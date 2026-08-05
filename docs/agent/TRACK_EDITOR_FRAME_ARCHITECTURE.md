@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110e** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-06 — queue head **§110e** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -299,8 +299,21 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no glyph-damage harness / scroll forces full reshape | **done** 2026-08-06 |
-| 2 | Green: Y-adjust / newly-visible reshape + scroll ceiling <60 | pending |
+| 2 | Green: Y-adjust / newly-visible reshape + scroll ceiling <60 | **done** 2026-08-06 |
 | 3 | Critic | pending |
+
+### Green measured (§110e)
+
+| Metric | Value |
+|--------|-------|
+| mechanism | `adjust_y` + `append_colored` newly-visible |
+| scroll_editor_glyph_shape_avg | **10** (max 64; was ~130 under §109e ≤256) |
+| newly_visible_rows (L1) | 1 → bound 36 |
+| SCROLL_CPU_MAX | **50** (was 60; measured scroll ~41–43) |
+| scroll_cpu_percent (harness) | 43 |
+| type_stall_ms | 16 |
+| wake gen deltas | 0 |
+| dogfood_gate | ok |
 
 ## Diff / notes
 
@@ -320,3 +333,4 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 2026-08-06: §110d CLOSED (Critic OK); queue → §110e Decision.
 2026-08-06: §110e Decision frozen (glyph damage / scroll Y-adjust + newly-visible reshape).
 2026-08-06: §110e Red — `scripts/run_editor_glyph_damage_red.sh` (exit 1: no green harness / scroll_offset_y in fp).
+2026-08-06: §110e Green — adjust_y + newly-visible append; shape avg 10; SCROLL_CPU_MAX=50; `run_editor_glyph_damage.sh`.

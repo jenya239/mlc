@@ -1,0 +1,55 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110e — glyph scroll damage helpers (no GL).
+
+export fn editor_glyph_visual_row_identity(
+  doc_line: i32,
+  is_wrap_continue: i32,
+  byte_start: i32,
+  byte_end: i32
+) -> string =
+  doc_line.to_string() + ":" +
+    is_wrap_continue.to_string() + ":" +
+    byte_start.to_string() + ":" +
+    byte_end.to_string()
+
+export fn editor_glyph_row_id_in_list(row_id: string, row_ids: [string]) -> i32 = do
+  let mut index = 0
+  while index < row_ids.length() do
+    if row_ids[index] == row_id then
+      return 1
+    end
+    index = index + 1
+  end
+  0
+end
+
+export fn editor_glyph_newly_visible_rows(
+  previous_row_ids: [string],
+  next_row_ids: [string]
+) -> i32 = do
+  let mut newly_visible_rows = 0
+  let mut index = 0
+  while index < next_row_ids.length() do
+    if editor_glyph_row_id_in_list(next_row_ids[index], previous_row_ids) == 0 then
+      newly_visible_rows = newly_visible_rows + 1
+    end
+    index = index + 1
+  end
+  newly_visible_rows
+end
+
+// Decision: tighter than §109e 4*visible+64 — bound by newly visible only.
+export fn editor_glyph_scroll_shape_bound(newly_visible_rows: i32) -> i32 =
+  4 * newly_visible_rows + 32
+
+export fn editor_glyph_should_full_rebuild_scroll(
+  newly_visible_rows: i32,
+  visible_row_count: i32
+) -> i32 = do
+  if visible_row_count <= 0 then
+    return 1
+  end
+  if newly_visible_rows * 2 >= visible_row_count then
+    return 1
+  end
+  0
+end

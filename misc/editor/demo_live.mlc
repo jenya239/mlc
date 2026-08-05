@@ -55,9 +55,17 @@ import {
   static_text_create,
   static_text_glyph_batch_new,
   static_text_glyph_batch_rebuild_colored,
+  static_text_glyph_batch_adjust_y,
+  static_text_glyph_batch_append_colored,
   static_text_glyph_batch_destroy,
   static_text_destroy
 } from './ui/static_text'
+import {
+  editor_glyph_visual_row_identity,
+  editor_glyph_newly_visible_rows,
+  editor_glyph_row_id_in_list,
+  editor_glyph_should_full_rebuild_scroll
+} from './ux/glyph_damage'
 import { editor_resolve_font_path } from './config/font_path'
 import {
   status_bar_from_buffer,
@@ -1030,6 +1038,9 @@ fn main() -> i32 = do
   let mut minimap_cached_font_size = 0 - 1
   let mut editor_glyph_batch = static_text_glyph_batch_new()
   let mut editor_glyph_fingerprint = ""
+  let mut editor_glyph_scroll_y = 0
+  let mut editor_glyph_row_ids: [string] = []
+  let mut editor_glyph_newly_visible_rows_last = 0
   let mut minimap_drag = 0
   let mut scrollbar_drag = 0
   let mut frame_layout = frame_layout_new_pixel(
@@ -1102,6 +1113,11 @@ fn main() -> i32 = do
               dogfood_phase_file,
               "editor_glyph_shape_calls=" +
                 perf_counters.editor_glyph_shape_calls.to_string()
+            )
+            dogfood_emit_sink = dogfood_emit(
+              dogfood_phase_file,
+              "newly_visible_rows=" +
+                editor_glyph_newly_visible_rows_last.to_string()
             )
             dogfood_emit_sink = dogfood_emit(
               dogfood_phase_file,
@@ -3422,6 +3438,9 @@ fn main() -> i32 = do
     end
 
     let mut editor_lines: [StaticTextLine] = []
+    let mut editor_row_line_starts: [i32] = []
+    let mut editor_row_line_counts: [i32] = []
+    let mut next_glyph_row_ids: [string] = []
     if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
       text_layer_batch = editor_ux_text_layer_batch_invalidate(text_layer_batch)
       const terminal_origin_x = text_rect.x + 4
@@ -3456,6 +3475,7 @@ fn main() -> i32 = do
       let mut draw_row = 0
       while draw_row < visual_rows.length() do
         const row = visual_rows[draw_row]
+        const row_line_start = editor_lines.length()
         const baseline = gutter_baseline_y(text_rect.y + 2, metrics.line_height, draw_row, 14)
         let mut gutter_label = ""
         if row.is_wrap_continue == 0 then
@@ -3477,6 +3497,13 @@ fn main() -> i32 = do
           baseline,
           metrics.char_width
         )
+        editor_row_line_starts.push(row_line_start)
+        editor_row_line_counts.push(editor_lines.length() - row_line_start)
+        next_glyph_row_ids.push(
+          editor_glyph_visual_row_identity(
+            row.doc_line, row.is_wrap_continue, row.byte_start, row.byte_end
+          )
+        )
         draw_row = draw_row + 1
       end
       text_layer_batch = editor_ux_text_layer_batch_store(text_layer_batch, editor_lines)
@@ -3484,8 +3511,7 @@ fn main() -> i32 = do
     end
 
     paint_list = editor_paint_list_push_scissor_on(paint_list, height, content_clip)
-    // §109e — retained editor glyph batch (separate from minimap). Invalidate on
-    // version/font/theme/width/visible-row identity; draw-only when fingerprint matches.
+    // §110e — reshape fp excludes scroll_offset_y; Y-adjust + newly-visible append.
     let mut editor_glyph_fp = editor_glyph_fingerprint
     if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
       if content_dirty != 0 || editor_glyph_batch.valid == 0 then
@@ -3494,44 +3520,144 @@ fn main() -> i32 = do
           editor_lines.length().to_string()
       end
     else
-      let mut row_fp = ""
-      let mut row_i = 0
-      while row_i < visual_rows.length() do
-        const fp_row = visual_rows[row_i]
-        row_fp = row_fp + fp_row.doc_line.to_string() + ":" +
-          fp_row.is_wrap_continue.to_string() + ":" +
-          fp_row.byte_start.to_string() + ":" +
-          fp_row.byte_end.to_string() + ";"
-        row_i = row_i + 1
-      end
       editor_glyph_fp =
         document.version.to_string() + "|" +
         zoom_font_size.to_string() + "|" +
         scaled_font_size.to_string() + "|" +
         text_rect.width.to_string() + "|" +
-        app.ux.scroll_offset_y.to_string() + "|" +
         f64_to_i32(theme.text_red * 1000.0).to_string() + "|" +
-        f64_to_i32(theme.keyword_red * 1000.0).to_string() + "|" +
-        row_fp
+        f64_to_i32(theme.keyword_red * 1000.0).to_string()
+      if next_glyph_row_ids.length() == 0 then
+        let mut row_i = 0
+        while row_i < visual_rows.length() do
+          const fp_row = visual_rows[row_i]
+          next_glyph_row_ids.push(
+            editor_glyph_visual_row_identity(
+              fp_row.doc_line, fp_row.is_wrap_continue,
+              fp_row.byte_start, fp_row.byte_end
+            )
+          )
+          row_i = row_i + 1
+        end
+      end
     end
-    if editor_glyph_fingerprint != editor_glyph_fp || editor_glyph_batch.valid == 0 then
-      const editor_rebuilt = static_text_glyph_batch_rebuild_colored(
-        text_state, editor_glyph_batch, editor_lines, width, height,
-        theme.text_red, theme.text_green, theme.text_blue, 1.0
+    if editor_app_terminal_tab_active(app) && app.terminal.active != 0 then
+      if editor_glyph_fingerprint != editor_glyph_fp || editor_glyph_batch.valid == 0 then
+        const editor_rebuilt = static_text_glyph_batch_rebuild_colored(
+          text_state, editor_glyph_batch, editor_lines, width, height,
+          theme.text_red, theme.text_green, theme.text_blue, 1.0
+        )
+        text_state = editor_rebuilt.state
+        editor_glyph_batch = editor_rebuilt.batch
+        editor_glyph_fingerprint = editor_glyph_fp
+        editor_glyph_newly_visible_rows_last = editor_lines.length()
+        perf_counters = editor_perf_note_editor_glyph_shape_calls(
+          perf_counters, editor_rebuilt.shape_calls
+        )
+        if editor_rebuilt.error_code != 0 then
+          static_text_glyph_batch_destroy(editor_glyph_batch)
+          static_text_glyph_batch_destroy(minimap_glyph_batch)
+          static_text_destroy(text_state)
+          solid_renderer_destroy(solid)
+          glfw_gl_context_end()
+          return editor_rebuilt.error_code
+        end
+      end
+    else
+      const newly_visible_rows = editor_glyph_newly_visible_rows(
+        editor_glyph_row_ids, next_glyph_row_ids
       )
-      text_state = editor_rebuilt.state
-      editor_glyph_batch = editor_rebuilt.batch
-      editor_glyph_fingerprint = editor_glyph_fp
-      perf_counters = editor_perf_note_editor_glyph_shape_calls(
-        perf_counters, editor_rebuilt.shape_calls
-      )
-      if editor_rebuilt.error_code != 0 then
-        static_text_glyph_batch_destroy(editor_glyph_batch)
-        static_text_glyph_batch_destroy(minimap_glyph_batch)
-        static_text_destroy(text_state)
-        solid_renderer_destroy(solid)
-        glfw_gl_context_end()
-        return editor_rebuilt.error_code
+      let mut need_full_glyph = 0
+      if editor_glyph_fingerprint != editor_glyph_fp || editor_glyph_batch.valid == 0 then
+        need_full_glyph = 1
+      else if editor_glyph_should_full_rebuild_scroll(
+          newly_visible_rows, next_glyph_row_ids.length()
+        ) != 0 then
+        need_full_glyph = 1
+      else if newly_visible_rows > 0 &&
+          editor_row_line_starts.length() != next_glyph_row_ids.length() then
+        need_full_glyph = 1
+      else if editor_glyph_batch.float_count > next_glyph_row_ids.length() * 4000 then
+        // Compact after append growth (stale scrolled-out quads).
+        need_full_glyph = 1
+      end
+      if need_full_glyph != 0 then
+        const editor_rebuilt = static_text_glyph_batch_rebuild_colored(
+          text_state, editor_glyph_batch, editor_lines, width, height,
+          theme.text_red, theme.text_green, theme.text_blue, 1.0
+        )
+        text_state = editor_rebuilt.state
+        editor_glyph_batch = editor_rebuilt.batch
+        editor_glyph_fingerprint = editor_glyph_fp
+        editor_glyph_scroll_y = app.ux.scroll_offset_y
+        editor_glyph_row_ids = next_glyph_row_ids
+        editor_glyph_newly_visible_rows_last = newly_visible_rows
+        if editor_glyph_batch.valid != 0 && editor_glyph_row_ids.length() > 0 &&
+            newly_visible_rows == 0 then
+          editor_glyph_newly_visible_rows_last = editor_glyph_row_ids.length()
+        end
+        perf_counters = editor_perf_note_editor_glyph_shape_calls(
+          perf_counters, editor_rebuilt.shape_calls
+        )
+        if editor_rebuilt.error_code != 0 then
+          static_text_glyph_batch_destroy(editor_glyph_batch)
+          static_text_glyph_batch_destroy(minimap_glyph_batch)
+          static_text_destroy(text_state)
+          solid_renderer_destroy(solid)
+          glfw_gl_context_end()
+          return editor_rebuilt.error_code
+        end
+      else
+        const delta_pixel_y = editor_glyph_scroll_y - app.ux.scroll_offset_y
+        editor_glyph_batch = static_text_glyph_batch_adjust_y(
+          editor_glyph_batch, delta_pixel_y, height
+        )
+        editor_glyph_newly_visible_rows_last = newly_visible_rows
+        if newly_visible_rows > 0 && editor_row_line_starts.length() == next_glyph_row_ids.length() then
+          let mut new_lines: [StaticTextLine] = []
+          let mut row_index = 0
+          while row_index < next_glyph_row_ids.length() do
+            if editor_glyph_row_id_in_list(
+                next_glyph_row_ids[row_index], editor_glyph_row_ids
+              ) == 0 then
+              const line_start = editor_row_line_starts[row_index]
+              const line_count = editor_row_line_counts[row_index]
+              let mut line_offset = 0
+              while line_offset < line_count do
+                new_lines.push(editor_lines[line_start + line_offset])
+                line_offset = line_offset + 1
+              end
+            end
+            row_index = row_index + 1
+          end
+          const editor_appended = static_text_glyph_batch_append_colored(
+            text_state, editor_glyph_batch, new_lines, width, height,
+            theme.text_red, theme.text_green, theme.text_blue, 1.0
+          )
+          text_state = editor_appended.state
+          editor_glyph_batch = editor_appended.batch
+          perf_counters = editor_perf_note_editor_glyph_shape_calls(
+            perf_counters, editor_appended.shape_calls
+          )
+          if editor_appended.error_code != 0 then
+            static_text_glyph_batch_destroy(editor_glyph_batch)
+            static_text_glyph_batch_destroy(minimap_glyph_batch)
+            static_text_destroy(text_state)
+            solid_renderer_destroy(solid)
+            glfw_gl_context_end()
+            return editor_appended.error_code
+          end
+        end
+        editor_glyph_scroll_y = app.ux.scroll_offset_y
+        editor_glyph_row_ids = next_glyph_row_ids
+        if editor_glyph_batch.valid == 0 then
+          static_text_glyph_batch_destroy(editor_glyph_batch)
+          static_text_glyph_batch_destroy(minimap_glyph_batch)
+          static_text_destroy(text_state)
+          solid_renderer_destroy(solid)
+          glfw_gl_context_end()
+          return 1
+        end
       end
     end
     paint_list = editor_paint_list_push_glyph_editor(paint_list)
