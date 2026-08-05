@@ -468,3 +468,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110d STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d critique-audit) |
+
+### Turn 2026-08-06 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110d)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent L1 + sab1/sab2/sab4 + wake; regression_gate 20/0 + examples 148/0; closed §110d; opened §110e stub; PLAN → §110e |
+| verify  | L1 upload=288 idle=0; red already-present; sab2 ux_fail idle; wake gens 7→7/2→2 still=1%; regression ok; dogfood Driver pass accepted |
+| result  | **§110d CLOSED (Critic OK).** §110e Decision next |
+| issues  | residual: live paint-list rebuild every frame; glyph newly-visible reshape → §110e |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Decision — glyph damage) |
