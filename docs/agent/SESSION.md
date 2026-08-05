@@ -528,3 +528,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110e STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e — audit glyph damage) |
+
+### Turn 2026-08-06 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110e)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent L1 + sab1/sab2 + wake; regression_gate 20/0 + examples 148/0; closed §110e; opened §110f stub; PLAN → §110f |
+| verify  | L1 newly=1 bound=36; red already-present; sab1 scroll-in-fp static fail; sab2 always-full >64; wake gens 7→7/2→2; regression ok |
+| result  | **§110e CLOSED (Critic OK).** §110f Decision next |
+| issues  | residual: live paint-list rebuild every frame → §110f/G |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110f Decision — optional overlay metrics) |

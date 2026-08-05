@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110e** (STEP=2 Green done; Critic next)
+## Status: **open** 2026-08-06 — queue head **§110f** (STEP=0 Decision next; §110e CLOSED)
 
 ## Destination (plain)
 
@@ -52,8 +52,8 @@ unless a phase Decision explicitly replaces a member.
 | **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | **done** §110b — L1/wake gen deltas 0; Critic OK |
 | **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress — **§110c CLOSED** |
 | **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 — **§110d CLOSED** |
-| **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) — **§110e** |
-| **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates |
+| **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) — **§110e CLOSED** |
+| **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates — **§110f** |
 | **G** | Archive / handoff | Point GUI_ARCHITECTURE + EDITOR at this path; resume §103f | docs only |
 
 Non-goals for the whole track (unless user re-opens):
@@ -270,7 +270,7 @@ Content-frame ceilings (L1 paste): upload sample 288 bytes / idle 0.
 
 Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `already present`. Sab1: inject `terminal_grid_draw_cached_backgrounds` into demo copy → green static would fail. Sab2: force non-idle upload helper → `ux_fail upload_idle` exit 5. Sab4: orphan path present (`nullptr` then data in `glad_gl_abi.hpp`). Independent wake: gens 7→7 / 2→2; still=1% jitter=1%; rebuild deltas 0. `scripts/regression_gate.sh` (lib/mlc touched): 20 passed, 0 failed; examples ok=148 fail=0 skip=3. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110e: live still rebuilds paint list every frame (fingerprint skip is L1/stream-level); glyph reshape still not newly-visible-only.
 
-## §110e `EDITOR_GLYPH_DAMAGE` — **queue head**
+## §110e `EDITOR_GLYPH_DAMAGE` — **CLOSED** 2026-08-06 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -300,7 +300,7 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no glyph-damage harness / scroll forces full reshape | **done** 2026-08-06 |
 | 2 | Green: Y-adjust / newly-visible reshape + scroll ceiling <60 | **done** 2026-08-06 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 ### Green measured (§110e)
 
@@ -314,6 +314,30 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 | type_stall_ms | 16 |
 | wake gen deltas | 0 |
 | dogfood_gate | ok |
+
+### Critic (§110e)
+
+Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: inject `scroll_offset_y` into reshape fp → green static awk fails. Sab2: force `need_full_glyph=1` always → would exceed shape_avg_max=64 (pre-cut ~130). API: `adjust_y` + `append_colored` + `buffer_adjust_ndc_y`. Independent wake: gens 7→7 / 2→2; still/jitter OK; rebuild deltas 0. `scripts/regression_gate.sh` (lib/mlc touched): 20 passed, 0 failed; examples ok=148 fail=0 skip=3. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110f/G: live still rebuilds paint list every frame (fingerprint skip is L1/stream-level).
+
+## §110f `EDITOR_OVERLAY_METRICS` — **queue head** (optional)
+
+| Item | Choice |
+|------|--------|
+| Problem | Path phase F: in-process counters exist in perf scripts; optional on-screen overlay behind env flag for dogfood diagnosis — must not replace script gates |
+| Fix | Decision freeze next |
+| Depends on | §110e CLOSED |
+| Gate | Overlay (if shipped) env-gated; dogfood/wake/glyph-damage harnesses remain authority; no ceiling weaken |
+| Sabotage | TBD in Decision |
+| Out of scope | SceneNode; replacing dogfood gate with visual-only metrics; raising §109/§110e ceilings without measure |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **open** |
+| 1 | Red | pending |
+| 2 | Green | pending |
+| 3 | Critic | pending |
 
 ## Diff / notes
 
@@ -334,3 +358,4 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 2026-08-06: §110e Decision frozen (glyph damage / scroll Y-adjust + newly-visible reshape).
 2026-08-06: §110e Red — `scripts/run_editor_glyph_damage_red.sh` (exit 1: no green harness / scroll_offset_y in fp).
 2026-08-06: §110e Green — adjust_y + newly-visible append; shape avg 10; SCROLL_CPU_MAX=50; `run_editor_glyph_damage.sh`.
+2026-08-06: §110e CLOSED (Critic OK); queue → §110f Decision (optional overlay metrics).
