@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110e** (Decision next; §110d CLOSED)
+## Status: **open** 2026-08-06 — queue head **§110e** (STEP=0 Decision done; Red next)
 
 ## Destination (plain)
 
@@ -274,20 +274,32 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 
 | Item | Choice |
 |------|--------|
-| Problem | Path phase E: glyph reshape / row Y still not limited to newly-visible damage (leftover from §109e); scroll_cpu ceiling still §109’s 60 |
-| Fix | Decision next (Driver STEP=0) |
-| Depends on | §110d CLOSED (paint list + solid stream); §109e glyph layer exists |
-| Gate | TBD in Decision — scroll_cpu ceiling tightened below 60 with measured numbers; shape O(newly visible); wake + dogfood non-regress |
-| Sabotage | TBD in Decision |
-| Out of scope | SceneNode; wholesale delete of `demo_live`; raising other §109 ceilings without measure; Xvfb dogfood scroll residual (§110a) |
+| Problem | Path phase E / §109e residual: editor glyph fingerprint includes `scroll_offset_y`, so every scroll forces full `static_text_glyph_batch_rebuild_colored` of all visible rows — no per-row Y-nudge / newly-visible-only reshape; dogfood `SCROLL_CPU_MAX` still 60 |
+| Fix | Below (Decision frozen 2026-08-06) |
+| Depends on | §110d CLOSED (paint list + solid stream); §109e retained `editor_glyph_batch` + `run_editor_perf_glyph_layer_budget.sh` |
+| Gate | Glyph-damage harness green; scroll shape O(newly visible); `scroll_cpu` ceiling tightened below 60 with measured-then-written number; wake + dogfood non-regress under new ceiling |
+| Sabotage | (1) Keep `scroll_offset_y` in reshape fingerprint (or equivalent always-rebuild on scroll) while claiming green → scroll shape/CPU gate fail. (2) Claim newly-visible-only while still reshaping full visible set every scroll frame → shape avg bound fails. (3) Wake rebuild/gen deltas or dogfood gate regress under new ceiling |
+| Out of scope | SceneNode; wholesale delete of `demo_live`; raising other §109 ceilings without measure; Xvfb dogfood scroll residual (§110a); inventing numeric scroll ceiling before Green measure |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_glyph_damage.sh` (+ `_red.sh`). L1/report: scroll-phase `editor_glyph_shape_calls` (avg/frame and/or newly-visible bound) + dogfood `scroll_cpu_percent`. Side: `run_editor_perf_wake_on_hover.sh` gen deltas still 0. Dogfood: `run_editor_perf_dogfood_gate.sh` with **updated** `SCROLL_CPU_MAX` (this STEP writes the ceiling after measure — must be **< 60**). Report: `.tmp/editor_glyph_damage/report.txt`. Reuse §109e dogfood/PERF markers; do not weaken type_stall |
+| Pre-cut (audit 2026-08-06) | (1) **No** `run_editor_glyph_damage.sh`. (2) `demo_live.mlc` ~3507–3524: `editor_glyph_fp` concatenates `document.version`, fonts, `text_rect.width`, **`app.ux.scroll_offset_y`**, theme, and full `visual_rows` identity — any scroll changes fp → full `static_text_glyph_batch_rebuild_colored`. (3) No `static_text_glyph_batch_adjust_y` / row-damage API in `ui/static_text.mlc` (only `rebuild_colored` + `draw`). (4) §109e Critic residual: full-visible reshape on scroll; shape avg ~130 ≤256; dogfood scroll ≤60. (5) Gate default `SCROLL_CPU_MAX=60` in `run_editor_perf_dogfood_gate.sh`. (6) Recent quiet dogfood scroll ~40–43 (post-§110d) — room to tighten, but reshape cost still O(visible) per scroll frame |
+| **Green cut** | (A) Stop treating **scroll Y alone** as reshape-invalidating: fingerprint for **reshape** excludes `scroll_offset_y` (keep version/font/theme/width/visible-row **identity** that requires new glyphs). (B) On version-unchanged scroll: **Y-adjust** retained quads for rows that stay visible (`static_text_glyph_batch_adjust_y` or equivalent VBO Y translate) **and/or** reshape **only newly revealed** visual rows, merging into the retained batch — not full visible rebuild. (C) First paint / unknown damage / identity set change may full-rebuild once. Files: `demo_live.mlc` (fp + damage wire) + `ui/static_text.mlc` (Y-adjust / partial rebuild helper as needed) + optional `ui/perf.mlc` counter; L1 scenario + harness (+ `_red.sh`). Update dogfood gate `SCROLL_CPU_MAX` to measured ceiling **< 60** |
+| Green must hit | (1) L1/harness: version-unchanged scroll sample reports shape cost bounded by **newly visible** (named bound in report; must be **strictly tighter** than §109e’s `4*visible_row_budget+64` = 256 — e.g. ≤ `4*newly_visible_rows+32` or absolute avg ≤ **64** if newly-visible count not exported). (2) Sabotages (1)/(2) fail green. (3) Dogfood `scroll_cpu` ≤ new ceiling **< 60** (paste measured ceiling). (4) `type_stall_ms` ≤ 500. (5) Wake still/jitter + gen deltas still 0. (6) Red “already present” after Green. (7) Static: reshape fingerprint path no longer keys sole scroll_offset_y into full rebuild |
+| Counters / report | `editor_glyph_shape_calls` scroll avg; optional `newly_visible_rows`; `scroll_cpu_percent`; `SCROLL_CPU_MAX=<new>`; wake deltas; type_stall |
+| Red | No `run_editor_glyph_damage.sh` / scroll_offset_y still forces full editor glyph rebuild / no Y-adjust or newly-visible path |
+| Green | Damage path + harness + tightened scroll ceiling paste under this §110e |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | **open** |
-| 1 | Red | pending |
-| 2 | Green | pending |
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no glyph-damage harness / scroll forces full reshape | **open** |
+| 2 | Green: Y-adjust / newly-visible reshape + scroll ceiling <60 | pending |
 | 3 | Critic | pending |
 
 ## Diff / notes
@@ -306,3 +318,4 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 2026-08-06: §110d Red — `scripts/run_editor_batch_stream_red.sh` (exit 1: no green harness / terminal solids outside list).
 2026-08-06: §110d Green — orphan solid stream + terminal emit-only + coalesce + `run_editor_batch_stream.sh`.
 2026-08-06: §110d CLOSED (Critic OK); queue → §110e Decision.
+2026-08-06: §110e Decision frozen (glyph damage / scroll Y-adjust + newly-visible reshape).

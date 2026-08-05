@@ -483,3 +483,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110d CLOSED (Critic OK).** §110e Decision next |
 | issues  | residual: live paint-list rebuild every frame; glyph newly-visible reshape → §110e |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Decision — glyph damage) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110e Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110e: pre-cut (`scroll_offset_y` in editor_glyph_fp → full rebuild; no Y-adjust API; SCROLL_CPU_MAX=60); Green cut exclude scroll from reshape fp + Y-adjust/newly-visible + tighten scroll ceiling <60 |
+| verify  | Decision table in TRACK STEP=0=done; PLAN → Red; docs-only — gap still scroll-keyed full glyph rebuild |
+| result  | **§110e STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110e Red — no glyph-damage harness) |
