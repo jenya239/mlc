@@ -408,3 +408,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110c STEP=2 done (Green).** Critic next |
 | issues  | terminal_grid_draw_cached_backgrounds still fills solid before list flush_over |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110c critique-audit) |
+
+### Turn 2026-08-06 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110c)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent L1 rebuild + sab1/sab2 + wake remasure; static forbidden=0 / submit owns GL; closed §110c; opened §110d stub; PLAN queue → §110d |
+| verify  | L1 paint_ops=9 gl=0; red already-present exit 1; sab2 ux_fail paint_ops; wake gens 7→7/2→2 still=1% jitter=0% rebuildΔ=0; dogfood Driver pass accepted |
+| result  | **§110c CLOSED (Critic OK).** §110d Decision next |
+| issues  | residual: terminal_grid_draw_cached_backgrounds still solid_renderer_rect outside submit → §110d |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Decision — batch/stream) |

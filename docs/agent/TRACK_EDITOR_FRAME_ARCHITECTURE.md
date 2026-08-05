@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110c** (STEP=2 Green done; Critic next)
+## Status: **open** 2026-08-06 — queue head **§110d** (Decision next; §110c CLOSED)
 
 ## Destination (plain)
 
@@ -50,8 +50,8 @@ unless a phase Decision explicitly replaces a member.
 | **0** | Finish §109 | §109k Critic closes epic | **done** 2026-08-05 — dogfood gate ×2 + sabotages |
 | **A** | Headless-visible measure | All `MLC_GLFW_VISIBLE=1` dogfood/perf scripts runnable under **Xvfb** (or `DISPLAY` isolate) so agents do not steal `:0` keyboard/mouse | **done** §110a — wrapper + wake isolate; dogfood-under-xvfb scroll residual |
 | **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | **done** §110b — L1/wake gen deltas 0; Critic OK |
-| **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress — **§110c** |
-| **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 |
+| **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress — **§110c CLOSED** |
+| **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 — **§110d** |
 | **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) |
 | **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates |
 | **G** | Archive / handoff | Point GUI_ARCHITECTURE + EDITOR at this path; resume §103f | docs only |
@@ -179,7 +179,7 @@ Red after Green: `already present`.
 
 Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks → exit 3. Sab2: bare `frame_layout_tick_*` in demo copy detected by harness static check. Sab3: still-window gen bump would fail ownership delta gate. Independent wake remasure: layout/paint gens 7→7 / 2→2; still=1% jitter=1%; rebuild/frame deltas 0. Red `already present`. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110c: retained batches still keyed by `layout_skip`/booleans, not gens; no single `editor_frame_tick` entry (wrapper family OK per Decision “or equivalent”).
 
-## §110c `EDITOR_PAINT_LIST` — **queue head**
+## §110c `EDITOR_PAINT_LIST` — **CLOSED** 2026-08-06 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -209,7 +209,7 @@ Independent L1 rebuild/rerun (`ux_ok`, deltas 0). Sab1: strip always-dirty marks
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no paint-list harness / direct GL sites remain | **done** 2026-08-06 |
 | 2 | Green: paint list + single submit + dogfood non-regress | **done** 2026-08-06 |
-| 3 | Critic | **open** |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 ### Green measured (§110c)
 
@@ -219,6 +219,30 @@ Wake still: layout/paint gens 7→7 / 2→2; still=1% jitter=0%.
 Dogfood gate exit 0: scroll_cpu_percent=40; type_stall_ms=16.
 Red after Green: `already present`.
 Residual: `terminal_grid_draw_cached_backgrounds` still writes solids into the renderer before list `flush_over` (not a listed demo_live call).
+
+### Critic (§110c)
+
+Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 1 `already present`. Sab1: inject `solid_renderer_rect` into demo copy → green static would fail. Sab2: empty list L1 → `ux_fail paint_ops` exit 1. Independent wake: layout/paint gens 7→7 / 2→2; still=1% jitter=0%; rebuild deltas 0. Static forbidden=0; submit owns listed GL. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110d: `terminal_grid_draw_cached_backgrounds` still issues `solid_renderer_rect` outside `editor_paint_list_submit` (demo_live must-hit met; Green-cut “only live path” ideal not fully met for terminal cells).
+
+## §110d `EDITOR_BATCH_STREAM` — **queue head**
+
+| Item | Choice |
+|------|--------|
+| Problem | Path phase D: paint list submits still expand to many per-op GL uploads / draws; no merge of compatible rects/glyphs; orphaning / multi-buffer stream not owned |
+| Fix | Decision next (Driver STEP=0) |
+| Depends on | §110c CLOSED (`EditorPaintList` + submit); §108 retained batches stay as command sources |
+| Gate | TBD in Decision — draw_calls / bytes_uploaded ceilings measured-then-written; idle upload ≈0; wake + dogfood non-regress |
+| Sabotage | TBD in Decision |
+| Out of scope | SceneNode; glyph row-Y damage (§110e); wholesale delete of `demo_live`; raising §109 CPU ceilings; Xvfb dogfood scroll residual (§110a) |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **open** |
+| 1 | Red | pending |
+| 2 | Green | pending |
+| 3 | Critic | pending |
 
 ## Diff / notes
 
@@ -231,3 +255,4 @@ Residual: `terminal_grid_draw_cached_backgrounds` still writes solids into the r
 2026-08-06: §110c Decision frozen (paint list / single GL submit).
 2026-08-06: §110c Red — `scripts/run_editor_paint_list_red.sh` (exit 1: no green harness / direct GL sites).
 2026-08-06: §110c Green — `ux/paint_list.mlc` + demo_live emit-only + `run_editor_paint_list.sh`.
+2026-08-06: §110c CLOSED (Critic OK); queue → §110d Decision.
