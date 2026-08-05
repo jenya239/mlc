@@ -87,6 +87,12 @@ export MLC_EDITOR_PERF_OPEN="$OPEN_PATH"
 export EDITOR_DEMO_LIVE_FS_OUT="$DEMO_OUT"
 export MLCC_OBJ_CLEAN="${MLCC_OBJ_CLEAN:-1}"
 export MLCC_PCH="${MLCC_PCH:-0}"
+# Longer scroll sample windows cut /proc jiffy noise (~0.5%/jiffy at 2s → ~0.2% at 5s).
+# Members keep ${VAR:-default}; suite exports override their short defaults.
+export DOGFOOD_SAMPLE_SEC_SHORT="${DOGFOOD_SAMPLE_SEC_SHORT:-5}"
+export DOGFOOD_SAMPLE_ROUNDS_SHORT="${DOGFOOD_SAMPLE_ROUNDS_SHORT:-3}"
+export DOGFOOD_QUIET_LOAD_MAX="${DOGFOOD_QUIET_LOAD_MAX:-6.00}"
+export DOGFOOD_QUIET_LOAD_TIMEOUT_SEC="${DOGFOOD_QUIET_LOAD_TIMEOUT_SEC:-60}"
 unset MLC_EDITOR_PERF || true
 
 rm -rf "$REPORT_DIR"
@@ -142,6 +148,7 @@ assert_dogfood_ceilings() {
   [ "$stall" -le "$TYPE_STALL_MS_MAX" ] || fail "type_stall_ms=$stall > $TYPE_STALL_MS_MAX"
   if [ "$scroll" -gt "$SCROLL_CPU_MAX" ]; then
     local samples="$scroll" retry retry_dir retry_scroll retry_status
+    echo "[editor_perf_dogfood_gate] scroll=$scroll > $SCROLL_CPU_MAX — median-of-3 after quiet" >&2
     for retry in 1 2; do
       retry_dir="$REPORT_DIR/dogfood_scroll_retry_$retry"
       export EDITOR_PERF_DOGFOOD_OUT="$retry_dir"

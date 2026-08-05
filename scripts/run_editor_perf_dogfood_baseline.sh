@@ -75,6 +75,47 @@ if [ "$HZ" -le 0 ]; then
   HZ=100
 fi
 
+# 1-minute load average; empty if unreadable.
+read_loadavg_1m() {
+  local load
+  load="$(cut -d' ' -f1 /proc/loadavg 2>/dev/null || true)"
+  echo "$load"
+}
+
+# Wait until 1m loadavg ≤ max for stable_sec, or timeout (then proceed — ceiling still applies).
+wait_quiet_load() {
+  local max_load="${DOGFOOD_QUIET_LOAD_MAX:-6.00}"
+  local timeout_sec="${DOGFOOD_QUIET_LOAD_TIMEOUT_SEC:-60}"
+  local stable_sec="${DOGFOOD_QUIET_LOAD_STABLE_SEC:-2}"
+  local deadline quiet_since now avg
+  deadline=$(( $(date +%s) + timeout_sec ))
+  quiet_since=""
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    avg="$(read_loadavg_1m)"
+    if [ -z "$avg" ]; then
+      echo "[editor_perf_dogfood_baseline] WARN: cannot read loadavg — skip quiet wait" >&2
+      return 0
+    fi
+    # Note: do not name awk vars `load` — gawk builtin.
+    if awk -v avg="$avg" -v max="$max_load" 'BEGIN { exit !(avg + 0 <= max + 0) }'; then
+      now="$(date +%s)"
+      if [ -z "$quiet_since" ]; then
+        quiet_since=$now
+      fi
+      if [ $((now - quiet_since)) -ge "$stable_sec" ]; then
+        echo "[editor_perf_dogfood_baseline] quiet loadavg=$avg (max=$max_load)" >&2
+        return 0
+      fi
+    else
+      quiet_since=""
+      echo "[editor_perf_dogfood_baseline] waiting quiet loadavg=$avg > $max_load" >&2
+    fi
+    sleep 1
+  done
+  avg="$(read_loadavg_1m)"
+  echo "[editor_perf_dogfood_baseline] WARN: quiet-load timeout loadavg=${avg:-?} max=$max_load — sample anyway" >&2
+}
+
 sample_cpu() {
   local mode="$1"
   local sample_sec="$2"
@@ -176,6 +217,9 @@ text_jitter_cpu_percent="$(sample_cpu min "$SAMPLE_SEC_LONG" "$SAMPLE_ROUNDS_LON
 
 set_phase_cmd "scroll"
 wait_phase_marker "phase=scroll"
+# Host load inflates /proc CPU% (Critic §109k: 61–72 under load_avg 4–8). Wait for
+# quiet before sampling — does not raise the ≤60 ceiling.
+wait_quiet_load
 # Median of short rounds (not max): max-of-2s spikes noise past ≤60 under shared load.
 scroll_cpu_percent="$(sample_cpu median "$SAMPLE_SEC_SHORT" "$SAMPLE_ROUNDS_SHORT")"
 

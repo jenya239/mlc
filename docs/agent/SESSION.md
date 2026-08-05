@@ -213,3 +213,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§109k Critic BLOCKED** (no consecutive ×2). Epic not closed. |
 | issues  | scroll_cpu% at Decision ceiling under host load; §110a Xvfb may isolate — but STEPs gated on §109 close |
 | next    | ROLE=Driver STEP=debug-verify TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — quiet consecutive gate ×2 / scroll sample) |
+
+### Turn 2026-08-05 (Driver TRACK_EDITOR_PERF_DOGFOOD STEP=debug-verify, §109k)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | debug-verify |
+| track   | TRACK_EDITOR_PERF_DOGFOOD |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Scroll sample harden: gate `DOGFOOD_SAMPLE_SEC_SHORT=5`/rounds=3; baseline `wait_quiet_load` before scroll (awk `avg`, max=6 timeout=60); quiet gate ×2 exit 0 (scroll 39/29; startup_scroll 58/33); red already present |
+| verify  | pass1 03:49→04:17 exit 0 scroll=39; pass2 14:12→14:34 exit 0 scroll=29; smoke scroll=54; `run_editor_perf_dogfood_gate_red.sh` exit 1 |
+| result  | **§109k debug-verify done** (measurement harden + ×2). Epic not closed — Critic resume |
+| issues  | none (ceiling still ≤60; no raise) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_PERF_DOGFOOD (§109k — re-audit sabotes + independent ×2; close epic if green) |

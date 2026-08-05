@@ -15,7 +15,7 @@ workflow — agent must see pass/fail or concrete counters. §109a–c built the
 dashboard; each later Green is **one** bottleneck (hypothesis → metric → cut →
 before/after). Do not “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§109k** (Critic STEP=3 **blocked** — scroll ×2)
+## Status: **open** 2026-08-05 — queue head **§109k** (Critic STEP=3 resume — Driver debug-verify ×2 green)
 
 ## Why (facts)
 
@@ -654,7 +654,7 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 | 0 | Decision freeze | **done** 2026-08-04 |
 | 1 | Red: no dogfood-gate harness | **done** 2026-08-04 — `scripts/run_editor_perf_dogfood_gate_red.sh` exit 1 |
 | 2 | Green: compose suite + ceilings + ×2 | **done** 2026-08-04 — gate ×2 exit 0; red already present |
-| 3 | Critic | **blocked** 2026-08-05 — sab1–4 fail OK; harden (sab2 guards, harness OUT, tree scroll report, dogfood scroll median-of-rounds); independent consecutive ×2 not green: scroll_cpu often 61–72 vs ≤60 (solo C1=60 C7=58; Driver Green 39/31). Host load_avg often 4–8. Do not close until quiet consecutive ×2 or measurement isolate (§110a) |
+| 3 | Critic | **resume** — 2026-08-05 blocked (scroll ×2 under load); Driver debug-verify 2026-08-05: scroll sample harden + quiet ×2 exit 0 (scroll 39/29). Re-audit sabotes + independent ×2 before close |
 
 ### Critic notes (2026-08-05)
 
@@ -665,7 +665,22 @@ Red after Green: `already present` exit 1. All seven `member=* status=ok`.
 | Sab3 README open | fail basename |
 | Sab4 omit minimap | fail missing `status=ok` |
 | Red already present | exit 1 |
-| Quiet consecutive ×2 | **not met** — C2/C3/C5/C8/C9/C11 scroll fail; C1/C7 solo OK |
+| Quiet consecutive ×2 | **not met** on Critic turn — C2/C3/C5/C8/C9/C11 scroll fail; C1/C7 solo OK |
+
+### Driver debug-verify (2026-08-05) — scroll sample harden + ×2
+
+Ceiling **unchanged** (scroll≤60). Measurement harden only:
+
+1. Gate exports `DOGFOOD_SAMPLE_SEC_SHORT=5` / `ROUNDS_SHORT=3` (cuts `/proc` jiffy noise vs 2s windows).
+2. Baseline `wait_quiet_load` before scroll sample (`DOGFOOD_QUIET_LOAD_MAX=6`, timeout 60s; awk var must not be named `load` — gawk builtin).
+3. Quiet remasure ×2 (ceiling still 60; red already-present):
+
+| Pass | wall (+0400) | scroll | stall | present_ms | startup_scroll | remeasure_total_us | exit |
+|------|--------------|--------|-------|------------|----------------|--------------------|------|
+| 1 | 03:49→04:17 | 39 | 16 | 119 | 58 | 820207 | 0 |
+| 2 | 14:12→14:34 | 29 | 16 | 108 | 33 | 885253 | 0 |
+
+Smoke dogfood alone (pre-suite): scroll=54. Epic **not** Critic-closed this turn.
 
 ---
 
