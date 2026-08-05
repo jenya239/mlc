@@ -318,3 +318,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110b STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Red — no ownership harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=1, §110b Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `scripts/run_editor_frame_ownership_red.sh`: fail while green harness / `EditorFrame` / `layout_generation`/`paint_generation` absent; ux_gate unwired; no §110b measured paste |
+| verify  | `bash scripts/run_editor_frame_ownership_red.sh` → FAIL exit 1 (`no editor frame ownership harness`); touch green → `already present` |
+| result  | **§110b STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Green — EditorFrame + generation-stable L1) |

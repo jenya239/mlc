@@ -164,7 +164,7 @@ Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: no ownership harness / no generations | **open** |
+| 1 | Red: no ownership harness / no generations | **done** 2026-08-06 |
 | 2 | Green: EditorFrame + generation-stable L1 + dogfood non-regress | **open** |
 | 3 | Critic | **open** |
 
@@ -173,3 +173,4 @@ Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present
 2026-08-04: path written; no code.
 2026-08-05: §109 CLOSED; §110a Decision/Red/Green/Critic CLOSED (Xvfb wrapper + wake isolate); dogfood-under-xvfb scroll residual.
 2026-08-06: §110b Decision frozen (frame ownership / dirty generations).
+2026-08-06: §110b Red — `scripts/run_editor_frame_ownership_red.sh` (exit 1: no green harness / no gens).
