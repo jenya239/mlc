@@ -1,0 +1,53 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110b — L1 generation stability.
+import {
+  EditorFrame,
+  editor_frame_new,
+  editor_frame_mark_layout,
+  editor_frame_mark_paint,
+  editor_frame_generation_delta
+} from '../app/editor_frame'
+
+fn main() -> i32 = do
+  let mut frame = editor_frame_new()
+  const before = frame
+  let mut tick = 0
+  while tick < 16 do
+    // Unchanged UI: no mark_layout / mark_paint.
+    tick = tick + 1
+  end
+  let mut delta = editor_frame_generation_delta(before, frame)
+  if delta.layout_generation != 0 || delta.paint_generation != 0 then
+    println("ux_fail frame_ownership_stable idle_delta")
+    return 1
+  end
+
+  frame = editor_frame_mark_layout(frame)
+  frame = editor_frame_mark_paint(frame)
+  delta = editor_frame_generation_delta(before, frame)
+  if delta.layout_generation != 1 || delta.paint_generation != 1 then
+    println("ux_fail frame_ownership_stable mark_delta")
+    return 2
+  end
+
+  // Sabotage shape: always-dirty bumps every poll → delta != 0.
+  let mut always = editor_frame_new()
+  const always_before = always
+  let mut poll = 0
+  while poll < 8 do
+    always = editor_frame_mark_layout(always)
+    always = editor_frame_mark_paint(always)
+    poll = poll + 1
+  end
+  delta = editor_frame_generation_delta(always_before, always)
+  if delta.layout_generation == 0 || delta.paint_generation == 0 then
+    println("ux_fail frame_ownership_stable sabotage_undetected")
+    return 3
+  end
+
+  println("ux_ok frame_ownership_stable")
+  println("layout_generation=" + frame.layout_generation.to_string())
+  println("paint_generation=" + frame.paint_generation.to_string())
+  println("delta_layout_generation=0")
+  println("delta_paint_generation=0")
+  0
+end

@@ -333,3 +333,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110b STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Green — EditorFrame + generation-stable L1) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110b Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `misc/editor/app/editor_frame.mlc` (`EditorFrame` + tick wrappers); routed all live `frame_layout_tick_*` via `editor_frame_*`; wake counters dump gens; L1 `frame_ownership_stable`; harness `run_editor_frame_ownership.sh`; amended `frame_layout_wrap_stable` for wrapper |
+| verify  | L1 ux_ok deltas 0; red already-present; wake still gens 7→7 / 2→2; dogfood gate exit 0 (scroll=45 type_stall=16); wrap_stable ok |
+| result  | **§110b STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b critique-audit) |

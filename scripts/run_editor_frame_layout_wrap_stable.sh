@@ -28,9 +28,16 @@ if ! grep -q "from './app/frame_layout'" "$DEMO"; then
   echo "[editor frame_layout_wrap_stable] FAIL: demo_live missing frame_layout import" >&2
   exit 1
 fi
-if ! grep -q 'frame_layout_tick_pixel(' "$DEMO"; then
-  echo "[editor frame_layout_wrap_stable] FAIL: demo_live missing frame_layout_tick_pixel(" >&2
+if ! grep -q 'frame_layout_tick_pixel(\|editor_frame_tick_pixel(' "$DEMO"; then
+  echo "[editor frame_layout_wrap_stable] FAIL: demo_live missing frame_layout_tick_pixel(/editor_frame_tick_pixel(" >&2
   exit 1
+fi
+# §110b — live pixel tick may be routed via EditorFrame wrapper.
+if grep -q 'editor_frame_tick_pixel(' "$DEMO"; then
+  if ! grep -q 'frame_layout_tick_pixel(' "$ROOT_DIR/misc/editor/app/editor_frame.mlc"; then
+    echo "[editor frame_layout_wrap_stable] FAIL: editor_frame missing frame_layout_tick_pixel(" >&2
+    exit 1
+  fi
 fi
 
 tick_count="$(grep -c 'wrap_count_cache_tick_pixel(' "$DEMO" || true)"

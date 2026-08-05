@@ -1,0 +1,159 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110b — dirty generations owned by one frame object.
+import {
+  LineIndex
+} from '../document/line_index'
+import {
+  TextDocument
+} from '../document/piece_table'
+import {
+  EditorFrameLayout,
+  frame_layout_tick_pixel,
+  frame_layout_tick_snapshot,
+  frame_layout_tick_snapshot_edit,
+  frame_layout_tick_spans,
+  frame_layout_tick_minimap,
+  frame_layout_tick_max_columns
+} from './frame_layout'
+
+export type EditorFrame = {
+  layout_generation: i32,
+  paint_generation: i32
+}
+
+export type EditorFrameLayoutOwned = {
+  frame: EditorFrame,
+  layout: EditorFrameLayout
+}
+
+export fn editor_frame_new() -> EditorFrame =
+  EditorFrame {
+    layout_generation: 0,
+    paint_generation: 0
+  }
+
+export fn editor_frame_mark_layout(frame: EditorFrame) -> EditorFrame =
+  EditorFrame {
+    layout_generation: frame.layout_generation + 1,
+    paint_generation: frame.paint_generation
+  }
+
+export fn editor_frame_mark_paint(frame: EditorFrame) -> EditorFrame =
+  EditorFrame {
+    layout_generation: frame.layout_generation,
+    paint_generation: frame.paint_generation + 1
+  }
+
+// Sabotage / L1: unchanged UI must keep both generations stable.
+export fn editor_frame_generation_delta(
+  before: EditorFrame,
+  after: EditorFrame
+) -> EditorFrame =
+  EditorFrame {
+    layout_generation: after.layout_generation - before.layout_generation,
+    paint_generation: after.paint_generation - before.paint_generation
+  }
+
+export fn editor_frame_tick_snapshot(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  document: TextDocument,
+  dirty: i32
+) -> EditorFrameLayoutOwned = do
+  let mut next_frame = frame
+  if dirty != 0 then
+    next_frame = editor_frame_mark_layout(next_frame)
+  end
+  EditorFrameLayoutOwned {
+    frame: next_frame,
+    layout: frame_layout_tick_snapshot(layout, document, dirty)
+  }
+end
+
+export fn editor_frame_tick_snapshot_edit(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  byte_start: i32,
+  removed_len: i32,
+  inserted: string
+) -> EditorFrameLayoutOwned =
+  EditorFrameLayoutOwned {
+    frame: editor_frame_mark_layout(frame),
+    layout: frame_layout_tick_snapshot_edit(
+      layout, byte_start, removed_len, inserted
+    )
+  }
+
+// Caller only invokes on layout_skip==0 (content/geometry path).
+export fn editor_frame_tick_pixel(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  document_version: i32,
+  text: string,
+  line_index: LineIndex,
+  viewport_width_px: i32,
+  font_path: string,
+  pixel_size: i32,
+  line_height: i32,
+  skip_full_pixel_wrap: i32
+) -> EditorFrameLayoutOwned =
+  EditorFrameLayoutOwned {
+    frame: editor_frame_mark_layout(frame),
+    layout: frame_layout_tick_pixel(
+      layout, document_version, text, line_index,
+      viewport_width_px, font_path, pixel_size, line_height,
+      skip_full_pixel_wrap
+    )
+  }
+
+export fn editor_frame_tick_max_columns(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  document_version: i32,
+  line_index: LineIndex
+) -> EditorFrameLayoutOwned =
+  EditorFrameLayoutOwned {
+    frame: editor_frame_mark_layout(frame),
+    layout: frame_layout_tick_max_columns(
+      layout, document_version, line_index
+    )
+  }
+
+export fn editor_frame_tick_spans(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  document_version: i32,
+  text: string,
+  range_start: i32,
+  range_end: i32
+) -> EditorFrameLayoutOwned = do
+  const prev_rebuild = layout.span_cache.rebuild_count
+  const next_layout = frame_layout_tick_spans(
+    layout, document_version, text, range_start, range_end
+  )
+  let mut next_frame = frame
+  if next_layout.span_cache.rebuild_count != prev_rebuild then
+    next_frame = editor_frame_mark_layout(next_frame)
+  end
+  EditorFrameLayoutOwned {
+    frame: next_frame,
+    layout: next_layout
+  }
+end
+
+// May run on layout_skip frames — bump only when minimap cache rebuilds.
+export fn editor_frame_tick_minimap(
+  frame: EditorFrame,
+  layout: EditorFrameLayout,
+  document_version: i32
+) -> EditorFrameLayoutOwned = do
+  const prev_rebuild = layout.minimap_cache.rebuild_count
+  const next_layout = frame_layout_tick_minimap(layout, document_version)
+  let mut next_frame = frame
+  if next_layout.minimap_cache.rebuild_count != prev_rebuild then
+    next_frame = editor_frame_mark_layout(next_frame)
+  end
+  EditorFrameLayoutOwned {
+    frame: next_frame,
+    layout: next_layout
+  }
+end
