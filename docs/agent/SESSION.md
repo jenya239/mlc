@@ -303,3 +303,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110a CLOSED (Critic OK).** |
 | issues  | outer `MLC_EDITOR_PERF` stripped by wrapper — sab4 needs `-- env`; dogfood scroll under Xvfb residual unchanged |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Decision freeze — frame ownership) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=0, §110b Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §110b: `EditorFrame` + `layout_generation`/`paint_generation`; live ticks through one owner; L1 unchanged UI → gen deltas 0; harness `run_editor_frame_ownership.sh`. Pre-cut: no EditorFrame/gens; ~30 scattered `frame_layout_tick_*` in `demo_live` |
+| verify  | Decision table + Steps in TRACK; PLAN/CONTINUITY → STEP=1 Red; docs-only — gap still no ownership script/gens |
+| result  | **§110b STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Red — no ownership harness) |

@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§110b** (§110a CLOSED; STEP=0 Decision next)
+## Status: **open** 2026-08-06 — queue head **§110b** (STEP=0 Decision frozen; Red next)
 
 ## Destination (plain)
 
@@ -48,8 +48,8 @@ unless a phase Decision explicitly replaces a member.
 | Phase | Name | What ships | Gate idea |
 |-------|------|------------|-----------|
 | **0** | Finish §109 | §109k Critic closes epic | **done** 2026-08-05 — dogfood gate ×2 + sabotages |
-| **A** | Headless-visible measure | All `MLC_GLFW_VISIBLE=1` dogfood/perf scripts runnable under **Xvfb** (or `DISPLAY` isolate) so agents do not steal `:0` keyboard/mouse | `MLC_EDITOR_PERF_XVFB=1` → same pass/fail as today; fail if falls back to skip-green — **§110a** |
-| **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | L1: unchanged UI → layout_generation and paint_generation do not bump; sabotage always-dirty fails |
+| **A** | Headless-visible measure | All `MLC_GLFW_VISIBLE=1` dogfood/perf scripts runnable under **Xvfb** (or `DISPLAY` isolate) so agents do not steal `:0` keyboard/mouse | **done** §110a — wrapper + wake isolate; dogfood-under-xvfb scroll residual |
+| **B** | Frame ownership | One `EditorFrame` (or equivalent): dirty generations (`content` / `chrome` / `present` / `layout` / `paint` / `geometry`); **all** live ticks go through it; no new ad-hoc caches in `demo_live` | L1: unchanged UI → layout_generation and paint_generation do not bump; sabotage always-dirty fails — **§110b** |
 | **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress |
 | **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 |
 | **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) |
@@ -136,11 +136,40 @@ Independent remasure (system `/usr/bin` Xvfb, not `.tmp` prefix):
 
 Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present-pace follow-up (runtime/`SwapInterval` under Xvfb).
 
-## §110b `EDITOR_FRAME_OWNERSHIP` — **next**
+## §110b `EDITOR_FRAME_OWNERSHIP` — **queue head**
 
-Path phase **B**. Driver STEP=0 Decision freeze next (dirty generations / single frame state). Do not pull paint-list (§110c) ahead.
+| Item | Choice |
+|------|--------|
+| Problem | Path phase B: `demo_live.mlc` still owns the GLFW loop and schedules layout/paint by hand. Dirty intent is **booleans** (`content_dirty` / `pointer_dirty` / `chrome_dirty` / `paint_dirty` / `layout_skip`). Retained batches (§108) and `EditorFrameLayout` ticks (§97) exist, but there is **no** single `EditorFrame` and **no** `layout_generation` / `paint_generation`. ~30 scattered `frame_layout_tick_*` call sites in `demo_live` — new ad-hoc caches can still land outside one owner |
+| Fix | Below (Decision frozen 2026-08-06) |
+| Depends on | §110a CLOSED (measure isolate available); §108 retained chrome/text layers; §109 dogfood gate stays authority for epic CPU ceilings |
+| Gate | Frame-ownership harness green; unchanged UI → generation deltas 0; sabotage always-dirty fails; dogfood gate non-regress |
+| Sabotage | (1) Force bump `layout_generation` and/or `paint_generation` every poll while UI unchanged → L1 fail. (2) Bypass `EditorFrame` and call bare `frame_layout_tick_*` from a load-bearing live path while claiming ownership → static/harness fail. (3) Claim green while `run_editor_perf_wake_on_hover.sh` rebuild deltas or `run_editor_perf_dogfood_gate.sh` regress |
+| Out of scope | SceneNode; full paint-list / GL submit merge (§110c/D); wholesale delete of `demo_live`; Xvfb dogfood scroll pacing residual (§110a); changing §109 CPU ceilings; glyph row-Y damage (§110e) |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_frame_ownership.sh` (+ `_red.sh`). L1 scenario dumps `layout_generation` / `paint_generation` (and content/chrome gens if shipped) over still/idle/present-only ticks. Side: `run_editor_perf_wake_on_hover.sh` rebuild/frame deltas still 0. Dogfood: existing `run_editor_perf_dogfood_gate.sh` non-regress (ceilings unchanged). Report: `.tmp/editor_frame_ownership/report.txt` |
+| Pre-cut (audit 2026-08-06) | (1) **No** type `EditorFrame`; **zero** `layout_generation` / `paint_generation` in repo. (2) Loop + paint orchestration owned by `misc/editor/demo_live.mlc` (~3566 lines; `while glfw_gl_context_should_close()`). (3) Closest types: `EditorFrameInput` (`app/frame_input.mlc`), `EditorFrameLayout` + `frame_layout_tick_*` (`app/frame_layout.mlc`) — layout helpers, not frame owner. (4) Dirty = booleans in input/live locals (`content_dirty` / `pointer_dirty` / `chrome_dirty` / `paint_dirty` / `layout_skip`). (5) ~30 `frame_layout_tick_*` sites in `demo_live` (snapshot/edit/pixel/spans/minimap/max_columns). (6) Retained `TextLayerBatch` / `ChromeLayerBatch` / glyph batches exist (§108/§109) but are not generation-owned. (7) Wake L1 already gates `delta_*_rebuild_count` / `delta_*_frame_count`, **not** generations |
+| **Green cut** | Introduce **`EditorFrame`** (name may match `EditorFrameLayout` family) holding dirty **generations** at minimum `layout_generation` + `paint_generation` (add `content` / `chrome` / `present` / `geometry` if needed for the wire without expanding to paint-list). Single live entry (`editor_frame_tick` / equivalent) schedules layout ticks + retained-layer invalidate/replay from gens — **route load-bearing live paths through it** so unchanged UI does not bump layout/paint gens. Edit/open paths mark content (or layout) gen once instead of growing the ad-hoc retick forest. Keep §108 retained batches; **do not** emit paint-command lists (§110c). Files: new small module under `misc/editor/app/` (preferred) + minimal `demo_live.mlc` wire; L1 scenario + harness (+ `_red.sh`) |
+| Green must hit | (1) Unchanged UI (still-over-text and/or present-only / hit-stable as harness defines): `layout_generation` delta == 0 and `paint_generation` delta == 0 across the sample window. (2) Sabotage always-dirty fails that assert. (3) Static/harness: load-bearing live layout ticks go through `EditorFrame` (bare `frame_layout_tick_*` from listed live sites fails). (4) `run_editor_perf_wake_on_hover.sh` still/jitter ceilings + rebuild deltas still 0. (5) `run_editor_perf_dogfood_gate.sh` exit 0 (one quiet pass OK for Green; Critic may ×2). (6) Red “already present” after Green |
+| Counters / report | `layout_generation=…`, `paint_generation=…`, deltas over sample; optional content/chrome gens; wake `delta_*_rebuild_count`; dogfood `scroll_cpu_percent` / `type_stall_ms` copied when run |
+| Red | No `run_editor_frame_ownership.sh` / no generation fields in editor sources |
+| Green | Ownership type + wire + harness; paste L1 generation deltas + wake/dogfood side metrics under this §110b |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no ownership harness / no generations | **open** |
+| 2 | Green: EditorFrame + generation-stable L1 + dogfood non-regress | **open** |
+| 3 | Critic | **open** |
 
 ## Diff / notes
 
 2026-08-04: path written; no code.
-2026-08-05: §109 CLOSED; §110a Decision/Red/Green/Critic CLOSED (Xvfb wrapper + wake isolate); dogfood-under-xvfb scroll residual; §110b next.
+2026-08-05: §109 CLOSED; §110a Decision/Red/Green/Critic CLOSED (Xvfb wrapper + wake isolate); dogfood-under-xvfb scroll residual.
+2026-08-06: §110b Decision frozen (frame ownership / dirty generations).
