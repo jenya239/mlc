@@ -453,3 +453,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110d STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d Green — orphan/stream + idle upload 0) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110d Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Orphan `gl_buffer_data_orphan_scratch` + stream flush/skip; terminal emit-only + coalesce; L1 `frame_batch_stream_stable`; harness `run_editor_batch_stream.sh`; demo_live wired |
+| verify  | L1 upload=288 idle=0 coalesce 3→2; red already-present; wake gens 7→7/2→2 still=1%; dogfood gate exit 0 (scroll=41 stall=16) |
+| result  | **§110d STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110d critique-audit) |

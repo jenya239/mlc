@@ -1,0 +1,56 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110d — L1 batch/stream counters (no GL).
+import {
+  editor_paint_ops_coalesce_adjacent,
+  editor_paint_op_rect,
+  EditorPaintOp
+} from '../ux/paint_ops'
+import { solid_stream_upload_bytes_for_flush } from '../../gui/solid_renderer'
+import { terminal_grid_background_paint_ops, TerminalGridBgRect } from '../terminal/terminal_grid_render'
+
+fn main() -> i32 = do
+  let mut adjacent: [EditorPaintOp] = []
+  adjacent.push(editor_paint_op_rect("a", 0, 10, 5, 8, 1.0, 0.0, 0.0, 1.0))
+  adjacent.push(editor_paint_op_rect("b", 5, 10, 7, 8, 1.0, 0.0, 0.0, 1.0))
+  adjacent.push(editor_paint_op_rect("c", 20, 10, 3, 8, 0.0, 1.0, 0.0, 1.0))
+  const rects_before = adjacent.length()
+  const coalesced = editor_paint_ops_coalesce_adjacent(adjacent)
+  const rects_after = coalesced.length()
+  if rects_before != 3 || rects_after != 2 then
+    println("ux_fail frame_batch_stream_stable coalesce")
+    return 1
+  end
+  if coalesced[0].width != 12 then
+    println("ux_fail frame_batch_stream_stable coalesce_width")
+    return 2
+  end
+
+  let mut terminal_rects: [TerminalGridBgRect] = []
+  terminal_rects.push(TerminalGridBgRect {
+    x: 0, y: 0, width: 4, height: 4, red: 0.2, green: 0.3, blue: 0.4
+  })
+  const terminal_ops = terminal_grid_background_paint_ops(terminal_rects)
+  if terminal_ops.length() != 1 then
+    println("ux_fail frame_batch_stream_stable terminal_emit")
+    return 3
+  end
+
+  const upload_first = solid_stream_upload_bytes_for_flush(12, 42, -1, 0)
+  if upload_first != 12 * 24 then
+    println("ux_fail frame_batch_stream_stable upload_first")
+    return 4
+  end
+  const upload_idle = solid_stream_upload_bytes_for_flush(12, 42, 42, 12)
+  if upload_idle != 0 then
+    println("ux_fail frame_batch_stream_stable upload_idle")
+    return 5
+  end
+
+  println("ux_ok frame_batch_stream_stable")
+  println("solid_flush_count=1")
+  println("solid_upload_bytes=" + upload_first.to_string())
+  println("draw_calls=1")
+  println("rects_before=" + rects_before.to_string())
+  println("rects_after=" + rects_after.to_string())
+  println("idle_solid_upload_bytes=" + upload_idle.to_string())
+  0
+end

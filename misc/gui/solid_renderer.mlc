@@ -1,4 +1,5 @@
 // Colored solid quads (screen-space, top-left origin) via vertex colors.
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110d — orphan upload + idle skip replay.
 import {
   gl_clear,
   gl_clear_color_f64,
@@ -22,7 +23,7 @@ import {
   gl_bind_buffer,
   gl_scratch_f32_clear,
   gl_scratch_f32_push,
-  gl_buffer_data_scratch,
+  gl_buffer_data_orphan_scratch,
   gl_enable_vertex_attrib_array,
   gl_vertex_attrib_pointer_offset,
   gl_draw_arrays
@@ -54,21 +55,65 @@ export type SolidRenderer = {
   vertex_buffer: i32,
   position_location: i32,
   color_location: i32,
-  vertex_count: i32
+  vertex_count: i32,
+  gpu_vertex_count: i32,
+  gpu_fingerprint: i32,
+  last_upload_bytes: i32,
+  solid_flush_count: i32
 }
+
+export type SolidFlushStreamResult = {
+  renderer: SolidRenderer,
+  error_code: i32,
+  solid_upload_bytes: i32,
+  solid_flush_count: i32
+}
+
+fn solid_renderer_make(
+  program: i32,
+  vertex_buffer: i32,
+  position_location: i32,
+  color_location: i32,
+  vertex_count: i32,
+  gpu_vertex_count: i32,
+  gpu_fingerprint: i32,
+  last_upload_bytes: i32,
+  solid_flush_count: i32
+) -> SolidRenderer =
+  SolidRenderer {
+    program: program,
+    vertex_buffer: vertex_buffer,
+    position_location: position_location,
+    color_location: color_location,
+    vertex_count: vertex_count,
+    gpu_vertex_count: gpu_vertex_count,
+    gpu_fingerprint: gpu_fingerprint,
+    last_upload_bytes: last_upload_bytes,
+    solid_flush_count: solid_flush_count
+  }
+
+fn solid_renderer_error(program: i32) -> SolidRenderer =
+  solid_renderer_make(program, 0, -1, -1, 0, 0, -1, 0, 0)
+
+// Pure counter helper for L1 (no GL): fingerprint match → 0 upload bytes.
+export fn solid_stream_upload_bytes_for_flush(
+  vertex_count: i32,
+  fingerprint: i32,
+  gpu_fingerprint: i32,
+  gpu_vertex_count: i32
+) -> i32 = do
+  if fingerprint >= 0 && fingerprint == gpu_fingerprint && gpu_vertex_count > 0 then
+    return 0
+  end
+  vertex_count * 24
+end
 
 export fn solid_renderer_create() -> SolidRenderer = do
   const vertex_shader = gl_create_shader(gl_vertex_shader())
   gl_shader_source_string(vertex_shader, vertex_shader_source())
   gl_compile_shader(vertex_shader)
   if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
-    return SolidRenderer {
-      program: -12,
-      vertex_buffer: 0,
-      position_location: -1,
-      color_location: -1,
-      vertex_count: 0
-    }
+    return solid_renderer_error(-12)
   end
 
   const fragment_shader = gl_create_shader(gl_fragment_shader())
@@ -76,13 +121,7 @@ export fn solid_renderer_create() -> SolidRenderer = do
   gl_compile_shader(fragment_shader)
   if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
     gl_delete_shader(vertex_shader)
-    return SolidRenderer {
-      program: -13,
-      vertex_buffer: 0,
-      position_location: -1,
-      color_location: -1,
-      vertex_count: 0
-    }
+    return solid_renderer_error(-13)
   end
 
   const program = gl_create_program()
@@ -93,13 +132,7 @@ export fn solid_renderer_create() -> SolidRenderer = do
     gl_delete_shader(vertex_shader)
     gl_delete_shader(fragment_shader)
     gl_delete_program(program)
-    return SolidRenderer {
-      program: -14,
-      vertex_buffer: 0,
-      position_location: -1,
-      color_location: -1,
-      vertex_count: 0
-    }
+    return solid_renderer_error(-14)
   end
 
   gl_delete_shader(vertex_shader)
@@ -109,34 +142,19 @@ export fn solid_renderer_create() -> SolidRenderer = do
   const color_location = gl_get_attrib_location_string(program, "a_color")
   if position_location < 0 || color_location < 0 then
     gl_delete_program(program)
-    return SolidRenderer {
-      program: -15,
-      vertex_buffer: 0,
-      position_location: -1,
-      color_location: -1,
-      vertex_count: 0
-    }
+    return solid_renderer_error(-15)
   end
 
   const vertex_buffer = gl_gen_buffer()
   if vertex_buffer == 0 then
     gl_delete_program(program)
-    return SolidRenderer {
-      program: -16,
-      vertex_buffer: 0,
-      position_location: -1,
-      color_location: -1,
-      vertex_count: 0
-    }
+    return solid_renderer_error(-16)
   end
 
-  SolidRenderer {
-    program: program,
-    vertex_buffer: vertex_buffer,
-    position_location: position_location,
-    color_location: color_location,
-    vertex_count: 0
-  }
+  solid_renderer_make(
+    program, vertex_buffer, position_location, color_location,
+    0, 0, -1, 0, 0
+  )
 end
 
 fn push_vertex(
@@ -165,24 +183,24 @@ export fn solid_renderer_add_vertex(
   alpha: f64
 ) -> SolidRenderer = do
   push_vertex(position_x, position_y, red, green, blue, alpha)
-  SolidRenderer {
-    program: renderer.program,
-    vertex_buffer: renderer.vertex_buffer,
-    position_location: renderer.position_location,
-    color_location: renderer.color_location,
-    vertex_count: renderer.vertex_count + 1
-  }
+  solid_renderer_make(
+    renderer.program, renderer.vertex_buffer,
+    renderer.position_location, renderer.color_location,
+    renderer.vertex_count + 1,
+    renderer.gpu_vertex_count, renderer.gpu_fingerprint,
+    renderer.last_upload_bytes, renderer.solid_flush_count
+  )
 end
 
 export fn solid_renderer_begin(renderer: SolidRenderer) -> SolidRenderer = do
   gl_scratch_f32_clear()
-  SolidRenderer {
-    program: renderer.program,
-    vertex_buffer: renderer.vertex_buffer,
-    position_location: renderer.position_location,
-    color_location: renderer.color_location,
-    vertex_count: 0
-  }
+  solid_renderer_make(
+    renderer.program, renderer.vertex_buffer,
+    renderer.position_location, renderer.color_location,
+    0,
+    renderer.gpu_vertex_count, renderer.gpu_fingerprint,
+    renderer.last_upload_bytes, renderer.solid_flush_count
+  )
 end
 
 export fn solid_renderer_rect(
@@ -212,12 +230,99 @@ export fn solid_renderer_rect(
   push_vertex(right, top, red, green, blue, alpha)
   push_vertex(left, top, red, green, blue, alpha)
 
-  SolidRenderer {
-    program: renderer.program,
-    vertex_buffer: renderer.vertex_buffer,
-    position_location: renderer.position_location,
-    color_location: renderer.color_location,
-    vertex_count: renderer.vertex_count + 6
+  solid_renderer_make(
+    renderer.program, renderer.vertex_buffer,
+    renderer.position_location, renderer.color_location,
+    renderer.vertex_count + 6,
+    renderer.gpu_vertex_count, renderer.gpu_fingerprint,
+    renderer.last_upload_bytes, renderer.solid_flush_count
+  )
+end
+
+fn solid_renderer_bind_draw(renderer: SolidRenderer, draw_vertex_count: i32) -> unit = do
+  gl_use_program(renderer.program)
+  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  gl_enable_vertex_attrib_array(renderer.position_location)
+  gl_enable_vertex_attrib_array(renderer.color_location)
+  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 24, 0)
+  gl_vertex_attrib_pointer_offset(renderer.color_location, 4, gl_float(), 0, 24, 8)
+  gl_draw_arrays(gl_triangles(), 0, draw_vertex_count)
+end
+
+// fingerprint < 0 → force orphan upload; match → replay prior VBO (upload_bytes=0).
+export fn solid_renderer_flush_over_stream(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  fingerprint: i32
+) -> SolidFlushStreamResult = do
+  gl_viewport(0, 0, window_width, window_height)
+  gl_enable(gl_blend())
+  gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
+  const next_flush_count = renderer.solid_flush_count + 1
+  if renderer.vertex_count <= 0 &&
+      !(fingerprint >= 0 && fingerprint == renderer.gpu_fingerprint && renderer.gpu_vertex_count > 0) then
+    return SolidFlushStreamResult {
+      renderer: solid_renderer_make(
+        renderer.program, renderer.vertex_buffer,
+        renderer.position_location, renderer.color_location,
+        renderer.vertex_count,
+        renderer.gpu_vertex_count, renderer.gpu_fingerprint,
+        0, next_flush_count
+      ),
+      error_code: 0,
+      solid_upload_bytes: 0,
+      solid_flush_count: next_flush_count
+    }
+  end
+
+  const upload_bytes = solid_stream_upload_bytes_for_flush(
+    renderer.vertex_count, fingerprint,
+    renderer.gpu_fingerprint, renderer.gpu_vertex_count
+  )
+  if upload_bytes == 0 then
+    solid_renderer_bind_draw(renderer, renderer.gpu_vertex_count)
+    return SolidFlushStreamResult {
+      renderer: solid_renderer_make(
+        renderer.program, renderer.vertex_buffer,
+        renderer.position_location, renderer.color_location,
+        renderer.vertex_count,
+        renderer.gpu_vertex_count, renderer.gpu_fingerprint,
+        0, next_flush_count
+      ),
+      error_code: 0,
+      solid_upload_bytes: 0,
+      solid_flush_count: next_flush_count
+    }
+  end
+
+  gl_use_program(renderer.program)
+  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
+  if gl_buffer_data_orphan_scratch(gl_array_buffer(), gl_dynamic_draw()) != 0 then
+    return SolidFlushStreamResult {
+      renderer: renderer,
+      error_code: -17,
+      solid_upload_bytes: 0,
+      solid_flush_count: renderer.solid_flush_count
+    }
+  end
+  gl_enable_vertex_attrib_array(renderer.position_location)
+  gl_enable_vertex_attrib_array(renderer.color_location)
+  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 24, 0)
+  gl_vertex_attrib_pointer_offset(renderer.color_location, 4, gl_float(), 0, 24, 8)
+  gl_draw_arrays(gl_triangles(), 0, renderer.vertex_count)
+  const stored_fingerprint = if fingerprint >= 0 then fingerprint else renderer.vertex_count
+  SolidFlushStreamResult {
+    renderer: solid_renderer_make(
+      renderer.program, renderer.vertex_buffer,
+      renderer.position_location, renderer.color_location,
+      renderer.vertex_count,
+      renderer.vertex_count, stored_fingerprint,
+      upload_bytes, next_flush_count
+    ),
+    error_code: 0,
+    solid_upload_bytes: upload_bytes,
+    solid_flush_count: next_flush_count
   }
 end
 
@@ -229,10 +334,26 @@ export fn solid_renderer_flush(
   clear_green: f64,
   clear_blue: f64
 ) -> i32 = do
+  const streamed = solid_renderer_flush_stream(
+    renderer, window_width, window_height,
+    clear_red, clear_green, clear_blue, -1
+  )
+  streamed.error_code
+end
+
+export fn solid_renderer_flush_stream(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  clear_red: f64,
+  clear_green: f64,
+  clear_blue: f64,
+  fingerprint: i32
+) -> SolidFlushStreamResult = do
   gl_viewport(0, 0, window_width, window_height)
   gl_clear_color_f64(clear_red, clear_green, clear_blue, 1.0)
   gl_clear(gl_color_buffer_bit())
-  solid_renderer_flush_over(renderer, window_width, window_height)
+  solid_renderer_flush_over_stream(renderer, window_width, window_height, fingerprint)
 end
 
 // Draw without clearing the framebuffer (compose over prior flush / text).
@@ -241,23 +362,8 @@ export fn solid_renderer_flush_over(
   window_width: i32,
   window_height: i32
 ) -> i32 = do
-  gl_viewport(0, 0, window_width, window_height)
-  gl_enable(gl_blend())
-  gl_blend_func(gl_src_alpha(), gl_one_minus_src_alpha())
-  if renderer.vertex_count <= 0 then
-    return 0
-  end
-  gl_use_program(renderer.program)
-  gl_bind_buffer(gl_array_buffer(), renderer.vertex_buffer)
-  if gl_buffer_data_scratch(gl_array_buffer(), gl_dynamic_draw()) != 0 then
-    return -17
-  end
-  gl_enable_vertex_attrib_array(renderer.position_location)
-  gl_enable_vertex_attrib_array(renderer.color_location)
-  gl_vertex_attrib_pointer_offset(renderer.position_location, 2, gl_float(), 0, 24, 0)
-  gl_vertex_attrib_pointer_offset(renderer.color_location, 4, gl_float(), 0, 24, 8)
-  gl_draw_arrays(gl_triangles(), 0, renderer.vertex_count)
-  0
+  const streamed = solid_renderer_flush_over_stream(renderer, window_width, window_height, -1)
+  streamed.error_code
 end
 
 export fn solid_renderer_destroy(renderer: SolidRenderer) -> i32 = do

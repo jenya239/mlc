@@ -5,6 +5,7 @@
 import { VtermCell, vterm_cell_at } from './vterm_ffi'
 import { StaticTextLine } from '../ui/static_text'
 import { SolidRenderer, solid_renderer_rect } from '../../gui/solid_renderer'
+import { editor_paint_op_rect, EditorPaintOp } from '../ux/paint_ops'
 
 extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 
@@ -131,9 +132,28 @@ export fn terminal_grid_draw_cached_backgrounds(
   working
 end
 
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110d — emit-only for paint list (no GL).
+export fn terminal_grid_background_paint_ops(
+  rects: [TerminalGridBgRect]
+) -> [EditorPaintOp] = do
+  let mut ops: [EditorPaintOp] = []
+  let mut index = 0
+  while index < rects.length() do
+    const rect = rects[index]
+    ops.push(editor_paint_op_rect(
+      "terminal_bg",
+      rect.x, rect.y, rect.width, rect.height,
+      rect.red, rect.green, rect.blue, 1.0
+    ))
+    index = index + 1
+  end
+  ops
+end
+
 // Accumulates 1 solid_renderer_rect per cell whose background differs from
 // the given default (caller flushes via solid_renderer_flush_over after —
 // composes over the panel's own background fill, drawn separately).
+// Kept for terminal_cell_grid_render_smoke; live demo uses paint_ops emit.
 export fn terminal_grid_draw_backgrounds(
   renderer: SolidRenderer,
   screen_handle: i64,

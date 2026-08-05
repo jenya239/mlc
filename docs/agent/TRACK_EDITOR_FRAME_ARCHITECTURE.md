@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110d** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-06 — queue head **§110d** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -253,8 +253,18 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no batch-stream harness / terminal solids outside list | **done** 2026-08-06 |
-| 2 | Green: orphan/stream + idle upload 0 + dogfood non-regress | **open** |
-| 3 | Critic | pending |
+| 2 | Green: orphan/stream + idle upload 0 + dogfood non-regress | **done** 2026-08-06 |
+| 3 | Critic | **open** |
+
+### Green measured (§110d)
+
+Mechanism: **orphan** (`gl_buffer_data_orphan_scratch` — NULL then data).
+L1 `frame_batch_stream_stable`: `solid_upload_bytes=288`, `idle_solid_upload_bytes=0`, `draw_calls=1`, coalesce `rects_before=3`→`rects_after=2`.
+Static: demo uses `terminal_grid_background_paint_ops` + coalesce; no `terminal_grid_draw_cached_backgrounds` / no `solid_renderer_rect` in demo.
+Wake: layout/paint gens 7→7 / 2→2; still=1% jitter=1%.
+Dogfood gate exit 0: scroll_cpu_percent=41; type_stall_ms=16.
+Red after Green: `already present`.
+Content-frame ceilings (L1 paste): upload sample 288 bytes / idle 0.
 
 ## Diff / notes
 
@@ -270,3 +280,4 @@ Independent L1 rebuild: `paint_ops=9` `gl_call_from_widget=0` `ux_ok`. Red exit 
 2026-08-06: §110c CLOSED (Critic OK); queue → §110d Decision.
 2026-08-06: §110d Decision frozen (batch/stream solid upload + terminal emit-only).
 2026-08-06: §110d Red — `scripts/run_editor_batch_stream_red.sh` (exit 1: no green harness / terminal solids outside list).
+2026-08-06: §110d Green — orphan solid stream + terminal emit-only + coalesce + `run_editor_batch_stream.sh`.

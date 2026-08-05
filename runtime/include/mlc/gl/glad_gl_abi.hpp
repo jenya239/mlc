@@ -198,6 +198,21 @@ inline int32_t buffer_data_scratch(int32_t target, int32_t usage) {
   return 0;
 }
 
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110d — orphan then upload (avoid stall on in-flight VBO).
+inline int32_t buffer_data_orphan_scratch(int32_t target, int32_t usage) {
+  const std::vector<float>& values = scratch_f32();
+  if (values.empty()) {
+    return -1;
+  }
+  const GLenum buffer_target = static_cast<GLenum>(target);
+  const GLenum buffer_usage = static_cast<GLenum>(usage);
+  const GLsizeiptr byte_count =
+    static_cast<GLsizeiptr>(values.size() * sizeof(float));
+  glBufferData(buffer_target, byte_count, nullptr, buffer_usage);
+  glBufferData(buffer_target, byte_count, values.data(), buffer_usage);
+  return 0;
+}
+
 inline void scratch_u8_clear() { scratch_u8().clear(); }
 inline void scratch_u8_resize_zero(int32_t byte_count) {
   if (byte_count < 0) {
@@ -383,6 +398,9 @@ inline void gl_scratch_f32_clear() { glad_abi::scratch_f32_clear(); }
 inline void gl_scratch_f32_push(double value) { glad_abi::scratch_f32_push(value); }
 inline int32_t gl_buffer_data_scratch(int32_t target, int32_t usage) {
   return glad_abi::buffer_data_scratch(target, usage);
+}
+inline int32_t gl_buffer_data_orphan_scratch(int32_t target, int32_t usage) {
+  return glad_abi::buffer_data_orphan_scratch(target, usage);
 }
 inline void gl_enable_vertex_attrib_array(int32_t index) {
   glad_abi::enable_vertex_attrib_array(index);

@@ -1,11 +1,11 @@
-// TRACK_EDITOR_FRAME_ARCHITECTURE §110c — CPU paint list + single GL submit.
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110c/§110d — CPU paint list + stream submit.
 import { Rect } from '../../gui/layout'
 import {
   SolidRenderer,
   solid_renderer_begin,
   solid_renderer_rect,
-  solid_renderer_flush,
-  solid_renderer_flush_over
+  solid_renderer_flush_stream,
+  solid_renderer_flush_over_stream
 } from '../../gui/solid_renderer'
 import {
   StaticTextState,
@@ -19,6 +19,9 @@ import {
   editor_gl_scissor_disable
 } from '../ui/gl_scissor'
 import { EditorPaintOp } from './paint_ops'
+
+extern fn f64_to_i32(value: f64) -> i32
+  = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
 
 export type EditorPaintTextRun = {
   lines: [StaticTextLine],
@@ -44,7 +47,10 @@ export type EditorPaintListSubmitResult = {
   error_code: i32,
   glyph_batch_draw_calls: i32,
   paint_ops: i32,
-  gl_call_from_widget: i32
+  gl_call_from_widget: i32,
+  solid_flush_count: i32,
+  solid_upload_bytes: i32,
+  draw_calls: i32
 }
 
 fn paint_kind_begin() -> i32 = 1
@@ -120,7 +126,6 @@ export fn editor_paint_list_push_flush(
   let mut kinds = list.kinds
   let mut rects = list.rects
   kinds.push(paint_kind_flush())
-  // Pack clear color into a sentinel rect (widget_id unused).
   rects.push(EditorPaintOp {
     widget_id: "flush_clear",
     x: 0,
@@ -245,7 +250,31 @@ export fn editor_paint_list_push_glyph_minimap(list: EditorPaintList) -> EditorP
   }
 end
 
-// Sole live GL issuer for paint_list commands (Decision §110c).
+export fn editor_paint_list_solid_fingerprint(list: EditorPaintList) -> i32 = do
+  let mut fingerprint = 17
+  let mut index = 0
+  while index < list.rects.length() do
+    const op = list.rects[index]
+    fingerprint = fingerprint + op.x + 1
+    fingerprint = fingerprint + op.y + 3
+    fingerprint = fingerprint + op.width + 5
+    fingerprint = fingerprint + op.height + 7
+    fingerprint = fingerprint + f64_to_i32(op.red * 255.0)
+    fingerprint = fingerprint + f64_to_i32(op.green * 255.0)
+    fingerprint = fingerprint + f64_to_i32(op.blue * 255.0)
+    fingerprint = fingerprint + index + 1
+    if fingerprint > 1000000000 then
+      fingerprint = fingerprint - 1000000000
+    end
+    if fingerprint < 0 then
+      fingerprint = 17 + index
+    end
+    index = index + 1
+  end
+  fingerprint
+end
+
+// Sole live GL issuer for paint_list commands (§110c/§110d stream).
 export fn editor_paint_list_submit(
   list: EditorPaintList,
   solid_in: SolidRenderer,
@@ -259,10 +288,14 @@ export fn editor_paint_list_submit(
   let mut text_state = text_state_in
   let mut error_code = 0
   let mut glyph_batch_draw_calls = 0
+  let mut solid_flush_count = 0
+  let mut solid_upload_bytes = 0
+  let mut draw_calls = 0
   let mut rect_index = 0
   let mut scissor_index = 0
   let mut text_index = 0
   let mut cmd_index = 0
+  const list_fingerprint = editor_paint_list_solid_fingerprint(list)
   while cmd_index < list.kinds.length() do
     const kind = list.kinds[cmd_index]
     if kind == paint_kind_begin() then
@@ -278,17 +311,31 @@ export fn editor_paint_list_submit(
     else if kind == paint_kind_flush() then
       const clear_op = list.rects[rect_index]
       rect_index = rect_index + 1
-      const flush_status = solid_renderer_flush(
+      const streamed = solid_renderer_flush_stream(
         solid, window_width, window_height,
-        clear_op.red, clear_op.green, clear_op.blue
+        clear_op.red, clear_op.green, clear_op.blue, list_fingerprint
       )
-      if flush_status != 0 && error_code == 0 then
-        error_code = flush_status
+      solid = streamed.renderer
+      solid_flush_count = streamed.solid_flush_count
+      solid_upload_bytes = solid_upload_bytes + streamed.solid_upload_bytes
+      if streamed.solid_upload_bytes > 0 || streamed.renderer.gpu_vertex_count > 0 then
+        draw_calls = draw_calls + 1
+      end
+      if streamed.error_code != 0 && error_code == 0 then
+        error_code = streamed.error_code
       end
     else if kind == paint_kind_flush_over() then
-      const flush_over_status = solid_renderer_flush_over(solid, window_width, window_height)
-      if flush_over_status != 0 && error_code == 0 then
-        error_code = flush_over_status
+      const streamed = solid_renderer_flush_over_stream(
+        solid, window_width, window_height, list_fingerprint
+      )
+      solid = streamed.renderer
+      solid_flush_count = streamed.solid_flush_count
+      solid_upload_bytes = solid_upload_bytes + streamed.solid_upload_bytes
+      if streamed.solid_upload_bytes > 0 || streamed.renderer.gpu_vertex_count > 0 then
+        draw_calls = draw_calls + 1
+      end
+      if streamed.error_code != 0 && error_code == 0 then
+        error_code = streamed.error_code
       end
     else if kind == paint_kind_scissor_on() then
       const scissor_rect = list.scissors[scissor_index]
@@ -305,6 +352,7 @@ export fn editor_paint_list_submit(
         run.red, run.green, run.blue, run.alpha
       )
       text_state = drawn.state
+      draw_calls = draw_calls + 1
       if drawn.error_code != 0 && error_code == 0 then
         error_code = drawn.error_code
       end
@@ -314,6 +362,7 @@ export fn editor_paint_list_submit(
       )
       text_state = editor_drawn.state
       glyph_batch_draw_calls = glyph_batch_draw_calls + editor_drawn.batch_draw_calls
+      draw_calls = draw_calls + editor_drawn.batch_draw_calls
       if editor_drawn.error_code != 0 && error_code == 0 then
         error_code = editor_drawn.error_code
       end
@@ -323,6 +372,7 @@ export fn editor_paint_list_submit(
       )
       text_state = minimap_drawn.state
       glyph_batch_draw_calls = glyph_batch_draw_calls + minimap_drawn.batch_draw_calls
+      draw_calls = draw_calls + minimap_drawn.batch_draw_calls
       if minimap_drawn.error_code != 0 && error_code == 0 then
         error_code = minimap_drawn.error_code
       end
@@ -335,6 +385,9 @@ export fn editor_paint_list_submit(
     error_code: error_code,
     glyph_batch_draw_calls: glyph_batch_draw_calls,
     paint_ops: list.paint_ops,
-    gl_call_from_widget: 0
+    gl_call_from_widget: 0,
+    solid_flush_count: solid_flush_count,
+    solid_upload_bytes: solid_upload_bytes,
+    draw_calls: draw_calls
   }
 end

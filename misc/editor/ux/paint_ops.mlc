@@ -34,6 +34,44 @@ export fn editor_paint_op_rect(
     alpha: alpha
   }
 
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110d — merge adjacent same-color axis-aligned rects.
+export fn editor_paint_ops_coalesce_adjacent(ops: [EditorPaintOp]) -> [EditorPaintOp] = do
+  if ops.length() == 0 then
+    return []
+  end
+  let mut out: [EditorPaintOp] = []
+  let mut current = ops[0]
+  let mut index = 1
+  while index < ops.length() do
+    const next = ops[index]
+    if current.y == next.y &&
+        current.height == next.height &&
+        current.red == next.red &&
+        current.green == next.green &&
+        current.blue == next.blue &&
+        current.alpha == next.alpha &&
+        current.x + current.width == next.x then
+      current = EditorPaintOp {
+        widget_id: current.widget_id,
+        x: current.x,
+        y: current.y,
+        width: current.width + next.width,
+        height: current.height,
+        red: current.red,
+        green: current.green,
+        blue: current.blue,
+        alpha: current.alpha
+      }
+    else
+      out.push(current)
+      current = next
+    end
+    index = index + 1
+  end
+  out.push(current)
+  out
+end
+
 // q1 chrome bands: window bg + header + tab_bar strip + toolbar strip.
 export fn editor_paint_ops_chrome_bands(
   window_width: i32,

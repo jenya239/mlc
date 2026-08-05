@@ -21,6 +21,7 @@ import { editor_ux_chrome_hover_draw_entry } from './ux/chrome_hover'
 import {
   editor_paint_ops_chrome_bands,
   editor_paint_op_rect,
+  editor_paint_ops_coalesce_adjacent,
   EditorPaintOp
 } from './ux/paint_ops'
 import {
@@ -460,7 +461,7 @@ import {
   editor_app_save_active_buffer
 } from './app/state'
 import { terminal_panel_session_grid_cache_tick } from './app/terminal_panel'
-import { terminal_grid_draw_cached_backgrounds } from './terminal/terminal_grid_render'
+import { terminal_grid_background_paint_ops } from './terminal/terminal_grid_render'
 
 extern fn f64_to_i32(value: f64) -> i32
   = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
@@ -3443,12 +3444,9 @@ fn main() -> i32 = do
           terminal_default_blue
         )
       )
-      solid = terminal_grid_draw_cached_backgrounds(
-        solid,
-        app.terminal.cached_bg_rects,
-        width,
-        height
-      )
+      let mut terminal_bg_ops = terminal_grid_background_paint_ops(app.terminal.cached_bg_rects)
+      terminal_bg_ops = editor_paint_ops_coalesce_adjacent(terminal_bg_ops)
+      paint_list = editor_paint_list_push_rects(paint_list, terminal_bg_ops)
       paint_list = editor_paint_list_push_flush_over(paint_list)
       paint_list = editor_paint_list_push_begin(paint_list)
       editor_lines = app.terminal.cached_text_lines
