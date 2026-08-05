@@ -558,3 +558,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110f STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110f Red — no overlay-metrics harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=1, §110f Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `scripts/run_editor_overlay_metrics_red.sh`: fail while green harness / OVERLAY env / perf_overlay helper absent |
+| verify  | `bash scripts/run_editor_overlay_metrics_red.sh` → FAIL exit 1 (`no editor overlay metrics harness`) |
+| result  | **§110f STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110f Green — env-gated HUD + default-off) |

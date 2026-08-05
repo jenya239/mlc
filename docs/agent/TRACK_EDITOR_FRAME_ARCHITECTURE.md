@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110f** (STEP=0 Decision done; Red next)
+## Status: **open** 2026-08-06 — queue head **§110f** (STEP=1 Red done; Green next)
 
 ## Destination (plain)
 
@@ -347,7 +347,7 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: no overlay-metrics harness / no env HUD | pending |
+| 1 | Red: no overlay-metrics harness / no env HUD | **done** 2026-08-06 |
 | 2 | Green: env-gated paint-list HUD + default-off non-regress | pending |
 | 3 | Critic | pending |
 
@@ -372,3 +372,4 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 2026-08-06: §110e Green — adjust_y + newly-visible append; shape avg 10; SCROLL_CPU_MAX=50; `run_editor_glyph_damage.sh`.
 2026-08-06: §110e CLOSED (Critic OK); queue → §110f Decision (optional overlay metrics).
 2026-08-06: §110f Decision frozen (env-gated overlay HUD; default-off; gates stay authority).
+2026-08-06: §110f Red — `scripts/run_editor_overlay_metrics_red.sh` (exit 1: no green harness / no OVERLAY env).
