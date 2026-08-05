@@ -288,3 +288,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110a STEP=2 done (Green).** Critic next |
 | issues  | full dogfood gate under Xvfb exceeds §109 scroll≤60 (llvmpipe/uncapped present) — Decision Green must-hit amended to wake isolate proof; pacing residual |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a — audit Xvfb wrapper) |
+
+### Turn 2026-08-05 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110a)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Audited §110a: red/missing/isolate/false/ambient OK; wake-under-xvfb remasure still=1% display=:99; sab4 via `-- env` (PERF/SCROLL/README) exit 1. Closed §110a; residual dogfood-under-xvfb scroll pacing |
+| verify  | red=1; missing=1; smoke display=:99; false=1; ambient xvfb=0; wake=0 still=1%; sab4_perf/scroll/readme=1 |
+| result  | **§110a CLOSED (Critic OK).** |
+| issues  | outer `MLC_EDITOR_PERF` stripped by wrapper — sab4 needs `-- env`; dogfood scroll under Xvfb residual unchanged |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110b Decision freeze — frame ownership) |

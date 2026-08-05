@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§110a** (STEP=2 Green done; Critic next)
+## Status: **open** 2026-08-05 — queue head **§110b** (§110a CLOSED; STEP=0 Decision next)
 
 ## Destination (plain)
 
@@ -71,14 +71,14 @@ Non-goals for the whole track (unless user re-opens):
 Do not reopen §109 numbered STEPs for architecture; fold residuals into
 phases B–E with new harness names.
 
-## §110a `EDITOR_PERF_XVFB_ISOLATE` — **queue head**
+## §110a `EDITOR_PERF_XVFB_ISOLATE` — **CLOSED** 2026-08-05 (Critic OK)
 
 | Item | Choice |
 |------|--------|
 | Problem | §109 `MLC_GLFW_VISIBLE=1` dogfood/perf scripts bind ambient `DISPLAY` (usually `:0`). Agent Critic/Driver runs steal keyboard/mouse and share CPU with the interactive session — §109k scroll_cpu noise (61–72 under load) was partly host contention on `:0`, not only editor work |
 | Fix | Below (Decision frozen 2026-08-05) |
 | Depends on | §109 CLOSED (dogfood gate exists and stays the pass/fail authority for ceilings) |
-| Gate | Xvfb wrapper harness green; `run_editor_perf_dogfood_gate.sh` under wrapper exit 0; missing Xvfb → **fail**, not skip-green |
+| Gate | Xvfb wrapper harness green; wake-under-xvfb isolate proof exit 0; missing Xvfb → **fail**, not skip-green. Full dogfood-under-xvfb scroll pacing = residual (not §110a close blocker) |
 | Sabotage | (1) `MLC_EDITOR_PERF_XVFB=1` while child still sees real `:0` / no Xvfb process → isolate check fail. (2) Missing `xvfb-run`/`Xvfb` in `PATH` with XVFB=1 → **skip-green or exit 0** → fail. (3) Wrapper swallows child non-zero exit → fail. (4) Under wrapper, open README* / raise scroll ceiling / set `MLC_EDITOR_PERF` → dogfood-gate sabotes still fail |
 | Out of scope | Frame ownership (§110b); paint list / batch; changing §109 CPU ceilings; SceneNode; installing `xvfb` into CI images as a separate infra track (Green may document `apt-get install -y xvfb` as host prerequisite — still **fail** if absent) |
 
@@ -101,7 +101,7 @@ phases B–E with new harness names.
 | 0 | Decision freeze | **done** 2026-08-05 |
 | 1 | Red: no xvfb harness | **done** 2026-08-05 — `scripts/run_editor_perf_xvfb_red.sh` exit 1 |
 | 2 | Green: wrapper + isolate proof under Xvfb | **done** 2026-08-05 — see Green measured |
-| 3 | Critic | **open** |
+| 3 | Critic | **done** 2026-08-05 — CLOSED; see Critic notes |
 
 ### Green measured (2026-08-05)
 
@@ -117,7 +117,30 @@ Host: `xvfb` package installed (`Xvfb`/`xvfb-run` on PATH). Wrapper: `scripts/ru
 | Wake under Xvfb | exit 0, `display=:99`, still=1% jitter=1% |
 | Full dogfood gate under Xvfb | **fail** scroll median **242** (samples 235/242/256) — residual present-pace |
 
+### Critic notes (2026-08-05)
+
+Independent remasure (system `/usr/bin` Xvfb, not `.tmp` prefix):
+
+| Check | Result |
+|-------|--------|
+| Red already present | exit 1 |
+| Missing stubs on PATH | exit 1, install message |
+| Isolate smoke | exit 0, `display=:99` |
+| `-- false` | exit 1 |
+| Ambient XVFB=0 | exit 0, `xvfb=0` |
+| Wake under Xvfb | exit 0, `display=:99`, still=1% jitter=1%, L1 deltas 0 |
+| Sab4 `MLC_EDITOR_PERF=1` via `-- env … dogfood_gate` | exit 1 skip-heavy |
+| Sab4 `SCROLL_CPU_MAX=100` via `-- env …` | exit 1 |
+| Sab4 README via `-- env …` | exit 1 basename |
+| Note | Outer `MLC_EDITOR_PERF=1` on default child is **unset by wrapper** before exec — sab4 must use `-- env …` to reach the gate (not a false-green) |
+
+Residual (not blocking §110a close): dogfood-under-xvfb scroll≫60 — present-pace follow-up (runtime/`SwapInterval` under Xvfb).
+
+## §110b `EDITOR_FRAME_OWNERSHIP` — **next**
+
+Path phase **B**. Driver STEP=0 Decision freeze next (dirty generations / single frame state). Do not pull paint-list (§110c) ahead.
+
 ## Diff / notes
 
 2026-08-04: path written; no code.
-2026-08-05: §109 CLOSED; §110a Decision frozen; Red harness; Green wrapper + wake-under-xvfb proof; dogfood-under-xvfb scroll residual documented.
+2026-08-05: §109 CLOSED; §110a Decision/Red/Green/Critic CLOSED (Xvfb wrapper + wake isolate); dogfood-under-xvfb scroll residual; §110b next.
