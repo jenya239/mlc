@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§110a** (STEP=0 Decision frozen; Red next)
+## Status: **open** 2026-08-05 — queue head **§110a** (STEP=1 Red done; Green next)
 
 ## Destination (plain)
 
@@ -99,11 +99,11 @@ phases B–E with new harness names.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-05 |
-| 1 | Red: no xvfb harness | **open** — `scripts/run_editor_perf_xvfb_red.sh` exit 1 while green absent |
+| 1 | Red: no xvfb harness | **done** 2026-08-05 — `scripts/run_editor_perf_xvfb_red.sh` exit 1 |
 | 2 | Green: wrapper + dogfood gate under Xvfb | **open** |
 | 3 | Critic | **open** |
 
 ## Diff / notes
 
 2026-08-04: path written; no code.
-2026-08-05: §109 CLOSED; §110a Decision frozen (Xvfb wrapper contract).
+2026-08-05: §109 CLOSED; §110a Decision frozen (Xvfb wrapper contract); Red harness added.
