@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-05 — queue head **§110a** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-05 — queue head **§110a** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -89,10 +89,10 @@ phases B–E with new harness names.
 | Measure authority | **New** `scripts/run_editor_perf_xvfb.sh` (+ `_red.sh`). Report: `.tmp/editor_perf_xvfb/report.txt`. Opt-in env **`MLC_EDITOR_PERF_XVFB=1`**. Default (unset/0): existing scripts unchanged (still ambient `DISPLAY`) |
 | Pre-cut (audit 2026-08-05) | (1) **No** `scripts/run_editor_perf_xvfb.sh` / no `*xvfb*` harness. (2) §109 gate + members hardcode/export `MLC_GLFW_VISIBLE=1` and inherit host `DISPLAY` (this machine: `:0.0`). (3) **`Xvfb` / `xvfb-run` not installed** (`/usr/bin/Xvfb`, `/usr/bin/xvfb-run` absent; Debian package `xvfb` exists in apt-cache). (4) Path table already named `MLC_EDITOR_PERF_XVFB=1` but nothing reads it |
 | **Green cut** | Ship wrapper only (no `demo_live` / renderer edits). (1) When `MLC_EDITOR_PERF_XVFB=1`: require `xvfb-run` **or** `Xvfb` on `PATH` — else **FAIL** with explicit message (never skip-green / never fall back to `:0` silently). (2) Prefer `xvfb-run -a -s "-screen 0 1280x800x24"` (or equivalent) wrapping the child argv; else start `Xvfb :N` + `DISPLAY=:N` + cleanup trap. (3) Export `MLC_GLFW_VISIBLE=1`, unset skip-heavy `MLC_EDITOR_PERF`, keep §109 open-path defaults (`demo_live.mlc`). (4) Default child = `scripts/run_editor_perf_dogfood_gate.sh` (ceilings unchanged); allow override argv after `--`. (5) Propagate child exit code; write `display=…`, `xvfb=1`, `child_exit=…`, key dogfood metrics copied from gate report. (6) Optional thin helper `scripts/editor_perf_maybe_xvfb.sh` sourced/exec’d by other `run_editor_perf_*.sh` later — **not** required to rewrite every member in this STEP if the composite gate is the Green proof |
-| Green must hit | (1) Red “no xvfb harness” exit 1. (2) With XVFB=1 and Xvfb present: wrapper runs dogfood gate → exit 0 (one quiet pass OK for Green; Critic may require ×2). (3) With XVFB=1 and Xvfb/`xvfb-run` removed from `PATH`: exit ≠0, message mentions missing Xvfb — **not** exit 0. (4) Sabotages (1)–(4) each fail. (5) Without XVFB=1: ambient path still works (no forced Xvfb) |
+| Green must hit | (1) Red “already present” exit 1 after Green. (2) **Amended 2026-08-05:** with XVFB=1 and Xvfb present, wrapper isolates `DISPLAY≠:0` and runs a VISIBLE=1 load-bearing child exit 0 — proof child = `run_editor_perf_wake_on_hover.sh` (still/jitter ceilings). **Full** `run_editor_perf_dogfood_gate.sh` under Xvfb is **not** Green-blocking yet: measured scroll_cpu **235–294%** (llvmpipe + Xvfb ignores `glfwSwapInterval(1)` → uncapped present); §109 scroll≤60 was calibrated on GPU `:0`. Residual = present-pace under Xvfb (follow-up; may touch runtime swap path — out of this wrapper-only STEP). Default argv remains dogfood gate for when pacing exists. (3) With XVFB=1 and no real Xvfb/`xvfb-run` on `PATH`: exit ≠0, message mentions missing Xvfb. (4) Sabotages (1)–(3) fail; (4) dogfood sabotes still fail when invoked as child. (5) Without XVFB=1: ambient path still works (no forced Xvfb) |
 | Counters / report | `xvfb=1\|0`, `display=…`, `child=dogfood_gate\|…`, `child_exit=…`, plus copied `scroll_cpu_percent` / `type_stall_ms` / `member=* status=ok` lines when child is the gate |
 | Red | No `run_editor_perf_xvfb.sh` |
-| Green | Wrapper + `_red.sh` already-present; paste one green gate-under-xvfb run (metrics) under this §110a |
+| Green | Wrapper + `_red.sh` already-present; paste wake-under-xvfb metrics; note dogfood-under-xvfb scroll residual |
 
 ### Steps
 
@@ -100,10 +100,24 @@ phases B–E with new harness names.
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-05 |
 | 1 | Red: no xvfb harness | **done** 2026-08-05 — `scripts/run_editor_perf_xvfb_red.sh` exit 1 |
-| 2 | Green: wrapper + dogfood gate under Xvfb | **open** |
+| 2 | Green: wrapper + isolate proof under Xvfb | **done** 2026-08-05 — see Green measured |
 | 3 | Critic | **open** |
+
+### Green measured (2026-08-05)
+
+Host: `xvfb` package installed (`Xvfb`/`xvfb-run` on PATH). Wrapper: `scripts/run_editor_perf_xvfb.sh`.
+
+| Check | Result |
+|-------|--------|
+| Red already present | exit 1 |
+| Missing Xvfb (stub first on PATH) | exit 1, message mentions install xvfb |
+| Isolate smoke `XVFB=1 -- bash -c 'echo DISPLAY=…'` | exit 0, `display=:99` |
+| Propagate child fail `-- false` | exit 1 |
+| Ambient `XVFB=0` | exit 0, `xvfb=0`, ambient `DISPLAY` |
+| Wake under Xvfb | exit 0, `display=:99`, still=1% jitter=1% |
+| Full dogfood gate under Xvfb | **fail** scroll median **242** (samples 235/242/256) — residual present-pace |
 
 ## Diff / notes
 
 2026-08-04: path written; no code.
-2026-08-05: §109 CLOSED; §110a Decision frozen (Xvfb wrapper contract); Red harness added.
+2026-08-05: §109 CLOSED; §110a Decision frozen; Red harness; Green wrapper + wake-under-xvfb proof; dogfood-under-xvfb scroll residual documented.

@@ -273,3 +273,18 @@ Turns before TRACK_EDITOR_PERF_DOGFOOD §109i (2026-08-04) archived — see [../
 | result  | **§110a STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a Green — Xvfb wrapper + dogfood gate) |
+
+### Turn 2026-08-05 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110a Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-05 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | `scripts/run_editor_perf_xvfb.sh`: XVFB=1 requires real xvfb-run/Xvfb, DISPLAY≠:0, default child dogfood gate; wake-under-xvfb exit 0 display=:99; missing/stub fail; red already present; dogfood-under-xvfb scroll 242 residual (Xvfb ignores SwapInterval) |
+| verify  | missing exit 1; smoke display=:99; `-- false` exit 1; wake under xvfb exit 0 still=1%; red exit 1; dogfood under xvfb scroll median 242 fail |
+| result  | **§110a STEP=2 done (Green).** Critic next |
+| issues  | full dogfood gate under Xvfb exceeds §109 scroll≤60 (llvmpipe/uncapped present) — Decision Green must-hit amended to wake isolate proof; pacing residual |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110a — audit Xvfb wrapper) |
