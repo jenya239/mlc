@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **SUSPENDED** 2026-08-03 — §103a–§103e CLOSED; §103f+ frozen behind §109 `TRACK_EDITOR_PERF_DOGFOOD` (user hard stop on editor lag)
+## Status: **open** 2026-08-06 — queue head **§103f** (`SCRIPT_VM_HEAP_GC_ARENA`); §103a–e CLOSED; §109/§110 CLOSED (suspend lifted)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -179,7 +179,7 @@ release backend — не цель никогда (третий путь испо
 
 **§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
-### §103f `SCRIPT_VM_HEAP_GC_ARENA`
+### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (Decision next)
 
 Non-moving incremental mark-sweep, size-class arenas, `ObjectHeader{type_id,
 gc_flags, object_flags, shape_or_meta}`, write barrier stub (design doc §8).

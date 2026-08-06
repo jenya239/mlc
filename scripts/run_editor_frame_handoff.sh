@@ -28,8 +28,9 @@ residual_named=fail
 harness_index=fail
 destination_named=fail
 
-grep -q 'TRACK_EDITOR_FRAME_ARCHITECTURE' "$GUI_ARCH" && gui_arch_link=ok
-grep -q 'TRACK_EDITOR_FRAME_ARCHITECTURE' "$EDITOR_DOC" && editor_doc_link=ok
+# Exact track filename (bare name without .md is not enough — sab1).
+grep -Fq 'TRACK_EDITOR_FRAME_ARCHITECTURE.md' "$GUI_ARCH" && gui_arch_link=ok
+grep -Fq 'TRACK_EDITOR_FRAME_ARCHITECTURE.md' "$EDITOR_DOC" && editor_doc_link=ok
 
 # Destination one-liner keywords in both docs.
 if grep -Eqi 'paint list' "$GUI_ARCH" && grep -Eqi 'dirty' "$GUI_ARCH" && \
@@ -37,12 +38,12 @@ if grep -Eqi 'paint list' "$GUI_ARCH" && grep -Eqi 'dirty' "$GUI_ARCH" && \
   destination_named=ok
 fi
 
-# Residual must be named open (sabotage 3: docs must not claim it fixed).
+# Residual must be named open in BOTH docs (sabotage 3).
 if grep -Fq 'Residual (open' "$GUI_ARCH" && grep -Fq 'Residual (open' "$EDITOR_DOC" && \
    grep -Fqi 'paint list every frame' "$GUI_ARCH" && \
    grep -Fqi 'paint list every frame' "$EDITOR_DOC" && \
-   ! grep -Eqi 'residual is (fixed|closed)|paint-list residual (fixed|closed)|every frame is (fixed|closed)' "$GUI_ARCH" && \
-   ! grep -Eqi 'residual is (fixed|closed)|paint-list residual (fixed|closed)|every frame is (fixed|closed)' "$EDITOR_DOC"; then
+   ! grep -Eqi 'Residual is fixed|residual is closed|paint list every frame is closed' "$GUI_ARCH" && \
+   ! grep -Eqi 'Residual is fixed|residual is closed|paint list every frame is closed' "$EDITOR_DOC"; then
   residual_named=ok
 fi
 
@@ -57,7 +58,7 @@ need=(
 )
 missing=0
 for name in "${need[@]}"; do
-  grep -q "$name" "$GUI_ARCH" || missing=1
+  grep -Fq "$name" "$GUI_ARCH" || missing=1
 done
 [ "$missing" = 0 ] && harness_index=ok
 
@@ -65,8 +66,8 @@ done
 grep -Eqi 'SceneNode chrome Deviation|SceneNode.*unchanged|do not reparent' "$GUI_ARCH" || \
   fail "GUI_ARCHITECTURE missing SceneNode chrome Deviation unchanged note"
 
-[ "$gui_arch_link" = ok ] || fail "GUI_ARCHITECTURE lacks TRACK_EDITOR_FRAME_ARCHITECTURE link"
-[ "$editor_doc_link" = ok ] || fail "EDITOR.md lacks TRACK_EDITOR_FRAME_ARCHITECTURE link"
+[ "$gui_arch_link" = ok ] || fail "GUI_ARCHITECTURE lacks TRACK_EDITOR_FRAME_ARCHITECTURE.md link"
+[ "$editor_doc_link" = ok ] || fail "EDITOR.md lacks TRACK_EDITOR_FRAME_ARCHITECTURE.md link"
 [ "$destination_named" = ok ] || fail "docs lack destination keywords (paint list / dirty)"
 [ "$residual_named" = ok ] || fail "residual paint-list-every-frame not named open"
 [ "$harness_index" = ok ] || fail "GUI_ARCHITECTURE missing load-bearing harness index"

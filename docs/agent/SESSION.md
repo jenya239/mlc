@@ -108,3 +108,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§110g STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110g — audit docs handoff; close epic → §103f) |
+
+### Turn 2026-08-06 (Critic TRACK_EDITOR_FRAME_ARCHITECTURE STEP=3, §110g)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent green OK; fixed sab1/sab3 (require `.md` link + Residual open both docs); closed §110g+epic; unsuspended §103f |
+| verify  | critic green all=ok; sab1_exit=1; sab3_exit=1; red already-present; residual still open in docs |
+| result  | **§110g CLOSED + §110 epic CLOSED (Critic OK).** §103f Decision next |
+| issues  | residual paint-list-every-frame remains open (documented; out of §110 scope) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103f SCRIPT_VM_HEAP_GC_ARENA Decision) |

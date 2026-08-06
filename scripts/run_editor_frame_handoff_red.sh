@@ -29,11 +29,11 @@ if [ -f "$GREEN" ]; then
 fi
 
 # Red: product docs lack §110 TRACK link until Green.
-if grep -q 'TRACK_EDITOR_FRAME_ARCHITECTURE' "$GUI_ARCH"; then
-  fail "GUI_ARCHITECTURE.md already links TRACK_EDITOR_FRAME_ARCHITECTURE (expected gap until Green)"
+if grep -Fq 'TRACK_EDITOR_FRAME_ARCHITECTURE.md' "$GUI_ARCH"; then
+  fail "GUI_ARCHITECTURE.md already links TRACK_EDITOR_FRAME_ARCHITECTURE.md (expected gap until Green)"
 fi
-if grep -q 'TRACK_EDITOR_FRAME_ARCHITECTURE' "$EDITOR_DOC"; then
-  fail "EDITOR.md already links TRACK_EDITOR_FRAME_ARCHITECTURE (expected gap until Green)"
+if grep -Fq 'TRACK_EDITOR_FRAME_ARCHITECTURE.md' "$EDITOR_DOC"; then
+  fail "EDITOR.md already links TRACK_EDITOR_FRAME_ARCHITECTURE.md (expected gap until Green)"
 fi
 
 # Red: no §110g Green measured paste yet.

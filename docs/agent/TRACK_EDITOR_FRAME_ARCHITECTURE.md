@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110g** (STEP=2 Green done; Critic next)
+## Status: **CLOSED** 2026-08-06 — §110a–g Critic OK; epic handoff complete; queue → §103f
 
 ## Destination (plain)
 
@@ -367,7 +367,7 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 
 Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `editor_perf_overlay_enabled` always-on → L1 `ux_fail default_off`. Sab2: dogfood `SCROLL_CPU_MAX` still 50. Sab3: `perf_overlay.mlc` has no widget GL. Independent wake (overlay unset): gens 7→7 / 2→2; still/jitter OK. Dogfood/glyph: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110g: live still rebuilds paint list every frame (fingerprint skip is L1/stream-level).
 
-## §110g `EDITOR_FRAME_HANDOFF` — **queue head** (docs)
+## §110g `EDITOR_FRAME_HANDOFF` — **CLOSED** 2026-08-06 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -397,7 +397,12 @@ Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `edito
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no handoff harness / docs lack §110 link | **done** 2026-08-06 — `scripts/run_editor_frame_handoff_red.sh` exit 1 (`no editor frame handoff harness`); green absent; GUI_ARCHITECTURE/EDITOR lack TRACK link |
 | 2 | Green: docs pointers + residual note + harness | **done** 2026-08-06 — `GUI_ARCHITECTURE.md` / `EDITOR.md` §110 pointers; `scripts/run_editor_frame_handoff.sh`; report all ok |
-| 3 | Critic (closes §110 epic → resume §103f) | pending |
+| 3 | Critic (closes §110 epic → resume §103f) | **done** 2026-08-06 — independent green OK; sab1/sab3 initially not load-bearing (substring link / Residual open); Critic tightened harness to require `TRACK_EDITOR_FRAME_ARCHITECTURE.md` + Residual (open) in both docs; re-verified sab1/sab3 exit 1; epic CLOSED |
+
+### Critic notes (§110g)
+
+Independent `EDITOR_FRAME_HANDOFF_OUT=.tmp/editor_frame_handoff_critic*` green: all counters ok. Red already-present.
+**Defect found+fixed:** green used bare `TRACK_EDITOR_FRAME_ARCHITECTURE` substring (sab1 rename to `_X.md` still matched) and sab3 Residual rewrite did not fail until Residual (open) required in both docs. Harness+red updated; sab1_exit=1, sab3_exit=1. Residual paint-list-every-frame remains **open** (documented). SceneNode chrome Deviation unchanged. No `misc/editor`/`compiler` in Green. PLAN §110 → closed; resume §103f.
 
 ### §110g Green measured
 
@@ -437,3 +442,4 @@ red_already_present=ok
 2026-08-06: §110g Decision frozen (docs pointers + residual note; Critic close → §103f).
 2026-08-06: §110g Red — `scripts/run_editor_frame_handoff_red.sh` (exit 1: no green harness / docs lack §110 link).
 2026-08-06: §110g Green — docs pointers + residual note + `run_editor_frame_handoff.sh` (all counters ok).
+2026-08-06: §110g CLOSED (Critic OK; harness sab1/sab3 tightened); epic CLOSED → §103f.
