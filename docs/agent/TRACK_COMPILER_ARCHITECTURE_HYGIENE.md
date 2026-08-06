@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 11** Decision next (s10 CLOSED). Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 11** Decision frozen; Red next. Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 10 CLOSED; slice 11 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 11 Decision frozen (Break/Continue); Red next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -992,6 +992,39 @@ Independent re-run:
 - `dev_gate_fast` 1471/0
 
 Residuals: parent open; `unsupported statement=11` (Break); operand-context=34; `type_is_unknown`=26; HOF/CppIR deferred.
+
+### Slice 11 — `break` / `continue` (loop CFG targets)
+
+#### Pre-cut facts (audit 2026-08-06, post-s10)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=638` `mir_functions=2509` |
+| Hist | `fold=125`, `map=93`, `make_identifier_cpp_expression=49`, `any=36`, operand-context=34, `type_is_unknown`=26, …, **`unsupported statement=11`**, … |
+| Statement `_` | After s10 LetPattern, residual `unsupported statement` is `SemanticStatementBreak` / `Continue` (still `_`) |
+| Call sites | Real `break` in while-bodies across lexer/cpp_*/lsp (~16 source sites; 11 reach MIR lower as errors). **No** bare `continue` stmts in `compiler/**/*.mlc` (excl. out/) |
+| Gap | `MirLowerState` has no loop break/continue targets; `mir_lower_while_statement` / `mir_lower_for_statement` already allocate exit + header blocks but do not publish them to nested statements |
+| Deferred | HOF; CppIR `make_*`; Lambda/With operand; `type_is_unknown` |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Residual `unsupported statement=11` is loop `break` (and unused-but-wired `continue`). Need CFG targets nested while/for can jump to |
+| Fix | (1) Add loop frame stack on `MirLowerState`: `loop_break_targets: [BlockId]`, `loop_continue_targets: [BlockId]` (push/pop around loop bodies). (2) `while`: push break=exit, continue=header before body. (3) `for`: allocate `for_continue` block; body fallthrough and `continue` jump there; that block does index++ then `MirJump(header)`; break=exit. (4) `SemanticStatementBreak`/`Continue` → `MirJump` to top-of-stack target (Err if empty); after jump start a fresh dead block so trailing stmts do not re-emit into a terminated block. Import statement ctors. No new VM natives / terminators |
+| Gate | Red: no Break/Continue arms; no `loop_break_targets` on state. Green: wired; `lower_error_count` **strictly < 638**; hist `unsupported statement` **strictly < 11** (ideally absent); smoke `--run` while+break; `dev_gate_fast`; self-host IDENTICAL |
+| Sabotage | Claim Green while Break still `_`; LEC≥638; hist still ≥11; for-continue jumps to header skipping increment |
+| REG | no |
+| Out of scope | HOF; CppIR; Lambda/With; labeled break; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 11)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no Break/Continue / no loop target stack | open |
+| 2 | Green: stack+arms; LEC < 638; hist statement < 11 | open |
+| 3 | Critic | open |
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached

@@ -213,3 +213,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s10 CLOSED (Critic OK).** next = slice 11 Decision |
 | issues  | parent open; Break residual=11 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s11)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Freeze §104-6 s11 Decision: loop target stack; Break/Continue→MirJump; for continue-block with increment |
+| verify  | Baseline LEC=638, unsupported statement=11; breaks in while; no continue stmts; TRACK Decision+Steps |
+| result  | **§104-6 s11 Decision frozen.** next = Red |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Red) |
