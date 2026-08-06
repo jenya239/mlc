@@ -468,3 +468,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§104-6 s2 Green done.** next = Critic |
 | issues  | — |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 2 Critic) |
+
+### Turn 2026-08-06 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s2)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent coverage+sab1/2/3+VM smoke; slice 2 CLOSED |
+| verify  | LEC=1087; hist ok; sab1/2/3; `--run` substring/char_at exit 0; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s2 CLOSED (Critic OK).** next = slice 3 Decision |
+| issues  | parent open until LEC=0 |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 3 Decision) |

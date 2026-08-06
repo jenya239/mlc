@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 2** Critic next (Green done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 3** Decision next (slice 2 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 2 Green done 2026-08-06 (Critic next); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 2 CLOSED 2026-08-06 (Critic OK); slice 3 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -459,7 +459,7 @@ Residuals (non-blocking for slice 1):
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no hist / no substring\|char_at natives | **done** 2026-08-06 — `compiler/scripts/mir-coverage_s2_red.sh` exit 1 (`no lower_error_hist / substring|char_at natives`) |
 | 2 | Green: hist + natives; count < 1134 | **done** 2026-08-06 — see Green measured below |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — slice 2 CLOSED; see Critic audit below |
 
 #### Green measured (§104-6 slice 2) — 2026-08-06
 
@@ -470,6 +470,25 @@ Residuals (non-blocking for slice 1):
 | Natives | `substring`/`char_at` → `__mir_string_substring`/`__mir_string_char_at` in lower_fn + native.mlc + runtime.mlc |
 | `dev_gate_fast` | 1471/0 |
 | Self-host | IDENTICAL |
+
+#### Critic audit (2026-08-06), §104-6 slice 2 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=1087` (<1134); hist top matches Green (`to_string=285` …)
+- Wiring: whitelist + native + runtime for substring/char_at; hist in report/coverage
+- Sab1: strip `lower_error_hist:` → coverage would reject
+- Sab2: no substring/char_at in hist (load-bearing vs whitelist-only claim)
+- Sab3: count drop load-bearing
+- VM smoke: `--run` `.tmp/s2_substring_smoke.mlc` exit 0
+- Red after Green: exit 1 `lower_error_hist already present`
+- `dev_gate_fast` 1471/0
+
+Residuals: parent §104-6 open (`lower_error_count≠0`); next slice should attack hist head (`to_string`/`fold`/…).
+
+### Slice 3 — next method batch (Decision pending)
+
+Queue head after slice 2 Critic. Hist head: `to_string=285`, `fold=116`, `join=73`, `concat=67`.
+
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
