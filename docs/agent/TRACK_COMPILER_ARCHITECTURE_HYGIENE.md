@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 4** Green next (Red done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 4** Critic next (Green done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 4 Red done (`concat`/`has` gap proven); Green next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 4 Green done (`concat`/`has`); Critic next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -571,7 +571,7 @@ Residuals: parent open; next leaf candidates from hist: `concat=67`, `has=59` (H
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no concat\|has natives | **done** 2026-08-06 |
-| 2 | Green: natives; LEC < 790; hist clean of those two | open |
+| 2 | Green: natives; LEC < 790; hist clean of those two | **done** 2026-08-06 |
 | 3 | Critic | open |
 
 #### Red measured (§104-6 slice 4)
@@ -580,6 +580,17 @@ Residuals: parent open; next leaf candidates from hist: `concat=67`, `has=59` (H
 - Whitelist: no `concat`/`has` in `mir_lower_method_native_name`
 - VM: no `__mir_array_concat` / `__mir_map_has` in `native.mlc`/`runtime.mlc`
 - Coverage baseline: `lower_error_count=790`; hist `concat=67` `has=59`
+
+#### Green measured (§104-6 slice 4)
+
+| Check | Result |
+|-------|--------|
+| `mir-coverage.sh` | `mir_functions=2450` `lower_error_count=683` (<790); hist head `fold=122` — no concat/has |
+| Natives | `concat`→`__mir_array_concat`, `has`→`__mir_map_has` in lower_fn + native + runtime |
+| Smoke | `--run` `.tmp/s4_concat_has_smoke.mlc` exit 0 |
+| Red after Green | exit 1 `__mir_array_concat/__mir_map_has already in VM` |
+| Self-host | mlcc2 diff IDENTICAL |
+| `dev_gate_fast` | 1471 passed, 0 failed |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
