@@ -273,3 +273,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s11 Critic REJECT.** Green reopen |
 | issues  | codegen misbind or stale emit of for finish-state; while-only smoke insufficient |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Green reopen) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2 reopen, §104-6 s11)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | `for_blocks_allocated_state` workaround in `mir_lower_for_statement`; emit uses it for finish |
+| verify  | for_if=16 for_break=3 for_continue=25 while_break=7; MIR dups=0; LEC=630; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s11 Green reopen done.** next = Critic |
+| issues  | parent open; residual codegen misbind of `*.state` on reassignment (workaround only) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Critic re-audit) |

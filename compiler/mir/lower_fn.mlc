@@ -1885,7 +1885,12 @@ fn mir_lower_for_statement(
       const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
       const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
       const continue_block_step = mir_lower_allocate_block_index(exit_block_step.state)
-      prep_state = mir_lower_finish_current_block(continue_block_step.state, MirJump(loop_header_step.block_id))
+      // Bind allocate-chain state under a distinct name: codegen has mis-emitted
+      // `continue_block_step.state` as `loop_header_step.state` on the reassignment below
+      // (Critic §104-6 s11), dropping id_pool advances → duplicate BlockIds in for+if.
+      const for_blocks_allocated_state = continue_block_step.state
+      prep_state = mir_lower_finish_current_block(
+        for_blocks_allocated_state, MirJump(loop_header_step.block_id))
       prep_state = mir_lower_start_block(prep_state, loop_header_step.block_id, 'for_loop')
       const length_step = mir_lower_allocate_local(prep_state, '', mir_lower_unknown_type())
       prep_state = mir_lower_emit_call_assign(
