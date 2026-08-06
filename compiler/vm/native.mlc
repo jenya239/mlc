@@ -20,6 +20,8 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_map_length' then vm_native_map_length(arguments)
   else if name == '__mir_string_length' then vm_native_string_length(arguments)
   else if name == '__mir_string_contains' then vm_native_string_contains(arguments)
+  else if name == '__mir_string_substring' then vm_native_string_substring(arguments)
+  else if name == '__mir_string_char_at' then vm_native_string_char_at(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
@@ -383,6 +385,36 @@ fn vm_native_string_contains(arguments: [VmValue]) -> Result<VmValue, [string]> 
           _ => Err(['vm: __mir_string_contains expects string needle'])
         },
       _ => Err(['vm: __mir_string_contains expects string'])
+    }
+  end
+
+fn vm_native_string_substring(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 3 then Err(['vm: __mir_string_substring expects 3 arguments'])
+  else
+    match arguments[0] {
+      VmString(text) =>
+        match arguments[1] {
+          VmI32(start) =>
+            match arguments[2] {
+              VmI32(length) => Ok(VmString(text.substring(start, length))),
+              _ => Err(['vm: __mir_string_substring expects i32 length'])
+            },
+          _ => Err(['vm: __mir_string_substring expects i32 start'])
+        },
+      _ => Err(['vm: __mir_string_substring expects string'])
+    }
+  end
+
+fn vm_native_string_char_at(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_string_char_at expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmString(text) =>
+        match arguments[1] {
+          VmI32(index) => Ok(VmString(text.char_at(index))),
+          _ => Err(['vm: __mir_string_char_at expects i32 index'])
+        },
+      _ => Err(['vm: __mir_string_char_at expects string'])
     }
   end
 

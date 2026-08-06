@@ -205,6 +205,8 @@ fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]>
   else if method_name == 'set' then Ok('__mir_map_set')
   else if method_name == 'length' then Ok('__mir_length')
   else if method_name == 'contains' then Ok('__mir_string_contains')
+  else if method_name == 'substring' then Ok('__mir_string_substring')
+  else if method_name == 'char_at' then Ok('__mir_string_char_at')
   else Err([`mir lower: unsupported method ${method_name}`])
 
 fn mir_lower_is_mutating_method(method_name: string) -> bool =

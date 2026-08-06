@@ -170,6 +170,141 @@ fn mir_bootstrap_append_lower_error_lines(
   mir_bootstrap_append_lower_error_lines(next_lines, errors, index + 1, max_errors)
 end
 
+type MirBootstrapHistEntry = MirBootstrapHistEntry {
+  message: string,
+  count: i32
+}
+
+fn mir_bootstrap_hist_find_index(
+  entries: [MirBootstrapHistEntry],
+  message: string,
+  index: i32
+) -> i32 = do
+  if index >= entries.length() then return -1 end
+  if entries[index].message == message then return index end
+  mir_bootstrap_hist_find_index(entries, message, index + 1)
+end
+
+fn mir_bootstrap_hist_replace_at(
+  entries: [MirBootstrapHistEntry],
+  target_index: i32,
+  replacement: MirBootstrapHistEntry,
+  index: i32,
+  accumulated: [MirBootstrapHistEntry]
+) -> [MirBootstrapHistEntry] = do
+  if index >= entries.length() then return accumulated end
+  let mut next_accumulated = accumulated
+  if index == target_index then
+    next_accumulated.push(replacement)
+  else
+    next_accumulated.push(entries[index])
+  end
+  mir_bootstrap_hist_replace_at(entries, target_index, replacement, index + 1, next_accumulated)
+end
+
+fn mir_bootstrap_hist_push_new(
+  entries: [MirBootstrapHistEntry],
+  message: string
+) -> [MirBootstrapHistEntry] = do
+  let mut next_entries = entries
+  next_entries.push(MirBootstrapHistEntry { message: message, count: 1 })
+  next_entries
+end
+
+fn mir_bootstrap_hist_bump(
+  entries: [MirBootstrapHistEntry],
+  found: i32
+) -> [MirBootstrapHistEntry] = do
+  const previous = entries[found]
+  mir_bootstrap_hist_replace_at(
+    entries,
+    found,
+    MirBootstrapHistEntry { message: previous.message, count: previous.count + 1 },
+    0,
+    [])
+end
+
+fn mir_bootstrap_hist_accumulate(
+  entries: [MirBootstrapHistEntry],
+  errors: [string],
+  index: i32
+) -> [MirBootstrapHistEntry] = do
+  if index >= errors.length() then return entries end
+  const message = errors[index]
+  const found = mir_bootstrap_hist_find_index(entries, message, 0)
+  if found < 0 then
+    return mir_bootstrap_hist_accumulate(
+      mir_bootstrap_hist_push_new(entries, message), errors, index + 1)
+  end
+  mir_bootstrap_hist_accumulate(mir_bootstrap_hist_bump(entries, found), errors, index + 1)
+end
+
+fn mir_bootstrap_hist_append_one(
+  entries: [MirBootstrapHistEntry],
+  entry: MirBootstrapHistEntry
+) -> [MirBootstrapHistEntry] = do
+  let mut next_entries = entries
+  next_entries.push(entry)
+  next_entries
+end
+
+fn mir_bootstrap_hist_append_tail(
+  destination: [MirBootstrapHistEntry],
+  source: [MirBootstrapHistEntry],
+  index: i32
+) -> [MirBootstrapHistEntry] = do
+  if index >= source.length() then return destination end
+  let mut next_destination = destination
+  next_destination.push(source[index])
+  mir_bootstrap_hist_append_tail(next_destination, source, index + 1)
+end
+
+fn mir_bootstrap_hist_insert_sorted(
+  sorted: [MirBootstrapHistEntry],
+  entry: MirBootstrapHistEntry,
+  index: i32,
+  accumulated: [MirBootstrapHistEntry]
+) -> [MirBootstrapHistEntry] =
+  if index >= sorted.length() then
+    mir_bootstrap_hist_append_one(accumulated, entry)
+  else if entry.count > sorted[index].count then
+    mir_bootstrap_hist_append_tail(
+      mir_bootstrap_hist_append_one(accumulated, entry),
+      sorted,
+      index)
+  else
+    mir_bootstrap_hist_insert_sorted(
+      sorted,
+      entry,
+      index + 1,
+      mir_bootstrap_hist_append_one(accumulated, sorted[index]))
+  end
+
+fn mir_bootstrap_hist_sort_by_count_desc(
+  entries: [MirBootstrapHistEntry],
+  index: i32,
+  sorted: [MirBootstrapHistEntry]
+) -> [MirBootstrapHistEntry] =
+  if index >= entries.length() then sorted
+  else
+    mir_bootstrap_hist_sort_by_count_desc(
+      entries,
+      index + 1,
+      mir_bootstrap_hist_insert_sorted(sorted, entries[index], 0, []))
+  end
+
+fn mir_bootstrap_append_hist_lines(
+  lines: [string],
+  entries: [MirBootstrapHistEntry],
+  index: i32
+) -> [string] = do
+  if index >= entries.length() then return lines end
+  const entry = entries[index]
+  let mut next_lines = lines
+  next_lines.push(`lower_error_hist: ${entry.message}=${entry.count}`)
+  mir_bootstrap_append_hist_lines(next_lines, entries, index + 1)
+end
+
 fn mir_bootstrap_join_lines(lines: [string]) -> string = do
   if lines.length() == 0 then return "" end
   let mut result = lines[0]
@@ -185,6 +320,11 @@ export fn print_mir_bootstrap_report(report: MirBootstrapReport) -> string = do
   let mut lines: [string] = [
     `mir_functions=${report.mir_function_count} simple=${report.simple_function_count} cpp_ok=${report.cpp_ok_count} cpp_skip=${report.cpp_skip_count} lower_error_count=${report.lower_error_count}`
   ]
+  const hist_entries = mir_bootstrap_hist_sort_by_count_desc(
+    mir_bootstrap_hist_accumulate([], report.lower_errors, 0),
+    0,
+    [])
+  lines = mir_bootstrap_append_hist_lines(lines, hist_entries, 0)
   lines = mir_bootstrap_append_lower_error_lines(lines, report.lower_errors, 0, 32)
   lines = mir_bootstrap_append_entry_lines(lines, report.entries, 0)
   mir_bootstrap_join_lines(lines)

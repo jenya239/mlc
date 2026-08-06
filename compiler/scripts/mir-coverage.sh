@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# §104-6 slice 1: measure MIR lower coverage on an entry (default compiler/main.mlc).
-# Exit 0 always — measurement only (fail-on-nonzero is a later slice).
+# §104-6: measure MIR lower coverage on an entry (default compiler/main.mlc).
+# Slice 2: also surfaces lower_error_hist: lines. Exit 0 always (measurement).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -37,6 +37,14 @@ if [ -z "${LOWER_ERROR_COUNT:-}" ]; then
   exit 1
 fi
 
+HIST_LINES="$(printf '%s\n' "$RAW" | grep -E '^lower_error_hist:' || true)"
+if [ -z "$HIST_LINES" ]; then
+  echo "mir-coverage: missing lower_error_hist: lines" >&2
+  exit 1
+fi
+
 echo "mir-coverage: mir_functions=${MIR_FUNCTIONS} simple=${SIMPLE} cpp_ok=${CPP_OK} cpp_skip=${CPP_SKIP} lower_error_count=${LOWER_ERROR_COUNT}"
 echo "$SUMMARY"
+echo "--- lower_error_hist (top 20) ---"
+printf '%s\n' "$HIST_LINES" | head -20
 exit 0

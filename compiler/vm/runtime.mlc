@@ -43,6 +43,8 @@ export fn vm_is_native_callee(name: string) -> bool =
   || name == "__mir_map_length"
   || name == "__mir_string_length"
   || name == "__mir_string_contains"
+  || name == "__mir_string_substring"
+  || name == "__mir_string_char_at"
   || name == "__mir_length"
   || name == "__mir_variant_is"
   || name == "__mir_variant_field"
