@@ -605,9 +605,37 @@ Independent re-run:
 
 Residuals: parent open; HOF fold/map deferred; next candidates from hist: operand-context=60, `make_identifier_cpp_expression`=49, `any`=35, `type_is_unknown`=26 (non-HOF leaves / expression gaps).
 
-### Slice 5 — next MIR gap (Decision pending)
+### Slice 5 — operand/rvalue: Block + Char/Float consts
 
-Queue head after slice 4 Critic. Hist head: `fold=122`, `map=93`, operand-context=60, `make_identifier_cpp_expression`=49, `any`=35, …
+#### Pre-cut facts (audit 2026-08-06, post-s4)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=683` `mir_functions=2450` |
+| Hist head | `fold=122`, `map=93`, **operand-context=60**, `make_identifier_cpp_expression=49`, `any=35`, `type_is_unknown=26`, …, **rvalue-context=13**, `to_i=5` |
+| Operand match | `mir_lower_operand_from_expression` handles Int/Bool/Str/Unit/Tuple0/Ident/Bin/Un/Call/Array/Index/Method/Record/Field/Question/If — then `_` → `unsupported expression in operand context` |
+| Already elsewhere | `mir_lower_expression_into_local` already lowers **Block**; return path lowers Match/Block; Char/Float are `string` payloads in SemanticIR but not Const operands |
+| Deferred | HOF (`fold`/`map`/`any`/`filter`/`flat_map`/`all`); CppIR `make_*` / `cpp_*`; `type_is_unknown` (module free-fn / Type heap); Match-as-operand (needs `match_to_local`, not only `match_return`); `to_i` (small leaf — next slice candidate) |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Largest *non-HOF* residual after s4 is operand-context (60) + rvalue-context (13): Block/Char/Float fall through `_` despite Block already having into-local support |
+| Fix | (1) In `mir_lower_operand_from_expression` and `mir_lower_rvalue_from_expression`: route `SemanticExpressionBlock` via allocate-local + existing `mir_lower_expression_into_local` (same pattern as If→local). (2) Map `SemanticExpressionChar` and `SemanticExpressionFloat` to `MirOperandConstStr` / `MirRvalueUse(ConstStr)` (payload is already `string`). No new VM natives |
+| Gate | Red: operand/rvalue still lack Block/Char/Float arms (harness). Green: arms present; `lower_error_count` **strictly < 683**; hist `unsupported expression in operand context` count **strictly < 60** (or line absent); `dev_gate_fast` green; self-host IDENTICAL; smoke `--run` block-as-value + char/float string path |
+| Sabotage | Claim Green while operand still `_`-only for Block; LEC≥683; hist operand-context still ≥60 |
+| REG | no |
+| Out of scope | HOF; Match-as-operand; CppIR make_*; `type_is_unknown`; `to_i`; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 5)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no Block/Char/Float in operand\|rvalue | open |
+| 2 | Green: arms; LEC < 683; operand hist < 60 | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
