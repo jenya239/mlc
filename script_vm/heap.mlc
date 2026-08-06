@@ -1,7 +1,6 @@
-// TRACK_MLC_SCRIPT_VM §103f — non-moving mark-sweep heap + size-class freelists.
-// Cell = ObjectHeader + one child Value. Roots explicit. Write-barrier stub.
-// Size classes: 0→32, 1→64, 2→128, 3→256 bytes. Cell uses class 1 (64).
-// GC mark flag bit = 1. Cell type_id = 1.
+// TRACK_MLC_SCRIPT_VM §103f/§103g — non-moving mark-sweep heap.
+// Cell type_id=1 (child); Array=2 / Record=3 (elements[]). Size classes 0..3.
+// GC mark flag bit = 1. Freelist pop-reuse deferred (mlcc residual).
 
 import {
   Value,
@@ -21,6 +20,7 @@ export type ObjectHeader = {
 type HeapSlot = {
   header: ObjectHeader,
   child: Value,
+  elements: [Value],
   size_class: i32,
   live: bool
 }
@@ -38,6 +38,10 @@ export type Heap = {
 }
 
 export type HeapAlloc = { heap: Heap, value: Value }
+
+export fn heap_type_cell() -> i32 = 1
+export fn heap_type_array() -> i32 = 2
+export fn heap_type_record() -> i32 = 3
 
 export fn heap_new() -> Heap =
   Heap {
@@ -81,22 +85,51 @@ fn slots_with(slots: [HeapSlot], object_id: i32, slot: HeapSlot) -> [HeapSlot] =
   out
 end
 
-export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
-  // Always append a new slot id (non-moving). Freelist reuse is applied on
-  // collect (ids pushed by size class); pop-reuse deferred — codegen drops
-  // statements after if/else-if chains in do-blocks (mlcc residual).
+fn elements_with(elements: [Value], index: i32, value: Value) -> [Value] = do
+  let mut out: [Value] = []
+  let mut cursor = 0
+  while cursor < elements.length() do
+    if cursor == index then
+      out.push(value)
+    else
+      out.push(elements[cursor])
+    end
+    cursor = cursor + 1
+  end
+  out
+end
+
+fn make_nil_elements(length: i32) -> [Value] = do
+  let mut elements: [Value] = []
+  let mut index = 0
+  const nil_value = value_encode(ValueNil)
+  while index < length do
+    elements.push(nil_value)
+    index = index + 1
+  end
+  elements
+end
+
+fn heap_alloc_slot(
+  heap: Heap,
+  type_id: i32,
+  shape_or_meta: i64,
+  elements: [Value],
+  size_class: i32
+) -> HeapAlloc = do
   let mut slots = heap.slots
   const object_id = slots.length()
   const header = ObjectHeader {
-    type_id: 1,
+    type_id: type_id,
     gc_flags: 0,
     object_flags: 0,
-    shape_or_meta: 0
+    shape_or_meta: shape_or_meta
   }
   const slot = HeapSlot {
     header: header,
     child: value_encode(ValueNil),
-    size_class: 1,
+    elements: elements,
+    size_class: size_class,
     live: true
   }
   slots.push(slot)
@@ -116,6 +149,17 @@ export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
     value: value_encode(ValueHeapRef(object_id))
   }
 end
+
+export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
+  let mut empty: [Value] = []
+  heap_alloc_slot(heap, heap_type_cell(), 0, empty, 1)
+end
+
+export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc =
+  heap_alloc_slot(heap, heap_type_array(), 0, make_nil_elements(length), 2)
+
+export fn heap_alloc_record(heap: Heap, field_count: i32) -> HeapAlloc =
+  heap_alloc_slot(heap, heap_type_record(), 0, make_nil_elements(field_count), 2)
 
 export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
   let mut roots = heap.roots
@@ -146,6 +190,77 @@ export fn heap_root_clear(heap: Heap) -> Heap =
     scratch_object_id: 0 - 1
   }
 
+export fn heap_object_type_id(heap: Heap, value: Value) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0
+      else if object_id >= heap.slots.length() then
+        0
+      else if !heap.slots[object_id].live then
+        0
+      else
+        heap.slots[object_id].header.type_id
+      end
+    end,
+    _ => 0
+  }
+
+export fn heap_get_element(heap: Heap, parent: Value, index: i32) -> Value =
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        value_encode(ValueNil)
+      else if object_id >= heap.slots.length() then
+        value_encode(ValueNil)
+      else
+        const slot = heap.slots[object_id]
+        if !slot.live then
+          value_encode(ValueNil)
+        else if index < 0 then
+          value_encode(ValueNil)
+        else if index >= slot.elements.length() then
+          value_encode(ValueNil)
+        else
+          slot.elements[index]
+        end
+      end
+    end,
+    _ => value_encode(ValueNil)
+  }
+
+export fn heap_element_count(heap: Heap, parent: Value) -> i32 =
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0
+      else if object_id >= heap.slots.length() then
+        0
+      else if !heap.slots[object_id].live then
+        0
+      else
+        heap.slots[object_id].elements.length()
+      end
+    end,
+    _ => 0
+  }
+
+fn mark_value(heap: Heap, value: Value) -> Heap =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => mark_object(heap, object_id),
+    _ => heap
+  }
+
+fn mark_elements(heap: Heap, elements: [Value]) -> Heap = do
+  let mut next = heap
+  let mut index = 0
+  while index < elements.length() do
+    next = mark_value(next, elements[index])
+    index = index + 1
+  end
+  next
+end
+
 fn mark_object(heap: Heap, object_id: i32) -> Heap = do
   if object_id < 0 then
     return heap
@@ -169,6 +284,7 @@ fn mark_object(heap: Heap, object_id: i32) -> Heap = do
   const marked_slot = HeapSlot {
     header: marked_header,
     child: slot.child,
+    elements: slot.elements,
     size_class: slot.size_class,
     live: true
   }
@@ -183,17 +299,9 @@ fn mark_object(heap: Heap, object_id: i32) -> Heap = do
     write_barrier_hits: heap.write_barrier_hits,
     scratch_object_id: 0 - 1
   }
-  match value_decode(slot.child) {
-    ValueHeapRef(child_id) => mark_object(next, child_id),
-    _ => next
-  }
+  next = mark_value(next, slot.child)
+  mark_elements(next, slot.elements)
 end
-
-fn mark_value(heap: Heap, value: Value) -> Heap =
-  match value_decode(value) {
-    ValueHeapRef(object_id) => mark_object(heap, object_id),
-    _ => heap
-  }
 
 export fn heap_collect(heap: Heap) -> Heap = do
   let mut next = heap
@@ -220,14 +328,17 @@ export fn heap_collect(heap: Heap) -> Heap = do
           object_flags: slot.header.object_flags,
           shape_or_meta: slot.header.shape_or_meta
         }
+        let mut empty_keep = slot.elements
         slots = slots_with(slots, object_id, HeapSlot {
           header: cleared,
           child: slot.child,
+          elements: empty_keep,
           size_class: slot.size_class,
           live: true
         })
         live_count = live_count + 1
       else
+        let mut empty_dead: [Value] = []
         slots = slots_with(slots, object_id, HeapSlot {
           header: ObjectHeader {
             type_id: 0,
@@ -236,6 +347,7 @@ export fn heap_collect(heap: Heap) -> Heap = do
             shape_or_meta: 0
           },
           child: value_encode(ValueNil),
+          elements: empty_dead,
           size_class: slot.size_class,
           live: false
         })
@@ -269,7 +381,7 @@ end
 export fn heap_write_barrier(
   heap: Heap,
   parent: Value,
-  _slot: i32,
+  slot_index: i32,
   new_child: Value
 ) -> Heap = do
   let mut slots = heap.slots
@@ -278,12 +390,23 @@ export fn heap_write_barrier(
       if object_id >= 0 && object_id < slots.length() then
         const slot = slots[object_id]
         if slot.live then
-          slots = slots_with(slots, object_id, HeapSlot {
-            header: slot.header,
-            child: new_child,
-            size_class: slot.size_class,
-            live: true
-          })
+          if slot.header.type_id == heap_type_cell() then
+            slots = slots_with(slots, object_id, HeapSlot {
+              header: slot.header,
+              child: new_child,
+              elements: slot.elements,
+              size_class: slot.size_class,
+              live: true
+            })
+          else if slot_index >= 0 && slot_index < slot.elements.length() then
+            slots = slots_with(slots, object_id, HeapSlot {
+              header: slot.header,
+              child: slot.child,
+              elements: elements_with(slot.elements, slot_index, new_child),
+              size_class: slot.size_class,
+              live: true
+            })
+          end
         end
       end
     end,

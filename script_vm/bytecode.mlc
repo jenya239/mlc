@@ -27,6 +27,12 @@ fn opcode_lt() -> i32 = 12
 fn opcode_le() -> i32 = 13
 fn opcode_gt() -> i32 = 14
 fn opcode_ge() -> i32 = 15
+fn opcode_new_array() -> i32 = 16
+fn opcode_get_index() -> i32 = 17
+fn opcode_set_index() -> i32 = 18
+fn opcode_new_record() -> i32 = 19
+fn opcode_get_prop() -> i32 = 20
+fn opcode_set_prop() -> i32 = 21
 
 export fn instruction_opcode_load_const() -> i32 = opcode_load_const()
 export fn instruction_opcode_move() -> i32 = opcode_move()
@@ -43,6 +49,12 @@ export fn instruction_opcode_lt() -> i32 = opcode_lt()
 export fn instruction_opcode_le() -> i32 = opcode_le()
 export fn instruction_opcode_gt() -> i32 = opcode_gt()
 export fn instruction_opcode_ge() -> i32 = opcode_ge()
+export fn instruction_opcode_new_array() -> i32 = opcode_new_array()
+export fn instruction_opcode_get_index() -> i32 = opcode_get_index()
+export fn instruction_opcode_set_index() -> i32 = opcode_set_index()
+export fn instruction_opcode_new_record() -> i32 = opcode_new_record()
+export fn instruction_opcode_get_prop() -> i32 = opcode_get_prop()
+export fn instruction_opcode_set_prop() -> i32 = opcode_set_prop()
 
 export fn instruction_encode(opcode: i32, a: i32, b: i32, c: i32) -> Instruction =
   Instruction {
@@ -125,6 +137,42 @@ end
 export fn instruction_words_return(source: i32) -> [i32] = do
   let mut words: [i32] = []
   words.push(instruction_encode(opcode_return(), source, 0, 0).word)
+  words
+end
+
+export fn instruction_words_new_array(destination: i32, length_register: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_new_array(), destination, length_register, 0).word)
+  words
+end
+
+export fn instruction_words_get_index(destination: i32, array_register: i32, index_register: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_get_index(), destination, array_register, index_register).word)
+  words
+end
+
+export fn instruction_words_set_index(array_register: i32, index_register: i32, value_register: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_set_index(), array_register, index_register, value_register).word)
+  words
+end
+
+export fn instruction_words_new_record(destination: i32, field_count: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_new_record(), destination, field_count, 0).word)
+  words
+end
+
+export fn instruction_words_get_prop(destination: i32, record_register: i32, field_index: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_get_prop(), destination, record_register, field_index).word)
+  words
+end
+
+export fn instruction_words_set_prop(record_register: i32, field_index: i32, value_register: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_set_prop(), record_register, field_index, value_register).word)
   words
 end
 
@@ -243,6 +291,18 @@ export fn instruction_disassemble(words: [i32], index: i32) -> string = do
       "GT " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
     else if decoded.opcode == opcode_ge() then
       "GE " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_new_array() then
+      "NEW_ARRAY " + register_name(decoded.a) + ", " + register_name(decoded.b)
+    else if decoded.opcode == opcode_get_index() then
+      "GET_INDEX " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_set_index() then
+      "SET_INDEX " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_new_record() then
+      "NEW_RECORD " + register_name(decoded.a) + ", #" + decoded.b.to_string()
+    else if decoded.opcode == opcode_get_prop() then
+      "GET_PROP " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", #" + decoded.c.to_string()
+    else if decoded.opcode == opcode_set_prop() then
+      "SET_PROP " + register_name(decoded.a) + ", #" + decoded.b.to_string() + ", " + register_name(decoded.c)
     else
       "<unknown-opcode " + decoded.opcode.to_string() + ">"
     end

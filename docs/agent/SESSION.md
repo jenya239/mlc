@@ -213,3 +213,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103g STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103g Green — Array/Record + cycle gate) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103g Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Array/Record heap (`heap_alloc_array`/`record`); opcodes 16–21; `run_with_heap`; `arrays_records_unit` cycle+smoke; green harness; side §103f/§103e |
+| verify  | `bash scripts/run_script_vm_arrays_records_unit.sh` → ok; red already-present; `dev_gate_fast` 1471/0 |
+| result  | **§103g STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103g) |

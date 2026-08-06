@@ -1,0 +1,217 @@
+// TRACK_MLC_SCRIPT_VM §103g — arrays/records + cycle mark-sweep gate.
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  heap_new,
+  heap_alloc_cell,
+  heap_alloc_array,
+  heap_alloc_record,
+  heap_root_push,
+  heap_root_clear,
+  heap_collect,
+  heap_live_object_count,
+  heap_write_barrier,
+  heap_write_barrier_hits,
+  heap_get_element,
+  heap_type_array,
+  heap_type_record,
+  heap_object_type_id
+} from '../heap'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_new_array,
+  instruction_words_get_index,
+  instruction_words_set_index,
+  instruction_words_new_record,
+  instruction_words_get_prop,
+  instruction_words_set_prop
+} from '../bytecode'
+import {
+  RunOk,
+  RunErr,
+  RunResult,
+  run_with_heap,
+  run_err_type
+} from '../interpreter'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm arrays_records_unit] FAIL: " + message)
+  code
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn err_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn ok_int(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) =>
+      match value_decode(value) {
+        ValueInt32(number) => number,
+        _ => 0 - 999999
+      },
+    RunErr(_c, _a) => 0 - 999999
+  }
+
+fn main() -> i32 = do
+  let mut heap = heap_new()
+  const baseline = heap_live_object_count(heap)
+
+  // --- Cycle gate via heap API (authority) ---
+  const alloc_a = heap_alloc_record(heap, 1)
+  heap = alloc_a.heap
+  const record_a = alloc_a.value
+  const alloc_b = heap_alloc_record(heap, 1)
+  heap = alloc_b.heap
+  const record_b = alloc_b.value
+  if heap_object_type_id(heap, record_a) != heap_type_record() then
+    return fail("record_a type_id", 1)
+  end
+  heap = heap_write_barrier(heap, record_a, 0, record_b)
+  heap = heap_write_barrier(heap, record_b, 0, record_a)
+  if heap_live_object_count(heap) != baseline + 2 then
+    return fail("cycle live before collect", 2)
+  end
+
+  // (a) no roots → both reclaimed
+  heap = heap_root_clear(heap)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != baseline then
+    return fail(
+      "cycle unreclaimed live=" + heap_live_object_count(heap).to_string(),
+      3
+    )
+  end
+
+  // (b) root one → both live
+  const alloc_c = heap_alloc_record(heap, 1)
+  heap = alloc_c.heap
+  const record_c = alloc_c.value
+  const alloc_d = heap_alloc_record(heap, 1)
+  heap = alloc_d.heap
+  const record_d = alloc_d.value
+  heap = heap_write_barrier(heap, record_c, 0, record_d)
+  heap = heap_write_barrier(heap, record_d, 0, record_c)
+  heap = heap_root_clear(heap)
+  heap = heap_root_push(heap, record_c)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != baseline + 2 then
+    return fail(
+      "cycle rooted live=" + heap_live_object_count(heap).to_string(),
+      4
+    )
+  end
+
+  // --- Cell reclaim still works ---
+  heap = heap_root_clear(heap)
+  heap = heap_collect(heap)
+  const cell_baseline = heap_live_object_count(heap)
+  const alloc_cell = heap_alloc_cell(heap)
+  heap = alloc_cell.heap
+  heap = heap_root_clear(heap)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != cell_baseline then
+    return fail("Cell reclaim regression", 5)
+  end
+
+  // --- Interpreter: NEW_ARRAY + SET_INDEX + GET_INDEX ---
+  // r0 = NEW_ARRAY len=#0 (2); LOAD idx=#1 (0); LOAD val=#2 (42); SET; GET; RETURN
+  let mut array_words: [i32] = []
+  array_words = append_words(array_words, instruction_words_load_const(1, 0))
+  array_words = append_words(array_words, instruction_words_new_array(0, 1))
+  array_words = append_words(array_words, instruction_words_load_const(2, 1))
+  array_words = append_words(array_words, instruction_words_load_const(3, 2))
+  array_words = append_words(array_words, instruction_words_set_index(0, 2, 3))
+  array_words = append_words(array_words, instruction_words_get_index(4, 0, 2))
+  array_words = append_words(array_words, instruction_words_return(4))
+  let mut array_constants: [Value] = []
+  array_constants.push(value_encode(ValueInt32(2)))
+  array_constants.push(value_encode(ValueInt32(0)))
+  array_constants.push(value_encode(ValueInt32(42)))
+  const array_run = run_with_heap(heap_new(), array_words, array_constants, 5)
+  if !is_run_ok(array_run.result) then
+    return fail("array smoke RunOk got=" + err_code(array_run.result), 6)
+  end
+  if ok_int(array_run.result) != 42 then
+    return fail("array smoke expected 42 got=" + ok_int(array_run.result).to_string(), 7)
+  end
+  if heap_write_barrier_hits(array_run.heap) < 1 then
+    return fail("array SET did not bump write_barrier_hits", 8)
+  end
+
+  // --- Interpreter: NEW_RECORD + SET_PROP + GET_PROP ---
+  let mut record_words: [i32] = []
+  record_words = append_words(record_words, instruction_words_new_record(0, 1))
+  record_words = append_words(record_words, instruction_words_load_const(1, 0))
+  record_words = append_words(record_words, instruction_words_set_prop(0, 0, 1))
+  record_words = append_words(record_words, instruction_words_get_prop(2, 0, 0))
+  record_words = append_words(record_words, instruction_words_return(2))
+  let mut record_constants: [Value] = []
+  record_constants.push(value_encode(ValueInt32(7)))
+  const record_run = run_with_heap(heap_new(), record_words, record_constants, 3)
+  if !is_run_ok(record_run.result) then
+    return fail("record smoke RunOk got=" + err_code(record_run.result), 9)
+  end
+  if ok_int(record_run.result) != 7 then
+    return fail("record smoke expected 7 got=" + ok_int(record_run.result).to_string(), 10)
+  end
+  if heap_write_barrier_hits(record_run.heap) < 1 then
+    return fail("record SET did not bump write_barrier_hits", 11)
+  end
+
+  // Wrong type on GET_INDEX → type err
+  let mut bad_words: [i32] = []
+  bad_words = append_words(bad_words, instruction_words_load_const(0, 0))
+  bad_words = append_words(bad_words, instruction_words_load_const(1, 1))
+  bad_words = append_words(bad_words, instruction_words_get_index(2, 0, 1))
+  bad_words = append_words(bad_words, instruction_words_return(2))
+  let mut bad_constants: [Value] = []
+  bad_constants.push(value_encode(ValueInt32(0)))
+  bad_constants.push(value_encode(ValueInt32(0)))
+  const bad_run = run_with_heap(heap_new(), bad_words, bad_constants, 3)
+  if err_code(bad_run.result) != run_err_type() then
+    return fail("GET_INDEX on Int32 expected type got=" + err_code(bad_run.result), 12)
+  end
+
+  // Array API alloc type_id
+  let mut heap2 = heap_new()
+  const arr_alloc = heap_alloc_array(heap2, 3)
+  heap2 = arr_alloc.heap
+  if heap_object_type_id(heap2, arr_alloc.value) != heap_type_array() then
+    return fail("heap_alloc_array type_id", 13)
+  end
+  heap2 = heap_write_barrier(heap2, arr_alloc.value, 1, value_encode(ValueInt32(99)))
+  const got = heap_get_element(heap2, arr_alloc.value, 1)
+  if !value_raw_equal(got, value_encode(ValueInt32(99))) then
+    return fail("array element round-trip", 14)
+  end
+
+  println("[script_vm] arrays_records_unit ok")
+  println("cycle_unrooted=ok")
+  println("cycle_rooted=ok")
+  println("arrays_records=ok")
+  println(
+    "write_barrier_hits=" + heap_write_barrier_hits(record_run.heap).to_string()
+  )
+  0
+end

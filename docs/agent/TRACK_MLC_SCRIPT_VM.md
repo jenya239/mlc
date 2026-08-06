@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103g** STEP=1 Red done; Green next; §103a–f CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103g** STEP=2 Green done; Critic next; §103a–f CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -230,7 +230,7 @@ write_barrier_hits=1
 dev_gate_fast=1471/0
 ```
 
-### §103g `SCRIPT_VM_ARRAYS_RECORDS` — **queue head** (STEP=1 Red done; Green next)
+### §103g `SCRIPT_VM_ARRAYS_RECORDS` — **queue head** (STEP=2 Green done; Critic next)
 
 Heap-backed array/record objects; field/index opcodes; GC traces elements (design § / track gate).
 
@@ -264,8 +264,21 @@ Heap-backed array/record objects; field/index opcodes; GC traces elements (desig
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: arrays/records unit runner absent | **done** 2026-08-06 — `scripts/run_script_vm_arrays_records_unit_red.sh` exit 1 (`no script_vm arrays_records unit`); green/unit/opcodes/`run_with_heap` absent |
-| 2 | Green: Array/Record + opcodes + cycle gate; `dev_gate_fast` | pending |
+| 2 | Green: Array/Record + opcodes + cycle gate; `dev_gate_fast` | **done** 2026-08-06 — Array/Record heap; opcodes 16–21; `run_with_heap`; unit cycle+smoke; red already-present; side §103f/§103e; `dev_gate_fast` 1471/0 |
 | 3 | Critic | pending |
+
+#### Green measured (§103g)
+
+```
+arrays_records=ok
+cycle_unrooted=ok
+cycle_rooted=ok
+red_already_present=ok
+side_heap_gc_arena=ok
+side_control_flow=ok
+write_barrier_hits=1
+dev_gate_fast: 1471 passed, 0 failed
+```
 
 ### §103h `SCRIPT_VM_CLOSURES_FIBERS`
 

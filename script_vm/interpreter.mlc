@@ -29,17 +29,37 @@ import {
   instruction_opcode_lt,
   instruction_opcode_le,
   instruction_opcode_gt,
-  instruction_opcode_ge
+  instruction_opcode_ge,
+  instruction_opcode_new_array,
+  instruction_opcode_get_index,
+  instruction_opcode_set_index,
+  instruction_opcode_new_record,
+  instruction_opcode_get_prop,
+  instruction_opcode_set_prop
 } from './bytecode'
 import {
   VerifyOk,
   VerifyErr,
   verify_function
 } from './verifier'
+import {
+  Heap,
+  heap_new,
+  heap_alloc_array,
+  heap_alloc_record,
+  heap_write_barrier,
+  heap_get_element,
+  heap_element_count,
+  heap_object_type_id,
+  heap_type_array,
+  heap_type_record
+} from './heap'
 
 export type RunResult =
   | RunOk(Value)
   | RunErr(string, i32)
+
+export type RunHeapResult = { heap: Heap, result: RunResult }
 
 export fn run_err_verify() -> string = "verify"
 export fn run_err_type() -> string = "type"
@@ -47,6 +67,7 @@ export fn run_err_overflow() -> string = "overflow"
 export fn run_err_div_zero() -> string = "div_zero"
 export fn run_err_no_return() -> string = "no_return"
 export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
+export fn run_err_bounds() -> string = "bounds"
 
 extern fn script_vm_int32_checked_add(left: i32, right: i32) -> i32 =
   "mlc::script_vm::int32_checked_add" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
@@ -244,7 +265,13 @@ end
 fn jump_target(words: [i32], primary: i32, span: i32) -> i32 =
   primary + span + instruction_jump_offset(words, primary)
 
-fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+fn execute_with_heap(
+  heap: Heap,
+  words: [i32],
+  constants: [Value],
+  register_count: i32
+) -> RunHeapResult = do
+  let mut heap_state = heap
   let mut registers = make_registers(register_count)
   let mut program_counter = 0
   let mut err_code = ""
@@ -364,6 +391,105 @@ fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> 
       else
         program_counter = program_counter + span
       end
+    else if decoded.opcode == instruction_opcode_new_array() then
+      match value_decode(registers[decoded.b]) {
+        ValueInt32(length) => do
+          if length < 0 then
+            err_code = run_err_bounds()
+            err_at = primary
+          else
+            const alloc = heap_alloc_array(heap_state, length)
+            heap_state = alloc.heap
+            registers = registers_set(registers, decoded.a, alloc.value)
+            program_counter = program_counter + span
+          end
+        end,
+        _ => do
+          err_code = run_err_type()
+          err_at = primary
+        end
+      }
+    else if decoded.opcode == instruction_opcode_get_index() then
+      if heap_object_type_id(heap_state, registers[decoded.b]) != heap_type_array() then
+        err_code = run_err_type()
+        err_at = primary
+      else
+        match value_decode(registers[decoded.c]) {
+          ValueInt32(index) => do
+            if index < 0 || index >= heap_element_count(heap_state, registers[decoded.b]) then
+              err_code = run_err_bounds()
+              err_at = primary
+            else
+              const element = heap_get_element(heap_state, registers[decoded.b], index)
+              registers = registers_set(registers, decoded.a, element)
+              program_counter = program_counter + span
+            end
+          end,
+          _ => do
+            err_code = run_err_type()
+            err_at = primary
+          end
+        }
+      end
+    else if decoded.opcode == instruction_opcode_set_index() then
+      if heap_object_type_id(heap_state, registers[decoded.a]) != heap_type_array() then
+        err_code = run_err_type()
+        err_at = primary
+      else
+        match value_decode(registers[decoded.b]) {
+          ValueInt32(index) => do
+            if index < 0 || index >= heap_element_count(heap_state, registers[decoded.a]) then
+              err_code = run_err_bounds()
+              err_at = primary
+            else
+              heap_state = heap_write_barrier(
+                heap_state,
+                registers[decoded.a],
+                index,
+                registers[decoded.c]
+              )
+              program_counter = program_counter + span
+            end
+          end,
+          _ => do
+            err_code = run_err_type()
+            err_at = primary
+          end
+        }
+      end
+    else if decoded.opcode == instruction_opcode_new_record() then
+      const alloc = heap_alloc_record(heap_state, decoded.b)
+      heap_state = alloc.heap
+      registers = registers_set(registers, decoded.a, alloc.value)
+      program_counter = program_counter + span
+    else if decoded.opcode == instruction_opcode_get_prop() then
+      if heap_object_type_id(heap_state, registers[decoded.b]) != heap_type_record() then
+        err_code = run_err_type()
+        err_at = primary
+      else if decoded.c < 0 || decoded.c >= heap_element_count(heap_state, registers[decoded.b]) then
+        err_code = run_err_bounds()
+        err_at = primary
+      else
+        const element = heap_get_element(heap_state, registers[decoded.b], decoded.c)
+        registers = registers_set(registers, decoded.a, element)
+        program_counter = program_counter + span
+      end
+    else if decoded.opcode == instruction_opcode_set_prop() then
+      if heap_object_type_id(heap_state, registers[decoded.a]) != heap_type_record() then
+        err_code = run_err_type()
+        err_at = primary
+      else if decoded.b < 0 || decoded.b >= heap_element_count(heap_state, registers[decoded.a]) then
+        err_code = run_err_bounds()
+        err_at = primary
+      else
+        heap_state = heap_write_barrier(
+          heap_state,
+          registers[decoded.a],
+          decoded.b,
+          registers[decoded.c]
+        )
+        program_counter = program_counter + span
+      end
     else
       err_code = run_err_unsupported_opcode()
       err_at = primary
@@ -371,18 +497,27 @@ fn execute_arithmetic(words: [i32], constants: [Value], register_count: i32) -> 
   end
 
   if err_code != "" then
-    RunErr(err_code, err_at)
+    RunHeapResult { heap: heap_state, result: RunErr(err_code, err_at) }
   else if returned then
-    RunOk(return_value)
+    RunHeapResult { heap: heap_state, result: RunOk(return_value) }
   else
-    RunErr(run_err_no_return(), words.length())
+    RunHeapResult { heap: heap_state, result: RunErr(run_err_no_return(), words.length()) }
   end
 end
 
-export fn run_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+export fn run_with_heap(
+  heap: Heap,
+  words: [i32],
+  constants: [Value],
+  register_count: i32
+) -> RunHeapResult = do
   const verified = verify_function(words, register_count, constants.length())
   match verified {
-    VerifyErr(_code, word_index) => RunErr(run_err_verify(), word_index),
-    VerifyOk => execute_arithmetic(words, constants, register_count)
+    VerifyErr(_code, word_index) =>
+      RunHeapResult { heap: heap, result: RunErr(run_err_verify(), word_index) },
+    VerifyOk => execute_with_heap(heap, words, constants, register_count)
   }
 end
+
+export fn run_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult =
+  run_with_heap(heap_new(), words, constants, register_count).result
