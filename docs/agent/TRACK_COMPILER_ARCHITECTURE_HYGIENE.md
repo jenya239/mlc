@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 13** Green done; Critic next. Prior: §104-6 s12 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 13 CLOSED**; next = slice 14 Decision. Prior: §104-6 s12 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 13 Green done (byte_size/upper/to_lower/take); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 13 CLOSED (byte_size/upper/to_lower/take); next = slice 14 Decision; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1190,7 +1190,7 @@ No false-done. Slice 12 CLOSED. Parent remains open (LEC≠0).
 | 0 | Decision freeze | **done** 2026-08-07 |
 | 1 | Red: no byte_size/upper/to_lower/take natives | **done** 2026-08-07 |
 | 2 | Green: natives+maps; LEC < 620; hist clean for four | **done** 2026-08-07 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-07 — CLOSED |
 
 #### Red measured (§104-6 slice 13)
 
@@ -1212,6 +1212,22 @@ No false-done. Slice 12 CLOSED. Parent remains open (LEC≠0).
 | `dev_gate_fast` | 1471/0 |
 
 Residuals: parent open; LEC=616; HOF≈300 + CppIR + operand-context=36 — next slice after Critic (HOF strategic).
+
+#### Critic audit (2026-08-07), §104-6 slice 13 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | maps at `lower_fn.mlc:283-286`; dispatch+bodies in `native.mlc`; allowlist `runtime.mlc:57-60`; tip `3ab1d73e` matches |
+| MIR dump | combined: `__mir_string_byte_size(1)`, `__mir_string_upper(1)`, `__mir_string_to_lower(1)`, `__mir_array_take(2)` |
+| Smokes | independent UTF-8 byte_size + case + take + combined `--run` exit 0 |
+| Coverage | LEC=616 (<620); Δ=4 vs Red baseline 620 (= hist `1+1+1+1`); hist four leaves **absent** |
+| Red after | `mir-coverage_s13_red.sh` exit 1 `natives already in VM` |
+| Self-host | fresh p1→`critic_mlcc2_s13`→p2; `diff -r --exclude=obj` IDENTICAL |
+| Gate | `dev_gate_fast` 1471/0 |
+
+No false-done. Slice 13 CLOSED. Parent remains open (LEC≠0).
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
