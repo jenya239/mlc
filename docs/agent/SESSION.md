@@ -258,3 +258,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s11 Green done.** next = Critic |
 | issues  | parent open; residual LEC=630 (HOF/CppIR/…) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Critic) |
+
+### Turn 2026-08-07 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s11)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Independent audit: while OK; for+if/break/continue hang; MIR dup BlockIds; cpp finish uses `loop_header_step.state` not `continue_block_step.state` |
+| verify  | LEC=630 OK; for_if_only timeout 124; dump ids dup 2/3/4; `lower_fn.cpp:1637` vs `.mlc:1888` mismatch |
+| result  | **§104-6 s11 Critic REJECT.** Green reopen |
+| issues  | codegen misbind or stale emit of for finish-state; while-only smoke insufficient |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Green reopen) |

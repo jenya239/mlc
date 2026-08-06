@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 11** Green done; Critic next. Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 11** Critic REJECT → Green reopen. Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 11 Green done (Break/Continue); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 11 Critic REJECT (for id_pool codegen); Green reopen; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1023,8 +1023,8 @@ Residuals: parent open; `unsupported statement=11` (Break); operand-context=34; 
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no Break/Continue / no loop target stack | **done** 2026-08-06 |
-| 2 | Green: stack+arms; LEC < 638; hist statement < 11 | **done** 2026-08-07 |
-| 3 | Critic | open |
+| 2 | Green: stack+arms; LEC < 638; hist statement < 11 | **reopen** 2026-08-07 (Critic REJECT) |
+| 3 | Critic | **REJECT** 2026-08-07 — see audit |
 
 #### Red measured (§104-6 slice 11)
 
@@ -1043,6 +1043,24 @@ Residuals: parent open; `unsupported statement=11` (Break); operand-context=34; 
 | Red after Green | exit 1 `statement already has Break/Continue arms` |
 | Self-host | mlcc2 diff IDENTICAL (`diff -rq` empty excl. obj) |
 | `dev_gate_fast` | 1471/0 |
+
+#### Critic audit (2026-08-07), §104-6 slice 11 **REJECT** — Green reopen
+
+Independent re-check (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Coverage | `lower_error_count=630` (<638); hist **no** `unsupported statement` — OK |
+| while+if+break | `--run` exit 7; MIR block ids unique `[0..6]` — OK |
+| while+continue | Driver smoke exit 25; Critic nested-break hits=15 — OK |
+| Red after Green | exit 1 `already has Break/Continue arms` — OK |
+| **for+if (no break)** | `--run` **hangs** (timeout 124); MIR ids **duplicate** `2/3/4` thrice — FAIL |
+| **for+break / for+continue** | hang timeout 124 — FAIL (Decision sabotage: for-continue / increment path) |
+| Root cause | `.mlc` source has `finish(continue_block_step.state, …)` but generated `compiler/out/lower_fn.cpp:1637` emits `finish(loop_header_step.state, …)` — drops id_pool advances from body/exit/continue allocates; body then re-allocates ids 2/3/4. while path correctly emits `exit_block_step.state`. |
+
+Sabotage hit: claim Green while for-continue/id_pool path is load-bearing-broken. while-only smokes insufficient.
+
+**Reopen Gate (Driver STEP=2):** for+if and for+continue `--run` exit correctly; MIR dump unique BlockIds; generated C++ finish uses post-continue allocate state (workaround in `.mlc` if codegen misbinds `*.state`, or fix codegen); re-measure LEC/hist; `dev_gate_fast`; self-host IDENTICAL.
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
