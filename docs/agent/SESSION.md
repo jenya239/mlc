@@ -498,3 +498,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s8 CLOSED (Critic OK).** next = slice 9 Decision |
 | issues  | parent open; HOF deferred |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Frozen §104-6 slice 9: I64/U8/Usize → ConstStr in operand+rvalue (Char/Float pattern); gate LEC<646 + hist improve |
+| verify  | LEC=646; operand=34 rvalue=5; I64/U8/Usize absent from arms; HOF/LetPattern/type_is_unknown deferred |
+| result  | **§104-6 s9 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Red) |
