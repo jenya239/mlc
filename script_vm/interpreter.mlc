@@ -35,7 +35,13 @@ import {
   instruction_opcode_set_index,
   instruction_opcode_new_record,
   instruction_opcode_get_prop,
-  instruction_opcode_set_prop
+  instruction_opcode_set_prop,
+  instruction_opcode_call,
+  instruction_opcode_make_closure,
+  instruction_opcode_get_upval,
+  instruction_opcode_set_upval,
+  instruction_upvalue_source_is_local,
+  instruction_upvalue_source_index
 } from './bytecode'
 import {
   VerifyOk,
@@ -47,12 +53,18 @@ import {
   heap_new,
   heap_alloc_array,
   heap_alloc_record,
+  heap_alloc_cell,
+  heap_alloc_closure,
   heap_write_barrier,
   heap_get_element,
   heap_element_count,
   heap_object_type_id,
   heap_type_array,
-  heap_type_record
+  heap_type_record,
+  heap_type_closure,
+  heap_type_cell,
+  heap_closure_proto_index,
+  heap_cell_child
 } from './heap'
 
 export type RunResult =
@@ -61,6 +73,20 @@ export type RunResult =
 
 export type RunHeapResult = { heap: Heap, result: RunResult }
 
+export type FunctionProto = {
+  words: [i32],
+  constants: [Value],
+  register_count: i32
+}
+
+type CallFrame = {
+  proto_index: i32,
+  program_counter: i32,
+  registers: [Value],
+  closure: Value,
+  return_dst: i32
+}
+
 export fn run_err_verify() -> string = "verify"
 export fn run_err_type() -> string = "type"
 export fn run_err_overflow() -> string = "overflow"
@@ -68,6 +94,7 @@ export fn run_err_div_zero() -> string = "div_zero"
 export fn run_err_no_return() -> string = "no_return"
 export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
 export fn run_err_bounds() -> string = "bounds"
+export fn run_err_stack() -> string = "stack"
 
 extern fn script_vm_int32_checked_add(left: i32, right: i32) -> i32 =
   "mlc::script_vm::int32_checked_add" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
@@ -521,3 +548,388 @@ end
 
 export fn run_arithmetic(words: [i32], constants: [Value], register_count: i32) -> RunResult =
   run_with_heap(heap_new(), words, constants, register_count).result
+
+fn frames_set_last(frames: [CallFrame], frame: CallFrame) -> [CallFrame] = do
+  let mut out: [CallFrame] = []
+  let mut index = 0
+  const last = frames.length() - 1
+  while index < frames.length() do
+    if index == last then
+      out.push(frame)
+    else
+      out.push(frames[index])
+    end
+    index = index + 1
+  end
+  out
+end
+
+fn frames_without_last(frames: [CallFrame]) -> [CallFrame] = do
+  let mut out: [CallFrame] = []
+  let mut index = 0
+  const last = frames.length() - 1
+  while index < last do
+    out.push(frames[index])
+    index = index + 1
+  end
+  out
+end
+
+type UpvalueFill = { heap: Heap, err_code: string, err_at: i32 }
+
+fn fill_closure_upvalues(
+  heap: Heap,
+  closure_value: Value,
+  parent_closure: Value,
+  registers: [Value],
+  words: [i32],
+  primary: i32,
+  upvalue_count: i32
+) -> UpvalueFill = do
+  let mut heap_state = heap
+  let mut err_code = ""
+  let mut err_at = 0
+  let mut up_index = 0
+  while up_index < upvalue_count && err_code == "" do
+    const source_word = words[primary + 1 + up_index]
+    const is_local = instruction_upvalue_source_is_local(source_word)
+    const source_index = instruction_upvalue_source_index(source_word)
+    const step = fill_one_upvalue(
+      heap_state,
+      closure_value,
+      parent_closure,
+      registers,
+      is_local,
+      source_index,
+      up_index,
+      primary
+    )
+    heap_state = step.heap
+    err_code = step.err_code
+    err_at = step.err_at
+    up_index = up_index + 1
+  end
+  UpvalueFill { heap: heap_state, err_code: err_code, err_at: err_at }
+end
+
+fn fill_one_upvalue(
+  heap: Heap,
+  closure_value: Value,
+  parent_closure: Value,
+  registers: [Value],
+  is_local: i32,
+  source_index: i32,
+  up_index: i32,
+  primary: i32
+) -> UpvalueFill =
+  if is_local != 0 then
+    const cell_alloc = heap_alloc_cell(heap)
+    const with_child = heap_write_barrier(cell_alloc.heap, cell_alloc.value, 0, registers[source_index])
+    const with_slot = heap_write_barrier(with_child, closure_value, up_index, cell_alloc.value)
+    UpvalueFill { heap: with_slot, err_code: "", err_at: 0 }
+  else if heap_object_type_id(heap, parent_closure) != heap_type_closure() then
+    UpvalueFill { heap: heap, err_code: run_err_type(), err_at: primary }
+  else
+    const parent_cell = heap_get_element(heap, parent_closure, source_index)
+    const with_slot = heap_write_barrier(heap, closure_value, up_index, parent_cell)
+    UpvalueFill { heap: with_slot, err_code: "", err_at: 0 }
+  end
+
+fn execute_program(heap: Heap, protos: [FunctionProto], entry_proto_index: i32) -> RunHeapResult = do
+  let mut heap_state = heap
+  let mut frames: [CallFrame] = []
+  frames.push(CallFrame {
+    proto_index: entry_proto_index,
+    program_counter: 0,
+    registers: make_registers(protos[entry_proto_index].register_count),
+    closure: value_encode(ValueNil),
+    return_dst: 0
+  })
+  let mut err_code = ""
+  let mut err_at = 0
+  let mut finished = false
+  let mut return_value = value_encode(ValueNil)
+
+  while frames.length() > 0 && err_code == "" && !finished do
+    const frame = frames[frames.length() - 1]
+    const proto = protos[frame.proto_index]
+    const words = proto.words
+    const constants = proto.constants
+    let mut registers = frame.registers
+    let mut program_counter = frame.program_counter
+    const closure = frame.closure
+    const return_dst = frame.return_dst
+
+    if program_counter >= words.length() then
+      err_code = run_err_no_return()
+      err_at = words.length()
+    else
+      const primary = program_counter
+      const decoded = instruction_decode(Instruction { word: words[primary] })
+      const span = instruction_word_span(words, primary)
+      if decoded.opcode == instruction_opcode_load_const() then
+        const constant_index = instruction_load_const_index(words, primary)
+        registers = registers_set(registers, decoded.a, constants[constant_index])
+        program_counter = program_counter + span
+        frames = frames_set_last(frames, CallFrame {
+          proto_index: frame.proto_index,
+          program_counter: program_counter,
+          registers: registers,
+          closure: closure,
+          return_dst: return_dst
+        })
+      else if decoded.opcode == instruction_opcode_move() then
+        registers = registers_set(registers, decoded.a, registers[decoded.b])
+        program_counter = program_counter + span
+        frames = frames_set_last(frames, CallFrame {
+          proto_index: frame.proto_index,
+          program_counter: program_counter,
+          registers: registers,
+          closure: closure,
+          return_dst: return_dst
+        })
+      else if decoded.opcode == instruction_opcode_add() then
+        const add_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+        if add_result.err_code != "" then
+          err_code = add_result.err_code
+          err_at = primary
+        else
+          registers = registers_set(registers, decoded.a, add_result.value)
+          program_counter = program_counter + span
+          frames = frames_set_last(frames, CallFrame {
+            proto_index: frame.proto_index,
+            program_counter: program_counter,
+            registers: registers,
+            closure: closure,
+            return_dst: return_dst
+          })
+        end
+      else if decoded.opcode == instruction_opcode_sub() then
+        const sub_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+        if sub_result.err_code != "" then
+          err_code = sub_result.err_code
+          err_at = primary
+        else
+          registers = registers_set(registers, decoded.a, sub_result.value)
+          program_counter = program_counter + span
+          frames = frames_set_last(frames, CallFrame {
+            proto_index: frame.proto_index,
+            program_counter: program_counter,
+            registers: registers,
+            closure: closure,
+            return_dst: return_dst
+          })
+        end
+      else if decoded.opcode == instruction_opcode_return() then
+        const value = registers[decoded.a]
+        if frames.length() == 1 then
+          return_value = value
+          finished = true
+        else
+          frames = frames_without_last(frames)
+          const caller = frames[frames.length() - 1]
+          const caller_registers = registers_set(caller.registers, return_dst, value)
+          frames = frames_set_last(frames, CallFrame {
+            proto_index: caller.proto_index,
+            program_counter: caller.program_counter,
+            registers: caller_registers,
+            closure: caller.closure,
+            return_dst: caller.return_dst
+          })
+        end
+      else if decoded.opcode == instruction_opcode_jump() then
+        program_counter = jump_target(words, primary, span)
+        frames = frames_set_last(frames, CallFrame {
+          proto_index: frame.proto_index,
+          program_counter: program_counter,
+          registers: registers,
+          closure: closure,
+          return_dst: return_dst
+        })
+      else if decoded.opcode == instruction_opcode_jump_if_false() then
+        if value_is_falsy(registers[decoded.a]) then
+          program_counter = jump_target(words, primary, span)
+        else
+          program_counter = program_counter + span
+        end
+        frames = frames_set_last(frames, CallFrame {
+          proto_index: frame.proto_index,
+          program_counter: program_counter,
+          registers: registers,
+          closure: closure,
+          return_dst: return_dst
+        })
+      else if decoded.opcode == instruction_opcode_le() then
+        const le_result = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+        if le_result.err_code != "" then
+          err_code = le_result.err_code
+          err_at = primary
+        else
+          registers = registers_set(registers, decoded.a, le_result.value)
+          program_counter = program_counter + span
+          frames = frames_set_last(frames, CallFrame {
+            proto_index: frame.proto_index,
+            program_counter: program_counter,
+            registers: registers,
+            closure: closure,
+            return_dst: return_dst
+          })
+        end
+      else if decoded.opcode == instruction_opcode_call() then
+        if frames.length() >= 256 then
+          err_code = run_err_stack()
+          err_at = primary
+        else if heap_object_type_id(heap_state, registers[decoded.b]) != heap_type_closure() then
+          err_code = run_err_type()
+          err_at = primary
+        else
+          const callee_proto_index = heap_closure_proto_index(heap_state, registers[decoded.b])
+          if callee_proto_index < 0 || callee_proto_index >= protos.length() then
+            err_code = run_err_type()
+            err_at = primary
+          else
+            const callee_proto = protos[callee_proto_index]
+            let mut callee_registers = make_registers(callee_proto.register_count)
+            let mut arg_index = 0
+            while arg_index < decoded.c do
+              const source = decoded.b + 1 + arg_index
+              if source < registers.length() && arg_index < callee_registers.length() then
+                callee_registers = registers_set(callee_registers, arg_index, registers[source])
+              end
+              arg_index = arg_index + 1
+            end
+            frames = frames_set_last(frames, CallFrame {
+              proto_index: frame.proto_index,
+              program_counter: primary + span,
+              registers: registers,
+              closure: closure,
+              return_dst: return_dst
+            })
+            frames.push(CallFrame {
+              proto_index: callee_proto_index,
+              program_counter: 0,
+              registers: callee_registers,
+              closure: registers[decoded.b],
+              return_dst: decoded.a
+            })
+          end
+        end
+      else if decoded.opcode == instruction_opcode_make_closure() then
+        if decoded.b < 0 || decoded.b >= protos.length() then
+          err_code = run_err_type()
+          err_at = primary
+        else
+          const alloc = heap_alloc_closure(heap_state, decoded.b, decoded.c)
+          const filled = fill_closure_upvalues(
+            alloc.heap,
+            alloc.value,
+            closure,
+            registers,
+            words,
+            primary,
+            decoded.c
+          )
+          heap_state = filled.heap
+          if filled.err_code != "" then
+            err_code = filled.err_code
+            err_at = filled.err_at
+          else
+            registers = registers_set(registers, decoded.a, alloc.value)
+            program_counter = program_counter + span
+            frames = frames_set_last(frames, CallFrame {
+              proto_index: frame.proto_index,
+              program_counter: program_counter,
+              registers: registers,
+              closure: closure,
+              return_dst: return_dst
+            })
+          end
+        end
+      else if decoded.opcode == instruction_opcode_get_upval() then
+        if heap_object_type_id(heap_state, closure) != heap_type_closure() then
+          err_code = run_err_type()
+          err_at = primary
+        else if decoded.b < 0 || decoded.b >= heap_element_count(heap_state, closure) then
+          err_code = run_err_bounds()
+          err_at = primary
+        else
+          const cell = heap_get_element(heap_state, closure, decoded.b)
+          if heap_object_type_id(heap_state, cell) != heap_type_cell() then
+            err_code = run_err_type()
+            err_at = primary
+          else
+            registers = registers_set(registers, decoded.a, heap_cell_child(heap_state, cell))
+            program_counter = program_counter + span
+            frames = frames_set_last(frames, CallFrame {
+              proto_index: frame.proto_index,
+              program_counter: program_counter,
+              registers: registers,
+              closure: closure,
+              return_dst: return_dst
+            })
+          end
+        end
+      else if decoded.opcode == instruction_opcode_set_upval() then
+        if heap_object_type_id(heap_state, closure) != heap_type_closure() then
+          err_code = run_err_type()
+          err_at = primary
+        else if decoded.a < 0 || decoded.a >= heap_element_count(heap_state, closure) then
+          err_code = run_err_bounds()
+          err_at = primary
+        else
+          const cell = heap_get_element(heap_state, closure, decoded.a)
+          if heap_object_type_id(heap_state, cell) != heap_type_cell() then
+            err_code = run_err_type()
+            err_at = primary
+          else
+            heap_state = heap_write_barrier(heap_state, cell, 0, registers[decoded.b])
+            program_counter = program_counter + span
+            frames = frames_set_last(frames, CallFrame {
+              proto_index: frame.proto_index,
+              program_counter: program_counter,
+              registers: registers,
+              closure: closure,
+              return_dst: return_dst
+            })
+          end
+        end
+      else
+        err_code = run_err_unsupported_opcode()
+        err_at = primary
+      end
+    end
+  end
+
+  if err_code != "" then
+    RunHeapResult { heap: heap_state, result: RunErr(err_code, err_at) }
+  else if finished then
+    RunHeapResult { heap: heap_state, result: RunOk(return_value) }
+  else
+    RunHeapResult { heap: heap_state, result: RunErr(run_err_no_return(), 0) }
+  end
+end
+
+export fn run_program(heap: Heap, protos: [FunctionProto], entry_proto_index: i32) -> RunHeapResult = do
+  let mut proto_index = 0
+  let mut verify_failed = false
+  let mut verify_at = 0
+  while proto_index < protos.length() && !verify_failed do
+    const proto = protos[proto_index]
+    const verified = verify_function(proto.words, proto.register_count, proto.constants.length())
+    match verified {
+      VerifyErr(_code, word_index) => do
+        verify_failed = true
+        verify_at = word_index
+      end,
+      VerifyOk => do end
+    }
+    proto_index = proto_index + 1
+  end
+  if verify_failed then
+    RunHeapResult { heap: heap, result: RunErr(run_err_verify(), verify_at) }
+  else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
+    RunHeapResult { heap: heap, result: RunErr(run_err_type(), 0) }
+  else
+    execute_program(heap, protos, entry_proto_index)
+  end
+end

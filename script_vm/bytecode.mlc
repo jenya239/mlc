@@ -33,6 +33,10 @@ fn opcode_set_index() -> i32 = 18
 fn opcode_new_record() -> i32 = 19
 fn opcode_get_prop() -> i32 = 20
 fn opcode_set_prop() -> i32 = 21
+fn opcode_call() -> i32 = 22
+fn opcode_make_closure() -> i32 = 23
+fn opcode_get_upval() -> i32 = 24
+fn opcode_set_upval() -> i32 = 25
 
 export fn instruction_opcode_load_const() -> i32 = opcode_load_const()
 export fn instruction_opcode_move() -> i32 = opcode_move()
@@ -55,6 +59,10 @@ export fn instruction_opcode_set_index() -> i32 = opcode_set_index()
 export fn instruction_opcode_new_record() -> i32 = opcode_new_record()
 export fn instruction_opcode_get_prop() -> i32 = opcode_get_prop()
 export fn instruction_opcode_set_prop() -> i32 = opcode_set_prop()
+export fn instruction_opcode_call() -> i32 = opcode_call()
+export fn instruction_opcode_make_closure() -> i32 = opcode_make_closure()
+export fn instruction_opcode_get_upval() -> i32 = opcode_get_upval()
+export fn instruction_opcode_set_upval() -> i32 = opcode_set_upval()
 
 export fn instruction_encode(opcode: i32, a: i32, b: i32, c: i32) -> Instruction =
   Instruction {
@@ -103,7 +111,9 @@ export fn instruction_word_span(words: [i32], index: i32) -> i32 = do
   else
     const word_value = words[index]
     const decoded = instruction_decode(Instruction { word: word_value })
-    if instruction_is_wide(decoded) then
+    if decoded.opcode == opcode_make_closure() then
+      1 + decoded.c
+    else if instruction_is_wide(decoded) then
       2
     else
       1
@@ -173,6 +183,48 @@ end
 export fn instruction_words_set_prop(record_register: i32, field_index: i32, value_register: i32) -> [i32] = do
   let mut words: [i32] = []
   words.push(instruction_encode(opcode_set_prop(), record_register, field_index, value_register).word)
+  words
+end
+
+export fn instruction_upvalue_source_word(is_local: i32, index: i32) -> i32 =
+  ((is_local & 255) << 8) | (index & 255)
+
+export fn instruction_upvalue_source_is_local(word: i32) -> i32 =
+  (word >> 8) & 255
+
+export fn instruction_upvalue_source_index(word: i32) -> i32 =
+  word & 255
+
+export fn instruction_words_call(destination: i32, function_register: i32, argument_count: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_call(), destination, function_register, argument_count).word)
+  words
+end
+
+export fn instruction_words_make_closure(
+  destination: i32,
+  proto_index: i32,
+  upvalue_source_words: [i32]
+) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_make_closure(), destination, proto_index, upvalue_source_words.length()).word)
+  let mut index = 0
+  while index < upvalue_source_words.length() do
+    words.push(upvalue_source_words[index])
+    index = index + 1
+  end
+  words
+end
+
+export fn instruction_words_get_upval(destination: i32, upvalue_index: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_get_upval(), destination, upvalue_index, 0).word)
+  words
+end
+
+export fn instruction_words_set_upval(upvalue_index: i32, source_register: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode_set_upval(), upvalue_index, source_register, 0).word)
   words
 end
 
@@ -303,6 +355,14 @@ export fn instruction_disassemble(words: [i32], index: i32) -> string = do
       "GET_PROP " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", #" + decoded.c.to_string()
     else if decoded.opcode == opcode_set_prop() then
       "SET_PROP " + register_name(decoded.a) + ", #" + decoded.b.to_string() + ", " + register_name(decoded.c)
+    else if decoded.opcode == opcode_call() then
+      "CALL " + register_name(decoded.a) + ", " + register_name(decoded.b) + ", #" + decoded.c.to_string()
+    else if decoded.opcode == opcode_make_closure() then
+      "MAKE_CLOSURE " + register_name(decoded.a) + ", #" + decoded.b.to_string() + ", #" + decoded.c.to_string()
+    else if decoded.opcode == opcode_get_upval() then
+      "GET_UPVAL " + register_name(decoded.a) + ", #" + decoded.b.to_string()
+    else if decoded.opcode == opcode_set_upval() then
+      "SET_UPVAL #" + decoded.a.to_string() + ", " + register_name(decoded.b)
     else
       "<unknown-opcode " + decoded.opcode.to_string() + ">"
     end

@@ -273,3 +273,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103h STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103h Green — Closure+Frame+CALL/upvals) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103h Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Closure=4; CALL/MAKE_CLOSURE/GET_UPVAL/SET_UPVAL; `run_program`+Frame; unit upvalue/recursion/stack; green harness |
+| verify  | `bash scripts/run_script_vm_closures_fibers_unit.sh` ok; red already-present; `dev_gate_fast` 1471/0 |
+| result  | **§103h STEP=2 done (Green).** Critic next |
+| issues  | proto_index in `object_flags` (not shape_or_meta); fill_upvalue helpers for mlcc if/else-if residual |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103h) |

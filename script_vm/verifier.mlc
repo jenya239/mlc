@@ -29,7 +29,11 @@ import {
   instruction_opcode_set_index,
   instruction_opcode_new_record,
   instruction_opcode_get_prop,
-  instruction_opcode_set_prop
+  instruction_opcode_set_prop,
+  instruction_opcode_call,
+  instruction_opcode_make_closure,
+  instruction_opcode_get_upval,
+  instruction_opcode_set_upval
 } from './bytecode'
 
 export type VerifyResult =
@@ -91,6 +95,14 @@ fn is_known_opcode(opcode: i32) -> bool = do
     true
   else if opcode == instruction_opcode_set_prop() then
     true
+  else if opcode == instruction_opcode_call() then
+    true
+  else if opcode == instruction_opcode_make_closure() then
+    true
+  else if opcode == instruction_opcode_get_upval() then
+    true
+  else if opcode == instruction_opcode_set_upval() then
+    true
   else
     false
   end
@@ -149,6 +161,14 @@ fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
     register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count)
   else if decoded.opcode == instruction_opcode_set_prop() then
     register_in_range(decoded.a, register_count) && register_in_range(decoded.c, register_count)
+  else if decoded.opcode == instruction_opcode_call() then
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count)
+  else if decoded.opcode == instruction_opcode_make_closure() then
+    register_in_range(decoded.a, register_count)
+  else if decoded.opcode == instruction_opcode_get_upval() then
+    register_in_range(decoded.a, register_count)
+  else if decoded.opcode == instruction_opcode_set_upval() then
+    register_in_range(decoded.b, register_count)
   else
     true
   end
@@ -180,6 +200,9 @@ export fn verify_function(words: [i32], register_count: i32, constant_count: i32
     const decoded = instruction_decode(Instruction { word: word_value })
     if !is_known_opcode(decoded.opcode) then
       early_code = verify_err_unknown_opcode()
+      early_at = word_index
+    else if decoded.opcode == instruction_opcode_make_closure() && word_index + decoded.c >= words.length() then
+      early_code = verify_err_truncated_wide()
       early_at = word_index
     else if instruction_is_wide(decoded) && word_index + 1 >= words.length() then
       early_code = verify_err_truncated_wide()

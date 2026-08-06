@@ -42,6 +42,7 @@ export type HeapAlloc = { heap: Heap, value: Value }
 export fn heap_type_cell() -> i32 = 1
 export fn heap_type_array() -> i32 = 2
 export fn heap_type_record() -> i32 = 3
+export fn heap_type_closure() -> i32 = 4
 
 export fn heap_new() -> Heap =
   Heap {
@@ -160,6 +161,75 @@ export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc =
 
 export fn heap_alloc_record(heap: Heap, field_count: i32) -> HeapAlloc =
   heap_alloc_slot(heap, heap_type_record(), 0, make_nil_elements(field_count), 2)
+
+export fn heap_alloc_closure(heap: Heap, proto_index: i32, upvalue_count: i32) -> HeapAlloc = do
+  let mut slots = heap.slots
+  const object_id = slots.length()
+  const header = ObjectHeader {
+    type_id: heap_type_closure(),
+    gc_flags: 0,
+    object_flags: proto_index,
+    shape_or_meta: 0
+  }
+  const slot = HeapSlot {
+    header: header,
+    child: value_encode(ValueNil),
+    elements: make_nil_elements(upvalue_count),
+    size_class: 2,
+    live: true
+  }
+  slots.push(slot)
+  HeapAlloc {
+    heap: Heap {
+      slots: slots,
+      freelist_32: heap.freelist_32,
+      freelist_64: heap.freelist_64,
+      freelist_128: heap.freelist_128,
+      freelist_256: heap.freelist_256,
+      roots: heap.roots,
+      live_count: heap.live_count + 1,
+      write_barrier_hits: heap.write_barrier_hits,
+      scratch_object_id: object_id
+    },
+    value: value_encode(ValueHeapRef(object_id))
+  }
+end
+
+export fn heap_closure_proto_index(heap: Heap, closure: Value) -> i32 =
+  match value_decode(closure) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0 - 1
+      else if object_id >= heap.slots.length() then
+        0 - 1
+      else if !heap.slots[object_id].live then
+        0 - 1
+      else if heap.slots[object_id].header.type_id != heap_type_closure() then
+        0 - 1
+      else
+        heap.slots[object_id].header.object_flags
+      end
+    end,
+    _ => 0 - 1
+  }
+
+export fn heap_cell_child(heap: Heap, cell: Value) -> Value =
+  match value_decode(cell) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        value_encode(ValueNil)
+      else if object_id >= heap.slots.length() then
+        value_encode(ValueNil)
+      else if !heap.slots[object_id].live then
+        value_encode(ValueNil)
+      else if heap.slots[object_id].header.type_id != heap_type_cell() then
+        value_encode(ValueNil)
+      else
+        heap.slots[object_id].child
+      end
+    end,
+    _ => value_encode(ValueNil)
+  }
 
 export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
   let mut roots = heap.roots

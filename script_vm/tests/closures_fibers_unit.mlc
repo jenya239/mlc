@@ -1,0 +1,229 @@
+// TRACK_MLC_SCRIPT_VM §103h — closures + material call frames.
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  heap_new,
+  heap_write_barrier_hits
+} from '../heap'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump_if_false,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_words_get_upval,
+  instruction_words_set_upval,
+  instruction_words_move,
+  instruction_upvalue_source_word,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunOk,
+  RunErr,
+  RunResult,
+  run_program,
+  run_err_stack,
+  run_err_type
+} from '../interpreter'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm closures_fibers_unit] FAIL: " + message)
+  code
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn err_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn ok_int(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) =>
+      match value_decode(value) {
+        ValueInt32(number) => number,
+        _ => 0 - 999999
+      },
+    RunErr(_c, _a) => 0 - 999999
+  }
+
+fn main() -> i32 = do
+  // --- Mutable upvalue across two CALLs ---
+  // proto1: GET_UPVAL r0,0; LOAD 1; ADD; SET_UPVAL; RETURN
+  let mut callee_words: [i32] = []
+  callee_words = append_words(callee_words, instruction_words_get_upval(0, 0))
+  callee_words = append_words(callee_words, instruction_words_load_const(1, 0))
+  callee_words = append_words(callee_words, instruction_words_binary(instruction_opcode_add(), 0, 0, 1))
+  callee_words = append_words(callee_words, instruction_words_set_upval(0, 0))
+  callee_words = append_words(callee_words, instruction_words_return(0))
+  let mut callee_constants: [Value] = []
+  callee_constants.push(value_encode(ValueInt32(1)))
+
+  // proto0: LOAD 0 → r1; MAKE_CLOSURE r0 proto1 nup=1 local r1; CALL; CALL; RETURN
+  let mut entry_words: [i32] = []
+  entry_words = append_words(entry_words, instruction_words_load_const(1, 0))
+  let mut up_sources: [i32] = []
+  up_sources.push(instruction_upvalue_source_word(1, 1))
+  entry_words = append_words(entry_words, instruction_words_make_closure(0, 1, up_sources))
+  entry_words = append_words(entry_words, instruction_words_call(2, 0, 0))
+  entry_words = append_words(entry_words, instruction_words_call(3, 0, 0))
+  entry_words = append_words(entry_words, instruction_words_return(3))
+  let mut entry_constants: [Value] = []
+  entry_constants.push(value_encode(ValueInt32(0)))
+
+  let mut protos_up: [FunctionProto] = []
+  protos_up.push(FunctionProto {
+    words: entry_words,
+    constants: entry_constants,
+    register_count: 4
+  })
+  protos_up.push(FunctionProto {
+    words: callee_words,
+    constants: callee_constants,
+    register_count: 2
+  })
+  const up_run = run_program(heap_new(), protos_up, 0)
+  if !is_run_ok(up_run.result) then
+    return fail("upvalue RunOk got=" + err_code(up_run.result), 1)
+  end
+  if ok_int(up_run.result) != 2 then
+    return fail("upvalue expected 2 got=" + ok_int(up_run.result).to_string(), 2)
+  end
+  if heap_write_barrier_hits(up_run.heap) < 1 then
+    return fail("SET_UPVAL did not bump write_barrier_hits", 3)
+  end
+
+  // --- Recursion depth 8: sum ---
+  // proto1(self,r0 n): LE r2,r0,#0; JUMP_IF_FALSE +2; RETURN #0;
+  //   SUB r3,r0,#1; MOVE r4,self; CALL r5,r4,2 (self,n-1); ADD; RETURN
+  // Args: r0=self closure, r1=n
+  let mut rec_words: [i32] = []
+  rec_words = append_words(rec_words, instruction_words_load_const(2, 0))
+  rec_words = append_words(rec_words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  rec_words = append_words(rec_words, instruction_words_jump_if_false(3, 2))
+  rec_words = append_words(rec_words, instruction_words_load_const(4, 0))
+  rec_words = append_words(rec_words, instruction_words_return(4))
+  rec_words = append_words(rec_words, instruction_words_load_const(5, 1))
+  rec_words = append_words(rec_words, instruction_words_binary(instruction_opcode_sub(), 6, 1, 5))
+  // CALL: func=r0 (self), argc=2, args r1=self? Wait CALL args from B+1..
+  // B=0 func=self, need args at r1 and r2 = self and n-1
+  // Move: r1 should become self (r0), r2 = n-1 (r6)
+  rec_words = append_words(rec_words, instruction_words_move(7, 0))
+  rec_words = append_words(rec_words, instruction_words_move(8, 6))
+  // CALL dst=9, func=0, argc=2 → args registers[1], registers[2] — WRONG, need B+1=1 and B+2=2
+  // So put self at r1, n-1 at r2, func at r0:
+  rec_words = append_words(rec_words, instruction_words_move(1, 0))
+  rec_words = append_words(rec_words, instruction_words_move(2, 6))
+  rec_words = append_words(rec_words, instruction_words_call(9, 0, 2))
+  rec_words = append_words(rec_words, instruction_words_load_const(10, 1))
+  rec_words = append_words(rec_words, instruction_words_binary(instruction_opcode_add(), 11, 9, 10))
+  rec_words = append_words(rec_words, instruction_words_return(11))
+  let mut rec_constants: [Value] = []
+  rec_constants.push(value_encode(ValueInt32(0)))
+  rec_constants.push(value_encode(ValueInt32(1)))
+
+  // entry: MAKE_CLOSURE r0 proto1; LOAD 8 → r2; MOVE r1=r0; CALL r3,r0,2; RETURN r3
+  let mut rec_entry: [i32] = []
+  let mut empty_up: [i32] = []
+  rec_entry = append_words(rec_entry, instruction_words_make_closure(0, 1, empty_up))
+  rec_entry = append_words(rec_entry, instruction_words_load_const(2, 0))
+  rec_entry = append_words(rec_entry, instruction_words_move(1, 0))
+  rec_entry = append_words(rec_entry, instruction_words_call(3, 0, 2))
+  rec_entry = append_words(rec_entry, instruction_words_return(3))
+  let mut rec_entry_constants: [Value] = []
+  rec_entry_constants.push(value_encode(ValueInt32(8)))
+
+  let mut protos_rec: [FunctionProto] = []
+  protos_rec.push(FunctionProto {
+    words: rec_entry,
+    constants: rec_entry_constants,
+    register_count: 4
+  })
+  protos_rec.push(FunctionProto {
+    words: rec_words,
+    constants: rec_constants,
+    register_count: 12
+  })
+  const rec_run = run_program(heap_new(), protos_rec, 0)
+  if !is_run_ok(rec_run.result) then
+    return fail("recursion RunOk got=" + err_code(rec_run.result), 4)
+  end
+  // depth 8 → returns 8 (count down adding 1 each time)
+  if ok_int(rec_run.result) != 8 then
+    return fail("recursion expected 8 got=" + ok_int(rec_run.result).to_string(), 5)
+  end
+
+  // --- Stack overflow ---
+  let mut bomb_words: [i32] = []
+  bomb_words = append_words(bomb_words, instruction_words_move(1, 0))
+  bomb_words = append_words(bomb_words, instruction_words_call(2, 0, 1))
+  bomb_words = append_words(bomb_words, instruction_words_return(2))
+  let mut bomb_entry: [i32] = []
+  bomb_entry = append_words(bomb_entry, instruction_words_make_closure(0, 1, empty_up))
+  bomb_entry = append_words(bomb_entry, instruction_words_move(1, 0))
+  bomb_entry = append_words(bomb_entry, instruction_words_call(2, 0, 1))
+  bomb_entry = append_words(bomb_entry, instruction_words_return(2))
+  let mut empty_constants: [Value] = []
+  let mut protos_bomb: [FunctionProto] = []
+  protos_bomb.push(FunctionProto {
+    words: bomb_entry,
+    constants: empty_constants,
+    register_count: 3
+  })
+  protos_bomb.push(FunctionProto {
+    words: bomb_words,
+    constants: empty_constants,
+    register_count: 3
+  })
+  const bomb_run = run_program(heap_new(), protos_bomb, 0)
+  if err_code(bomb_run.result) != run_err_stack() then
+    return fail("stack overflow expected stack got=" + err_code(bomb_run.result), 6)
+  end
+
+  // CALL on Int32 → type
+  let mut bad_words: [i32] = []
+  bad_words = append_words(bad_words, instruction_words_load_const(0, 0))
+  bad_words = append_words(bad_words, instruction_words_call(1, 0, 0))
+  bad_words = append_words(bad_words, instruction_words_return(1))
+  let mut bad_constants: [Value] = []
+  bad_constants.push(value_encode(ValueInt32(0)))
+  let mut protos_bad: [FunctionProto] = []
+  protos_bad.push(FunctionProto {
+    words: bad_words,
+    constants: bad_constants,
+    register_count: 2
+  })
+  const bad_run = run_program(heap_new(), protos_bad, 0)
+  if err_code(bad_run.result) != run_err_type() then
+    return fail("CALL on Int32 expected type got=" + err_code(bad_run.result), 7)
+  end
+
+  println("[script_vm] closures_fibers_unit ok")
+  println("upvalue_mut=ok")
+  println("recursion=ok")
+  println("closures_fibers=ok")
+  println(
+    "write_barrier_hits=" + heap_write_barrier_hits(up_run.heap).to_string()
+  )
+  0
+end
