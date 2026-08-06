@@ -1777,4 +1777,90 @@ Independent re-audit, none of the Driver's artifacts reused (fresh scratch under
 - First implementation attempt (mirroring the review's illustrative 3-line snippet literally — `clang++ ... /tmp/stage1/*.cpp -Iruntime/include -o /tmp/mlcc-stage1`, no runtime `.cpp` sources) **failed to link**: `undefined reference to mlc::String::substring(...)` and similar — the review's own snippet omits the runtime implementation object files, which every `mlcc`-generated `.cpp` needs linked in (confirmed by comparing against `bisect_bootstrap_link.sh`'s own `RT_CPP` list). Fixed by compiling+linking `runtime/src/io/io.cpp`/`runtime/src/core/string.cpp`/`runtime/src/core/profile.cpp` alongside the generated `.cpp` files in `bootstrap-fast.sh`, matching `bisect_bootstrap_link.sh`'s existing pattern. This finding is disclosed here because it means the review's Шаг 22 snippet, taken literally, is not directly runnable as written.
 - Fresh `MLCC_INCREMENTAL=0 compiler/build.sh` (0 errors, pre-existing `-Wparentheses-equality` warnings only) to have a known-fresh `compiler/out/mlcc` before testing either script.
 - `compiler/scripts/bootstrap-fast.sh` run end-to-end: `mlcc --emit-layout=hybrid --cpp-mode=fast-build` translation → `-O0` link via `select_cxx.sh` (picked `clang++`, matching the review's own choice) → exit 0. The `-O0`-built `mlcc-stage1` binary's own timed re-translation of `compiler/main.mlc` (`--emit-layout=hybrid`, default `readable` codegen): **37.054s real** (`36.572s` user CPU) — contrasted against this project's own documented `mlcc -O2` benchmark reference (~4-5s, `.cursor/rules/mlcc-self-host-verification.mdc`), i.e. roughly 8-9× slower to *run* in exchange for a much faster *compile* of `mlcc-stage1` itself (no `-O2` optimization pass) — the exact fast-dev-loop trade-off the review's Шаг 22 is illustrating, now reproducibly measurable instead of asserted.
-- `compiler/scripts/bootstrap-full.sh` run
+- `compiler/scripts/bootstrap-full.sh` run end-to-end: `mlcc -o p1 compiler/main.mlc` → `MLC_CXX` auto-selected `clang++` via `build_bin.sh` → `mlcc2` (parallel+PCH build) → `mlcc2 -o p2 compiler/main.mlc` → `diff -rq --exclude=obj p1 p2` empty → printed **`STAGE IDENTICAL`**, exit 0 — this run is itself a full, genuine self-hosting-correctness round-trip (not a simulated/mocked check), directly satisfying this track's own standing Tier-B bar for the step.
+- Both scripts' exit codes confirmed 0 via the shell's own `exit_code` in the terminal-file footer (not just visual inspection of printed text).
+- Scratch artifacts (`$TMPDIR/mlc_bootstrap_fast`, `$TMPDIR/mlc_bootstrap_full`, both under `.tmp/104_22_tmpdir/`, plus the log files) deleted after verification, not committed. No `git worktree` needed this step (no baseline-vs-current comparison — no `.mlc` file changed).
+- No new `rake test_compiler_mlc` run required this step per the Decision (no `.mlc`/codegen change) — the two scripts' own successful execution, including `bootstrap-full.sh`'s `STAGE IDENTICAL`, is the step's actual regression evidence (it re-exercises the existing, unmodified, already-tested pipeline end-to-end).
+
+#### Critic (STEP=3) — **done** 2026-07-30, §104-22 CLOSED
+
+Independent re-audit, none of the Driver's artifacts reused (fresh scratch under `.tmp/critic_104_22/`, deleted after verification):
+
+- `git show --stat 2f06acee` — exactly 2 new files (`compiler/scripts/bootstrap-fast.sh`, `compiler/scripts/bootstrap-full.sh`) plus the 5 documentation files the Decision's own Module-touch row lists; **zero `.mlc` files touched**, confirming the "no self-host-diff risk from this step itself" claim directly rather than by inference.
+- Read both scripts in full, independently, against the review's own Шаг 22 text (`mlc-support/responses/review_20260629_144027.md:453-473`, located and read in full — outside this repo, under the sibling `mlc-support/` directory) — confirmed the review's own literal 3-line `bootstrap-fast.sh` snippet (`clang++ ... /tmp/stage1/*.cpp -Iruntime/include -o /tmp/mlcc-stage1`, no runtime `.cpp` sources) and the `bootstrap-full.sh` snippet (assumes `mlcc`/`mlcc2` both already exist, no `build_bin.sh` step) are illustrative pseudocode rather than directly runnable, exactly as the Driver disclosed; both implemented scripts extend the snippets with the missing runtime-linking step / `build_bin.sh` build step respectively, which is necessary and correctly attributed.
+- Independent from-scratch Ruby-bootstrap rebuild of `mlcc` (`MLCC_INCREMENTAL=0 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing `-Wparentheses-equality` warnings.
+- Independent run of `compiler/scripts/bootstrap-fast.sh` (fresh `TMPDIR`, own scratch dir): **exit 0**. The `-O0`-built `mlcc-stage1`'s own timed re-translation of `compiler/main.mlc`: **36.648s real** (36.464s user CPU) — matches the Driver's independently-measured 37.054s to within run-to-run noise, confirming the reported fast-compile/slow-run trade-off is real and reproducible, not a one-off measurement.
+- Independent run of `compiler/scripts/bootstrap-full.sh` (fresh `TMPDIR`, own scratch dir, own `mlcc2` built via `build_bin.sh`): **exit 0**, printed **`STAGE IDENTICAL`** — a full, independent self-hosting-correctness round-trip, not reusing the Driver's `p1`/`mlcc2`/`p2`.
+- Independent language-choice check: `file` on all of `compiler/scripts/*.sh` plus `compiler/build.sh`/`build_bin.sh`/`scripts/regression_gate.sh` — confirmed every one is a Bourne-Again shell script, corroborating the Decision's "Bash, not Ruby" rationale against the actual repository state rather than trusting the prose claim.
+- Edge case not exercised by the Driver: ran both scripts with `MLCC=/nonexistent/mlcc` — both correctly print `missing .../mlcc — run compiler/build.sh first` to stderr and exit 1, confirming the fail-fast contract (matching `mir_bootstrap_report.sh`'s own convention) actually works, not just reads correctly.
+- Confirmed the non-track WIP files (`CLAUDE.md`, `README.md`, `capture_analyzer.rb`, `docs/reddit-*`, `.vscode/`) are absent from commit `2f06acee` and still present/uncommitted/untouched after this audit.
+- No `rake test_compiler_mlc` rerun performed — correctly not required per the Decision (zero `.mlc` files touched, independently confirmed via `git show --stat` above), consistent with the §104-19 precedent (survey/tooling-only steps don't need a functional regression rerun when no compiler source changed).
+- No false-done found. **§104-22 CLOSED.** Scratch artifacts (`.tmp/critic_104_22/**`) cleaned up after verification, not committed.
+
+## §104-23 Determinism checks (`--dump-mir`/`--dump-sem` diff-stable)
+
+### Decision (STEP=0) — **frozen** 2026-07-31
+
+| Item | Choice |
+|------|--------|
+| Problem | Review's Шаг 23 (`review_20260629_144027.md:477-494`): no CI-visible check verifies that `--dump-mir`/`--dump-sem` output is stable across repeated runs of the same entry — a hidden `Map` (unordered) iteration anywhere upstream of a dump printer would silently make the dump (and, by extension, any future MIR-as-a-layer determinism assumption for Wave 2) non-reproducible. Proposal: `compiler/scripts/check-determinism.sh` running `--dump-mir` and `--dump-sem` twice each on the same entry, diffing the 2 outputs, printing `MIR DETERMINISTIC`/`SEM DETERMINISTIC` on success; register a `rake test_determinism` task |
+| Prerequisite check (before committing to Red/Green) | Depends on Review's Шаг 9 (the `--dump-mir`/`--dump-sem` flags themselves) and Шаг 22 (bootstrap-tooling convention this script follows). Verified both already satisfied: `compiler/compile_options.mlc:58-118` parses both flags (already implemented, predates this track), and §104-22 (this track, closed previous step) established the exact `compiler/scripts/` convention (assume `compiler/out/mlcc` pre-built, fail fast otherwise, `MLCC`/`ENTRY` overridable) this script reuses |
+| Survey (the review's own flagged risk, checked before implementing) | Read both dump-printer chains in full: `compiler/ir/semantic_ir_dump.mlc` (`print_semantic_load_item`/`print_semantic_load_items`) and `compiler/mir/mir_dump.mlc` (`print_mir_block`/`print_mir_function`/`print_mir_module`/`print_mir_program`) — both walk plain `[T]` arrays with `while index < ...length()` loops, zero `Map`/`HashMap` iteration in either file. The review's risk is about whatever builds the arrays these printers walk (module/declaration ordering upstream), not the printers themselves — not fully traced to its root (`Map<...>` usage does exist in `pipeline.mlc`/`semantic_ir.mlc`, e.g. for the module-graph lookup/memoization tables), but this step's own gate is empirical (does the real dump actually reproduce byte-identically twice on the real `compiler/main.mlc`?), not a static proof, so an exhaustive static trace of every `Map` in the pipeline is not required to close this step — if the empirical check ever fails, that failure is itself the actionable signal pointing at the exact non-deterministic pass |
+| Strategy | `compiler/scripts/check-determinism.sh`, following §104-22's own established `compiler/scripts/` convention (assume `compiler/out/mlcc` pre-built, `MLCC`/`ENTRY` overridable, fail fast with a clear message otherwise). Uses `--check-only` alongside `--dump-mir`/`--dump-sem` (confirmed via `compiler/pipeline.mlc:396-397`: `check_only` only skips the codegen pass — `has_transformed` is already `true` by then, so the dump still fires — meaning the dump exercises the real checker+transform+MIR-lowering path without paying for the C++-file-write codegen pass each of the 4 runs, a deliberate speed optimization over the review's own literal snippet, which omits `--check-only`). New `Rakefile` task `test_determinism` (matches the `test_compiler_mlc`/`triple_bootstrap` task-definition pattern already in the file) invoking the script |
+| Primary gate | Review's own literal acceptance test: the script prints both `MIR DETERMINISTIC` and `SEM DETERMINISTIC` lines, exit 0 |
+| Module touch | new `compiler/scripts/check-determinism.sh`; `Rakefile` (new `test_determinism` task). No `.mlc` file touched — pure tooling/CI-task addition, no self-host-diff risk introduced by this step itself (mirrors §104-22's own scoping) |
+| REG | no (`compiler/**` tooling + `Rakefile` only, no `.mlc` touched) |
+| Out of scope | Шаг 24 (switch C++ backend to MIR) — not in this track's authorized Wave 1 list at all (only §104-1/2/3/12/13/14/15/16/18/19/20/22/23 are pulled forward); tracing every `Map` in the pipeline to a static determinism proof — the empirical check is this step's actual, review-specified gate |
+
+### Steps (§104-23)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** |
+| 1 | Red: confirmed `compiler/scripts/check-determinism.sh` absent and `Rakefile` had no `test_determinism` task before this step | **done** |
+| 2 | Green: implemented + verified (below) | **done** 2026-07-31 |
+| 3 | Critic: full re-audit | **done** 2026-07-31 |
+
+#### Green (STEP=2) — **done** 2026-07-31
+
+- Implemented `compiler/scripts/check-determinism.sh` (runs `--dump-mir --check-only` twice into separate scratch dirs, `diff`s the 2 captured stdout files, then the same for `--dump-sem --check-only`) and the `test_determinism` `Rakefile` task, exactly as scoped in Strategy above.
+- Ran the script against the real `compiler/main.mlc` (185+ module entry, the same one every other §104 sub-track gates against): **exit 0**, printed **`MIR DETERMINISTIC`** and **`SEM DETERMINISTIC`**. The 2 dump captures are non-trivial (38441 lines for `--dump-mir`, 3753 lines for `--dump-sem`) — not a degenerate/empty-output false pass.
+- Ran `bundle exec rake test_determinism` end-to-end — same result, confirming the `Rakefile` wiring works, not just the raw script invocation.
+- Tested the fail-fast path (`MLCC=/nonexistent/mlcc`) — correctly prints a clear message to stderr and exits 1, matching the §104-22 sibling scripts' convention.
+- No `.mlc` file needed changing — the empirical check passed on the first attempt, meaning no hidden `Map`-iteration non-determinism was found in the real dump path for this entry point. Disclosed here since a track file reader might otherwise wonder why no correction narrative follows this step's Survey row.
+- Incidental cleanup: an unrelated stray `--help.cpp`/`--help.hpp` pair (created in repo root by an earlier ad-hoc `compiler/out/mlcc --help` invocation this step — `mlcc` has no `--help` flag, so the unrecognized argument fell through to the `entry_path` branch and got "compiled" as a 0-byte-effective source, writing degenerate output files under that literal name) was found and deleted; unrelated to this step's actual change, not committed.
+- Scratch artifacts (`.tmp/104_23_tmpdir/**`) deleted after verification, not committed.
+
+#### Critic (STEP=3) — **done** 2026-07-31
+
+- `git show --stat 9cf19dab` — exactly 1 new script (`compiler/scripts/check-determinism.sh`), the `Rakefile` diff, and the 5 documentation files the Decision's own Module-touch row lists; **zero `.mlc` files touched**, confirmed directly.
+- Read the script in full, independently, against `compiler/pipeline.mlc:396-399` — confirmed `run_codegen_pipeline_pass` returns early on `check_only` *before* the transform-pass gate check, and `run_transform_pipeline_pass` (which sets `has_transformed: true`) runs strictly before codegen in `run_pass_manager_descriptors`'s pass order — so `--check-only` genuinely does not suppress `maybe_emit_dump_semantic`/`maybe_emit_dump_mir` (both gated only on `input.dump_sem`/`input.dump_mir` && `context.has_transformed`). The Driver's `--check-only` addition is correct and does exercise the real checker+transform+MIR-lowering path.
+- Independently re-checked the Survey's own claim: `grep -n "Map\|.keys()\|.values()\|HashMap" compiler/ir/semantic_ir_dump.mlc compiler/mir/mir_dump.mlc` — zero matches, confirming both dump printers are pure ordered-array walks.
+- Independent from-scratch Ruby-bootstrap rebuild of `mlcc` (`MLCC_INCREMENTAL=0 compiler/build.sh`, not reusing the Driver's binary) — 0 errors, only the same pre-existing `-Wparentheses-equality` warnings.
+- Independent run of `compiler/scripts/check-determinism.sh` against the freshly-rebuilt binary (own `TMPDIR`): **exit 0**, printed both **`MIR DETERMINISTIC`** and **`SEM DETERMINISTIC`**. Dump sizes independently re-measured — **38441**/**3753** lines — exact match to the Driver's reported figures, confirming reproducibility (not a fluke of one run).
+- Independent run of `bundle exec rake test_determinism` — same result, confirming the `Rakefile` wiring end-to-end, not just the raw script.
+- Edge case not exercised by the Driver's own verify step (only its implementation-time smoke test): re-ran the missing-`mlcc` fail-fast path (`MLCC=/nonexistent/mlcc`) — correctly prints `missing .../mlcc — run compiler/build.sh first` to stderr and exits 1, matching the §104-22 sibling scripts' contract.
+- Sanity-checked the `diff`/branch shell idiom itself (identical pattern to the already-verified `bootstrap-full.sh`) against a hand-crafted mismatching pair outside the repo — confirms the `else` (non-deterministic) branch would fire correctly; the real dump pair never hit that branch in either the Driver's or this independent run.
+- Confirmed the non-track WIP files (`CLAUDE.md`/`README.md`/`capture_analyzer.rb`/`docs/reddit-*`/`.vscode/`) are absent from commit `9cf19dab` and still present/uncommitted/untouched after this audit.
+- No `rake test_compiler_mlc` rerun performed — correctly not required per the Decision (zero `.mlc` files touched, independently confirmed via `git show --stat` above), consistent with the §104-19/§104-22 precedent.
+- No false-done found. **§104-23 CLOSED.** This finishes every sub-track in this track's currently-authorized Wave 1 list (§104-1/2/3/12/13/14/15/16/18/19/20/22/23). Wave 2 (MIR-as-layer) and Wave 3 (deferred/high-risk) remain gated behind §101/§102/§103 per the standing queue order — not re-authorized by this close. Scratch artifacts (`.tmp/critic_104_23/**`) cleaned up after verification, not committed.
+
+Every sub-track: `mlcc -o /tmp/p1 compiler/main.mlc` before, apply change,
+`mlcc -o /tmp/p2 compiler/main.mlc` after, `diff -r /tmp/p1 /tmp/p2` empty
+(bootstrap diff) unless the sub-track explicitly changes output by design
+(§104-18/19/20/24 — those gate on `rake test_compiler_mlc` + a working
+`clang++` build instead, exactly as the source review specifies per-step).
+**Refined 2026-07-28 (§104-12 slice 1 finding):** for a god-file split
+specifically, "empty" cannot be literal — the split module's own
+`.cpp`/`.hpp` pair is new and the source module's shrinks, and any *other*
+module that calls a relocated symbol gets its call site's C++ namespace
+prefix mechanically renamed to the symbol's new home (C++ codegen always
+qualifies by defining module, regardless of import path). The actual gate
+for a split: restrict `diff -rq` to files **other than** the split
+modules and confirm **zero** further differences; any change touching a
+direct caller of a moved symbol must be exactly 1 renamed namespace
+prefix per call site, not a logic change — verify by reading the diff,
+don't just eyeball line counts. `scripts/regression_gate.sh` after any
+`lib/mlc/` touch. Self-host verification per
+`.cursor/rules/mlcc-self-host-verification.mdc` — mlcc2 diff check —
+required before Critic close on any Wave 1/2 sub-track.
