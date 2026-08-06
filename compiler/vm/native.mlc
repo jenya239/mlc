@@ -31,6 +31,10 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_string_index_of' then vm_native_string_index_of(arguments)
   else if name == '__mir_string_trim' then vm_native_string_trim(arguments)
   else if name == '__mir_array_drop' then vm_native_array_drop(arguments)
+  else if name == '__mir_string_byte_size' then vm_native_string_byte_size(arguments)
+  else if name == '__mir_string_upper' then vm_native_string_upper(arguments)
+  else if name == '__mir_string_to_lower' then vm_native_string_to_lower(arguments)
+  else if name == '__mir_array_take' then vm_native_array_take(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
@@ -533,6 +537,57 @@ fn vm_native_array_drop(arguments: [VmValue]) -> Result<VmValue, [string]> =
           _ => Err(['vm: __mir_array_drop expects i32 count'])
         },
       _ => Err(['vm: __mir_array_drop expects array'])
+    }
+  end
+
+fn vm_native_string_byte_size(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_string_byte_size expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(text) => Ok(VmI32(text.byte_size())),
+      _ => Err(['vm: __mir_string_byte_size expects string'])
+    }
+  end
+
+fn vm_native_string_upper(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_string_upper expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(text) => Ok(VmString(text.upper())),
+      _ => Err(['vm: __mir_string_upper expects string'])
+    }
+  end
+
+fn vm_native_string_to_lower(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_string_to_lower expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(text) => Ok(VmString(text.to_lower())),
+      _ => Err(['vm: __mir_string_to_lower expects string'])
+    }
+  end
+
+fn vm_native_array_take(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_array_take expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmArray(array) =>
+        match arguments[1] {
+          VmI32(count) => do
+            let mut elements: [VmFieldSlot] = []
+            let mut index = 0
+            let mut limit = count
+            if limit < 0 then limit = 0 end
+            if limit > array.elements.length() then limit = array.elements.length() end
+            while index < limit do
+              elements.push(array.elements[index])
+              index = index + 1
+            end
+            Ok(VmArray(VmArrayValue { elements: elements }))
+          end,
+          _ => Err(['vm: __mir_array_take expects i32 count'])
+        },
+      _ => Err(['vm: __mir_array_take expects array'])
     }
   end
 

@@ -280,6 +280,10 @@ fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]>
   else if method_name == 'index_of' then Ok('__mir_string_index_of')
   else if method_name == 'trim' then Ok('__mir_string_trim')
   else if method_name == 'drop' then Ok('__mir_array_drop')
+  else if method_name == 'byte_size' then Ok('__mir_string_byte_size')
+  else if method_name == 'upper' then Ok('__mir_string_upper')
+  else if method_name == 'to_lower' then Ok('__mir_string_to_lower')
+  else if method_name == 'take' then Ok('__mir_array_take')
   else Err([`mir lower: unsupported method ${method_name}`])
 
 fn mir_lower_is_mutating_method(method_name: string) -> bool =
