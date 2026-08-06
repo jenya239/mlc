@@ -408,3 +408,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s7 Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 7 Green) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `match_into_local`/`match_to_local` + Match in operand/rvalue/`expression_into_local` |
+| verify  | LEC=649 (<677); operand hist=34 (<55); red trips already-present; smoke match-as-value 0; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s7 Green done.** next = Critic |
+| issues  | parent open until LEC=0; HOF residual dominates |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 7 Critic) |

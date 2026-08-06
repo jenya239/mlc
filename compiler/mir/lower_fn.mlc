@@ -673,6 +673,12 @@ fn mir_lower_operand_from_expression(
         Ok(local_step) =>
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
+    SemanticExpressionMatch(subject, arms, _, _) =>
+      match mir_lower_match_to_local(state, subject, arms) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
     SemanticExpressionChar(value, _, _) =>
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     SemanticExpressionFloat(value, _, _) =>
@@ -818,6 +824,15 @@ fn mir_lower_rvalue_from_expression(
       },
     SemanticExpressionBlock(_, _, _, _) =>
       match mir_lower_block_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionMatch(subject, arms, _, _) =>
+      match mir_lower_match_to_local(state, subject, arms) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
           Ok(MirLowerRvalueStep {
@@ -1210,6 +1225,168 @@ fn mir_lower_match_return(
         subject_step.state, subject_step.operand, mir_lower_expand_or_arms(arms), 0)
   }
 
+fn mir_lower_match_arm_after_bind_into_local(
+  state: MirLowerState,
+  arm: Shared<SemanticMatchArm>,
+  guard_fail_block: BlockId,
+  result_local_id: LocalId,
+  continue_block_id: BlockId
+) -> Result<MirLowerState, [string]> =
+  if !arm.has_guard then
+    match mir_lower_expression_into_local(state, arm.body, result_local_id) {
+      Err(errors) => Err(errors),
+      Ok(body_state) => Ok(mir_lower_finish_current_block(body_state, MirJump(continue_block_id)))
+    }
+  else
+    match mir_lower_operand_from_expression(state, arm.when_condition) {
+      Err(errors) => Err(errors),
+      Ok(guard_step) => do
+        const body_block_step = mir_lower_allocate_block_index(guard_step.state)
+        let mut branch_state = mir_lower_finish_current_block(
+          body_block_step.state,
+          MirCondJump(guard_step.operand, body_block_step.block_id, guard_fail_block))
+        branch_state = mir_lower_start_block(branch_state, body_block_step.block_id, 'match_guard_body')
+        match mir_lower_expression_into_local(branch_state, arm.body, result_local_id) {
+          Err(errors) => Err(errors),
+          Ok(body_state) => Ok(mir_lower_finish_current_block(body_state, MirJump(continue_block_id)))
+        }
+      end
+    }
+  end
+
+fn mir_lower_match_arm_body_into_local(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  arm: Shared<SemanticMatchArm>,
+  guard_fail_block: BlockId,
+  result_local_id: LocalId,
+  continue_block_id: BlockId
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_bind_match_arm_pattern(state, scrutinee, arm.pattern) {
+    Err(errors) => Err(errors),
+    Ok(bound_state) =>
+      mir_lower_match_arm_after_bind_into_local(
+        bound_state, arm, guard_fail_block, result_local_id, continue_block_id)
+  }
+
+fn mir_lower_match_arms_into_local(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  arms: [Shared<SemanticMatchArm>],
+  index: i32,
+  result_local_id: LocalId,
+  continue_block_id: BlockId
+) -> Result<MirLowerState, [string]> =
+  if index >= arms.length() then Err(['mir lower: empty match'])
+  else if index == arms.length() - 1 then do
+    const fail_block_step = mir_lower_allocate_block_index(state)
+    match mir_lower_match_arm_body_into_local(
+      fail_block_step.state,
+      scrutinee,
+      arms[index],
+      fail_block_step.block_id,
+      result_local_id,
+      continue_block_id
+    ) {
+      Err(errors) => Err(errors),
+      Ok(arm_state) => do
+        let mut fail_state = mir_lower_start_block(arm_state, fail_block_step.block_id, 'match_guard_fail')
+        Ok(mir_lower_finish_unreachable(fail_state))
+      end
+    }
+  end else if !mir_lower_pattern_needs_conditional_test(arms[index].pattern) then do
+    const next_test_step = mir_lower_allocate_block_index(state)
+    match mir_lower_match_arm_body_into_local(
+      next_test_step.state,
+      scrutinee,
+      arms[index],
+      next_test_step.block_id,
+      result_local_id,
+      continue_block_id
+    ) {
+      Err(errors) => Err(errors),
+      Ok(arm_done_state) =>
+        mir_lower_match_arms_into_local(
+          mir_lower_start_block(arm_done_state, next_test_step.block_id, 'match_test'),
+          scrutinee,
+          arms,
+          index + 1,
+          result_local_id,
+          continue_block_id
+        )
+    }
+  end else
+    match mir_lower_pattern_matches_operand(state, scrutinee, arms[index].pattern) {
+      Err(errors) => Err(errors),
+      Ok(condition_step) => do
+        const arm_block_step = mir_lower_allocate_block_index(condition_step.state)
+        const next_test_step = mir_lower_allocate_block_index(arm_block_step.state)
+        let mut branch_state = mir_lower_finish_current_block(
+          next_test_step.state,
+          MirCondJump(
+            condition_step.operand, arm_block_step.block_id, next_test_step.block_id))
+        branch_state = mir_lower_start_block(branch_state, arm_block_step.block_id, 'match_arm')
+        match mir_lower_match_arm_body_into_local(
+          branch_state,
+          scrutinee,
+          arms[index],
+          next_test_step.block_id,
+          result_local_id,
+          continue_block_id
+        ) {
+          Err(errors) => Err(errors),
+          Ok(arm_done_state) =>
+            mir_lower_match_arms_into_local(
+              mir_lower_start_block(arm_done_state, next_test_step.block_id, 'match_test'),
+              scrutinee,
+              arms,
+              index + 1,
+              result_local_id,
+              continue_block_id
+            )
+        }
+      end
+    }
+  end
+
+fn mir_lower_match_into_local(
+  state: MirLowerState,
+  subject: Shared<SemanticExpression>,
+  arms: [Shared<SemanticMatchArm>],
+  result_local_id: LocalId
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_operand_from_expression(state, subject) {
+    Err(errors) => Err(errors),
+    Ok(subject_step) => do
+      const continue_step = mir_lower_allocate_block_index(subject_step.state)
+      match mir_lower_match_arms_into_local(
+        continue_step.state,
+        subject_step.operand,
+        mir_lower_expand_or_arms(arms),
+        0,
+        result_local_id,
+        continue_step.block_id
+      ) {
+        Err(errors) => Err(errors),
+        Ok(arms_state) =>
+          Ok(mir_lower_start_block(arms_state, continue_step.block_id, 'match_continue'))
+      }
+    end
+  }
+
+fn mir_lower_match_to_local(
+  state: MirLowerState,
+  subject: Shared<SemanticExpression>,
+  arms: [Shared<SemanticMatchArm>]
+) -> Result<MirLowerLocalStep, [string]> = do
+  const local_step = mir_lower_allocate_local(state, 'match_tmp', mir_lower_unknown_type())
+  match mir_lower_match_into_local(local_step.state, subject, arms, local_step.local_id) {
+    Err(errors) => Err(errors),
+    Ok(match_state) =>
+      Ok(MirLowerLocalStep { state: match_state, local_id: local_step.local_id })
+  }
+end
+
 fn mir_lower_bind_lambda_parameters_from_index(
   state: MirLowerState,
   parameter_names: [string],
@@ -1477,6 +1654,8 @@ fn mir_lower_expression_into_local(
     SemanticExpressionIf(condition, then_expression, else_expression, _, _) =>
       mir_lower_if_into_local(
         state, condition, then_expression, else_expression, local_id),
+    SemanticExpressionMatch(subject, arms, _, _) =>
+      mir_lower_match_into_local(state, subject, arms, local_id),
     _ =>
       match mir_lower_rvalue_from_expression(state, expression) {
         Err(errors) => Err(errors),

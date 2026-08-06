@@ -759,7 +759,7 @@ Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-op
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no Match in operand\|rvalue / no match_to_local | **done** 2026-08-06 |
-| 2 | Green: Match wired; LEC < 677; operand hist < 55 | open |
+| 2 | Green: Match wired; LEC < 677; operand hist < 55 | **done** 2026-08-06 |
 | 3 | Critic | open |
 
 #### Red measured (§104-6 slice 7)
@@ -768,6 +768,20 @@ Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-op
 - No `mir_lower_match_to_local` / `mir_lower_match_into_local`
 - Operand/rvalue: no `SemanticExpressionMatch` arms
 - Coverage baseline: `lower_error_count=677`; hist `operand-context=55`
+
+#### Green measured (§104-6 slice 7)
+
+| Metric | Value |
+|--------|-------|
+| `lower_error_count` | **649** (<677) |
+| `mir_functions` | 2494 |
+| hist `unsupported expression in operand context` | **34** (<55) |
+| hist `unsupported expression in rvalue context` | 5 |
+| Wiring | `mir_lower_match_into_local` / `mir_lower_match_to_local`; Match arms in operand + rvalue + `expression_into_local` |
+| Red after Green | `mir-coverage_s7_red.sh` exit 1 `match_to_local/match_into_local already present` |
+| Smoke | `--run` `.tmp/s7_match_value_smoke.mlc` exit 0 |
+| Self-host | `diff -r` mlc_p1/mlc_p2 `--exclude=obj` IDENTICAL |
+| `dev_gate_fast` | 1471/0 |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
