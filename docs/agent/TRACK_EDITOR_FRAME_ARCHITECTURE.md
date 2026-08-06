@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110f** (STEP=2 Green done; Critic next)
+## Status: **open** 2026-08-06 — queue head **§110g** (STEP=0 Decision next; §110f CLOSED)
 
 ## Destination (plain)
 
@@ -53,8 +53,8 @@ unless a phase Decision explicitly replaces a member.
 | **C** | Paint list | Chrome + text + overlays emit **paint commands** (rects/glyphs/scissors); GL only in one submit path | Counter: `gl_call_from_widget == 0`; draw_calls / paint_ops reported; dogfood non-regress — **§110c CLOSED** |
 | **D** | Batch + stream | Merge compatible commands; orphaning / multi-buffer upload; no per-quad `glBufferData` | draw_calls and bytes_uploaded ceilings measured-then-written; idle upload ≈0 — **§110d CLOSED** |
 | **E** | Glyph damage residual | Row-level Y-adjust / newly-visible-only reshape (leftover from §109e) | scroll_cpu ceiling tightened below §109’s 60 with numbers; shape O(newly visible) — **§110e CLOSED** |
-| **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates — **§110f** |
-| **G** | Archive / handoff | Point GUI_ARCHITECTURE + EDITOR at this path; resume §103f | docs only |
+| **F** | Overlay metrics (optional) | In-process counters already in perf scripts; optional on-screen overlay behind env flag | Does not replace script gates — **§110f CLOSED** |
+| **G** | Archive / handoff | Point GUI_ARCHITECTURE + EDITOR at this path; resume §103f | docs only — **§110g** |
 
 Non-goals for the whole track (unless user re-opens):
 
@@ -319,7 +319,7 @@ Independent L1 rebuild: upload=288 idle=0 coalesce 3→2 `ux_ok`. Red exit 1 `al
 
 Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: inject `scroll_offset_y` into reshape fp → green static awk fails. Sab2: force `need_full_glyph=1` always → would exceed shape_avg_max=64 (pre-cut ~130). API: `adjust_y` + `append_colored` + `buffer_adjust_ndc_y`. Independent wake: gens 7→7 / 2→2; still/jitter OK; rebuild deltas 0. `scripts/regression_gate.sh` (lib/mlc touched): 20 passed, 0 failed; examples ok=148 fail=0 skip=3. Dogfood: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110f/G: live still rebuilds paint list every frame (fingerprint skip is L1/stream-level).
 
-## §110f `EDITOR_OVERLAY_METRICS` — **queue head** (optional)
+## §110f `EDITOR_OVERLAY_METRICS` — **CLOSED** 2026-08-06 (Critic OK)
 
 | Item | Choice |
 |------|--------|
@@ -349,7 +349,7 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no overlay-metrics harness / no env HUD | **done** 2026-08-06 |
 | 2 | Green: env-gated paint-list HUD + default-off non-regress | **done** 2026-08-06 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 ### Green measured (§110f)
 
@@ -362,6 +362,30 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 | scroll_cpu_percent (default off) | 43 (≤50) |
 | dogfood_gate | ok |
 | glyph_damage | ok |
+
+### Critic (§110f)
+
+Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `editor_perf_overlay_enabled` always-on → L1 `ux_fail default_off`. Sab2: dogfood `SCROLL_CPU_MAX` still 50. Sab3: `perf_overlay.mlc` has no widget GL. Independent wake (overlay unset): gens 7→7 / 2→2; still/jitter OK. Dogfood/glyph: Driver quiet pass accepted (Decision: Critic may ×2 — not required). Residual for §110g: live still rebuilds paint list every frame (fingerprint skip is L1/stream-level).
+
+## §110g `EDITOR_FRAME_HANDOFF` — **queue head** (docs)
+
+| Item | Choice |
+|------|--------|
+| Problem | Path phase G: point GUI_ARCHITECTURE + EDITOR docs at this frame/paint path; resume §103f after epic close criteria |
+| Fix | Decision freeze next |
+| Depends on | §110f CLOSED |
+| Gate | Docs point at §110 destination + harness list; no code required unless Decision finds a docs-only gap that needs a one-line pointer fix |
+| Sabotage | TBD in Decision |
+| Out of scope | SceneNode; fixing paint-list-every-frame without a new numbered phase authorization; reopening §109 STEPs |
+
+### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **open** |
+| 1 | Red (if any harness) / docs gap | pending |
+| 2 | Green / docs handoff | pending |
+| 3 | Critic | pending |
 
 ## Diff / notes
 
@@ -386,3 +410,4 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 2026-08-06: §110f Decision frozen (env-gated overlay HUD; default-off; gates stay authority).
 2026-08-06: §110f Red — `scripts/run_editor_overlay_metrics_red.sh` (exit 1: no green harness / no OVERLAY env).
 2026-08-06: §110f Green — `ux/perf_overlay.mlc` + demo wire; `run_editor_overlay_metrics.sh`; scroll=43 default-off.
+2026-08-06: §110f CLOSED (Critic OK); queue → §110g Decision (docs handoff).
