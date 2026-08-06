@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103i** STEP=3 Critic next (Green done); §103a–h CLOSED; §109/§110 CLOSED
+## Status: **CLOSED** 2026-08-06 — Phase 1 (§103a–i) Critic OK; queue → §104 Wave 2 (§104-6)
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -314,7 +314,7 @@ Closures capturing upvalues; material call `Frame` stack (design doc §11 — fr
 
 Independent `SCRIPT_VM_CLOSURES_FIBERS_OUT=tmp/script_vm_closures_fibers_critic` green: closures_fibers/upvalue_mut/recursion/side ok, write_barrier_hits=4. Sabotages load-bearing (CALL without frame push; GET_UPVAL ignores Cell; SET_UPVAL skips write). **Residual (disclosed, non-blocking):** proto_index stored in `object_flags` not `shape_or_meta`; cooperative fiber scheduler still out of scope. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103i Decision.
 
-### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (Green done; STEP=3 Critic next)
+### §103i `SCRIPT_VM_EMBEDDING_ABI` — **CLOSED** 2026-08-06 (Critic OK)
 
 C ABI from design doc §10: first embeddable proof (host C links ABI, not
 only an internal MLC harness).
@@ -352,7 +352,11 @@ only an internal MLC harness).
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: embedding ABI / unit / host absent | **done** 2026-08-06 — `scripts/run_script_vm_embedding_abi_unit_red.sh` exit 1 (`no script_vm embedding ABI unit`); green/unit/host/header/embedding/bridge absent |
 | 2 | Green: embedding.mlc + C ABI + host call→42; `dev_gate_fast` | **done** 2026-08-06 — embedding.mlc + ABI header/bridge/host; unit+host add1→42; red already-present; side §103h; `dev_gate_fast` 1471/0 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — independent unit+host OK; sab1 call→argc fails host; sab2 skip-verify accepts invalid opcode (ctrl rejects); no `lib/mlc/**` / `compiler/**/*.mlc`; `dev_gate_fast` 1471/0 |
+
+### Critic notes (§103i)
+
+Independent `SCRIPT_VM_EMBEDDING_ABI_OUT=tmp/script_vm_embedding_abi_critic` green: embedding_abi/add1/host_call/side ok. Sabotages load-bearing (bridge call skips `emb_call_export_ptr` → host≠42; load skips `emb_verify_module_ptr` → invalid-opcode blob accepted, control rejects). Bridge calls MLC (no C++ opcode twin). **Residuals (disclosed, non-blocking):** C++ owns module blob map (Decision text said MLC id-keyed registry — gate uses MLC verify+`run_program_with_args`); host is `.cpp` not `.c`; config instruction/heap limits stored not enforced; `i64=0` codegen seed via `embedding_u8_to_i64`. **Phase 1 (§103a–i) CLOSED.** Queue → §104 Wave 2 (§104-6).
 
 ### Green measured (§103i)
 

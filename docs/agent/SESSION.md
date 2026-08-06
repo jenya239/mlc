@@ -348,3 +348,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103i Green done.** next = Critic |
 | issues  | i64=0 codegen residual (mitigated); config limits stored not enforced |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103i) |
+
+### Turn 2026-08-06 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103i)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent critic green; sab1/sab2 load-bearing; closed §103i + Phase 1; residuals disclosed; queue → §104-6 |
+| verify  | critic unit+host ok; sab1 exit 7; sab2 accept vs ctrl reject; green scope ok; `dev_gate_fast` 1471/0 |
+| result  | **§103i CLOSED (Critic OK). Phase 1 CLOSED.** next = §104 Wave 2 |
+| issues  | C++ blob map vs MLC id registry (non-blocking); limits not enforced; host `.cpp` |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 MIR lowering Decision) |
