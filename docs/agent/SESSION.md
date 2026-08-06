@@ -303,3 +303,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103h CLOSED (Critic OK).** §103i Decision next |
 | issues  | proto_index in object_flags (non-blocking); fiber scheduler still deferred |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103i)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Frozen §103i Decision: embedding.mlc + C ABI header + bridge (mlcc no-main link); MLSC v1 bytecode blob; MlcVmConfig limits/panic; gate MLC unit + host C call(41)→42; no opcode twin in C++ |
+| verify  | pre-cut: no mlc_vm_*/embedding_abi/host/runners; mlcc emits cpp without main |
+| result  | **§103i Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Red) |

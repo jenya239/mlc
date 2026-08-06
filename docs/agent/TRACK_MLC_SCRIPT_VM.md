@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103i** STEP=0 Decision next; §103a–h CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103i** STEP=1 Red next (Decision frozen); §103a–h CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -314,15 +314,45 @@ Closures capturing upvalues; material call `Frame` stack (design doc §11 — fr
 
 Independent `SCRIPT_VM_CLOSURES_FIBERS_OUT=tmp/script_vm_closures_fibers_critic` green: closures_fibers/upvalue_mut/recursion/side ok, write_barrier_hits=4. Sabotages load-bearing (CALL without frame push; GET_UPVAL ignores Cell; SET_UPVAL skips write). **Residual (disclosed, non-blocking):** proto_index stored in `object_flags` not `shape_or_meta`; cooperative fiber scheduler still out of scope. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103i Decision.
 
-### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (STEP=0 Decision next)
+### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (Decision frozen; STEP=1 Red next)
 
-The C ABI surface from design doc §10: `mlc_vm_create/destroy/
-load_module/get_export/call/handle_release`, explicit `MlcVmConfig`
-(allocator, resolver, clock, limits, panic callback — no hidden globals).
-Gate: a minimal host C program links the ABI, loads a tiny script module
-compiled by §103a-h's pipeline, calls one exported function, reads back the
-correct result — first true "embeddable" proof, not just an internal test
-harness.
+C ABI from design doc §10: first embeddable proof (host C links ABI, not
+only an internal MLC harness).
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | No embedding surface: only internal `script_vm/tests/*_unit.mlc` harnesses. No `mlc_vm_*`, no module blob, no host-C link proof — Phase 1 gate “embeddable” cannot land |
+| Fix | (1) `script_vm/embedding.mlc` — authoritative Vm (id-keyed registry): create/destroy, load bytecode module, get_export, call → existing verifier + `run_program`, handle_release. (2) `runtime/include/mlc/script_vm/embedding_abi.h` — pure C API, names from design §10. (3) `runtime/src/script_vm/embedding_abi.cpp` (or `script_vm/embedding_abi_bridge.cpp`) — `extern "C"` wrappers; harness compiles **mlcc output of `embedding.mlc` (no `main`)** + bridge + host `.c` + runtime. Bridge: `MlcVm*` = heap wrapper holding MLC vm id; calls into generated MLC namespace |
+| Module payload | **Bytecode only** (Phase 1). LE blob: magic `u32` `0x43534C4D` (`MLSC`), `version=1`, then `export_count`, exports `{name_len u32, name bytes, proto_index u32}`, `proto_count`, each proto `{register_count u32, word_count u32, words i32[], const_count u32, constants i64 raw[]}`. `load_module` `name` = registry key for `get_export`. **Source** bytes → `MlcResult` error `unsupported` (deferred). Encode helper in MLC for fixtures |
+| Verify-before-run | Every proto in the blob must pass existing verifier before registration; fail → load error, no partial export table |
+| MlcVmConfig | Struct fields (no hidden globals): `instruction_limit` (u64, 0=unlimited), `heap_limit_objects` (i32), `panic_callback` (`void (*)(const char*)`, nullable). Allocator / module resolver / clock / random / logger / native resolver / JIT cache limits — **present as nullable/zero reserved fields**, not wired this STEP. Null config pointer → defaults (`instruction_limit=0`, `heap_limit_objects=1000000`, panic=null) |
+| Types | `MlcValue { int64_t raw; }` (= ValueRep). `MlcHandle` = `uint64_t` (export binding id). `MlcResult { int32_t code; }` — 0=ok; nonzero = error kind (`unsupported`/`verify`/`type`/`bounds`/`stack`/…). `mlc_handle_release` drops a handle; double-release is no-op or error (freeze: **error**) |
+| Call | `mlc_vm_call`: resolve handle → Closure or entry proto; argc args as `MlcValue*`; write result raw. Entry path uses `run_program` (or equivalent embedding wrapper). Instruction/heap limits from config applied if non-zero (minimal: reject load/call when heap objects would exceed limit — exact counter = `heap.object_count` or slots length) |
+| Gate (authority) | (1) MLC unit: encode tiny module (export `add1`: LOAD_CONST/ADD/RETURN or equiv), load, get_export, call(Int32 41) → raw Int32 42. (2) Host C (`embedding_abi_host.c`): `#include` ABI header, link bridge+mlcc objs, same blob bytes, same call → 42. Red: green runner / header / embedding.mlc / host absent |
+| Build / test | `scripts/run_script_vm_embedding_abi_unit.sh` (+ `_red.sh`). Builds MLC unit + host C link. **Not** in `run_ux_gate`. Green: `dev_gate_fast.sh`. Side: §103h closures_fibers still ok |
+| Sabotage | Bridge `call` returns argc / skips `run_program` → host≠42; load skips verifier → invalid-opcode blob accepted |
+| REG | no (`script_vm/**` + `runtime/include/mlc/script_vm/embedding_abi.h` + bridge `.cpp` only). No `lib/mlc/**` / `compiler/**/*.mlc` |
+| Out of scope | Source `load_module`; wiring custom allocator/resolver/clock; fiber scheduler; native typed boundary (§16 / §103j); Phase 2–5; editing `docs/MLC_SCRIPT_VM.md` beyond this track’s Status; unifying C++ bridge with a second interpreter (bridge **must** call MLC, not reimplement opcode loop) |
+
+#### Pre-cut (audit 2026-08-06)
+
+| Fact | Evidence |
+|------|----------|
+| No C ABI | No `mlc_vm_*` / `MlcVmConfig` / `embedding_abi.h` under `runtime/` or `script_vm/` |
+| No embedding module | No `script_vm/embedding.mlc` |
+| No host / runners | No `embedding_abi_host.c`; no `run_script_vm_embedding_abi_unit.sh` |
+| mlcc lib-ok | `mlcc` emits `.cpp` for modules **without** `fn main` (probe 2026-08-06) — enables host link |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: embedding ABI / unit / host absent | open |
+| 2 | Green: embedding.mlc + C ABI + host call→42; `dev_gate_fast` | open |
+| 3 | Critic | open |
 
 ## Explicitly deferred past Phase 1 (do not pull forward without new user authorization)
 
