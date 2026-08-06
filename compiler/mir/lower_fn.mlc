@@ -212,6 +212,7 @@ fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]>
   else if method_name == 'join' then Ok('__mir_array_join')
   else if method_name == 'concat' then Ok('__mir_array_concat')
   else if method_name == 'has' then Ok('__mir_map_has')
+  else if method_name == 'to_i' then Ok('__mir_string_to_i')
   else Err([`mir lower: unsupported method ${method_name}`])
 
 fn mir_lower_is_mutating_method(method_name: string) -> bool =

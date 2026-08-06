@@ -348,3 +348,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s6 Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Green) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | `__mir_string_to_i` + whitelist; expression-style parse (no fragile do/return) |
+| verify  | LEC=677 (<680); hist clean of to_i; smoke 0; red trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s6 Green done.** next = Critic |
+| issues  | — |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Critic) |
