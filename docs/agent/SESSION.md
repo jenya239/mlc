@@ -348,3 +348,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s12 Green done.** next = Critic |
 | issues  | parent open; LEC=620 (HOF/CppIR dominate) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Critic) |
+
+### Turn 2026-08-07 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s12)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Independent wiring+MIR+smokes+LECΔ+red+self-host+gate; slice 12 CLOSED |
+| verify  | LEC=620; MIR CallNative×3; critic smokes 0; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s12 CLOSED (Critic OK).** next = slice 13 Decision |
+| issues  | parent open; LEC=620 (HOF/CppIR/…) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 13 Decision) |
