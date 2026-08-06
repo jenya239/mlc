@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103h** STEP=0 Decision next; §103a–g CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103h** STEP=0 Decision done; Red next; §103a–g CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -271,14 +271,44 @@ Heap-backed array/record objects; field/index opcodes; GC traces elements (desig
 
 Independent `SCRIPT_VM_ARRAYS_RECORDS_OUT=tmp/script_vm_arrays_records_critic` green: arrays_records/cycle_*/side ok, write_barrier_hits=1. Sabotages load-bearing (mark without elements; SET without hits bump). Opcodes 16–21 present; `run_with_heap` + Array/Record alloc present. **Residual (disclosed, non-blocking):** Decision said `shape_or_meta` = length/field_count; Green keeps `0` and uses `elements.length()` — gate does not assert meta. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103h Decision.
 
-### §103h `SCRIPT_VM_CLOSURES_FIBERS` — **queue head** (STEP=0 Decision next)
+### §103h `SCRIPT_VM_CLOSURES_FIBERS` — **queue head** (STEP=0 Decision done; Red next)
 
-Closures capturing upvalues; `Frame{function, instruction, registers,
-caller}` call stack (design doc §11 — frame stays material, no deopt
-machinery yet since there is no JIT in Phase 1). Gate: a closure capturing a
-mutable upvalue across two calls returns the mutated value on the second
-call; a recursive function to a fixed depth returns the correct result
-without stack corruption.
+Closures capturing upvalues; material call `Frame` stack (design doc §11 — frame stays material, no deopt). Gate: mutable upvalue across two calls; recursion to fixed depth without stack corruption.
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Interpreter is single-frame flat (`execute_with_heap`); no CALL/RETURN frame pop, no Closure heap kind, no upvalue ops — track gate (mutable capture across two calls + recursive depth) cannot land |
+| Fix | Extend `heap.mlc` + `bytecode.mlc` + `verifier.mlc` + `interpreter.mlc`. Heap kind **Closure**. Material **Frame** stack in interpreter. `FunctionProto` table (host-owned, not heap). Entry `run_program(heap, protos, entry_proto_index) -> RunHeapResult`. Keep `run_arithmetic` / no-call `run_with_heap` for §103d–g fixtures |
+| Object model | `type_id` **Closure=4**. Slot `elements` = upvalue Cells (each Cell type_id=1; mutable capture = Cell.child). `shape_or_meta` = `proto_index` (i64 bits of i32 index into `protos`). Mark: follow `elements` (Cells) as today. Alloc `heap_alloc_closure(heap, proto_index, upvalue_count)` → Nil-filled upvalue slots; fill via `heap_write_barrier` |
+| FunctionProto (host) | `{ words: [i32], constants: [Value], register_count: i32 }` — array `protos` passed to `run_program`. Nested protos for recursion/MAKE_CLOSURE by index |
+| Frame (interpreter, material) | `{ proto_index: i32, program_counter: i32, registers: [Value], closure: Value, return_dst: i32 }` + `frames: [Frame]`. CALL pushes; RETURN pops and writes result into caller `return_dst`. Max depth **256** → `RunErr("stack", primary)` |
+| New opcodes (tags 22–25; narrow ABC) | `CALL=22` A=dst, B=func_reg, C=argc — callee must be Closure; copy args from regs `B+1 .. B+C` into new frame regs `0 .. C-1`; rest Nil; PC=0 on callee proto. `MAKE_CLOSURE=23` A=dst, B=proto_index (u8 imm), C=upvalue_count (u8) — alloc Closure; **following C instruction words** each encode one upvalue source as packed `(is_local:8, reg_or_upval:8)` in low 16 bits of a payload word (span=1+C via special-case in `instruction_word_span` / verifier): `is_local!=0` → capture caller reg as **new Cell** holding that Value; `is_local==0` → share parent Closure upvalue Cell at index. `GET_UPVAL=24` A=dst, B=upval_index (u8). `SET_UPVAL=25` A=upval_index, B=src_reg — write via Cell + `heap_write_barrier`. Existing `RETURN` pops frame (top-level RETURN → `RunOk`) |
+| Fiber meaning (this STEP) | **Call-stack frames only** (design §11 material Frame). Cooperative fiber spawn/yield/resume / multi-fiber scheduler — **out of scope** (name residual; gate does not require yield) |
+| Gate (authority) | (1) Mutable upvalue: Closure + Cell; SET_UPVAL then CALL twice — second call sees mutated Int32. (2) Recursion: proto calls self to fixed depth N≥8, returns expected Int32; depth>256 → `stack` err. Red: green runner/unit absent |
+| Build / test | `scripts/run_script_vm_closures_fibers_unit.sh` → `script_vm/tests/closures_fibers_unit.mlc`. **Not** in `run_ux_gate`. Green: `dev_gate_fast.sh`. Side: §103g arrays_records + §103e control_flow still ok |
+| Sabotage | CALL without push (flat PC) → recursion corrupts / wrong result; GET_UPVAL ignores Cell → second call stale; SET_UPVAL skips write_barrier hits bump → hits assert fails |
+| REG | no (`script_vm/**` only). No `lib/mlc/**` / `compiler/**/*.mlc` |
+| Out of scope | Fiber scheduler/yield; embedding ABI (§103i); freelist pop-reuse; editing `docs/MLC_SCRIPT_VM.md`; Phase 2–5; open upvalues pointing at live registers (always close into Cell on MAKE_CLOSURE) |
+
+#### Pre-cut (audit 2026-08-06)
+
+| Fact | Evidence |
+|------|----------|
+| No call/closure opcodes | `bytecode.mlc` tags 1–21 only; no CALL/MAKE_CLOSURE/GET_UPVAL/SET_UPVAL |
+| Single flat frame | `interpreter.mlc` `execute_with_heap` — one register file, RETURN ends run |
+| No Closure kind | `heap.mlc` type_id Cell=1, Array=2, Record=3 only |
+| No unit / runner | No `closures_fibers_unit.mlc`; no `run_script_vm_closures_fibers_unit.sh` |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: closures/fibers unit runner absent | pending |
+| 2 | Green: Closure+Frame+CALL/upvals; recursion; `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ### §103i `SCRIPT_VM_EMBEDDING_ABI`
 

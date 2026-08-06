@@ -243,3 +243,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103g CLOSED (Critic OK).** §103h Decision next |
 | issues  | shape_or_meta length unused (elements.length authority) — non-blocking |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103h SCRIPT_VM_CLOSURES_FIBERS Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103h Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §103h: Closure=4 + Cell upvals; Frame stack; CALL/MAKE_CLOSURE/GET_UPVAL/SET_UPVAL; `run_program`; fiber=frames only |
+| verify  | Decision STEP=0=done; pre-cut no call/closure/unit; PLAN → Red |
+| result  | **§103h STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103h Red — no closures/fibers unit) |
