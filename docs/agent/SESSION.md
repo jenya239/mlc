@@ -513,3 +513,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s9 Decision frozen.** next = Red |
 | issues  | — |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Red) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Red harness `mir-coverage_s9_red.sh`; proven no I64/U8/Usize in operand/rvalue |
+| verify  | exit 1 `no I64/U8/Usize in operand\|rvalue`; LEC=646; operand=34 rvalue=5 |
+| result  | **§104-6 s9 Red done.** next = Green |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Green) |
