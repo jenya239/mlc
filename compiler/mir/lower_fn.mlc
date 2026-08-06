@@ -18,7 +18,8 @@ import {
   SemanticExpressionChar, SemanticExpressionFloat,
   SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize,
   SemanticStatementLet, SemanticStatementLetConst, SemanticStatementLetPattern,
-  SemanticStatementExpr, SemanticStatementReturn, sexpr_span
+  SemanticStatementExpr, SemanticStatementReturn,
+  SemanticStatementBreak, SemanticStatementContinue, sexpr_span
 } from '../ir/semantic_ir'
 import { Type, TUnknown } from '../checker/registry'
 import {
@@ -51,7 +52,9 @@ type MirLowerState = MirLowerState {
   current_block_id: BlockId,
   current_label: string,
   current_stmts: [MirStmt],
-  id_pool: MirIdPool
+  id_pool: MirIdPool,
+  loop_break_targets: [BlockId],
+  loop_continue_targets: [BlockId]
 }
 
 type MirLowerBlockStep = MirLowerBlockStep { state: MirLowerState, block_id: BlockId }
@@ -69,8 +72,57 @@ fn mir_lower_state_new() -> MirLowerState = MirLowerState {
   current_block_id: mir_block_id(0),
   current_label: 'entry',
   current_stmts: [],
-  id_pool: mir_id_pool_new()
+  id_pool: mir_id_pool_new(),
+  loop_break_targets: [],
+  loop_continue_targets: []
 }
+
+fn mir_lower_block_id_stack_without_last(targets: [BlockId]) -> [BlockId] = do
+  let mut result: [BlockId] = []
+  let mut index = 0
+  const limit = targets.length() - 1
+  while index < limit do
+    result.push(targets[index])
+    index = index + 1
+  end
+  result
+end
+
+fn mir_lower_push_loop_targets(
+  state: MirLowerState,
+  break_target: BlockId,
+  continue_target: BlockId
+) -> MirLowerState = do
+  let mut break_targets = state.loop_break_targets
+  let mut continue_targets = state.loop_continue_targets
+  break_targets.push(break_target)
+  continue_targets.push(continue_target)
+  MirLowerState {
+    ...state,
+    loop_break_targets: break_targets,
+    loop_continue_targets: continue_targets
+  }
+end
+
+fn mir_lower_pop_loop_targets(state: MirLowerState) -> MirLowerState =
+  if state.loop_break_targets.length() == 0 then state
+  else
+    MirLowerState {
+      ...state,
+      loop_break_targets: mir_lower_block_id_stack_without_last(state.loop_break_targets),
+      loop_continue_targets: mir_lower_block_id_stack_without_last(state.loop_continue_targets)
+    }
+  end
+
+fn mir_lower_lookup_loop_break_target(state: MirLowerState) -> Result<BlockId, [string]> =
+  if state.loop_break_targets.length() == 0 then Err(['mir lower: break outside loop'])
+  else Ok(state.loop_break_targets[state.loop_break_targets.length() - 1])
+  end
+
+fn mir_lower_lookup_loop_continue_target(state: MirLowerState) -> Result<BlockId, [string]> =
+  if state.loop_continue_targets.length() == 0 then Err(['mir lower: continue outside loop'])
+  else Ok(state.loop_continue_targets[state.loop_continue_targets.length() - 1])
+  end
 
 fn mir_lower_bind_lambda(
   state: MirLowerState,
@@ -121,6 +173,16 @@ end
 
 fn mir_lower_start_block(state: MirLowerState, block_id: BlockId, label: string) -> MirLowerState =
   MirLowerState { ...state, current_block_id: block_id, current_label: label, current_stmts: [] }
+
+fn mir_lower_jump_to_loop_target_then_dead(
+  state: MirLowerState,
+  target: BlockId,
+  dead_label: string
+) -> MirLowerState = do
+  let mut next_state = mir_lower_finish_current_block(state, MirJump(target))
+  const dead_step = mir_lower_allocate_block_index(next_state)
+  mir_lower_start_block(dead_step.state, dead_step.block_id, dead_label)
+end
 
 fn mir_lower_bind_params(state: MirLowerState, params: [Shared<Param>]) -> MirLowerState = do
   let mut environment = state.name_environment
@@ -1783,7 +1845,7 @@ fn mir_lower_while_statement(
   const loop_header_step = mir_lower_allocate_block_index(state)
   const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
   const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
-  let mut loop_state = mir_lower_finish_current_block(loop_header_step.state, MirJump(loop_header_step.block_id))
+  let mut loop_state = mir_lower_finish_current_block(exit_block_step.state, MirJump(loop_header_step.block_id))
   loop_state = mir_lower_start_block(loop_state, loop_header_step.block_id, 'loop')
   match mir_lower_operand_from_expression(loop_state, condition) {
     Err(errors) => Err(errors),
@@ -1792,10 +1854,13 @@ fn mir_lower_while_statement(
         condition_step.state,
         MirCondJump(condition_step.operand, body_block_step.block_id, exit_block_step.block_id))
       loop_state = mir_lower_start_block(loop_state, body_block_step.block_id, 'loop_body')
+      loop_state = mir_lower_push_loop_targets(
+        loop_state, exit_block_step.block_id, loop_header_step.block_id)
       match mir_lower_statements(loop_state, body_statements) {
         Err(errors) => Err(errors),
         Ok(body_state) => do
-          let mut exit_state = mir_lower_finish_current_block(body_state, MirJump(loop_header_step.block_id))
+          let mut exit_state = mir_lower_pop_loop_targets(body_state)
+          exit_state = mir_lower_finish_current_block(exit_state, MirJump(loop_header_step.block_id))
           Ok(mir_lower_start_block(exit_state, exit_block_step.block_id, 'loop_exit'))
         end
       }
@@ -1819,7 +1884,8 @@ fn mir_lower_for_statement(
       const loop_header_step = mir_lower_allocate_block_index(prep_state)
       const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
       const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
-      prep_state = mir_lower_finish_current_block(loop_header_step.state, MirJump(loop_header_step.block_id))
+      const continue_block_step = mir_lower_allocate_block_index(exit_block_step.state)
+      prep_state = mir_lower_finish_current_block(continue_block_step.state, MirJump(loop_header_step.block_id))
       prep_state = mir_lower_start_block(prep_state, loop_header_step.block_id, 'for_loop')
       const length_step = mir_lower_allocate_local(prep_state, '', mir_lower_unknown_type())
       prep_state = mir_lower_emit_call_assign(
@@ -1842,12 +1908,19 @@ fn mir_lower_for_statement(
         '__mir_array_get',
         [MirOperandLocal(iterator_step.local_id), MirOperandLocal(index_step.local_id)])
       prep_state = mir_lower_bind_name(prep_state, variable_name, element_step.local_id)
+      prep_state = mir_lower_push_loop_targets(
+        prep_state, exit_block_step.block_id, continue_block_step.block_id)
       match mir_lower_statements(prep_state, body_statements) {
         Err(errors) => Err(errors),
         Ok(body_state) => do
+          let mut after_body = mir_lower_pop_loop_targets(body_state)
+          after_body = mir_lower_finish_current_block(
+            after_body, MirJump(continue_block_step.block_id))
+          after_body = mir_lower_start_block(
+            after_body, continue_block_step.block_id, 'for_continue')
           const add_op = "+"
           const next_index_step = mir_lower_temp_operand_from_rvalue(
-            body_state,
+            after_body,
             MirRvalueBinary(add_op, MirOperandLocal(index_step.local_id), MirOperandConstInt(1)))
           let mut exit_state = mir_lower_emit_assign(
             next_index_step.state,
@@ -1858,6 +1931,18 @@ fn mir_lower_for_statement(
         end
       }
     end
+  }
+
+fn mir_lower_break_statement(state: MirLowerState) -> Result<MirLowerState, [string]> =
+  match mir_lower_lookup_loop_break_target(state) {
+    Err(errors) => Err(errors),
+    Ok(target) => Ok(mir_lower_jump_to_loop_target_then_dead(state, target, 'after_break'))
+  }
+
+fn mir_lower_continue_statement(state: MirLowerState) -> Result<MirLowerState, [string]> =
+  match mir_lower_lookup_loop_continue_target(state) {
+    Err(errors) => Err(errors),
+    Ok(target) => Ok(mir_lower_jump_to_loop_target_then_dead(state, target, 'after_continue'))
   }
 
 fn mir_lower_assign_identifier(
@@ -1960,6 +2045,8 @@ fn mir_lower_let_pattern_statement(
 
 fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement>) -> Result<MirLowerState, [string]> = do
   match statement {
+    SemanticStatementBreak(_) => mir_lower_break_statement(state),
+    SemanticStatementContinue(_) => mir_lower_continue_statement(state),
     SemanticStatementLetPattern(pattern, _, value, _, has_else, else_body, _) =>
       mir_lower_let_pattern_statement(state, pattern, value, has_else, else_body),
     SemanticStatementLet(name, _, value, type_value, _) =>

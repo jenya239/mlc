@@ -243,3 +243,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s11 Red done.** next = Green |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Green) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s11)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | `lower_fn.mlc`: loop target stack + Break/Continue arms; while/for push/pop + for continue-block; id_pool finish fix |
+| verify  | LEC 638→630; hist statement absent; smoke break=7 continue=25; red-after trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s11 Green done.** next = Critic |
+| issues  | parent open; residual LEC=630 (HOF/CppIR/…) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Critic) |
