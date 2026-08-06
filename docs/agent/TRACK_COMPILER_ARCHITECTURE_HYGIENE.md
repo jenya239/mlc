@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 1** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 1** Green next (Red done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 Decision frozen 2026-08-06
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 Red done 2026-08-06 (Green next)
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -398,7 +398,7 @@ Parent review: `mlc-support/responses/review_20260629_144027.md` Шаг 6.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: mir-coverage / lower_error_count absent | open |
+| 1 | Red: mir-coverage / lower_error_count absent | **done** 2026-08-06 — `compiler/scripts/mir-coverage_red.sh` exit 1 (`no mir-coverage / lower_error_count`); coverage script + report field absent |
 | 2 | Green: report + script; baseline numbers recorded; `dev_gate_fast` | open |
 | 3 | Critic | open |
 
