@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103f** (`SCRIPT_VM_HEAP_GC_ARENA`); §103a–e CLOSED; §109/§110 CLOSED (suspend lifted)
+## Status: **open** 2026-08-06 — queue head **§103f** STEP=0 Decision done; Red next; §103a–e CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -179,13 +179,42 @@ release backend — не цель никогда (третий путь испо
 
 **§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
-### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (Decision next)
+### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=0 Decision done; Red next)
 
-Non-moving incremental mark-sweep, size-class arenas, `ObjectHeader{type_id,
-gc_flags, object_flags, shape_or_meta}`, write barrier stub (design doc §8).
-Gate: alloc/free cycle test with an explicit live-object counter — no leaks
-across N alloc/collect cycles; a collect call reclaims an object proven
-unreachable from roots, does not reclaim one that is reachable.
+Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | §103a–e Values are immediate-only (Nil/Bool/Int32/Float64); no heap, no `ObjectHeader`, no GC roots, no live-object accounting — track gate and §103g arrays/records cannot land |
+| Fix | New `script_vm/heap.mlc` (+ optional thin `runtime/include/mlc/script_vm/heap_abi.hpp` only if bit/layout helpers need it — prefer pure MLC). Extend `ValueRep` with **HeapRef** (NaN-box tag **4**, payload = stable non-moving `object_id: u32`). `ObjectHeader { type_id: u32, gc_flags: u16, object_flags: u16, shape_or_meta: u64 }` as in design §6. Size-class freelist arenas (classes **32 / 64 / 128 / 256** bytes, header included). Explicit root set API. `heap_collect` = single-threaded **stop-the-world mark-sweep** (non-moving). Write-barrier **stub**: `heap_write_barrier(parent, slot, new_child)` always callable; increments `write_barrier_hits` (no incremental-grey work yet) |
+| Object model (§103f only) | One allocatable kind: **`Cell`** (`type_id` fixed) = header + one child `Value` slot (Nil or HeapRef). Enough to prove reachability without §103g array/record opcodes |
+| Roots | `heap_root_push(Value)` / `heap_root_clear()` (or equivalent). Collect marks from roots only — registers/globals **not** auto-scanned this STEP |
+| Gate metrics | `heap_live_object_count()`; after N alloc+drop-root+collect cycles count returns to baseline (no leak); unreachable Cell reclaimed; reachable (rooted) Cell survives |
+| Build / test | `scripts/run_script_vm_heap_gc_arena_unit.sh` → `script_vm/tests/heap_gc_arena_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** folded into `run_ux_gate`. Green also runs `dev_gate_fast.sh` (same discipline as §103e) |
+| Gate | Unit: (1) alloc Cell → live≥1; (2) no root + collect → live back to baseline; (3) root held + collect → still live; (4) N≥8 alloc/collect cycles no leak; (5) write_barrier_hits increases on child write. Red: green runner / unit absent |
+| Sabotage | Collect that never reclaims (or always reclaims rooted) → unit fails; omit write-barrier bump on child write → hits assert fails |
+| REG | no if `script_vm/**` (+ optional `runtime/include/mlc/script_vm/heap_abi.hpp`) only — no `lib/mlc/**` / `compiler/**/*.mlc`. If Green must touch `compiler/` → self-host diff + Tier B (avoid) |
+| Out of scope | Array/record opcodes (§103g); closures/fibers (§103h); embedding ABI (§103i); concurrent/moving GC; weak refs; true incremental mark quanta (API may expose `heap_collect` only); interpreter heap opcodes; editing `docs/MLC_SCRIPT_VM.md` (design stays authority, not rewritten here); Phase 2–5 |
+
+#### Pre-cut (audit 2026-08-06)
+
+| Fact | Evidence |
+|------|----------|
+| No heap module | No `script_vm/heap.mlc`; no `*heap*` under `script_vm/` |
+| ValueRep immediate-only | `value.mlc` / `value_rep_abi.hpp`: tags Nil/Bool/Int32 (+ Float raw); no HeapRef / tag 4 |
+| No GC unit / runner | No `heap_gc_arena_unit.mlc`; no `run_script_vm_heap_gc_arena_unit.sh` |
+| Design authority | `MLC_SCRIPT_VM.md` §6 `ObjectHeader`, §8 non-moving mark-sweep + size-class arenas + write barrier — **not** edited this STEP |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: heap GC unit runner absent | pending |
+| 2 | Green: HeapRef + arenas + mark-sweep + unit; `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ### §103g `SCRIPT_VM_ARRAYS_RECORDS`
 

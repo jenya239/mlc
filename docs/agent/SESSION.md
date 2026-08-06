@@ -123,3 +123,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§110g CLOSED + §110 epic CLOSED (Critic OK).** §103f Decision next |
 | issues  | residual paint-list-every-frame remains open (documented; out of §110 scope) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103f SCRIPT_VM_HEAP_GC_ARENA Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=0, §103f Decision)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Froze §103f: HeapRef tag4 + ObjectHeader + size-class arenas + STW mark-sweep + write-barrier stub; Cell+roots gate; unit harness; out of scope arrays/incremental/concurrent |
+| verify  | Decision table in TRACK STEP=0=done; pre-cut no heap.mlc / no HeapRef / no unit; PLAN → Red |
+| result  | **§103f STEP=0 done (Decision frozen).** Red next |
+| issues  | none |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103f Red — no heap GC unit) |
