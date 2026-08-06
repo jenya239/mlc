@@ -1081,7 +1081,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       → [agent/TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md))**
   → **EDITOR_PERF_DOGFOOD (§109 — CLOSED 2026-08-05; §109a–k Critic OK
       → [agent/TRACK_EDITOR_PERF_DOGFOOD](agent/TRACK_EDITOR_PERF_DOGFOOD.md))**
-  → **MLC_SCRIPT_VM Phase 1 (§103 — QUEUE HEAD §103g Decision done → Red; §103a–f CLOSED;
+  → **MLC_SCRIPT_VM Phase 1 (§103 — QUEUE HEAD §103g Red done → Green; §103a–f CLOSED;
       Phase 2–5 of `MLC_SCRIPT_VM.md` §12 remain design-only, NOT authorized
       → [agent/TRACK_MLC_SCRIPT_VM](agent/TRACK_MLC_SCRIPT_VM.md))**
   → COMPILER_ARCHITECTURE_HYGIENE Wave 2 (§104 — Wave 1 CLOSED; Wave 2 **queued last**,
