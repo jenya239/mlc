@@ -318,3 +318,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§111 path frozen (study)** |
 | issues  | Disk was full earlier; editor ran from existing bin |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Decision) — or user override → §111a |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s6)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Frozen §104-6 slice 6 Decision: `__mir_string_to_i` for `to_i`; gate LEC<680 + hist clean of to_i |
+| verify  | hist to_i=5; whitelist lacks to_i; HOF/Match deferred; §111 stays behind unless override |
+| result  | **§104-6 s6 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Red) |

@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 6** Decision next (slice 5 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 6** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 5 CLOSED; slice 6 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 6 Decision frozen (`to_i`); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -666,9 +666,38 @@ Independent re-run:
 
 Residuals: parent open; operand still 55 / rvalue 13 (Match/Lambda/With/…); HOF fold/map deferred; next leaf candidates: `to_i`, or Match-as-operand / remaining operand kinds.
 
-### Slice 6 — next MIR gap (Decision pending)
+### Slice 6 — `to_i` native (leaf string/char → i32)
 
-Queue head after slice 5 Critic. Hist head: `fold=124`, `map=93`, operand-context=55, `make_identifier_cpp_expression`=49, …
+#### Pre-cut facts (audit 2026-08-06, post-s5)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=680` `mir_functions=2454` |
+| Hist | `fold=124`, `map=93`, operand-context=55, `make_identifier_cpp_expression=49`, …, **`to_i=5`** |
+| Checker | `to_i` arity 0 → TI32 (`semantic_type_structure.mlc`); used on char/string digits (lexer, lsp, http) |
+| Whitelist | no `to_i` in `mir_lower_method_native_name` |
+| VM | no `__mir_string_to_i` (or equivalent) |
+| Deferred | HOF; CppIR `make_*`; Match-as-operand (`match_to_local`); remaining operand kinds (Lambda/With/…); `type_is_unknown` |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | After s5, next typed *leaf* method gap is `to_i` (5); HOF and Match-as-operand stay deferred |
+| Fix | (1) Map `to_i` → `__mir_string_to_i` in `mir_lower_method_native_name` (arity 1 incl. receiver). (2) VM: `__mir_string_to_i` parses digit `VmString` to `VmI32` (char literals already ConstStr; multi-digit string digits as in lexer). Wire `runtime.mlc` allowlist |
+| Gate | Red: `to_i` absent from whitelist; no `__mir_string_to_i` in VM. Green: whitelisted+natived; `lower_error_count` **strictly < 680**; hist has no `unsupported method to_i`; `dev_gate_fast` green; self-host IDENTICAL; smoke `--run` for `to_i` |
+| Sabotage | Whitelist without native → `--run` fails; LEC≥680 while claiming Green; hist still lists to_i |
+| REG | no |
+| Out of scope | HOF; Match-as-operand; CppIR; full decimal/`-`/`+` parse beyond digit strings used by compiler; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 6)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no to_i native | open |
+| 2 | Green: native; LEC < 680; hist clean of to_i | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
