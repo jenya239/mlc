@@ -303,3 +303,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s5 CLOSED (Critic OK).** next = slice 6 Decision |
 | issues  | parent open until LEC=0 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Decision) |
+
+### Turn 2026-08-06 (Planner — §111 layout integrity path)
+
+| field   | value |
+|---------|-------|
+| role    | Planner/Scribe |
+| step    | n/a (path/study) |
+| track   | TRACK_EDITOR_LAYOUT_INTEGRITY |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | User: faster but crooked; why demo_live; need agent system for clear non-overlapping UI — study first. Wrote §111 path: shell layout map, partition L1, live one-map, bleed pack, product rename, agent checklist. AGENTS visual note. No code; queue stays §104-6 unless override |
+| verify  | Docs-only |
+| result  | **§111 path frozen (study)** |
+| issues  | Disk was full earlier; editor ran from existing bin |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 6 Decision) — or user override → §111a |

@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-08-04-frame-arch-path` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-08-06-layout-integrity-path` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-08-04-frame-arch-path
+INSTRUCTIONS_REV=2026-08-06-layout-integrity-path
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -198,6 +198,7 @@ INSTRUCTIONS_REV=2026-08-04-frame-arch-path
 | **`TRACK_MLC_SCRIPT_VM` (PLAN §103)** | **SUSPENDED** 2026-08-03 — Phase 1 §103a–e CLOSED; §103f+ frozen behind §109 (override h). Do not open §103f until §109 Critic-closes. Phase 2-5 remain design-only |
 | **`TRACK_EDITOR_TERMINAL` (PLAN §102)** | **CLOSED** 2026-07-31 — epic complete, §102a–§102g all closed and Critic-audited (git `44b66105`+). **Do not re-open any numbered sub-track (§102a…§102g) or its STEPs.** Terminal follow-ups from the 2026-08-01 audit are owned by §107, not by this track: fd/process teardown on tab-strip close and window close (EHA-08/09) → **§107g**; idle repaint of an unchanged grid, `vterm_damage_count` unconsumed (EHA-11) → **§107k**; `pty_spawn`'s `/bin/sh -c` shell-exec contract (EHA-10) → §107 backlog **B11**. New terminal work outside those requires a new PLAN row and explicit user authorization |
 | **`TRACK_EDITOR_IDLE_POINTER_DIRTY` (PLAN §106)** | **CLOSED** 2026-08-01 — incident fix shipped as commit `47b4f134` (`pointer_dirty` / out-of-window ignore / idle wait-before-layout / `layout_skip` + `cached_visual_rows` / `glfwSwapInterval(1)` when `MLC_GLFW_VISIBLE`). **Do not re-open.** Residuals from the same incident are owned by §107, not by this track: text-memcmp cache invalidation → **§107e**; shape-segment budget → **§107h**; spans under `layout_skip` → **§107i**; behavioral hover/idle gate → **§107r**; uncapped swap when `MLC_GLFW_VISIBLE` is unset → backlog **B7**. New idle/pointer work outside those requires a new PLAN row and explicit user authorization |
+| **`TRACK_EDITOR_LAYOUT_INTEGRITY` (PLAN §111)** | **open (path)** 2026-08-06 — agent visual integrity: shell layout map, no-overlap gates, bleed scenarios, rename demo_live→product. STEPs when prioritized (§111a). |
 | **`TRACK_EDITOR_FRAME_ARCHITECTURE` (PLAN §110)** | **open** 2026-08-06 — queue head §110c; Green done (paint list / submit); Critic next. |
 | **`TRACK_EDITOR_PERF_DOGFOOD` (PLAN §109)** | **CLOSED** 2026-08-05 — §109a–k Critic OK; independent gate ×2 (scroll 31/38); sabotes+red fail; epic close criteria via dogfood suite. |
 | **`TRACK_EDITOR_RETAINED_PAINT` (PLAN §108)** | **CLOSED** 2026-08-03 — §108a–§108d Critic-audited (hover CPU gate L1 counters + L2 /proc floor `HOVER_CPU_BUDGET_PERCENT=10`). **Do not re-open.** Residuals/dogfood lag owned by §109, not this track. |

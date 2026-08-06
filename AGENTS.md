@@ -35,3 +35,11 @@ Low-level UI cannot be “vibe-coded” without a measurable loop. Architecture 
 - A static UI (idle, hit-stable pointer) must not reshape text / rebuild O(doc) glyph lists every frame.
 - One measured bottleneck per Green step. If the target metric does not move → revert or narrow; do not ship “cleaner” without numbers.
 - Optional deeper GL traces (`apitrace`) are allowed for diagnosis; they do not replace scripted pass/fail gates.
+
+## Visual layout (editor chrome)
+
+CPU gates do not prove “nothing overlaps”. For chrome/geometry changes see
+[docs/agent/TRACK_EDITOR_LAYOUT_INTEGRITY.md](docs/agent/TRACK_EDITOR_LAYOUT_INTEGRITY.md):
+prefer `EditorShellLayout` + partition/bleed scenarios over screenshot-only fixes.
+One region family per change; probe geometry must match live.
+
