@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 3** Critic next (Green done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 4** Decision next (slice 3 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 3 Green done 2026-08-06 (Critic next); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 3 CLOSED 2026-08-06 (Critic OK); slice 4 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -516,7 +516,7 @@ Residuals: parent §104-6 open (`lower_error_count≠0`); next slice should atta
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no to_string\|join natives | **done** 2026-08-06 — `compiler/scripts/mir-coverage_s3_red.sh` exit 1 (`no to_string|join natives`) |
 | 2 | Green: natives; LEC < 1087; hist clean of those two | **done** 2026-08-06 — see Green measured below |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — slice 3 CLOSED; see Critic audit below |
 
 #### Green measured (§104-6 slice 3) — 2026-08-06
 
@@ -527,6 +527,24 @@ Residuals: parent §104-6 open (`lower_error_count≠0`); next slice should atta
 | Smoke | `--run` `.tmp/s3_to_string_join_smoke.mlc` exit 0 |
 | `dev_gate_fast` | 1471/0 |
 | Self-host | IDENTICAL |
+
+#### Critic audit (2026-08-06), §104-6 slice 3 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=790` (<1087); hist head `fold=117` — no to_string/join
+- Wiring: whitelist + native + runtime for both methods
+- Sab1: hist clean of to_string/join
+- Sab2: LEC drop load-bearing
+- Red after Green: exit 1 `__mir_to_string/__mir_array_join already in VM`
+- VM smoke: `--run` to_string+join exit 0
+- `dev_gate_fast` 1471/0
+
+Residuals: parent open; next leaf candidates from hist: `concat=67`, `has=59` (HOF fold/map deferred).
+
+### Slice 4 — next leaf methods (Decision pending)
+
+Queue head after slice 3 Critic. Hist head: `fold=117`, `map=90`, `concat=67`, `has=59`.
+
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
