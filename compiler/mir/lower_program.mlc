@@ -9,7 +9,7 @@ import { MirProgram, MirModule, MirFunction } from './mir_types'
 import { lower_semantic_function } from './lower_fn'
 import { run_mir_passes_on_function } from './mir_passes'
 
-type MirLowerAccum = MirLowerAccum { functions: [MirFunction], errors: [string] }
+export type MirLowerAccum = MirLowerAccum { functions: [MirFunction], errors: [string] }
 
 fn mir_lower_append_errors(accumulated: [string], errors: [string]) -> [string] = do
   let mut next = accumulated
@@ -51,7 +51,7 @@ fn mir_lower_declarations(accum: MirLowerAccum, declarations: [Shared<SemanticDe
   next
 end
 
-fn mir_lower_items(items: [SemanticLoadItem]) -> MirLowerAccum = do
+export fn mir_lower_items(items: [SemanticLoadItem]) -> MirLowerAccum = do
   let mut index = 0
   let mut accum = MirLowerAccum { functions: [], errors: [] }
   while index < items.length() do

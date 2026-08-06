@@ -52,10 +52,12 @@ export fn mir_bootstrap_report_tests() -> [TestResult] = do
       const report = build_mir_bootstrap_report_from_semantic_items([item])
       results.push(assert_eq_int('bootstrap probe mir_functions', report.mir_function_count, 1))
       results.push(assert_eq_int('bootstrap probe cpp_ok', report.cpp_ok_count, 1))
+      results.push(assert_eq_int('bootstrap probe lower_error_count', report.lower_error_count, 0))
       results.push(assert_true('bootstrap probe cpp matches', mir_bootstrap_report_cpp_matches_mir(report)))
       const text = print_mir_bootstrap_report(report)
       results.push(assert_true('bootstrap probe print mentions main', text.contains('fn main')))
       results.push(assert_true('bootstrap probe print cpp_ok line', text.contains('cpp_ok=1')))
+      results.push(assert_true('bootstrap probe print lower_error_count', text.contains('lower_error_count=0')))
       emit_mir_bootstrap_report_from_semantic_items([item], 'probe.mlc')
       results.push(assert_true('emit_mir_bootstrap_report ok', true))
     end,

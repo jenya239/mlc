@@ -393,3 +393,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§104-6 s1 Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 1 Green) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | `lower_error_count` in MirBootstrapReport; `mir_lower_items` export; `compiler/scripts/mir-coverage.sh`; unit asserts in test_mir_bootstrap_report.mlc |
+| verify  | mir-coverage: lower_error_count=1134 mir_functions=1982; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s1 Green done.** next = Critic |
+| issues  | run_tests stale (Ruby rebuild disabled); new unit asserts not in binary yet — mlcc path verified |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 1 Critic) |

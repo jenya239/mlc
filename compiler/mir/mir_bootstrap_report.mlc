@@ -1,9 +1,10 @@
 // MIR bootstrap report: per-function MIR summary vs CppIR signature (TRACK_MIR STEP=8).
+// §104-6 slice 1: surfaces lower_error_count from mir_lower_items (errors not dropped).
 
 import { SemanticLoadItem } from '../ir/semantic_ir'
 import { CppDeclaration, CppFnDef } from '../cpp_ir/cpp_ast'
-import { MirProgram, MirFunction } from './mir_types'
-import { build_mir_program_from_semantic_items } from './lower_program'
+import { MirProgram, MirModule, MirFunction } from './mir_types'
+import { mir_lower_items } from './lower_program'
 import { mir_function_is_simple, mir_function_to_cpp_declaration } from '../cpp_ir/mir_to_cpp'
 
 export type MirBootstrapFunctionEntry = MirBootstrapFunctionEntry {
@@ -18,6 +19,8 @@ export type MirBootstrapReport = MirBootstrapReport {
   simple_function_count: i32,
   cpp_ok_count: i32,
   cpp_skip_count: i32,
+  lower_error_count: i32,
+  lower_errors: [string],
   entries: [MirBootstrapFunctionEntry]
 }
 
@@ -102,7 +105,20 @@ fn mir_bootstrap_array_length_i32(items: [MirFunction]) -> i32 = do
   count
 end
 
-export fn build_mir_bootstrap_report(program: MirProgram) -> MirBootstrapReport = do
+fn mir_bootstrap_string_array_length(items: [string]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < items.length() do
+    count = count + 1
+    index = index + 1
+  end
+  count
+end
+
+export fn build_mir_bootstrap_report_with_lower_errors(
+  program: MirProgram,
+  lower_errors: [string]
+) -> MirBootstrapReport = do
   const functions = program.modules[0].functions
   const entries = mir_bootstrap_append_function_entries([], functions, 0)
   const cpp_ok_count = mir_bootstrap_count_cpp_ok(entries, 0, 0)
@@ -111,12 +127,20 @@ export fn build_mir_bootstrap_report(program: MirProgram) -> MirBootstrapReport 
     simple_function_count: mir_bootstrap_count_simple_functions(functions, 0, 0),
     cpp_ok_count: cpp_ok_count,
     cpp_skip_count: mir_bootstrap_array_length_i32(functions) - cpp_ok_count,
+    lower_error_count: mir_bootstrap_string_array_length(lower_errors),
+    lower_errors: lower_errors,
     entries: entries
   }
 end
 
-export fn build_mir_bootstrap_report_from_semantic_items(items: [SemanticLoadItem]) -> MirBootstrapReport =
-  build_mir_bootstrap_report(build_mir_program_from_semantic_items(items))
+export fn build_mir_bootstrap_report(program: MirProgram) -> MirBootstrapReport =
+  build_mir_bootstrap_report_with_lower_errors(program, [])
+
+export fn build_mir_bootstrap_report_from_semantic_items(items: [SemanticLoadItem]) -> MirBootstrapReport = do
+  const accum = mir_lower_items(items)
+  const program = MirProgram { modules: [MirModule { functions: accum.functions }] }
+  build_mir_bootstrap_report_with_lower_errors(program, accum.errors)
+end
 
 fn mir_bootstrap_append_entry_lines(lines: [string], entries: [MirBootstrapFunctionEntry], index: i32) -> [string] =
   if index >= entries.length() then lines
@@ -133,6 +157,19 @@ fn mir_bootstrap_append_entry_lines(lines: [string], entries: [MirBootstrapFunct
     mir_bootstrap_append_entry_lines(next_lines, entries, index + 1)
   end
 
+fn mir_bootstrap_append_lower_error_lines(
+  lines: [string],
+  errors: [string],
+  index: i32,
+  max_errors: i32
+) -> [string] = do
+  if index >= errors.length() then return lines end
+  if index >= max_errors then return lines end
+  let mut next_lines = lines
+  next_lines.push(`  lower_error: ${errors[index]}`)
+  mir_bootstrap_append_lower_error_lines(next_lines, errors, index + 1, max_errors)
+end
+
 fn mir_bootstrap_join_lines(lines: [string]) -> string = do
   if lines.length() == 0 then return "" end
   let mut result = lines[0]
@@ -146,8 +183,9 @@ end
 
 export fn print_mir_bootstrap_report(report: MirBootstrapReport) -> string = do
   let mut lines: [string] = [
-    `mir_functions=${report.mir_function_count} simple=${report.simple_function_count} cpp_ok=${report.cpp_ok_count} cpp_skip=${report.cpp_skip_count}`
+    `mir_functions=${report.mir_function_count} simple=${report.simple_function_count} cpp_ok=${report.cpp_ok_count} cpp_skip=${report.cpp_skip_count} lower_error_count=${report.lower_error_count}`
   ]
+  lines = mir_bootstrap_append_lower_error_lines(lines, report.lower_errors, 0, 32)
   lines = mir_bootstrap_append_entry_lines(lines, report.entries, 0)
   mir_bootstrap_join_lines(lines)
 end
