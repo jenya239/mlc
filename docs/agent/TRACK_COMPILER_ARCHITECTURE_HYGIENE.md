@@ -697,7 +697,7 @@ Residuals: parent open; operand still 55 / rvalue 13 (Match/Lambda/With/…); HO
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no to_i native | **done** 2026-08-06 |
 | 2 | Green: native; LEC < 680; hist clean of to_i | **done** 2026-08-06 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 #### Red measured (§104-6 slice 6)
 
@@ -716,6 +716,23 @@ Residuals: parent open; operand still 55 / rvalue 13 (Match/Lambda/With/…); HO
 | Red after Green | exit 1 `__mir_string_to_i already in VM` |
 | Self-host | mlcc2 diff IDENTICAL |
 | `dev_gate_fast` | 1471 passed, 0 failed |
+
+#### Critic audit (2026-08-06), §104-6 slice 6 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=677` (<680); hist clean of to_i
+- Wiring: whitelist + native + runtime for `__mir_string_to_i`
+- Sab1: hist clean of to_i
+- Sab2: LEC drop load-bearing (680→677)
+- Red after Green: exit 1 `__mir_string_to_i already in VM`
+- VM smoke: `--run` to_i fixture exit 0
+- `dev_gate_fast` 1471/0
+
+Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-operand / Lambda/With), `make_identifier_cpp_expression`=49 (CppIR deferred).
+
+### Slice 7 — next MIR gap (Decision pending)
+
+Queue head after slice 6 Critic. Hist head: `fold=124`, `map=93`, operand-context=55, `make_identifier_cpp_expression`=49, …
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
