@@ -28,6 +28,9 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_array_concat' then vm_native_array_concat(arguments)
   else if name == '__mir_map_has' then vm_native_map_has(arguments)
   else if name == '__mir_string_to_i' then vm_native_string_to_i(arguments)
+  else if name == '__mir_string_index_of' then vm_native_string_index_of(arguments)
+  else if name == '__mir_string_trim' then vm_native_string_trim(arguments)
+  else if name == '__mir_array_drop' then vm_native_array_drop(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
@@ -486,6 +489,50 @@ fn vm_native_string_to_i(arguments: [VmValue]) -> Result<VmValue, [string]> =
     match arguments[0] {
       VmString(text) => vm_native_string_to_i_from_text(text),
       _ => Err(['vm: __mir_string_to_i expects string'])
+    }
+  end
+
+fn vm_native_string_index_of(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_string_index_of expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmString(text) =>
+        match arguments[1] {
+          VmString(needle) => Ok(VmI32(text.index_of(needle))),
+          _ => Err(['vm: __mir_string_index_of expects string needle'])
+        },
+      _ => Err(['vm: __mir_string_index_of expects string'])
+    }
+  end
+
+fn vm_native_string_trim(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_string_trim expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(text) => Ok(VmString(text.trim())),
+      _ => Err(['vm: __mir_string_trim expects string'])
+    }
+  end
+
+fn vm_native_array_drop(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_array_drop expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmArray(array) =>
+        match arguments[1] {
+          VmI32(count) => do
+            let mut elements: [VmFieldSlot] = []
+            let mut index = count
+            if index < 0 then index = 0 end
+            while index < array.elements.length() do
+              elements.push(array.elements[index])
+              index = index + 1
+            end
+            Ok(VmArray(VmArrayValue { elements: elements }))
+          end,
+          _ => Err(['vm: __mir_array_drop expects i32 count'])
+        },
+      _ => Err(['vm: __mir_array_drop expects array'])
     }
   end
 

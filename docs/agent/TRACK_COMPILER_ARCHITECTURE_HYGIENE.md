@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 12** Red done; Green next. Prior: §104-6 s11 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 12** Green done; Critic next. Prior: §104-6 s11 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 12 Red done (no index_of/trim/drop); Green next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 12 Green done (index_of/trim/drop); Critic next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1119,7 +1119,7 @@ Residuals: parent open; LEC=630; hist `fold=125`/`map=93`/CppIR `make_*`/operand
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-07 |
 | 1 | Red: no index_of/trim/drop natives | **done** 2026-08-07 |
-| 2 | Green: natives+maps; LEC < 630; hist clean for three | open |
+| 2 | Green: natives+maps; LEC < 630; hist clean for three | **done** 2026-08-07 |
 | 3 | Critic | open |
 
 #### Red measured (§104-6 slice 12)
@@ -1128,6 +1128,20 @@ Residuals: parent open; LEC=630; hist `fold=125`/`map=93`/CppIR `make_*`/operand
 - `mir_lower_method_native_name`: no `index_of` / `trim` / `drop` arms
 - No `__mir_string_index_of` / `__mir_string_trim` / `__mir_array_drop` in `native.mlc` / `runtime.mlc`
 - Coverage baseline: `lower_error_count=630`; hist `index_of=4`, `trim=3`, `drop=3`
+
+#### Green measured (§104-6 slice 12)
+
+| Check | Result |
+|-------|--------|
+| Maps | `index_of`→`__mir_string_index_of`, `trim`→`__mir_string_trim`, `drop`→`__mir_array_drop` in `mir_lower_method_native_name` |
+| VM | `vm_native_string_index_of` / `_trim` / `vm_native_array_drop` + `runtime.mlc` allowlist |
+| Coverage | `lower_error_count=620` (<630); hist `index_of`/`trim`/`drop` **absent** |
+| Smoke | `--run` index_of / trim / drop fixtures exit 0 |
+| Red after Green | exit 1 `index_of/trim/drop natives already in VM` |
+| Self-host | `diff -r` mlc_p1/mlc_p2 `--exclude=obj` IDENTICAL |
+| `dev_gate_fast` | 1471/0 |
+
+Residuals: parent open; LEC=620; hist head still HOF (`fold=125`/`map=93`) + CppIR `make_*` + operand-context=36 — next slice after Critic.
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
