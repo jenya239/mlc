@@ -453,3 +453,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s8 Decision frozen.** next = Red |
 | issues  | — |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Red) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Red harness `mir-coverage_s8_red.sh`; proven no byte_substring whitelist+VM native |
+| verify  | exit 1 `no byte_substring native`; LEC=649; hist byte_substring=5; grep absent |
+| result  | **§104-6 s8 Red done.** next = Green |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Green) |
