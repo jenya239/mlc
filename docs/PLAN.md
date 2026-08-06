@@ -1078,7 +1078,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
       (P2 backlog B1–B11 lives in the track file, not in this queue)
       → [agent/TRACK_EDITOR_HYGIENE](agent/TRACK_EDITOR_HYGIENE.md))
   → **EDITOR_FRAME_ARCHITECTURE (§110 — QUEUE HEAD after §109 CLOSED)
-      §110a–f CLOSED → §110g archive/handoff (Decision done → Red) → resume §103f → … → [agent/TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md))**
+      §110a–f CLOSED → §110g archive/handoff (Red done → Green) → resume §103f → … → [agent/TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md))**
   → **EDITOR_PERF_DOGFOOD (§109 — CLOSED 2026-08-05; §109a–k Critic OK
       → [agent/TRACK_EDITOR_PERF_DOGFOOD](agent/TRACK_EDITOR_PERF_DOGFOOD.md))**
   → **MLC_SCRIPT_VM Phase 1 (§103f+ after §110; §103a–e CLOSED;
