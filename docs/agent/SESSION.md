@@ -318,3 +318,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s12 Decision frozen.** next = Red |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Red) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s12)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Added `compiler/scripts/mir-coverage_s12_red.sh`; confirmed no index_of/trim/drop maps or VM natives |
+| verify  | red exit 1 `no index_of/trim/drop natives`; LEC=630; hist index_of=4 trim=3 drop=3 |
+| result  | **§104-6 s12 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Green) |
