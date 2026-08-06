@@ -438,3 +438,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s14 Decision frozen.** next = Red |
 | issues  | parent open; first HOF slice — Green may surface nested lambda-body residuals |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 14 Red) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s14)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `compiler/scripts/mir-coverage_s14_red.sh`; confirmed no any/all HOF desugar |
+| verify  | red exit 1 `no any/all HOF desugar`; LEC=616; hist any=36 all=9 |
+| result  | **§104-6 s14 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 14 Green) |
