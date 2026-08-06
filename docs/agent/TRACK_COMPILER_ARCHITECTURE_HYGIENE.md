@@ -760,7 +760,7 @@ Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-op
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no Match in operand\|rvalue / no match_to_local | **done** 2026-08-06 |
 | 2 | Green: Match wired; LEC < 677; operand hist < 55 | **done** 2026-08-06 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 #### Red measured (§104-6 slice 7)
 
@@ -782,6 +782,19 @@ Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-op
 | Smoke | `--run` `.tmp/s7_match_value_smoke.mlc` exit 0 |
 | Self-host | `diff -r` mlc_p1/mlc_p2 `--exclude=obj` IDENTICAL |
 | `dev_gate_fast` | 1471/0 |
+
+#### Critic audit (2026-08-06), §104-6 slice 7 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=649` (<677); operand-context=34 (<55)
+- Wiring: `match_into_local`/`match_to_local`/`match_arms_into_local` + Match in operand, rvalue, `expression_into_local`
+- Sab1: LEC + operand hist drops load-bearing vs pre-s7 (677→649, 55→34)
+- Sab2: operand/rvalue Match arms call `match_to_local` (not empty stubs)
+- Red after Green: exit 1 `match_to_local/match_into_local already present`
+- VM smoke: independent Choice/ctor + Match-as-operand `(match …)+(match …)` exit 0
+- `dev_gate_fast` 1471/0
+
+Residuals: parent open until LEC=0; HOF fold/map deferred; next non-HOF: operand-context=34 (Lambda/With/…), `type_is_unknown`=26, `unsupported statement`=18, `byte_substring`=5; CppIR `make_*` deferred.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
