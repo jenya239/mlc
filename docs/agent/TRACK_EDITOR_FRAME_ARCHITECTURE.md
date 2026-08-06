@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110g** (STEP=0 Decision next; §110f CLOSED)
+## Status: **open** 2026-08-06 — queue head **§110g** (STEP=0 Decision done; Red next)
 
 ## Destination (plain)
 
@@ -371,21 +371,33 @@ Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `edito
 
 | Item | Choice |
 |------|--------|
-| Problem | Path phase G: point GUI_ARCHITECTURE + EDITOR docs at this frame/paint path; resume §103f after epic close criteria |
-| Fix | Decision freeze next |
-| Depends on | §110f CLOSED |
-| Gate | Docs point at §110 destination + harness list; no code required unless Decision finds a docs-only gap that needs a one-line pointer fix |
-| Sabotage | TBD in Decision |
-| Out of scope | SceneNode; fixing paint-list-every-frame without a new numbered phase authorization; reopening §109 STEPs |
+| Problem | Path phase G: `GUI_ARCHITECTURE.md` / `EDITOR.md` still point at MVP-era tracks; they do **not** name the §110 destination (dirty gens → paint list → batch/stream) or the dogfood/ownership/paint harness list — agents resume §103f without a frozen handoff pointer |
+| Fix | Below (Decision frozen 2026-08-06) |
+| Depends on | §110a–f CLOSED (path phases delivered; dogfood gate + overlay remain authority) |
+| Gate | Docs handoff harness green; both product docs link this TRACK + destination one-liner + harness index; PLAN marks §110 closed only after Critic; queue advances to §103f |
+| Sabotage | (1) Claim green while `GUI_ARCHITECTURE.md` or `EDITOR.md` still lacks a link to `TRACK_EDITOR_FRAME_ARCHITECTURE.md`. (2) Claim epic closed while PLAN §110 still “open” / queue still on §110g. (3) Docs claim paint-list-every-frame residual is fixed |
+| Out of scope | SceneNode chrome migration; code fix for live paint-list rebuild-every-frame (residual — note only); reopening §109 STEPs; raising §109/§110e ceilings; implementing §103f in this STEP |
+
+### Decision (frozen 2026-08-06)
+
+| Choice | Freeze |
+|--------|--------|
+| Measure authority | **New** `scripts/run_editor_frame_handoff.sh` (+ `_red.sh`). Docs-only: grep/link checks — no GLFW required. Report: `.tmp/editor_frame_handoff/report.txt` |
+| Pre-cut (audit 2026-08-06) | (1) **No** `run_editor_frame_handoff.sh`. (2) `docs/GUI_ARCHITECTURE.md` — **zero** mentions of `TRACK_EDITOR_FRAME_ARCHITECTURE` / §110 path; still MVP/Scene-era framing (+ Live chrome Deviation §218). (3) `docs/EDITOR.md` — points at archived `TRACK_EDITOR_MVP`; **no** §110 destination or harness list. (4) Residual (document, do not fix): live still rebuilds paint list every frame (§110e/f Critic). (5) After this epic Critic-close: PLAN queue resumes **§103f** (`SCRIPT_VM_HEAP_GC_ARENA`) under standing override (h) lift once §110 closed |
+| **Green cut** | (A) Add a short **§110 frame/paint path** subsection (or “Current editor frame path”) to `GUI_ARCHITECTURE.md` and a matching pointer in `EDITOR.md`: link `[TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md)`, destination one-liner (dirty generations → layout → paint list → batch/stream → swap), and index of load-bearing harnesses (`run_editor_perf_dogfood_gate.sh`, ownership/paint/batch/glyph/overlay as named in TRACK). (B) Explicit residual bullet: paint-list rebuild every frame — **not** closed. (C) Explicit: SceneNode chrome Deviation unchanged. (D) On TRACK close after Critic: mark path phases A–G done; PLAN §110 **closed**; `next` = Driver §103f (not invent new editor phase). Files: docs only (+ harness scripts). No `compiler/` / `misc/editor` code |
+| Green must hit | (1) Red “already present” after Green. (2) Both docs contain link to `TRACK_EDITOR_FRAME_ARCHITECTURE.md` + destination keywords (`paint list` / `dirty` generations or equivalent). (3) Residual paint-list-every-frame named as open. (4) Sabotages (1)/(3) fail green. (5) No ceiling / harness script rewrites beyond the new handoff scripts |
+| Counters / report | `gui_arch_link=ok`; `editor_doc_link=ok`; `residual_named=ok`; `harness_index=ok` |
+| Red | No handoff harness / docs lack §110 TRACK link |
+| Green | Docs pointers + residual note + handoff harness; epic ready for Critic close → §103f |
 
 ### Steps
 
 | Step | Item | Gate |
 |------|------|------|
-| 0 | Decision freeze | **open** |
-| 1 | Red (if any harness) / docs gap | pending |
-| 2 | Green / docs handoff | pending |
-| 3 | Critic | pending |
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no handoff harness / docs lack §110 link | pending |
+| 2 | Green: docs pointers + residual note + harness | pending |
+| 3 | Critic (closes §110 epic → resume §103f) | pending |
 
 ## Diff / notes
 
@@ -411,3 +423,4 @@ Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `edito
 2026-08-06: §110f Red — `scripts/run_editor_overlay_metrics_red.sh` (exit 1: no green harness / no OVERLAY env).
 2026-08-06: §110f Green — `ux/perf_overlay.mlc` + demo wire; `run_editor_overlay_metrics.sh`; scroll=43 default-off.
 2026-08-06: §110f CLOSED (Critic OK); queue → §110g Decision (docs handoff).
+2026-08-06: §110g Decision frozen (docs pointers + residual note; Critic close → §103f).
