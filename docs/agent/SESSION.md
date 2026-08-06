@@ -198,3 +198,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s10 Green done.** next = Critic |
 | issues  | residual unsupported statement=11 (Break); SESSION archived older turns |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 10 Critic) |
+
+### Turn 2026-08-06 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s10)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Independent coverage+wiring+sab+smoke+gate; slice 10 CLOSED |
+| verify  | LEC=638; statement=11; bind reuse+CondJump; red trips; smoke 0; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s10 CLOSED (Critic OK).** next = slice 11 Decision |
+| issues  | parent open; Break residual=11 |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Decision) |

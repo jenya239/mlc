@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 10** Green done; Critic next. Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 11** Decision next (s10 CLOSED). Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 10 Green done (LetPattern); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 10 CLOSED; slice 11 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -958,7 +958,7 @@ Residuals: parent open; next residual targets: `unsupported statement`=19 (LetPa
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no LetPattern statement arm / helper | **done** 2026-08-06 |
 | 2 | Green: LetPattern wired; LEC < 646; hist statement < 19 | **done** 2026-08-06 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 #### Red measured (§104-6 slice 10)
 
@@ -977,6 +977,21 @@ Residuals: parent open; next residual targets: `unsupported statement`=19 (LetPa
 | Red after Green | exit 1 `statement already has LetPattern arm` |
 | Self-host | mlcc2 diff IDENTICAL (`diff -rq` empty excl. obj) |
 | `dev_gate_fast` | 1471/0 |
+
+
+
+#### Critic audit (2026-08-06), §104-6 slice 10 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=638` (<646); hist `unsupported statement=11` (<19); `mir_functions=2509`
+- Wiring: `mir_lower_let_pattern_statement` + bind/else helpers; arm calls helper; reuses `mir_lower_bind_match_arm_pattern`; CondJump on refutable; **no** Break/Continue arms (as Decision)
+- Sab1: LEC + statement hist drops load-bearing (646→638, 19→11)
+- Sab2: arm not empty stub — binds via match helpers
+- Red after Green: exit 1 `statement already has LetPattern arm`
+- VM smoke: independent `let { x, y } = Pair { x: 10, y: 32 }` exit 0
+- `dev_gate_fast` 1471/0
+
+Residuals: parent open; `unsupported statement=11` (Break); operand-context=34; `type_is_unknown`=26; HOF/CppIR deferred.
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
