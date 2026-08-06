@@ -288,3 +288,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s11 Green reopen done.** next = Critic |
 | issues  | parent open; residual codegen misbind of `*.state` on reassignment (workaround only) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 11 Critic re-audit) |
+
+### Turn 2026-08-07 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3 re-audit, §104-6 s11)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Independent for_if=160 for_break=6 for_continue=12; MIR dups=0; emit has for_blocks_allocated_state; LEC=630; gate 1471/0 |
+| verify  | reopen gate met; hist statement absent; red-after trips |
+| result  | **§104-6 s11 CLOSED (Critic OK).** next = slice 12 Decision |
+| issues  | parent open; LEC=630 (fold/map/CppIR/…) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Decision) |
