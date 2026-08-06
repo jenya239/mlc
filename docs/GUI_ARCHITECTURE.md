@@ -234,6 +234,28 @@ migrating chrome mid-polish would mix unrelated trees and block scissor/cursor/c
 **Later (out of this track):** optional Scene-backed chrome only after Path/wires Critic and an
 explicit new Decision — not implied by north-star “scene fragments” wording above.
 
+## Current editor frame / paint path (§110)
+
+**Authority:** [TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md)
+(PLAN §110). Destination: dirty generations → layout → paint list →
+batch/stream → swap. SceneNode chrome Deviation above is **unchanged** —
+do not reparent IDE chrome into `SceneNode` under this path.
+
+Load-bearing harnesses (do not weaken without a Decision):
+
+| Harness | Role |
+|---------|------|
+| `scripts/run_editor_perf_dogfood_gate.sh` | Interactive dogfood ceilings (§109) |
+| `scripts/run_editor_frame_ownership.sh` | Dirty generations / frame ownership |
+| `scripts/run_editor_paint_list.sh` | CPU paint list → single submit |
+| `scripts/run_editor_batch_stream.sh` | Solid batch/stream uploads |
+| `scripts/run_editor_glyph_damage.sh` | Glyph scroll Y-adjust / reshape |
+| `scripts/run_editor_overlay_metrics.sh` | Opt-in HUD (`MLC_EDITOR_PERF_OVERLAY=1`) |
+
+**Residual (open — not closed):** live still rebuilds the paint list every frame
+(fingerprint skip is L1/stream-level only). Do not claim this residual
+is fixed without a new authorized phase.
+
 ## Relation to existing code
 | Existing | Role under this architecture |
 |----------|------------------------------|

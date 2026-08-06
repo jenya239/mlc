@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110g** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-06 — queue head **§110g** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -396,8 +396,19 @@ Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `edito
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no handoff harness / docs lack §110 link | **done** 2026-08-06 — `scripts/run_editor_frame_handoff_red.sh` exit 1 (`no editor frame handoff harness`); green absent; GUI_ARCHITECTURE/EDITOR lack TRACK link |
-| 2 | Green: docs pointers + residual note + harness | pending |
+| 2 | Green: docs pointers + residual note + harness | **done** 2026-08-06 — `GUI_ARCHITECTURE.md` / `EDITOR.md` §110 pointers; `scripts/run_editor_frame_handoff.sh`; report all ok |
 | 3 | Critic (closes §110 epic → resume §103f) | pending |
+
+### §110g Green measured
+
+```
+gui_arch_link=ok
+editor_doc_link=ok
+destination_named=ok
+residual_named=ok
+harness_index=ok
+red_already_present=ok
+```
 
 ## Diff / notes
 
@@ -425,3 +436,4 @@ Independent L1: `ux_ok` text_ops 0/4. Red exit 1 `already present`. Sab1: `edito
 2026-08-06: §110f CLOSED (Critic OK); queue → §110g Decision (docs handoff).
 2026-08-06: §110g Decision frozen (docs pointers + residual note; Critic close → §103f).
 2026-08-06: §110g Red — `scripts/run_editor_frame_handoff_red.sh` (exit 1: no green harness / docs lack §110 link).
+2026-08-06: §110g Green — docs pointers + residual note + `run_editor_frame_handoff.sh` (all counters ok).

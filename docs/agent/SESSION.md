@@ -93,3 +93,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§110g STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110g Green — docs pointers + handoff harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=2, §110g Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | GUI_ARCHITECTURE/EDITOR §110 pointers + residual open; `run_editor_frame_handoff.sh`; red already-present |
+| verify  | green OK (all counters=ok); red already links/present |
+| result  | **§110g STEP=2 done (Green).** Critic next |
+| issues  | none |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110g — audit docs handoff; close epic → §103f) |

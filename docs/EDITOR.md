@@ -22,6 +22,16 @@ Code/LSP/IDE parity (no debugger, no language server, no extension host).
 When a backlog item trades feature breadth against startup time, frame
 latency, or crash/data-loss safety, **stability and speed win** — see
 [TRACK_EDITOR_UX_BACKLOG](agent/TRACK_EDITOR_UX_BACKLOG.md) priority rule.
+
+## Current frame / paint path (§110)
+
+Product paint path after the §109 dogfood gate:
+[TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md).
+Destination: dirty generations → layout → paint list → batch/stream → swap.
+Harness index and SceneNode chrome Deviation live in
+[GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md) §Current editor frame / paint path.
+**Residual (open):** live still rebuilds the paint list every frame — not closed.
+
 ## Placement decision (frozen)
 
 **Priority (2026-07-13):** PLAN §33 head of queue — ahead of GUI Phase B–D.
