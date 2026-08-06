@@ -78,3 +78,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§110g STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110g Red — no handoff harness) |
+
+### Turn 2026-08-06 (Driver TRACK_EDITOR_FRAME_ARCHITECTURE STEP=1, §110g Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_EDITOR_FRAME_ARCHITECTURE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | `scripts/run_editor_frame_handoff_red.sh`: green absent; GUI_ARCHITECTURE/EDITOR lack TRACK link; exit 1 expected |
+| verify  | bash red → exit 1 `no editor frame handoff harness (Red expected)` |
+| result  | **§110g STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_EDITOR_FRAME_ARCHITECTURE (§110g Green — docs pointers + handoff harness) |
