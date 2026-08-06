@@ -228,3 +228,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103g STEP=2 done (Green).** Critic next |
 | issues  | none |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103g) |
+
+### Turn 2026-08-06 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103g)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent unit+sab1/2; closed §103g; residual shape_or_meta=0 disclosed; queue → §103h |
+| verify  | critic unit ok; sab1 exit4; sab2 exit8; red already-present; opcodes 16–21; `dev_gate_fast` 1471/0 |
+| result  | **§103g CLOSED (Critic OK).** §103h Decision next |
+| issues  | shape_or_meta length unused (elements.length authority) — non-blocking |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103h SCRIPT_VM_CLOSURES_FIBERS Decision) |

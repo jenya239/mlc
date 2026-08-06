@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103g** STEP=2 Green done; Critic next; §103a–f CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103h** STEP=0 Decision next; §103a–g CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -230,7 +230,7 @@ write_barrier_hits=1
 dev_gate_fast=1471/0
 ```
 
-### §103g `SCRIPT_VM_ARRAYS_RECORDS` — **queue head** (STEP=2 Green done; Critic next)
+### §103g `SCRIPT_VM_ARRAYS_RECORDS` — **CLOSED** 2026-08-06 (Critic OK)
 
 Heap-backed array/record objects; field/index opcodes; GC traces elements (design § / track gate).
 
@@ -265,22 +265,13 @@ Heap-backed array/record objects; field/index opcodes; GC traces elements (desig
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: arrays/records unit runner absent | **done** 2026-08-06 — `scripts/run_script_vm_arrays_records_unit_red.sh` exit 1 (`no script_vm arrays_records unit`); green/unit/opcodes/`run_with_heap` absent |
 | 2 | Green: Array/Record + opcodes + cycle gate; `dev_gate_fast` | **done** 2026-08-06 — Array/Record heap; opcodes 16–21; `run_with_heap`; unit cycle+smoke; red already-present; side §103f/§103e; `dev_gate_fast` 1471/0 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-06 — independent unit OK; sab1 skip `mark_elements` → exit 4 (`cycle rooted live=1`); sab2 no barrier bump → exit 8; red already-present; opcodes 16–21; green scope `script_vm/**` only; `dev_gate_fast` 1471/0 |
 
-#### Green measured (§103g)
+### Critic notes (§103g)
 
-```
-arrays_records=ok
-cycle_unrooted=ok
-cycle_rooted=ok
-red_already_present=ok
-side_heap_gc_arena=ok
-side_control_flow=ok
-write_barrier_hits=1
-dev_gate_fast: 1471 passed, 0 failed
-```
+Independent `SCRIPT_VM_ARRAYS_RECORDS_OUT=tmp/script_vm_arrays_records_critic` green: arrays_records/cycle_*/side ok, write_barrier_hits=1. Sabotages load-bearing (mark without elements; SET without hits bump). Opcodes 16–21 present; `run_with_heap` + Array/Record alloc present. **Residual (disclosed, non-blocking):** Decision said `shape_or_meta` = length/field_count; Green keeps `0` and uses `elements.length()` — gate does not assert meta. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103h Decision.
 
-### §103h `SCRIPT_VM_CLOSURES_FIBERS`
+### §103h `SCRIPT_VM_CLOSURES_FIBERS` — **queue head** (STEP=0 Decision next)
 
 Closures capturing upvalues; `Frame{function, instruction, registers,
 caller}` call stack (design doc §11 — frame stays material, no deopt
