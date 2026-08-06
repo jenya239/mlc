@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 4** Decision next (slice 3 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 4** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 3 CLOSED 2026-08-06 (Critic OK); slice 4 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 3 CLOSED; slice 4 Decision frozen (`concat`/`has`); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -541,10 +541,38 @@ Independent re-run:
 
 Residuals: parent open; next leaf candidates from hist: `concat=67`, `has=59` (HOF fold/map deferred).
 
-### Slice 4 — next leaf methods (Decision pending)
+### Slice 4 — `concat` + `has` natives (leaf hist after HOF)
 
-Queue head after slice 3 Critic. Hist head: `fold=117`, `map=90`, `concat=67`, `has=59`.
+#### Pre-cut facts (audit 2026-08-06, post-s3)
 
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=790` `mir_functions=2341` |
+| Hist head | `fold=117`, `map=90`, `concat=67`, `has=59`, operand-context=58, … |
+| Checker | `has` arity 1 → TBool; `concat` used as Array method (append another array) across checker |
+| Whitelist | no `concat`/`has` in `mir_lower_method_native_name` |
+| VM | map has get/set; **no** `__mir_array_concat` / `__mir_map_has` |
+| Deferred | HOF (`fold`/`map`/`filter`/`any`/`flat_map`); CppIR `make_*` methods; operand-context gaps |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | After s3, largest *leaf* gaps are `concat` (67) and `has` (59); HOF fold/map stay deferred |
+| Fix | (1) Map `concat` → `__mir_array_concat` (arity 2: receiver array + other array) and `has` → `__mir_map_has` (arity 2: receiver map + string key) in `mir_lower_method_native_name`. (2) VM: `__mir_array_concat` appends all slots from second array onto first; `__mir_map_has` returns VmBool whether key exists (reuse map key scan pattern from `__mir_map_get`). Wire `runtime.mlc` allowlist |
+| Gate | Red: `concat`/`has` absent from whitelist; no `__mir_array_concat`/`__mir_map_has` in VM. Green: both whitelisted+natived; `lower_error_count` **strictly < 790**; hist has no `unsupported method concat` / `unsupported method has`; `dev_gate_fast` green; self-host IDENTICAL; smoke `--run` for both |
+| Sabotage | Whitelist without native → `--run` fails; LEC≥790 while claiming Green; hist still lists concat/has |
+| REG | no |
+| Out of scope | HOF; MirRvalue Record/Tuple; `lower_error_count=0`; `cpp_skip=0` |
+
+#### Steps (§104-6 slice 4)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no concat\|has natives | open |
+| 2 | Green: natives; LEC < 790; hist clean of those two | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

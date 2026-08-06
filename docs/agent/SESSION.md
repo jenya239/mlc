@@ -543,3 +543,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§104-6 s3 CLOSED (Critic OK).** next = slice 4 Decision |
 | issues  | parent open until LEC=0 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 4 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Frozen §104-6 slice 4 Decision: `__mir_array_concat` + `__mir_map_has`; gate LEC<790 + hist clean of those two |
+| verify  | hist concat=67 has=59; HOF deferred; whitelist lacks both |
+| result  | **§104-6 s4 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 4 Red) |
