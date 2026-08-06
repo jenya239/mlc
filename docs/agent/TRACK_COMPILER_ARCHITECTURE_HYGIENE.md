@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 2** Decision next (slice 1 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 2** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 CLOSED 2026-08-06 (Critic OK); slice 2 Decision next; parent stays open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 CLOSED 2026-08-06; slice 2 Decision frozen (hist + substring/char_at); parent stays open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -428,9 +428,38 @@ Residuals (non-blocking for slice 1):
 - `lower_error_count` counts error strings from `MirLowerAccum.errors`, not strictly failed-function count — `=0` gate still valid
 - §104-6 parent **open** until `lower_error_count=0`; next = slice 2 Decision (drive count down / MirRvalue surface)
 
-### Slice 2 — drive `lower_error_count` down (Decision pending)
+### Slice 2 — error histogram + string method natives (`substring` / `char_at`)
 
-Queue head after slice 1 Critic.
+#### Pre-cut facts (audit 2026-08-06, post-s1)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=1134` `mir_functions=1982` |
+| Method whitelist | only `push`/`pop`/`get`/`set`/`length`/`contains` in `mir_lower_method_native_name` |
+| Live sample (print cap 32) | includes repeated `unsupported method substring`, also `make_temp_directory` |
+| VM natives | `__mir_string_contains`/`__mir_string_length` exist; **no** `__mir_string_substring` / `__mir_string_char_at` |
+| MirRvalue | still Use/Binary/Unary only — record/field already lower via `__mir_record_*` Call path, not blocked on MirRvalue variants for this slice |
+| Review MirRvalue Record/Tuple | deferred to a later §104-6 slice (not this one) |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Cannot prioritize lowering gaps: print cap hides frequency; dominant live class is `unsupported method …`; string methods `substring`/`char_at` are typed in checker and used heavily but absent from MIR method whitelist + VM natives |
+| Fix | (1) Add sorted unique histogram to report path: lines `lower_error_hist: <msg>=<count>` for **all** errors (no 32 cap on hist; keep existing truncated `lower_error:` list). Extend `mir-coverage.sh` to surface hist (at least top lines / confirm `lower_error_hist:` present). (2) Add `__mir_string_substring` (arity 3: receiver, start, length) and `__mir_string_char_at` (arity 2: receiver, index) in `compiler/vm/native.mlc` + `runtime.mlc` allowlist; map both names in `mir_lower_method_native_name`. Existing `mir_lower_method_call_on_operand` already passes receiver+args — no MirRvalue change |
+| Gate | Red: no `lower_error_hist:` in printer/coverage; `substring`/`char_at` absent from method whitelist. Green: hist present on `main.mlc`; both methods whitelisted+natived; `lower_error_count` **strictly < 1134**; `dev_gate_fast` green; self-host IDENTICAL |
+| Sabotage | Strip hist → coverage/Critic fails; whitelist without native → `--run`/vm path errors; hard-code lower count unchanged while claiming Green |
+| REG | no |
+| Out of scope | `lower_error_count=0`; MirRvalue Record/Tuple/Field variants; `cpp_skip=0`; `mir_builder.mlc` (§104-7); other unsupported methods beyond substring/char_at |
+
+#### Steps (§104-6 slice 2)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no hist / no substring\|char_at natives | open |
+| 2 | Green: hist + natives; count < 1134 | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
