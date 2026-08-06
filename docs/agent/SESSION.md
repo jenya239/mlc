@@ -378,3 +378,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s13 Decision frozen.** next = Red |
 | issues  | parent open; after this leaf mop-up HOF is next strategic residual |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 13 Red) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s13)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Added `compiler/scripts/mir-coverage_s13_red.sh`; confirmed no byte_size/upper/to_lower/take maps or VM natives |
+| verify  | red exit 1 `no byte_size/upper/to_lower/take natives`; LEC=620; hist byte_size=upper=to_lower=take=1 |
+| result  | **§104-6 s13 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 13 Green) |
