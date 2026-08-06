@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103h** STEP=2 Green done; Critic next; §103a–g CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103i** STEP=0 Decision next; §103a–h CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -271,7 +271,7 @@ Heap-backed array/record objects; field/index opcodes; GC traces elements (desig
 
 Independent `SCRIPT_VM_ARRAYS_RECORDS_OUT=tmp/script_vm_arrays_records_critic` green: arrays_records/cycle_*/side ok, write_barrier_hits=1. Sabotages load-bearing (mark without elements; SET without hits bump). Opcodes 16–21 present; `run_with_heap` + Array/Record alloc present. **Residual (disclosed, non-blocking):** Decision said `shape_or_meta` = length/field_count; Green keeps `0` and uses `elements.length()` — gate does not assert meta. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103h Decision.
 
-### §103h `SCRIPT_VM_CLOSURES_FIBERS` — **queue head** (STEP=2 Green done; Critic next)
+### §103h `SCRIPT_VM_CLOSURES_FIBERS` — **CLOSED** 2026-08-06 (Critic OK)
 
 Closures capturing upvalues; material call `Frame` stack (design doc §11 — frame stays material, no deopt). Gate: mutable upvalue across two calls; recursion to fixed depth without stack corruption.
 
@@ -308,22 +308,13 @@ Closures capturing upvalues; material call `Frame` stack (design doc §11 — fr
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: closures/fibers unit runner absent | **done** 2026-08-06 — `scripts/run_script_vm_closures_fibers_unit_red.sh` exit 1 (`no script_vm closures_fibers unit`); green/unit/CALL/Closure/`run_program` absent |
 | 2 | Green: Closure+Frame+CALL/upvals; recursion; `dev_gate_fast` | **done** 2026-08-06 — Closure=4; opcodes 22–25; `run_program`+Frame stack; unit upvalue/recursion/stack; red already-present; side §103g/§103e; `dev_gate_fast` 1471/0 |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-06 — independent unit OK; sab1 CALL no-push → exit 2; sab2 GET_UPVAL ignore Cell → exit 2; sab3 SET_UPVAL no write → exit 2; red already-present; opcodes 22–25; green scope `script_vm/**`; `dev_gate_fast` 1471/0 |
 
-#### Green measured (§103h)
+### Critic notes (§103h)
 
-```
-closures_fibers=ok
-upvalue_mut=ok
-recursion=ok
-red_already_present=ok
-side_arrays_records=ok
-side_control_flow=ok
-write_barrier_hits=4
-dev_gate_fast: 1471 passed, 0 failed
-```
+Independent `SCRIPT_VM_CLOSURES_FIBERS_OUT=tmp/script_vm_closures_fibers_critic` green: closures_fibers/upvalue_mut/recursion/side ok, write_barrier_hits=4. Sabotages load-bearing (CALL without frame push; GET_UPVAL ignores Cell; SET_UPVAL skips write). **Residual (disclosed, non-blocking):** proto_index stored in `object_flags` not `shape_or_meta`; cooperative fiber scheduler still out of scope. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103i Decision.
 
-### §103i `SCRIPT_VM_EMBEDDING_ABI`
+### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (STEP=0 Decision next)
 
 The C ABI surface from design doc §10: `mlc_vm_create/destroy/
 load_module/get_export/call/handle_release`, explicit `MlcVmConfig`

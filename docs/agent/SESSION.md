@@ -288,3 +288,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103h STEP=2 done (Green).** Critic next |
 | issues  | proto_index in `object_flags` (not shape_or_meta); fill_upvalue helpers for mlcc if/else-if residual |
 | next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103h) |
+
+### Turn 2026-08-06 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103h)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent unit+sab1/2/3; closed §103h; residual object_flags proto_index disclosed; queue → §103i |
+| verify  | critic unit ok; sab1/2/3 exit 2; red already-present; opcodes 22–25; `dev_gate_fast` 1471/0 |
+| result  | **§103h CLOSED (Critic OK).** §103i Decision next |
+| issues  | proto_index in object_flags (non-blocking); fiber scheduler still deferred |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Decision) |
