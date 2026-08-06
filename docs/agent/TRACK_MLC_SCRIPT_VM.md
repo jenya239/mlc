@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103g** (`SCRIPT_VM_ARRAYS_RECORDS` Decision next); §103a–f CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103g** STEP=0 Decision done; Red next; §103a–f CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -230,14 +230,42 @@ write_barrier_hits=1
 dev_gate_fast=1471/0
 ```
 
-### §103g `SCRIPT_VM_ARRAYS_RECORDS`
+### §103g `SCRIPT_VM_ARRAYS_RECORDS` — **queue head** (STEP=0 Decision done; Red next)
 
-Heap-backed array/record objects; `GET_PROP`/`SET_PROP`/array-index opcodes
-tracing correctly through §103f's GC (objects referenced only via array/record
-fields survive a collect). Gate: build a record graph with a field cycle,
-collect, assert cycle is collected iff unreachable from roots (mark-sweep
-handles cycles; this is the test that would catch a refcount-only
-regression by mistake).
+Heap-backed array/record objects; field/index opcodes; GC traces elements (design § / track gate).
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | §103f heap only allocates **Cell** (one child); mark follows Cell only. No array/record objects, no `GET_PROP`/`SET_PROP`/index opcodes — track gate (cycle through fields survives iff rooted) cannot land; interpreter still returns `unsupported_opcode` for any heap op |
+| Fix | Extend `script_vm/heap.mlc` + `bytecode.mlc` + `verifier.mlc` + `interpreter.mlc`. New heap kinds **Array** / **Record**. New entry `run_with_heap(heap, words, constants, register_count) -> RunHeapResult` (`{ heap, result }`). Keep `run_arithmetic` unchanged for §103d/e fixtures (no heap opcodes) |
+| Object model | `type_id`: Cell=1 (existing), **Array=2**, **Record=3**. Slot gains `elements: [Value]` (Cell keeps `child`; Array/Record use `elements`, `child=Nil`). `shape_or_meta` = length/field_count as i64. Alloc via `heap_alloc_array(heap, length)` / `heap_alloc_record(heap, field_count)` → HeapRef. Mark: Cell→child; Array/Record→each element HeapRef. SET paths call `heap_write_barrier` (hits bump) |
+| New opcodes (tags 16–21; narrow ABC) | `NEW_ARRAY=16` A=dst, B=len_reg (Int32≥0); `GET_INDEX=17` A=dst, B=arr, C=idx_reg; `SET_INDEX=18` A=arr, B=idx_reg, C=val_reg; `NEW_RECORD=19` A=dst, B=field_count (u8 imm); `GET_PROP=20` A=dst, B=rec, C=field_index (u8); `SET_PROP=21` A=rec, B=field_index, C=val_reg. Prop = **field index** this STEP (symbol/`:` names deferred). Bounds / wrong type_id → `RunErr("type"\|"bounds", primary)` |
+| Cycle gate (authority) | Hand-built: two Records, `SET_PROP` each → other (2-cycle); (a) no roots + collect → live back to baseline; (b) root one + collect → both live. Proves mark-sweep handles cycles (refcount-only would leak or over-collect). Prefer **heap API** construction for the cycle assert; interpreter opcodes covered by separate NEW/GET/SET smoke in same unit |
+| Build / test | `scripts/run_script_vm_arrays_records_unit.sh` → `script_vm/tests/arrays_records_unit.mlc` via `mlcc` + `build_bin.sh`. **Not** in `run_ux_gate`. Green runs `dev_gate_fast.sh`. Side: §103f heap unit + §103e control_flow still ok |
+| Gate | Unit: cycle unreclaimed vs rooted; NEW_ARRAY+SET_INDEX+GET_INDEX round-trip; NEW_RECORD+SET_PROP+GET_PROP; write_barrier_hits increases on SET_*; §103f Cell reclaim still works. Red: green runner / unit absent |
+| Sabotage | Mark that skips `elements` → cycle rooted still dies / unreclaimed cycle leaks wrong; SET without barrier bump → hits assert fails |
+| REG | no (`script_vm/**` + existing `value_rep_abi.hpp` only if needed — prefer no new ABI). No `lib/mlc/**` / `compiler/**/*.mlc` |
+| Out of scope | Closures/fibers (§103h); embedding ABI (§103i); symbol-named props; freelist pop-reuse (§103f residual); concurrent GC; editing `docs/MLC_SCRIPT_VM.md`; Phase 2–5 |
+
+#### Pre-cut (audit 2026-08-06)
+
+| Fact | Evidence |
+|------|----------|
+| Heap Cell-only | `heap.mlc`: type_id Cell=1; mark follows `child` only; no Array/Record alloc |
+| No heap opcodes | `bytecode.mlc` opcodes 1–15 only; interpreter `unsupported_opcode` default |
+| No unit / runner | No `arrays_records_unit.mlc`; no `run_script_vm_arrays_records_unit.sh` |
+| Interpreter↔heap | `run_arithmetic` has no `Heap` parameter |
+
+#### Steps
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: arrays/records unit runner absent | pending |
+| 2 | Green: Array/Record + opcodes + cycle gate; `dev_gate_fast` | pending |
+| 3 | Critic | pending |
 
 ### §103h `SCRIPT_VM_CLOSURES_FIBERS`
 
