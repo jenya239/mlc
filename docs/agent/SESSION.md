@@ -303,3 +303,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s11 CLOSED (Critic OK).** next = slice 12 Decision |
 | issues  | parent open; LEC=630 (fold/map/CppIR/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s12)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Freeze §104-6 s12 Decision: `__mir_string_index_of` / `__mir_string_trim` / `__mir_array_drop`; gate LEC<630 + hist clean for three |
+| verify  | Baseline LEC=630; hist index_of=4 trim=3 drop=3; HOF/CppIR deferred; TRACK Decision+Steps |
+| result  | **§104-6 s12 Decision frozen.** next = Red |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 12 Red) |

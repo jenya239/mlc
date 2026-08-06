@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 12** Decision next (s11 CLOSED). Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 12** Decision frozen; Red next. Prior: §104-6 s11 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 11 CLOSED; slice 12 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 12 Decision frozen (`index_of`/`trim`/`drop`); Red next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1089,6 +1089,38 @@ Independent fixtures (not Driver's):
 - Note: post-rebuild mlcc translating sabotaged `continue_block_step.state` form emits that name correctly — REJECT-era misbind was load-bearing on the then-current binary/emit; workaround retained as defense
 
 Residuals: parent open; LEC=630; hist `fold=125`/`map=93`/CppIR `make_*`/operand-context=36/`type_is_unknown`=26 — next slice Decision.
+
+### Slice 12 — `index_of` + `trim` + `drop` natives (leaf hist after HOF/CppIR)
+
+#### Pre-cut facts (audit 2026-08-07, post-s11)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=630` `mir_functions=2525` |
+| Hist head | `fold=125`, `map=93`, `make_identifier_cpp_expression=49`, `any=36`, operand-context=36, `type_is_unknown`=26, … |
+| Leaf gaps | **`index_of=4`**, **`trim=3`**, **`drop=3`** (plus `read=4` File/static — out of scope); runtime already has `String::index_of` / `trim` and `Array::drop` |
+| Precedent | s2 substring/char_at; s3 to_string/join; s4 concat/has; s6 to_i; s8 byte_substring — map in `mir_lower_method_native_name` + VM native + `runtime.mlc` allowlist |
+| Deferred | HOF (`fold`/`map`/`any`/`filter`/`flat_map`/`all`/`exists`); CppIR `make_*`/`cpp_*`; `type_is_unknown`; operand Lambda/With/RecordUpdate/Extern; mutating non-ident receiver; `File.read` |
+
+#### Decision (**frozen** 2026-08-07, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Largest remaining *leaf* method residuals after s11 (HOF/CppIR still deferred): `index_of`, `trim`, `drop` |
+| Fix | (1) Map in `mir_lower_method_native_name`: `index_of`→`__mir_string_index_of` (receiver+needle→i32), `trim`→`__mir_string_trim` (receiver→string), `drop`→`__mir_array_drop` (receiver array + count→array). (2) Implement the three VM natives in `compiler/vm/native.mlc`; allowlist in `runtime.mlc`. Existing method-call operand path unchanged |
+| Gate | Red: no three mappings / natives. Green: wired; `lower_error_count` **strictly < 630**; hist lines for `index_of`/`trim`/`drop` **absent**; smoke `--run` for each; `dev_gate_fast`; self-host IDENTICAL |
+| Sabotage | Claim Green while any of the three still unsupported; LEC≥630; hist still lists them |
+| REG | no |
+| Out of scope | HOF; CppIR; `type_is_unknown`; operand Lambda/With; `File.read`; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 12)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-07 |
+| 1 | Red: no index_of/trim/drop natives | open |
+| 2 | Green: natives+maps; LEC < 630; hist clean for three | open |
+| 3 | Critic | open |
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
