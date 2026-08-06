@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103f** STEP=1 Red done; Green next; §103a–e CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103f** STEP=2 Green done; Critic next; §103a–e CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -179,7 +179,7 @@ release backend — не цель никогда (третий путь испо
 
 **§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
-### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=1 Red done; Green next)
+### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=2 Green done; Critic next)
 
 Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
 
@@ -212,9 +212,19 @@ Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
 | Step | Item | Gate |
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
-| 1 | Red: heap GC unit runner absent | pending |
-| 2 | Green: HeapRef + arenas + mark-sweep + unit; `dev_gate_fast` | pending |
+| 1 | Red: heap GC unit runner absent | **done** 2026-08-06 — `scripts/run_script_vm_heap_gc_arena_unit_red.sh` exit 1 (`no script_vm heap_gc_arena unit`); green/unit/heap.mlc/HeapRef absent |
+| 2 | Green: HeapRef + arenas + mark-sweep + unit; `dev_gate_fast` | **done** 2026-08-06 — `heap.mlc` + HeapRef tag4; unit ok; red already-present; `dev_gate_fast` 1471/0; freelist **push** on sweep (pop-reuse deferred — mlcc drops stmts after if/else-if in do-blocks) |
 | 3 | Critic | pending |
+
+### §103f Green measured
+
+```
+heap_gc_arena=ok
+red_already_present=ok
+heap_live=1
+write_barrier_hits=1
+dev_gate_fast=1471/0
+```
 
 ### §103g `SCRIPT_VM_ARRAYS_RECORDS`
 

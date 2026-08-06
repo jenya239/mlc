@@ -153,3 +153,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103f STEP=1 done (Red).** Green next |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103f Green — HeapRef + mark-sweep + unit) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103f Green)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | HeapRef tag4 + `heap.mlc` STW mark-sweep/Cell/roots/write-barrier; unit+harness; freelist push on sweep (pop-reuse deferred codegen); value_rep/control_flow ok; `dev_gate_fast` 1471/0 |
+| verify  | `run_script_vm_heap_gc_arena_unit.sh` ok; red already-present; value_rep+control_flow ok; dev_gate_fast 1471/0 |
+| result  | **§103f STEP=2 done (Green).** Critic next |
+| issues  | mlcc drops stmts after if/else-if in do-blocks → freelist pop-reuse not wired; size-class freelist still filled on sweep |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103f — audit heap GC arena) |

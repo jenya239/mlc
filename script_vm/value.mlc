@@ -1,5 +1,6 @@
-// TRACK_MLC_SCRIPT_VM §103a — 8-byte NaN-boxed Value + ValueRep encode/decode.
+// TRACK_MLC_SCRIPT_VM §103a/§103f — 8-byte NaN-boxed Value + ValueRep encode/decode.
 // Top-level script_vm/ (not compiler/vm/ — that is MIR VM).
+// §103f: ValueHeapRef(object_id) — tag 4, non-moving heap object id payload.
 
 export type Value = { raw: i64 }
 
@@ -8,6 +9,7 @@ export type ValueRep =
   | ValueBool(bool)
   | ValueInt32(i32)
   | ValueFloat64(f64)
+  | ValueHeapRef(i32)
 
 extern fn script_vm_encode_nil() -> i64 =
   "mlc::script_vm::encode_nil" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
@@ -17,12 +19,16 @@ extern fn script_vm_encode_int32(value: i32) -> i64 =
   "mlc::script_vm::encode_int32" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_encode_float64(value: f64) -> i64 =
   "mlc::script_vm::encode_float64" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_heap(object_id: i32) -> i64 =
+  "mlc::script_vm::encode_heap" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_decode_kind(raw: i64) -> i32 =
   "mlc::script_vm::decode_kind" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_decode_bool(raw: i64) -> i32 =
   "mlc::script_vm::decode_bool" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_decode_int32(raw: i64) -> i32 =
   "mlc::script_vm::decode_int32" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_decode_heap_object_id(raw: i64) -> i32 =
+  "mlc::script_vm::decode_heap_object_id" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_decode_float64(raw: i64) -> f64 =
   "mlc::script_vm::decode_float64" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
 extern fn script_vm_value_byte_size() -> i32 =
@@ -35,7 +41,8 @@ export fn value_encode(rep: ValueRep) -> Value =
       raw: script_vm_encode_bool(if flag then 1 else 0)
     },
     ValueInt32(number) => Value { raw: script_vm_encode_int32(number) },
-    ValueFloat64(number) => Value { raw: script_vm_encode_float64(number) }
+    ValueFloat64(number) => Value { raw: script_vm_encode_float64(number) },
+    ValueHeapRef(object_id) => Value { raw: script_vm_encode_heap(object_id) }
   }
 
 export fn value_decode(value: Value) -> ValueRep = do
@@ -46,6 +53,8 @@ export fn value_decode(value: Value) -> ValueRep = do
     ValueBool(script_vm_decode_bool(value.raw) != 0)
   else if kind == 3 then
     ValueInt32(script_vm_decode_int32(value.raw))
+  else if kind == 4 then
+    ValueHeapRef(script_vm_decode_heap_object_id(value.raw))
   else
     ValueFloat64(script_vm_decode_float64(value.raw))
   end

@@ -16,6 +16,7 @@ inline constexpr std::int64_t k_tag_shift = 32;
 inline constexpr std::int64_t k_tag_nil = 1;
 inline constexpr std::int64_t k_tag_bool = 2;
 inline constexpr std::int64_t k_tag_int32 = 3;
+inline constexpr std::int64_t k_tag_heap = 4;
 inline constexpr std::int64_t k_payload_mask = 0x00000000FFFFFFFFLL;
 // Canonical quiet-NaN outside our box prefix (float NaN collision escape).
 inline constexpr std::int64_t k_float_nan_escape = 0x7FF8000000000001LL;
@@ -37,6 +38,11 @@ inline std::int64_t encode_int32(std::int32_t value) {
          static_cast<std::int64_t>(static_cast<std::uint32_t>(value));
 }
 
+inline std::int64_t encode_heap(std::int32_t object_id) {
+  return k_box_base | (k_tag_heap << k_tag_shift) |
+         static_cast<std::int64_t>(static_cast<std::uint32_t>(object_id));
+}
+
 inline std::int64_t encode_float64(double value) {
   std::int64_t bits = 0;
   std::memcpy(&bits, &value, sizeof(bits));
@@ -46,7 +52,7 @@ inline std::int64_t encode_float64(double value) {
   return bits;
 }
 
-// 0 = Float64, 1 = Nil, 2 = Bool, 3 = Int32
+// 0 = Float64, 1 = Nil, 2 = Bool, 3 = Int32, 4 = HeapRef
 inline std::int32_t decode_kind(std::int64_t raw) {
   if (!is_boxed(raw)) {
     return 0;
@@ -61,6 +67,9 @@ inline std::int32_t decode_kind(std::int64_t raw) {
   if (tag == k_tag_int32) {
     return 3;
   }
+  if (tag == k_tag_heap) {
+    return 4;
+  }
   return 0;
 }
 
@@ -69,6 +78,10 @@ inline std::int32_t decode_bool(std::int64_t raw) {
 }
 
 inline std::int32_t decode_int32(std::int64_t raw) {
+  return static_cast<std::int32_t>(static_cast<std::uint32_t>(raw & k_payload_mask));
+}
+
+inline std::int32_t decode_heap_object_id(std::int64_t raw) {
   return static_cast<std::int32_t>(static_cast<std::uint32_t>(raw & k_payload_mask));
 }
 

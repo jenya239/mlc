@@ -5,6 +5,7 @@ import {
   ValueBool,
   ValueInt32,
   ValueFloat64,
+  ValueHeapRef,
   value_encode,
   value_decode
 } from './value'
@@ -167,7 +168,8 @@ fn value_is_falsy(value: Value) -> bool =
     ValueNil => true,
     ValueBool(flag) => !flag,
     ValueInt32(number) => number == 0,
-    ValueFloat64(number) => number == 0.0
+    ValueFloat64(number) => number == 0.0,
+    ValueHeapRef(_object_id) => false
   }
 
 fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do

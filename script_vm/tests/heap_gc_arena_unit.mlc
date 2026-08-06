@@ -1,0 +1,131 @@
+// TRACK_MLC_SCRIPT_VM §103f — heap GC arena unit.
+import {
+  Value,
+  ValueHeapRef,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  Heap,
+  heap_new,
+  heap_alloc_cell,
+  heap_root_push,
+  heap_root_clear,
+  heap_collect,
+  heap_live_object_count,
+  heap_write_barrier,
+  heap_write_barrier_hits,
+  heap_size_class_bytes
+} from '../heap'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm heap_gc_arena_unit] FAIL: " + message)
+  code
+end
+
+fn is_heap_ref(value: Value) -> bool =
+  match value_decode(value) {
+    ValueHeapRef(_object_id) => true,
+    _ => false
+  }
+
+fn main() -> i32 = do
+  // SIZE_CLASS_64 index == 1
+  if heap_size_class_bytes(1) != 64 then
+    return fail("size class 64 bytes != 64", 1)
+  end
+
+  let mut heap = heap_new()
+  const baseline = heap_live_object_count(heap)
+
+  // (1) alloc Cell → live ≥ 1
+  const alloc1 = heap_alloc_cell(heap)
+  heap = alloc1.heap
+  const cell_a = alloc1.value
+  if !is_heap_ref(cell_a) then
+    return fail("alloc Cell did not yield HeapRef", 2)
+  end
+  if heap_live_object_count(heap) < baseline + 1 then
+    return fail("live count did not increase after alloc", 3)
+  end
+
+  // (2) no root + collect → live back to baseline
+  heap = heap_root_clear(heap)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != baseline then
+    return fail(
+      "unreachable Cell not reclaimed live=" + heap_live_object_count(heap).to_string(),
+      4
+    )
+  end
+
+  // (3) root held + collect → still live
+  const alloc2 = heap_alloc_cell(heap)
+  heap = alloc2.heap
+  const cell_b = alloc2.value
+  heap = heap_root_push(heap, cell_b)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != baseline + 1 then
+    return fail(
+      "rooted Cell reclaimed live=" + heap_live_object_count(heap).to_string(),
+      5
+    )
+  end
+
+  // Child link + write barrier hits
+  const alloc3 = heap_alloc_cell(heap)
+  heap = alloc3.heap
+  const cell_c = alloc3.value
+  const hits_before = heap_write_barrier_hits(heap)
+  heap = heap_write_barrier(heap, cell_b, 0, cell_c)
+  if heap_write_barrier_hits(heap) <= hits_before then
+    return fail("write_barrier_hits did not increase", 6)
+  end
+  // Reachability via child: root only cell_b; cell_c reachable through child
+  heap = heap_root_clear(heap)
+  heap = heap_root_push(heap, cell_b)
+  heap = heap_collect(heap)
+  if heap_live_object_count(heap) != baseline + 2 then
+    return fail(
+      "child Cell not retained via mark live=" + heap_live_object_count(heap).to_string(),
+      7
+    )
+  end
+
+  // (4) N≥8 alloc/collect cycles no leak
+  heap = heap_root_clear(heap)
+  heap = heap_collect(heap)
+  const cycle_baseline = heap_live_object_count(heap)
+  let mut cycle = 0
+  while cycle < 8 do
+    const alloc_cycle = heap_alloc_cell(heap)
+    heap = alloc_cycle.heap
+    heap = heap_root_clear(heap)
+    heap = heap_collect(heap)
+    if heap_live_object_count(heap) != cycle_baseline then
+      return fail(
+        "leak after cycle " + cycle.to_string() +
+          " live=" + heap_live_object_count(heap).to_string(),
+        8
+      )
+    end
+    cycle = cycle + 1
+  end
+
+  // HeapRef round-trip through ValueRep
+  const alloc4 = heap_alloc_cell(heap)
+  heap = alloc4.heap
+  const cell_d = alloc4.value
+  const again = value_encode(value_decode(cell_d))
+  if !value_raw_equal(cell_d, again) then
+    return fail("HeapRef ValueRep round-trip", 9)
+  end
+
+  println("[script_vm] heap_gc_arena_unit ok")
+  println(
+    "heap_live=" + heap_live_object_count(heap).to_string() +
+      " write_barrier_hits=" + heap_write_barrier_hits(heap).to_string()
+  )
+  0
+end

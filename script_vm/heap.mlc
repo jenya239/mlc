@@ -1,0 +1,303 @@
+// TRACK_MLC_SCRIPT_VM §103f — non-moving mark-sweep heap + size-class freelists.
+// Cell = ObjectHeader + one child Value. Roots explicit. Write-barrier stub.
+// Size classes: 0→32, 1→64, 2→128, 3→256 bytes. Cell uses class 1 (64).
+// GC mark flag bit = 1. Cell type_id = 1.
+
+import {
+  Value,
+  ValueNil,
+  ValueHeapRef,
+  value_encode,
+  value_decode
+} from './value'
+
+export type ObjectHeader = {
+  type_id: i32,
+  gc_flags: i32,
+  object_flags: i32,
+  shape_or_meta: i64
+}
+
+type HeapSlot = {
+  header: ObjectHeader,
+  child: Value,
+  size_class: i32,
+  live: bool
+}
+
+export type Heap = {
+  slots: [HeapSlot],
+  freelist_32: [i32],
+  freelist_64: [i32],
+  freelist_128: [i32],
+  freelist_256: [i32],
+  roots: [Value],
+  live_count: i32,
+  write_barrier_hits: i32,
+  scratch_object_id: i32
+}
+
+export type HeapAlloc = { heap: Heap, value: Value }
+
+export fn heap_new() -> Heap =
+  Heap {
+    slots: [],
+    freelist_32: [],
+    freelist_64: [],
+    freelist_128: [],
+    freelist_256: [],
+    roots: [],
+    live_count: 0,
+    write_barrier_hits: 0,
+    scratch_object_id: 0 - 1
+  }
+
+export fn heap_live_object_count(heap: Heap) -> i32 = heap.live_count
+
+export fn heap_write_barrier_hits(heap: Heap) -> i32 = heap.write_barrier_hits
+
+export fn heap_size_class_bytes(size_class: i32) -> i32 =
+  if size_class == 0 then
+    32
+  else if size_class == 1 then
+    64
+  else if size_class == 2 then
+    128
+  else
+    256
+  end
+
+fn slots_with(slots: [HeapSlot], object_id: i32, slot: HeapSlot) -> [HeapSlot] = do
+  let mut out: [HeapSlot] = []
+  let mut index = 0
+  while index < slots.length() do
+    if index == object_id then
+      out.push(slot)
+    else
+      out.push(slots[index])
+    end
+    index = index + 1
+  end
+  out
+end
+
+export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
+  // Always append a new slot id (non-moving). Freelist reuse is applied on
+  // collect (ids pushed by size class); pop-reuse deferred — codegen drops
+  // statements after if/else-if chains in do-blocks (mlcc residual).
+  let mut slots = heap.slots
+  const object_id = slots.length()
+  const header = ObjectHeader {
+    type_id: 1,
+    gc_flags: 0,
+    object_flags: 0,
+    shape_or_meta: 0
+  }
+  const slot = HeapSlot {
+    header: header,
+    child: value_encode(ValueNil),
+    size_class: 1,
+    live: true
+  }
+  slots.push(slot)
+  const next = Heap {
+    slots: slots,
+    freelist_32: heap.freelist_32,
+    freelist_64: heap.freelist_64,
+    freelist_128: heap.freelist_128,
+    freelist_256: heap.freelist_256,
+    roots: heap.roots,
+    live_count: heap.live_count + 1,
+    write_barrier_hits: heap.write_barrier_hits,
+    scratch_object_id: object_id
+  }
+  HeapAlloc {
+    heap: next,
+    value: value_encode(ValueHeapRef(object_id))
+  }
+end
+
+export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
+  let mut roots = heap.roots
+  roots.push(value)
+  Heap {
+    slots: heap.slots,
+    freelist_32: heap.freelist_32,
+    freelist_64: heap.freelist_64,
+    freelist_128: heap.freelist_128,
+    freelist_256: heap.freelist_256,
+    roots: roots,
+    live_count: heap.live_count,
+    write_barrier_hits: heap.write_barrier_hits,
+    scratch_object_id: 0 - 1
+  }
+end
+
+export fn heap_root_clear(heap: Heap) -> Heap =
+  Heap {
+    slots: heap.slots,
+    freelist_32: heap.freelist_32,
+    freelist_64: heap.freelist_64,
+    freelist_128: heap.freelist_128,
+    freelist_256: heap.freelist_256,
+    roots: [],
+    live_count: heap.live_count,
+    write_barrier_hits: heap.write_barrier_hits,
+    scratch_object_id: 0 - 1
+  }
+
+fn mark_object(heap: Heap, object_id: i32) -> Heap = do
+  if object_id < 0 then
+    return heap
+  end
+  if object_id >= heap.slots.length() then
+    return heap
+  end
+  const slot = heap.slots[object_id]
+  if !slot.live then
+    return heap
+  end
+  if (slot.header.gc_flags & 1) != 0 then
+    return heap
+  end
+  const marked_header = ObjectHeader {
+    type_id: slot.header.type_id,
+    gc_flags: slot.header.gc_flags | 1,
+    object_flags: slot.header.object_flags,
+    shape_or_meta: slot.header.shape_or_meta
+  }
+  const marked_slot = HeapSlot {
+    header: marked_header,
+    child: slot.child,
+    size_class: slot.size_class,
+    live: true
+  }
+  let mut next = Heap {
+    slots: slots_with(heap.slots, object_id, marked_slot),
+    freelist_32: heap.freelist_32,
+    freelist_64: heap.freelist_64,
+    freelist_128: heap.freelist_128,
+    freelist_256: heap.freelist_256,
+    roots: heap.roots,
+    live_count: heap.live_count,
+    write_barrier_hits: heap.write_barrier_hits,
+    scratch_object_id: 0 - 1
+  }
+  match value_decode(slot.child) {
+    ValueHeapRef(child_id) => mark_object(next, child_id),
+    _ => next
+  }
+end
+
+fn mark_value(heap: Heap, value: Value) -> Heap =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => mark_object(heap, object_id),
+    _ => heap
+  }
+
+export fn heap_collect(heap: Heap) -> Heap = do
+  let mut next = heap
+  let mut root_index = 0
+  while root_index < next.roots.length() do
+    next = mark_value(next, next.roots[root_index])
+    root_index = root_index + 1
+  end
+
+  let mut slots = next.slots
+  let mut freelist_32 = next.freelist_32
+  let mut freelist_64 = next.freelist_64
+  let mut freelist_128 = next.freelist_128
+  let mut freelist_256 = next.freelist_256
+  let mut live_count = 0
+  let mut object_id = 0
+  while object_id < slots.length() do
+    const slot = slots[object_id]
+    if slot.live then
+      if (slot.header.gc_flags & 1) != 0 then
+        const cleared = ObjectHeader {
+          type_id: slot.header.type_id,
+          gc_flags: slot.header.gc_flags - 1,
+          object_flags: slot.header.object_flags,
+          shape_or_meta: slot.header.shape_or_meta
+        }
+        slots = slots_with(slots, object_id, HeapSlot {
+          header: cleared,
+          child: slot.child,
+          size_class: slot.size_class,
+          live: true
+        })
+        live_count = live_count + 1
+      else
+        slots = slots_with(slots, object_id, HeapSlot {
+          header: ObjectHeader {
+            type_id: 0,
+            gc_flags: 0,
+            object_flags: 0,
+            shape_or_meta: 0
+          },
+          child: value_encode(ValueNil),
+          size_class: slot.size_class,
+          live: false
+        })
+        if slot.size_class == 0 then
+          freelist_32.push(object_id)
+        else if slot.size_class == 1 then
+          freelist_64.push(object_id)
+        else if slot.size_class == 2 then
+          freelist_128.push(object_id)
+        else
+          freelist_256.push(object_id)
+        end
+      end
+    end
+    object_id = object_id + 1
+  end
+
+  Heap {
+    slots: slots,
+    freelist_32: freelist_32,
+    freelist_64: freelist_64,
+    freelist_128: freelist_128,
+    freelist_256: freelist_256,
+    roots: next.roots,
+    live_count: live_count,
+    write_barrier_hits: next.write_barrier_hits,
+    scratch_object_id: 0 - 1
+  }
+end
+
+export fn heap_write_barrier(
+  heap: Heap,
+  parent: Value,
+  _slot: i32,
+  new_child: Value
+) -> Heap = do
+  let mut slots = heap.slots
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id >= 0 && object_id < slots.length() then
+        const slot = slots[object_id]
+        if slot.live then
+          slots = slots_with(slots, object_id, HeapSlot {
+            header: slot.header,
+            child: new_child,
+            size_class: slot.size_class,
+            live: true
+          })
+        end
+      end
+    end,
+    _ => do end
+  }
+  Heap {
+    slots: slots,
+    freelist_32: heap.freelist_32,
+    freelist_64: heap.freelist_64,
+    freelist_128: heap.freelist_128,
+    freelist_256: heap.freelist_256,
+    roots: heap.roots,
+    live_count: heap.live_count,
+    write_barrier_hits: heap.write_barrier_hits + 1,
+    scratch_object_id: 0 - 1
+  }
+end
