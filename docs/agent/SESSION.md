@@ -378,3 +378,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s6 CLOSED (Critic OK).** next = slice 7 Decision |
 | issues  | parent open until LEC=0 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 7 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s7)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Frozen §104-6 slice 7: Match-as-operand via `match_to_local` (into_local + Jump continue); gate LEC<677 + operand hist<55 |
+| verify  | hist operand=55; match_return exists; Match absent from operand/rvalue; HOF/CppIR deferred |
+| result  | **§104-6 s7 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 7 Red) |

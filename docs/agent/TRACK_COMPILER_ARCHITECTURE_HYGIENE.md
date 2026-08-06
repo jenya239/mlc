@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 7** Decision next (slice 6 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 7** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 6 CLOSED; slice 7 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 7 Decision frozen (Match-as-operand); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -730,9 +730,37 @@ Independent re-run:
 
 Residuals: parent open; next non-HOF candidates: operand-context=55 (Match-as-operand / Lambda/With), `make_identifier_cpp_expression`=49 (CppIR deferred).
 
-### Slice 7 — next MIR gap (Decision pending)
+### Slice 7 — Match-as-operand / Match-as-rvalue (`match_to_local`)
 
-Queue head after slice 6 Critic. Hist head: `fold=124`, `map=93`, operand-context=55, `make_identifier_cpp_expression`=49, …
+#### Pre-cut facts (audit 2026-08-06, post-s6)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=677` `mir_functions=2461` |
+| Hist head | `fold=124`, `map=93`, **operand-context=55**, `make_identifier_cpp_expression`=49, …, rvalue-context=13 |
+| Operand/rvalue | After s5, Block/Char/Float handled; Match still falls through `_` |
+| Already elsewhere | `mir_lower_match_return` + arm CFG for **return** context only; `mir_lower_expression_into_local` / `mir_lower_if_to_local` exist for value materialization |
+| Deferred | HOF; CppIR `make_*`; Lambda/With/RecordUpdate-as-operand; `type_is_unknown` |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Largest *non-HOF* residual is operand-context (55): `SemanticExpressionMatch` (and same for rvalue) unsupported despite full match-return lowering |
+| Fix | (1) Add `mir_lower_match_into_local` / `mir_lower_match_to_local` mirroring `if_into_local`/`if_to_local`: reuse existing pattern-test CFG from `mir_lower_match_arms_return`, but arm bodies call `mir_lower_expression_into_local` then `MirJump(continue)` instead of `mir_lower_return_expression`. (2) Wire `SemanticExpressionMatch` in `mir_lower_operand_from_expression` and `mir_lower_rvalue_from_expression` via `match_to_local`. Prefer factoring shared arm/dispatch helpers over copy-paste of the full return path. No new VM natives |
+| Gate | Red: no Match arms in operand/rvalue; no `mir_lower_match_to_local`. Green: Match wired; `lower_error_count` **strictly < 677**; hist `unsupported expression in operand context` **strictly < 55** (or absent); `dev_gate_fast` green; self-host IDENTICAL; smoke `--run` match-as-value |
+| Sabotage | Claim Green while Match still `_` in operand; LEC≥677; operand hist still ≥55 |
+| REG | no |
+| Out of scope | HOF; CppIR; Lambda/With; changing match-return semantics; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 7)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no Match in operand\|rvalue / no match_to_local | open |
+| 2 | Green: Match wired; LEC < 677; operand hist < 55 | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
