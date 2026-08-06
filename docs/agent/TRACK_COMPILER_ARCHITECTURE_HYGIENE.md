@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 3** Decision next (slice 2 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 3** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 2 CLOSED 2026-08-06 (Critic OK); slice 3 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 2 CLOSED; slice 3 Decision frozen (`to_string`/`join`); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -485,10 +485,38 @@ Independent re-run:
 
 Residuals: parent §104-6 open (`lower_error_count≠0`); next slice should attack hist head (`to_string`/`fold`/…).
 
-### Slice 3 — next method batch (Decision pending)
+### Slice 3 — `to_string` + `join` natives (hist head)
 
-Queue head after slice 2 Critic. Hist head: `to_string=285`, `fold=116`, `join=73`, `concat=67`.
+#### Pre-cut facts (audit 2026-08-06, post-s2)
 
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=1087` `mir_functions=2041` |
+| Hist head | `to_string=285`, `fold=116`, `join=73`, `concat=67`, `has=59`, … |
+| Checker | `to_string` arity 0 → TString; `join` arity 1 → TString (`semantic_type_structure.mlc`) |
+| Whitelist | no `to_string`/`join` in `mir_lower_method_native_name` |
+| VM | no `__mir_to_string` / `__mir_array_join` (or equivalent) |
+| Deferred this slice | HOF (`fold`/`map`/`filter`/`any`/`flat_map`); `concat`/`has`; CppIR builder methods (`make_*_cpp_*`) |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Post-s2 hist still dominated by `unsupported method to_string` (285) and `join` (73); both are typed leaf methods, not HOF |
+| Fix | (1) Map `to_string` → `__mir_to_string` (arity 1 incl. receiver) and `join` → `__mir_array_join` (arity 2: receiver array + separator string) in `mir_lower_method_native_name`. (2) Implement VM natives: `__mir_to_string` stringifies `VmI32`/`VmBool`/`VmString` (extend if trivial); `__mir_array_join` joins `VmArray` of `VmString` with separator. Wire `runtime.mlc` allowlist. Existing method-call operand path unchanged |
+| Gate | Red: `to_string`/`join` absent from whitelist; no `__mir_to_string`/`__mir_array_join` in VM. Green: both whitelisted+natived; `lower_error_count` **strictly < 1087**; hist has no `unsupported method to_string` / `unsupported method join` lines (or count 0); `dev_gate_fast` green; self-host IDENTICAL; smoke `--run` for both methods |
+| Sabotage | Whitelist without native → `--run` fails; claim Green while LEC≥1087; hist still lists to_string |
+| REG | no |
+| Out of scope | `fold`/other HOF; `concat`/`has`; MirRvalue Record/Tuple; `lower_error_count=0`; `cpp_skip=0` |
+
+#### Steps (§104-6 slice 3)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no to_string\|join natives | open |
+| 2 | Green: natives; LEC < 1087; hist clean of those two | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
