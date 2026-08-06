@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 1** Critic next (Green done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 2** Decision next (slice 1 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 Green done 2026-08-06 (Critic next)
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 CLOSED 2026-08-06 (Critic OK); slice 2 Decision next; parent stays open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -400,7 +400,7 @@ Parent review: `mlc-support/responses/review_20260629_144027.md` Шаг 6.
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: mir-coverage / lower_error_count absent | **done** 2026-08-06 — `compiler/scripts/mir-coverage_red.sh` exit 1 (`no mir-coverage / lower_error_count`); coverage script + report field absent |
 | 2 | Green: report + script; baseline numbers recorded; `dev_gate_fast` | **done** 2026-08-06 — see Green measured below |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — slice 1 CLOSED; see Critic audit below |
 
 #### Green measured (§104-6 slice 1) — 2026-08-06
 
@@ -412,6 +412,25 @@ Parent review: `mlc-support/responses/review_20260629_144027.md` Шаг 6.
 | `dev_gate_fast` | 1471/0 + arch lint failures=0 (run_tests stale vs new unit asserts — Ruby rebuild disabled; mlcc path verified) |
 | Self-host | `mlcc`→`mlcc2` `diff -r` IDENTICAL (`TMPDIR` in-repo) |
 | Red after Green | `mir-coverage_red.sh` exit 1: `mir-coverage.sh already present` |
+
+#### Critic audit (2026-08-06), §104-6 slice 1 CLOSED
+
+Independent re-run (not Driver paste):
+- `mir-coverage.sh` → `lower_error_count=1134` (matches Green measured)
+- Wiring: report imports `mir_lower_items`; silent-drop path remains only on `build_mir_program_from_semantic_items` (non-report)
+- Cap: exactly 32 `lower_error:` lines printed
+- Sabotage1: summary without `lower_error_count=` → extract rejects (script would exit 1)
+- Sabotage2: `main.mlc` reports 1134 ≠ 0 (load-bearing vs hard-coded zero)
+- `dev_gate_fast` 1471/0 reconfirmed
+
+Residuals (non-blocking for slice 1):
+- `run_tests` still stale vs new `test_mir_bootstrap_report` asserts (Ruby rebuild disabled)
+- `lower_error_count` counts error strings from `MirLowerAccum.errors`, not strictly failed-function count — `=0` gate still valid
+- §104-6 parent **open** until `lower_error_count=0`; next = slice 2 Decision (drive count down / MirRvalue surface)
+
+### Slice 2 — drive `lower_error_count` down (Decision pending)
+
+Queue head after slice 1 Critic.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

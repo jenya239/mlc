@@ -408,3 +408,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§104-6 s1 Green done.** next = Critic |
 | issues  | run_tests stale (Ruby rebuild disabled); new unit asserts not in binary yet — mlcc path verified |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 1 Critic) |
+
+### Turn 2026-08-06 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s1)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent mir-coverage + sabotage1/2 + wiring audit; slice 1 CLOSED |
+| verify  | coverage lower_error_count=1134; 32 error lines; sab1 reject missing field; sab2 nonzero; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s1 CLOSED (Critic OK).** next = slice 2 Decision |
+| issues  | stale run_tests; error-string count vs fn-count residual |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 2 Decision) |
