@@ -423,3 +423,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s13 CLOSED (Critic OK).** next = slice 14 Decision |
 | issues  | parent open; LEC=616 (HOF/CppIR/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 14 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s14)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Freeze §104-6 s14 Decision: array `any`/`all` HOF desugar (for-like + `lambda_inline_body`); gate LEC<580 + hist any/all absent; no new VM natives |
+| verify  | Baseline LEC=616; hist any=36 all=9; exists=File.exists deferred; fold/map deferred |
+| result  | **§104-6 s14 Decision frozen.** next = Red |
+| issues  | parent open; first HOF slice — Green may surface nested lambda-body residuals |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 14 Red) |

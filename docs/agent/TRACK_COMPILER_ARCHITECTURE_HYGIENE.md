@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 13 CLOSED**; next = slice 14 Decision. Prior: §104-6 s12 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 14** Decision frozen; Red next. Prior: §104-6 s13 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 13 CLOSED (byte_size/upper/to_lower/take); next = slice 14 Decision; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 14 Decision frozen (array `any`/`all` HOF desugar); Red next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1228,6 +1228,39 @@ Independent re-audit (not a re-read of Driver log):
 | Gate | `dev_gate_fast` 1471/0 |
 
 No false-done. Slice 13 CLOSED. Parent remains open (LEC≠0).
+
+### Slice 14 — array predicate HOF `any` + `all` (first HOF; desugar, not natives)
+
+#### Pre-cut facts (audit 2026-08-07, post-s13)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=616` `mir_functions=2546` |
+| Hist | **`any=36`**, **`all=9`**, `fold=125`, `map=93`, CppIR `make_identifier…=49`, operand-context=36, …; `exists=5` is **`File.exists`-class method**, not array HOF |
+| Why not natives | Callback is `SemanticExpressionLambda` — cannot pass through `mir_lower_method_operands_with_receiver` (Lambda≠operand); VM has no first-class closures |
+| Reuse | `mir_lower_for_statement` index walk (`__mir_length` / `__mir_array_get`); `mir_lower_lambda_inline_body` for predicate body; loop break targets (s11) |
+| Call shapes | compiler `.any(…=>…)` / `.all(…=>…)` overwhelmingly inline lambdas (lexer/checker/codegen) |
+| Deferred | `fold`/`map`/`filter`/`flat_map`; `File.exists`; operand Lambda/With; CppIR; `type_is_*` |
+
+#### Decision (**frozen** 2026-08-07, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Leaf methods mopped (s13). Largest remaining *actionable* residual class is HOF; simplest entry is boolean array predicates `any`/`all` (hist 36+9) |
+| Fix | (1) In `mir_lower_method_to_local`, before native whitelist path, special-case `any`/`all` with arity 1. (2) New helper `mir_lower_array_predicate_hof_to_local`: lower receiver to array local; init result local (`false` for `any`, `true` for `all`); for-like index loop; per element bind lambda param + `mir_lower_lambda_inline_body` into a bool temp; `any`: if true → assign result true + break; `all`: if false → assign result false + break; exit yields result local. (3) Callback must be `SemanticExpressionLambda` or `Ident` with `mir_lower_lookup_lambda`. **No new VM natives** |
+| Gate | Red: no `any`/`all` special-case / no predicate-hof helper. Green: wired; `lower_error_count` **strictly < 580**; hist `unsupported method any` / `unsupported method all` **absent**; smoke `--run` any+all; `dev_gate_fast`; self-host IDENTICAL |
+| Sabotage | Claim Green while hist still lists any/all; LEC≥580; smokes fail; Ident/Lambda paths missing |
+| REG | no |
+| Out of scope | `fold`/`map`/`filter`/`flat_map`; `exists`/`File.exists`; free-fn Ident predicates (not lambda-bound); CppIR; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 14)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-07 |
+| 1 | Red: no any/all HOF desugar | open |
+| 2 | Green: desugar; LEC < 580; hist any/all absent | open |
+| 3 | Critic | open |
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
