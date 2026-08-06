@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103f** STEP=0 Decision done; Red next; §103a–e CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103f** STEP=1 Red done; Green next; §103a–e CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -179,7 +179,7 @@ release backend — не цель никогда (третий путь испо
 
 **§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
-### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=0 Decision done; Red next)
+### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=1 Red done; Green next)
 
 Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
 

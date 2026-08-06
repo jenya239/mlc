@@ -138,3 +138,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103f STEP=0 done (Decision frozen).** Red next |
 | issues  | none |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103f Red — no heap GC unit) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103f Red)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | `scripts/run_script_vm_heap_gc_arena_unit_red.sh`: green/unit/heap.mlc/HeapRef absent; exit 1 expected |
+| verify  | bash red → exit 1 `no script_vm heap_gc_arena unit (Red expected)` |
+| result  | **§103f STEP=1 done (Red).** Green next |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103f Green — HeapRef + mark-sweep + unit) |
