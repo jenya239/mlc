@@ -17,8 +17,8 @@ import {
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
   SemanticExpressionChar, SemanticExpressionFloat,
   SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize,
-  SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
-  SemanticStatementReturn, sexpr_span
+  SemanticStatementLet, SemanticStatementLetConst, SemanticStatementLetPattern,
+  SemanticStatementExpr, SemanticStatementReturn, sexpr_span
 } from '../ir/semantic_ir'
 import { Type, TUnknown } from '../checker/registry'
 import {
@@ -1885,8 +1885,83 @@ fn mir_lower_bind_lambda_statement(
     _ => Err(['mir lower: expected lambda binding'])
   }
 
+fn mir_lower_let_pattern_bind_then_jump(
+  state: MirLowerState,
+  scrutinee: MirOperand,
+  pattern: Shared<Pattern>,
+  continue_block_id: BlockId
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_bind_match_arm_pattern(state, scrutinee, pattern) {
+    Err(errors) => Err(errors),
+    Ok(bound_state) => Ok(mir_lower_finish_current_block(bound_state, MirJump(continue_block_id)))
+  }
+
+fn mir_lower_let_pattern_else_then_jump(
+  state: MirLowerState,
+  has_else: bool,
+  else_body: Shared<SemanticExpression>,
+  continue_block_id: BlockId
+) -> Result<MirLowerState, [string]> =
+  if has_else then
+    match mir_lower_discard_expression(state, else_body) {
+      Err(errors) => Err(errors),
+      Ok(else_state) => Ok(mir_lower_finish_current_block(else_state, MirJump(continue_block_id)))
+    }
+  else
+    Ok(mir_lower_finish_unreachable(state))
+  end
+
+fn mir_lower_let_pattern_statement(
+  state: MirLowerState,
+  pattern: Shared<Pattern>,
+  value: Shared<SemanticExpression>,
+  has_else: bool,
+  else_body: Shared<SemanticExpression>
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_expression_to_local(state, value) {
+    Err(errors) => Err(errors),
+    Ok(value_step) => do
+      const scrutinee = MirOperandLocal(value_step.local_id)
+      if !mir_lower_pattern_needs_conditional_test(pattern) then
+        mir_lower_bind_match_arm_pattern(value_step.state, scrutinee, pattern)
+      else
+        match mir_lower_pattern_matches_operand(value_step.state, scrutinee, pattern) {
+          Err(errors) => Err(errors),
+          Ok(condition_step) => do
+            const bind_block_step = mir_lower_allocate_block_index(condition_step.state)
+            const else_block_step = mir_lower_allocate_block_index(bind_block_step.state)
+            const continue_block_step = mir_lower_allocate_block_index(else_block_step.state)
+            let mut branch_state = mir_lower_finish_current_block(
+              continue_block_step.state,
+              MirCondJump(
+                condition_step.operand, bind_block_step.block_id, else_block_step.block_id))
+            branch_state = mir_lower_start_block(
+              branch_state, bind_block_step.block_id, 'let_pattern_bind')
+            match mir_lower_let_pattern_bind_then_jump(
+              branch_state, scrutinee, pattern, continue_block_step.block_id) {
+              Err(errors) => Err(errors),
+              Ok(after_bind) => do
+                let mut else_state = mir_lower_start_block(
+                  after_bind, else_block_step.block_id, 'let_pattern_else')
+                match mir_lower_let_pattern_else_then_jump(
+                  else_state, has_else, else_body, continue_block_step.block_id) {
+                  Err(errors) => Err(errors),
+                  Ok(after_else) =>
+                    Ok(mir_lower_start_block(
+                      after_else, continue_block_step.block_id, 'let_pattern_continue'))
+                }
+              end
+            }
+          end
+        }
+      end
+    end
+  }
+
 fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement>) -> Result<MirLowerState, [string]> = do
   match statement {
+    SemanticStatementLetPattern(pattern, _, value, _, has_else, else_body, _) =>
+      mir_lower_let_pattern_statement(state, pattern, value, has_else, else_body),
     SemanticStatementLet(name, _, value, type_value, _) =>
       match value {
         SemanticExpressionLambda(_, _, _, _) =>
