@@ -1,0 +1,29 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110f — env-gated perf overlay strings (no GL).
+
+export fn editor_perf_overlay_enabled(overlay_env: string) -> i32 = do
+  if overlay_env == "1" then
+    return 1
+  end
+  0
+end
+
+export fn editor_perf_overlay_format_lines(
+  layout_generation: i32,
+  paint_generation: i32,
+  editor_glyph_shape_calls: i32,
+  content_frame_count: i32
+) -> [string] = do
+  let mut lines: [string] = []
+  lines.push("layout_generation=" + layout_generation.to_string())
+  lines.push("paint_generation=" + paint_generation.to_string())
+  lines.push("editor_glyph_shape_calls=" + editor_glyph_shape_calls.to_string())
+  lines.push("content_frame_count=" + content_frame_count.to_string())
+  lines
+end
+
+export fn editor_perf_overlay_text_ops(overlay_env: string) -> i32 = do
+  if editor_perf_overlay_enabled(overlay_env) == 0 then
+    return 0
+  end
+  4
+end

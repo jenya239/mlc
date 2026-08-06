@@ -66,6 +66,10 @@ import {
   editor_glyph_row_id_in_list,
   editor_glyph_should_full_rebuild_scroll
 } from './ux/glyph_damage'
+import {
+  editor_perf_overlay_enabled,
+  editor_perf_overlay_format_lines
+} from './ux/perf_overlay'
 import { editor_resolve_font_path } from './config/font_path'
 import {
   status_bar_from_buffer,
@@ -953,6 +957,9 @@ fn main() -> i32 = do
   // §109b: wake-on-hover probe (honest text-rect + reason counters).
   const wake_probe = has("MLC_EDITOR_PERF_WAKE_PROBE")
   const wake_counters_file = get_or("MLC_EDITOR_PERF_WAKE_COUNTERS_FILE", "")
+  // §110f — optional on-screen HUD (default off; gates stay file/script authority).
+  const perf_overlay_env = get_or("MLC_EDITOR_PERF_OVERLAY", "")
+  const perf_overlay_on = editor_perf_overlay_enabled(perf_overlay_env)
   // Counters run for baseline, terminal, or full. Heavy skips only on baseline/terminal
   // when PERF_FULL is not set (FULL overrides skips).
   const perf_enabled =
@@ -3333,6 +3340,27 @@ fn main() -> i32 = do
       )
     )
     chrome_lines = push_line(chrome_lines, status, 12, 12, height - 8)
+
+    // §110f — env-gated metrics HUD (paint-list text only; default off).
+    if perf_overlay_on != 0 then
+      const overlay_hud = editor_perf_overlay_format_lines(
+        editor_frame.layout_generation,
+        editor_frame.paint_generation,
+        perf_counters.editor_glyph_shape_calls,
+        perf_counters.content_frame_count
+      )
+      let mut overlay_index = 0
+      while overlay_index < overlay_hud.length() do
+        chrome_lines = push_line(
+          chrome_lines,
+          overlay_hud[overlay_index],
+          11,
+          8,
+          16 + overlay_index * 14
+        )
+        overlay_index = overlay_index + 1
+      end
+    end
 
     if dirty_close_overlay_is_visible(app.overlay) then
       chrome_lines = push_line(

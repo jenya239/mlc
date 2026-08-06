@@ -1,0 +1,58 @@
+// TRACK_EDITOR_FRAME_ARCHITECTURE §110f — L1 overlay format helper (no GL).
+import {
+  editor_perf_overlay_enabled,
+  editor_perf_overlay_format_lines,
+  editor_perf_overlay_text_ops
+} from '../ux/perf_overlay'
+
+fn main() -> i32 = do
+  if editor_perf_overlay_enabled("") != 0 then
+    println("ux_fail frame_overlay_metrics_stable default_off")
+    return 1
+  end
+  if editor_perf_overlay_enabled("0") != 0 then
+    println("ux_fail frame_overlay_metrics_stable env_zero")
+    return 2
+  end
+  if editor_perf_overlay_enabled("1") != 1 then
+    println("ux_fail frame_overlay_metrics_stable env_one")
+    return 3
+  end
+  if editor_perf_overlay_text_ops("") != 0 then
+    println("ux_fail frame_overlay_metrics_stable text_ops_off")
+    return 4
+  end
+  if editor_perf_overlay_text_ops("1") != 4 then
+    println("ux_fail frame_overlay_metrics_stable text_ops_on")
+    return 5
+  end
+  const lines = editor_perf_overlay_format_lines(7, 2, 10, 42)
+  if lines.length() != 4 then
+    println("ux_fail frame_overlay_metrics_stable line_count")
+    return 6
+  end
+  if lines[0] != "layout_generation=7" then
+    println("ux_fail frame_overlay_metrics_stable layout")
+    return 7
+  end
+  if lines[1] != "paint_generation=2" then
+    println("ux_fail frame_overlay_metrics_stable paint")
+    return 8
+  end
+  if lines[2] != "editor_glyph_shape_calls=10" then
+    println("ux_fail frame_overlay_metrics_stable shape")
+    return 9
+  end
+  if lines[3] != "content_frame_count=42" then
+    println("ux_fail frame_overlay_metrics_stable content")
+    return 10
+  end
+  println("ux_ok frame_overlay_metrics_stable")
+  println("overlay_env=0")
+  println("overlay_text_ops=0")
+  println("overlay_env=1")
+  println("overlay_text_ops=4")
+  println("layout_generation=7")
+  println("paint_generation=2")
+  0
+end

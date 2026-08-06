@@ -12,7 +12,7 @@ perf/architecture/testing directive), unless the user overrides.
 Standing discipline: [AGENTS.md](../../AGENTS.md) Performance workflow —
 measure → one hypothesis → one cut → remasure. No “optimize GUI broadly”.
 
-## Status: **open** 2026-08-06 — queue head **§110f** (STEP=1 Red done; Green next)
+## Status: **open** 2026-08-06 — queue head **§110f** (STEP=2 Green done; Critic next)
 
 ## Destination (plain)
 
@@ -348,8 +348,20 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no overlay-metrics harness / no env HUD | **done** 2026-08-06 |
-| 2 | Green: env-gated paint-list HUD + default-off non-regress | pending |
+| 2 | Green: env-gated paint-list HUD + default-off non-regress | **done** 2026-08-06 |
 | 3 | Critic | pending |
+
+### Green measured (§110f)
+
+| Metric | Value |
+|--------|-------|
+| mechanism | env-gated paint-list HUD (`MLC_EDITOR_PERF_OVERLAY=1`) |
+| overlay_text_ops (env=0) | **0** |
+| overlay_text_ops (env=1) | **4** |
+| wake gen deltas | 0 |
+| scroll_cpu_percent (default off) | 43 (≤50) |
+| dogfood_gate | ok |
+| glyph_damage | ok |
 
 ## Diff / notes
 
@@ -373,3 +385,4 @@ Independent L1: `ux_ok` newly=1 bound=36. Red exit 1 `already present`. Sab1: in
 2026-08-06: §110e CLOSED (Critic OK); queue → §110f Decision (optional overlay metrics).
 2026-08-06: §110f Decision frozen (env-gated overlay HUD; default-off; gates stay authority).
 2026-08-06: §110f Red — `scripts/run_editor_overlay_metrics_red.sh` (exit 1: no green harness / no OVERLAY env).
+2026-08-06: §110f Green — `ux/perf_overlay.mlc` + demo wire; `run_editor_overlay_metrics.sh`; scroll=43 default-off.
