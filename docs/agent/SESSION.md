@@ -168,3 +168,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103f STEP=2 done (Green).** Critic next |
 | issues  | mlcc drops stmts after if/else-if in do-blocks → freelist pop-reuse not wired; size-class freelist still filled on sweep |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_MLC_SCRIPT_VM (§103f — audit heap GC arena) |
+
+### Turn 2026-08-06 (Critic TRACK_MLC_SCRIPT_VM STEP=3, §103f)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Independent unit+sab1/2/3; closed §103f; residual freelist pop-reuse disclosed; queue → §103g |
+| verify  | critic unit ok; sab1 exit4; sab2 exit5; sab3 exit6; red already-present; arithmetic ok |
+| result  | **§103f CLOSED (Critic OK).** §103g Decision next |
+| issues  | freelist pop-reuse still deferred (codegen); not a Decision gate miss |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_MLC_SCRIPT_VM (§103g SCRIPT_VM_ARRAYS_RECORDS Decision) |

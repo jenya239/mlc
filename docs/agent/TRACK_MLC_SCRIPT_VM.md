@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103f** STEP=2 Green done; Critic next; §103a–e CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103g** (`SCRIPT_VM_ARRAYS_RECORDS` Decision next); §103a–f CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -179,7 +179,7 @@ release backend — не цель никогда (третий путь испо
 
 **§103e CLOSED** 2026-08-03 (Critic OK). Do not reopen numbered STEPs. Note: narrow JUMP offset +1 collides with wide marker B=0,C=1 — encoder must use trailing form (Driver Green).
 
-### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **queue head** (STEP=2 Green done; Critic next)
+### §103f `SCRIPT_VM_HEAP_GC_ARENA` — **CLOSED** 2026-08-06 (Critic OK)
 
 Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
 
@@ -214,7 +214,11 @@ Non-moving mark-sweep + size-class arenas (design doc §8). Gate detail below.
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: heap GC unit runner absent | **done** 2026-08-06 — `scripts/run_script_vm_heap_gc_arena_unit_red.sh` exit 1 (`no script_vm heap_gc_arena unit`); green/unit/heap.mlc/HeapRef absent |
 | 2 | Green: HeapRef + arenas + mark-sweep + unit; `dev_gate_fast` | **done** 2026-08-06 — `heap.mlc` + HeapRef tag4; unit ok; red already-present; `dev_gate_fast` 1471/0; freelist **push** on sweep (pop-reuse deferred — mlcc drops stmts after if/else-if in do-blocks) |
-| 3 | Critic | pending |
+| 3 | Critic | **done** 2026-08-06 — independent unit OK; sab1 never-reclaim → exit 4; sab2 skip-mark → exit 5; sab3 no barrier bump → exit 6; red already-present; arithmetic side ok |
+
+### Critic notes (§103f)
+
+Independent `SCRIPT_VM_HEAP_GC_ARENA_OUT=tmp/script_vm_heap_gc_critic` green: heap_gc_arena=ok, write_barrier_hits=1. Sabotages load-bearing (sweep always-keep / mark no-op / hits frozen). HeapRef tag4 + ObjectHeader + Cell + roots + STW collect present. **Residual (disclosed, not blocking gate):** freelist **push** on sweep without pop-reuse (Driver: mlcc drops stmts after if/else-if in do-blocks) — size-class lists exist; reuse deferred. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103g Decision.
 
 ### §103f Green measured
 
