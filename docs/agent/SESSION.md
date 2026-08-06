@@ -438,3 +438,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s7 CLOSED (Critic OK).** next = slice 8 Decision |
 | issues  | parent open; HOF deferred |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Frozen §104-6 slice 8 Decision: `__mir_string_byte_substring` for `byte_substring`; gate LEC<649 + hist clean |
+| verify  | hist byte_substring=5; whitelist/VM lack native; lexer 5 call sites; HOF/operand deferred |
+| result  | **§104-6 s8 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Red) |
