@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 5** Critic next (Green done 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 6** Decision next (slice 5 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 5 Green done (Block/Char/Float operand|rvalue); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 5 CLOSED; slice 6 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -635,7 +635,7 @@ Residuals: parent open; HOF fold/map deferred; next candidates from hist: operan
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: no Block/Char/Float in operand\|rvalue | **done** 2026-08-06 |
 | 2 | Green: arms; LEC < 683; operand hist < 60 | **done** 2026-08-06 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-06 — CLOSED |
 
 #### Red measured (§104-6 slice 5)
 
@@ -653,6 +653,22 @@ Residuals: parent open; HOF fold/map deferred; next candidates from hist: operan
 | Red after Green | exit 1 `operand already has Block/Char/Float arms` |
 | Self-host | mlcc2 diff IDENTICAL |
 | `dev_gate_fast` | 1471 passed, 0 failed |
+
+#### Critic audit (2026-08-06), §104-6 slice 5 CLOSED
+
+Independent re-run:
+- coverage: `lower_error_count=680` (<683); operand-context=55 (<60)
+- Wiring: Block/Char/Float in both operand+rvalue; `mir_lower_block_to_local` present
+- Sab1: LEC + operand hist drop load-bearing vs pre-s5 baseline
+- Red after Green: exit 1 `operand already has Block/Char/Float arms`
+- VM smoke: `--run` block+char+float fixture exit 0
+- `dev_gate_fast` 1471/0
+
+Residuals: parent open; operand still 55 / rvalue 13 (Match/Lambda/With/…); HOF fold/map deferred; next leaf candidates: `to_i`, or Match-as-operand / remaining operand kinds.
+
+### Slice 6 — next MIR gap (Decision pending)
+
+Queue head after slice 5 Critic. Hist head: `fold=124`, `map=93`, operand-context=55, `make_identifier_cpp_expression`=49, …
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
