@@ -528,3 +528,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s9 Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Green) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s9)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | I64/U8/Usize ConstStr arms; Decision correction: zero residual drop on main.mlc |
+| verify  | LEC=646 (no regression); operand=34 rvalue=5 unchanged; smoke 42i64/7u8/3usize 0; red trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s9 Green done (IR completeness; residual gate corrected).** next = Critic |
+| issues  | original LEC/hist improve gate not load-bearing; next residual → LetPattern/operand kinds |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Critic) |

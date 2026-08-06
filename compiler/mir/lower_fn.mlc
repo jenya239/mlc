@@ -16,6 +16,7 @@ import {
   SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
   SemanticExpressionChar, SemanticExpressionFloat,
+  SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize,
   SemanticStatementLet, SemanticStatementLetConst, SemanticStatementExpr,
   SemanticStatementReturn, sexpr_span
 } from '../ir/semantic_ir'
@@ -684,6 +685,12 @@ fn mir_lower_operand_from_expression(
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     SemanticExpressionFloat(value, _, _) =>
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
+    SemanticExpressionI64(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
+    SemanticExpressionU8(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
+    SemanticExpressionUsize(value, _, _) =>
+      Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     _ => Err(['mir lower: unsupported expression in operand context'])
   }
 end
@@ -844,6 +851,12 @@ fn mir_lower_rvalue_from_expression(
     SemanticExpressionChar(value, _, _) =>
       Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
     SemanticExpressionFloat(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
+    SemanticExpressionI64(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
+    SemanticExpressionU8(value, _, _) =>
+      Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
+    SemanticExpressionUsize(value, _, _) =>
       Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
     _ => Err(['mir lower: unsupported expression in rvalue context'])
   }
