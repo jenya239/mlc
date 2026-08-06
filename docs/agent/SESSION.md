@@ -558,3 +558,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§104-6 s4 Decision frozen.** next = Red |
 | issues  | — |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 4 Red) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s4)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Red harness `mir-coverage_s4_red.sh`; proven no concat/has whitelist+VM natives |
+| verify  | exit 1 `no concat\|has natives`; LEC=790; hist concat=67 has=59; grep absent |
+| result  | **§104-6 s4 Red done.** next = Green |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 4 Green) |
