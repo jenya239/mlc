@@ -22,6 +22,8 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_string_contains' then vm_native_string_contains(arguments)
   else if name == '__mir_string_substring' then vm_native_string_substring(arguments)
   else if name == '__mir_string_char_at' then vm_native_string_char_at(arguments)
+  else if name == '__mir_to_string' then vm_native_to_string(arguments)
+  else if name == '__mir_array_join' then vm_native_array_join(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
@@ -415,6 +417,49 @@ fn vm_native_string_char_at(arguments: [VmValue]) -> Result<VmValue, [string]> =
           _ => Err(['vm: __mir_string_char_at expects i32 index'])
         },
       _ => Err(['vm: __mir_string_char_at expects string'])
+    }
+  end
+
+fn vm_native_to_string(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_to_string expects 1 argument'])
+  else
+    match arguments[0] {
+      VmI32(integer) => Ok(VmString(`${integer}`)),
+      VmBool(flag) => Ok(VmString(if flag then 'true' else 'false')),
+      VmString(text) => Ok(VmString(text)),
+      VmUnit => Ok(VmString('()')),
+      _ => Err(['vm: __mir_to_string unsupported value'])
+    }
+  end
+
+fn vm_native_array_join_elements(
+  array: VmArrayValue,
+  separator: string,
+  index: i32,
+  accumulated: string
+) -> Result<VmValue, [string]> = do
+  if index >= array.elements.length() then return Ok(VmString(accumulated)) end
+  match vm_value_from_field_slot(array.elements[index]) {
+    VmString(piece) =>
+      if index == 0 then
+        vm_native_array_join_elements(array, separator, index + 1, piece)
+      else
+        vm_native_array_join_elements(array, separator, index + 1, accumulated + separator + piece)
+      end,
+    _ => Err(['vm: __mir_array_join expects string elements'])
+  }
+end
+
+fn vm_native_array_join(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_array_join expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmArray(array) =>
+        match arguments[1] {
+          VmString(separator) => vm_native_array_join_elements(array, separator, 0, ''),
+          _ => Err(['vm: __mir_array_join expects string separator'])
+        },
+      _ => Err(['vm: __mir_array_join expects array'])
     }
   end
 
