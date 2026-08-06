@@ -1,0 +1,410 @@
+// TRACK_MLC_SCRIPT_VM §103i — embedding module blob + call (authoritative semantics).
+import {
+  Value,
+  ValueInt32,
+  value_encode
+} from './value'
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_opcode_add
+} from './bytecode'
+import {
+  verify_function,
+  VerifyOk,
+  VerifyErr
+} from './verifier'
+import {
+  FunctionProto,
+  RunOk,
+  RunErr,
+  run_program_with_args,
+  run_err_verify,
+  run_err_type,
+  run_err_bounds,
+  run_err_stack
+} from './interpreter'
+import { heap_new } from './heap'
+
+extern fn embedding_u8_at(data_pointer: i64, index: i32) -> i32 =
+  "mlc::script_vm::embedding_u8_at" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_i64_at(data_pointer: i64, index: i32) -> i64 =
+  "mlc::script_vm::embedding_i64_at" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_i64_store(data_pointer: i64, value: i64) -> i32 =
+  "mlc::script_vm::embedding_i64_store" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_i64_byte(value: i64, byte_index: i32) -> i32 =
+  "mlc::script_vm::embedding_i64_byte" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_u8_to_i64(byte_value: i32) -> i64 =
+  "mlc::script_vm::embedding_u8_to_i64" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_string_from_byte(value: i32) -> string =
+  "mlc::script_vm::embedding_string_from_byte" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+extern fn embedding_string_byte(text: string, index: i32) -> i32 =
+  "mlc::script_vm::embedding_string_byte" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+
+export fn emb_ok() -> i32 = 0
+export fn emb_unsupported() -> i32 = 1
+export fn emb_verify() -> i32 = 2
+export fn emb_type() -> i32 = 3
+export fn emb_bounds() -> i32 = 4
+export fn emb_stack() -> i32 = 5
+export fn emb_format() -> i32 = 6
+export fn emb_not_found() -> i32 = 7
+export fn emb_bad_handle() -> i32 = 8
+
+export type EmbCallResult = { code: i32, raw: i64 }
+
+type ModuleExport = { name: string, proto_index: i32 }
+type DecodedModule = {
+  exports: [ModuleExport],
+  protos: [FunctionProto]
+}
+type DecodeResult = { code: i32, module: DecodedModule }
+
+fn magic_mlsc() -> i32 = 1129531469
+
+fn append_u32_le(bytes: [i32], value: i32) -> [i32] = do
+  bytes.push(value & 255)
+  bytes.push((value >> 8) & 255)
+  bytes.push((value >> 16) & 255)
+  bytes.push((value >> 24) & 255)
+  bytes
+end
+
+fn append_i64_le(bytes: [i32], value: i64) -> [i32] = do
+  let mut byte_index = 0
+  while byte_index < 8 do
+    bytes.push(embedding_i64_byte(value, byte_index))
+    byte_index = byte_index + 1
+  end
+  bytes
+end
+
+fn read_u32_le(bytes: [i32], offset: i32) -> i32 =
+  (bytes[offset] & 255) |
+  ((bytes[offset + 1] & 255) << 8) |
+  ((bytes[offset + 2] & 255) << 16) |
+  ((bytes[offset + 3] & 255) << 24)
+
+fn read_i64_le(bytes: [i32], offset: i32) -> i64 = do
+  let mut value = embedding_u8_to_i64(0)
+  let mut index = 0
+  while index < 8 do
+    const part = embedding_u8_to_i64(bytes[offset + index] & 255)
+    const shift = embedding_u8_to_i64(index * 8)
+    value = value | (part << shift)
+    index = index + 1
+  end
+  value
+end
+
+fn bytes_from_pointer(data_pointer: i64, size: i32) -> [i32] = do
+  let mut bytes: [i32] = []
+  let mut index = 0
+  while index < size do
+    bytes.push(embedding_u8_at(data_pointer, index))
+    index = index + 1
+  end
+  bytes
+end
+
+fn name_from_bytes(bytes: [i32], offset: i32, length: i32) -> string = do
+  let mut name = ""
+  let mut index = 0
+  while index < length do
+    name = name + embedding_string_from_byte(bytes[offset + index] & 255)
+    index = index + 1
+  end
+  name
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn append_name_bytes(bytes: [i32], name: string) -> [i32] = do
+  let mut index = 0
+  while index < name.byte_size() do
+    bytes.push(embedding_string_byte(name, index) & 255)
+    index = index + 1
+  end
+  bytes
+end
+
+export fn emb_encode_add1_module() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 0, 0, 1))
+  words = append_words(words, instruction_words_return(0))
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(1)))
+  const export_name = "add1"
+  let mut bytes: [i32] = []
+  bytes = append_u32_le(bytes, magic_mlsc())
+  bytes = append_u32_le(bytes, 1)
+  bytes = append_u32_le(bytes, 1)
+  bytes = append_u32_le(bytes, export_name.byte_size())
+  bytes = append_name_bytes(bytes, export_name)
+  bytes = append_u32_le(bytes, 0)
+  bytes = append_u32_le(bytes, 1)
+  bytes = append_u32_le(bytes, 2)
+  bytes = append_u32_le(bytes, words.length())
+  let mut word_index = 0
+  while word_index < words.length() do
+    bytes = append_u32_le(bytes, words[word_index])
+    word_index = word_index + 1
+  end
+  bytes = append_u32_le(bytes, constants.length())
+  let mut constant_index = 0
+  while constant_index < constants.length() do
+    bytes = append_i64_le(bytes, constants[constant_index].raw)
+    constant_index = constant_index + 1
+  end
+  bytes
+end
+
+fn decode_module(bytes: [i32]) -> DecodeResult = do
+  let mut empty_exports: [ModuleExport] = []
+  let mut empty_protos: [FunctionProto] = []
+  const empty = DecodedModule { exports: empty_exports, protos: empty_protos }
+  if bytes.length() < 8 then
+    DecodeResult { code: emb_format(), module: empty }
+  else if read_u32_le(bytes, 0) != magic_mlsc() then
+    DecodeResult { code: emb_unsupported(), module: empty }
+  else if read_u32_le(bytes, 4) != 1 then
+    DecodeResult { code: emb_format(), module: empty }
+  else
+    let mut offset = 8
+    if offset + 4 > bytes.length() then
+      DecodeResult { code: emb_format(), module: empty }
+    else
+      const export_count = read_u32_le(bytes, offset)
+      offset = offset + 4
+      let mut exports: [ModuleExport] = []
+      let mut export_index = 0
+      let mut decode_failed = false
+      let mut fail_code = emb_ok()
+      while export_index < export_count && !decode_failed do
+        if offset + 4 > bytes.length() then
+          decode_failed = true
+          fail_code = emb_format()
+        else
+          const name_length = read_u32_le(bytes, offset)
+          offset = offset + 4
+          if name_length < 0 || offset + name_length + 4 > bytes.length() then
+            decode_failed = true
+            fail_code = emb_format()
+          else
+            const name = name_from_bytes(bytes, offset, name_length)
+            offset = offset + name_length
+            const proto_index = read_u32_le(bytes, offset)
+            offset = offset + 4
+            exports.push(ModuleExport { name: name, proto_index: proto_index })
+            export_index = export_index + 1
+          end
+        end
+      end
+      if decode_failed then
+        DecodeResult { code: fail_code, module: empty }
+      else if offset + 4 > bytes.length() then
+        DecodeResult { code: emb_format(), module: empty }
+      else
+        const proto_count = read_u32_le(bytes, offset)
+        offset = offset + 4
+        let mut protos: [FunctionProto] = []
+        let mut proto_index = 0
+        while proto_index < proto_count && !decode_failed do
+          if offset + 8 > bytes.length() then
+            decode_failed = true
+            fail_code = emb_format()
+          else
+            const register_count = read_u32_le(bytes, offset)
+            offset = offset + 4
+            const word_count = read_u32_le(bytes, offset)
+            offset = offset + 4
+            if word_count < 0 || offset + word_count * 4 + 4 > bytes.length() then
+              decode_failed = true
+              fail_code = emb_format()
+            else
+              let mut words: [i32] = []
+              let mut word_index = 0
+              while word_index < word_count do
+                words.push(read_u32_le(bytes, offset))
+                offset = offset + 4
+                word_index = word_index + 1
+              end
+              const constant_count = read_u32_le(bytes, offset)
+              offset = offset + 4
+              if constant_count < 0 || offset + constant_count * 8 > bytes.length() then
+                decode_failed = true
+                fail_code = emb_format()
+              else
+                let mut constants: [Value] = []
+                let mut constant_index = 0
+                while constant_index < constant_count do
+                  constants.push(Value { raw: read_i64_le(bytes, offset) })
+                  offset = offset + 8
+                  constant_index = constant_index + 1
+                end
+                protos.push(FunctionProto {
+                  words: words,
+                  constants: constants,
+                  register_count: register_count
+                })
+                proto_index = proto_index + 1
+              end
+            end
+          end
+        end
+        if decode_failed then
+          DecodeResult { code: fail_code, module: empty }
+        else if offset != bytes.length() then
+          DecodeResult { code: emb_format(), module: empty }
+        else
+          DecodeResult {
+            code: emb_ok(),
+            module: DecodedModule { exports: exports, protos: protos }
+          }
+        end
+      end
+    end
+  end
+end
+
+fn verify_decoded(module: DecodedModule) -> i32 = do
+  let mut proto_index = 0
+  let mut failed = false
+  while proto_index < module.protos.length() && !failed do
+    const proto = module.protos[proto_index]
+    const verified = verify_function(proto.words, proto.register_count, proto.constants.length())
+    const is_err = match verified {
+      VerifyErr(_code, _at) => true,
+      VerifyOk => false
+    }
+    if is_err then
+      failed = true
+    end
+    proto_index = proto_index + 1
+  end
+  if failed then
+    emb_verify()
+  else
+    emb_ok()
+  end
+end
+
+fn find_export_proto(module: DecodedModule, export_name: string) -> i32 = do
+  let mut index = 0
+  while index < module.exports.length() do
+    if module.exports[index].name == export_name then
+      return module.exports[index].proto_index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn run_err_to_code(code: string) -> i32 = do
+  if code == run_err_verify() then
+    emb_verify()
+  else if code == run_err_type() then
+    emb_type()
+  else if code == run_err_bounds() then
+    emb_bounds()
+  else if code == run_err_stack() then
+    emb_stack()
+  else
+    emb_type()
+  end
+end
+
+export fn emb_verify_module_bytes(bytes: [i32]) -> i32 = do
+  const decoded = decode_module(bytes)
+  if decoded.code != emb_ok() then
+    decoded.code
+  else
+    verify_decoded(decoded.module)
+  end
+end
+
+export fn emb_call_export_bytes(
+  bytes: [i32],
+  export_name: string,
+  arg_raws: [i64]
+) -> EmbCallResult = do
+  const decoded = decode_module(bytes)
+  if decoded.code != emb_ok() then
+    EmbCallResult { code: decoded.code, raw: embedding_u8_to_i64(0) }
+  else
+    const verify_code = verify_decoded(decoded.module)
+    if verify_code != emb_ok() then
+      EmbCallResult { code: verify_code, raw: embedding_u8_to_i64(0) }
+    else
+      const proto_index = find_export_proto(decoded.module, export_name)
+      if proto_index < 0 then
+        EmbCallResult { code: emb_not_found(), raw: embedding_u8_to_i64(0) }
+      else
+        let mut args: [Value] = []
+        let mut arg_index = 0
+        while arg_index < arg_raws.length() do
+          args.push(Value { raw: arg_raws[arg_index] })
+          arg_index = arg_index + 1
+        end
+        const ran = run_program_with_args(
+          heap_new(),
+          decoded.module.protos,
+          proto_index,
+          args
+        )
+        match ran.result {
+          RunOk(value) => EmbCallResult { code: emb_ok(), raw: value.raw },
+          RunErr(code, _at) => EmbCallResult { code: run_err_to_code(code), raw: embedding_u8_to_i64(0) }
+        }
+      end
+    end
+  end
+end
+
+export fn emb_verify_module_ptr(data_pointer: i64, size: i32) -> i32 =
+  emb_verify_module_bytes(bytes_from_pointer(data_pointer, size))
+
+export fn emb_call_export_ptr(
+  data_pointer: i64,
+  size: i32,
+  export_name: string,
+  args_pointer: i64,
+  argc: i32,
+  result_out_pointer: i64
+) -> i32 = do
+  let mut arg_raws: [i64] = []
+  let mut arg_index = 0
+  while arg_index < argc do
+    arg_raws.push(embedding_i64_at(args_pointer, arg_index))
+    arg_index = arg_index + 1
+  end
+  const result = emb_call_export_bytes(
+    bytes_from_pointer(data_pointer, size),
+    export_name,
+    arg_raws
+  )
+  if result.code == emb_ok() then
+    const _stored = embedding_i64_store(result_out_pointer, result.raw)
+  end
+  result.code
+end
+
+export fn emb_add1_fixture_byte_at(index: i32) -> i32 = do
+  const bytes = emb_encode_add1_module()
+  if index < 0 || index >= bytes.length() then
+    0 - 1
+  else
+    bytes[index] & 255
+  end
+end
+
+export fn emb_add1_fixture_size() -> i32 = emb_encode_add1_module().length()

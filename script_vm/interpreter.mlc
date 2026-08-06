@@ -635,13 +635,24 @@ fn fill_one_upvalue(
     UpvalueFill { heap: with_slot, err_code: "", err_at: 0 }
   end
 
-fn execute_program(heap: Heap, protos: [FunctionProto], entry_proto_index: i32) -> RunHeapResult = do
+fn execute_program(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value]
+) -> RunHeapResult = do
   let mut heap_state = heap
   let mut frames: [CallFrame] = []
+  let mut entry_registers = make_registers(protos[entry_proto_index].register_count)
+  let mut arg_index = 0
+  while arg_index < args.length() && arg_index < entry_registers.length() do
+    entry_registers = registers_set(entry_registers, arg_index, args[arg_index])
+    arg_index = arg_index + 1
+  end
   frames.push(CallFrame {
     proto_index: entry_proto_index,
     program_counter: 0,
-    registers: make_registers(protos[entry_proto_index].register_count),
+    registers: entry_registers,
     closure: value_encode(ValueNil),
     return_dst: 0
   })
@@ -930,6 +941,37 @@ export fn run_program(heap: Heap, protos: [FunctionProto], entry_proto_index: i3
   else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
     RunHeapResult { heap: heap, result: RunErr(run_err_type(), 0) }
   else
-    execute_program(heap, protos, entry_proto_index)
+    let mut empty_args: [Value] = []
+    execute_program(heap, protos, entry_proto_index, empty_args)
+  end
+end
+
+export fn run_program_with_args(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value]
+) -> RunHeapResult = do
+  let mut proto_index = 0
+  let mut verify_failed = false
+  let mut verify_at = 0
+  while proto_index < protos.length() && !verify_failed do
+    const proto = protos[proto_index]
+    const verified = verify_function(proto.words, proto.register_count, proto.constants.length())
+    match verified {
+      VerifyErr(_code, word_index) => do
+        verify_failed = true
+        verify_at = word_index
+      end,
+      VerifyOk => do end
+    }
+    proto_index = proto_index + 1
+  end
+  if verify_failed then
+    RunHeapResult { heap: heap, result: RunErr(run_err_verify(), verify_at) }
+  else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
+    RunHeapResult { heap: heap, result: RunErr(run_err_type(), 0) }
+  else
+    execute_program(heap, protos, entry_proto_index, args)
   end
 end

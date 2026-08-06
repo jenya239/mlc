@@ -333,3 +333,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103i Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Green) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=2, §103i)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Green: `script_vm/embedding.mlc` + `embedding_abi.h` + bridge + host; `run_program_with_args`; MLSC blob; unit+host add1(41)→42; green harness |
+| verify  | green harness ok (embedding_abi/add1/host_call/red/side); `dev_gate_fast` 1471/0 |
+| result  | **§103i Green done.** next = Critic |
+| issues  | i64=0 codegen residual (mitigated); config limits stored not enforced |
+| next    | ROLE=Critic STEP=critique-audit TRACK=TRACK_MLC_SCRIPT_VM (§103i) |

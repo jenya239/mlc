@@ -1,0 +1,61 @@
+// TRACK_MLC_SCRIPT_VM §103i — embedding ABI unit (MLC path).
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  emb_ok,
+  emb_encode_add1_module,
+  emb_verify_module_bytes,
+  emb_call_export_bytes,
+  emb_unsupported
+} from '../embedding'
+
+fn fail(message: string, code: i32) -> i32 = do
+  println("[script_vm embedding_abi_unit] FAIL: " + message)
+  code
+end
+
+fn main() -> i32 = do
+  const bytes = emb_encode_add1_module()
+  if bytes.length() < 16 then
+    return fail("add1 module too small", 2)
+  end
+  if emb_verify_module_bytes(bytes) != emb_ok() then
+    return fail("verify add1 module", 3)
+  end
+
+  let mut args: [i64] = []
+  args.push(value_encode(ValueInt32(41)).raw)
+  const called = emb_call_export_bytes(bytes, "add1", args)
+  if called.code != emb_ok() then
+    return fail("call add1 code=" + called.code.to_string(), 4)
+  end
+  const result_value = Value { raw: called.raw }
+  const decoded_rep = value_decode(result_value)
+  const number = match decoded_rep {
+    ValueInt32(value) => value,
+    _ => 0 - 999999
+  }
+  if number != 42 then
+    return fail("add1 result=" + number.to_string(), 5)
+  end
+
+  // Non-MLSC payload → unsupported (source deferred).
+  let mut sourceish: [i32] = []
+  let mut fill = 0
+  while fill < 8 do
+    sourceish.push(102)
+    fill = fill + 1
+  end
+  if emb_verify_module_bytes(sourceish) != emb_unsupported() then
+    return fail("source payload should be unsupported", 7)
+  end
+
+  println("embedding_abi=ok")
+  println("add1=ok")
+  println("[script_vm] embedding_abi_unit ok")
+  0
+end

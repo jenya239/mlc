@@ -7,7 +7,7 @@ HARD STOP GATE, Phase 1 (`MLC_SCRIPT_VM.md` §12 фаза 1) разбита на
 под-треки ниже. Эмфаза по требованию пользователя: производительность,
 архитектура, тестирование — у каждого под-трека явный gate.
 
-## Status: **open** 2026-08-06 — queue head **§103i** STEP=2 Green next (Red done); §103a–h CLOSED; §109/§110 CLOSED
+## Status: **open** 2026-08-06 — queue head **§103i** STEP=3 Critic next (Green done); §103a–h CLOSED; §109/§110 CLOSED
 
 **НЕ путать с [TRACK_MIR_VM_FULL](TRACK_MIR_VM_FULL.md)** — разные объекты,
 полная таблица различий: [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) §0.
@@ -314,7 +314,7 @@ Closures capturing upvalues; material call `Frame` stack (design doc §11 — fr
 
 Independent `SCRIPT_VM_CLOSURES_FIBERS_OUT=tmp/script_vm_closures_fibers_critic` green: closures_fibers/upvalue_mut/recursion/side ok, write_barrier_hits=4. Sabotages load-bearing (CALL without frame push; GET_UPVAL ignores Cell; SET_UPVAL skips write). **Residual (disclosed, non-blocking):** proto_index stored in `object_flags` not `shape_or_meta`; cooperative fiber scheduler still out of scope. No `lib/mlc/**` / `compiler/**/*.mlc` in Green. Queue → §103i Decision.
 
-### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (Red done; STEP=2 Green next)
+### §103i `SCRIPT_VM_EMBEDDING_ABI` — **queue head** (Green done; STEP=3 Critic next)
 
 C ABI from design doc §10: first embeddable proof (host C links ABI, not
 only an internal MLC harness).
@@ -351,8 +351,21 @@ only an internal MLC harness).
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-06 |
 | 1 | Red: embedding ABI / unit / host absent | **done** 2026-08-06 — `scripts/run_script_vm_embedding_abi_unit_red.sh` exit 1 (`no script_vm embedding ABI unit`); green/unit/host/header/embedding/bridge absent |
-| 2 | Green: embedding.mlc + C ABI + host call→42; `dev_gate_fast` | open |
+| 2 | Green: embedding.mlc + C ABI + host call→42; `dev_gate_fast` | **done** 2026-08-06 — embedding.mlc + ABI header/bridge/host; unit+host add1→42; red already-present; side §103h; `dev_gate_fast` 1471/0 |
 | 3 | Critic | open |
+
+### Green measured (§103i)
+
+```
+embedding_abi=ok
+add1=ok
+host_call=ok
+red_already_present=ok
+side_closures_fibers=ok
+dev_gate_fast=1471/0
+```
+
+**Residual (disclosed, non-blocking):** `let mut value: i64 = 0` codegen'd as `auto value = 0` (i32) — `read_i64_le` uses `embedding_u8_to_i64(0)` seed; instruction/heap limits from config stored but not enforced on call this STEP.
 
 ## Explicitly deferred past Phase 1 (do not pull forward without new user authorization)
 
