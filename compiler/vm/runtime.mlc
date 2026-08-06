@@ -44,6 +44,7 @@ export fn vm_is_native_callee(name: string) -> bool =
   || name == "__mir_string_length"
   || name == "__mir_string_contains"
   || name == "__mir_string_substring"
+  || name == "__mir_string_byte_substring"
   || name == "__mir_string_char_at"
   || name == "__mir_to_string"
   || name == "__mir_array_join"

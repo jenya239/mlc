@@ -468,3 +468,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s8 Red done.** next = Green |
 | issues  | — |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Green) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s8)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | `__mir_string_byte_substring` + whitelist; VM `text.byte_substring` |
+| verify  | LEC=646 (<649); hist clean of byte_substring; smoke 0; red trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s8 Green done.** next = Critic |
+| issues  | — |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 8 Critic) |

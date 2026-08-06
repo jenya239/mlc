@@ -21,6 +21,7 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_string_length' then vm_native_string_length(arguments)
   else if name == '__mir_string_contains' then vm_native_string_contains(arguments)
   else if name == '__mir_string_substring' then vm_native_string_substring(arguments)
+  else if name == '__mir_string_byte_substring' then vm_native_string_byte_substring(arguments)
   else if name == '__mir_string_char_at' then vm_native_string_char_at(arguments)
   else if name == '__mir_to_string' then vm_native_to_string(arguments)
   else if name == '__mir_array_join' then vm_native_array_join(arguments)
@@ -407,6 +408,23 @@ fn vm_native_string_substring(arguments: [VmValue]) -> Result<VmValue, [string]>
           _ => Err(['vm: __mir_string_substring expects i32 start'])
         },
       _ => Err(['vm: __mir_string_substring expects string'])
+    }
+  end
+
+fn vm_native_string_byte_substring(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 3 then Err(['vm: __mir_string_byte_substring expects 3 arguments'])
+  else
+    match arguments[0] {
+      VmString(text) =>
+        match arguments[1] {
+          VmI32(start) =>
+            match arguments[2] {
+              VmI32(length) => Ok(VmString(text.byte_substring(start, length))),
+              _ => Err(['vm: __mir_string_byte_substring expects i32 length'])
+            },
+          _ => Err(['vm: __mir_string_byte_substring expects i32 start'])
+        },
+      _ => Err(['vm: __mir_string_byte_substring expects string'])
     }
   end
 
