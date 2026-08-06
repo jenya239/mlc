@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6** (Wave 2 MIR lowering) Decision next (after §103 Phase 1 CLOSED 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 1** Red next (Decision frozen 2026-08-06). Prior: §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,12 +348,59 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6)
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 1 Decision frozen 2026-08-06
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
 - **§104-10** `MirPass` trait + `mir/passes/` (Step 10) — depends on §104-7
 - **§104-11** optional `--cpp-from-mir` flag, not default (Step 11) — depends on §104-6
+
+## §104-6 complete MIR lowering coverage (Wave 2 / review Шаг 6)
+
+Parent review: `mlc-support/responses/review_20260629_144027.md` Шаг 6.
+**§104-6 stays open** until `lower_error_count=0` on `compiler/main.mlc`
+(every `SemanticDeclarationFn` lowers to `MirFunction`). Slices below;
+`mir_builder.mlc` is §104-7 — do not pull into §104-6.
+
+### Metric clarification (frozen)
+
+| Metric | Meaning | §104-6 role |
+|--------|---------|-------------|
+| `lower_error_count` | `lower_semantic_function` → `Err` (functions dropped today by `build_mir_program_from_semantic_items`) | **Primary close gate** → 0 |
+| `cpp_skip` | lowered Ok but `!mir_function_is_simple` (mir→CppIR skip) | **Secondary** baseline/trend; review text aimed at 0, but that is mostly CFG/`mir_to_cpp` surface — full `cpp_skip=0` may finish under §104-11; do not block §104-6 close on it alone |
+
+### Pre-cut baseline (audit 2026-08-06)
+
+| Fact | Evidence |
+|------|----------|
+| Report on `compiler/main.mlc` | `mir_functions=1980 simple=1204 cpp_ok=1204 cpp_skip=776` (`--mir-bootstrap-report`) |
+| Silent drop | `build_mir_program_from_semantic_items` keeps only `Ok` functions; errors discarded. Checked API `build_mir_program_from_semantic_items_checked` exists but bootstrap report unused |
+| No coverage script | `compiler/scripts/mir-coverage.sh` absent (review proposed) |
+| `MirRvalue` narrow | Only `Use`/`Binary`/`Unary` in `mir_types.mlc` — review's Record/Field/Tuple variants absent |
+| `lower_fn.mlc` | 1802 lines; many `mir lower: unsupported …` Err arms |
+| No `mir_builder.mlc` | §104-7 |
+
+### Slice 1 — coverage measurement (lower errors surfaced)
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | Cannot drive Step 6: bootstrap report never prints how many functions **fail to lower**; `cpp_skip` alone conflates “not simple for mir_to_cpp” with “did not lower”. No `mir-coverage.sh` |
+| Fix | (1) Extend `MirBootstrapReport` + `print_mir_bootstrap_report` with `lower_error_count` and optional truncated error lines (cap printed errors, e.g. first 32). Wire report builder through `mir_lower_items` / checked accum so errors are counted, not dropped. (2) New `compiler/scripts/mir-coverage.sh`: run `mlcc --check-only --mir-bootstrap-report` on `compiler/main.mlc`, parse `mir_functions=` / `lower_error_count=` / `cpp_skip=`, print summary, exit 0 always for slice 1 (measurement only — **no** fail-on-nonzero yet). (3) Keep existing cpp_ok/cpp_skip lines intact |
+| Gate | Red: `mir-coverage.sh` absent; report text lacks `lower_error_count=`. Green: script runs on `main.mlc`, stdout contains `lower_error_count=` (integer ≥0) and existing `mir_functions=`/`cpp_skip=`; `dev_gate_fast` / `rake test_compiler_mlc` green; self-host diff empty if only report/script (+ tiny lower_program/report wiring) |
+| Sabotage | Strip `lower_error_count` from printer → script/gate fails; or report always prints `lower_error_count=0` while forcing a known-fail fixture still shows 0 → Critic catches |
+| REG | no (`compiler/**` only; no `lib/mlc/**`) |
+| Out of scope | Filling `MirRvalue` Record/Tuple/Field (later §104-6 slices); `mir_builder.mlc` (§104-7); making `cpp_skip=0`; `--cpp-from-mir` (§104-11); switching default C++ backend (§104-24) |
+
+#### Steps (§104-6 slice 1)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: mir-coverage / lower_error_count absent | open |
+| 2 | Green: report + script; baseline numbers recorded; `dev_gate_fast` | open |
+| 3 | Critic | open |
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

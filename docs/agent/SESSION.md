@@ -363,3 +363,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103i CLOSED (Critic OK). Phase 1 CLOSED.** next = §104 Wave 2 |
 | issues  | C++ blob map vs MLC id registry (non-blocking); limits not enforced; host `.cpp` |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 MIR lowering Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Frozen §104-6 slice 1 Decision: mir-coverage.sh + lower_error_count in bootstrap report; primary gate lower_error_count→0 for §104-6 close; cpp_skip secondary; baseline 1980/776 |
+| verify  | pre-cut: no mir-coverage.sh; report lacks lower_error_count; MirRvalue Use/Binary/Unary only; checked API unused by report |
+| result  | **§104-6 s1 Decision frozen.** next = Red |
+| issues  | — |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 1 Red) |
