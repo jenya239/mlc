@@ -543,3 +543,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s9 Green done (IR completeness; residual gate corrected).** next = Critic |
 | issues  | original LEC/hist improve gate not load-bearing; next residual → LetPattern/operand kinds |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 9 Critic) |
+
+### Turn 2026-08-06 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s9)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Independent coverage+wiring+sab+smoke+gate; Decision correction confirmed; slice 9 CLOSED |
+| verify  | LEC=646; hist 34/5 unchanged; ConstStr arms; red trips; smoke 0; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s9 CLOSED (Critic OK).** next = slice 10 Decision |
+| issues  | parent open; next residual LetPattern/operand |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 10 Decision) |

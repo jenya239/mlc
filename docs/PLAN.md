@@ -1078,7 +1078,7 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
         → §107r EDITOR_UX_GATE_BEHAVIORAL (CLOSED)
       (P2 backlog B1–B11 lives in the track file, not in this queue)
       → [agent/TRACK_EDITOR_HYGIENE](agent/TRACK_EDITOR_HYGIENE.md))
-  → **§104 Wave 2 QUEUE HEAD (§104-6 slice 9 Critic; Green done, residual 0 disclosed)**
+  → **§104 Wave 2 QUEUE HEAD (§104-6 slice 10 Decision; s9 CLOSED)**
       → [agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md)
   → **MLC_SCRIPT_VM Phase 1 (§103 — CLOSED 2026-08-06 §103a–i;
       Phase 2–5 of `MLC_SCRIPT_VM.md` §12 remain design-only, NOT authorized
