@@ -363,3 +363,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s12 CLOSED (Critic OK).** next = slice 13 Decision |
 | issues  | parent open; LEC=620 (HOF/CppIR/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 13 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s13)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Freeze §104-6 s13 Decision: `__mir_string_byte_size` / `__mir_string_upper` / `__mir_string_to_lower` / `__mir_array_take`; gate LEC<620 + hist clean for four |
+| verify  | Baseline LEC=620; hist byte_size=upper=to_lower=take=1; HOF≈300/CppIR≈191 deferred; TRACK Decision+Steps |
+| result  | **§104-6 s13 Decision frozen.** next = Red |
+| issues  | parent open; after this leaf mop-up HOF is next strategic residual |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 13 Red) |
