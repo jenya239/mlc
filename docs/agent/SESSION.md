@@ -558,3 +558,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s1 (2026-08-06 Critic s
 | result  | **§104-6 s9 CLOSED (Critic OK).** next = slice 10 Decision |
 | issues  | parent open; next residual LetPattern/operand |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 10 Decision) |
+
+### Turn 2026-08-06 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s10)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-06-layout-integrity-path |
+| done    | Freeze §104-6 s10 Decision: LetPattern via match bind helpers; Break deferred; gate LEC<646 + statement hist<19 |
+| verify  | Baseline re-measured: LEC=646, unsupported statement=19; ~9 lexer `let {…}`; ~7 `break`; TRACK Decision+Steps table |
+| result  | **§104-6 s10 Decision frozen.** next = Red |
+| issues  | parent open; Break residuals expected after Green |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 10 Red) |

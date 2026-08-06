@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 10** Decision next (s9 CLOSED). Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 10** Decision frozen; Red next. Prior: §104-6 s8 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 9 CLOSED; slice 10 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 10 Decision frozen (LetPattern); Red next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -925,6 +925,40 @@ Independent re-run:
 - `dev_gate_fast` 1471/0
 
 Residuals: parent open; next residual targets: `unsupported statement`=19 (LetPattern), operand-context=34 (Lambda/With/…), `type_is_unknown`=26; HOF/CppIR deferred.
+
+### Slice 10 — `SemanticStatementLetPattern` (statement residual)
+
+#### Pre-cut facts (audit 2026-08-06, post-s9)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=646` `mir_functions=2498` |
+| Hist | `fold=125`, `map=93`, `make_identifier_cpp_expression=49`, `any=36`, operand-context=34, `type_is_unknown`=26, **`unsupported statement=19`**, `flat_map=18`, …, rvalue-context=5 |
+| Statement `_` | `mir_lower_statement` falls through for `SemanticStatementLetPattern` / `Break` / `Continue` → shared `unsupported statement` |
+| Load-bearing residual | ~9 `let { … } = …` record destructures in `compiler/frontend/lexer.mlc`; ~7 bare `break` in lexer/parser/cpp_* — **no** `continue` stmts in `compiler/**/*.mlc` (excl. out/) |
+| Reuse | Match already has `mir_lower_bind_match_arm_pattern` (Ident/Ctor/Record), `mir_lower_pattern_needs_conditional_test`, `mir_lower_pattern_matches_operand` |
+| Gap | No loop break/continue stack on `MirLowerState`; Break needs new CFG targets — **not this slice** |
+| Deferred | HOF; CppIR `make_*`; Lambda/With operand; Break/Continue; `type_is_unknown` |
+
+#### Decision (**frozen** 2026-08-06, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | After s9 IR-completeness (zero residual drop), next *residual* leaf is `unsupported statement=19`. Largest actionable share is `SemanticStatementLetPattern` (record/ident/ctor binds). Break needs loop-exit CFG — separate slice |
+| Fix | Add `mir_lower_let_pattern_statement` in `compiler/mir/lower_fn.mlc`: (1) lower value → scrutinee local via existing rvalue/`expression_into_local`; (2) if `mir_lower_pattern_needs_conditional_test(pattern)` then CondJump success vs else-body (`has_else`) or unreachable/error path; (3) bind via `mir_lower_bind_match_arm_pattern`. Wire `SemanticStatementLetPattern` arm in `mir_lower_statement`. Prefer reuse over new pattern IR. No new VM natives. **Do not** implement Break/Continue here |
+| Gate | Red: no `SemanticStatementLetPattern` arm in `mir_lower_statement`; no `mir_lower_let_pattern_statement`. Green: arm+helper present; `lower_error_count` **strictly < 646**; hist `unsupported statement` **strictly < 19** (Break residuals may remain); smoke `--run` record `let { a, b } = …`; `dev_gate_fast`; self-host IDENTICAL. **Do not** require hist=0 this slice (Break remains) |
+| Sabotage | Claim Green while LetPattern still `_`; LEC≥646; hist still ≥19; silent PatternTuple/Array “Ok(state)” no-op counted as support without bind |
+| REG | no |
+| Out of scope | Break/Continue; HOF; CppIR; Lambda/With; Tuple/Array let-pattern beyond what bind already does; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 10)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-06 |
+| 1 | Red: no LetPattern statement arm / helper | open |
+| 2 | Green: LetPattern wired; LEC < 646; hist statement < 19 | open |
+| 3 | Critic | open |
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
