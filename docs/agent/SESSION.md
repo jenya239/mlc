@@ -318,3 +318,18 @@ Turns before TRACK_EDITOR_FRAME_ARCHITECTURE §110f (2026-08-06) archived — se
 | result  | **§103i Decision frozen.** next = Red |
 | issues  | — |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Red) |
+
+### Turn 2026-08-06 (Driver TRACK_MLC_SCRIPT_VM STEP=1, §103i)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_MLC_SCRIPT_VM |
+| started | 2026-08-06 |
+| instructions_rev | 2026-08-04-frame-arch-path |
+| done    | Added `scripts/run_script_vm_embedding_abi_unit_red.sh`; asserts green runner/unit/host/embedding.mlc/header/bridge absent |
+| verify  | red exit 1: `no script_vm embedding ABI unit (Red expected)` |
+| result  | **§103i Red done.** next = Green |
+| issues  | — |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_MLC_SCRIPT_VM (§103i SCRIPT_VM_EMBEDDING_ABI Green) |
