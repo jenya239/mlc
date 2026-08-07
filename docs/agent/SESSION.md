@@ -558,3 +558,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s16 Decision frozen.** next = Red |
 | issues  | parent open; nested-reach buffer in gate (map-heavy codegen) |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Red) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s16)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Red harness `compiler/scripts/mir-coverage_s16_red.sh`; gap confirmed (no map HOF desugar) |
+| verify  | harness exit 1 `no map HOF desugar (Red expected)`; no `mir_lower_array_map_hof_to_local`; no `method_name == 'map'` |
+| result  | **§104-6 s16 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Green) |
