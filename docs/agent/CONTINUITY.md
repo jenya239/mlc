@@ -2,7 +2,7 @@
 
 **Path:** `docs/agent/CONTINUITY.md`.
 
-**INSTRUCTIONS_REV:** `2026-08-06-layout-integrity-path` — bump when workflow/rules change.
+**INSTRUCTIONS_REV:** `2026-08-07-queue-sync` — bump when workflow/rules change.
 
 Orchestration: **обычная очередь сообщений Cursor** (оператор вручную ставит в очередь N одинаковых копий driver-промпта). Никакого MCP-роутинга, токенов, CDP, watchdog — этот подход (`agent-loop`/`cr`) отменён, архив: `docs/archive/CONTINUITY_AGENT_LOOP_MCP.md`, `docs/archive/TRACK_ORCH_DEV.md`.
 
@@ -26,7 +26,7 @@ Orchestration: **обычная очередь сообщений Cursor** (оп
 Queued prompt (тот же текст в каждом сообщении очереди):
 
 ```
-INSTRUCTIONS_REV=2026-08-06-layout-integrity-path
+INSTRUCTIONS_REV=2026-08-07-queue-sync
 @docs/agent/CONTINUITY.md
 @docs/agent/DEVELOPMENT.md
 @docs/agent/SESSION.md
@@ -136,7 +136,7 @@ INSTRUCTIONS_REV=2026-08-06-layout-integrity-path
 | **`TRACK_EDITOR_RENDER_ARCHITECTURE` (PLAN §97)** | **closed** 2026-07-25 (Critic OK). P0 §97a/b/c+§96 done. Residual later folds not queued. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CPU_BUDGET` (PLAN §51)** | **closed** 2026-07-22 (Critic OK). Archived. Paint-only blink + `/proc` CPU% ≤10. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_CARET_BLINK` (PLAN §50)** | **closed** 2026-07-22 (Critic OK). Archived. `clock_ms` + `paint_dirty` blink redraw. Do not reopen numbered STEPs |
-| **Authorized queue** | **§110c Critic** (`TRACK_EDITOR_FRAME_ARCHITECTURE` — paint list Green audit). §110a/§110b CLOSED; §110c Red+Green done. |
+| **Authorized queue** | **§104-6 slice 17 Green** (`TRACK_COMPILER_ARCHITECTURE_HYGIENE` — fold HOF desugar). §109/§110/§103 Phase 1 **CLOSED**. §111 layout integrity **path only** (not queue head). |
 | **`TRACK_EDITOR_SOLID_PASS_CONTENT_CLIP` (PLAN §49)** | **closed** 2026-07-22 (Critic OK). Archived. Solid `content_clip` + minimap indicator under `minimap_rect`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_WRAPPED_TEXT_BLEEDS_INTO_MINIMAP` (§46 #37)** | **closed** 2026-07-22 (Critic OK). Archived. Glyph batch scissors `content_clip`. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU` (§46 #38)** | **closed** 2026-07-22 (Critic OK). Archived. Activity dirty-flag + `frame_snapshot_cache` + `wait_events_timeout`. Do not reopen numbered STEPs |
@@ -195,12 +195,12 @@ INSTRUCTIONS_REV=2026-08-06-layout-integrity-path
 | **`TRACK_EDITOR_GOTO_LINE` (§46 #8)** | **closed** 2026-07-18 (Critic OK). Archived. Goto + Ctrl+G + demo_live. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_DRAG_AUTOSCROLL` (§46 #9)** | **closed** 2026-07-18 (Critic OK). Archived. Past-edge drag autoscroll + demo_live. Do not reopen numbered STEPs |
 | **`TRACK_EDITOR_AUTO_INDENT` (§46 #10)** | **closed** 2026-07-18 (Critic OK). Archived. Enter keeps leading indent. Do not reopen numbered STEPs |
-| **`TRACK_MLC_SCRIPT_VM` (PLAN §103)** | **SUSPENDED** 2026-08-03 — Phase 1 §103a–e CLOSED; §103f+ frozen behind §109 (override h). Do not open §103f until §109 Critic-closes. Phase 2-5 remain design-only |
+| **`TRACK_MLC_SCRIPT_VM` (PLAN §103)** | **CLOSED** 2026-08-06 — Phase 1 (§103a–i) Critic OK. Phase 2–5 design-only. Do not reopen numbered STEPs.|
 | **`TRACK_EDITOR_TERMINAL` (PLAN §102)** | **CLOSED** 2026-07-31 — epic complete, §102a–§102g all closed and Critic-audited (git `44b66105`+). **Do not re-open any numbered sub-track (§102a…§102g) or its STEPs.** Terminal follow-ups from the 2026-08-01 audit are owned by §107, not by this track: fd/process teardown on tab-strip close and window close (EHA-08/09) → **§107g**; idle repaint of an unchanged grid, `vterm_damage_count` unconsumed (EHA-11) → **§107k**; `pty_spawn`'s `/bin/sh -c` shell-exec contract (EHA-10) → §107 backlog **B11**. New terminal work outside those requires a new PLAN row and explicit user authorization |
 | **`TRACK_EDITOR_IDLE_POINTER_DIRTY` (PLAN §106)** | **CLOSED** 2026-08-01 — incident fix shipped as commit `47b4f134` (`pointer_dirty` / out-of-window ignore / idle wait-before-layout / `layout_skip` + `cached_visual_rows` / `glfwSwapInterval(1)` when `MLC_GLFW_VISIBLE`). **Do not re-open.** Residuals from the same incident are owned by §107, not by this track: text-memcmp cache invalidation → **§107e**; shape-segment budget → **§107h**; spans under `layout_skip` → **§107i**; behavioral hover/idle gate → **§107r**; uncapped swap when `MLC_GLFW_VISIBLE` is unset → backlog **B7**. New idle/pointer work outside those requires a new PLAN row and explicit user authorization |
-| **`TRACK_EDITOR_LAYOUT_INTEGRITY` (PLAN §111)** | **open (path)** 2026-08-06 — agent visual integrity: shell layout map, no-overlap gates, bleed scenarios, rename demo_live→product. STEPs when prioritized (§111a). |
-| **`TRACK_EDITOR_FRAME_ARCHITECTURE` (PLAN §110)** | **open** 2026-08-06 — queue head §110c; Green done (paint list / submit); Critic next. |
-| **`TRACK_EDITOR_PERF_DOGFOOD` (PLAN §109)** | **CLOSED** 2026-08-05 — §109a–k Critic OK; independent gate ×2 (scroll 31/38); sabotes+red fail; epic close criteria via dogfood suite. |
+| **`TRACK_EDITOR_LAYOUT_INTEGRITY` (PLAN §111)** | **open (path)** 2026-08-06 — §111a Decision when prioritized; default behind §104-6 unless user override.|
+| **`TRACK_EDITOR_FRAME_ARCHITECTURE` (PLAN §110)** | **CLOSED** 2026-08-06 — §110a–g Critic OK. Residuals noted in track. Do not reopen numbered STEPs.|
+| **`TRACK_EDITOR_PERF_DOGFOOD` (PLAN §109)** | **CLOSED** 2026-08-05 — §109a–k Critic OK; dogfood gate ×2. Do not reopen numbered STEPs.|
 | **`TRACK_EDITOR_RETAINED_PAINT` (PLAN §108)** | **CLOSED** 2026-08-03 — §108a–§108d Critic-audited (hover CPU gate L1 counters + L2 /proc floor `HOVER_CPU_BUDGET_PERCENT=10`). **Do not re-open.** Residuals/dogfood lag owned by §109, not this track. |
 | **`TRACK_EDITOR_HYGIENE` (PLAN §107)** | **CLOSED** 2026-08-03 — §107a–§107r Critic-audited (behavioural wheel L1 + arch-lint classification; absorb checklist via §107a–h/§108d). **Do not re-open numbered sub-tracks.** P2 B1–B11 remain backlog-only. Queue: §103a → §104 Wave 2. |
 | **`TRACK_EDITOR_HORIZONTAL_SCROLLBAR_MAX_COLUMNS_CACHE` (PLAN §105)** | **CLOSED** 2026-07-31 — found while investigating §101 (its "confirmed root cause" claim was unmeasured/wrong). `editor_ux_max_line_columns_from_index` is the actual dominant cost (>95% of `draw_us`) on the standing 100k-line perf smoke fixture. Decision/red/green: `MaxLineColumnsCache` wired into `EditorFrameLayout`; perf smoke `draw_us` 105× lower, `total_us` 17× lower. Critic-audited same day: independent rebuild + re-measure (`draw_us=78062 total_us=501532`, same order of magnitude), `run_ux_gate.sh` run twice (113/113 both times, 0 failures) — no false-done found |
