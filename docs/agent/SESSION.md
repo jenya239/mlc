@@ -468,3 +468,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s14 Green done.** next = Critic |
 | issues  | parent open; LEC=574 (fold/map dominate); fold hist 125→127 nested reach |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 14 Critic) |
+
+### Turn 2026-08-07 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s14)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Independent wiring+MIR+nested smokes+LECΔ+red+self-host+gate; slice 14 CLOSED |
+| verify  | LEC=574; hist any/all absent; nested hof MIR; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s14 CLOSED (Critic OK).** next = slice 15 Decision |
+| issues  | parent open; LEC=574 (fold/map/…); Ident free-fn any residual=1 |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 15 Decision) |
