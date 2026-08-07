@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 16** Decision next (s15 CLOSED). Prior: §104-6 s15 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 16** Decision frozen; Red next. Prior: §104-6 s15 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 15 CLOSED; slice 16 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 16 Decision frozen (array `map` HOF desugar); Red next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1367,6 +1367,38 @@ Independent re-audit (not a re-read of Driver log):
 | Gate | `dev_gate_fast` 1471/0 |
 
 No false-done. Slice 15 CLOSED. Parent remains open (LEC≠0).
+
+### Slice 16 — array `map` HOF desugar (transform + push; after filter)
+
+#### Pre-cut facts (audit 2026-08-07, post-s15)
+
+| Fact | Evidence |
+|------|----------|
+| Baseline | `mir-coverage`: `lower_error_count=565` `mir_functions=2600` |
+| Hist | **`fold=127`**, **`map=98`**, CppIR `make_identifier…=49`, operand=36, `type_is_unknown=26`, **`flat_map=18`**, … |
+| Why map next | Same loop+empty/push skeleton as s15 `filter`; always push callback result (no CondJump keep). Largest remaining array HOF after `fold` (fold needs 2-arg accumulator — deferred) |
+| Reuse | `mir_lower_resolve_predicate_callback` (1-arg Lambda/Ident); for-like index walk; `mir_lower_lambda_inline_body`; `__mir_array_empty`/`__mir_array_push`/`__mir_length`/`__mir_array_get` |
+| Deferred | `fold`/`flat_map`; CppIR `make_*`; operand Lambda; free-fn Ident non-lambda |
+
+#### Decision (**frozen** 2026-08-07, Driver STEP=0)
+
+| Item | Choice |
+|------|--------|
+| Problem | After s15 filter, next array HOF gap is `map` (hist 98) |
+| Fix | (1) Special-case `map` arity 1 in `mir_lower_method_to_local`. (2) New `mir_lower_array_map_hof_to_local`: lower receiver; `result = __mir_array_empty()`; index loop; get element; inline callback into mapped temp; `result = __mir_array_push(result, mapped)`; yield result. Callback = Lambda or lambda-bound Ident (reuse resolve helper). **No new VM natives** |
+| Gate | Red: no map special-case / no `mir_lower_array_map_hof_to_local`. Green: wired; `lower_error_count` **≤ 520** (565−98=467 plus nested-reach buffer — codegen is map-heavy); hist `unsupported method map` **absent**; smoke `--run` map; `dev_gate_fast`; self-host IDENTICAL |
+| Sabotage | Claim Green while hist still lists map; LEC>520; smoke fails |
+| REG | no |
+| Out of scope | `fold`/`flat_map`; CppIR; `lower_error_count=0` |
+
+#### Steps (§104-6 slice 16)
+
+| Step | Item | Gate |
+|------|------|------|
+| 0 | Decision freeze | **done** 2026-08-07 |
+| 1 | Red: no map HOF desugar | open |
+| 2 | Green: desugar; LEC ≤ 520; hist map absent | open |
+| 3 | Critic | open |
 
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached

@@ -543,3 +543,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s15 CLOSED (Critic OK).** next = slice 16 Decision |
 | issues  | parent open; LEC=565 (fold/map/…); Decision gate ≤565 nested-map correction OK |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s16)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Freeze §104-6 s16 Decision: array `map` HOF desugar (empty+push + callback); gate LEC≤520 + hist map absent; no new VM natives |
+| verify  | Baseline LEC=565; hist map=98 fold=127; fold/flat_map deferred; reuses s15 loop skeleton |
+| result  | **§104-6 s16 Decision frozen.** next = Red |
+| issues  | parent open; nested-reach buffer in gate (map-heavy codegen) |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Red) |
