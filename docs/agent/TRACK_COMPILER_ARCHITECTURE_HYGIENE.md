@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 15** Green done; Critic next. Prior: §104-6 s14 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 16** Decision next (s15 CLOSED). Prior: §104-6 s15 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 15 Green done (array `filter` HOF desugar); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 15 CLOSED; slice 16 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1328,7 +1328,7 @@ No false-done. Slice 14 CLOSED. Parent remains open (LEC≠0).
 | 0 | Decision freeze | **done** 2026-08-07 |
 | 1 | Red: no filter HOF desugar | **done** 2026-08-07 |
 | 2 | Green: desugar; LEC ≤ 565; hist filter absent | **done** 2026-08-07 |
-| 3 | Critic | open |
+| 3 | Critic | **done** 2026-08-07 — CLOSED |
 
 #### Red evidence (§104-6 slice 15)
 
@@ -1351,6 +1351,23 @@ No false-done. Slice 14 CLOSED. Parent remains open (LEC≠0).
 **Decision correction (Green):** original buffer `LEC < 565` assumed 574−14 without nested reach; measured net −9 (filter −14, map +5). Gate restated **LEC ≤ 565**.
 
 Residuals: parent open; LEC=565; hist head `fold=127`/`map=98`/CppIR — next HOF after Critic likely `map` or `flat_map`.
+
+#### Critic audit (2026-08-07), §104-6 slice 15 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | tip `05dba430`: `mir_lower_array_filter_hof_to_local` + `method_to_local` filter arity-1; empty/push + predicate; no new VM natives |
+| Smokes | independent filter + nested `filter.any` `--run` exit 0 |
+| MIR | nested: `hof_filter_*` then `hof_predicate_*` |
+| Coverage | LEC=565 (≤565); Δ=9 vs Red 574; hist filter **absent**; map=98 (nested reach) |
+| Red after | exit 1 `mir_lower_array_filter_hof_to_local already present` |
+| Self-host | fresh critic_s15_p1→`critic_mlcc2_s15`→p2; `diff -r --exclude=obj` IDENTICAL |
+| Gate | `dev_gate_fast` 1471/0 |
+
+No false-done. Slice 15 CLOSED. Parent remains open (LEC≠0).
+
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
