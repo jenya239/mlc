@@ -56,6 +56,7 @@ import {
   static_text_glyph_batch_new,
   static_text_glyph_batch_rebuild_colored,
   static_text_glyph_batch_adjust_y,
+  static_text_glyph_batch_adjust_x,
   static_text_glyph_batch_append_colored,
   static_text_glyph_batch_destroy,
   static_text_destroy
@@ -1066,6 +1067,7 @@ fn main() -> i32 = do
   let mut editor_glyph_batch = static_text_glyph_batch_new()
   let mut editor_glyph_fingerprint = ""
   let mut editor_glyph_scroll_y = 0
+  let mut editor_glyph_scroll_x = 0
   let mut editor_glyph_row_ids: [string] = []
   let mut editor_glyph_newly_visible_rows_last = 0
   let mut minimap_drag = 0
@@ -1525,9 +1527,19 @@ fn main() -> i32 = do
     const visual_row_count = frame_layout.visual_row_count
     let mut wrapped_content_height = frame_layout.wrapped_content_height
     app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
+    const early_clamp_before_y = app.ux.scroll_offset_y
+    const early_clamp_before_x = app.ux.scroll_offset_x
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height, text_rect.height
     )
+    const early_clamp_note = editor_live_note_scroll_changed(
+      content_dirty, layout_skip, cached_visual_rows_valid,
+      early_clamp_before_y, app.ux.scroll_offset_y,
+      early_clamp_before_x, app.ux.scroll_offset_x
+    )
+    content_dirty = early_clamp_note.content_dirty
+    layout_skip = early_clamp_note.layout_skip
+    cached_visual_rows_valid = early_clamp_note.cached_visual_rows_valid
     let mut visible_row_budget = text_rect.height / metrics.line_height + 3
     if visible_row_budget < 1 then
       visible_row_budget = 1
@@ -2603,7 +2615,17 @@ fn main() -> i32 = do
     draw_text = frame.text
     app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
     if !(dogfood_probe && dogfood_phase == "scroll") then
+      const ensure_caret_before_y = app.ux.scroll_offset_y
+      const ensure_caret_before_x = app.ux.scroll_offset_x
       app = editor_app_ensure_caret_visible(app, metrics, line_index)
+      const ensure_caret_note = editor_live_note_scroll_changed(
+        content_dirty, layout_skip, cached_visual_rows_valid,
+        ensure_caret_before_y, app.ux.scroll_offset_y,
+        ensure_caret_before_x, app.ux.scroll_offset_x
+      )
+      content_dirty = ensure_caret_note.content_dirty
+      layout_skip = ensure_caret_note.layout_skip
+      cached_visual_rows_valid = ensure_caret_note.cached_visual_rows_valid
     end
     const wrap_columns_now = wrap_max_columns(text_rect.width - 8, metrics.char_width)
     const wrap_viewport_width_now = text_rect.width - 8
@@ -2653,9 +2675,19 @@ fn main() -> i32 = do
     end
     const visual_row_count_now = frame_layout.visual_row_count
     let mut wrapped_content_height_now = frame_layout.wrapped_content_height
+    const late_clamp_before_y = app.ux.scroll_offset_y
+    const late_clamp_before_x = app.ux.scroll_offset_x
     app = editor_app_clamp_scroll_to_content(
       app, wrapped_content_height_now, text_rect.height
     )
+    const late_clamp_note = editor_live_note_scroll_changed(
+      content_dirty, layout_skip, cached_visual_rows_valid,
+      late_clamp_before_y, app.ux.scroll_offset_y,
+      late_clamp_before_x, app.ux.scroll_offset_x
+    )
+    content_dirty = late_clamp_note.content_dirty
+    layout_skip = late_clamp_note.layout_skip
+    cached_visual_rows_valid = late_clamp_note.cached_visual_rows_valid
     visible = visible_line_range(line_index_line_count(line_index), app.ux.scroll_offset_y, viewport)
     if layout_skip == 0 then
       // §107j — single visible-row collect per content frame.
@@ -3743,6 +3775,7 @@ fn main() -> i32 = do
         editor_glyph_batch = editor_rebuilt.batch
         editor_glyph_fingerprint = editor_glyph_fp
         editor_glyph_scroll_y = app.ux.scroll_offset_y
+        editor_glyph_scroll_x = app.ux.scroll_offset_x
         editor_glyph_row_ids = next_glyph_row_ids
         editor_glyph_newly_visible_rows_last = newly_visible_rows
         if editor_glyph_batch.valid != 0 && editor_glyph_row_ids.length() > 0 &&
@@ -3762,8 +3795,12 @@ fn main() -> i32 = do
         end
       else
         const delta_pixel_y = editor_glyph_scroll_y - app.ux.scroll_offset_y
+        const delta_pixel_x = editor_glyph_scroll_x - app.ux.scroll_offset_x
         editor_glyph_batch = static_text_glyph_batch_adjust_y(
           editor_glyph_batch, delta_pixel_y, height
+        )
+        editor_glyph_batch = static_text_glyph_batch_adjust_x(
+          editor_glyph_batch, delta_pixel_x, width
         )
         editor_glyph_newly_visible_rows_last = newly_visible_rows
         if newly_visible_rows > 0 && editor_row_line_starts.length() == next_glyph_row_ids.length() then
@@ -3802,6 +3839,7 @@ fn main() -> i32 = do
           end
         end
         editor_glyph_scroll_y = app.ux.scroll_offset_y
+        editor_glyph_scroll_x = app.ux.scroll_offset_x
         editor_glyph_row_ids = next_glyph_row_ids
         if editor_glyph_batch.valid == 0 then
           static_text_glyph_batch_destroy(editor_glyph_batch)

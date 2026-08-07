@@ -94,6 +94,13 @@ export extern fn gl_buffer_adjust_ndc_y(
   usage: i32
 ) -> i32
   = "mlc::gl::glad_abi::buffer_adjust_ndc_y" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_buffer_adjust_ndc_x(
+  target: i32,
+  float_count: i32,
+  delta_ndc_x: f64,
+  usage: i32
+) -> i32
+  = "mlc::gl::glad_abi::buffer_adjust_ndc_x" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_enable_vertex_attrib_array(index: i32) -> unit
   = "mlc::gl::glad_abi::enable_vertex_attrib_array" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_vertex_attrib_pointer_offset(

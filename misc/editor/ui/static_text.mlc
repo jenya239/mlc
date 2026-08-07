@@ -22,7 +22,8 @@ import {
   text_bind_array_buffer,
   text_upload_dynamic_scratch,
   text_buffer_download_to_scratch,
-  text_buffer_adjust_ndc_y
+  text_buffer_adjust_ndc_y,
+  text_buffer_adjust_ndc_x
 } from '../../gui/text_renderer'
 import {
   gl_gen_buffer,
@@ -546,6 +547,34 @@ export fn static_text_glyph_batch_adjust_y(
     (0.0 - i32_to_f64(delta_pixel_y) / i32_to_f64(window_height)) * 2.0
   text_bind_array_buffer(batch.vertex_buffer)
   const status = text_buffer_adjust_ndc_y(batch.float_count, delta_ndc)
+  if status != 0 then
+    return StaticTextGlyphBatch {
+      vertex_buffer: batch.vertex_buffer,
+      color_ranges: batch.color_ranges,
+      valid: 0,
+      float_count: batch.float_count
+    }
+  end
+  batch
+end
+
+// §111a1 — horizontal scroll without reshape (NDC x).
+export fn static_text_glyph_batch_adjust_x(
+  batch: StaticTextGlyphBatch,
+  delta_pixel_x: i32,
+  window_width: i32
+) -> StaticTextGlyphBatch = do
+  if batch.valid == 0 || batch.float_count <= 0 || delta_pixel_x == 0 then
+    return batch
+  end
+  if window_width <= 0 then
+    return batch
+  end
+  // left_ndc = -1 + pixel_x/width*2 → +delta_pixel_x → +delta on NDC x
+  const delta_ndc =
+    (i32_to_f64(delta_pixel_x) / i32_to_f64(window_width)) * 2.0
+  text_bind_array_buffer(batch.vertex_buffer)
+  const status = text_buffer_adjust_ndc_x(batch.float_count, delta_ndc)
   if status != 0 then
     return StaticTextGlyphBatch {
       vertex_buffer: batch.vertex_buffer,

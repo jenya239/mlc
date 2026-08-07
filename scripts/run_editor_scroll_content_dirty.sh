@@ -36,6 +36,10 @@ if ! grep -q 'minimap_scroll' "$DEMO"; then
   fail "demo_live missing minimap_scroll path"
 fi
 
+# §111a1 S1 — clamp/ensure must note scroll (Decision sabotage: strip note → fail).
+ruby "$ROOT_DIR/scripts/check_scroll_note_neighbors.rb" "$DEMO" ||
+  fail "clamp/ensure missing editor_live_note_scroll_changed neighbor"
+
 # Sabotage: helper must not no-op on scroll_changed=1.
 if grep -q 'return flags$' "$HELPER"; then
   # Allowed early return when scroll_changed==0; require dirty assignment exists.

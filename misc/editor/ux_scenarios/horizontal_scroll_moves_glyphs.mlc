@@ -1,0 +1,28 @@
+// TRACK_EDITOR_SCROLL_GLYPH_X §111a1 S3 — horizontal scroll must adjust glyphs (no GL).
+import {
+  editor_glyph_scroll_pixel_delta,
+  editor_glyph_needs_adjust_x
+} from '../ux/glyph_damage'
+
+fn main() -> i32 = do
+  if editor_glyph_needs_adjust_x(0, 0) != 0 then
+    println("ux_fail horizontal_scroll_moves_glyphs no_delta")
+    return 1
+  end
+  if editor_glyph_needs_adjust_x(10, 40) == 0 then
+    println("ux_fail horizontal_scroll_moves_glyphs needs_adjust")
+    return 2
+  end
+  const delta_pixel_x = editor_glyph_scroll_pixel_delta(10, 40)
+  if delta_pixel_x != 0 - 30 then
+    println("ux_fail horizontal_scroll_moves_glyphs delta")
+    return 3
+  end
+  // Same formula as adjust_y retain path: previous - current.
+  if editor_glyph_scroll_pixel_delta(40, 10) != 30 then
+    println("ux_fail horizontal_scroll_moves_glyphs delta_sign")
+    return 4
+  end
+  println("ux_ok horizontal_scroll_moves_glyphs")
+  0
+end

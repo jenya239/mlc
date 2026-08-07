@@ -53,3 +53,21 @@ export fn editor_glyph_should_full_rebuild_scroll(
   end
   0
 end
+
+// §111a1 — retained scroll delta (previous_offset - current_offset).
+export fn editor_glyph_scroll_pixel_delta(
+  previous_scroll: i32,
+  current_scroll: i32
+) -> i32 =
+  previous_scroll - current_scroll
+
+// True when horizontal scroll alone must move glyphs (no reshape).
+export fn editor_glyph_needs_adjust_x(
+  previous_scroll_x: i32,
+  current_scroll_x: i32
+) -> i32 = do
+  if previous_scroll_x != current_scroll_x then
+    return 1
+  end
+  0
+end

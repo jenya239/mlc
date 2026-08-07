@@ -253,6 +253,27 @@ inline int32_t buffer_adjust_ndc_y(
   return buffer_data_scratch(target, usage);
 }
 
+// §111a1 — NDC X is float index % 4 == 0.
+inline int32_t buffer_adjust_ndc_x(
+  int32_t target,
+  int32_t float_count,
+  double delta_ndc_x,
+  int32_t usage
+) {
+  if (float_count <= 0 || delta_ndc_x == 0.0) {
+    return 0;
+  }
+  if (buffer_download_to_scratch(target, float_count) != 0) {
+    return -1;
+  }
+  auto& values = scratch_f32();
+  const float delta = static_cast<float>(delta_ndc_x);
+  for (size_t index = 0; index < values.size(); index += 4) {
+    values[index] += delta;
+  }
+  return buffer_data_scratch(target, usage);
+}
+
 inline void scratch_u8_clear() { scratch_u8().clear(); }
 inline void scratch_u8_resize_zero(int32_t byte_count) {
   if (byte_count < 0) {

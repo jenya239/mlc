@@ -303,3 +303,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§111a0 CLOSED (Critic OK).** queue resumes §104-6 s17 Green |
 | issues  | none |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |
+
+### Turn 2026-08-07 (Driver+Critic TRACK_EDITOR_SCROLL_GLYPH_X §111a1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver/Critic |
+| step    | 0–5 |
+| track   | TRACK_EDITOR_SCROLL_GLYPH_X |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | S1: note after clamp/ensure + neighbor check; S3: buffer_adjust_ndc_x + adjust_x + editor_glyph_scroll_x wire; gates + sabotage |
+| verify  | scroll_content_dirty ok; horizontal_scroll_glyphs ok; s1/s3 sabotage fail; demo_live compile |
+| result  | **§111a1 CLOSED (Critic OK).** queue resumes §104-6 s17 Green |
+| issues  | S2/S4/S5 residual path |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |
