@@ -258,3 +258,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s17 Decision frozen.** next = Red |
 | issues  | parent open; nested-reach buffer in gate (fold-heavy codegen) |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Red) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s17)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Red harness `compiler/scripts/mir-coverage_s17_red.sh`; gap confirmed (no fold HOF desugar) |
+| verify  | harness exit 1 `no fold HOF desugar (Red expected)`; no `mir_lower_array_fold_hof_to_local`; no `method_name == 'fold'` |
+| result  | **§104-6 s17 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |
