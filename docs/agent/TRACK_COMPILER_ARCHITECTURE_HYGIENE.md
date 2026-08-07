@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 16** Red done; Green next. Prior: §104-6 s15 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 16** Green done; Critic next. Prior: §104-6 s15 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 16 Red done (array `map` HOF desugar); Green next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 16 Green done (array `map` HOF desugar); Critic next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1397,7 +1397,7 @@ No false-done. Slice 15 CLOSED. Parent remains open (LEC≠0).
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-07 |
 | 1 | Red: no map HOF desugar | **done** 2026-08-07 |
-| 2 | Green: desugar; LEC ≤ 520; hist map absent | open |
+| 2 | Green: desugar; LEC ≤ 520; hist map absent | **done** 2026-08-07 |
 | 3 | Critic | open |
 
 #### Red evidence (§104-6 slice 16)
@@ -1406,6 +1406,19 @@ No false-done. Slice 15 CLOSED. Parent remains open (LEC≠0).
 - No `fn mir_lower_array_map_hof_to_local` in `lower_fn.mlc`
 - `mir_lower_method_to_local`: no `method_name == 'map'` special-case
 - TRACK: no Green measured counters for slice 16
+
+#### Green measured (§104-6 slice 16)
+
+| Check | Result |
+|-------|--------|
+| Wiring | `mir_lower_array_map_hof_to_local`; `method_to_local` special-cases `map` arity 1; reuses resolve callback |
+| Coverage | `lower_error_count=477` (≤520); hist `map` **absent**; `fold` 127→130 (+3 nested) |
+| Smoke | `--run` `.tmp/s16_map_smoke.mlc` exit 0; MIR `hof_map_*` + empty/push |
+| Red after Green | exit 1 `mir_lower_array_map_hof_to_local already present` |
+| Self-host | `diff -r` s16_p1/s16_p2 `--exclude=obj` IDENTICAL |
+| `dev_gate_fast` | 1471/0 |
+
+Residuals: parent open; LEC=477; hist head `fold=130`/`flat_map=18`/CppIR — next after Critic likely `fold` or `flat_map`.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
