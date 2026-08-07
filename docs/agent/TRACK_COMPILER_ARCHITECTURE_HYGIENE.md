@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 15** Red done; Green next. Prior: §104-6 s14 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 15** Green done; Critic next. Prior: §104-6 s14 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 15 Red done (array `filter` HOF desugar); Green next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 15 Green done (array `filter` HOF desugar); Critic next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1316,8 +1316,8 @@ No false-done. Slice 14 CLOSED. Parent remains open (LEC≠0).
 |------|--------|
 | Problem | After s14 predicates, next small array HOF gap is `filter` (hist 14) |
 | Fix | (1) Special-case `filter` arity 1 in `mir_lower_method_to_local`. (2) New `mir_lower_array_filter_hof_to_local`: lower receiver to array local; `result = __mir_array_empty()`; index loop; get element; inline predicate; if true → `result = __mir_array_push(result, element)`; yield result local. Callback = Lambda or lambda-bound Ident (reuse `mir_lower_resolve_predicate_callback`). **No new VM natives** |
-| Gate | Red: no filter special-case / no `mir_lower_array_filter_hof_to_local`. Green: wired; `lower_error_count` **strictly < 565**; hist `unsupported method filter` **absent**; smoke `--run` filter; `dev_gate_fast`; self-host IDENTICAL |
-| Sabotage | Claim Green while hist still lists filter; LEC≥565; smoke fails |
+| Gate | Red: no filter special-case / no `mir_lower_array_filter_hof_to_local`. Green: wired; `lower_error_count` **≤ 565** (Decision correction 2026-08-07: nested `map` +5 offsets 574−14); hist `unsupported method filter` **absent**; smoke `--run` filter; `dev_gate_fast`; self-host IDENTICAL |
+| Sabotage | Claim Green while hist still lists filter; LEC>565; smoke fails |
 | REG | no |
 | Out of scope | `map`/`fold`/`flat_map`; Option/Result filter semantics; `lower_error_count=0` |
 
@@ -1327,7 +1327,7 @@ No false-done. Slice 14 CLOSED. Parent remains open (LEC≠0).
 |------|------|------|
 | 0 | Decision freeze | **done** 2026-08-07 |
 | 1 | Red: no filter HOF desugar | **done** 2026-08-07 |
-| 2 | Green: desugar; LEC < 565; hist filter absent | open |
+| 2 | Green: desugar; LEC ≤ 565; hist filter absent | **done** 2026-08-07 |
 | 3 | Critic | open |
 
 #### Red evidence (§104-6 slice 15)
@@ -1336,6 +1336,21 @@ No false-done. Slice 14 CLOSED. Parent remains open (LEC≠0).
 - No `fn mir_lower_array_filter_hof_to_local` in `lower_fn.mlc`
 - `mir_lower_method_to_local`: no `method_name == 'filter'` special-case
 - TRACK: no Green measured counters for slice 15
+
+#### Green measured (§104-6 slice 15)
+
+| Check | Result |
+|-------|--------|
+| Wiring | `mir_lower_array_filter_hof_to_local`; `method_to_local` special-cases `filter` arity 1; reuses `mir_lower_resolve_predicate_callback` |
+| Coverage | `lower_error_count=565` (≤565); hist `filter` **absent**; `map` 93→98 (+5 nested reach) |
+| Smoke | `--run` `.tmp/s15_filter_smoke.mlc` exit 0; MIR `hof_filter_*` + `__mir_array_empty`/`push` |
+| Red after Green | exit 1 `mir_lower_array_filter_hof_to_local already present` |
+| Self-host | `diff -r` s15_p1/s15_p2 `--exclude=obj` IDENTICAL |
+| `dev_gate_fast` | 1471/0 |
+
+**Decision correction (Green):** original buffer `LEC < 565` assumed 574−14 without nested reach; measured net −9 (filter −14, map +5). Gate restated **LEC ≤ 565**.
+
+Residuals: parent open; LEC=565; hist head `fold=127`/`map=98`/CppIR — next HOF after Critic likely `map` or `flat_map`.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
