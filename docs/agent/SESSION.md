@@ -573,3 +573,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s16 Red done.** next = Green |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Green) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s16)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `mir_lower_array_map_hof_to_local` + `method_to_local` map special-case (empty+push + callback) |
+| verify  | LEC=477 (≤520); hist map absent; smoke 0; red-after trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s16 Green done.** next = Critic |
+| issues  | parent open; fold 127→130 nested; disk pressure during build (MLC_JOBS=1) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 16 Critic) |
