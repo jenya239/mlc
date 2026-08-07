@@ -1,0 +1,60 @@
+// TRACK_EDITOR_SCROLL_CONTENT_DIRTY §111a0 — scroll must force content collect.
+
+export type EditorScrollFrameFlags = {
+  content_dirty: i32,
+  layout_skip: i32,
+  cached_visual_rows_valid: i32
+}
+
+export fn editor_scroll_frame_flags_new(
+  content_dirty: i32,
+  layout_skip: i32,
+  cached_visual_rows_valid: i32
+) -> EditorScrollFrameFlags =
+  EditorScrollFrameFlags {
+    content_dirty: content_dirty,
+    layout_skip: layout_skip,
+    cached_visual_rows_valid: cached_visual_rows_valid
+  }
+
+export fn editor_scroll_offsets_changed(
+  before_y: i32,
+  after_y: i32,
+  before_x: i32,
+  after_x: i32
+) -> i32 = do
+  if before_y != after_y then
+    return 1
+  end
+  if before_x != after_x then
+    return 1
+  end
+  0
+end
+
+// Invariant: scroll change ⇒ content frame (no layout_skip; drop row cache).
+export fn editor_scroll_frame_note_changed(
+  flags: EditorScrollFrameFlags,
+  scroll_changed: i32
+) -> EditorScrollFrameFlags = do
+  if scroll_changed == 0 then
+    return flags
+  end
+  EditorScrollFrameFlags {
+    content_dirty: 1,
+    layout_skip: 0,
+    cached_visual_rows_valid: 0
+  }
+end
+
+export fn editor_scroll_frame_after_offsets(
+  flags: EditorScrollFrameFlags,
+  before_y: i32,
+  after_y: i32,
+  before_x: i32,
+  after_x: i32
+) -> EditorScrollFrameFlags =
+  editor_scroll_frame_note_changed(
+    flags,
+    editor_scroll_offsets_changed(before_y, after_y, before_x, after_x)
+  )

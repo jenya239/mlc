@@ -287,6 +287,11 @@ import {
 } from './app/editor_frame'
 import { frame_input_poll } from './app/frame_input'
 import {
+  EditorScrollFrameFlags,
+  editor_scroll_frame_flags_new,
+  editor_scroll_frame_after_offsets
+} from './app/scroll_frame'
+import {
   editor_ux_chrome_hit_slots_basic,
   editor_ux_chrome_hit_style_id,
   editor_ux_chrome_hit_pointer_plan
@@ -710,6 +715,21 @@ fn frame_layout_after_span_edit(
   end
   owned
 end
+
+// §111a0 — any scroll_offset change forces content collect this frame.
+fn editor_live_note_scroll_changed(
+  content_dirty: i32,
+  layout_skip: i32,
+  cached_visual_rows_valid: i32,
+  before_y: i32,
+  after_y: i32,
+  before_x: i32,
+  after_x: i32
+) -> EditorScrollFrameFlags =
+  editor_scroll_frame_after_offsets(
+    editor_scroll_frame_flags_new(content_dirty, layout_skip, cached_visual_rows_valid),
+    before_y, after_y, before_x, after_x
+  )
 
 fn toolbar_button_rect(index: i32, bar_y: i32) -> Rect =
   editor_app_toolbar_button_rect(index, bar_y)
@@ -1485,8 +1505,17 @@ fn main() -> i32 = do
       if dogfood_line_h < 1 then
         dogfood_line_h = 1
       end
+      const dogfood_scroll_before_y = app.ux.scroll_offset_y
+      const dogfood_scroll_before_x = app.ux.scroll_offset_x
       app = editor_app_set_scroll_y(app, app.ux.scroll_offset_y + 3 * dogfood_line_h)
-      content_dirty = 1
+      const dogfood_scroll_note = editor_live_note_scroll_changed(
+        content_dirty, layout_skip, cached_visual_rows_valid,
+        dogfood_scroll_before_y, app.ux.scroll_offset_y,
+        dogfood_scroll_before_x, app.ux.scroll_offset_x
+      )
+      content_dirty = dogfood_scroll_note.content_dirty
+      layout_skip = dogfood_scroll_note.layout_skip
+      cached_visual_rows_valid = dogfood_scroll_note.cached_visual_rows_valid
     end
     const content_clip = editor_ux_content_clip_rect(editor_rect, minimap_layout)
     const gutter_rect = panes.gutter
@@ -1564,9 +1593,19 @@ fn main() -> i32 = do
         end
         const content_width =
           frame_layout.max_columns_cache.max_columns * char_width
+        const wheel_x_before_y = app.ux.scroll_offset_y
+        const wheel_x_before_x = app.ux.scroll_offset_x
         app = editor_app_wheel_scroll_horizontal(
           app, metrics, scroll_ticks, content_width, text_rect.width
         )
+        const wheel_x_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          wheel_x_before_y, app.ux.scroll_offset_y,
+          wheel_x_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = wheel_x_note.content_dirty
+        layout_skip = wheel_x_note.layout_skip
+        cached_visual_rows_valid = wheel_x_note.cached_visual_rows_valid
         app = editor_app_set_last_command(app, "scroll_x")
         view_metrics = editor_view_metrics_new(
           metrics.line_height, metrics.char_width,
@@ -1575,10 +1614,20 @@ fn main() -> i32 = do
           text_rect.height / metrics.line_height
         )
       else
+        const wheel_y_before_y = app.ux.scroll_offset_y
+        const wheel_y_before_x = app.ux.scroll_offset_x
         app = editor_app_wheel_scroll(app, metrics, scroll_ticks, line_index)
         app = editor_app_clamp_scroll_to_content(
           app, wrapped_content_height, text_rect.height
         )
+        const wheel_y_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          wheel_y_before_y, app.ux.scroll_offset_y,
+          wheel_y_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = wheel_y_note.content_dirty
+        layout_skip = wheel_y_note.layout_skip
+        cached_visual_rows_valid = wheel_y_note.cached_visual_rows_valid
         visible = visible_line_range(line_count, app.ux.scroll_offset_y, viewport)
         view_metrics = editor_view_metrics_new(
           metrics.line_height, metrics.char_width,
@@ -1745,8 +1794,17 @@ fn main() -> i32 = do
         const mapped = editor_ux_minimap_scroll_at_y(
           input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
         )
+        const minimap_click_before_y = app.ux.scroll_offset_y
+        const minimap_click_before_x = app.ux.scroll_offset_x
         app = editor_app_set_scroll_y(app, mapped)
-        app = editor_app_set_scroll_y(app, mapped)
+        const minimap_click_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          minimap_click_before_y, app.ux.scroll_offset_y,
+          minimap_click_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = minimap_click_note.content_dirty
+        layout_skip = minimap_click_note.layout_skip
+        cached_visual_rows_valid = minimap_click_note.cached_visual_rows_valid
         minimap_drag = 1
         scrollbar_drag = 0
         app = editor_app_set_selecting_text(app, 0)
@@ -1761,8 +1819,17 @@ fn main() -> i32 = do
           const mapped_y = editor_ux_content_scrollbar_scroll_at_y(
             input.mouse_y, text_rect, wrapped_content_height, text_rect.height
           )
+          const scrollbar_y_click_before_y = app.ux.scroll_offset_y
+          const scrollbar_y_click_before_x = app.ux.scroll_offset_x
           app = editor_app_set_scroll_y(app, mapped_y)
-          app = editor_app_set_scroll_y(app, mapped_y)
+          const scrollbar_y_click_note = editor_live_note_scroll_changed(
+            content_dirty, layout_skip, cached_visual_rows_valid,
+            scrollbar_y_click_before_y, app.ux.scroll_offset_y,
+            scrollbar_y_click_before_x, app.ux.scroll_offset_x
+          )
+          content_dirty = scrollbar_y_click_note.content_dirty
+          layout_skip = scrollbar_y_click_note.layout_skip
+          cached_visual_rows_valid = scrollbar_y_click_note.cached_visual_rows_valid
           scrollbar_drag = 1
           minimap_drag = 0
           app = editor_app_set_selecting_text(app, 0)
@@ -1782,7 +1849,17 @@ fn main() -> i32 = do
           const mapped_x = editor_ux_content_scrollbar_scroll_at_x(
             input.mouse_x, text_rect, drag_content_width, text_rect.width
           )
+          const scrollbar_x_click_before_y = app.ux.scroll_offset_y
+          const scrollbar_x_click_before_x = app.ux.scroll_offset_x
           app = editor_app_set_scroll_x(app, mapped_x)
+          const scrollbar_x_click_note = editor_live_note_scroll_changed(
+            content_dirty, layout_skip, cached_visual_rows_valid,
+            scrollbar_x_click_before_y, app.ux.scroll_offset_y,
+            scrollbar_x_click_before_x, app.ux.scroll_offset_x
+          )
+          content_dirty = scrollbar_x_click_note.content_dirty
+          layout_skip = scrollbar_x_click_note.layout_skip
+          cached_visual_rows_valid = scrollbar_x_click_note.cached_visual_rows_valid
           scrollbar_drag = 2
           minimap_drag = 0
           app = editor_app_set_selecting_text(app, 0)
@@ -2239,10 +2316,20 @@ fn main() -> i32 = do
               draw_text = frame.text
               const loaded_view = load_demo_session_view(app.ux.tabs)
               app = editor_app_set_selection(app, selection_collapsed(loaded_view.caret))
+              const session_scroll_before_y = app.ux.scroll_offset_y
+              const session_scroll_before_x = app.ux.scroll_offset_x
               app = editor_app_set_scroll_y(app, loaded_view.scroll_offset_y)
               app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
               app = editor_app_set_scroll_y(app, loaded_view.scroll_offset_y)
               app = editor_app_set_scroll_x(app, loaded_view.scroll_offset_x)
+              const session_scroll_note = editor_live_note_scroll_changed(
+                content_dirty, layout_skip, cached_visual_rows_valid,
+                session_scroll_before_y, app.ux.scroll_offset_y,
+                session_scroll_before_x, app.ux.scroll_offset_x
+              )
+              content_dirty = session_scroll_note.content_dirty
+              layout_skip = session_scroll_note.layout_skip
+              cached_visual_rows_valid = session_scroll_note.cached_visual_rows_valid
               app = editor_app_set_history(app, history_new())
               app = editor_app_set_last_command(app, "session_load")
             else
@@ -2287,8 +2374,17 @@ fn main() -> i32 = do
         const mapped_drag = editor_ux_minimap_scroll_at_y(
           input.mouse_y, minimap_rect, wrapped_content_height, text_rect.height
         )
+        const minimap_drag_before_y = app.ux.scroll_offset_y
+        const minimap_drag_before_x = app.ux.scroll_offset_x
         app = editor_app_set_scroll_y(app, mapped_drag)
-        app = editor_app_set_scroll_y(app, mapped_drag)
+        const minimap_drag_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          minimap_drag_before_y, app.ux.scroll_offset_y,
+          minimap_drag_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = minimap_drag_note.content_dirty
+        layout_skip = minimap_drag_note.layout_skip
+        cached_visual_rows_valid = minimap_drag_note.cached_visual_rows_valid
         app = editor_app_set_last_command(app, "minimap_scroll")
       end
       if input.mouse_down != 0 && scrollbar_drag == 1 &&
@@ -2296,8 +2392,17 @@ fn main() -> i32 = do
         const mapped_sb_y = editor_ux_content_scrollbar_scroll_at_y(
           input.mouse_y, text_rect, wrapped_content_height, text_rect.height
         )
+        const scrollbar_y_drag_before_y = app.ux.scroll_offset_y
+        const scrollbar_y_drag_before_x = app.ux.scroll_offset_x
         app = editor_app_set_scroll_y(app, mapped_sb_y)
-        app = editor_app_set_scroll_y(app, mapped_sb_y)
+        const scrollbar_y_drag_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          scrollbar_y_drag_before_y, app.ux.scroll_offset_y,
+          scrollbar_y_drag_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = scrollbar_y_drag_note.content_dirty
+        layout_skip = scrollbar_y_drag_note.layout_skip
+        cached_visual_rows_valid = scrollbar_y_drag_note.cached_visual_rows_valid
         app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
       end
       if input.mouse_down != 0 && scrollbar_drag == 2 &&
@@ -2311,7 +2416,17 @@ fn main() -> i32 = do
         const mapped_sb_x = editor_ux_content_scrollbar_scroll_at_x(
           input.mouse_x, text_rect, drag_content_width_move, text_rect.width
         )
+        const scrollbar_x_drag_before_y = app.ux.scroll_offset_y
+        const scrollbar_x_drag_before_x = app.ux.scroll_offset_x
         app = editor_app_set_scroll_x(app, mapped_sb_x)
+        const scrollbar_x_drag_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          scrollbar_x_drag_before_y, app.ux.scroll_offset_y,
+          scrollbar_x_drag_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = scrollbar_x_drag_note.content_dirty
+        layout_skip = scrollbar_x_drag_note.layout_skip
+        cached_visual_rows_valid = scrollbar_x_drag_note.cached_visual_rows_valid
         app = editor_app_set_last_command(app, "scrollbar_thumb_drag")
       end
       if input.mouse_down != 0 && scrollbar_drag == 3 &&
@@ -2325,10 +2440,20 @@ fn main() -> i32 = do
           panels.dragging == 0 && dragging_tab_index < 0 &&
           minimap_drag == 0 && scrollbar_drag == 0 then
         app = editor_app_sync_shell(app, width, height, panels, app.ux.tabs, app.ux.selection)
+        const autoscroll_before_y = app.ux.scroll_offset_y
+        const autoscroll_before_x = app.ux.scroll_offset_x
         app = editor_app_set_scroll_y(app, app.ux.scroll_offset_y)
         app = editor_app_drag_text_autoscroll(
           app, metrics, input.mouse_x, input.mouse_y, line_index
         )
+        const autoscroll_note = editor_live_note_scroll_changed(
+          content_dirty, layout_skip, cached_visual_rows_valid,
+          autoscroll_before_y, app.ux.scroll_offset_y,
+          autoscroll_before_x, app.ux.scroll_offset_x
+        )
+        content_dirty = autoscroll_note.content_dirty
+        layout_skip = autoscroll_note.layout_skip
+        cached_visual_rows_valid = autoscroll_note.cached_visual_rows_valid
       end
       if input.mouse_down == 0 && app.mouse_was_down != 0 then
         panels = shell_panels_end_drag(panels)

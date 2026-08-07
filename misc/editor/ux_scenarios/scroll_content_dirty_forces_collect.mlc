@@ -1,0 +1,73 @@
+// TRACK_EDITOR_SCROLL_CONTENT_DIRTY §111a0 —
+// pointer-only + scroll change must clear layout_skip / row cache.
+import { rect_new } from '../../gui/layout'
+import {
+  EditorScrollFrameFlags,
+  editor_scroll_frame_flags_new,
+  editor_scroll_offsets_changed,
+  editor_scroll_frame_note_changed,
+  editor_scroll_frame_after_offsets
+} from '../app/scroll_frame'
+import { editor_ux_minimap_scroll_at_y } from '../ux/minimap'
+
+fn main() -> i32 = do
+  // Simulate layout_skip after pointer-only hover with valid row cache.
+  let mut flags = editor_scroll_frame_flags_new(0, 1, 1)
+  if editor_scroll_offsets_changed(0, 0, 0, 0) != 0 then
+    println("ux_fail scroll_content_dirty_forces_collect no_change")
+    return 1
+  end
+  if editor_scroll_offsets_changed(10, 40, 0, 0) == 0 then
+    println("ux_fail scroll_content_dirty_forces_collect y_change")
+    return 2
+  end
+
+  flags = editor_scroll_frame_note_changed(flags, 1)
+  if flags.content_dirty != 1 then
+    println("ux_fail scroll_content_dirty_forces_collect content_dirty")
+    return 3
+  end
+  if flags.layout_skip != 0 then
+    println("ux_fail scroll_content_dirty_forces_collect layout_skip")
+    return 4
+  end
+  if flags.cached_visual_rows_valid != 0 then
+    println("ux_fail scroll_content_dirty_forces_collect cache_valid")
+    return 5
+  end
+
+  // Unchanged offsets keep pointer-only skip.
+  flags = editor_scroll_frame_flags_new(0, 1, 1)
+  flags = editor_scroll_frame_after_offsets(flags, 20, 20, 0, 0)
+  if flags.layout_skip != 1 || flags.content_dirty != 0 then
+    println("ux_fail scroll_content_dirty_forces_collect unchanged")
+    return 6
+  end
+
+  // Minimap drag Y mapping must move scroll (rows would follow after collect).
+  const minimap_rect = rect_new(700, 50, 80, 400)
+  const scroll_low = editor_ux_minimap_scroll_at_y(
+    minimap_rect.y + 20, minimap_rect, 2000, 400
+  )
+  const scroll_high = editor_ux_minimap_scroll_at_y(
+    minimap_rect.y + minimap_rect.height - 20, minimap_rect, 2000, 400
+  )
+  if scroll_low == scroll_high then
+    println("ux_fail scroll_content_dirty_forces_collect minimap_same")
+    return 7
+  end
+  if scroll_high <= scroll_low then
+    println("ux_fail scroll_content_dirty_forces_collect minimap_order")
+    return 8
+  end
+  flags = editor_scroll_frame_flags_new(0, 1, 1)
+  flags = editor_scroll_frame_after_offsets(flags, scroll_low, scroll_high, 0, 0)
+  if flags.content_dirty != 1 || flags.layout_skip != 0 ||
+      flags.cached_visual_rows_valid != 0 then
+    println("ux_fail scroll_content_dirty_forces_collect minimap_flags")
+    return 9
+  end
+
+  println("ux_ok scroll_content_dirty_forces_collect")
+  0
+end

@@ -288,3 +288,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **CONTINUITY unstale** |
 | issues  | Disk pressure recurring |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |
+
+### Turn 2026-08-07 (Driver+Critic TRACK_EDITOR_SCROLL_CONTENT_DIRTY §111a0)
+
+| field   | value |
+|---------|-------|
+| role    | Driver/Critic |
+| step    | 0–3 |
+| track   | TRACK_EDITOR_SCROLL_CONTENT_DIRTY |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Decision+Red+Green+Critic: `scroll_frame.mlc`, `editor_live_note_scroll_changed` wire in `demo_live`, gate `run_editor_scroll_content_dirty.sh`, scenario `scroll_content_dirty_forces_collect` |
+| verify  | green ok; sabotage no-op helper → fail content_dirty; red-after already present; demo_live fs compile 0; PLAN/CONTINUITY/§111 updated |
+| result  | **§111a0 CLOSED (Critic OK).** queue resumes §104-6 s17 Green |
+| issues  | none |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |

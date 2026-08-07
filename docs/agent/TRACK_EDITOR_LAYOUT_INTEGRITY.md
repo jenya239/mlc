@@ -12,7 +12,14 @@ migration. Focus: **layout contract + agent-checkable visual invariants**.
 Standing: [AGENTS.md](../../AGENTS.md) Performance workflow still applies to
 CPU. This track adds the missing **geometry / overlap / bleed** loop.
 
-## Status: **open (path + study)** 2026-08-06 — STEPs start at §111a Decision
+## Status: **open** 2026-08-07 — §111a0 P0 hotfix **CLOSED**; §111a study next when queued
+
+([TRACK_EDITOR_SCROLL_CONTENT_DIRTY](TRACK_EDITOR_SCROLL_CONTENT_DIRTY.md) Critic OK).
+
+**Finding 2026-08-07:** minimap/scrollbar drag changes scroll under `layout_skip`
+(pointer-only) without `content_dirty` → stale `visual_rows` + §110e glyph
+desync (caret/nav/crooked lines). Hotfix §111a0 shipped: scroll change clears
+`layout_skip` / row cache before collect.
 
 ## Why it still feels crooked
 
