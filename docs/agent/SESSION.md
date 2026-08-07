@@ -243,3 +243,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s16 CLOSED (Critic OK).** next = slice 17 Decision |
 | issues  | parent open; LEC=477 (fold/flat_map/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s17)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Freeze §104-6 s17 Decision: array `fold` HOF desugar (init + 2-arg callback); gate LEC≤400 + hist fold absent; no new VM natives |
+| verify  | Baseline LEC=477; hist fold=130; flat_map/CppIR deferred; reuses index walk + lambda_inline |
+| result  | **§104-6 s17 Decision frozen.** next = Red |
+| issues  | parent open; nested-reach buffer in gate (fold-heavy codegen) |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Red) |
