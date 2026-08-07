@@ -483,3 +483,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s7 Decision (archived 2
 | result  | **§104-6 s14 CLOSED (Critic OK).** next = slice 15 Decision |
 | issues  | parent open; LEC=574 (fold/map/…); Ident free-fn any residual=1 |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 15 Decision) |
+
+### Turn 2026-08-07 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s15)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-07 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Freeze §104-6 s15 Decision: array `filter` HOF desugar (empty+push + predicate); gate LEC<565 + hist filter absent; no new VM natives |
+| verify  | Baseline LEC=574; hist filter=14; map/fold deferred; reuses s14 callback resolve |
+| result  | **§104-6 s15 Decision frozen.** next = Red |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 15 Red) |
