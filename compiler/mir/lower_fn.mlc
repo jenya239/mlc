@@ -763,6 +763,110 @@ fn mir_lower_array_map_hof_to_local(
       end
   }
 
+// flat_map → index walk + inline callback; concat mapped arrays (no VM HOF native).
+fn mir_lower_array_flat_map_hof_to_local(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  callback: Shared<SemanticExpression>
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_resolve_predicate_callback(state, callback) {
+    Err(errors) => Err(errors),
+    Ok(binding) =>
+      if binding.parameter_names.length() != 1 then
+        Err(['mir lower: flat_map callback expects one parameter'])
+      else
+        match mir_lower_expression_to_local(state, object) {
+          Err(errors) => Err(errors),
+          Ok(array_step) => do
+            const result_step = mir_lower_allocate_local(
+              array_step.state, '', mir_lower_unknown_type())
+            let mut prep_state = mir_lower_emit_call_assign(
+              result_step.state,
+              result_step.local_id,
+              '__mir_array_empty',
+              [])
+            const index_step = mir_lower_allocate_local(prep_state, '', mir_lower_unknown_type())
+            prep_state = mir_lower_emit_assign(
+              index_step.state, index_step.local_id, MirRvalueUse(MirOperandConstInt(0)))
+            const loop_header_step = mir_lower_allocate_block_index(prep_state)
+            const body_block_step = mir_lower_allocate_block_index(loop_header_step.state)
+            const exit_block_step = mir_lower_allocate_block_index(body_block_step.state)
+            const hof_blocks_allocated_state = exit_block_step.state
+            prep_state = mir_lower_finish_current_block(
+              hof_blocks_allocated_state, MirJump(loop_header_step.block_id))
+            prep_state = mir_lower_start_block(
+              prep_state, loop_header_step.block_id, 'hof_flat_map_loop')
+            const length_step = mir_lower_allocate_local(prep_state, '', mir_lower_unknown_type())
+            prep_state = mir_lower_emit_call_assign(
+              length_step.state,
+              length_step.local_id,
+              '__mir_length',
+              [MirOperandLocal(array_step.local_id)])
+            const less_op = "<"
+            const compare_step = mir_lower_temp_operand_from_rvalue(
+              prep_state,
+              MirRvalueBinary(
+                less_op,
+                MirOperandLocal(index_step.local_id),
+                MirOperandLocal(length_step.local_id)))
+            prep_state = mir_lower_finish_current_block(
+              compare_step.state,
+              MirCondJump(
+                compare_step.operand, body_block_step.block_id, exit_block_step.block_id))
+            prep_state = mir_lower_start_block(
+              prep_state, body_block_step.block_id, 'hof_flat_map_body')
+            const element_step = mir_lower_allocate_local(
+              prep_state, '', mir_lower_unknown_type())
+            prep_state = mir_lower_emit_call_assign(
+              element_step.state,
+              element_step.local_id,
+              '__mir_array_get',
+              [MirOperandLocal(array_step.local_id), MirOperandLocal(index_step.local_id)])
+            const mapped_step = mir_lower_allocate_local(
+              prep_state, '', mir_lower_unknown_type())
+            match mir_lower_lambda_inline_body(
+              mapped_step.state,
+              binding.parameter_names,
+              binding.body,
+              [MirOperandLocal(element_step.local_id)],
+              mapped_step.local_id) {
+              Err(errors) => Err(errors),
+              Ok(after_mapped) => do
+                const concat_step = mir_lower_allocate_local(
+                  after_mapped, '', mir_lower_unknown_type())
+                let mut body_state = mir_lower_emit_call_assign(
+                  concat_step.state,
+                  concat_step.local_id,
+                  '__mir_array_concat',
+                  [
+                    MirOperandLocal(result_step.local_id),
+                    MirOperandLocal(mapped_step.local_id)
+                  ])
+                body_state = mir_lower_emit_assign(
+                  body_state,
+                  result_step.local_id,
+                  MirRvalueUse(MirOperandLocal(concat_step.local_id)))
+                const add_op = "+"
+                const next_index_step = mir_lower_temp_operand_from_rvalue(
+                  body_state,
+                  MirRvalueBinary(
+                    add_op, MirOperandLocal(index_step.local_id), MirOperandConstInt(1)))
+                body_state = mir_lower_emit_assign(
+                  next_index_step.state,
+                  index_step.local_id,
+                  MirRvalueUse(next_index_step.operand))
+                body_state = mir_lower_finish_current_block(
+                  body_state, MirJump(loop_header_step.block_id))
+                body_state = mir_lower_start_block(
+                  body_state, exit_block_step.block_id, 'hof_flat_map_exit')
+                Ok(MirLowerLocalStep { state: body_state, local_id: result_step.local_id })
+              end
+            }
+          end
+        }
+      end
+  }
+
 // fold → index walk + inline 2-arg callback over accumulator (no VM HOF native).
 fn mir_lower_array_fold_hof_to_local(
   state: MirLowerState,
@@ -871,6 +975,8 @@ fn mir_lower_method_to_local(
     mir_lower_array_filter_hof_to_local(state, object, arguments[0])
   else if method_name == 'map' && arguments.length() == 1 then
     mir_lower_array_map_hof_to_local(state, object, arguments[0])
+  else if method_name == 'flat_map' && arguments.length() == 1 then
+    mir_lower_array_flat_map_hof_to_local(state, object, arguments[0])
   else if method_name == 'fold' && arguments.length() == 2 then
     mir_lower_array_fold_hof_to_local(state, object, arguments[0], arguments[1])
   else if method_name == 'pop' && arguments.length() == 0 then
