@@ -7,6 +7,13 @@ import {
   vm_field_slot_from_value, vm_value_from_field_slot
 } from './value'
 
+extern fn mir_host_file_exists(path: string) -> bool =
+  "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn mir_host_file_read(path: string) -> string =
+  "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn mir_host_file_write(path: string, content: string) -> bool =
+  "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
 export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, [string]> =
   if name == 'println' then vm_native_println(arguments)
   else if name == '__mir_array_empty' then vm_native_array_empty(arguments)
@@ -35,6 +42,9 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_string_upper' then vm_native_string_upper(arguments)
   else if name == '__mir_string_to_lower' then vm_native_string_to_lower(arguments)
   else if name == '__mir_array_take' then vm_native_array_take(arguments)
+  else if name == '__mir_file_exists' then vm_native_file_exists(arguments)
+  else if name == '__mir_file_read' then vm_native_file_read(arguments)
+  else if name == '__mir_file_write' then vm_native_file_write(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
@@ -588,6 +598,37 @@ fn vm_native_array_take(arguments: [VmValue]) -> Result<VmValue, [string]> =
           _ => Err(['vm: __mir_array_take expects i32 count'])
         },
       _ => Err(['vm: __mir_array_take expects array'])
+    }
+  end
+
+fn vm_native_file_exists(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_file_exists expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(path) => Ok(VmBool(mir_host_file_exists(path))),
+      _ => Err(['vm: __mir_file_exists expects string path'])
+    }
+  end
+
+fn vm_native_file_read(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_file_read expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(path) => Ok(VmString(mir_host_file_read(path))),
+      _ => Err(['vm: __mir_file_read expects string path'])
+    }
+  end
+
+fn vm_native_file_write(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 2 then Err(['vm: __mir_file_write expects 2 arguments'])
+  else
+    match arguments[0] {
+      VmString(path) =>
+        match arguments[1] {
+          VmString(content) => Ok(VmBool(mir_host_file_write(path, content))),
+          _ => Err(['vm: __mir_file_write expects string content'])
+        },
+      _ => Err(['vm: __mir_file_write expects string path'])
     }
   end
 

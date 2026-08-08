@@ -286,6 +286,68 @@ fn mir_lower_method_native_name(method_name: string) -> Result<string, [string]>
   else if method_name == 'take' then Ok('__mir_array_take')
   else Err([`mir lower: unsupported method ${method_name}`])
 
+fn mir_lower_module_qualified_method_to_local(
+  state: MirLowerState,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_operands_from_arguments(state, arguments) {
+    Err(errors) => Err(errors),
+    Ok(operands_step) => do
+      const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+      Ok(MirLowerLocalStep {
+        state: mir_lower_emit_call_assign(
+          local_step.state, local_step.local_id, method_name, operands_step.operands),
+        local_id: local_step.local_id
+      })
+    end
+  }
+
+fn mir_lower_file_static_method_to_local(
+  state: MirLowerState,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerLocalStep, [string]> =
+  if method_name == 'exists' && arguments.length() == 1 then
+    match mir_lower_operands_from_arguments(state, arguments) {
+      Err(errors) => Err(errors),
+      Ok(operands_step) => do
+        const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+        Ok(MirLowerLocalStep {
+          state: mir_lower_emit_call_assign(
+            local_step.state, local_step.local_id, '__mir_file_exists', operands_step.operands),
+          local_id: local_step.local_id
+        })
+      end
+    }
+  else if method_name == 'read' && arguments.length() == 1 then
+    match mir_lower_operands_from_arguments(state, arguments) {
+      Err(errors) => Err(errors),
+      Ok(operands_step) => do
+        const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+        Ok(MirLowerLocalStep {
+          state: mir_lower_emit_call_assign(
+            local_step.state, local_step.local_id, '__mir_file_read', operands_step.operands),
+          local_id: local_step.local_id
+        })
+      end
+    }
+  else if method_name == 'write' && arguments.length() == 2 then
+    match mir_lower_operands_from_arguments(state, arguments) {
+      Err(errors) => Err(errors),
+      Ok(operands_step) => do
+        const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+        Ok(MirLowerLocalStep {
+          state: mir_lower_emit_call_assign(
+            local_step.state, local_step.local_id, '__mir_file_write', operands_step.operands),
+          local_id: local_step.local_id
+        })
+      end
+    }
+  else
+    Err([`mir lower: unsupported File.${method_name}`])
+  end
+
 fn mir_lower_is_mutating_method(method_name: string) -> bool =
   method_name == 'push' || method_name == 'set' || method_name == 'pop'
 
@@ -987,13 +1049,21 @@ fn mir_lower_method_to_local(
     }
   else
     match object {
-      SemanticExpressionIdent(type_name, _, _) =>
-        if type_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
+      SemanticExpressionIdent(receiver_name, _, _) =>
+        if receiver_name == 'Map' && method_name == 'new' && arguments.length() == 0 then
           mir_lower_map_new_local(state)
-        else if type_name == 'Shared' && method_name == 'new' then
+        else if receiver_name == 'Shared' && method_name == 'new' then
           mir_lower_shared_new_to_local(state, arguments)
         else
-          mir_lower_method_call_on_operand(state, object, method_name, arguments)
+          match mir_lower_lookup_local(state, receiver_name) {
+            Ok(_) => mir_lower_method_call_on_operand(state, object, method_name, arguments),
+            Err(_) =>
+              if receiver_name == 'File' then
+                mir_lower_file_static_method_to_local(state, method_name, arguments)
+              else
+                mir_lower_module_qualified_method_to_local(state, method_name, arguments)
+              end
+          }
         end,
       _ => mir_lower_method_call_on_operand(state, object, method_name, arguments)
     }
