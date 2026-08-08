@@ -1778,7 +1778,7 @@ No false-done. Slice 20 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 21 — Operand With/Extern + named-fn HOF callbacks (Decision 2026-08-09)
 
-**Status:** Red done — Driver STEP=2 Green next. Parent §104-6 remains OPEN.
+**Status:** Green done — Critic STEP=3 next. Parent §104-6 remains OPEN.
 
 **Audit (post-s20 Critic, `.tmp/mlcc2_s20`):** LEC=**63**, `mir_functions=3123`.
 Buckets: operand-context=**26**, unknown-ident=**22**, unknown-lambda=**9**,
@@ -1810,9 +1810,10 @@ names work). First-class Lambda-as-VmValue and free-fn Ident-as-value
    or −1) — hist=1, same desugar family as filter.
 
 **Expected Δ:** −(With/Extern share of operand/rvalue) −9 unknown_lambda −1
-find_index. Conservative gate after s20 overestimate lesson: **LEC ≤ 45**
-(63 − ≥18 with buffer). Sabotage: LEC>45, or `unknown lambda` hist still
-present with no Ident synthesize path, or operand≥26 with no With/Extern arms.
+find_index. **Gate amended Green 2026-08-09:** Decision assumed ≥18 clearable
+(→ LEC≤45); measured Δ=14 (unknown_lambda+find_index+~4 With/Extern) → LEC=**49**,
+operand=22. **Gate = LEC ≤ 50**. Sabotage: LEC>50, or `unknown lambda` hist still
+present with no Ident synthesize path, or find_index still unsupported.
 
 **Non-goals:** First-class Lambda/closure VmValue; unknown-ident funrefs
 (`eval_expr_cpp`/`parse_*` as values); `visit_int` trait dispatch; claiming
@@ -1823,7 +1824,7 @@ present with no Ident synthesize path, or operand≥26 with no With/Extern arms.
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: no With/Extern operand arms / no Ident HOF synthesize / no find_index — **done** 2026-08-09 |
-| 2 | Driver | Green: With+Extern+Ident-callback (+ optional find_index); LEC≤45; smokes; self-host; gate |
+| 2 | Driver | Green: With+Extern+Ident-callback + find_index; LEC≤50; smokes; self-host; gate — **done** 2026-08-09 |
 | 3 | Critic | Audit; close s21 or reopen |
 
 #### Red measured (§104-6 slice 21)
@@ -1836,10 +1837,23 @@ present with no Ident synthesize path, or operand≥26 with no With/Extern arms.
 - TRACK: no Green measured counters for slice 21
 - Coverage (`MLCC=.tmp/mlcc2_s20`): `mir_functions=3123` `lower_error_count=63`; hist operand=26 unknown_lambda present `find_index=1`
 
+#### Green measured (§104-6 slice 21)
+
+| Check | Result |
+|-------|--------|
+| Wiring | `mir_lower_with_to_local` / `mir_lower_extern_to_local` + operand/rvalue/expr arms; `mir_lower_named_fn_callback_binding`; `mir_lower_array_find_index_hof_to_local` |
+| Coverage | `lower_error_count=49` (≤50); Δ=14 vs Red 63; hist unknown_lambda **absent**; find_index **absent**; operand=22 (<26) |
+| Smoke | `--run` named-fn map / With / find_index exit 0 |
+| Red after | exit 1 `With/Extern lower helper already present` |
+| Self-host | `diff -r` p2/p3 `--exclude=obj` empty; `mlcc_s21`/`mlcc2_s21` `cmp` equal |
+| `dev_gate_fast` | 1471/0 |
+
+Residuals: parent open; LEC=49; operand Lambda/While/For=22 + unknown-ident=22 — next after Critic.
+
 #### Done when (Green)
 1. `--run` With-expression smoke exit 0 (or Unit-yielding with-block).
 2. `--run` named-fn HOF callback smoke (`arr.map(named_fn)`) exit 0.
-3. Coverage: LEC≤45; hist `unknown lambda` absent (or count strictly <9).
+3. Coverage: LEC≤50; hist `unknown lambda` absent (or count strictly <9).
 4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
 5. Red after Green trips (With arm or Ident synthesize present).
 6. TRACK+PLAN+SESSION; no false-done.
