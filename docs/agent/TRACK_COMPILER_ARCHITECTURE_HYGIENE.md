@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 20 CLOSED (RecordUpdate + Field → LEC=63); next slice 21 Decision; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 20 CLOSED (LEC=63); slice 21 Decision frozen (With/Extern + named-fn HOF; gate LEC≤45); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1774,6 +1774,64 @@ No false-done. Slice 20 CLOSED. Parent remains open (LEC≠0).
 3. Coverage: LEC≤65; operand hist strictly <41; RecordUpdate wired in source.
 4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
 5. Red after Green trips (`mir_lower_record_update_to_local already present`).
+6. TRACK+PLAN+SESSION; no false-done.
+
+### Slice 21 — Operand With/Extern + named-fn HOF callbacks (Decision 2026-08-09)
+
+**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+
+**Audit (post-s20 Critic, `.tmp/mlcc2_s20`):** LEC=**63**, `mir_functions=3123`.
+Buckets: operand-context=**26**, unknown-ident=**22**, unknown-lambda=**9**,
+rvalue=4, unsupported-method=2 (`find_index`, `visit_int`).
+
+**Why this slice:** Hist head remains operand-context (s20 cleared RecordUpdate;
+residual kinds are **With / Extern / Lambda / While / For** — still opaque
+`unsupported expression in operand context`). Parallel clearable residual:
+**unknown_lambda=9** — HOF callbacks that are **named top-level fns**
+(`SemanticExpressionIdent`) fail `mir_lower_lookup_lambda` in
+`mir_lower_resolve_predicate_callback` (only bare Lambda or let-bound lambda
+names work). First-class Lambda-as-VmValue and free-fn Ident-as-value
+(unknown-ident=22) stay deferred (need closure / funref representation).
+
+**Approach (Green):**
+1. Wire **`SemanticExpressionWith`** in operand + rvalue + `expression_to_local`:
+   lower resource → local; bind binder name; `mir_lower_statements` body;
+   yield **Unit** (With is statement-shaped; matches codegen drop-at-end).
+2. Wire **`SemanticExpressionExtern`** in the same three places → **Unit**
+   operand (extern fn bodies are not MIR-interpreted; stub matches C++ empty
+   body path in `decl.mlc`).
+3. Extend `mir_lower_resolve_predicate_callback`: on Ident, if not in
+   `lambda_bindings`, synthesize `MirLambdaBinding` with
+   `parameter_names` of caller-expected arity and `body` =
+   `Call(Ident(fn_name), [Ident(param)…])` so HOF desugars inline a direct
+   call. Thread expected arity from map/filter/any/all/fold/flat_map sites
+   (already known).
+4. Optional mop-up: array **`find_index`** HOF (arity 1 predicate → i32 index
+   or −1) — hist=1, same desugar family as filter.
+
+**Expected Δ:** −(With/Extern share of operand/rvalue) −9 unknown_lambda −1
+find_index. Conservative gate after s20 overestimate lesson: **LEC ≤ 45**
+(63 − ≥18 with buffer). Sabotage: LEC>45, or `unknown lambda` hist still
+present with no Ident synthesize path, or operand≥26 with no With/Extern arms.
+
+**Non-goals:** First-class Lambda/closure VmValue; unknown-ident funrefs
+(`eval_expr_cpp`/`parse_*` as values); `visit_int` trait dispatch; claiming
+`lower_error_count=0`; Wave 3.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) |
+| 1 | Driver | Red: no With/Extern operand arms / no Ident HOF synthesize / no find_index |
+| 2 | Driver | Green: With+Extern+Ident-callback (+ optional find_index); LEC≤45; smokes; self-host; gate |
+| 3 | Critic | Audit; close s21 or reopen |
+
+#### Done when (Green)
+1. `--run` With-expression smoke exit 0 (or Unit-yielding with-block).
+2. `--run` named-fn HOF callback smoke (`arr.map(named_fn)`) exit 0.
+3. Coverage: LEC≤45; hist `unknown lambda` absent (or count strictly <9).
+4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+5. Red after Green trips (With arm or Ident synthesize present).
 6. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached

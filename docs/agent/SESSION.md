@@ -528,3 +528,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s20 CLOSED (Critic OK).** next = slice 21 Decision |
 | issues  | parent open; LEC=63 (Lambda/With/Extern operand) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 21 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s21)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s21 Decision: operand With/Extern + Ident→Call HOF callbacks (+ optional find_index); gate LEC≤45 |
+| verify  | Baseline LEC=63; operand=26 unknown_lambda=9 unknown_ident=22; TRACK Decision+Steps; PLAN |
+| result  | **§104-6 s21 Decision frozen.** next = Red |
+| issues  | parent open; funref/closure deferred |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 21 Red) |
