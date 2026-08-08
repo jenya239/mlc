@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 20** Decision next (s19 CLOSED). Prior: §104-6 s19 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 20** Decision frozen (RecordUpdate + Field mutate). Prior: §104-6 s19 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 19 CLOSED (module Call + File → LEC=95); slice 20 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 19 CLOSED (module Call + File → LEC=95); slice 20 Decision frozen (RecordUpdate + Field mutate; gate LEC≤50); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1675,6 +1675,66 @@ Independent re-audit (not a re-read of Driver log):
 | Gate | `dev_gate_fast` 1471/0 |
 
 No false-done. Slice 19 CLOSED. Parent remains open (LEC≠0).
+
+### Slice 20 — RecordUpdate + Field-receiver mutating write-back (Decision 2026-08-09)
+
+**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+
+**Audit (post-s19 Critic, `.tmp/mlcc2_s19`):** LEC=**95**, `mir_functions=3081`.
+Buckets: operand-context=**41**, mutating non-ident=**14**, unknown-ident=22,
+unknown-lambda=9, rvalue=6, File.make_temp_directory=1, find_index=1, …
+
+**Why this slice:** Hist head is operand-context; dominant missing kinds after
+s5/s7/s9 arms are **`SemanticExpressionRecordUpdate`** (heavy use:
+`CodegenContext { ...self, field: … }` in `codegen/context.mlc`) plus
+**`SemanticExpressionWith` / Lambda / Extern** (smaller). Mutating residual is
+largely **`receiver.field.push/set`** (`context.value_params.push(…)` etc.) —
+needs field get → mutate → write-back, not a new HOF. One shared native unlocks
+both RecordUpdate and Field-mutating.
+
+**Approach (Green):**
+1. VM native `__mir_record_with_field(record, field_name, value) -> record`
+   (clone fields; replace or append named field; keep `type_name`). Allowlist in
+   `runtime.mlc`. Reuse existing `VmRecord` layout from `__mir_record_new` /
+   `__mir_record_field`.
+2. `mir_lower_record_update_to_local`: lower base → local; for each override
+   field, lower value → operand; `acc = __mir_record_with_field(acc, name, value)`;
+   yield acc. Wire **operand + rvalue + expression_to_local** arms for
+   `SemanticExpressionRecordUpdate`.
+3. Mutating statement path: if object is
+   `SemanticExpressionField(SemanticExpressionIdent(record_name), field_name)`:
+   lookup record local; `field_val = __mir_record_field(record, field)`;
+   mutate field_val via existing `mir_lower_mutating_method_statement` into new
+   array/map local; `record = __mir_record_with_field(record, field, new_val)`
+   (assign back to Ident). Other non-Ident receivers stay Err this slice.
+4. Optional mop-up same slice: `File.make_temp_directory` →
+   `__mir_file_make_temp_directory` (arity 1 string; `file_abi` /
+   `mlc::file::make_temp_directory`) — hist=1, same File static path as s19.
+
+**Expected Δ:** −(most RecordUpdate operand/rvalue) −(Field mutating) −1 temp dir;
+Lambda/With/Extern operand and free-fn Ident-as-value stay. Gate: **LEC ≤ 50**
+(95 − ~45 with buffer). Sabotage LEC>50 or hist still shows
+`unsupported expression in operand context` count ≥41 with no RecordUpdate arm.
+
+**Non-goals:** Operand Lambda/With/Extern (next); `find_index` HOF; claiming
+`lower_error_count=0`; Index-receiver mutating; Wave 3.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) |
+| 1 | Driver | Red: no record_with_field / RecordUpdate arms / Field mutate path |
+| 2 | Driver | Green: native + RecordUpdate + Field mutate (+ optional temp dir); LEC≤50; smokes; self-host; gate |
+| 3 | Critic | Audit; close s20 or reopen |
+
+#### Done when (Green)
+1. `--run` record update smoke (`Point { ...p, x: … }`) exit 0.
+2. `--run` Field-mutating smoke (`rec.arr.push(…)`) exit 0 (or equivalent).
+3. Coverage: LEC≤50; RecordUpdate no longer the silent operand miss (hist operand
+   count strictly <41 or RecordUpdate wired in source).
+4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+5. Red after Green trips (`__mir_record_with_field already present` or helper present).
+6. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

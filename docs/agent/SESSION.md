@@ -468,3 +468,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s19 CLOSED (Critic OK).** next = slice 20 Decision |
 | issues  | parent open; LEC=95 (operand/mutating/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s20)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s20 Decision: `__mir_record_with_field` + RecordUpdate lower + Field-receiver mutating write-back (+ optional File.make_temp_directory); gate LEC≤50 |
+| verify  | Baseline LEC=95; operand=41 mutating=14; RecordUpdate/`context.field.push` root cause; TRACK Decision+Steps; PLAN |
+| result  | **§104-6 s20 Decision frozen.** next = Red |
+| issues  | parent open; Lambda/With/Extern operand deferred |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Red) |
