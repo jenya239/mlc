@@ -453,3 +453,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s19 Green done.** next = Critic |
 | issues  | parent open; LEC=95 (operand/mutating/unknown-ident residual) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s19)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Independent wiring+File smoke+LECΔ+red+self-host+gate; slice 19 CLOSED |
+| verify  | LEC=95; hist make_identifier+type_is_unknown absent; file smoke 0; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s19 CLOSED (Critic OK).** next = slice 20 Decision |
+| issues  | parent open; LEC=95 (operand/mutating/…) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Decision) |
