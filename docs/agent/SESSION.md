@@ -483,3 +483,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s20 Decision frozen.** next = Red |
 | issues  | parent open; Lambda/With/Extern operand deferred |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Red) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s20)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Red harness `compiler/scripts/mir-coverage_s20_red.sh`; gap confirmed (no record_with_field / RecordUpdate / Field mutate) |
+| verify  | red exit 1 `no record_with_field / RecordUpdate arms / Field mutate path`; LEC=95; hist operand=41 mutating=14 |
+| result  | **§104-6 s20 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Green) |
