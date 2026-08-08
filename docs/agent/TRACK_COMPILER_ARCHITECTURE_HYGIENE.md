@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 18** Decision next (s17 CLOSED). Prior: §104-6 s17 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 18** Decision frozen (array `flat_map` HOF; Red next). Prior: §104-6 s17 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 17 CLOSED; slice 18 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 17 CLOSED; slice 18 Decision frozen (`flat_map` HOF; gate LEC≤340); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1504,6 +1504,58 @@ Independent re-audit (not a re-read of Driver log):
 
 No false-done. Slice 17 CLOSED. Parent remains open (LEC≠0).
 
+### Slice 18 — array `flat_map` HOF desugar (last array HOF; Decision 2026-08-09)
+
+**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+
+**Audit (post-s17 Critic, `.tmp/mlcc2_s17`):** LEC=**354**, `mir_functions=2813`.
+Hist head: `make_identifier_cpp_expression`=50, operand-context=36,
+`type_is_unknown`=26, **`flat_map`=19**, `make_auto_cpp_statement`=19,
+`make_assignment_cpp_statement`=18, then smaller. Coverage log:
+`unsupported method 'flat_map'` ×19.
+
+**Why flat_map (not CppIR `make_*` / operand / `type_is_unknown`):** Completes
+the array-HOF series (filter→map→fold→flat_map). Same desugar surface as s15–s17
+(`mir_lower_method_to_local` special-case + for-like index walk). CppIR `make_*`
+(~87 combined) and operand-context stay a **different** class — deferred, not
+this slice.
+
+**API (docs + `lib/mlc` / `runtime` Array):** `array.flat_map(fn (elem) -> Array)` —
+arity **1**; callback returns an array; result concatenates/flattens one level.
+
+**Approach (Green):** Special-case `flat_map` arity 1 in `mir_lower_method_to_local`.
+New `mir_lower_array_flat_map_hof_to_local` in `lower_fn.mlc` (allowlisted):
+1. Resolve callback via `mir_lower_resolve_predicate_callback` (reuse).
+2. Outer for-like over source (`__mir_length` / `__mir_array_get`).
+3. Per element: inline/call callback → mapped array local.
+4. Inner for-like over mapped array: `__mir_array_push` into result
+   (or `__mir_array_concat` if one-shot join is cleaner — Green chooses; both
+   natives already whitelisted; **no new VM natives**).
+5. Prefixed locals + `hof_flat_map_*` block labels; reuse
+   `hof_filter_blocks_allocated_state` / map/fold pattern.
+Reject wrong arity / missing callback like map.
+
+**Expected Δ:** −19 if all flat_map sites lower; nested HOF may add a few →
+buffer. Gate: **LEC ≤ 340** (354−19=335 + ~5 nested). Sabotage LEC>340.
+
+**Non-goals:** CppIR `make_*`; operand-context; `type_is_unknown` APIs;
+`contains`/`to_string` leftovers; VM `flat_map` native; Wave 3; claim parent close.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) |
+| 1 | Driver | Red: harness fails; LEC=354; hist flat_map present |
+| 2 | Driver | Green: flat_map desugar + smoke + coverage ≤340 + self-host + gate |
+| 3 | Critic | Audit; close s18 or reopen |
+
+#### Done when (Green)
+1. Independent `arr.flat_map(...)` `--run` exit 0.
+2. Nested `map`/`filter`/`flat_map` `--run` exit 0; MIR has `hof_flat_map_*`.
+3. Coverage: LEC≤340; hist `unsupported method 'flat_map'` **absent**.
+4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+5. Red after Green fails (`mir_lower_array_flat_map_hof_to_local already present`).
+6. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

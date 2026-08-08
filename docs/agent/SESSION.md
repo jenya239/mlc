@@ -348,3 +348,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s17 CLOSED (Critic OK).** next = slice 18 Decision |
 | issues  | parent open; LEC=354 (flat_map/CppIR/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s18)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s18 Decision: array `flat_map` HOF desugar (map-like + inner push/concat); gate LEC≤340; hist flat_map absent; no new VM natives |
+| verify  | Baseline LEC=354; hist flat_map=19; CppIR/operand deferred; TRACK Decision+Steps; PLAN queue line |
+| result  | **§104-6 s18 Decision frozen.** next = Red |
+| issues  | parent open; last array HOF before CppIR class |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Red) |
