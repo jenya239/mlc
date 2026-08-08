@@ -543,3 +543,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s21 Decision frozen.** next = Red |
 | issues  | parent open; funref/closure deferred |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 21 Red) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s21)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Red harness `compiler/scripts/mir-coverage_s21_red.sh`; gap confirmed (no With/Extern / Ident synthesize / find_index) |
+| verify  | red exit 1 `no With/Extern operand arms / Ident HOF synthesize / find_index`; LEC=63; hist operand=26 unknown_lambda present |
+| result  | **§104-6 s21 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 21 Green) |
