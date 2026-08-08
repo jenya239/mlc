@@ -423,3 +423,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s19 Decision frozen.** next = Red |
 | issues  | parent open; operand-context/instance cpp_* deferred |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Red) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s19)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Red harness `compiler/scripts/mir-coverage_s19_red.sh`; gap confirmed (no module Call / File natives) |
+| verify  | red exit 1 `no module-qualified call / File natives`; LEC=336; hist make_identifier=50 type_is_unknown=26 |
+| result  | **§104-6 s19 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Green) |

@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 19** Decision frozen (module-qualified calls + File natives). Prior: §104-6 s18 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 19** Red done (Green next). Prior: §104-6 s18 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 18 CLOSED (flat_map → LEC=336); slice 19 Decision frozen (module-qualified Call + File natives; gate LEC≤220); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 18 CLOSED; slice 19 Red done (module Call + File gap; LEC=336); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1588,7 +1588,7 @@ No false-done. Slice 18 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 19 — module-qualified calls + `File` leaf natives (Decision 2026-08-09)
 
-**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+**Status:** Red done — Driver STEP=2 Green next. Parent §104-6 remains OPEN.
 
 **Audit (post-s18 Critic, `.tmp/mlcc2_s18`):** LEC=**336**, `mir_functions=2832`.
 Hist head: `make_identifier_cpp_expression`=50, operand-context=36,
@@ -1633,9 +1633,19 @@ still has `make_identifier_cpp_expression` / `type_is_unknown`.
 | Step | Role | Outcome |
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) |
-| 1 | Driver | Red: harness fails; LEC=336; hist make_identifier + type_is_unknown present |
+| 1 | Driver | Red: harness fails; LEC=336; hist make_identifier + type_is_unknown present — **done** 2026-08-09 |
 | 2 | Driver | Green: module Call + File natives; LEC≤220; smokes; self-host; gate |
 | 3 | Critic | Audit; close s19 or reopen |
+
+#### Red measured (§104-6 slice 19)
+
+- Harness: `compiler/scripts/mir-coverage_s19_red.sh` → exit 1 `no module-qualified call / File natives (Red expected)`
+- No `mir_lower_module_qualified_method_to_local` / static-module helper
+- No `__mir_file_*` in `lower_fn` / `native.mlc` / `runtime.mlc`
+- `mir_lower_method_to_local`: no File/lookup_local static path
+- `mir_lower_method_native_name`: no exists/read/write maps
+- TRACK: no Green measured counters for slice 19
+- Coverage (`MLCC=.tmp/mlcc2_s18`): `mir_functions=2832` `lower_error_count=336`; hist `make_identifier_cpp_expression=50` `type_is_unknown=26`
 
 #### Done when (Green)
 1. Fixture with `import * as helpers` + `helpers.some_fn(...)` lowers / `--run` as applicable.
