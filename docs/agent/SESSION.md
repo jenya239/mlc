@@ -393,3 +393,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s18 Green done.** next = Critic |
 | issues  | parent open; LEC=336 (CppIR/operand residual) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s18)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Independent wiring+MIR+nested smokes+LECΔ+red+self-host+gate; slice 18 CLOSED |
+| verify  | LEC=336; hist flat_map absent; nested hof MIR; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s18 CLOSED (Critic OK).** next = slice 19 Decision |
+| issues  | parent open; LEC=336 (CppIR/operand/…) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Decision) |

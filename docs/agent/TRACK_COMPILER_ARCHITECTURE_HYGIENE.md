@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 18** Green done (Critic next). Prior: §104-6 s17 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 19** Decision next (s18 CLOSED). Prior: §104-6 s18 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 17 CLOSED; slice 18 Green done (`flat_map` HOF; LEC=336); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 18 CLOSED (flat_map → LEC=336); slice 19 Decision next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1506,7 +1506,7 @@ No false-done. Slice 17 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 18 — array `flat_map` HOF desugar (last array HOF; Decision 2026-08-09)
 
-**Status:** Green done — Critic STEP=3 next. Parent §104-6 remains OPEN.
+**Status:** CLOSED 2026-08-09 (Critic OK). Parent §104-6 remains OPEN.
 
 **Audit (post-s17 Critic, `.tmp/mlcc2_s17`):** LEC=**354**, `mir_functions=2813`.
 Hist head: `make_identifier_cpp_expression`=50, operand-context=36,
@@ -1547,7 +1547,7 @@ buffer. Gate: **LEC ≤ 340** (354−19=335 + ~5 nested). Sabotage LEC>340.
 | 0 | Driver | Decision frozen (this subsection) |
 | 1 | Driver | Red: harness fails; LEC=354; hist flat_map present — **done** 2026-08-09 |
 | 2 | Driver | Green: flat_map desugar + smoke + coverage ≤340 + self-host + gate — **done** 2026-08-09 |
-| 3 | Critic | Audit; close s18 or reopen |
+| 3 | Critic | Audit; close s18 — **done** 2026-08-09 CLOSED |
 
 #### Red measured (§104-6 slice 18)
 
@@ -1568,13 +1568,23 @@ buffer. Gate: **LEC ≤ 340** (354−19=335 + ~5 nested). Sabotage LEC>340.
 | Self-host | `diff -r` p1/p2/p3 `--exclude=obj` IDENTICAL; `mlcc_s18`/`mlcc2_s18` |
 | `dev_gate_fast` | 1471/0 |
 
-#### Done when (Green)
-1. Independent `arr.flat_map(...)` `--run` exit 0.
-2. Nested `map`/`filter`/`flat_map` `--run` exit 0; MIR has `hof_flat_map_*`.
-3. Coverage: LEC≤340; hist `unsupported method 'flat_map'` **absent**.
-4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
-5. Red after Green fails (`mir_lower_array_flat_map_hof_to_local already present`).
-6. TRACK+PLAN+SESSION; no false-done.
+Residuals: parent open; LEC=336; hist head CppIR `make_*` / operand / `type_is_unknown` — next after Critic likely CppIR leaf or operand.
+
+#### Critic audit (2026-08-09), §104-6 slice 18 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | tip `bab2dd11`: `mir_lower_array_flat_map_hof_to_local` + `method_to_local` flat_map arity-1; `__mir_array_concat`; no new VM natives |
+| Smokes | independent flat_map + nested `map.flat_map.filter` `--run` exit 0 |
+| MIR | nested: `hof_map_*` → `hof_flat_map_*` + `__mir_array_concat` → `hof_filter_*` |
+| Coverage | LEC=336 (≤340); Δ=18 vs Red 354; hist flat_map **absent** |
+| Red after | exit 1 `mir_lower_array_flat_map_hof_to_local already present` |
+| Self-host | fresh critic_s18_p1 vs `mlcc2_s18` p2; `diff -r --exclude=obj` IDENTICAL; binaries `cmp` equal |
+| Gate | `dev_gate_fast` 1471/0 |
+
+No false-done. Slice 18 CLOSED. Parent remains open (LEC≠0).
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
