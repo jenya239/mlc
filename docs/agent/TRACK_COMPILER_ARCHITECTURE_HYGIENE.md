@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 21 CLOSED** (Critic OK; LEC=49). Next: slice 22 Decision. Prior: §104-6 s20 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 22 Decision frozen** (While→Unit; gate LEC≤35). Prior: s21 CLOSED (LEC=49); §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 21 CLOSED (With/Extern + named-fn HOF → LEC=49); next slice 22 Decision; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 22 Decision frozen (operand/rvalue While→Unit; baseline LEC=49; gate ≤35); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1873,6 +1873,55 @@ No false-done. Slice 21 CLOSED. Parent remains open (LEC≠0).
 4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
 5. Red after Green trips (With arm or Ident synthesize present).
 6. TRACK+PLAN+SESSION; no false-done.
+
+### Slice 22 — Operand/rvalue While (+ For) → Unit (Decision 2026-08-09)
+
+**Status:** Decision frozen 2026-08-09. Parent §104-6 remains OPEN.
+
+**Audit (post-s21 Critic, `.tmp/mlcc2_s21`):** LEC=**49**, `mir_functions=3142`.
+Opaque buckets: operand-context=**22**, unknown-ident=**22**, rvalue=**4**,
+`visit_int`=1.
+
+**Kind probe (temporary instrument on `_` arms, probe binary discarded, `lower_fn.mlc`
+restored to tip):** operand **While=13**, **Lambda=9**; rvalue **While=4**;
+**For=0**. So 17/26 of the opaque operand+rvalue residual is While used as a
+value (block tail / let RHS / nested expression), not statement-shaped
+`SemanticStatementExpr` (already wired via `mir_lower_while_statement`).
+
+**Why this slice:** Highest clearable leaf without new VmValue representation.
+Reuse existing CFG while/for lowerers; yield **Unit** local (same shape as
+With/Extern). Lambda-as-value (9) and unknown-ident funrefs (22) stay deferred
+(need closure / funref).
+
+**Approach (Green):**
+1. Add `mir_lower_while_to_local` / `mir_lower_for_to_local`: run
+   `mir_lower_while_statement` / `mir_lower_for_statement`, then allocate a
+   local assigned `MirOperandUnit`.
+2. Wire **While** (+ **For** for completeness) in operand + rvalue +
+   `expression_to_local` to those helpers.
+
+**Expected Δ:** −17 (13+4 While). **Gate = LEC ≤ 35** (49−17=32 + margin).
+Sabotage: LEC>35, or opaque operand/rvalue hist still contains While (kind
+probe or residual count ≥ pre-slice While share).
+
+**Non-goals:** Lambda-as-VmValue; unknown-ident funrefs; `visit_int`; claiming
+`lower_error_count=0`; Wave 3.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
+| 1 | Driver | Red: no While/For to_local / no operand\|rvalue While\|For arms |
+| 2 | Driver | Green: While(+For)→Unit; LEC≤35; smoke; self-host; gate |
+| 3 | Critic | Audit; close s22 |
+
+#### Done when (Green)
+1. `--run` while-as-expression smoke exit 0 (e.g. `let _ = while … do … end`).
+2. Coverage: LEC≤35; While absent from opaque operand/rvalue residual (or
+   kind-tagged While count 0).
+3. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+4. Red after Green trips (`mir_lower_while_to_local` already present).
+5. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 
