@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 19** Decision next (s18 CLOSED). Prior: §104-6 s18 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 19** Decision frozen (module-qualified calls + File natives). Prior: §104-6 s18 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 18 CLOSED (flat_map → LEC=336); slice 19 Decision next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 18 CLOSED (flat_map → LEC=336); slice 19 Decision frozen (module-qualified Call + File natives; gate LEC≤220); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1585,6 +1585,65 @@ Independent re-audit (not a re-read of Driver log):
 | Gate | `dev_gate_fast` 1471/0 |
 
 No false-done. Slice 18 CLOSED. Parent remains open (LEC≠0).
+
+### Slice 19 — module-qualified calls + `File` leaf natives (Decision 2026-08-09)
+
+**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+
+**Audit (post-s18 Critic, `.tmp/mlcc2_s18`):** LEC=**336**, `mir_functions=2832`.
+Hist head: `make_identifier_cpp_expression`=50, operand-context=36,
+`type_is_unknown`=26, `make_auto_cpp_statement`=19, `make_return_cpp_statement`=15,
+mutating non-ident=14, then more `make_*`/`cpp_*`, `exists`=5, `read`=4, …
+
+**Root cause (not “CppIR needs VM C++ AST”):** Dominants are
+`import * as emit_helpers` / `import * as semantic_type_structure` then
+`alias.fn(...)` — SemanticIR **MethodCall** on Ident module alias. Lower today
+forces `mir_lower_method_native_name` (instance-native whitelist) →
+`unsupported method <fn>`. The callee MirFunctions often **already lower**
+(`fn make_identifier_cpp_expression` cpp_ok; `fn type_is_unknown` cpp_skip).
+Gap is call-shape, not missing natives for Shared\<CppExpression\>.
+
+**Why this slice (not operand-Lambda / full Type-heap):** Highest LEC leverage
+with the same surface as Map.new/Shared.new special-cases; unlocks the whole
+`emit_helpers.*` / `semantic_type_structure.*` cluster without inventing CppIR
+VM values. Operand-context=36 (Lambda/With/…) stays deferred.
+
+**Approach (Green):**
+1. In `mir_lower_method_to_local`, after HOF/Map/Shared/`pop` arms: if object is
+   `SemanticExpressionIdent(receiver_name)` and `mir_lower_lookup_local` **fails**
+   (not a value binding):
+   - If `receiver_name == 'File'` and method ∈ {`exists`,`read`,`write`}: map to
+     `__mir_file_exists` / `__mir_file_read` / `__mir_file_write` (arity 1 path /
+     path / path+contents — match stdlib); add VM + `runtime.mlc` allowlist
+     (same leaf pattern as s12–s13).
+   - Else: lower **arguments only** (no receiver operand); `CallAssign(method_name, args)`
+     — same shape as free-fn `SemanticExpressionCall` path.
+2. Value-local Ident receivers keep existing instance-native / mutating path.
+3. **No** blanket CppIR natives; **no** new HOF.
+
+**Expected Δ:** −(make_* module cluster + type_is_* module cluster + File leaves);
+instance `cpp_*` on value receivers and operand-context remain. Gate:
+**LEC ≤ 220** (336 − ~100+; buffer for nested/reaches). Sabotage LEC>220 or hist
+still has `make_identifier_cpp_expression` / `type_is_unknown`.
+
+**Non-goals:** Operand Lambda/With; mutating non-ident receivers; claiming
+`lower_error_count=0`; Wave 3; rewriting call sites away from `import * as`.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) |
+| 1 | Driver | Red: harness fails; LEC=336; hist make_identifier + type_is_unknown present |
+| 2 | Driver | Green: module Call + File natives; LEC≤220; smokes; self-host; gate |
+| 3 | Critic | Audit; close s19 or reopen |
+
+#### Done when (Green)
+1. Fixture with `import * as helpers` + `helpers.some_fn(...)` lowers / `--run` as applicable.
+2. `File.exists` / `File.read` `--run` smoke exit 0.
+3. Coverage: LEC≤220; hist `make_identifier_cpp_expression` and `type_is_unknown` **absent**.
+4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+5. Red after Green trips (module-call helper or File native already present).
+6. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
 

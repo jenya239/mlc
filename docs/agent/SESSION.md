@@ -408,3 +408,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s18 CLOSED (Critic OK).** next = slice 19 Decision |
 | issues  | parent open; LEC=336 (CppIR/operand/…) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s19)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s19 Decision: module-alias MethodCall → free Call (no receiver) + File.exists/read/write natives; gate LEC≤220; hist make_identifier + type_is_unknown absent |
+| verify  | Baseline LEC=336; hist make_identifier=50 type_is_unknown=26 exists=5; root cause import* as alias.fn; TRACK Decision+Steps; PLAN queue |
+| result  | **§104-6 s19 Decision frozen.** next = Red |
+| issues  | parent open; operand-context/instance cpp_* deferred |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 19 Red) |
