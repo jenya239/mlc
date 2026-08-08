@@ -333,3 +333,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s17 Green done.** next = Critic |
 | issues  | parent open; nested +7; flat_map=19 residual |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s17)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | Independent wiring+MIR+nested smokes+LECΔ+red+self-host+gate; slice 17 CLOSED |
+| verify  | LEC=354; hist fold absent; nested hof MIR; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s17 CLOSED (Critic OK).** next = slice 18 Decision |
+| issues  | parent open; LEC=354 (flat_map/CppIR/…) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Decision) |
