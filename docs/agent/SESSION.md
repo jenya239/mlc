@@ -318,3 +318,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§111a1 CLOSED (Critic OK).** queue resumes §104-6 s17 Green |
 | issues  | S2/S4/S5 residual path |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Green) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s17)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-04-perf-dogfood-epic |
+| done    | `mir_lower_array_fold_hof_to_local` + `method_to_local` fold arity-2 (init + 2-arg callback) |
+| verify  | LEC=354 (≤400); hist fold absent; smoke 0; red-after trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s17 Green done.** next = Critic |
+| issues  | parent open; nested +7; flat_map=19 residual |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 17 Critic) |
