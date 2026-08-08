@@ -513,3 +513,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s20 Green done.** next = Critic |
 | issues  | parent open; LEC=63 (Lambda/With/Extern operand residual); Decision gate 50→65 (RecordUpdate was ~15 of 41) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s20)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Independent wiring+3 smokes+LECΔ+red+self-host+gate; gate amend 50→65 accepted; slice 20 CLOSED |
+| verify  | LEC=63; operand=26 mutating absent; smokes 0; red-after 1; self-host IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s20 CLOSED (Critic OK).** next = slice 21 Decision |
+| issues  | parent open; LEC=63 (Lambda/With/Extern operand) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 21 Decision) |

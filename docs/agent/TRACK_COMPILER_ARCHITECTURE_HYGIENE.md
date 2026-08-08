@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 19 CLOSED (module Call + File → LEC=95); slice 20 Green done (RecordUpdate + Field mutate → LEC=63; Critic next); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 20 CLOSED (RecordUpdate + Field → LEC=63); next slice 21 Decision; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1678,7 +1678,7 @@ No false-done. Slice 19 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 20 — RecordUpdate + Field-receiver mutating write-back (Decision 2026-08-09)
 
-**Status:** Green done — Critic STEP=3 next. Parent §104-6 remains OPEN.
+**Status:** CLOSED 2026-08-09 (Critic OK). Parent §104-6 remains OPEN.
 
 **Audit (post-s19 Critic, `.tmp/mlcc2_s19`):** LEC=**95**, `mir_functions=3081`.
 Buckets: operand-context=**41**, mutating non-ident=**14**, unknown-ident=22,
@@ -1725,7 +1725,7 @@ absent.
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: no record_with_field / RecordUpdate arms / Field mutate path — **done** 2026-08-09 |
 | 2 | Driver | Green: native + RecordUpdate + Field mutate (+ temp dir); LEC≤65; smokes; self-host; gate — **done** 2026-08-09 |
-| 3 | Critic | Audit; close s20 or reopen |
+| 3 | Critic | Audit; close s20 — **done** 2026-08-09 CLOSED |
 
 #### Red measured (§104-6 slice 20)
 
@@ -1751,6 +1751,22 @@ absent.
 | `dev_gate_fast` | 1471/0; arch lint allowlist `vm/native.mlc` (815) |
 
 Residuals: parent open; LEC=63; hist head operand Lambda/With/Extern=26 + unknown-ident/lambda — next after Critic.
+
+#### Critic audit (2026-08-09), §104-6 slice 20 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | tip `b3d8eba8`: `mir_lower_record_update_to_local` + operand/rvalue/expr arms; `mir_lower_nested_field_mutating_method_statement`; `__mir_record_with_field` + `__mir_file_make_temp_directory` + file_abi `make_temp_directory_value` |
+| Smoke | independent update / Field / nested Field `--run` exit 0 |
+| Coverage | LEC=63 (≤65); Δ=32 vs Red 95; operand=26 (<41); mutating hist **absent**; make_temp_directory hist **absent** |
+| Gate amend | 50→65 accepted: Decision overestimated RecordUpdate share of operand=41; residual matches deferred Lambda/With/Extern |
+| Red after | exit 1 `mir_lower_record_update_to_local already present` |
+| Self-host | fresh critic_s20_p1 vs p2 (`mlcc_s20`/`mlcc2_s20`); `diff -r --exclude=obj` empty; binaries `cmp` equal |
+| Gate | `dev_gate_fast` 1471/0; `vm/native.mlc` allowlisted |
+
+No false-done. Slice 20 CLOSED. Parent remains open (LEC≠0).
 
 #### Done when (Green)
 1. `--run` record update smoke (`Point { ...p, x: … }`) exit 0.
