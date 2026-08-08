@@ -363,3 +363,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s18 Decision frozen.** next = Red |
 | issues  | parent open; last array HOF before CppIR class |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Red) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s18)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Red harness `compiler/scripts/mir-coverage_s18_red.sh`; gap confirmed (no flat_map HOF desugar) |
+| verify  | red exit 1 `no flat_map HOF desugar`; LEC=354; hist flat_map=19 (`MLCC=.tmp/mlcc2_s17`) |
+| result  | **§104-6 s18 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 18 Green) |

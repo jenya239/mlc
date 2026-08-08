@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 18** Decision frozen (array `flat_map` HOF; Red next). Prior: §104-6 s17 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 18** Red done (Green next). Prior: §104-6 s17 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 17 CLOSED; slice 18 Decision frozen (`flat_map` HOF; gate LEC≤340); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 17 CLOSED; slice 18 Red done (`flat_map` HOF gap; LEC=354); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1506,7 +1506,7 @@ No false-done. Slice 17 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 18 — array `flat_map` HOF desugar (last array HOF; Decision 2026-08-09)
 
-**Status:** Decision frozen — Driver STEP=1 Red next. Parent §104-6 remains OPEN.
+**Status:** Red done — Driver STEP=2 Green next. Parent §104-6 remains OPEN.
 
 **Audit (post-s17 Critic, `.tmp/mlcc2_s17`):** LEC=**354**, `mir_functions=2813`.
 Hist head: `make_identifier_cpp_expression`=50, operand-context=36,
@@ -1545,9 +1545,17 @@ buffer. Gate: **LEC ≤ 340** (354−19=335 + ~5 nested). Sabotage LEC>340.
 | Step | Role | Outcome |
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) |
-| 1 | Driver | Red: harness fails; LEC=354; hist flat_map present |
+| 1 | Driver | Red: harness fails; LEC=354; hist flat_map present — **done** 2026-08-09 |
 | 2 | Driver | Green: flat_map desugar + smoke + coverage ≤340 + self-host + gate |
 | 3 | Critic | Audit; close s18 or reopen |
+
+#### Red measured (§104-6 slice 18)
+
+- Harness: `compiler/scripts/mir-coverage_s18_red.sh` → exit 1 `no flat_map HOF desugar (Red expected)`
+- No `fn mir_lower_array_flat_map_hof_to_local` in `lower_fn.mlc`
+- `mir_lower_method_to_local`: no `method_name == 'flat_map'` special-case
+- TRACK: no Green measured counters for slice 18
+- Coverage (`MLCC=.tmp/mlcc2_s17`): `mir_functions=2813` `lower_error_count=354`; hist `flat_map=19`
 
 #### Done when (Green)
 1. Independent `arr.flat_map(...)` `--run` exit 0.
