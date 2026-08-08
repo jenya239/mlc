@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 20 CLOSED (LEC=63); slice 21 Green done (With/Extern + named-fn HOF → LEC=49; Critic next); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 21 CLOSED (With/Extern + named-fn HOF → LEC=49); next slice 22 Decision; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1778,7 +1778,7 @@ No false-done. Slice 20 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 21 — Operand With/Extern + named-fn HOF callbacks (Decision 2026-08-09)
 
-**Status:** Green done — Critic STEP=3 next. Parent §104-6 remains OPEN.
+**Status:** CLOSED 2026-08-09 (Critic OK). Parent §104-6 remains OPEN.
 
 **Audit (post-s20 Critic, `.tmp/mlcc2_s20`):** LEC=**63**, `mir_functions=3123`.
 Buckets: operand-context=**26**, unknown-ident=**22**, unknown-lambda=**9**,
@@ -1825,7 +1825,7 @@ present with no Ident synthesize path, or find_index still unsupported.
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: no With/Extern operand arms / no Ident HOF synthesize / no find_index — **done** 2026-08-09 |
 | 2 | Driver | Green: With+Extern+Ident-callback + find_index; LEC≤50; smokes; self-host; gate — **done** 2026-08-09 |
-| 3 | Critic | Audit; close s21 or reopen |
+| 3 | Critic | Audit; close s21 — **done** 2026-08-09 CLOSED |
 
 #### Red measured (§104-6 slice 21)
 
@@ -1849,6 +1849,22 @@ present with no Ident synthesize path, or find_index still unsupported.
 | `dev_gate_fast` | 1471/0 |
 
 Residuals: parent open; LEC=49; operand Lambda/While/For=22 + unknown-ident=22 — next after Critic.
+
+#### Critic audit (2026-08-09), §104-6 slice 21 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | tip `041ed09e`/`90ed07b7`: `mir_lower_with_to_local`/`extern_to_local`; `mir_lower_named_fn_callback_binding` + expected_arity; `mir_lower_array_find_index_hof_to_local` |
+| Smoke | independent named-fn map / With / find_index `--run` exit 0 |
+| Coverage | LEC=49 (≤50); Δ=14 vs Red 63; hist unknown_lambda **absent**; find_index **absent**; operand=22 |
+| Gate amend | 45→50 accepted: measured Δ=14 (With/Extern only ~4 of operand=26) |
+| Red after | exit 1 `With/Extern lower helper already present` |
+| Self-host | fresh critic_s21_p1 vs p2; `diff -r --exclude=obj` empty; binaries `cmp` equal |
+| Gate | `dev_gate_fast` 1471/0 |
+
+No false-done. Slice 21 CLOSED. Parent remains open (LEC≠0).
 
 #### Done when (Green)
 1. `--run` With-expression smoke exit 0 (or Unit-yielding with-block).
