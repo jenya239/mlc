@@ -11,7 +11,8 @@ import {
   SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionStr, SemanticExpressionUnit,
   SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall,
   SemanticExpressionField, SemanticExpressionMethod, SemanticExpressionIndex,
-  SemanticExpressionArray, SemanticExpressionRecord, SemanticExpressionTuple,
+  SemanticExpressionArray, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
+  SemanticExpressionTuple,
   SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionWhile,
   SemanticExpressionFor,
   SemanticExpressionMatch, SemanticExpressionQuestion, SemanticExpressionLambda,
@@ -340,6 +341,18 @@ fn mir_lower_file_static_method_to_local(
         Ok(MirLowerLocalStep {
           state: mir_lower_emit_call_assign(
             local_step.state, local_step.local_id, '__mir_file_write', operands_step.operands),
+          local_id: local_step.local_id
+        })
+      end
+    }
+  else if method_name == 'make_temp_directory' && arguments.length() == 1 then
+    match mir_lower_operands_from_arguments(state, arguments) {
+      Err(errors) => Err(errors),
+      Ok(operands_step) => do
+        const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+        Ok(MirLowerLocalStep {
+          state: mir_lower_emit_call_assign(
+            local_step.state, local_step.local_id, '__mir_file_make_temp_directory', operands_step.operands),
           local_id: local_step.local_id
         })
       end
@@ -1220,6 +1233,196 @@ fn mir_lower_record_literal_to_local(
     end
   }
 
+fn mir_lower_record_update_apply_fields(
+  state: MirLowerState,
+  record_local_id: LocalId,
+  field_values: [Shared<SemanticFieldVal>],
+  index: i32
+) -> Result<MirLowerLocalStep, [string]> =
+  if index >= field_values.length() then
+    Ok(MirLowerLocalStep { state: state, local_id: record_local_id })
+  else
+    match mir_lower_operand_from_expression(state, field_values[index].value) {
+      Err(errors) => Err(errors),
+      Ok(value_step) => do
+        const result_step = mir_lower_allocate_local(value_step.state, '', mir_lower_unknown_type())
+        const updated_state = mir_lower_emit_call_assign(
+          result_step.state,
+          result_step.local_id,
+          '__mir_record_with_field',
+          [
+            MirOperandLocal(record_local_id),
+            MirOperandConstStr(field_values[index].name),
+            value_step.operand
+          ])
+        mir_lower_record_update_apply_fields(
+          updated_state, result_step.local_id, field_values, index + 1)
+      end
+    }
+  end
+
+fn mir_lower_record_update_to_local(
+  state: MirLowerState,
+  base: Shared<SemanticExpression>,
+  field_values: [Shared<SemanticFieldVal>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_expression_to_local(state, base) {
+    Err(errors) => Err(errors),
+    Ok(base_step) =>
+      mir_lower_record_update_apply_fields(
+        base_step.state, base_step.local_id, field_values, 0)
+  }
+
+fn mir_lower_field_mutating_method_statement(
+  state: MirLowerState,
+  record_local_id: LocalId,
+  field_name: string,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerState, [string]> = do
+  const field_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  const field_loaded = mir_lower_emit_call_assign(
+    field_step.state,
+    field_step.local_id,
+    '__mir_record_field',
+    [MirOperandLocal(record_local_id), MirOperandConstStr(field_name)])
+  match mir_lower_mutating_method_statement(
+    field_loaded, field_step.local_id, method_name, arguments) {
+    Err(errors) => Err(errors),
+    Ok(mutated_state) => do
+      const write_step = mir_lower_allocate_local(mutated_state, '', mir_lower_unknown_type())
+      const written = mir_lower_emit_call_assign(
+        write_step.state,
+        write_step.local_id,
+        '__mir_record_with_field',
+        [
+          MirOperandLocal(record_local_id),
+          MirOperandConstStr(field_name),
+          MirOperandLocal(field_step.local_id)
+        ])
+      Ok(mir_lower_emit_assign(
+        written, record_local_id, MirRvalueUse(MirOperandLocal(write_step.local_id))))
+    end
+  }
+end
+
+fn mir_lower_field_path_writeback(
+  state: MirLowerState,
+  root_local_id: LocalId,
+  field_names: [string],
+  chain_locals: [LocalId],
+  index: i32
+) -> Result<MirLowerState, [string]> =
+  if index < 0 then
+    Ok(state)
+  else do
+    const parent_local_id =
+      if index == 0 then root_local_id
+      else chain_locals[index - 1]
+    const child_local_id = chain_locals[index]
+    const write_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+    const written = mir_lower_emit_call_assign(
+      write_step.state,
+      write_step.local_id,
+      '__mir_record_with_field',
+      [
+        MirOperandLocal(parent_local_id),
+        MirOperandConstStr(field_names[index]),
+        MirOperandLocal(child_local_id)
+      ])
+    let mut next_state = mir_lower_emit_assign(
+      written, parent_local_id, MirRvalueUse(MirOperandLocal(write_step.local_id)))
+    if index == 0 then
+      next_state = mir_lower_emit_assign(
+        next_state, root_local_id, MirRvalueUse(MirOperandLocal(write_step.local_id)))
+    end
+    mir_lower_field_path_writeback(
+      next_state, root_local_id, field_names, chain_locals, index - 1)
+  end
+
+fn mir_lower_collect_field_path(
+  expression: Shared<SemanticExpression>,
+  field_names: [string]
+) -> Result<[string], [string]> =
+  match expression {
+    SemanticExpressionIdent(_, _, _) => Ok(field_names),
+    SemanticExpressionField(inner, field_name, _, _) => do
+      let mut next_names: [string] = [field_name]
+      let mut copy_index = 0
+      while copy_index < field_names.length() do
+        next_names.push(field_names[copy_index])
+        copy_index = copy_index + 1
+      end
+      mir_lower_collect_field_path(inner, next_names)
+    end,
+    _ => Err(['mir lower: mutating method requires identifier receiver'])
+  }
+
+fn mir_lower_field_path_root_name(
+  expression: Shared<SemanticExpression>
+) -> Result<string, [string]> =
+  match expression {
+    SemanticExpressionIdent(name, _, _) => Ok(name),
+    SemanticExpressionField(inner, _, _, _) => mir_lower_field_path_root_name(inner),
+    _ => Err(['mir lower: mutating method requires identifier receiver'])
+  }
+
+fn mir_lower_nested_field_mutating_method_statement(
+  state: MirLowerState,
+  object: Shared<SemanticExpression>,
+  method_name: string,
+  arguments: [Shared<SemanticExpression>]
+) -> Result<MirLowerState, [string]> =
+  match mir_lower_field_path_root_name(object) {
+    Err(errors) => Err(errors),
+    Ok(record_name) =>
+      match mir_lower_lookup_local(state, record_name) {
+        Err(errors) => Err(errors),
+        Ok(root_local_id) =>
+          match mir_lower_collect_field_path(object, []) {
+            Err(errors) => Err(errors),
+            Ok(field_names) =>
+              if field_names.length() == 0 then
+                mir_lower_mutating_method_statement(state, root_local_id, method_name, arguments)
+              else if field_names.length() == 1 then
+                mir_lower_field_mutating_method_statement(
+                  state, root_local_id, field_names[0], method_name, arguments)
+              else do
+                let mut chain_locals: [LocalId] = []
+                let mut current_local_id = root_local_id
+                let mut current_state = state
+                let mut field_index = 0
+                while field_index < field_names.length() do
+                  const field_step = mir_lower_allocate_local(
+                    current_state, '', mir_lower_unknown_type())
+                  current_state = mir_lower_emit_call_assign(
+                    field_step.state,
+                    field_step.local_id,
+                    '__mir_record_field',
+                    [
+                      MirOperandLocal(current_local_id),
+                      MirOperandConstStr(field_names[field_index])
+                    ])
+                  chain_locals.push(field_step.local_id)
+                  current_local_id = field_step.local_id
+                  field_index = field_index + 1
+                end
+                match mir_lower_mutating_method_statement(
+                  current_state, current_local_id, method_name, arguments) {
+                  Err(errors) => Err(errors),
+                  Ok(mutated_state) =>
+                    mir_lower_field_path_writeback(
+                      mutated_state,
+                      root_local_id,
+                      field_names,
+                      chain_locals,
+                      field_names.length() - 1)
+                }
+              end
+          }
+      }
+  }
+
 fn mir_lower_record_field_to_local(
   state: MirLowerState,
   object: Shared<SemanticExpression>,
@@ -1345,6 +1548,12 @@ fn mir_lower_operand_from_expression(
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
     SemanticExpressionRecord(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionRecordUpdate(_, _, _, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
@@ -1494,6 +1703,15 @@ fn mir_lower_rvalue_from_expression(
           })
       },
     SemanticExpressionRecord(_, _, _, _) =>
+      match mir_lower_expression_to_local(state, expression) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionRecordUpdate(_, _, _, _, _) =>
       match mir_lower_expression_to_local(state, expression) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
@@ -2147,6 +2365,8 @@ fn mir_lower_expression_to_local(
       mir_lower_array_literal_to_local(state, elements),
     SemanticExpressionRecord(type_name, field_values, _, _) =>
       mir_lower_record_literal_to_local(state, type_name, field_values),
+    SemanticExpressionRecordUpdate(_, base, field_values, _, _) =>
+      mir_lower_record_update_to_local(state, base, field_values),
     SemanticExpressionField(object, field_name, _, _) =>
       mir_lower_record_field_to_local(state, object, field_name),
     SemanticExpressionQuestion(inner, _, _) =>
@@ -2753,6 +2973,9 @@ fn mir_lower_statement(state: MirLowerState, statement: Shared<SemanticStatement
                   Ok(local_id) =>
                     mir_lower_mutating_method_statement(state, local_id, method_name, arguments)
                 },
+              SemanticExpressionField(_, _, _, _) =>
+                mir_lower_nested_field_mutating_method_statement(
+                  state, object, method_name, arguments),
               _ => Err(['mir lower: mutating method requires identifier receiver'])
             }
           else

@@ -18,3 +18,5 @@ file_size:tests/test_codegen.mlc
 # STEP=8b9: helpers moved from expr.mlc into stmt_eval
 file_size:codegen/stmt/stmt_eval.mlc
 file_size:codegen/expr/method_gen.mlc
+# §104-6 MIR VM natives growth (record_with_field / file natives)
+file_size:vm/native.mlc

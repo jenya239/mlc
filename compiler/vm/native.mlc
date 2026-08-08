@@ -13,6 +13,8 @@ extern fn mir_host_file_read(path: string) -> string =
   "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
 extern fn mir_host_file_write(path: string, content: string) -> bool =
   "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn mir_host_file_make_temp_directory(prefix: string) -> string =
+  "mlc::file::make_temp_directory_value" from "mlc/io/file_abi.hpp" blocking
 
 export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, [string]> =
   if name == 'println' then vm_native_println(arguments)
@@ -45,12 +47,14 @@ export fn vm_native_call(name: string, arguments: [VmValue]) -> Result<VmValue, 
   else if name == '__mir_file_exists' then vm_native_file_exists(arguments)
   else if name == '__mir_file_read' then vm_native_file_read(arguments)
   else if name == '__mir_file_write' then vm_native_file_write(arguments)
+  else if name == '__mir_file_make_temp_directory' then vm_native_file_make_temp_directory(arguments)
   else if name == '__mir_length' then vm_native_collection_length(arguments)
   else if name == '__mir_variant_is' then vm_native_variant_is(arguments)
   else if name == '__mir_variant_field' then vm_native_variant_field(arguments)
   else if name == '__mir_variant_new' then vm_native_variant_new(arguments)
   else if name == '__mir_record_new' then vm_native_record_new(arguments)
   else if name == '__mir_record_field' then vm_native_record_field(arguments)
+  else if name == '__mir_record_with_field' then vm_native_record_with_field(arguments)
   else if name == '__mir_shared_new' then vm_native_shared_new(arguments)
   else if name == '__mir_result_is_err' then vm_native_result_is_err(arguments)
   else if name == '__mir_result_ok_value' then vm_native_result_ok_value(arguments)
@@ -188,6 +192,47 @@ fn vm_native_record_field(arguments: [VmValue]) -> Result<VmValue, [string]> =
           _ => Err(['vm: __mir_record_field expects string field name'])
         },
       _ => Err(['vm: __mir_record_field expects record'])
+    }
+  end
+
+fn vm_native_record_with_field(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 3 then Err(['vm: __mir_record_with_field expects 3 arguments'])
+  else
+    match arguments[0] {
+      VmRecord(record_value) =>
+        match arguments[1] {
+          VmString(field_name) =>
+            match vm_field_slot_from_value(arguments[2]) {
+              Err(slot_errors) => Err(slot_errors),
+              Ok(new_slot) => do
+                let mut field_names: [string] = []
+                let mut fields: [VmFieldSlot] = []
+                let mut found = false
+                let mut index = 0
+                while index < record_value.field_names.length() do
+                  field_names.push(record_value.field_names[index])
+                  if record_value.field_names[index] == field_name then
+                    found = true
+                    fields.push(new_slot)
+                  else
+                    fields.push(record_value.fields[index])
+                  end
+                  index = index + 1
+                end
+                if !found then
+                  field_names.push(field_name)
+                  fields.push(new_slot)
+                end
+                Ok(VmRecord(VmRecordValue {
+                  type_name: record_value.type_name,
+                  field_names: field_names,
+                  fields: fields
+                }))
+              end
+            },
+          _ => Err(['vm: __mir_record_with_field expects string field name'])
+        },
+      _ => Err(['vm: __mir_record_with_field expects record'])
     }
   end
 
@@ -629,6 +674,15 @@ fn vm_native_file_write(arguments: [VmValue]) -> Result<VmValue, [string]> =
           _ => Err(['vm: __mir_file_write expects string content'])
         },
       _ => Err(['vm: __mir_file_write expects string path'])
+    }
+  end
+
+fn vm_native_file_make_temp_directory(arguments: [VmValue]) -> Result<VmValue, [string]> =
+  if arguments.length() != 1 then Err(['vm: __mir_file_make_temp_directory expects 1 argument'])
+  else
+    match arguments[0] {
+      VmString(prefix) => Ok(VmString(mir_host_file_make_temp_directory(prefix))),
+      _ => Err(['vm: __mir_file_make_temp_directory expects string prefix'])
     }
   end
 

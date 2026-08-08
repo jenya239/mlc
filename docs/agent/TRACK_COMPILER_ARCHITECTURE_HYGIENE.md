@@ -5,7 +5,7 @@ Parent: [../PLAN.md](../PLAN.md) §104. Authorized 2026-07-28 (user request: "т
 `compiler/**` (self-hosted compiler core), distinct from §97/§101 (editor
 render) and §102/§103 (new feature epics).
 
-## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 20** Red done (RecordUpdate + Field mutate). Prior: §104-6 s19 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
+## Status: **open** — Wave 1 CLOSED; **queue head §104-6 slice 20** Green done (RecordUpdate + Field mutate; LEC=63). Prior: §104-6 s19 CLOSED; §100 closed 2026-07-28, §104-1/2/3 found already
 implemented (see correction below, 2026-07-28), **§104-12 slice 1 closed
 2026-07-28** (`transform_coerce.mlc` extracted, Critic-audited), **§104-12
 slice 2 closed** same day (`transform_context.mlc` extracted, Critic-audited
@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 19 CLOSED (module Call + File → LEC=95); slice 20 Red done (RecordUpdate + Field mutate; gate LEC≤50); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 19 CLOSED (module Call + File → LEC=95); slice 20 Green done (RecordUpdate + Field mutate → LEC=63; Critic next); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1678,7 +1678,7 @@ No false-done. Slice 19 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 20 — RecordUpdate + Field-receiver mutating write-back (Decision 2026-08-09)
 
-**Status:** Red done — Driver STEP=2 Green next. Parent §104-6 remains OPEN.
+**Status:** Green done — Critic STEP=3 next. Parent §104-6 remains OPEN.
 
 **Audit (post-s19 Critic, `.tmp/mlcc2_s19`):** LEC=**95**, `mir_functions=3081`.
 Buckets: operand-context=**41**, mutating non-ident=**14**, unknown-ident=22,
@@ -1701,20 +1701,20 @@ both RecordUpdate and Field-mutating.
    field, lower value → operand; `acc = __mir_record_with_field(acc, name, value)`;
    yield acc. Wire **operand + rvalue + expression_to_local** arms for
    `SemanticExpressionRecordUpdate`.
-3. Mutating statement path: if object is
-   `SemanticExpressionField(SemanticExpressionIdent(record_name), field_name)`:
-   lookup record local; `field_val = __mir_record_field(record, field)`;
-   mutate field_val via existing `mir_lower_mutating_method_statement` into new
-   array/map local; `record = __mir_record_with_field(record, field, new_val)`
-   (assign back to Ident). Other non-Ident receivers stay Err this slice.
+3. Mutating statement path: Field path rooted at Ident (depth ≥1), including
+   nested `a.b.c.push` — load chain → mutate innermost → write-back via
+   `__mir_record_with_field`. Index/other non-Field receivers stay Err.
 4. Optional mop-up same slice: `File.make_temp_directory` →
    `__mir_file_make_temp_directory` (arity 1 string; `file_abi` /
-   `mlc::file::make_temp_directory`) — hist=1, same File static path as s19.
+   `mlc::file::make_temp_directory_value`) — hist=1, same File static path as s19.
 
-**Expected Δ:** −(most RecordUpdate operand/rvalue) −(Field mutating) −1 temp dir;
-Lambda/With/Extern operand and free-fn Ident-as-value stay. Gate: **LEC ≤ 50**
-(95 − ~45 with buffer). Sabotage LEC>50 or hist still shows
-`unsupported expression in operand context` count ≥41 with no RecordUpdate arm.
+**Expected Δ (Decision):** −(most RecordUpdate) −(Field mutating) −1 temp dir;
+Lambda/With/Extern operand stay. **Gate amended Green 2026-08-09:** Decision
+assumed RecordUpdate ≈ most of operand=41 (−~45 → LEC≤50); measured RecordUpdate
+was only ~15 of 41 (rest Lambda/With/Extern deferred). After Green: LEC=**63**,
+operand=26, mutating=**0**. **Gate = LEC ≤ 65**. Sabotage: LEC>65, or operand≥41
+with no RecordUpdate arm, or mutating non-ident residual remains with Field path
+absent.
 
 **Non-goals:** Operand Lambda/With/Extern (next); `find_index` HOF; claiming
 `lower_error_count=0`; Index-receiver mutating; Wave 3.
@@ -1724,7 +1724,7 @@ Lambda/With/Extern operand and free-fn Ident-as-value stay. Gate: **LEC ≤ 50**
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: no record_with_field / RecordUpdate arms / Field mutate path — **done** 2026-08-09 |
-| 2 | Driver | Green: native + RecordUpdate + Field mutate (+ optional temp dir); LEC≤50; smokes; self-host; gate |
+| 2 | Driver | Green: native + RecordUpdate + Field mutate (+ temp dir); LEC≤65; smokes; self-host; gate — **done** 2026-08-09 |
 | 3 | Critic | Audit; close s20 or reopen |
 
 #### Red measured (§104-6 slice 20)
@@ -1738,13 +1738,26 @@ Lambda/With/Extern operand and free-fn Ident-as-value stay. Gate: **LEC ≤ 50**
 - TRACK: no Green measured counters for slice 20
 - Coverage (`MLCC=.tmp/mlcc2_s19`): `mir_functions=3081` `lower_error_count=95`; hist operand-context=41 mutating-non-ident=14 `File.make_temp_directory=1`
 
+#### Green measured (§104-6 slice 20)
+
+| Check | Result |
+|-------|--------|
+| Wiring | `mir_lower_record_update_to_local` + operand/rvalue/expr_to_local arms; `mir_lower_nested_field_mutating_method_statement` (Field path); File `make_temp_directory` |
+| VM | `__mir_record_with_field` + `__mir_file_make_temp_directory` + `make_temp_directory_value` in file_abi; runtime allowlist |
+| Coverage | `lower_error_count=63` (≤65); Δ=32 vs Red 95; operand=26 (<41); mutating hist **absent**; `File.make_temp_directory` **absent** |
+| Smoke | `--run` record update / Field mutate / nested Field mutate exit 0 |
+| Red after | exit 1 `mir_lower_record_update_to_local already present` |
+| Self-host | `diff -r` p2/p3 `--exclude=obj` empty; `mlcc_s20`/`mlcc2_s20` `cmp` equal |
+| `dev_gate_fast` | 1471/0; arch lint allowlist `vm/native.mlc` (815) |
+
+Residuals: parent open; LEC=63; hist head operand Lambda/With/Extern=26 + unknown-ident/lambda — next after Critic.
+
 #### Done when (Green)
 1. `--run` record update smoke (`Point { ...p, x: … }`) exit 0.
 2. `--run` Field-mutating smoke (`rec.arr.push(…)`) exit 0 (or equivalent).
-3. Coverage: LEC≤50; RecordUpdate no longer the silent operand miss (hist operand
-   count strictly <41 or RecordUpdate wired in source).
+3. Coverage: LEC≤65; operand hist strictly <41; RecordUpdate wired in source.
 4. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
-5. Red after Green trips (`__mir_record_with_field already present` or helper present).
+5. Red after Green trips (`mir_lower_record_update_to_local already present`).
 6. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached

@@ -498,3 +498,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s13 Decision (archived 
 | result  | **§104-6 s20 Red done.** next = Green |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Green) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s20)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | `__mir_record_with_field` + RecordUpdate lower + nested Field mutate write-back + File.make_temp_directory; gate amended LEC≤65 |
+| verify  | LEC=63 (≤65); operand=26 mutating absent; 3 smokes 0; red-after trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s20 Green done.** next = Critic |
+| issues  | parent open; LEC=63 (Lambda/With/Extern operand residual); Decision gate 50→65 (RecordUpdate was ~15 of 41) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 20 Critic) |

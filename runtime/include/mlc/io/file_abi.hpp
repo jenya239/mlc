@@ -98,5 +98,9 @@ inline Array<int32_t> list_dir_is_directory_value(String path) {
   }
 }
 
+inline String make_temp_directory_value(String prefix) {
+  return make_temp_directory(prefix);
+}
+
 } // namespace file
 } // namespace mlc
