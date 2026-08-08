@@ -138,3 +138,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s22 Decision frozen.** next = Red |
 | issues  | parent open; Lambda/unknown-ident deferred |
 | next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 22 Red) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=1, §104-6 s22)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Red harness `compiler/scripts/mir-coverage_s22_red.sh`; gap confirmed (no While/For to_local; no operand\|rvalue\|expr While\|For arms) |
+| verify  | red exit 1 `no While/For to_local / operand|rvalue|expr While|For arms`; LEC=49; hist operand=22 rvalue=4 |
+| result  | **§104-6 s22 Red done.** next = Green |
+| issues  | parent open |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 22 Green) |
