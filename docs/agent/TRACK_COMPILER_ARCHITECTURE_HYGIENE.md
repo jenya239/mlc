@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 Decision frozen (unknown Ident→ConstStr; baseline LEC=32; gate ≤12); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 Red done (no funref Ident stub; LEC=32); Green next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1962,7 +1962,7 @@ No false-done. Slice 22 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 23 — Unknown Ident → ConstStr funref stub (Decision 2026-08-09)
 
-**Status:** Decision frozen 2026-08-09. Parent §104-6 remains OPEN.
+**Status:** Red done 2026-08-09. Parent §104-6 remains OPEN.
 
 **Audit (post-s22 Critic, `.tmp/mlcc2_s22`):** LEC=**32**, `mir_functions=3161`.
 Buckets: operand-context=**9** (Lambda residual from s22 kind probe),
@@ -1997,9 +1997,17 @@ claiming `lower_error_count=0`; Wave 3.
 | Step | Role | Outcome |
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
-| 1 | Driver | Red: Ident still Err(unknown identifier) on non-local non-ctor |
+| 1 | Driver | Red: Ident still Err(unknown identifier) on non-local non-ctor — **done** 2026-08-09 |
 | 2 | Driver | Green: funref ConstStr stub; LEC≤12; smoke; self-host; gate |
 | 3 | Critic | Audit; close s23 |
+
+#### Red measured (§104-6 slice 23)
+
+- Harness: `compiler/scripts/mir-coverage_s23_red.sh` → exit 1 `no funref Ident stub / Ident still Err(unknown identifier) (Red expected)`
+- No `mir_lower_funref_ident_to_local`
+- operand / rvalue / `expression_to_local`: Ident failure path still `Err(unknown identifier …)` (no funref route)
+- TRACK: no Green measured counters for slice 23
+- Coverage (`MLCC=.tmp/mlcc2_s22`): `mir_functions=3161` `lower_error_count=32`; hist unknown-ident present (eval_expr_cpp=6 …) operand=9
 
 #### Done when (Green)
 1. `--run` smoke that passes a named top-level fn as a value argument exit 0
