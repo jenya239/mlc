@@ -228,3 +228,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s23 Green done.** next = Critic |
 | issues  | parent open; LEC=10 (operand Lambda=9 + visit_int=1); VM `--run` rejects ConstStr funref (C++ smoke used) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s23)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Independent wiring+C++ smoke+LECΔ+red+self-host re-translate+gate; no gate amend; slice 23 CLOSED |
+| verify  | LEC=10; unknown-ident absent; smoke 0; red-after 1; p2/p3+re-translate IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s23 CLOSED (Critic OK).** next = slice 24 Decision |
+| issues  | parent open; LEC=10 (operand Lambda=9 + visit_int=1) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Decision) |
