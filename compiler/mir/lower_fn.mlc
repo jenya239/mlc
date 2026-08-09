@@ -1755,6 +1755,18 @@ fn mir_lower_operand_from_expression(
         Ok(local_step) =>
           Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
       },
+    SemanticExpressionWhile(condition, body_statements, _, _) =>
+      match mir_lower_while_to_local(state, condition, body_statements) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
+    SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
+      match mir_lower_for_to_local(state, variable_name, iterator, body_statements) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep { state: local_step.state, operand: MirOperandLocal(local_step.local_id) })
+      },
     SemanticExpressionChar(value, _, _) =>
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     SemanticExpressionFloat(value, _, _) =>
@@ -1942,6 +1954,24 @@ fn mir_lower_rvalue_from_expression(
       },
     SemanticExpressionExtern(_, _, _, _, _) =>
       match mir_lower_extern_to_local(state) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionWhile(condition, body_statements, _, _) =>
+      match mir_lower_while_to_local(state, condition, body_statements) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
+    SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
+      match mir_lower_for_to_local(state, variable_name, iterator, body_statements) {
         Err(errors) => Err(errors),
         Ok(local_step) =>
           Ok(MirLowerRvalueStep {
@@ -2555,6 +2585,10 @@ fn mir_lower_expression_to_local(
       mir_lower_with_to_local(state, resource, binder_name, statements),
     SemanticExpressionExtern(_, _, _, _, _) =>
       mir_lower_extern_to_local(state),
+    SemanticExpressionWhile(condition, body_statements, _, _) =>
+      mir_lower_while_to_local(state, condition, body_statements),
+    SemanticExpressionFor(variable_name, iterator, body_statements, _, _) =>
+      mir_lower_for_to_local(state, variable_name, iterator, body_statements),
     SemanticExpressionField(object, field_name, _, _) =>
       mir_lower_record_field_to_local(state, object, field_name),
     SemanticExpressionQuestion(inner, _, _) =>
@@ -3015,6 +3049,41 @@ fn mir_lower_for_statement(
           Ok(mir_lower_start_block(exit_state, exit_block_step.block_id, 'for_exit'))
         end
       }
+    end
+  }
+
+fn mir_lower_while_to_local(
+  state: MirLowerState,
+  condition: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_while_statement(state, condition, body_statements) {
+    Err(errors) => Err(errors),
+    Ok(after_while) => do
+      const unit_step = mir_lower_allocate_local(after_while, '', mir_lower_unknown_type())
+      Ok(MirLowerLocalStep {
+        state: mir_lower_emit_assign(
+          unit_step.state, unit_step.local_id, MirRvalueUse(MirOperandUnit)),
+        local_id: unit_step.local_id
+      })
+    end
+  }
+
+fn mir_lower_for_to_local(
+  state: MirLowerState,
+  variable_name: string,
+  iterator: Shared<SemanticExpression>,
+  body_statements: [Shared<SemanticStatement>]
+) -> Result<MirLowerLocalStep, [string]> =
+  match mir_lower_for_statement(state, variable_name, iterator, body_statements) {
+    Err(errors) => Err(errors),
+    Ok(after_for) => do
+      const unit_step = mir_lower_allocate_local(after_for, '', mir_lower_unknown_type())
+      Ok(MirLowerLocalStep {
+        state: mir_lower_emit_assign(
+          unit_step.state, unit_step.local_id, MirRvalueUse(MirOperandUnit)),
+        local_id: unit_step.local_id
+      })
     end
   }
 
