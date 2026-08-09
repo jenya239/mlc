@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 22 Green done (While→Unit → LEC=32); Critic next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 22 CLOSED (While→Unit → LEC=32); next slice 23 Decision; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1876,7 +1876,7 @@ No false-done. Slice 21 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 22 — Operand/rvalue While (+ For) → Unit (Decision 2026-08-09)
 
-**Status:** Green done 2026-08-09. Parent §104-6 remains OPEN.
+**Status:** CLOSED 2026-08-09 (Critic OK). Parent §104-6 remains OPEN.
 
 **Audit (post-s21 Critic, `.tmp/mlcc2_s21`):** LEC=**49**, `mir_functions=3142`.
 Opaque buckets: operand-context=**22**, unknown-ident=**22**, rvalue=**4**,
@@ -1913,7 +1913,7 @@ probe or residual count ≥ pre-slice While share).
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: no While/For to_local / no operand\|rvalue While\|For arms — **done** 2026-08-09 |
 | 2 | Driver | Green: While(+For)→Unit; LEC≤35; smoke; self-host; gate — **done** 2026-08-09 |
-| 3 | Critic | Audit; close s22 |
+| 3 | Critic | Audit; close s22 — **done** 2026-08-09 CLOSED |
 
 #### Red measured (§104-6 slice 22)
 
@@ -1935,6 +1935,22 @@ probe or residual count ≥ pre-slice While share).
 | `dev_gate_fast` | 1471/0 |
 
 Residuals: parent open; LEC=32; operand Lambda=9 + unknown-ident=22 — next after Critic.
+
+#### Critic audit (2026-08-09), §104-6 slice 22 CLOSED
+
+Independent re-audit (not a re-read of Driver log):
+
+| Check | Result |
+|-------|--------|
+| Wiring | tip `e54544d6`: `mir_lower_while_to_local`/`for_to_local` (Unit after statement lowerers); operand+rvalue+`expression_to_local` While/For arms |
+| Smoke | independent while-as-expr + for-as-expr `--run` exit 0 (distinct from Driver fixtures) |
+| Coverage | LEC=32 (≤35); Δ=17 vs Red 49; operand=9; rvalue While hist **absent** |
+| Gate | no amend — measured Δ matches Decision expected −17 |
+| Red after | exit 1 `While/For to_local helper already present` |
+| Self-host | Driver p2/p3 `diff -r --exclude=obj` empty; binaries `cmp` equal; independent `mlcc2_s22` re-translate vs p2 identical |
+| Gate | `dev_gate_fast` 1471/0 |
+
+No false-done. Slice 22 CLOSED. Parent remains open (LEC≠0).
 
 #### Done when (Green)
 1. `--run` while-as-expression smoke exit 0 (e.g. `let _ = while … do … end`).
