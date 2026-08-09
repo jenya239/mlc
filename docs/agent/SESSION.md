@@ -243,3 +243,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s23 CLOSED (Critic OK).** next = slice 24 Decision |
 | issues  | parent open; LEC=10 (operand Lambda=9 + visit_int=1) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s24)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s24 Decision: Lambda→ConstStr stub + visit_int Unit mop-up; gate LEC=0 |
+| verify  | Baseline LEC=10; operand-Lambda=9 visit_int=1; TRACK Decision+Steps; PLAN |
+| result  | **§104-6 s24 Decision frozen.** next = Red |
+| issues  | parent open until LEC=0; real closures deferred |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Red) |
