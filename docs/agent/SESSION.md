@@ -168,3 +168,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s22 Green done.** next = Critic |
 | issues  | parent open; LEC=32 (operand Lambda=9 + unknown-ident) |
 | next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 22 Critic) |
+
+### Turn 2026-08-09 (Critic TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=3, §104-6 s22)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 3 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Independent wiring+while/for smokes+LECΔ+red+self-host re-translate+gate; no gate amend; slice 22 CLOSED |
+| verify  | LEC=32; operand=9; rvalue While absent; smokes 0; red-after 1; p2/p3+re-translate IDENTICAL; gate 1471/0 |
+| result  | **§104-6 s22 CLOSED (Critic OK).** next = slice 23 Decision |
+| issues  | parent open; LEC=32 (operand Lambda + unknown-ident) |
+| next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Decision) |
