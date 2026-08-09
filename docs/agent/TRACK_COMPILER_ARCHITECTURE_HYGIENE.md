@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 22 CLOSED (While→Unit → LEC=32); next slice 23 Decision; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 Decision frozen (unknown Ident→ConstStr; baseline LEC=32; gate ≤12); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1958,6 +1958,55 @@ No false-done. Slice 22 CLOSED. Parent remains open (LEC≠0).
    kind-tagged While count 0).
 3. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
 4. Red after Green trips (`mir_lower_while_to_local` already present).
+5. TRACK+PLAN+SESSION; no false-done.
+
+### Slice 23 — Unknown Ident → ConstStr funref stub (Decision 2026-08-09)
+
+**Status:** Decision frozen 2026-08-09. Parent §104-6 remains OPEN.
+
+**Audit (post-s22 Critic, `.tmp/mlcc2_s22`):** LEC=**32**, `mir_functions=3161`.
+Buckets: operand-context=**9** (Lambda residual from s22 kind probe),
+unknown-ident=**22** (`eval_expr_cpp`=6, `parse_type`=3, `parse_expr`=2,
+`context_resolve`=2, plus parse_*/infer_*/transform_*/gen_* singles),
+`visit_int`=1.
+
+**Why this slice:** Highest clearable residual without a real callable VmValue.
+These idents are module-level fns used as *values* (HOF injection params like
+`eval_expr_cpp_fn`, not Call callees — Call(Ident) already works via
+`CallAssign`). Array-method Ident callbacks were cleared in s21; remaining
+sites pass fn names into non-array helpers. Lambda-as-operand (9) and
+`visit_int` stay deferred (closure / trait dispatch).
+
+**Approach (Green):**
+1. Add `mir_lower_funref_ident_to_local(state, name)`: allocate local; assign
+   `MirRvalueUse(MirOperandConstStr(name))` (name-as-string stand-in for a
+   funref; sufficient for lower_error clearance; MIR-eval of those HOF
+   codegen helpers is not a self-host load path).
+2. In operand + rvalue + `expression_to_local` Ident arms: when
+   `lookup_local` fails and not a variant ctor, call that helper instead of
+   `Err(unknown identifier …)`.
+
+**Expected Δ:** −22. **Gate = LEC ≤ 12** (32−22=10 + margin). Sabotage:
+LEC>12, or hist still lists any `unknown identifier <name>` from the
+baseline set.
+
+**Non-goals:** Callable funref/closure VmValue; Lambda-as-operand; `visit_int`;
+claiming `lower_error_count=0`; Wave 3.
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
+| 1 | Driver | Red: Ident still Err(unknown identifier) on non-local non-ctor |
+| 2 | Driver | Green: funref ConstStr stub; LEC≤12; smoke; self-host; gate |
+| 3 | Critic | Audit; close s23 |
+
+#### Done when (Green)
+1. `--run` smoke that passes a named top-level fn as a value argument exit 0
+   (C++ `--run` path; proves program still valid).
+2. Coverage: LEC≤12; hist `unknown identifier` absent (or count strictly <22).
+3. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+4. Red after Green trips (funref helper or ConstStr stub path present).
 5. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
