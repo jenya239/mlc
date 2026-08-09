@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 Red done (no funref Ident stub; LEC=32); Green next; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 Green done (funref ConstStr → LEC=10); Critic next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -1962,7 +1962,7 @@ No false-done. Slice 22 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 23 — Unknown Ident → ConstStr funref stub (Decision 2026-08-09)
 
-**Status:** Red done 2026-08-09. Parent §104-6 remains OPEN.
+**Status:** Green done 2026-08-09. Parent §104-6 remains OPEN.
 
 **Audit (post-s22 Critic, `.tmp/mlcc2_s22`):** LEC=**32**, `mir_functions=3161`.
 Buckets: operand-context=**9** (Lambda residual from s22 kind probe),
@@ -1998,7 +1998,7 @@ claiming `lower_error_count=0`; Wave 3.
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
 | 1 | Driver | Red: Ident still Err(unknown identifier) on non-local non-ctor — **done** 2026-08-09 |
-| 2 | Driver | Green: funref ConstStr stub; LEC≤12; smoke; self-host; gate |
+| 2 | Driver | Green: funref ConstStr stub; LEC≤12; smoke; self-host; gate — **done** 2026-08-09 |
 | 3 | Critic | Audit; close s23 |
 
 #### Red measured (§104-6 slice 23)
@@ -2008,6 +2008,19 @@ claiming `lower_error_count=0`; Wave 3.
 - operand / rvalue / `expression_to_local`: Ident failure path still `Err(unknown identifier …)` (no funref route)
 - TRACK: no Green measured counters for slice 23
 - Coverage (`MLCC=.tmp/mlcc2_s22`): `mir_functions=3161` `lower_error_count=32`; hist unknown-ident present (eval_expr_cpp=6 …) operand=9
+
+#### Green measured (§104-6 slice 23)
+
+| Check | Result |
+|-------|--------|
+| Wiring | `mir_lower_funref_ident_to_local` + operand/rvalue/`expression_to_local` Ident failure → ConstStr(name) |
+| Coverage | `lower_error_count=10` (≤12); Δ=22 vs Red 32; hist `unknown identifier` **absent**; operand=9 Lambda residual; `visit_int`=1 |
+| Smoke | C++ path: `apply_once(add_one, 41)` → binary exit 0 (`--run` VM rejects ConstStr funref — expected; Decision is C++ `--run` path) |
+| Red after | exit 1 `funref Ident helper already present` |
+| Self-host | `diff -r` p2/p3 `--exclude=obj` empty; `mlcc_s23`/`mlcc2_s23` `cmp` equal |
+| `dev_gate_fast` | 1471/0 |
+
+Residuals: parent open; LEC=10; operand Lambda=9 + `visit_int`=1 — next after Critic.
 
 #### Done when (Green)
 1. `--run` smoke that passes a named top-level fn as a value argument exit 0
