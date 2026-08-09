@@ -183,3 +183,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s22 CLOSED (Critic OK).** next = slice 23 Decision |
 | issues  | parent open; LEC=32 (operand Lambda + unknown-ident) |
 | next    | ROLE=Driver STEP=0 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Decision) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s23)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Freeze §104-6 s23 Decision: unknown Ident→ConstStr funref stub in operand/rvalue/expr; gate LEC≤12 |
+| verify  | Baseline LEC=32; unknown-ident=22 operand-Lambda=9 visit_int=1; TRACK Decision+Steps; PLAN |
+| result  | **§104-6 s23 Decision frozen.** next = Red |
+| issues  | parent open; Lambda/visit_int deferred |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Red) |
