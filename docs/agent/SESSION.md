@@ -213,3 +213,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s23 Red done.** next = Green |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Green) |
+
+### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=2, §104-6 s23)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_COMPILER_ARCHITECTURE_HYGIENE |
+| started | 2026-08-09 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | `mir_lower_funref_ident_to_local` + Ident→ConstStr in operand/rvalue/expr; LEC 32→10 |
+| verify  | LEC=10 (≤12); unknown-ident absent; C++ funref smoke 0; red-after trips; self-host IDENTICAL; `dev_gate_fast` 1471/0 |
+| result  | **§104-6 s23 Green done.** next = Critic |
+| issues  | parent open; LEC=10 (operand Lambda=9 + visit_int=1); VM `--run` rejects ConstStr funref (C++ smoke used) |
+| next    | ROLE=Critic STEP=3 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 23 Critic) |

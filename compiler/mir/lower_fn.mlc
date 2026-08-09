@@ -1656,7 +1656,14 @@ fn mir_lower_operand_from_expression(
                 })
             }
           else
-            Err([`mir lower: unknown identifier ${name}`])
+            match mir_lower_funref_ident_to_local(state, name) {
+              Err(errors) => Err(errors),
+              Ok(local_step) =>
+                Ok(MirLowerOperandStep {
+                  state: local_step.state,
+                  operand: MirOperandLocal(local_step.local_id)
+                })
+            }
           end
       },
     SemanticExpressionBin(operation, _, _, _, _) =>
@@ -1811,7 +1818,14 @@ fn mir_lower_rvalue_from_expression(
                 })
             }
           else
-            Err([`mir lower: unknown identifier ${name}`])
+            match mir_lower_funref_ident_to_local(state, name) {
+              Err(errors) => Err(errors),
+              Ok(local_step) =>
+                Ok(MirLowerRvalueStep {
+                  state: local_step.state,
+                  rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+                })
+            }
           end
       },
     SemanticExpressionBin(operation, left, right, _, _) =>
@@ -2712,7 +2726,7 @@ fn mir_lower_expression_to_local(
               local_id: local_step.local_id
             })
           end else
-            Err([`mir lower: unknown identifier ${name}`])
+            mir_lower_funref_ident_to_local(state, name)
           end
       },
     _ =>
@@ -2911,6 +2925,21 @@ fn mir_lower_extern_to_local(state: MirLowerState) -> Result<MirLowerLocalStep, 
   Ok(MirLowerLocalStep {
     state: mir_lower_emit_assign(
       local_step.state, local_step.local_id, MirRvalueUse(MirOperandUnit)),
+    local_id: local_step.local_id
+  })
+end
+
+// Module-level fn used as a value (HOF injection): stub as ConstStr(name).
+fn mir_lower_funref_ident_to_local(
+  state: MirLowerState,
+  name: string
+) -> Result<MirLowerLocalStep, [string]> = do
+  const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  Ok(MirLowerLocalStep {
+    state: mir_lower_emit_assign(
+      local_step.state,
+      local_step.local_id,
+      MirRvalueUse(MirOperandConstStr(name))),
     local_id: local_step.local_id
   })
 end
