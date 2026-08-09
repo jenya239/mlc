@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 24 Decision frozen (Lambda→ConstStr + visit_int; baseline LEC=10; gate =0); parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 24 Red done (no lambda_value / visit_int stub; LEC=10); Green next; parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -2048,7 +2048,7 @@ No false-done. Slice 23 CLOSED. Parent remains open (LEC≠0).
 
 ### Slice 24 — Operand Lambda → ConstStr stub + visit_int mop-up (Decision 2026-08-09)
 
-**Status:** Decision frozen 2026-08-09. Parent §104-6 remains OPEN until LEC=0.
+**Status:** Red done 2026-08-09. Parent §104-6 remains OPEN until LEC=0.
 
 **Audit (post-s23 Critic, `.tmp/mlcc2_s23`):** LEC=**10**, `mir_functions=3184`.
 Buckets: operand-context=**9** (Lambda only — While/For wired in s22),
@@ -2081,9 +2081,19 @@ claiming Wave 2/3 done; switching default C++ backend (§104-24).
 | Step | Role | Outcome |
 |------|------|---------|
 | 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
-| 1 | Driver | Red: no lambda_value_to_local / no operand Lambda arm / visit_int still unsupported |
+| 1 | Driver | Red: no lambda_value_to_local / no operand Lambda arm / visit_int still unsupported — **done** 2026-08-09 |
 | 2 | Driver | Green: Lambda+visit_int stubs; LEC=0; smoke; self-host; gate |
 | 3 | Critic | Audit; close s24; if LEC=0 close parent §104-6 |
+
+#### Red measured (§104-6 slice 24)
+
+- Harness: `compiler/scripts/mir-coverage_s24_red.sh` → exit 1 `no lambda_value_to_local / no operand|rvalue Lambda / visit_int unsupported (Red expected)`
+- No `mir_lower_lambda_value_to_local`
+- operand / rvalue: no `SemanticExpressionLambda` arms
+- `expression_to_local`: no `mir_lower_lambda_value_to_local` route (Call-nested Lambda OK)
+- `mir_lower_method_native_name`: no `visit_int`; no Unit mop-up
+- TRACK: no Green measured counters for slice 24
+- Coverage (`MLCC=.tmp/mlcc2_s23`): `mir_functions=3184` `lower_error_count=10`; hist operand=9 visit_int=1
 
 #### Done when (Green)
 1. C++-path smoke with a lambda value argument exit 0 (e.g. `apply(|x| x+1, n)`).
