@@ -348,7 +348,7 @@ a silent "closed" with the file still allowlisted.
 
 ### Wave 2 — MIR as a real layer (moderate-to-high effort, no immediate payoff, do after Wave 1)
 
-- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 23 CLOSED (funref ConstStr → LEC=10); next slice 24 Decision; parent open until `lower_error_count=0`
+- **§104-6** complete MIR lowering coverage (Step 6) — **queue head**, slice 24 Decision frozen (Lambda→ConstStr + visit_int; baseline LEC=10; gate =0); parent open until `lower_error_count=0`
 - **§104-7** `mir/mir_builder.mlc` extraction (Step 7) — depends on §104-6
 - **§104-8** MIR verifier extensions (Step 8) — depends on §104-6
 - **§104-9** deterministic MIR pretty-printer (Step 9) — depends on §104-6
@@ -2044,6 +2044,52 @@ No false-done. Slice 23 CLOSED. Parent remains open (LEC≠0).
 2. Coverage: LEC≤12; hist `unknown identifier` absent (or count strictly <22).
 3. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
 4. Red after Green trips (funref helper or ConstStr stub path present).
+5. TRACK+PLAN+SESSION; no false-done.
+
+### Slice 24 — Operand Lambda → ConstStr stub + visit_int mop-up (Decision 2026-08-09)
+
+**Status:** Decision frozen 2026-08-09. Parent §104-6 remains OPEN until LEC=0.
+
+**Audit (post-s23 Critic, `.tmp/mlcc2_s23`):** LEC=**10**, `mir_functions=3184`.
+Buckets: operand-context=**9** (Lambda only — While/For wired in s22),
+`unsupported method visit_int`=**1**.
+
+**Why this slice:** Last clearable residuals before parent `lower_error_count=0`.
+Lambda-as-value is the same class as s23 Ident funref (HOF injection /
+callback args that are not array-method predicates). `visit_int` is a visitor
+trait method with no MIR native — Unit/Call stub clears the single hit.
+Callable closure VmValue stays a non-goal (ConstStr stand-in, C++ path
+load-bearing for smokes).
+
+**Approach (Green):**
+1. Add `mir_lower_lambda_value_to_local(state, parameter_names, body)`:
+   unique name `__mir_lambda_${lambda_bindings.length()}`;
+   `mir_lower_bind_lambda`; allocate local assigned
+   `MirRvalueUse(MirOperandConstStr(name))` (same stand-in as s23 funref).
+2. Wire **`SemanticExpressionLambda`** in operand + rvalue +
+   `expression_to_local` to that helper.
+3. Mop-up: when method name is `visit_int`, lower to a Unit local (no native)
+   instead of `unsupported method` — one residual site.
+
+**Expected Δ:** −10. **Gate = LEC = 0**. Sabotage: LEC>0, or opaque operand
+hist still non-zero, or `visit_int` still unsupported.
+
+**Non-goals:** Real closure/funref VmValue; MIR-eval of ConstStr-as-callback;
+claiming Wave 2/3 done; switching default C++ backend (§104-24).
+
+#### Steps
+| Step | Role | Outcome |
+|------|------|---------|
+| 0 | Driver | Decision frozen (this subsection) — **done** 2026-08-09 |
+| 1 | Driver | Red: no lambda_value_to_local / no operand Lambda arm / visit_int still unsupported |
+| 2 | Driver | Green: Lambda+visit_int stubs; LEC=0; smoke; self-host; gate |
+| 3 | Critic | Audit; close s24; if LEC=0 close parent §104-6 |
+
+#### Done when (Green)
+1. C++-path smoke with a lambda value argument exit 0 (e.g. `apply(|x| x+1, n)`).
+2. Coverage: LEC=0; hist empty (or no operand / visit_int lines).
+3. Self-host `diff -r --exclude=obj` empty; `dev_gate_fast` 0 failed.
+4. Red after Green trips (`mir_lower_lambda_value_to_local` already present).
 5. TRACK+PLAN+SESSION; no false-done.
 
 ### Wave 3 — deferred, high-risk, needs explicit re-authorization when reached
