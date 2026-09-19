@@ -12,6 +12,13 @@ Trigger: два референсных C++ прототипа в `~/workspaces/g
 
 **Статус windowed/MLC-оркестрации:** [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md) **closed** 2026-07-11 (GLFW окно + `GlRenderer`/`TextRenderer` на MLC) — см. §8.
 
+**Restart surface for GUI (2026-09-20):** native editor product failed
+([archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md)).
+Last stable **fast many-glyph OpenGL** point is PLAN §32
+[TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md)
+(`c323556f`…`14972c49`): `misc/gui/text_renderer.mlc` +
+`misc/examples/text_ide_panels_demo.mlc` + `scripts/run_text_gl_perf_corpus.rb`.
+
 ## 1. Референсы (факты, не код)
 
 ### gtk-gl-cpp-2025 — HarfBuzz+FreeType pipeline

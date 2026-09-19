@@ -1,6 +1,21 @@
-# Native code editor (MLC) — product + placement
+# Native code editor (MLC) — **failed experiment** (2026-09-20)
 
-Parent: [PLAN.md](PLAN.md) §33, track [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md) (**closed**).
+PLAN §33–§111 (`misc/editor/`, `demo_live.mlc`) did not converge. **Do not
+continue numbered editor STEPs.** **Do not start new GUI work from this tree.**
+
+**Restart from** PLAN §32 [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md)
+(closed 2026-07-13, commits `c323556f`…`14972c49`): HashMap `GlyphCache` +
+layout cache in `misc/examples/text_ide_panels_demo.mlc`; ~2000 glyphs/frame
+72ms → ~3.2ms. Verdict: [archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md).
+Text pipeline: [TEXT_RENDERING.md](TEXT_RENDERING.md).
+
+The rest of this file is historical placement from the experiment.
+
+---
+
+# Native code editor (MLC) — product + placement (historical)
+
+Parent: [PLAN.md](PLAN.md) §33, track [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md) (**closed**; product later **failed** 2026-09-20).
 Architecture decisions (frozen): [GUI_ARCHITECTURE.md](GUI_ARCHITECTURE.md).
 Depends on: [GUI.md](GUI.md), [TEXT_RENDERING.md](TEXT_RENDERING.md),
 scene Phase A ([archive/tracks/TRACK_GUI_SCENE_PHASE_A.md](archive/tracks/TRACK_GUI_SCENE_PHASE_A.md)).

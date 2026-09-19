@@ -12,7 +12,9 @@ migration. Focus: **layout contract + agent-checkable visual invariants**.
 Standing: [AGENTS.md](../../AGENTS.md) Performance workflow still applies to
 CPU. This track adds the missing **geometry / overlap / bleed** loop.
 
-## Status: **open** 2026-08-07 — §111a1 **CLOSED**; §111a study when queued
+## Status: **aborted** 2026-09-20 — native editor product is a failed experiment. Do not resume numbered STEPs. Restart GUI from PLAN §32 text stack ([../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md)).
+
+Prior: **open** 2026-08-07 — §111a1 **CLOSED**; §111a study when queued (superseded by abort).
 
 ([TRACK_EDITOR_SCROLL_GLYPH_X](TRACK_EDITOR_SCROLL_GLYPH_X.md) Critic OK).
 §111a0 CLOSED. Residual: S2 wrap-aware caret/scroll, S4 shell layout, S5 minimap scale.

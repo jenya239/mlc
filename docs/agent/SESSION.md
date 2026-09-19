@@ -273,3 +273,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | **§104-6 s24 Red done.** next = Green |
 | issues  | parent open |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Green) |
+
+### Turn 2026-09-20 (Planner — native editor failed experiment)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | mark-failed |
+| track   | (editor product abort; no new TRACK) |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Mark PLAN §33–§111 / `misc/editor/` failed experiment. Restart GUI from PLAN §32 `c323556f`…`14972c49` (`text_ide_panels_demo` + HashMap GlyphCache). Docs: `docs/archive/EDITOR_EXPERIMENT_FAILED.md`, EDITOR/GUI/PLAN/CONTINUITY/AGENTS/SESSION |
+| verify  | Docs-only; no `compiler/` / `misc/editor/` code deleted |
+| result  | Editor product aborted. GUI substrate = §32 text stack. Compiler queue still §104-6 s24 Green |
+| issues  | `misc/editor/` left in tree as history. Uncommitted `lower_fn.mlc` Green WIP untouched |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Green) unless user starts GUI from §32 |

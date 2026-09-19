@@ -10,6 +10,10 @@ Trigger: пользователь 2026-07-13, `misc/examples/text_ide_panels_dem
 
 ## Status: **closed** (2026-07-13) — Critic OK
 
+**GUI restart (2026-09-20):** native editor product failed. This close is the
+last stable fast-many-glyph OpenGL point — see
+[EDITOR_EXPERIMENT_FAILED.md](../EDITOR_EXPERIMENT_FAILED.md).
+
 **Critic 2026-07-13:** STEP=1–3 vs `c323556f`…`14972c49` (+ activate `ef927fcc`);
 artifacts in HEAD (`Map<i64>` GlyphCache, ide `LayoutCache`,
 `run_text_gl_perf_corpus.rb`); re-ran corpus → PASS ide 1.14s / dash 0.26s.

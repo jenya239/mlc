@@ -1,7 +1,11 @@
 # MLC GUI / editor runtime — architecture decisions
 
-Status: **frozen 2026-07-13** (external large-context review + project choice).
-Product track: [agent/TRACK_EDITOR_MVP.md](agent/TRACK_EDITOR_MVP.md).
+Status: **editor-as-dogfood experiment failed 2026-09-20.** Do not continue
+`misc/editor/` / PLAN §33–§111. Restart GUI from PLAN §32 text stack
+([archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md)).
+The 2026-07-13 “editor-first runtime” freeze below is **historical**.
+
+Product track (historical): [archive/tracks/TRACK_EDITOR_MVP.md](archive/tracks/TRACK_EDITOR_MVP.md).
 Placement: [EDITOR.md](EDITOR.md). Scene substrate: [GUI.md](GUI.md).
 
 ## One-line verdict

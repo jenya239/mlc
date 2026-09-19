@@ -22,24 +22,17 @@ Exit 0 required. Suite: `specs/regression/` — Ruby bootstrap stdout is source 
 
 Docs-only tracks (no `compiler/**` changes) are exempt.
 
-## Performance workflow (GUI / editor / OpenGL)
+## Performance workflow (GUI / OpenGL)
 
 Low-level UI cannot be “vibe-coded” without a measurable loop. Architecture that looks right can still mean tens of thousands of shapes/draws per frame. Rules:
 
 - Never claim a performance win without before/after numbers from the same harness.
 - Prefer **measure → one hypothesis → one cut → remasure**. No unrelated refactor in that commit.
-- Editor dogfood authority while §109 is open: scripts under `scripts/run_editor_perf_*.sh` + PERF_FULL / dogfood metrics written into [docs/agent/TRACK_EDITOR_PERF_DOGFOOD.md](docs/agent/TRACK_EDITOR_PERF_DOGFOOD.md). Manual “launch and look” is not verification.
+- **Native editor (`misc/editor/`, PLAN §33–§111) is a failed experiment (2026-09-20).** Do not resume it. Do not use `scripts/run_editor_perf_*.sh` / `demo_live` as authority. Restart surface: PLAN §32 GlyphCache + `text_ide_panels_demo` — [docs/archive/EDITOR_EXPERIMENT_FAILED.md](docs/archive/EDITOR_EXPERIMENT_FAILED.md). Gate: `scripts/run_text_gl_perf_corpus.rb`.
 - Report at least: CPU frame parts you touch (`layout_us` / `draw_us` / `total_us` or named counters); keep GPU guesses separate unless timed asynchronously.
 - Do not add `glFinish`, framebuffer readback, or synchronous query reads to the normal frame path.
 - Widgets / chrome produce paint data; only the shared renderer path issues OpenGL.
 - A static UI (idle, hit-stable pointer) must not reshape text / rebuild O(doc) glyph lists every frame.
 - One measured bottleneck per Green step. If the target metric does not move → revert or narrow; do not ship “cleaner” without numbers.
 - Optional deeper GL traces (`apitrace`) are allowed for diagnosis; they do not replace scripted pass/fail gates.
-
-## Visual layout (editor chrome)
-
-CPU gates do not prove “nothing overlaps”. For chrome/geometry changes see
-[docs/agent/TRACK_EDITOR_LAYOUT_INTEGRITY.md](docs/agent/TRACK_EDITOR_LAYOUT_INTEGRITY.md):
-prefer `EditorShellLayout` + partition/bleed scenarios over screenshot-only fixes.
-One region family per change; probe geometry must match live.
 

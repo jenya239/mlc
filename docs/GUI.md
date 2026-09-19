@@ -2,6 +2,8 @@
 
 Parent: [PLAN.md](PLAN.md) §10b, [TEXT_RENDERING.md](TEXT_RENDERING.md) §8,
 [archive/tracks/TRACK_GUI_FRAMEWORK.md](archive/tracks/TRACK_GUI_FRAMEWORK.md).
+Native editor on top of this (`misc/editor/`) is a **failed experiment**
+(2026-09-20); restart from §32 text cache — [archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md).
 Input hardening: [archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md](archive/tracks/TRACK_GUI_INPUT_ROBUSTNESS.md).
 
 Built on closed [TRACK_TEXT_RENDERING_NATIVE](archive/tracks/TRACK_TEXT_RENDERING_NATIVE.md)
