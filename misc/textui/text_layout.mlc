@@ -1,0 +1,139 @@
+import { Theme } from './theme'
+import {
+  TextShapingState,
+  text_shaping_shape,
+  text_shaping_glyph_advance_at,
+  text_shaping_line_height
+} from '../gui/text_shaping'
+
+export type WrapWidth = WrapWidthNone | WrapWidthPixels(i32)
+
+export type TextLine = {
+  byte_start: i32,
+  byte_end: i32,
+  top: i32,
+  height: i32,
+  width: i32
+}
+
+export type TextCluster = {
+  byte_offset: i32,
+  x: i32,
+  width: i32,
+  line_index: i32
+}
+
+export type TextLayout = {
+  text: string,
+  font_id: i32,
+  pixel_size: i32,
+  wrap_width: WrapWidth,
+  pixel_width: i32,
+  pixel_height: i32,
+  lines: [TextLine],
+  clusters: [TextCluster]
+}
+
+export type TextLayoutCache = {
+  by_key: Map<string, TextLayout>,
+  rebuilds: i32
+}
+
+export fn text_layout_cache_new() -> TextLayoutCache = do
+  let mut by_key: Map<string, TextLayout> = Map.new()
+  TextLayoutCache { by_key: by_key, rebuilds: 0 }
+end
+
+export type TextLayoutBuildResult = {
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  layout: TextLayout
+}
+
+export fn wrap_width_none() -> WrapWidth =
+  WrapWidthNone
+
+fn wrap_width_to_string(wrap_width: WrapWidth) -> string =
+  match wrap_width
+    | WrapWidthPixels(value) => value.to_string()
+    | WrapWidthNone => "none"
+
+fn text_layout_key(font_path: string, pixel_size: i32, wrap_width: WrapWidth, text: string) -> string =
+  font_path + "|" + pixel_size.to_string() + "|" + wrap_width_to_string(wrap_width) + "|" + text
+
+fn build_single_line_layout(
+  text: string,
+  pixel_size: i32,
+  wrap_width: WrapWidth,
+  glyph_count: i32,
+  line_height: i32
+) -> TextLayout = do
+  let mut total_width = 0
+  let mut clusters: [TextCluster] = []
+  let mut glyph_index = 0
+  while glyph_index < glyph_count do
+    const advance = text_shaping_glyph_advance_at(glyph_index) / 64
+    clusters.push(TextCluster {
+      byte_offset: glyph_index,
+      x: total_width,
+      width: advance,
+      line_index: 0
+    })
+    total_width = total_width + advance
+    glyph_index = glyph_index + 1
+  end
+  let mut lines: [TextLine] = []
+  lines.push(TextLine {
+    byte_start: 0,
+    byte_end: text.length(),
+    top: 0,
+    height: line_height,
+    width: total_width
+  })
+  TextLayout {
+    text: text,
+    font_id: 0,
+    pixel_size: pixel_size,
+    wrap_width: wrap_width,
+    pixel_width: total_width,
+    pixel_height: line_height,
+    lines: lines,
+    clusters: clusters
+  }
+end
+
+export fn text_layout_build(
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  text: string,
+  wrap_width: WrapWidth
+) -> TextLayoutBuildResult = do
+  const key = text_layout_key(theme.font_path, theme.font_size_pixels, wrap_width, text)
+  let mut by_key = cache.by_key
+  if by_key.has(key) then
+    return TextLayoutBuildResult {
+      shaping: shaping,
+      cache: cache,
+      layout: by_key.get(key)
+    }
+  end
+  const shape_result = text_shaping_shape(shaping, theme.font_path, theme.font_size_pixels, text)
+  const line_height = text_shaping_line_height(shape_result.state, theme.font_path, theme.font_size_pixels)
+  const layout = build_single_line_layout(
+    text,
+    theme.font_size_pixels,
+    wrap_width,
+    shape_result.glyph_count,
+    line_height
+  )
+  by_key.set(key, layout)
+  TextLayoutBuildResult {
+    shaping: shape_result.state,
+    cache: TextLayoutCache {
+      by_key: by_key,
+      rebuilds: cache.rebuilds + 1
+    },
+    layout: layout
+  }
+end

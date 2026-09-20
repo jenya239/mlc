@@ -1,0 +1,26 @@
+import { Theme } from './theme'
+import { TextLayout } from './text_layout'
+
+export type LabelPreferredSize = {
+  width: i32,
+  height: i32
+}
+
+fn effective_padding(theme: Theme, parent_padding: i32) -> i32 = do
+  if parent_padding != 0 then
+    return parent_padding
+  end
+  theme.padding
+end
+
+export fn label_preferred_size(
+  theme: Theme,
+  parent_padding: i32,
+  layout: TextLayout
+) -> LabelPreferredSize = do
+  const padding = effective_padding(theme, parent_padding)
+  LabelPreferredSize {
+    width: layout.pixel_width + padding * 2,
+    height: layout.pixel_height + padding * 2
+  }
+end

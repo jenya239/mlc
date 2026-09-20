@@ -21,7 +21,7 @@ export type Theme = {
 
 export fn theme_default() -> Theme =
   Theme {
-    font_path: "assets/fonts/default.ttf",
+    font_path: "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     font_size_pixels: 14,
     padding: 8,
     gap: 10,

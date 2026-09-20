@@ -364,3 +364,33 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | issues  | Raw `textui_fm_step0_20260920_103642.md` still glued; TRACK is source of truth |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_TEXTUI_FILE_MANAGER (01-label) |
 
+### Turn 2026-09-20 (Driver — TRACK_TEXTUI_FILE_MANAGER STEP=1 commit + STEP=2)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 2 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Pushed STEP=1 `51f792da`. STEP=2 Label: `text_layout`/`layout_pass`/`paint_pass`/`widget_label`, `ft_face_line_height` ABI, `slice01_labels.mlc`. Sonnet $1.01 glued; Driver compile-fixed |
+| verify  | `run_textui_slice0_smoke.sh` ok; `run_textui_slice01_smoke.sh` ok; file-size ok |
+| result  | **STEP=2 done** (uncommitted). next = 02-selection |
+| issues  | `Option<i32>` codegen is `Option<int>` without a C++ type; used `WrapWidth`. mlcc segfault on import of stdlib `option.mlc` |
+| next    | ROLE=Driver STEP=commit TRACK=TRACK_TEXTUI_FILE_MANAGER (STEP=2) |
+
+### Turn 2026-09-20 (Driver — commit STEP=2, diagnose Option)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | commit |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Commit+push STEP=2 Label kit + `ft_face_line_height`. Diagnose mlcc `Option<i32>` / `option.mlc` |
+| verify  | slice0 + slice01 + file-size (already green) |
+| result  | STEP=2 committed. Option diagnosis in this turn |
+| issues  | |
+| next    | ROLE=Planner STEP=3 TRACK=TRACK_TEXTUI_FILE_MANAGER (02-selection) |
+

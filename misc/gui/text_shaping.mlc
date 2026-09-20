@@ -1,5 +1,4 @@
-// TRACK_TEXT_SHIM_TO_MLC STEP=4 — face/font cache + pitch-copy on thin abi.
-// Legacy freetype_shim/harfbuzz_shim path caches stay until STEP=8.
+// Face/font cache + pitch-copy on thin FreeType/HarfBuzz ABI.
 
 extern fn ft_library_get() -> i64 =
   "mlc::text::ft_library_get" from "mlc/text/freetype_abi.hpp" thread_affine
@@ -23,6 +22,12 @@ extern fn ft_glyph_bearing_y() -> i32 =
   "mlc::text::ft_glyph_bearing_y" from "mlc/text/freetype_abi.hpp" thread_affine
 extern fn ft_glyph_byte_at(index: i32) -> i32 =
   "mlc::text::ft_glyph_byte_at" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_ascender(face: i64) -> i32 =
+  "mlc::text::ft_face_ascender" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_descender(face: i64) -> i32 =
+  "mlc::text::ft_face_descender" from "mlc/text/freetype_abi.hpp" thread_affine
+extern fn ft_face_line_height(face: i64) -> i32 =
+  "mlc::text::ft_face_line_height" from "mlc/text/freetype_abi.hpp" thread_affine
 
 extern fn hb_font_create_from_face(face: i64) -> i64 =
   "mlc::text::hb_font_create_from_face" from "mlc/text/harfbuzz_abi.hpp" thread_affine
@@ -115,6 +120,18 @@ export fn text_shaping_ensure_face(
     face: face,
     error_code: 0
   }
+end
+
+export fn text_shaping_line_height(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32
+) -> i32 = do
+  const face_result = text_shaping_ensure_face(state, font_path, pixel_size)
+  if face_result.error_code != 0 then
+    return -1
+  end
+  ft_face_line_height(face_result.face)
 end
 
 export fn text_shaping_ensure_font(

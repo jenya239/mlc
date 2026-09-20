@@ -133,6 +133,33 @@ std::int32_t ft_face_render_glyph(std::int64_t face) {
   return (width << 16) | rows;
 }
 
+std::int32_t ft_face_ascender(std::int64_t face) {
+  FT_Face free_type_face = i64_to_face(face);
+  if (free_type_face == nullptr || free_type_face->size == nullptr) {
+    return -1;
+  }
+  const FT_Pos ascender = free_type_face->size->metrics.ascender;
+  return static_cast<std::int32_t>((ascender + 32) >> 6);
+}
+
+std::int32_t ft_face_descender(std::int64_t face) {
+  FT_Face free_type_face = i64_to_face(face);
+  if (free_type_face == nullptr || free_type_face->size == nullptr) {
+    return -1;
+  }
+  const FT_Pos descender = free_type_face->size->metrics.descender;
+  return static_cast<std::int32_t>((descender + 32) >> 6);
+}
+
+std::int32_t ft_face_line_height(std::int64_t face) {
+  FT_Face free_type_face = i64_to_face(face);
+  if (free_type_face == nullptr || free_type_face->size == nullptr) {
+    return -1;
+  }
+  const FT_Pos height = free_type_face->size->metrics.height;
+  return static_cast<std::int32_t>((height + 32) >> 6);
+}
+
 std::int32_t ft_glyph_width() { return last_glyph_slot().width; }
 std::int32_t ft_glyph_rows() { return last_glyph_slot().rows; }
 std::int32_t ft_glyph_pitch() { return last_glyph_slot().pitch; }

@@ -29,6 +29,8 @@ fn draw_op_to_string(operation: DrawOp) -> string =
       "stroke " + rect_to_string(data.rect) + " line_width=" + data.line_width.to_string()
     | OpPushClip(rect) => "pushclip " + rect_to_string(rect)
     | OpPopClip => "popclip"
+    | OpText(data) =>
+      "text " + data.origin_x.to_string() + "," + data.origin_y.to_string()
 
 export fn frame_dump(
   theme: Theme,

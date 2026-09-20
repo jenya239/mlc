@@ -1,0 +1,201 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new, text_layout_build, wrap_width_none } from '../text_layout'
+import { layout_column } from '../layout_pass'
+import { paint_frame } from '../paint_pass'
+import { hit_test } from '../hit'
+import { frame_dump } from '../dump'
+import { DrawOp } from '../draw_op'
+
+fn root_box_data(gap: i32) -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: gap }
+
+fn build_label_store(gap: i32) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    root_box_data(gap),
+    OverflowVisible,
+    0,
+    true
+  )
+  store = widget_store_add_label(store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true)
+  store = widget_store_add_label(store, store.root, LabelData { text: "two" }, OverflowVisible, 0, true)
+  widget_store_add_label(store, store.root, LabelData { text: "three" }, OverflowVisible, 0, true)
+end
+
+fn is_fill_op(operation: DrawOp) -> bool =
+  match operation
+    | OpFillRect(_) => true
+    | OpStrokeRect(_) => false
+    | OpPushClip(_) => false
+    | OpPopClip => false
+    | OpText(_) => false
+
+fn is_text_op(operation: DrawOp) -> bool =
+  match operation
+    | OpFillRect(_) => false
+    | OpStrokeRect(_) => false
+    | OpPushClip(_) => false
+    | OpPopClip => false
+    | OpText(_) => true
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_label_store(0)
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+
+  const first_result = layout_column(store, theme, shaping, cache)
+  shaping = first_result.shaping
+  cache = first_result.cache
+  const layout = first_result.layout
+
+  const child0 = store.nodes[1].id
+  const child1 = store.nodes[2].id
+  const child2 = store.nodes[3].id
+  const rect0 = layout.rects[child0.index]
+  const rect1 = layout.rects[child1.index]
+  const rect2 = layout.rects[child2.index]
+
+  if rect1.y < rect0.y + rect0.height then
+    return -1
+  end
+  if rect2.y < rect1.y + rect1.height then
+    return -1
+  end
+
+  const gap_store = build_label_store(20)
+  const gap_result = layout_column(gap_store, theme, shaping, cache)
+  shaping = gap_result.shaping
+  cache = gap_result.cache
+  const gap_child0 = gap_store.nodes[1].id
+  const gap_child1 = gap_store.nodes[2].id
+  const gap_rect0 = gap_result.layout.rects[gap_child0.index]
+  const gap_rect1 = gap_result.layout.rects[gap_child1.index]
+  const measured_gap = gap_rect1.y - (gap_rect0.y + gap_rect0.height)
+  if measured_gap < 19 then
+    return -2
+  end
+  if measured_gap >= 22 then
+    return -2
+  end
+
+  const big_theme = Theme {
+    font_path: theme.font_path,
+    font_size_pixels: 28,
+    padding: theme.padding,
+    gap: theme.gap,
+    background: theme.background,
+    foreground: theme.foreground,
+    muted: theme.muted,
+    selection_background: theme.selection_background
+  }
+  const small_result = layout_column(store, theme, shaping, cache)
+  shaping = small_result.shaping
+  cache = small_result.cache
+  const small_rect0 = small_result.layout.rects[child0.index]
+
+  const big_result = layout_column(store, big_theme, shaping, cache)
+  shaping = big_result.shaping
+  cache = big_result.cache
+  const big_rect0 = big_result.layout.rects[child0.index]
+
+  if big_rect0.height <= small_rect0.height then
+    return -3
+  end
+
+  const one_layout_result = text_layout_build(shaping, cache, theme, "one", wrap_width_none())
+  shaping = one_layout_result.shaping
+  cache = one_layout_result.cache
+  const expected_width = one_layout_result.layout.pixel_width + theme.padding * 2
+  const expected_height = one_layout_result.layout.pixel_height + theme.padding * 2
+  if rect0.width != expected_width then
+    return -4
+  end
+  if rect0.height != expected_height then
+    return -4
+  end
+
+  const text_layout_result = text_layout_build(shaping, cache, theme, "Text", wrap_width_none())
+  shaping = text_layout_result.shaping
+  cache = text_layout_result.cache
+  const typo_layout_result = text_layout_build(shaping, cache, theme, "Typo", wrap_width_none())
+  shaping = typo_layout_result.shaping
+  cache = typo_layout_result.cache
+  if text_layout_result.layout.pixel_height != typo_layout_result.layout.pixel_height then
+    return -5
+  end
+
+  const center_x = rect1.x + rect1.width / 2
+  const center_y = rect1.y + rect1.height / 2
+  const hit_second = hit_test(store, layout, center_x, center_y)
+  if widget_id_equals(hit_second, child1) == false then
+    return -6
+  end
+
+  const root_rect = layout.rects[store.root.index]
+  const below_y = root_rect.y + root_rect.height + 50
+  const hit_below = hit_test(store, layout, root_rect.x + 1, below_y)
+  if widget_id_is_none(hit_below) == false then
+    return -7
+  end
+
+  const operations = paint_frame(theme, store, layout)
+  let mut fill_count = 0
+  let mut text_count = 0
+  let mut op_index = 0
+  while op_index < operations.length() do
+    if is_fill_op(operations[op_index]) then
+      fill_count = fill_count + 1
+    end
+    if is_text_op(operations[op_index]) then
+      text_count = text_count + 1
+    end
+    op_index = op_index + 1
+  end
+  if fill_count != 1 then
+    return -8
+  end
+  if text_count != 3 then
+    return -8
+  end
+
+  const dump_one = frame_dump(theme, store, layout, operations, false)
+  const dump_two = frame_dump(theme, store, layout, operations, false)
+  if dump_one != dump_two then
+    return -10
+  end
+  if dump_one.contains("node 0") == false then
+    return -9
+  end
+  if dump_one.contains("overflow=") == false then
+    return -9
+  end
+  if dump_one.contains("needed=no") == false then
+    return -11
+  end
+
+  const rebuilds_before = cache.rebuilds
+  const repeat_result = layout_column(store, theme, shaping, cache)
+  shaping = repeat_result.shaping
+  cache = repeat_result.cache
+  if cache.rebuilds != rebuilds_before then
+    return -12
+  end
+  0
+end

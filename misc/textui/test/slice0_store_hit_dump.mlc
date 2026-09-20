@@ -120,7 +120,7 @@ fn main() -> i32 = do
   end
   const still_box = match store.nodes[0].kind
     | KindBox(_) => true
-    | KindLabel => false
+    | KindLabel(_) => false
   if !still_box then
     return -11
   end

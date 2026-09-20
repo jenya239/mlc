@@ -30,6 +30,12 @@ std::int32_t ft_face_load_glyph(std::int64_t face, std::int32_t glyph_index);
 // Success: (width << 16) | rows. Negative = error.
 std::int32_t ft_face_render_glyph(std::int64_t face);
 
+// size->metrics.ascender / descender / height (26.6 -> px, round-to-nearest).
+// Negative = error (null face / no size).
+std::int32_t ft_face_ascender(std::int64_t face);
+std::int32_t ft_face_descender(std::int64_t face);
+std::int32_t ft_face_line_height(std::int64_t face);
+
 std::int32_t ft_glyph_width();
 std::int32_t ft_glyph_rows();
 std::int32_t ft_glyph_pitch();

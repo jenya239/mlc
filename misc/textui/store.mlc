@@ -26,7 +26,11 @@ export type BoxData = {
   gap: i32
 }
 
-export type WidgetKind = KindBox(BoxData) | KindLabel
+export type LabelData = {
+  text: string
+}
+
+export type WidgetKind = KindBox(BoxData) | KindLabel(LabelData)
 
 export type WidgetNode = {
   id: WidgetId,
@@ -74,6 +78,42 @@ export fn widget_store_add_box(
     parent: parent,
     children: [],
     kind: KindBox(data),
+    overflow: overflow,
+    grow: grow,
+    visible: visible
+  }
+  let mut next_nodes = store.nodes
+  next_nodes.push(new_node)
+  if widget_id_is_none(parent) == false then
+    const parent_node = next_nodes[parent.index]
+    let mut parent_children = parent_node.children
+    parent_children.push(new_id)
+    next_nodes.set(parent.index, widget_node_with_children(parent_node, parent_children))
+  end
+  let mut next_root = store.root
+  if widget_id_is_none(store.root) then
+    next_root = new_id
+  end
+  WidgetStore {
+    nodes: next_nodes,
+    root: next_root
+  }
+end
+
+export fn widget_store_add_label(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: LabelData,
+  overflow: Overflow,
+  grow: i32,
+  visible: bool
+) -> WidgetStore = do
+  const new_id = WidgetId { index: store.nodes.length() }
+  const new_node = WidgetNode {
+    id: new_id,
+    parent: parent,
+    children: [],
+    kind: KindLabel(data),
     overflow: overflow,
     grow: grow,
     visible: visible

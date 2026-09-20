@@ -45,7 +45,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 **Native editor (`misc/editor/`, PLAN §33–§111):** **failed experiment** (2026-09-20). Do not resume numbered editor STEPs or `demo_live`. Verdict: [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md).
 
-**GUI queue (user-authorized 2026-09-20):** PLAN §112 `TRACK_TEXTUI_FILE_MANAGER` STEP=2 (01-label). STEP=0 Decision: `mlc-support/responses/textui_fm_step0_20260920_103642.md` (do not re-run). File cap: 400 lines / module, `ruby scripts/run_textui_file_size.rb`.
+**GUI queue (user-authorized 2026-09-20):** PLAN §112 `TRACK_TEXTUI_FILE_MANAGER` 02-selection next. STEP=0–2 done. File cap: 400 lines / module.
 
 ## Step sizing (good vs bad)
 

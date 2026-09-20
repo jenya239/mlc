@@ -13,26 +13,26 @@ Trigger: 2026-09-20 — native editor product failed; restart GUI from §32 in a
 mlc-support: `bundle_textui_fm_step0.sh` + `review_textui_fm_step0.rb`
 + `steps/textui_fm_step0.md` + `implement_textui_fm_step1.rb`.
 
-## Status: **open** — STEP=2 (01-label)
+## Status: **open** — STEP=2 done; next = 02-selection
 
-Compiler queue (§104-6) is independent. Slice 0 does not touch `compiler/`.
-Slice 01 needs `ft_face_line_height` ABI; slice 02 needs HB cluster.
+Compiler queue (§104-6) is independent. Slice 02 needs HB cluster.
 
 ## Next step
 
-**STEP=2** — Label + column measure. `ft_face_line_height` ABI if line
-metrics are not in the current FreeType ABI. No GLFW still if tests can
-measure from `TextLayout` alone; window only when submitting glyphs.
+**02-selection** (not numbered as STEP=3 until Planner writes it): single-line
+`index_at` / caret / copy on HB cluster ABI. No GLFW required for hit tests.
 
 ```bash
 bash scripts/run_textui_slice0_smoke.sh
+bash scripts/run_textui_slice01_smoke.sh
 ruby scripts/run_textui_file_size.rb
 ```
 
-Slice 0 is in tree (2026-09-20). Sonnet (`implement_textui_fm_step1.rb`)
-hit `max_tokens=32768` (`responses/impl_textui_fm_step1_20260920_104803.md`);
-FILE blocks were truncated/glued. Driver wrote the modules and the smoke.
-Do not `apply_response.rb` that file.
+STEP=2 (2026-09-20): Sonnet `implement_textui_fm_step2.rb` ($1.01, 62 607
+output tokens, `impl_textui_fm_step2_20260920_142545.md`). Stream glue —
+do not `apply_response.rb`. Driver compiled-fixed. `wrap_width` is
+`WrapWidth` (sum), not `Option<i32>`: mlcc emits `Option<int>` without a
+C++ template; importing `option.mlc` segfaulted mlcc.
 
 Source Decision: `mlc-support/responses/textui_fm_step0_20260920_103642.md`
 (Opus 5, 131 643 cache-write + 15 868 output, $1.22). Streaming had a few
@@ -211,7 +211,7 @@ needs it, not before ListView.
 |------|------|------|--------|
 | 0 | Opus map: slice-0 types + Cairo→MLC + TextLayout + dump + slice-01 tests | `responses/textui_fm_step0_20260920_103642.md`; Decision in this file | **done** (map; not code). Glue unglued into this file (`OpPopClip`, 12 slice-01 tests, `wrap_width: Option<i32>`). Do not re-run Opus/Sonnet |
 | 1 | Slice 0: geometry/theme/store/draw_op/dump (+ host without Label). Hit + dump tests, no GLFW. No per-frame node mutation. Each file ≤400 | `misc/textui/test/` exit 0; `ruby scripts/run_textui_file_size.rb` | **done** 2026-09-20. Gate: `bash scripts/run_textui_slice0_smoke.sh` + file-size. `WidgetKind = KindBox(BoxData) or KindLabel` (Label is a reserved unit ctor: mlcc lowers a one-ctor sum to `struct WidgetKind { field0 }`, so `KindBox{data}` does not compile). Clips use `[i32]` flags, not `[bool]` (`std::vector<bool>` proxies). |
-| 2 | 01-label: `text_layout` measure + column + Label. `ft_face_line_height` ABI if needed | tests in Decision §6 | pending |
+| 2 | 01-label: `text_layout` measure + column + Label. `ft_face_line_height` ABI | `bash scripts/run_textui_slice01_smoke.sh`; file-size | **done** 2026-09-20. 12 tests in `slice01_labels.mlc`. ABI `ft_face_line_height`. `KindLabel(LabelData)`. `WrapWidth` not `Option<i32>` (mlcc) |
 
 ## Non-goals
 

@@ -12,8 +12,16 @@ export type StrokeRectOp = {
   line_width: i32
 }
 
+export type TextOp = {
+  origin_x: i32,
+  origin_y: i32,
+  color: ColorRgba,
+  text: string
+}
+
 export type DrawOp =
   OpFillRect(FillRectOp)
   | OpStrokeRect(StrokeRectOp)
   | OpPushClip(Rect)
   | OpPopClip
+  | OpText(TextOp)
