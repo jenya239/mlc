@@ -204,10 +204,11 @@ end
 fn type_name_from_type_decl(declaration: Shared<Decl>) -> string =
   match decl_inner(declaration) { DeclType(type_name, _, _, _, _) => type_name, _ => '' }
 
-fn register_variant_type_mapping(variant_map: Map<string, string>, type_name: string, variant: Shared<TypeVariant>) -> unit =
+fn register_variant_type_mapping(variant_map: ref mut Map<string, string>, type_name: string, variant: Shared<TypeVariant>) -> unit = do
   variant_map.set(variant_name_from_type_variant(variant), type_name)
+end
 
-fn register_variant_types_for_decl(variant_map: Map<string, string>, declaration: Shared<Decl>) -> unit = do
+fn register_variant_types_for_decl(variant_map: ref mut Map<string, string>, declaration: Shared<Decl>) -> unit = do
   const type_name = type_name_from_type_decl(declaration)
   const variants = variants_from_type_decl(declaration)
   if type_name != '' then
@@ -220,7 +221,7 @@ fn register_variant_types_for_decl(variant_map: Map<string, string>, declaration
 end
 
 export fn build_variant_types_from_decls(declarations: [Shared<Decl>]) -> Map<string, string> = do
-  let variant_map: Map<string, string> = Map.new()
+  let mut variant_map: Map<string, string> = Map.new()
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     register_variant_types_for_decl(variant_map, declarations[declaration_index])
@@ -346,7 +347,7 @@ fn variant_used_type_parameters_for_index(type_parameters: [string], variant: Sh
 end
 
 fn register_sum_type_parameter_names(
-  parameter_map: Map<string, [string]>,
+  parameter_map: ref mut Map<string, [string]>,
   declaration: Shared<Decl>
 ) -> unit = do
   const type_name = type_name_from_type_decl(declaration)
@@ -357,7 +358,7 @@ fn register_sum_type_parameter_names(
 end
 
 export fn build_sum_type_parameter_names_from_decls(declarations: [Shared<Decl>]) -> Map<string, [string]> = do
-  let parameter_map: Map<string, [string]> = Map.new()
+  let mut parameter_map: Map<string, [string]> = Map.new()
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     register_sum_type_parameter_names(parameter_map, declarations[declaration_index])
@@ -367,7 +368,7 @@ export fn build_sum_type_parameter_names_from_decls(declarations: [Shared<Decl>]
 end
 
 fn register_variant_used_type_parameter_names(
-  used_map: Map<string, [string]>,
+  used_map: ref mut Map<string, [string]>,
   type_name: string,
   type_parameters: [string],
   variant: Shared<TypeVariant>
@@ -380,7 +381,7 @@ fn register_variant_used_type_parameter_names(
 end
 
 fn register_variant_used_type_parameter_names_for_decl(
-  used_map: Map<string, [string]>,
+  used_map: ref mut Map<string, [string]>,
   declaration: Shared<Decl>
 ) -> unit = do
   const type_name = type_name_from_type_decl(declaration)
@@ -397,7 +398,7 @@ fn register_variant_used_type_parameter_names_for_decl(
 end
 
 export fn build_variant_used_type_parameter_names_from_decls(declarations: [Shared<Decl>]) -> Map<string, [string]> = do
-  let used_map: Map<string, [string]> = Map.new()
+  let mut used_map: Map<string, [string]> = Map.new()
   let mut declaration_index = 0
   while declaration_index < declarations.length() do
     register_variant_used_type_parameter_names_for_decl(used_map, declarations[declaration_index])

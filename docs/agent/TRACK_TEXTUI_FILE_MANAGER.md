@@ -31,8 +31,22 @@ ruby scripts/run_textui_file_size.rb
 STEP=2 (2026-09-20): Sonnet `implement_textui_fm_step2.rb` ($1.01, 62 607
 output tokens, `impl_textui_fm_step2_20260920_142545.md`). Stream glue —
 do not `apply_response.rb`. Driver compiled-fixed. `wrap_width` is
-`WrapWidth` (sum), not `Option<i32>`: mlcc emits `Option<int>` without a
-C++ template; importing `option.mlc` segfaulted mlcc.
+`WrapWidth` (sum), not `Option<i32>`: three mlcc bugs (fixed 2026-09-20
+after STEP=2): (1) `substitute_type` reapplied `T := T` / `T := [T]` and
+stack-overflowed on `fn f<T>(x: Option<T>)` match — this is why importing
+`option.mlc` segfaulted; (2) `sem_type_to_cpp` remapped `Option` to
+`std::optional` while `type_to_cpp` (record fields) emitted `Option<int>`
+with no C++ type unless an ADT was declared; (3) sum/variant HashMap
+builders passed the map by value into `.set` helpers — COW `detach`
+dropped the insert, so the “user ADT Option” gate never fired. After the
+fix, a declared `type Option<T> = Some(T) | None` is a variant; undeclared
+`Option<T>` still maps to `std::optional`. Stdlib `option.mlc` also used
+Ruby `fn(T) -> U` in type position; mlcc only parsed `(T) -> U` and treated
+`fn(...)` as `unit` (`void f` / empty `map`). `parse_fn_type` accepts the
+Ruby form. Call unify also looped on `T := T` when a generic with two `T`
+parameters called another (`unwrap_or` → `unwrap` in `option.mlc`). STEP=2
+keeps `WrapWidth`. Residual: `map`/`and_then` `None` vs `Some(f(x))` still
+E020 (`Option` vs `Option`).
 
 Source Decision: `mlc-support/responses/textui_fm_step0_20260920_103642.md`
 (Opus 5, 131 643 cache-write + 15 868 output, $1.22). Streaming had a few
@@ -211,7 +225,7 @@ needs it, not before ListView.
 |------|------|------|--------|
 | 0 | Opus map: slice-0 types + Cairo→MLC + TextLayout + dump + slice-01 tests | `responses/textui_fm_step0_20260920_103642.md`; Decision in this file | **done** (map; not code). Glue unglued into this file (`OpPopClip`, 12 slice-01 tests, `wrap_width: Option<i32>`). Do not re-run Opus/Sonnet |
 | 1 | Slice 0: geometry/theme/store/draw_op/dump (+ host without Label). Hit + dump tests, no GLFW. No per-frame node mutation. Each file ≤400 | `misc/textui/test/` exit 0; `ruby scripts/run_textui_file_size.rb` | **done** 2026-09-20. Gate: `bash scripts/run_textui_slice0_smoke.sh` + file-size. `WidgetKind = KindBox(BoxData) or KindLabel` (Label is a reserved unit ctor: mlcc lowers a one-ctor sum to `struct WidgetKind { field0 }`, so `KindBox{data}` does not compile). Clips use `[i32]` flags, not `[bool]` (`std::vector<bool>` proxies). |
-| 2 | 01-label: `text_layout` measure + column + Label. `ft_face_line_height` ABI | `bash scripts/run_textui_slice01_smoke.sh`; file-size | **done** 2026-09-20. 12 tests in `slice01_labels.mlc`. ABI `ft_face_line_height`. `KindLabel(LabelData)`. `WrapWidth` not `Option<i32>` (mlcc) |
+| 2 | 01-label: `text_layout` measure + column + Label. `ft_face_line_height` ABI | `bash scripts/run_textui_slice01_smoke.sh`; file-size | **done** 2026-09-20. 12 tests in `slice01_labels.mlc`. ABI `ft_face_line_height`. `KindLabel(LabelData)`. `WrapWidth` not `Option<i32>` (kept; Option checker/codegen bugs: substitute loop, `type_to_cpp` vs `sem_type_to_cpp`, COW HashMap by-value index builders) |
 
 ## Non-goals
 

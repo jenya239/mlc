@@ -101,6 +101,10 @@ export fn codegen_tests() -> [TestResult] = do
     sem_type_to_cpp(context, Shared.new(TGeneric('Option', [Shared.new(TI32)]))),
     'std::optional<int>'))
 
+  results.push(assert_eq_str('type_to_cpp undeclared Option<i32> -> std::optional',
+    type_to_cpp(context, Shared.new(TyGeneric('Option', [Shared.new(TyI32)]))),
+    'std::optional<int>'))
+
   results.push(assert_eq_str('ExprInt(42) - \'42\'',
     print_expr(gen_expr(si(42), context)), '42'))
 
@@ -727,6 +731,10 @@ export fn codegen_tests() -> [TestResult] = do
   const h11_precomputed = precompute(h11_program, [], 'readable')
   results.push(assert_true('precompute: Some is generic variant',
     list_contains(h11_precomputed.generic_variants, 'Some')))
+  results.push(assert_true('precompute: sum_type_parameter_names has Opt',
+    h11_precomputed.sum_type_parameter_names.has('Opt')))
+  results.push(assert_eq_str('precompute: variant Some maps to Opt',
+    h11_precomputed.variant_types.get('Some'), 'Opt'))
   const h11_context =
     create_codegen_context(h11_program).with_enclosing_function_return_type(
       Shared.new(TGeneric("Opt", [Shared.new(TI64)])))
@@ -747,6 +755,34 @@ export fn codegen_tests() -> [TestResult] = do
   const h11_match_program = parse_program(tokenize(h11_match_program_source).tokens)
   results.push(assert_code_contains('generic sum match: Some<int64_t>& in visit arm',
     gen_program(h11_match_program), 'Some<int64_t>&'))
+
+  const option_adt_program = parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn none_i32() -> Option<i32> = None\n").tokens)
+  const option_declared_context = create_codegen_context(option_adt_program)
+  results.push(assert_eq_str('declared Option type_to_cpp is Option<int>',
+    type_to_cpp(option_declared_context, Shared.new(TyGeneric('Option', [Shared.new(TyI32)]))),
+    'Option<int>'))
+  results.push(assert_eq_str('declared Option sem_type_to_cpp is Option<int>',
+    sem_type_to_cpp(option_declared_context, Shared.new(TGeneric('Option', [Shared.new(TI32)]))),
+    'Option<int>'))
+  results.push(assert_code_contains('declared Option ADT return uses Option<int>',
+    gen_program(option_adt_program), 'Option<int> none_i32'))
+  results.push(assert_code_not_contains('declared Option ADT return is not std::optional',
+    gen_program(option_adt_program), 'std::optional<int>'))
+
+  const option_generic_match_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn is_some<T>(opt: Option<T>) -> bool = match opt { Some(_) => true, None => false }\n").tokens))
+  results.push(assert_code_contains('declared Option generic match param is Option<T>',
+    option_generic_match_cpp, 'Option<T>'))
+  results.push(assert_code_not_contains('declared Option generic match is not std::optional',
+    option_generic_match_cpp, 'std::optional'))
+
+  const generic_function_parameter_cpp = gen_program(parse_program(tokenize(
+    "fn apply<T, U>(value: T, mapper: fn(T) -> U) -> U = mapper(value)\n").tokens))
+  results.push(assert_code_contains('generic fn(T) -> U mapper is a template parameter',
+    generic_function_parameter_cpp, '__F1 mapper'))
+  results.push(assert_code_not_contains('generic fn(T) -> U mapper is not void',
+    generic_function_parameter_cpp, 'void mapper'))
 
   // C4: numeric tower
   const f64_t = Shared.new(TF64)

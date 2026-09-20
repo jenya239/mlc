@@ -87,9 +87,29 @@ fn parse_base_type_ident(parser: Parser, name: string) -> TypeResult = do
   parse_type_after_ident_name(parser, name)
 end
 
+fn parse_fn_type(parser: Parser) -> TypeResult = do
+  const after_fn = parser.advance()
+  if !after_fn.kind().is_lparen() then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      after_fn.record_parse_error('parse: expected ( after fn in type position'))
+  end
+  const paren_types_parsed = parse_paren_types(after_fn.advance())
+  if !paren_types_parsed.parser.kind().is_arrow() then
+    return type_parse_result(
+      Shared.new(TyUnit),
+      paren_types_parsed.parser.record_parse_error('parse: expected -> after fn parameters'))
+  end
+  const return_type_parsed = parse_type(paren_types_parsed.parser.advance())
+  type_parse_result(
+    Shared.new(TyFn(paren_types_parsed.value, return_type_parsed.value)),
+    return_type_parsed.parser)
+end
+
 fn parse_base_type(parser: Parser) -> TypeResult = do
   const kind = parser.kind()
   if kind.is_extern() then return parse_extern_fn_type(parser) end
+  if kind.is_fn() then return parse_fn_type(parser) end
   if kind.is_lparen() then
     const paren_types_parsed = parse_paren_types(parser.advance())
     if paren_types_parsed.parser.kind().is_arrow() then

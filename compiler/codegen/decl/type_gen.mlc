@@ -118,6 +118,11 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   else context.resolve(type_name)
   end
 
+fn maps_option_to_std_optional(context: CodegenContext) -> bool =
+  !context.sum_type_parameter_names.has('Option')
+    && context.variant_types.get('Some') != 'Option'
+    && context.variant_types.get('None') != 'Option'
+
 // Converts a semantic Type (from checker/registry) to a C++ type string.
 export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
   match semantic_type {
@@ -153,7 +158,8 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TPair(left, right) =>
       `std::pair<${sem_type_to_cpp(context, left)}, ${sem_type_to_cpp(context, right)}>`,
     TGeneric(type_name, type_arguments) =>
-      if type_name == 'Option' && type_arguments.length() == 1 then
+      if type_name == 'Option' && type_arguments.length() == 1 &&
+         maps_option_to_std_optional(context) then
         `std::optional<${sem_type_to_cpp(context, type_arguments[0])}>`
       else if type_name == 'RegionHandle' then
         'mlc::memory::RegionHandle'
@@ -268,6 +274,11 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
         cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
       else if name == 'RawPointer' && type_arguments.length() == 1 then
         cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]))
+      else if name == 'Option' && type_arguments.length() == 1 &&
+              maps_option_to_std_optional(context) then
+        cpp_template_single_type_argument(
+          'std::optional',
+          type_to_cpp(context, type_arguments[0]))
       else if name == '__ExternFn' && type_arguments.length() >= 1 then do
         const return_type_cpp = type_to_cpp(context, type_arguments[0])
         let mut parameter_types_csv = ''

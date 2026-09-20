@@ -6,6 +6,8 @@ import { parse_program, parse_program_with_source_path } from '../frontend/parse
 import { Program, Decl } from '../frontend/ast'
 import { check, check_with_context, program_diagnostics } from '../checker/check/check'
 import { build_registry } from '../checker/registry'
+import { Type, TNamed, TArray } from '../checker/registry_type'
+import { substitute_type, type_description } from '../checker/semantic_type_structure'
 import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_w_extern_attr, diagnostic_code_w_extern_arity, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
@@ -15,6 +17,18 @@ fn check_error_count(source: string) -> i32 =
     Ok(_)    => 0,
     Err(errs) => errs.length()
   }
+
+fn identity_type_parameter_substitution() -> Map<string, Shared<Type>> = do
+  let mut substitution: Map<string, Shared<Type>> = Map.new()
+  substitution.set("T", Shared.new(TNamed("T")))
+  substitution
+end
+
+fn array_of_same_type_parameter_substitution() -> Map<string, Shared<Type>> = do
+  let mut substitution: Map<string, Shared<Type>> = Map.new()
+  substitution.set("T", Shared.new(TArray(Shared.new(TNamed("T")))))
+  substitution
+end
 
 fn check_warning_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
@@ -1102,6 +1116,46 @@ export fn checker_tests() -> [TestResult] = do
     'error[E086]: orphan impl: extend AppError : From must be declared in the module defining AppError or From\n  --> mod_b.mlc:1:8'))
 
   // --- Result / Option combinators (A2) --------------------------------------
+
+  results.push(assert_eq_str(
+    'substitute_type: identity T := T does not loop',
+    type_description(substitute_type(Shared.new(TNamed("T")), identity_type_parameter_substitution())),
+    "T"))
+
+  results.push(assert_eq_str(
+    'substitute_type: T := [T] does not loop',
+    type_description(substitute_type(Shared.new(TNamed("T")), array_of_same_type_parameter_substitution())),
+    'array'))
+
+  results.push(assert_eq_int(
+    'infer: generic match on Opt<T> — 0 errors',
+    check_error_count(
+      'type Opt<T> = Some(T) | None\nfn is_some<T>(opt: Opt<T>) -> bool = match opt { Some(_) => true, None => false }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: generic match on Option<T> — 0 errors',
+    check_error_count(
+      'type Option<T> = Some(T) | None\nfn is_some<T>(opt: Option<T>) -> bool = match opt { Some(_) => true, None => false }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: generic fn(T) -> U parameter — 0 errors',
+    check_error_count(
+      'fn apply<T, U>(value: T, mapper: fn(T) -> U) -> U = mapper(value)\nfn f() -> i32 = apply(1, n => n + 1)'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: generic two-parameter call T,T — 0 errors',
+    check_error_count(
+      'fn identity_two<T>(first: T, second: T) -> T = second\nfn call_identity_two<T>(first: T, second: T) -> T = identity_two(first, second)'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: Option unwrap_or calls unwrap — 0 errors',
+    check_error_count(
+      'type Option<T> = Some(T) | None\nfn unwrap<T>(opt: Option<T>, default: T) -> T = default\nfn unwrap_or<T>(opt: Option<T>, default: T) -> T = unwrap(opt, default)'),
+    0))
 
   results.push(assert_eq_int('infer: Result map — 0 errors',
     check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(1).map(x => x + 1)'), 0))

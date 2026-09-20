@@ -491,12 +491,26 @@ export fn builtin_method_expected_argument_count(method_name: string) -> i32 =
   else -1
   end
 
+fn substitution_without_name(
+  substitution: Map<string, Shared<Type>>,
+  excluded_name: string
+) -> Map<string, Shared<Type>> = do
+  let mut remaining = substitution
+  remaining.remove(excluded_name)
+  remaining
+end
+
 fn substitute_named_type_for_map(
   name: string,
   type_value: Shared<Type>,
   substitution: Map<string, Shared<Type>>
 ) -> Shared<Type> =
-  if substitution.has(name) then substitute_type(substitution.get(name), substitution) else type_value end
+  if substitution.has(name) then
+    substitute_type(
+      substitution.get(name),
+      substitution_without_name(substitution, name))
+  else type_value
+  end
 
 fn substitute_array_type_for_map(inner: Shared<Type>, substitution: Map<string, Shared<Type>>) -> Shared<Type> =
   Shared.new(TArray(substitute_type(inner, substitution)))

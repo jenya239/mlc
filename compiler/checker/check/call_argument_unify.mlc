@@ -55,6 +55,9 @@ fn record_type_parameter_source_for_argument(
 fn list_contains_string(haystack: [string], needle: string) -> bool =
   haystack.any(haystack_entry => haystack_entry == needle)
 
+fn type_parameter_names_without(type_parameter_names: [string], excluded_name: string) -> [string] =
+  type_parameter_names.filter(candidate_name => candidate_name != excluded_name)
+
 fn unify_expected_and_actual_argument_types(
   expected_type: Shared<Type>,
   actual_type: Shared<Type>,
@@ -99,7 +102,7 @@ fn unify_expected_and_actual_argument_types(
           unify_expected_and_actual_argument_types(
             substitution.get(name),
             actual_type,
-            type_parameter_names,
+            type_parameter_names_without(type_parameter_names, name),
             substitution,
             diagnostic_span,
             type_parameter_source_argument_index,

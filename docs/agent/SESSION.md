@@ -394,3 +394,18 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | issues  | |
 | next    | ROLE=Planner STEP=3 TRACK=TRACK_TEXTUI_FILE_MANAGER (02-selection) |
 
+### Turn 2026-09-20 (Driver — mlcc Option bugs)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | option-fix |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | `substitute_type` drops bound name (`T:=T` / `T:=[T]`); call unify does the same; HashMap type-index builders take `ref mut`; `sem_type_to_cpp`/`type_to_cpp` skip `std::optional` when Option is a declared ADT; `parse_fn_type` accepts Ruby `fn(T)->U` |
+| verify  | `mlcc --check-only` generic Option match, two-param `T,T` call, `unwrap_or`→`unwrap`; declared Option program links (`is_some(none_i32())` exit 0); undeclared field stays `std::optional<int>`; `build.sh`; mlcc2 `diff -rq p1 p2` empty |
+| result  | Import/`--check-only` of `option.mlc` no longer SIGSEGV. Declared `Option<T>` is `std::variant`. |
+| issues  | `map`/`and_then` still E020 (`None` vs `Some(f(x))` both printed as Option). `none()` needs a type argument. Visit lambdas still emit bare `-> Option`. `WrapWidth` stays in slice 01 |
+| next    | ROLE=Planner STEP=3 TRACK=TRACK_TEXTUI_FILE_MANAGER (02-selection) |
+

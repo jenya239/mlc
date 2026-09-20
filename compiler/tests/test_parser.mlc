@@ -371,6 +371,23 @@ export fn parser_tests() -> [TestResult] = do
       _ => false
     }))
 
+  results.push(assert_true('parse_type fn(i32) -> bool Ruby form',
+    match parse_type_source('fn(i32) -> bool') {
+      TyFn(parameters, return_type) =>
+        parameters.length() == 1
+        && match parameters[0] { TyI32 => true, _ => false }
+        && match return_type { TyBool => true, _ => false },
+      _ => false
+    }))
+
+  results.push(assert_true('parse_type fn() -> i32 Ruby form',
+    match parse_type_source('fn() -> i32') {
+      TyFn(parameters, return_type) =>
+        parameters.length() == 0
+        && match return_type { TyI32 => true, _ => false },
+      _ => false
+    }))
+
   results.push(assert_true('parse_type T!E desugars to Result',
     match parse_type_source('i32!string') {
       TyGeneric(name, type_arguments) =>
