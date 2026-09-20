@@ -1,0 +1,97 @@
+export type WidgetId = {
+  index: i32
+}
+
+export fn widget_id_none() -> WidgetId =
+  WidgetId { index: -1 }
+
+export fn widget_id_is_none(id: WidgetId) -> bool =
+  id.index == -1
+
+export fn widget_id_equals(first: WidgetId, second: WidgetId) -> bool =
+  first.index == second.index
+
+export type Overflow = OverflowVisible | OverflowHidden
+
+export fn overflow_is_hidden(overflow: Overflow) -> bool =
+  match overflow
+    | OverflowHidden => true
+    | OverflowVisible => false
+
+export type BoxDirection = DirectionRow | DirectionColumn
+
+export type BoxData = {
+  direction: BoxDirection,
+  padding: i32,
+  gap: i32
+}
+
+export type WidgetKind = KindBox(BoxData) | KindLabel
+
+export type WidgetNode = {
+  id: WidgetId,
+  parent: WidgetId,
+  children: [WidgetId],
+  kind: WidgetKind,
+  overflow: Overflow,
+  grow: i32,
+  visible: bool
+}
+
+export type WidgetStore = {
+  nodes: [WidgetNode],
+  root: WidgetId
+}
+
+export fn widget_store_empty() -> WidgetStore =
+  WidgetStore {
+    nodes: [],
+    root: widget_id_none()
+  }
+
+fn widget_node_with_children(node: WidgetNode, children: [WidgetId]) -> WidgetNode =
+  WidgetNode {
+    id: node.id,
+    parent: node.parent,
+    children: children,
+    kind: node.kind,
+    overflow: node.overflow,
+    grow: node.grow,
+    visible: node.visible
+  }
+
+export fn widget_store_add_box(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: BoxData,
+  overflow: Overflow,
+  grow: i32,
+  visible: bool
+) -> WidgetStore = do
+  const new_id = WidgetId { index: store.nodes.length() }
+  const new_node = WidgetNode {
+    id: new_id,
+    parent: parent,
+    children: [],
+    kind: KindBox(data),
+    overflow: overflow,
+    grow: grow,
+    visible: visible
+  }
+  let mut next_nodes = store.nodes
+  next_nodes.push(new_node)
+  if widget_id_is_none(parent) == false then
+    const parent_node = next_nodes[parent.index]
+    let mut parent_children = parent_node.children
+    parent_children.push(new_id)
+    next_nodes.set(parent.index, widget_node_with_children(parent_node, parent_children))
+  end
+  let mut next_root = store.root
+  if widget_id_is_none(store.root) then
+    next_root = new_id
+  end
+  WidgetStore {
+    nodes: next_nodes,
+    root: next_root
+  }
+end

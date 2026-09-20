@@ -6,7 +6,9 @@ continue numbered editor STEPs.** **Do not start new GUI work from this tree.**
 **Restart from** PLAN §32 [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md)
 (closed 2026-07-13, commits `c323556f`…`14972c49`): HashMap `GlyphCache` +
 layout cache in `misc/examples/text_ide_panels_demo.mlc`; ~2000 glyphs/frame
-72ms → ~3.2ms. Verdict: [archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md).
+72ms → ~3.2ms. New product: PLAN §112
+[TRACK_TEXTUI_FILE_MANAGER](agent/TRACK_TEXTUI_FILE_MANAGER.md).
+Verdict: [archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md).
 Text pipeline: [TEXT_RENDERING.md](TEXT_RENDERING.md).
 
 The rest of this file is historical placement from the experiment.

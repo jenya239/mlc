@@ -1,0 +1,53 @@
+import { rect_contains } from './geometry'
+import {
+  WidgetStore,
+  WidgetId,
+  widget_id_none,
+  widget_id_is_none,
+  overflow_is_hidden
+} from './store'
+import { LayoutResult } from './layout_result'
+
+fn hit_test_node(
+  store: WidgetStore,
+  layout: LayoutResult,
+  id: WidgetId,
+  x: i32,
+  y: i32
+) -> WidgetId = do
+  const node = store.nodes[id.index]
+  if !node.visible then
+    return widget_id_none()
+  end
+  const own_rect = layout.rects[id.index]
+  if overflow_is_hidden(node.overflow) then
+    if rect_contains(own_rect, x, y) == false then
+      return widget_id_none()
+    end
+  end
+  let mut child_index = node.children.length() - 1
+  while child_index >= 0 do
+    const child_id = node.children[child_index]
+    const hit_child = hit_test_node(store, layout, child_id, x, y)
+    if widget_id_is_none(hit_child) == false then
+      return hit_child
+    end
+    child_index = child_index - 1
+  end
+  if rect_contains(own_rect, x, y) then
+    return id
+  end
+  widget_id_none()
+end
+
+export fn hit_test(
+  store: WidgetStore,
+  layout: LayoutResult,
+  x: i32,
+  y: i32
+) -> WidgetId = do
+  if widget_id_is_none(store.root) then
+    return widget_id_none()
+  end
+  hit_test_node(store, layout, store.root, x, y)
+end

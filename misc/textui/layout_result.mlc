@@ -1,0 +1,50 @@
+import { Rect, rect_intersect } from './geometry'
+import { WidgetStore, widget_id_is_none, overflow_is_hidden } from './store'
+
+export type LayoutResult = {
+  rects: [Rect],
+  clips: [Rect]
+}
+
+export fn layout_result_from_rects(store: WidgetStore, rects: [Rect]) -> LayoutResult = do
+  let mut clips: [Rect] = []
+  let mut hidden_ancestor_rects: [Rect] = []
+  let mut hidden_ancestor_flags: [i32] = []
+  let mut node_index = 0
+  while node_index < store.nodes.length() do
+    const node = store.nodes[node_index]
+    const own_rect = rects[node_index]
+    let mut inherited_rect = own_rect
+    let mut inherited_active = false
+    if widget_id_is_none(node.parent) == false then
+      inherited_active = hidden_ancestor_flags[node.parent.index] == 1
+      inherited_rect = hidden_ancestor_rects[node.parent.index]
+      const parent_node = store.nodes[node.parent.index]
+      if overflow_is_hidden(parent_node.overflow) then
+        const parent_rect = rects[node.parent.index]
+        if inherited_active then
+          inherited_rect = rect_intersect(parent_rect, inherited_rect)
+        else
+          inherited_rect = parent_rect
+        end
+        inherited_active = true
+      end
+    end
+    let mut clip_rect = own_rect
+    if inherited_active then
+      clip_rect = rect_intersect(own_rect, inherited_rect)
+    end
+    clips.push(clip_rect)
+    hidden_ancestor_rects.push(inherited_rect)
+    let mut flag = 0
+    if inherited_active then
+      flag = 1
+    end
+    hidden_ancestor_flags.push(flag)
+    node_index = node_index + 1
+  end
+  LayoutResult {
+    rects: rects,
+    clips: clips
+  }
+end

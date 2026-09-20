@@ -1,0 +1,32 @@
+export type ColorRgba = {
+  red: f64,
+  green: f64,
+  blue: f64,
+  alpha: f64
+}
+
+export fn color_rgba_new(red: f64, green: f64, blue: f64, alpha: f64) -> ColorRgba =
+  ColorRgba { red: red, green: green, blue: blue, alpha: alpha }
+
+export type Theme = {
+  font_path: string,
+  font_size_pixels: i32,
+  padding: i32,
+  gap: i32,
+  background: ColorRgba,
+  foreground: ColorRgba,
+  muted: ColorRgba,
+  selection_background: ColorRgba
+}
+
+export fn theme_default() -> Theme =
+  Theme {
+    font_path: "assets/fonts/default.ttf",
+    font_size_pixels: 14,
+    padding: 8,
+    gap: 10,
+    background: color_rgba_new(0.07, 0.08, 0.10, 1.0),
+    foreground: color_rgba_new(0.91, 0.92, 0.93, 1.0),
+    muted: color_rgba_new(0.55, 0.58, 0.62, 1.0),
+    selection_background: color_rgba_new(0.20, 0.40, 0.80, 0.35)
+  }

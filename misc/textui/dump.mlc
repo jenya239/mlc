@@ -1,0 +1,65 @@
+import { Rect } from './geometry'
+import { Theme } from './theme'
+import { WidgetStore, Overflow, overflow_is_hidden } from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp } from './draw_op'
+
+fn overflow_to_string(overflow: Overflow) -> string = do
+  if overflow_is_hidden(overflow) then
+    return "hidden"
+  end
+  "visible"
+end
+
+fn needed_to_string(needed: bool) -> string = do
+  if needed then
+    return "yes"
+  end
+  "no"
+end
+
+fn rect_to_string(rect: Rect) -> string =
+  rect.x.to_string() + "," + rect.y.to_string() + "," +
+  rect.width.to_string() + "," + rect.height.to_string()
+
+fn draw_op_to_string(operation: DrawOp) -> string =
+  match operation
+    | OpFillRect(data) => "fill " + rect_to_string(data.rect)
+    | OpStrokeRect(data) =>
+      "stroke " + rect_to_string(data.rect) + " line_width=" + data.line_width.to_string()
+    | OpPushClip(rect) => "pushclip " + rect_to_string(rect)
+    | OpPopClip => "popclip"
+
+export fn frame_dump(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  operations: [DrawOp],
+  needed: bool
+) -> string = do
+  let mut text = "theme font=" + theme.font_size_pixels.to_string()
+  text = text + " padding=" + theme.padding.to_string()
+  text = text + " gap=" + theme.gap.to_string() + "\n"
+  let mut node_index = 0
+  while node_index < store.nodes.length() do
+    const node = store.nodes[node_index]
+    const own_rect = layout.rects[node_index]
+    text = text + "node " + node_index.to_string()
+    text = text + " parent=" + node.parent.index.to_string()
+    text = text + " overflow=" + overflow_to_string(node.overflow)
+    text = text + " children=" + node.children.length().to_string()
+    text = text + " rect=" + rect_to_string(own_rect)
+    text = text + "\n"
+    node_index = node_index + 1
+  end
+  let mut operation_index = 0
+  while operation_index < operations.length() do
+    text = text + "op " + operation_index.to_string() + " "
+    text = text + draw_op_to_string(operations[operation_index]) + "\n"
+    operation_index = operation_index + 1
+  end
+  text = text + "frame ops=" + operations.length().to_string()
+  text = text + " nodes=" + store.nodes.length().to_string()
+  text = text + " needed=" + needed_to_string(needed)
+  text
+end

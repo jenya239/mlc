@@ -1,0 +1,128 @@
+import { Rect, rect_new } from '../geometry'
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  Overflow,
+  OverflowHidden,
+  OverflowVisible,
+  WidgetStore,
+  WidgetKind,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_empty
+} from '../store'
+import { layout_result_from_rects } from '../layout_result'
+import { hit_test } from '../hit'
+import { DrawOp, FillRectOp } from '../draw_op'
+import { frame_dump } from '../dump'
+
+fn empty_box_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn build_stack_store(root_overflow: Overflow) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    empty_box_data(),
+    root_overflow,
+    0,
+    true
+  )
+  store = widget_store_add_box(store, store.root, empty_box_data(), OverflowVisible, 0, true)
+  store = widget_store_add_box(store, store.root, empty_box_data(), OverflowVisible, 0, true)
+  widget_store_add_box(store, store.root, empty_box_data(), OverflowVisible, 0, true)
+end
+
+fn stacked_rects() -> [Rect] = do
+  let mut rects: [Rect] = []
+  rects.push(rect_new(0, 0, 200, 120))
+  rects.push(rect_new(8, 8, 100, 20))
+  rects.push(rect_new(8, 38, 100, 20))
+  rects.push(rect_new(8, 68, 100, 20))
+  rects
+end
+
+fn offset_child_rects() -> [Rect] = do
+  let mut rects: [Rect] = []
+  rects.push(rect_new(0, 0, 200, 120))
+  rects.push(rect_new(8, 8, 100, 20))
+  rects.push(rect_new(250, 8, 10, 10))
+  rects.push(rect_new(8, 68, 100, 20))
+  rects
+end
+
+fn sample_operations() -> [DrawOp] = do
+  const theme = theme_default()
+  let mut operations: [DrawOp] = []
+  operations.push(OpFillRect(FillRectOp {
+    rect: rect_new(0, 0, 200, 120),
+    color: theme.background
+  }))
+  operations
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_stack_store(OverflowVisible)
+  const layout = layout_result_from_rects(store, stacked_rects())
+  const second_child = store.nodes[2].id
+  const hit_second = hit_test(store, layout, 58, 48)
+  if widget_id_equals(hit_second, second_child) == false then
+    return -1
+  end
+  const hit_outside = hit_test(store, layout, -1, -1)
+  if widget_id_is_none(hit_outside) == false then
+    return -2
+  end
+
+  const hidden_store = build_stack_store(OverflowHidden)
+  const offset_layout = layout_result_from_rects(hidden_store, offset_child_rects())
+  const hit_clipped = hit_test(hidden_store, offset_layout, 255, 13)
+  if widget_id_is_none(hit_clipped) == false then
+    return -3
+  end
+
+  const visible_store = build_stack_store(OverflowVisible)
+  const visible_offset_layout = layout_result_from_rects(visible_store, offset_child_rects())
+  const overflow_child = visible_store.nodes[2].id
+  const hit_overflow = hit_test(visible_store, visible_offset_layout, 255, 13)
+  if widget_id_equals(hit_overflow, overflow_child) == false then
+    return -4
+  end
+
+  const operations = sample_operations()
+  const first_dump = frame_dump(theme, store, layout, operations, false)
+  const second_dump = frame_dump(theme, store, layout, operations, false)
+  if first_dump != second_dump then
+    return -5
+  end
+  if first_dump.contains("node 0") == false then
+    return -6
+  end
+  if first_dump.contains("overflow=") == false then
+    return -7
+  end
+
+  const root_children_before = store.nodes[0].children.length()
+  const unused_layout = layout_result_from_rects(store, stacked_rects())
+  if unused_layout.rects.length() != 4 then
+    return -8
+  end
+  if store.nodes[0].children.length() != root_children_before then
+    return -9
+  end
+  if store.nodes[0].children.length() != 3 then
+    return -10
+  end
+  const still_box = match store.nodes[0].kind
+    | KindBox(_) => true
+    | KindLabel => false
+  if !still_box then
+    return -11
+  end
+  0
+end

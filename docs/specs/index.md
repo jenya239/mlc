@@ -18,8 +18,10 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../BINDINGS_SEMANTICS_MRFC.md](../BINDINGS_SEMANTICS_MRFC.md) | bindings, let, migration, draft | Future `let`/`const` semantics (no compiler change) |
 | [../CODE_REVIEW_2026_06.md](../CODE_REVIEW_2026_06.md) | audit, compiler, structure, debt | Large refactors, folder layout, hotspots |
 | [../LARGE_CONTEXT_TASKS.md](../LARGE_CONTEXT_TASKS.md) | agent, external-model, batch, mlc-support | Deciding between batch LLM request vs iterative TDD for a track |
-| [../EDITOR.md](../EDITOR.md) | editor, gui, text, workspace, dogfood | Historical only — editor product **failed** 2026-09-20; see [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md). GUI restart: PLAN §32 / TEXT_RENDERING |
-| [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md) | editor, gui, failed-experiment | Before any `misc/editor/` or new GUI track |
+| [../EDITOR.md](../EDITOR.md) | editor, gui, text, workspace, dogfood | Historical only — editor product **failed** 2026-09-20; see [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md). GUI restart: PLAN §32 / §112 |
+| [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md) | editor, gui, failed-experiment | Before any `misc/editor/` work |
+| [../agent/TRACK_TEXTUI_FILE_MANAGER.md](../agent/TRACK_TEXTUI_FILE_MANAGER.md) | gui, textui, file-manager, cairo | PLAN §112 — kit in `misc/textui/`, FM first |
+| [../TEXT_RENDERING.md](../TEXT_RENDERING.md) | gui, text, freetype, harfbuzz, opengl | §32 substrate; GlyphCache + shaping |
 | [../GUI_ARCHITECTURE.md](../GUI_ARCHITECTURE.md) | gui, architecture, editor, hybrid, scene, platform | Editor-first runtime decisions; reference map GPUI/Xilem/… |
 | [../GUI_UX_TESTING.md](../GUI_UX_TESTING.md) | gui, editor, ux, headless, harness, inject, golden | Headless UX scenarios / probes; TRACK_UX_HEADLESS |
 | [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) | vm, script, dyn, embed, bytecode, jit, design-only | Script-profile VM. **Not** MIR VM / `mlcc --run` — see doc §0 |
@@ -41,3 +43,4 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | `runtime/` | `memory`, `runtime`, `ownership` |
 | Language feature (PLAN §2.x) | `language`, `design`, `mlc2` |
 | Agent infra only | `agent` (skip product specs unless needed) |
+| `misc/textui/`, file manager GUI | `gui`, `textui`, `file-manager`, `cairo` |

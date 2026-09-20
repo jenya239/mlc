@@ -288,3 +288,79 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 | result  | Editor product aborted. GUI substrate = §32 text stack. Compiler queue still §104-6 s24 Green |
 | issues  | `misc/editor/` left in tree as history. Uncommitted `lower_fn.mlc` Green WIP untouched |
 | next    | ROLE=Driver STEP=2 TRACK=TRACK_COMPILER_ARCHITECTURE_HYGIENE (§104-6 slice 24 Green) unless user starts GUI from §32 |
+
+### Turn 2026-09-20 (Planner — TRACK_TEXTUI_FILE_MANAGER STEP=0)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | PLAN §112 + TRACK + mlc-support STEP=0 bundle/review/step/intro. Poles frozen (retained, FM, `misc/textui/`). Dry-run count_tokens before paid Opus |
+| verify  | Docs + scripts; no widget source; `--dry-run` on actual bundle |
+| result  | Track open at STEP=0. Paid generation not started in this turn |
+| issues  | Compiler §104-6 s24 Green still standing; uncommitted `lower_fn.mlc` untouched |
+| next    | After dry-run: user OK → `MLC_SUPPORT_MODEL=claude-opus-5 ruby review_textui_fm_step0.rb`; then Planner copies Decision. Compiler remains §104-6 s24 Green |
+
+### Turn 2026-09-20 (Planner — TRACK_TEXTUI_FILE_MANAGER STEP=0 generate)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | 0 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Ran Opus 5 STEP=0. Decision copied into TRACK (types, TextLayout, ABI holes, slice-01 tests). STEP=1 opened |
+| verify  | Response `mlc-support/responses/textui_fm_step0_20260920_103642.md`; usage cache_write 131643 output 15868 $1.2195 |
+| result  | **STEP=0 done.** TextLayout = HB backend, wrap_width on the type, no Pango. next = Driver STEP=1 slice 0 |
+| issues  | Stream glued a few tokens; cleaned in TRACK. Compiler §104-6 untouched |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_TEXTUI_FILE_MANAGER (slice 0, no GLFW) |
+
+### Turn 2026-09-20 (Critic — TRACK_TEXTUI_FILE_MANAGER STEP=0 re-audit)
+
+| field   | value |
+|---------|-------|
+| role    | Critic |
+| step    | 0 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Re-audit STEP=0: required 7 sections present; ABI vs `harfbuzz_abi.cpp`/`freetype_abi.hpp`/`glfw_window_gl.hpp`; cairo test names exist; submit fn names exist; poles not reopened. No `.mlc` kit yet (in scope) |
+| verify  | Grep ABI; cairo_ui_test.rb; glad_gl scissor; solid/text renderer exports; `misc/textui/` = `main.mlc` only |
+| result  | **STEP=0 done as map, not as code.** Residuals (Option wrap_width, dump fingerprint, Box vs Theme padding) written in TRACK; do not re-run Opus |
+| issues  | Raw response stream-glued; TRACK table is source of truth |
+| next    | ROLE=Driver STEP=1 TRACK=TRACK_TEXTUI_FILE_MANAGER |
+
+### Turn 2026-09-20 (Driver — TRACK_TEXTUI_FILE_MANAGER STEP=1)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 1 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Slice 0 kit: `geometry`/`theme`/`store`/`layout_result`/`hit`/`draw_op`/`dump`; test `misc/textui/test/slice0_store_hit_dump.mlc`; `scripts/run_textui_slice0_smoke.sh`. Seven hit/overflow/dump/store-identity checks. `main.mlc` untouched |
+| verify  | `bash scripts/run_textui_slice0_smoke.sh` exit 0; `ruby scripts/run_textui_file_size.rb` ok |
+| result  | **STEP=1 done.** next = STEP=2 Label/column. No GLFW, no Label widget, no GL from widgets |
+| issues  | Sonnet `impl_textui_fm_step1_20260920_104803.md` truncated at 32768 tokens — not applied. `KindLabel` unit ctor reserved so `KindBox(data)` is a real variant. Clip ancestor flags are `[i32]` not `[bool]` |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_TEXTUI_FILE_MANAGER (01-label) |
+
+### Turn 2026-09-20 (Driver — TRACK_TEXTUI_FILE_MANAGER STEP=0 residuals)
+
+| field   | value |
+|---------|-------|
+| role    | Driver |
+| step    | 0 |
+| track   | TRACK_TEXTUI_FILE_MANAGER |
+| started | 2026-09-20 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Did **not** re-run Sonnet/Opus. Unglued STEP=0 Decision in TRACK: `OpPopClip`, `UiEvent` variants, `wrap_width: Option<i32>`, 12 slice-01 tests (test 8 = 1 fill + 3 `OpText`) |
+| verify  | Opus response still has all 7 required sections; critic residual list applied to TRACK table |
+| result  | STEP=0 stays **done**. next remains STEP=2 Label |
+| issues  | Raw `textui_fm_step0_20260920_103642.md` still glued; TRACK is source of truth |
+| next    | ROLE=Driver STEP=2 TRACK=TRACK_TEXTUI_FILE_MANAGER (01-label) |
+

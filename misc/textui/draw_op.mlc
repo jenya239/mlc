@@ -1,0 +1,19 @@
+import { Rect } from './geometry'
+import { ColorRgba } from './theme'
+
+export type FillRectOp = {
+  rect: Rect,
+  color: ColorRgba
+}
+
+export type StrokeRectOp = {
+  rect: Rect,
+  color: ColorRgba,
+  line_width: i32
+}
+
+export type DrawOp =
+  OpFillRect(FillRectOp)
+  | OpStrokeRect(StrokeRectOp)
+  | OpPushClip(Rect)
+  | OpPopClip

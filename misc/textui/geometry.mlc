@@ -1,0 +1,53 @@
+export type Rect = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export fn rect_new(x: i32, y: i32, width: i32, height: i32) -> Rect =
+  Rect { x: x, y: y, width: width, height: height }
+
+fn maximum_i32(left: i32, right: i32) -> i32 = do
+  if left > right then
+    return left
+  end
+  right
+end
+
+fn minimum_i32(left: i32, right: i32) -> i32 = do
+  if left < right then
+    return left
+  end
+  right
+end
+
+export fn rect_contains(rect: Rect, x: i32, y: i32) -> bool = do
+  if x < rect.x then
+    return false
+  end
+  if y < rect.y then
+    return false
+  end
+  if x >= rect.x + rect.width then
+    return false
+  end
+  if y >= rect.y + rect.height then
+    return false
+  end
+  true
+end
+
+export fn rect_is_empty(rect: Rect) -> bool =
+  rect.width == 0 || rect.height == 0
+
+export fn rect_intersect(first: Rect, second: Rect) -> Rect = do
+  const left = maximum_i32(first.x, second.x)
+  const top = maximum_i32(first.y, second.y)
+  const right = minimum_i32(first.x + first.width, second.x + second.width)
+  const bottom = minimum_i32(first.y + first.height, second.y + second.height)
+  if right <= left || bottom <= top then
+    return rect_new(0, 0, 0, 0)
+  end
+  rect_new(left, top, right - left, bottom - top)
+end

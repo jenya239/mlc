@@ -25,7 +25,9 @@ Editor MVP (§33) started **after** that close. Everything from `misc/editor/` o
 
 ## What to build next
 
-New GUI work starts from `misc/gui/` text + GLFW/GL + the §32 demos, not from `misc/editor/demo_live.mlc`. Product shape is not chosen here.
+PLAN **§112** `TRACK_TEXTUI_FILE_MANAGER`: retained kit in `misc/textui/`,
+first product = file manager. Substrate remains §32 text + GLFW/GL. Do not
+start from `misc/editor/demo_live.mlc`.
 
 ## What not to do
 

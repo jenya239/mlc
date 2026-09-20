@@ -60,9 +60,10 @@
    `specs/regression/`) по существующим паттернам — плохие тесты просто не
    проходят gate, ничего не ломают.
 
-7. **`TRACK_EDITOR_MVP` / native editor** — хороший кандидат на **1–2
-   дорогих запроса с большим контекстом**, не на «сгенерировать весь
-   редактор одним ответом».
+7. ~~**`TRACK_EDITOR_MVP` / native editor**~~ — **провален** 2026-09-20
+   ([EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md)).
+   Не кандидат; не класть `misc/editor/` в новые бандлы. Историческое
+   описание бандла ниже не использовать.
 
    **Что класть в бандл (порядок величины << 1M, если не тащить весь
    `compiler/`):**
@@ -99,6 +100,15 @@
    бандл. Референс стоимости большого бандла: `mlc2` parity ~873K in /
    ~$4.56 (`claude-opus-4-8`); editor-бандл ожидаемо меньше, если не
    тащить compiler.
+
+8. **`TRACK_TEXTUI_FILE_MANAGER` (PLAN §112) STEP=0** — один Opus-запрос:
+   карта переноса Cairo → MLC (типы среза 0 + таблица срезов), **не**
+   исходники виджетов. Скрипты: `bundle_textui_fm_step0.sh`,
+   `review_textui_fm_step0.rb`. Бандл: Cairo `experiments/cairo_ui` (docs
+   00–19, `ui/*.rb`, `cairo_ui_test.rb`) + MEMORY/TEXT/TRACK +
+   `misc/textui/main.mlc` + `text_renderer`/`text_shaping`/`solid_renderer`
+   + GL/FS/ABI. **Не** `compiler/`, **не** `misc/editor/`, **не** `scene*`.
+   Перед платным вызовом: `--dry-run` (count_tokens, бесплатно).
 
 ## Где НЕ имеет смысла
 

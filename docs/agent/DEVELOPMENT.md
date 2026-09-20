@@ -45,7 +45,7 @@ Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/r
 
 **Native editor (`misc/editor/`, PLAN §33–§111):** **failed experiment** (2026-09-20). Do not resume numbered editor STEPs or `demo_live`. Verdict: [../archive/EDITOR_EXPERIMENT_FAILED.md](../archive/EDITOR_EXPERIMENT_FAILED.md).
 
-**GUI restart surface:** PLAN §32 `TRACK_TEXT_GLYPH_CACHE_SCALING` (`c323556f`…`14972c49`): `misc/gui/text_renderer.mlc` HashMap GlyphCache + `misc/examples/text_ide_panels_demo.mlc` layout cache; gate `scripts/run_text_gl_perf_corpus.rb`. New GUI work starts there, not from the editor tree.
+**GUI queue (user-authorized 2026-09-20):** PLAN §112 `TRACK_TEXTUI_FILE_MANAGER` STEP=2 (01-label). STEP=0 Decision: `mlc-support/responses/textui_fm_step0_20260920_103642.md` (do not re-run). File cap: 400 lines / module, `ruby scripts/run_textui_file_size.rb`.
 
 ## Step sizing (good vs bad)
 

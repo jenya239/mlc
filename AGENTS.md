@@ -28,10 +28,11 @@ Low-level UI cannot be “vibe-coded” without a measurable loop. Architecture 
 
 - Never claim a performance win without before/after numbers from the same harness.
 - Prefer **measure → one hypothesis → one cut → remasure**. No unrelated refactor in that commit.
-- **Native editor (`misc/editor/`, PLAN §33–§111) is a failed experiment (2026-09-20).** Do not resume it. Do not use `scripts/run_editor_perf_*.sh` / `demo_live` as authority. Restart surface: PLAN §32 GlyphCache + `text_ide_panels_demo` — [docs/archive/EDITOR_EXPERIMENT_FAILED.md](docs/archive/EDITOR_EXPERIMENT_FAILED.md). Gate: `scripts/run_text_gl_perf_corpus.rb`.
+- **Native editor (`misc/editor/`, PLAN §33–§111) is a failed experiment (2026-09-20).** Do not resume it. Do not use `scripts/run_editor_perf_*.sh` / `demo_live` as authority. Restart surface: PLAN §32 GlyphCache + `text_ide_panels_demo`. New product track: PLAN §112 `TRACK_TEXTUI_FILE_MANAGER` (`misc/textui/`, file manager) — [docs/archive/EDITOR_EXPERIMENT_FAILED.md](docs/archive/EDITOR_EXPERIMENT_FAILED.md). Gate: `scripts/run_text_gl_perf_corpus.rb`.
 - Report at least: CPU frame parts you touch (`layout_us` / `draw_us` / `total_us` or named counters); keep GPU guesses separate unless timed asynchronously.
 - Do not add `glFinish`, framebuffer readback, or synchronous query reads to the normal frame path.
 - Widgets / chrome produce paint data; only the shared renderer path issues OpenGL.
+- **`misc/textui/`:** one concern per file, hard max 400 lines (`scripts/run_textui_file_size.rb`). No god-host (`app.mlc` wires the frame only). Split in the same STEP; no size allowlist.
 - A static UI (idle, hit-stable pointer) must not reshape text / rebuild O(doc) glyph lists every frame.
 - One measured bottleneck per Green step. If the target metric does not move → revert or narrow; do not ship “cleaner” without numbers.
 - Optional deeper GL traces (`apitrace`) are allowed for diagnosis; they do not replace scripted pass/fail gates.
