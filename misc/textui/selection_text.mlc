@@ -1,0 +1,43 @@
+import { widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import { Selection } from './selection'
+import { text_layout_slice } from './text_layout_hit'
+import { clipboard_set_primary } from './clipboard'
+import { UiState, ui_state_with } from './ui_state'
+
+export fn selection_copied_text(layout: LayoutResult, selection: Selection) -> string = do
+  if widget_id_is_none(selection.owner) then
+    return ""
+  end
+  if selection.anchor == selection.focus then
+    return ""
+  end
+  text_layout_slice(
+    layout.text_layouts[selection.owner.index],
+    selection.anchor,
+    selection.focus
+  )
+end
+
+export fn selection_publish_primary(
+  layout: LayoutResult,
+  state: UiState,
+  selection: Selection
+) -> UiState = do
+  if widget_id_is_none(selection.owner) || selection.anchor == selection.focus then
+    return ui_state_with(
+      selection,
+      state.grab,
+      state.pointer,
+      state.last_press,
+      state.clipboard
+    )
+  end
+  ui_state_with(
+    selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    clipboard_set_primary(state.clipboard, selection_copied_text(layout, selection))
+  )
+end

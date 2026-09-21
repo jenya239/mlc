@@ -1,0 +1,246 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_is_none,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new, text_layout_build, wrap_width_none } from '../text_layout'
+import {
+  text_layout_index_at,
+  text_layout_slice,
+  text_layout_selection_rects,
+  text_layout_word_range,
+  text_layout_caret_x
+} from '../text_layout_hit'
+import { layout_column } from '../layout_pass'
+import { ui_state_new, grab_is_none, grab_is_text } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { selection_is_empty } from '../selection'
+import { paint_selected_frame } from '../paint_pass'
+import { DrawOp } from '../draw_op'
+
+fn root_box_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn build_label_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    root_box_data(),
+    OverflowVisible,
+    0,
+    true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "hello world" }, OverflowVisible, 0, true
+  )
+  widget_store_add_label(
+    store, store.root, LabelData { text: "three" }, OverflowVisible, 0, true
+  )
+end
+
+fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: down,
+    left_released: released,
+    control_down: false,
+    copy_pressed: false,
+    now_ms: now_ms
+  }
+
+fn fill_count(operations: [DrawOp]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    match operations[index]
+      | OpFillRect(_) => do
+        count = count + 1
+      end
+      | OpStrokeRect(_) => do
+      end
+      | OpPushClip(_) => do
+      end
+      | OpPopClip => do
+      end
+      | OpText(_) => do
+      end
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const built = text_layout_build(shaping, cache, theme, "hello", wrap_width_none())
+  shaping = built.shaping
+  cache = built.cache
+  const hello = built.layout
+  if text_layout_index_at(hello, 0, 0) != 0 then
+    return -1
+  end
+  if text_layout_index_at(hello, hello.pixel_width + 8, 0) != hello.text.byte_size() then
+    return -1
+  end
+  let mut previous = 0
+  let mut sample_x = 0
+  while sample_x <= hello.pixel_width do
+    const index = text_layout_index_at(hello, sample_x, 0)
+    if index < previous then
+      return -2
+    end
+    previous = index
+    sample_x = sample_x + 3
+  end
+  if text_layout_slice(hello, 1, 4) != "ell" then
+    return -3
+  end
+  const boxes = text_layout_selection_rects(hello, 0, hello.text.byte_size())
+  if boxes.length() != 1 then
+    return -4
+  end
+  if boxes[0].width <= 0 then
+    return -4
+  end
+  if text_layout_caret_x(hello, 0) != 0 then
+    return -4
+  end
+  const words = text_layout_word_range(hello, 1)
+  if text_layout_slice(hello, words.start, words.finish) != "hello" then
+    return -5
+  end
+
+  const store = build_label_store()
+  const laid_out = layout_column(store, theme, shaping, cache)
+  shaping = laid_out.shaping
+  cache = laid_out.cache
+  const layout = laid_out.layout
+  const first = store.nodes[1].id
+  const second = store.nodes[2].id
+  const rect0 = layout.rects[first.index]
+  const rect1 = layout.rects[second.index]
+  const mid_y0 = rect0.y + rect0.height / 2
+  const mid_y1 = rect1.y + rect1.height / 2
+
+  let mut state = ui_state_new()
+  const click = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect0.x + 12, mid_y0, true, true, false, 0)
+  )
+  state = click.state
+  const click_up = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect0.x + 12, mid_y0, false, false, true, 16)
+  )
+  state = click_up.state
+  if selection_is_empty(state.selection) == false then
+    return -6
+  end
+  if grab_is_none(state.grab) == false then
+    return -6
+  end
+
+  const press = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect0.x + 6, mid_y0, true, true, false, 100)
+  )
+  state = press.state
+  const drag = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect0.x + rect0.width - 6, mid_y0, false, true, false, 116)
+  )
+  state = drag.state
+  if grab_is_text(state.grab) == false then
+    return -7
+  end
+  const release = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect0.x + rect0.width - 6, mid_y0, false, false, true, 132)
+  )
+  state = release.state
+  if widget_id_equals(state.selection.owner, first) == false then
+    return -7
+  end
+  if selection_is_empty(state.selection) then
+    return -7
+  end
+  if layout.text_layouts[first.index].text.contains(state.clipboard.primary) == false then
+    return -7
+  end
+  if state.clipboard.primary.byte_size() == 0 then
+    return -7
+  end
+  if grab_is_none(state.grab) == false then
+    return -8
+  end
+
+  const copy_input = UiInput {
+    mouse_x: rect0.x + 12,
+    mouse_y: mid_y0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: true,
+    copy_pressed: true,
+    now_ms: 200
+  }
+  const copied = ui_update(store, layout, theme, state, copy_input)
+  state = copied.state
+  if state.clipboard.clipboard != state.clipboard.primary then
+    return -9
+  end
+
+  const switch_press = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect1.x + 12, mid_y1, true, true, false, 300)
+  )
+  state = switch_press.state
+  const switch_up = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect1.x + 12, mid_y1, false, false, true, 316)
+  )
+  state = switch_up.state
+  if widget_id_equals(state.selection.owner, second) == false then
+    return -10
+  end
+
+  const drag_again_press = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect1.x + 6, mid_y1, true, true, false, 400)
+  )
+  state = drag_again_press.state
+  const drag_again_move = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect1.x + rect1.width - 6, mid_y1, false, true, false, 416)
+  )
+  state = drag_again_move.state
+  const drag_again_up = ui_update(
+    store, layout, theme, state,
+    pointer_at(rect1.x + rect1.width - 6, mid_y1, false, false, true, 432)
+  )
+  state = drag_again_up.state
+  const painted = paint_selected_frame(theme, store, layout, state.selection)
+  if fill_count(painted) < 2 then
+    return -11
+  end
+  0
+end

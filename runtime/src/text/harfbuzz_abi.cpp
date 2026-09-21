@@ -17,6 +17,8 @@ namespace {
 struct ShapedGlyphEntry {
   std::int32_t glyph_id = 0;
   std::int32_t x_advance = 0;
+  std::int32_t cluster = 0;
+  std::int32_t x_offset = 0;
 };
 
 std::vector<ShapedGlyphEntry>& last_shape_slot() {
@@ -92,6 +94,8 @@ std::int32_t hb_shape_text(std::int64_t font, String text) {
     ShapedGlyphEntry entry;
     entry.glyph_id = static_cast<std::int32_t>(infos[index].codepoint);
     entry.x_advance = positions[index].x_advance;
+    entry.cluster = static_cast<std::int32_t>(infos[index].cluster);
+    entry.x_offset = positions[index].x_offset;
     last_shape_slot().push_back(entry);
   }
   hb_buffer_destroy(buffer);
@@ -119,6 +123,22 @@ std::int32_t hb_shape_glyph_advance_at(std::int32_t index) {
     return -1;
   }
   return slot[static_cast<std::size_t>(index)].x_advance;
+}
+
+std::int32_t hb_shape_glyph_cluster_at(std::int32_t index) {
+  const std::vector<ShapedGlyphEntry>& slot = last_shape_slot();
+  if (index < 0 || index >= static_cast<std::int32_t>(slot.size())) {
+    return -1;
+  }
+  return slot[static_cast<std::size_t>(index)].cluster;
+}
+
+std::int32_t hb_shape_glyph_x_offset_at(std::int32_t index) {
+  const std::vector<ShapedGlyphEntry>& slot = last_shape_slot();
+  if (index < 0 || index >= static_cast<std::int32_t>(slot.size())) {
+    return -1;
+  }
+  return slot[static_cast<std::size_t>(index)].x_offset;
 }
 
 } // namespace text

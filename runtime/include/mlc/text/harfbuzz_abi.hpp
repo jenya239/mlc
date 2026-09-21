@@ -1,9 +1,6 @@
 #pragma once
 
-// Thin HarfBuzz ABI for TRACK_TEXT_SHIM_TO_MLC STEP=3.
-// Handles are i64 (postgres_abi pattern). No path/size cache — MLC STEP=4.
-// Shape result accessors use hb_shape_glyph_* names to avoid clashing with
-// legacy harfbuzz_shim.hpp shape_glyph_* until STEP=8.
+// Thin HarfBuzz ABI. Handles are i64 (postgres_abi pattern). No path/size cache.
 
 #include "mlc/core/string.hpp"
 
@@ -23,6 +20,8 @@ std::int32_t hb_shape_text(std::int64_t font, String text);
 
 std::int32_t hb_shape_glyph_id_at(std::int32_t index);
 std::int32_t hb_shape_glyph_advance_at(std::int32_t index);
+std::int32_t hb_shape_glyph_cluster_at(std::int32_t index);
+std::int32_t hb_shape_glyph_x_offset_at(std::int32_t index);
 
 } // namespace text
 } // namespace mlc

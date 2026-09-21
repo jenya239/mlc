@@ -1,0 +1,136 @@
+import { has } from 'Env'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_key_escape_down,
+  glfw_gl_clipboard_set
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { theme_default } from './theme'
+import {
+  BoxData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_empty
+} from './store'
+import { text_shaping_new } from '../gui/text_shaping'
+import { text_layout_cache_new } from './text_layout'
+import { layout_column } from './layout_pass'
+import { paint_selected_frame } from './paint_pass'
+import { submit_create, submit_destroy, submit_frame } from './submit'
+import { ui_state_new } from './ui_state'
+import { ui_update } from './ui_update'
+import { host_buttons_new, host_poll_input } from './host_input'
+
+extern fn sleep_ms(milliseconds: i32) -> unit
+  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
+
+fn window_width() -> i32 = 1280
+fn window_height() -> i32 = 800
+
+fn root_box_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn build_label_gallery() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    root_box_data(),
+    OverflowVisible,
+    0,
+    true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "two" }, OverflowVisible, 0, true
+  )
+  widget_store_add_label(
+    store, store.root, LabelData { text: "three" }, OverflowVisible, 0, true
+  )
+end
+
+fn main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(window_width(), window_height())
+  if begin_status != 0 then
+    return begin_status
+  end
+  let mut resources = submit_create()
+  if resources.error_code != 0 then
+    const error_code = resources.error_code
+    glfw_gl_context_end()
+    return error_code
+  end
+
+  const theme = theme_default()
+  const store = build_label_gallery()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+
+  println("[textui] label gallery — drag to select, Ctrl+C copies. Esc to quit")
+
+  let mut max_frames = 0
+  let mut frame_sleep_ms = 16
+  if has("MLC_TEXTUI_BENCH") then
+    max_frames = 8
+    frame_sleep_ms = 0
+  end
+
+  let mut state = ui_state_new()
+  let mut buttons = host_buttons_new()
+  let mut frame_index = 0
+  while glfw_gl_context_should_close() == 0 do
+    if glfw_gl_key_escape_down() != 0 then
+      break
+    end
+    const laid_out = layout_column(store, theme, shaping, cache)
+    shaping = laid_out.shaping
+    cache = laid_out.cache
+    const polled = host_poll_input(buttons, frame_index * 16)
+    buttons = polled.buttons
+    const updated = ui_update(store, laid_out.layout, theme, state, polled.input)
+    state = updated.state
+    if polled.input.copy_pressed && polled.input.control_down then
+      glfw_gl_clipboard_set(state.clipboard.clipboard)
+    end
+    const operations = paint_selected_frame(theme, store, laid_out.layout, state.selection)
+    const submitted = submit_frame(
+      resources,
+      shaping,
+      theme,
+      operations,
+      glfw_gl_window_width(),
+      glfw_gl_window_height()
+    )
+    if submitted.error_code != 0 then
+      submit_destroy(submitted.resources)
+      glfw_gl_context_end()
+      return submitted.error_code
+    end
+    resources = submitted.resources
+    shaping = submitted.shaping
+    glfw_gl_context_swap_poll()
+    if frame_sleep_ms > 0 then
+      sleep_ms(frame_sleep_ms)
+    end
+    frame_index = frame_index + 1
+    if max_frames > 0 && frame_index >= max_frames then
+      break
+    end
+  end
+
+  submit_destroy(resources)
+  glfw_gl_context_end()
+  println("[textui] closed frames=" + frame_index.to_string())
+  0
+end

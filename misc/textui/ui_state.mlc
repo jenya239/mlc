@@ -1,0 +1,67 @@
+import { WidgetId, widget_id_none } from './store'
+import { Selection, selection_none } from './selection'
+import { ClipboardBuffer, clipboard_buffer_empty } from './clipboard'
+
+export type GrabKind = GrabNone | GrabText
+
+export type PointerDrag = {
+  owner: WidgetId,
+  origin_x: i32,
+  origin_y: i32,
+  anchor: i32,
+  claimed: bool
+}
+
+export type PointerSession = PointerIdle | PointerActive(PointerDrag)
+
+export type LastPress = {
+  owner: WidgetId,
+  x: i32,
+  y: i32,
+  time_ms: i32,
+  count: i32
+}
+
+export type LastPressSession = LastPressNone | LastPressSome(LastPress)
+
+export type UiState = {
+  selection: Selection,
+  grab: GrabKind,
+  pointer: PointerSession,
+  last_press: LastPressSession,
+  clipboard: ClipboardBuffer
+}
+
+export fn grab_is_none(grab: GrabKind) -> bool =
+  match grab
+    | GrabNone => true
+    | GrabText => false
+
+export fn grab_is_text(grab: GrabKind) -> bool =
+  match grab
+    | GrabNone => false
+    | GrabText => true
+
+export fn ui_state_new() -> UiState =
+  UiState {
+    selection: selection_none(),
+    grab: GrabNone,
+    pointer: PointerIdle,
+    last_press: LastPressNone,
+    clipboard: clipboard_buffer_empty()
+  }
+
+export fn ui_state_with(
+  selection: Selection,
+  grab: GrabKind,
+  pointer: PointerSession,
+  last_press: LastPressSession,
+  clipboard: ClipboardBuffer
+) -> UiState =
+  UiState {
+    selection: selection,
+    grab: grab,
+    pointer: pointer,
+    last_press: last_press,
+    clipboard: clipboard
+  }

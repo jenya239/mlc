@@ -1,12 +1,28 @@
 import { Rect, rect_intersect } from './geometry'
 import { WidgetStore, widget_id_is_none, overflow_is_hidden } from './store'
+import { TextLayout, text_layout_empty } from './text_layout'
 
 export type LayoutResult = {
   rects: [Rect],
-  clips: [Rect]
+  clips: [Rect],
+  text_layouts: [TextLayout]
 }
 
-export fn layout_result_from_rects(store: WidgetStore, rects: [Rect]) -> LayoutResult = do
+fn empty_text_layouts(count: i32) -> [TextLayout] = do
+  let mut layouts: [TextLayout] = []
+  let mut index = 0
+  while index < count do
+    layouts.push(text_layout_empty())
+    index = index + 1
+  end
+  layouts
+end
+
+export fn layout_result_from_parts(
+  store: WidgetStore,
+  rects: [Rect],
+  text_layouts: [TextLayout]
+) -> LayoutResult = do
   let mut clips: [Rect] = []
   let mut hidden_ancestor_rects: [Rect] = []
   let mut hidden_ancestor_flags: [i32] = []
@@ -45,6 +61,11 @@ export fn layout_result_from_rects(store: WidgetStore, rects: [Rect]) -> LayoutR
   end
   LayoutResult {
     rects: rects,
-    clips: clips
+    clips: clips,
+    text_layouts: text_layouts
   }
 end
+
+export fn layout_result_from_rects(store: WidgetStore, rects: [Rect]) -> LayoutResult =
+  layout_result_from_parts(store, rects, empty_text_layouts(store.nodes.length()))
+

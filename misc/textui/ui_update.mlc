@@ -1,0 +1,24 @@
+import { Theme } from './theme'
+import { WidgetStore } from './store'
+import { LayoutResult } from './layout_result'
+import { UiState } from './ui_state'
+import { UiInput } from './ui_input'
+import { update_pointer } from './update_pointer'
+import { update_copy } from './update_copy'
+
+export type UiUpdateResult = {
+  state: UiState
+}
+
+export fn ui_update(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> UiUpdateResult = do
+  const after_pointer = update_pointer(store, layout, theme, state, input)
+  UiUpdateResult {
+    state: update_copy(layout, after_pointer, input)
+  }
+end

@@ -3,6 +3,7 @@ import {
   TextShapingState,
   text_shaping_shape,
   text_shaping_glyph_advance_at,
+  text_shaping_glyph_cluster_at,
   text_shaping_line_height
 } from '../gui/text_shaping'
 
@@ -53,6 +54,21 @@ export type TextLayoutBuildResult = {
 export fn wrap_width_none() -> WrapWidth =
   WrapWidthNone
 
+export fn text_layout_empty() -> TextLayout = do
+  let mut lines: [TextLine] = []
+  let mut clusters: [TextCluster] = []
+  TextLayout {
+    text: "",
+    font_id: 0,
+    pixel_size: 0,
+    wrap_width: WrapWidthNone,
+    pixel_width: 0,
+    pixel_height: 0,
+    lines: lines,
+    clusters: clusters
+  }
+end
+
 fn wrap_width_to_string(wrap_width: WrapWidth) -> string =
   match wrap_width
     | WrapWidthPixels(value) => value.to_string()
@@ -74,7 +90,7 @@ fn build_single_line_layout(
   while glyph_index < glyph_count do
     const advance = text_shaping_glyph_advance_at(glyph_index) / 64
     clusters.push(TextCluster {
-      byte_offset: glyph_index,
+      byte_offset: text_shaping_glyph_cluster_at(glyph_index),
       x: total_width,
       width: advance,
       line_index: 0
@@ -85,7 +101,7 @@ fn build_single_line_layout(
   let mut lines: [TextLine] = []
   lines.push(TextLine {
     byte_start: 0,
-    byte_end: text.length(),
+    byte_end: text.byte_size(),
     top: 0,
     height: line_height,
     width: total_width

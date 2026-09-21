@@ -1,0 +1,137 @@
+import { TextLayout } from './text_layout'
+
+export type SelectionBox = {
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+}
+
+export type ByteRange = {
+  start: i32,
+  finish: i32
+}
+
+fn clamp_byte(layout: TextLayout, index: i32) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  const limit = layout.text.byte_size()
+  if index > limit then
+    return limit
+  end
+  index
+end
+
+fn ordered_range(first: i32, second: i32) -> ByteRange = do
+  if first <= second then
+    return ByteRange { start: first, finish: second }
+  end
+  ByteRange { start: second, finish: first }
+end
+
+export fn text_layout_caret_x(layout: TextLayout, byte_index: i32) -> i32 = do
+  const index = clamp_byte(layout, byte_index)
+  if index >= layout.text.byte_size() then
+    return layout.pixel_width
+  end
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    const cluster = layout.clusters[cluster_index]
+    if cluster.byte_offset >= index then
+      return cluster.x
+    end
+    cluster_index = cluster_index + 1
+  end
+  layout.pixel_width
+end
+
+export fn text_layout_index_at(layout: TextLayout, x: i32, y: i32) -> i32 = do
+  if layout.clusters.length() == 0 then
+    return 0
+  end
+  if x <= 0 then
+    return 0
+  end
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    const cluster = layout.clusters[cluster_index]
+    const midpoint = cluster.x + cluster.width / 2
+    if x < midpoint then
+      return cluster.byte_offset
+    end
+    cluster_index = cluster_index + 1
+  end
+  layout.text.byte_size()
+end
+
+export fn text_layout_slice(layout: TextLayout, start_index: i32, end_index: i32) -> string = do
+  const range = ordered_range(clamp_byte(layout, start_index), clamp_byte(layout, end_index))
+  if range.finish <= range.start then
+    return ""
+  end
+  layout.text.byte_substring(range.start, range.finish - range.start)
+end
+
+export fn text_layout_selection_rects(
+  layout: TextLayout,
+  start_index: i32,
+  end_index: i32
+) -> [SelectionBox] = do
+  let mut rects: [SelectionBox] = []
+  const range = ordered_range(clamp_byte(layout, start_index), clamp_byte(layout, end_index))
+  if range.finish <= range.start then
+    return rects
+  end
+  const left = text_layout_caret_x(layout, range.start)
+  const right = text_layout_caret_x(layout, range.finish)
+  const width = right - left
+  if width <= 0 then
+    return rects
+  end
+  let mut height = layout.pixel_height
+  if layout.lines.length() > 0 then
+    height = layout.lines[0].height
+  end
+  rects.push(SelectionBox {
+    x: left,
+    y: 0,
+    width: width,
+    height: height
+  })
+  rects
+end
+
+fn word_character_set() -> string =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+fn is_word_byte(layout: TextLayout, byte_index: i32) -> bool = do
+  if byte_index < 0 then
+    return false
+  end
+  if byte_index >= layout.text.byte_size() then
+    return false
+  end
+  word_character_set().contains(layout.text.byte_at(byte_index))
+end
+
+export fn text_layout_word_range(layout: TextLayout, byte_index: i32) -> ByteRange = do
+  const limit = layout.text.byte_size()
+  if limit == 0 then
+    return ByteRange { start: 0, finish: 0 }
+  end
+  let mut index = clamp_byte(layout, byte_index)
+  if index >= limit then
+    index = limit - 1
+  end
+  const kind = is_word_byte(layout, index)
+  let mut start = index
+  while start > 0 && is_word_byte(layout, start - 1) == kind do
+    start = start - 1
+  end
+  let mut finish = index + 1
+  while finish < limit && is_word_byte(layout, finish) == kind do
+    finish = finish + 1
+  end
+  ByteRange { start: start, finish: finish }
+end

@@ -37,6 +37,10 @@ extern fn hb_shape_glyph_id_at(index: i32) -> i32 =
   "mlc::text::hb_shape_glyph_id_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
 extern fn hb_shape_glyph_advance_at(index: i32) -> i32 =
   "mlc::text::hb_shape_glyph_advance_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+extern fn hb_shape_glyph_cluster_at(index: i32) -> i32 =
+  "mlc::text::hb_shape_glyph_cluster_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
+extern fn hb_shape_glyph_x_offset_at(index: i32) -> i32 =
+  "mlc::text::hb_shape_glyph_x_offset_at" from "mlc/text/harfbuzz_abi.hpp" thread_affine
 
 export type TextShapingState = {
   library: i64,
@@ -134,6 +138,18 @@ export fn text_shaping_line_height(
   ft_face_line_height(face_result.face)
 end
 
+export fn text_shaping_ascender(
+  state: TextShapingState,
+  font_path: string,
+  pixel_size: i32
+) -> i32 = do
+  const face_result = text_shaping_ensure_face(state, font_path, pixel_size)
+  if face_result.error_code != 0 then
+    return -1
+  end
+  ft_face_ascender(face_result.face)
+end
+
 export fn text_shaping_ensure_font(
   state: TextShapingState,
   font_path: string,
@@ -205,6 +221,12 @@ export fn text_shaping_glyph_id_at(index: i32) -> i32 =
 
 export fn text_shaping_glyph_advance_at(index: i32) -> i32 =
   hb_shape_glyph_advance_at(index)
+
+export fn text_shaping_glyph_cluster_at(index: i32) -> i32 =
+  hb_shape_glyph_cluster_at(index)
+
+export fn text_shaping_glyph_x_offset_at(index: i32) -> i32 =
+  hb_shape_glyph_x_offset_at(index)
 
 fn copy_glyph_pixels_flattened() -> [i32] = do
   const width = ft_glyph_width()

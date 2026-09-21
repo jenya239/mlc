@@ -6,9 +6,9 @@ import {
   widget_id_is_none
 } from './store'
 import { TextShapingState } from '../gui/text_shaping'
-import { TextLayoutCache, text_layout_build, wrap_width_none } from './text_layout'
+import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none, text_layout_empty } from './text_layout'
 import { label_preferred_size } from './widget_label'
-import { LayoutResult, layout_result_from_rects } from './layout_result'
+import { LayoutResult, layout_result_from_parts } from './layout_result'
 
 export type LayoutColumnResult = {
   shaping: TextShapingState,
@@ -20,7 +20,8 @@ type ChildLayoutResult = {
   shaping: TextShapingState,
   cache: TextLayoutCache,
   width: i32,
-  height: i32
+  height: i32,
+  text_layout: TextLayout
 }
 
 fn box_padding_of(kind: WidgetKind) -> i32 =
@@ -55,14 +56,16 @@ fn layout_child(
         shaping: build_result.shaping,
         cache: build_result.cache,
         width: preferred.width,
-        height: preferred.height
+        height: preferred.height,
+        text_layout: build_result.layout
       }
     end
     | KindBox(_) => ChildLayoutResult {
       shaping: shaping,
       cache: cache,
       width: 0,
-      height: 0
+      height: 0,
+      text_layout: text_layout_empty()
     }
 
 export fn layout_column(
@@ -72,9 +75,11 @@ export fn layout_column(
   cache: TextLayoutCache
 ) -> LayoutColumnResult = do
   let mut rects: [Rect] = []
+  let mut text_layouts: [TextLayout] = []
   let mut fill_index = 0
   while fill_index < store.nodes.length() do
     rects.push(rect_new(0, 0, 0, 0))
+    text_layouts.push(text_layout_empty())
     fill_index = fill_index + 1
   end
   let mut current_shaping = shaping
@@ -83,7 +88,7 @@ export fn layout_column(
     return LayoutColumnResult {
       shaping: current_shaping,
       cache: current_cache,
-      layout: layout_result_from_rects(store, rects)
+      layout: layout_result_from_parts(store, rects, text_layouts)
     }
   end
   const root = store.nodes[store.root.index]
@@ -105,6 +110,7 @@ export fn layout_column(
     current_shaping = child_result.shaping
     current_cache = child_result.cache
     rects.set(child_id.index, rect_new(root_padding, cursor_y, child_result.width, child_result.height))
+    text_layouts.set(child_id.index, child_result.text_layout)
     if child_result.width > max_child_width then
       max_child_width = child_result.width
     end
@@ -119,6 +125,6 @@ export fn layout_column(
   LayoutColumnResult {
     shaping: current_shaping,
     cache: current_cache,
-    layout: layout_result_from_rects(store, rects)
+    layout: layout_result_from_parts(store, rects, text_layouts)
   }
 end

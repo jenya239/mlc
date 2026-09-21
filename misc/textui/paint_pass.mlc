@@ -1,15 +1,59 @@
 import { Theme } from './theme'
+import { rect_new } from './geometry'
 import {
   WidgetStore,
-  widget_id_is_none
+  WidgetId,
+  widget_id_is_none,
+  widget_id_equals
 } from './store'
 import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { Selection, selection_is_empty, selection_none } from './selection'
+import { text_layout_selection_rects } from './text_layout_hit'
+
+fn paint_selection(
+  theme: Theme,
+  layout: LayoutResult,
+  selection: Selection,
+  node_index: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if selection_is_empty(selection) then
+    return operations
+  end
+  const owner = WidgetId { index: node_index }
+  if widget_id_equals(selection.owner, owner) == false then
+    return operations
+  end
+  const rect = layout.rects[node_index]
+  const boxes = text_layout_selection_rects(
+    layout.text_layouts[node_index],
+    selection.anchor,
+    selection.focus
+  )
+  let mut updated = operations
+  let mut box_index = 0
+  while box_index < boxes.length() do
+    const box = boxes[box_index]
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(
+        rect.x + theme.padding + box.x,
+        rect.y + theme.padding + box.y,
+        box.width,
+        box.height
+      ),
+      color: theme.selection_background
+    }))
+    box_index = box_index + 1
+  end
+  updated
+end
 
 fn paint_node(
   theme: Theme,
   store: WidgetStore,
   layout: LayoutResult,
+  selection: Selection,
   node_index: i32,
   operations: [DrawOp]
 ) -> [DrawOp] = do
@@ -17,26 +61,34 @@ fn paint_node(
   const rect = layout.rects[node_index]
   let mut current_operations = match node.kind
     | KindLabel(data) => do
-      let mut updated = operations
+      let mut updated = paint_selection(theme, layout, selection, node_index, operations)
       updated.push(OpText(TextOp {
-        origin_x: rect.x,
-        origin_y: rect.y,
+        origin_x: rect.x + theme.padding,
+        origin_y: rect.y + theme.padding,
         color: theme.foreground,
         text: data.text
       }))
       updated
     end
     | KindBox(_) => operations
+  end
   let mut child_index = 0
   while child_index < node.children.length() do
     const child_id = node.children[child_index]
-    current_operations = paint_node(theme, store, layout, child_id.index, current_operations)
+    current_operations = paint_node(
+      theme, store, layout, selection, child_id.index, current_operations
+    )
     child_index = child_index + 1
   end
   current_operations
 end
 
-export fn paint_frame(theme: Theme, store: WidgetStore, layout: LayoutResult) -> [DrawOp] = do
+export fn paint_selected_frame(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  selection: Selection
+) -> [DrawOp] = do
   let mut operations: [DrawOp] = []
   if widget_id_is_none(store.root) then
     return operations
@@ -46,5 +98,8 @@ export fn paint_frame(theme: Theme, store: WidgetStore, layout: LayoutResult) ->
     rect: root_rect,
     color: theme.background
   }))
-  paint_node(theme, store, layout, store.root.index, operations)
+  paint_node(theme, store, layout, selection, store.root.index, operations)
 end
+
+export fn paint_frame(theme: Theme, store: WidgetStore, layout: LayoutResult) -> [DrawOp] =
+  paint_selected_frame(theme, store, layout, selection_none())

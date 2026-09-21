@@ -1,0 +1,35 @@
+import { WidgetId, widget_id_none, widget_id_is_none } from './store'
+
+export type Selection = {
+  owner: WidgetId,
+  anchor: i32,
+  focus: i32
+}
+
+export fn selection_none() -> Selection =
+  Selection {
+    owner: widget_id_none(),
+    anchor: 0,
+    focus: 0
+  }
+
+export fn selection_is_empty(selection: Selection) -> bool = do
+  if widget_id_is_none(selection.owner) then
+    return true
+  end
+  selection.anchor == selection.focus
+end
+
+export fn selection_start(selection: Selection) -> i32 = do
+  if selection.anchor <= selection.focus then
+    return selection.anchor
+  end
+  selection.focus
+end
+
+export fn selection_finish(selection: Selection) -> i32 = do
+  if selection.anchor <= selection.focus then
+    return selection.focus
+  end
+  selection.anchor
+end

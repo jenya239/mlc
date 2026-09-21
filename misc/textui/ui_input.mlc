@@ -1,0 +1,22 @@
+export type UiInput = {
+  mouse_x: i32,
+  mouse_y: i32,
+  left_pressed: bool,
+  left_down: bool,
+  left_released: bool,
+  control_down: bool,
+  copy_pressed: bool,
+  now_ms: i32
+}
+
+export fn ui_input_idle(now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    now_ms: now_ms
+  }

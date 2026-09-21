@@ -1,0 +1,22 @@
+export type ClipboardBuffer = {
+  clipboard: string,
+  primary: string
+}
+
+export fn clipboard_buffer_empty() -> ClipboardBuffer =
+  ClipboardBuffer {
+    clipboard: "",
+    primary: ""
+  }
+
+export fn clipboard_set_primary(buffer: ClipboardBuffer, text: string) -> ClipboardBuffer =
+  ClipboardBuffer {
+    clipboard: buffer.clipboard,
+    primary: text
+  }
+
+export fn clipboard_set_clipboard(buffer: ClipboardBuffer, text: string) -> ClipboardBuffer =
+  ClipboardBuffer {
+    clipboard: text,
+    primary: buffer.primary
+  }

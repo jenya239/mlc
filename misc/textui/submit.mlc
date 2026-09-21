@@ -1,0 +1,282 @@
+import { Theme } from './theme'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { TextShapingState, text_shaping_ascender } from '../gui/text_shaping'
+import {
+  GlyphAtlas,
+  GlyphCache,
+  TextRenderer,
+  glyph_atlas_new,
+  glyph_cache_new,
+  text_renderer_create,
+  text_renderer_upload_atlas,
+  text_renderer_set_batch,
+  text_renderer_draw_over_colored,
+  text_renderer_destroy,
+  text_scratch_u8_clear,
+  text_scratch_u8_resize_zero,
+  text_scratch_f32_clear,
+  text_bind_array_buffer,
+  text_upload_dynamic_scratch
+} from '../gui/text_renderer'
+import {
+  SolidRenderer,
+  solid_renderer_create,
+  solid_renderer_begin,
+  solid_renderer_rect,
+  solid_renderer_flush,
+  solid_renderer_destroy
+} from '../gui/solid_renderer'
+import {
+  GlyphRun,
+  GlyphRunsBuild,
+  submit_atlas_size,
+  glyph_runs_key,
+  push_run_quads,
+  ensure_glyph_runs
+} from './submit_text'
+
+export type SubmitResources = {
+  text_renderer: TextRenderer,
+  solid_renderer: SolidRenderer,
+  atlas: GlyphAtlas,
+  cache: GlyphCache,
+  glyph_runs: Map<string, [GlyphRun]>,
+  error_code: i32
+}
+
+export type SubmitFrameResult = {
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  vertex_count: i32,
+  atlas_dirty: i32,
+  error_code: i32
+}
+
+fn resources_with(
+  resources: SubmitResources,
+  text_renderer: TextRenderer,
+  solid_renderer: SolidRenderer
+) -> SubmitResources =
+  SubmitResources {
+    text_renderer: text_renderer,
+    solid_renderer: solid_renderer,
+    atlas: resources.atlas,
+    cache: resources.cache,
+    glyph_runs: resources.glyph_runs,
+    error_code: resources.error_code
+  }
+
+fn resources_from_build(
+  resources: SubmitResources,
+  built: GlyphRunsBuild
+) -> SubmitResources =
+  SubmitResources {
+    text_renderer: resources.text_renderer,
+    solid_renderer: resources.solid_renderer,
+    atlas: built.atlas,
+    cache: built.cache,
+    glyph_runs: built.glyph_runs,
+    error_code: 0
+  }
+
+fn submit_fill_rect(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  data: FillRectOp
+) -> SolidRenderer =
+  solid_renderer_rect(
+    renderer, window_width, window_height,
+    data.rect.x, data.rect.y, data.rect.width, data.rect.height,
+    data.color.red, data.color.green, data.color.blue, data.color.alpha
+  )
+
+fn submit_text_op(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  window_width: i32,
+  window_height: i32,
+  data: TextOp
+) -> SubmitFrameResult = do
+  const built = ensure_glyph_runs(
+    resources.atlas,
+    resources.cache,
+    shaping,
+    resources.glyph_runs,
+    theme.font_path,
+    theme.font_size_pixels,
+    data.text
+  )
+  if built.error_code != 0 then
+    return SubmitFrameResult {
+      resources: resources,
+      shaping: built.shaping,
+      vertex_count: 0,
+      atlas_dirty: 0,
+      error_code: built.error_code
+    }
+  end
+  const key = glyph_runs_key(theme.font_path, theme.font_size_pixels, data.text)
+  const runs = built.glyph_runs.get(key)
+  const baseline_y = data.origin_y + text_shaping_ascender(
+    built.shaping, theme.font_path, theme.font_size_pixels
+  )
+  const vertices = push_run_quads(
+    window_width, window_height, data.origin_x, baseline_y, submit_atlas_size(), runs
+  )
+  SubmitFrameResult {
+    resources: resources_from_build(resources, built),
+    shaping: built.shaping,
+    vertex_count: vertices,
+    atlas_dirty: built.atlas_dirty,
+    error_code: 0
+  }
+end
+
+fn empty_text_step(
+  resources: SubmitResources,
+  shaping: TextShapingState
+) -> SubmitFrameResult =
+  SubmitFrameResult {
+    resources: resources,
+    shaping: shaping,
+    vertex_count: 0,
+    atlas_dirty: 0,
+    error_code: 0
+  }
+
+export fn submit_create() -> SubmitResources = do
+  const text_renderer = text_renderer_create(submit_atlas_size())
+  const solid_renderer = solid_renderer_create()
+  let mut glyph_runs: Map<string, [GlyphRun]> = Map.new()
+  if text_renderer.program < 0 then
+    return SubmitResources {
+      text_renderer: text_renderer,
+      solid_renderer: solid_renderer,
+      atlas: glyph_atlas_new(submit_atlas_size()),
+      cache: glyph_cache_new(512),
+      glyph_runs: glyph_runs,
+      error_code: text_renderer.program
+    }
+  end
+  if solid_renderer.program < 0 then
+    return SubmitResources {
+      text_renderer: text_renderer,
+      solid_renderer: solid_renderer,
+      atlas: glyph_atlas_new(submit_atlas_size()),
+      cache: glyph_cache_new(512),
+      glyph_runs: glyph_runs,
+      error_code: solid_renderer.program
+    }
+  end
+  text_scratch_u8_clear()
+  text_scratch_u8_resize_zero(submit_atlas_size() * submit_atlas_size())
+  SubmitResources {
+    text_renderer: text_renderer,
+    solid_renderer: solid_renderer,
+    atlas: glyph_atlas_new(submit_atlas_size()),
+    cache: glyph_cache_new(512),
+    glyph_runs: glyph_runs,
+    error_code: 0
+  }
+end
+
+export fn submit_destroy(resources: SubmitResources) -> i32 = do
+  text_renderer_destroy(resources.text_renderer)
+  solid_renderer_destroy(resources.solid_renderer)
+  0
+end
+
+export fn submit_frame(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  operations: [DrawOp],
+  window_width: i32,
+  window_height: i32
+) -> SubmitFrameResult = do
+  let mut solid_renderer = solid_renderer_begin(resources.solid_renderer)
+  let mut current = resources
+  let mut current_shaping = shaping
+  let mut atlas_dirty = 0
+  let mut vertex_count = 0
+  let mut operation_index = 0
+  while operation_index < operations.length() do
+    match operations[operation_index]
+      | OpFillRect(data) => do
+        solid_renderer = submit_fill_rect(solid_renderer, window_width, window_height, data)
+      end
+      | OpStrokeRect(_) => do
+      end
+      | OpPushClip(_) => do
+      end
+      | OpPopClip => do
+      end
+      | OpText(_) => do
+      end
+    operation_index = operation_index + 1
+  end
+  const flush_status = solid_renderer_flush(
+    solid_renderer, window_width, window_height,
+    theme.background.red, theme.background.green, theme.background.blue
+  )
+  if flush_status != 0 then
+    return SubmitFrameResult {
+      resources: resources_with(current, current.text_renderer, solid_renderer),
+      shaping: current_shaping,
+      vertex_count: 0,
+      atlas_dirty: 0,
+      error_code: flush_status
+    }
+  end
+  text_scratch_f32_clear()
+  operation_index = 0
+  while operation_index < operations.length() do
+    const prepared = match operations[operation_index]
+      | OpFillRect(_) => empty_text_step(current, current_shaping)
+      | OpStrokeRect(_) => empty_text_step(current, current_shaping)
+      | OpPushClip(_) => empty_text_step(current, current_shaping)
+      | OpPopClip => empty_text_step(current, current_shaping)
+      | OpText(data) => submit_text_op(
+        current, current_shaping, theme, window_width, window_height, data
+      )
+    if prepared.error_code != 0 then
+      return prepared
+    end
+    if prepared.atlas_dirty == 1 then
+      atlas_dirty = 1
+    end
+    vertex_count = vertex_count + prepared.vertex_count
+    current = prepared.resources
+    current_shaping = prepared.shaping
+    operation_index = operation_index + 1
+  end
+  let mut text_renderer = current.text_renderer
+  if atlas_dirty == 1 then
+    const upload_status = text_renderer_upload_atlas(text_renderer)
+    if upload_status != 0 then
+      return SubmitFrameResult {
+        resources: resources_with(current, text_renderer, solid_renderer),
+        shaping: current_shaping,
+        vertex_count: vertex_count,
+        atlas_dirty: atlas_dirty,
+        error_code: upload_status
+      }
+    end
+  end
+  text_bind_array_buffer(text_renderer.vertex_buffer)
+  text_upload_dynamic_scratch()
+  text_renderer = text_renderer_set_batch(text_renderer, vertex_count)
+  const draw_status = text_renderer_draw_over_colored(
+    text_renderer, window_width, window_height,
+    theme.foreground.red, theme.foreground.green, theme.foreground.blue, theme.foreground.alpha
+  )
+  SubmitFrameResult {
+    resources: resources_with(current, text_renderer, solid_renderer),
+    shaping: current_shaping,
+    vertex_count: vertex_count,
+    atlas_dirty: atlas_dirty,
+    error_code: draw_status
+  }
+end

@@ -1,5 +1,7 @@
 import { Theme } from './theme'
+import { Rect } from './geometry'
 import { TextLayout } from './text_layout'
+import { text_layout_index_at, text_layout_word_range, ByteRange } from './text_layout_hit'
 
 export type LabelPreferredSize = {
   width: i32,
@@ -24,3 +26,9 @@ export fn label_preferred_size(
     height: layout.pixel_height + padding * 2
   }
 end
+
+export fn label_index_at(theme: Theme, rect: Rect, layout: TextLayout, x: i32, y: i32) -> i32 =
+  text_layout_index_at(layout, x - rect.x - theme.padding, y - rect.y - theme.padding)
+
+export fn label_word_range(theme: Theme, rect: Rect, layout: TextLayout, x: i32, y: i32) -> ByteRange =
+  text_layout_word_range(layout, label_index_at(theme, rect, layout, x, y))

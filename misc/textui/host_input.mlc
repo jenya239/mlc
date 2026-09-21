@@ -1,0 +1,41 @@
+import {
+  glfw_gl_mouse_x,
+  glfw_gl_mouse_y,
+  glfw_gl_mouse_left_down,
+  glfw_gl_mod_ctrl_down,
+  glfw_gl_take_binding_key
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { UiInput } from './ui_input'
+
+export type HostButtons = {
+  previous_left_down: i32
+}
+
+export type HostPoll = {
+  input: UiInput,
+  buttons: HostButtons
+}
+
+export fn host_buttons_new() -> HostButtons =
+  HostButtons { previous_left_down: 0 }
+
+export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
+  const left_down_flag = glfw_gl_mouse_left_down()
+  const left_pressed = buttons.previous_left_down == 0 && left_down_flag != 0
+  const left_released = buttons.previous_left_down != 0 && left_down_flag == 0
+  const key = glfw_gl_take_binding_key()
+  const copy_pressed = key == "c" || key == "insert"
+  HostPoll {
+    input: UiInput {
+      mouse_x: glfw_gl_mouse_x(),
+      mouse_y: glfw_gl_mouse_y(),
+      left_pressed: left_pressed,
+      left_down: left_down_flag != 0,
+      left_released: left_released,
+      control_down: glfw_gl_mod_ctrl_down() != 0,
+      copy_pressed: copy_pressed,
+      now_ms: now_ms
+    },
+    buttons: HostButtons { previous_left_down: left_down_flag }
+  }
+end

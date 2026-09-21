@@ -1,0 +1,13 @@
+import { WidgetKind } from './store'
+
+export type UserSelect = UserSelectNone | UserSelectText
+
+export fn kind_user_select(kind: WidgetKind) -> UserSelect =
+  match kind
+    | KindLabel(_) => UserSelectText
+    | KindBox(_) => UserSelectNone
+
+export fn kind_is_text_selectable(kind: WidgetKind) -> bool =
+  match kind_user_select(kind)
+    | UserSelectText => true
+    | UserSelectNone => false
