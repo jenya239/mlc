@@ -20,6 +20,7 @@ import {
   scroll_thumb_rect,
   scroll_offset_at
 } from './widget_scroll'
+import { paint_pick_overlay } from './inspect'
 
 fn paint_selection(
   theme: Theme,
@@ -178,7 +179,8 @@ export fn paint_ui_frame(
     rect: root_rect,
     color: theme.background
   }))
-  paint_node(theme, store, layout, state, store.root.index, operations)
+  const painted = paint_node(theme, store, layout, state, store.root.index, operations)
+  return paint_pick_overlay(theme, store, layout, state, painted)
 end
 
 export fn paint_selected_frame(

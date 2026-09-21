@@ -62,7 +62,9 @@ export type UiState = {
   last_press: LastPressSession,
   clipboard: ClipboardBuffer,
   hover: WidgetId,
-  scroll_offsets: [i32]
+  scroll_offsets: [i32],
+  pick_enabled: bool,
+  inspected: WidgetId
 }
 
 export fn grab_is_none(grab: GrabKind) -> bool =
@@ -95,7 +97,9 @@ export fn ui_state_new() -> UiState = do
     last_press: LastPressNone,
     clipboard: clipboard_buffer_empty(),
     hover: widget_id_none(),
-    scroll_offsets: scroll_offsets
+    scroll_offsets: scroll_offsets,
+    pick_enabled: false,
+    inspected: widget_id_none()
   }
 end
 
@@ -115,7 +119,9 @@ export fn ui_state_with(
     last_press: last_press,
     clipboard: clipboard,
     hover: hover,
-    scroll_offsets: state.scroll_offsets
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected
   }
 
 export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) -> UiState =
@@ -126,5 +132,20 @@ export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) ->
     last_press: state.last_press,
     clipboard: state.clipboard,
     hover: state.hover,
-    scroll_offsets: scroll_offsets
+    scroll_offsets: scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected
+  }
+
+export fn ui_state_with_pick(state: UiState, pick_enabled: bool, inspected: WidgetId) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: pick_enabled,
+    inspected: inspected
   }

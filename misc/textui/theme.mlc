@@ -23,7 +23,9 @@ export type Theme = {
   button_stroke: ColorRgba,
   scrollbar_track: ColorRgba,
   scrollbar_thumb: ColorRgba,
-  scrollbar_width: i32
+  scrollbar_width: i32,
+  inspect_hover: ColorRgba,
+  inspect_stroke: ColorRgba
 }
 
 export fn theme_content_inset(theme: Theme) -> i32 =
@@ -45,5 +47,7 @@ export fn theme_default() -> Theme =
     button_stroke: color_rgba_new(0.36, 0.40, 0.44, 1.0),
     scrollbar_track: color_rgba_new(0.10, 0.12, 0.15, 1.0),
     scrollbar_thumb: color_rgba_new(0.42, 0.45, 0.50, 1.0),
-    scrollbar_width: 8
+    scrollbar_width: 8,
+    inspect_hover: color_rgba_new(0.30, 0.82, 0.88, 1.0),
+    inspect_stroke: color_rgba_new(1.0, 0.72, 0.30, 1.0)
   }

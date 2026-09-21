@@ -110,7 +110,9 @@ fn main() -> i32 = do
     button_stroke: theme.button_stroke,
     scrollbar_track: theme.scrollbar_track,
     scrollbar_thumb: theme.scrollbar_thumb,
-    scrollbar_width: theme.scrollbar_width
+    scrollbar_width: theme.scrollbar_width,
+    inspect_hover: theme.inspect_hover,
+    inspect_stroke: theme.inspect_stroke
   }
   const small_result = layout_column(store, theme, shaping, cache)
   shaping = small_result.shaping

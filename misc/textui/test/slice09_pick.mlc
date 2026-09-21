@@ -1,0 +1,208 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { Rect, rect_new } from '../geometry'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_column } from '../layout_pass'
+import { ui_state_new, ui_state_with_pick } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { selection_is_empty } from '../selection'
+import { UiEvent, ui_event_is_click_on } from '../ui_event'
+import { paint_ui_frame } from '../paint_pass'
+import { DrawOp } from '../draw_op'
+import { frame_dump } from '../dump'
+import { widget_inspect_report } from '../inspect'
+import { stroke_frame_rects } from '../stroke_frame'
+
+fn root_box_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn build_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), root_box_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, store.root, ButtonData { text: "Ping" }, OverflowVisible, 0, true
+  )
+end
+
+fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: down,
+    left_released: released,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: now_ms
+  }
+
+fn clicked_owner(events: [UiEvent], owner: WidgetId) -> bool = do
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_click_on(events[index], owner) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn stroke_is_rect(operation: DrawOp, rect: Rect, line_width: i32) -> bool =
+  match operation
+    | OpStrokeRect(data) =>
+      data.line_width == line_width &&
+      data.rect.x == rect.x &&
+      data.rect.y == rect.y &&
+      data.rect.width == rect.width &&
+      data.rect.height == rect.height
+    | OpFillRect(_) => false
+    | OpPushClip(_) => false
+    | OpPopClip => false
+    | OpText(_) => false
+
+fn has_stroke(operations: [DrawOp], rect: Rect, line_width: i32) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    if stroke_is_rect(operations[index], rect, line_width) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn rect_dump(rect: Rect) -> string =
+  rect.x.to_string() + "," + rect.y.to_string() + "," +
+  rect.width.to_string() + "," + rect.height.to_string()
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_store()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const laid_out = layout_column(store, theme, shaping, cache)
+  shaping = laid_out.shaping
+  cache = laid_out.cache
+  const layout = laid_out.layout
+  const label = store.nodes[1].id
+  const ping = store.nodes[2].id
+  const label_rect = layout.rects[label.index]
+  const ping_rect = layout.rects[ping.index]
+  const label_x = label_rect.x + 6
+  const label_y = label_rect.y + label_rect.height / 2
+  const ping_x = ping_rect.x + 10
+  const ping_y = ping_rect.y + ping_rect.height / 2
+
+  let mut state = ui_state_new()
+  const click_down = ui_update(
+    store, layout, theme, state,
+    pointer_at(ping_x, ping_y, true, true, false, 0)
+  )
+  state = click_down.state
+  const click_up = ui_update(
+    store, layout, theme, state,
+    pointer_at(ping_x, ping_y, false, false, true, 16)
+  )
+  if clicked_owner(click_up.events, ping) == false then
+    return -1
+  end
+
+  state = ui_state_with_pick(ui_state_new(), true, widget_id_none())
+  const pick_label = ui_update(
+    store, layout, theme, state,
+    pointer_at(label_x, label_y, true, true, false, 100)
+  )
+  state = pick_label.state
+  if widget_id_equals(state.inspected, label) == false then
+    return -2
+  end
+  if selection_is_empty(state.selection) == false then
+    return -2
+  end
+  if pick_label.events.length() != 0 then
+    return -2
+  end
+  const report = widget_inspect_report(store, layout, state.inspected)
+  if report.contains("Label") == false then
+    return -2
+  end
+  if report.contains("text one") == false then
+    return -2
+  end
+
+  const operations = paint_ui_frame(theme, store, layout, state)
+  if has_stroke(operations, label_rect, 2) == false then
+    return -3
+  end
+  const dump = frame_dump(theme, store, layout, operations, false)
+  if dump.contains("stroke " + rect_dump(label_rect) + " line_width=2") == false then
+    return -4
+  end
+
+  const pick_down = ui_update(
+    store, layout, theme, state,
+    pointer_at(ping_x, ping_y, true, true, false, 200)
+  )
+  state = pick_down.state
+  const pick_up = ui_update(
+    store, layout, theme, state,
+    pointer_at(ping_x, ping_y, false, false, true, 216)
+  )
+  state = pick_up.state
+  if clicked_owner(pick_up.events, ping) then
+    return -5
+  end
+  if widget_id_equals(state.inspected, ping) == false then
+    return -5
+  end
+
+  state = ui_state_with_pick(ui_state_new(), true, widget_id_none())
+  const hover = ui_update(
+    store, layout, theme, state,
+    pointer_at(label_x, label_y, false, false, false, 300)
+  )
+  const hover_operations = paint_ui_frame(theme, store, layout, hover.state)
+  if has_stroke(hover_operations, label_rect, 1) == false then
+    return -6
+  end
+
+  const frame = stroke_frame_rects(rect_new(10, 20, 100, 50), 2)
+  if frame.length() != 4 then
+    return -7
+  end
+  if frame[0].x != 10 || frame[0].y != 20 || frame[0].width != 100 || frame[0].height != 2 then
+    return -7
+  end
+  if frame[1].y != 68 || frame[1].height != 2 then
+    return -7
+  end
+  if frame[2].x != 10 || frame[2].width != 2 || frame[2].height != 46 then
+    return -7
+  end
+  if frame[3].x != 108 || frame[3].width != 2 then
+    return -7
+  end
+  0
+end

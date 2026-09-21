@@ -9,10 +9,25 @@ import {
 import { UiInput } from './ui_input'
 
 extern fn f64_to_i32(value: f64) -> i32 = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn glfw_gl_context_wait_events_timeout(timeout_seconds: f64) -> unit
+  = "mlc::gl::glfw_gl_context_wait_events_timeout" from "mlc/gl/glfw_window_gl.hpp"
 
 export type HostButtons = {
-  previous_left_down: i32
+  previous_left_down: i32,
+  scroll_remainder: f64
 }
+
+type WheelSample = {
+  steps: i32,
+  remainder: f64
+}
+
+fn wheel_sample(remainder: f64, delta: f64) -> WheelSample = do
+  const total = remainder + delta
+  const steps = f64_to_i32(total)
+  WheelSample { steps: steps, remainder: total - i32_to_f64(steps) }
+end
 
 export type HostPoll = {
   input: UiInput,
@@ -20,14 +35,16 @@ export type HostPoll = {
 }
 
 export fn host_buttons_new() -> HostButtons =
-  HostButtons { previous_left_down: 0 }
+  HostButtons { previous_left_down: 0, scroll_remainder: 0.0 }
 
 export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
+  glfw_gl_context_wait_events_timeout(0.0)
   const left_down_flag = glfw_gl_mouse_left_down()
   const left_pressed = buttons.previous_left_down == 0 && left_down_flag != 0
   const left_released = buttons.previous_left_down != 0 && left_down_flag == 0
   const key = glfw_gl_take_binding_key()
   const copy_pressed = key == "c" || key == "insert"
+  const wheel = wheel_sample(buttons.scroll_remainder, glfw_gl_take_scroll_y())
   HostPoll {
     input: UiInput {
       mouse_x: glfw_gl_mouse_x(),
@@ -37,9 +54,12 @@ export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
       left_released: left_released,
       control_down: glfw_gl_mod_ctrl_down() != 0,
       copy_pressed: copy_pressed,
-      wheel_y: 0 - f64_to_i32(glfw_gl_take_scroll_y()),
+      wheel_y: 0 - wheel.steps,
       now_ms: now_ms
     },
-    buttons: HostButtons { previous_left_down: left_down_flag }
+    buttons: HostButtons {
+      previous_left_down: left_down_flag,
+      scroll_remainder: wheel.remainder
+    }
   }
 end

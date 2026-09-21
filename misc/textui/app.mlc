@@ -6,6 +6,9 @@ import {
   glfw_gl_context_end,
   glfw_gl_window_width,
   glfw_gl_window_height,
+  glfw_gl_window_x,
+  glfw_gl_window_y,
+  glfw_gl_window_request_position,
   glfw_gl_key_escape_down,
   glfw_gl_clipboard_set
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
@@ -20,6 +23,7 @@ import {
   WidgetId,
   WidgetStore,
   widget_id_none,
+  widget_id_is_none,
   widget_store_add_box,
   widget_store_add_button,
   widget_store_add_label,
@@ -31,21 +35,45 @@ import { text_layout_cache_new } from './text_layout'
 import { layout_ui } from './layout_pass'
 import { paint_ui_frame } from './paint_pass'
 import { submit_create, submit_destroy, submit_frame } from './submit'
-import { ui_state_new } from './ui_state'
+import { ui_state_new, ui_state_with_pick } from './ui_state'
 import { ui_update } from './ui_update'
 import { clipboard_copy_selection } from './update_copy'
 import { host_buttons_new, host_poll_input } from './host_input'
-
-extern fn sleep_ms(milliseconds: i32) -> unit
-  = "mlc::graphics::sleep_ms" from "mlc/graphics/graphics.hpp"
-
-fn window_width() -> i32 = 1280
-fn window_height() -> i32 = 800
+import { hit_test } from './hit'
+import { widget_inspect_report } from './inspect'
+import { UiInput } from './ui_input'
+import { WindowPlacement, window_placement_load, window_placement_save } from './window_placement'
 
 fn application_reload_status() -> i32 = 75
 
+fn remember_window() -> bool = do
+  if has("MLC_TEXTUI_BENCH") then
+    return false
+  end
+  window_placement_save(WindowPlacement {
+    x: glfw_gl_window_x(),
+    y: glfw_gl_window_y(),
+    width: glfw_gl_window_width(),
+    height: glfw_gl_window_height(),
+    restored: true
+  })
+end
+
 fn root_box_data() -> BoxData =
   BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn input_clear_buttons(input: UiInput) -> UiInput =
+  UiInput {
+    mouse_x: input.mouse_x,
+    mouse_y: input.mouse_y,
+    left_pressed: false,
+    left_down: input.left_down,
+    left_released: input.left_released,
+    control_down: input.control_down,
+    copy_pressed: input.copy_pressed,
+    wheel_y: input.wheel_y,
+    now_ms: input.now_ms
+  }
 
 fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
   match store.nodes[owner.index].kind
@@ -104,19 +132,33 @@ fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_button(
     store, row, ButtonData { text: "Ping" }, OverflowVisible, 0, true
   )
-  widget_store_add_button(
+  store = widget_store_add_button(
     store, row, ButtonData { text: "Reload" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, row, ButtonData { text: "Pick" }, OverflowVisible, 0, true
   )
 end
 
 fn main() -> i32 = do
-  const begin_status = glfw_gl_context_begin(window_width(), window_height())
+  let mut open_width = 1280
+  let mut open_height = 800
+  if has("MLC_TEXTUI_BENCH") == false then
+    const loaded = window_placement_load()
+    if loaded.restored then
+      open_width = loaded.width
+      open_height = loaded.height
+      glfw_gl_window_request_position(loaded.x, loaded.y)
+    end
+  end
+  const begin_status = glfw_gl_context_begin(open_width, open_height)
   if begin_status != 0 then
     return begin_status
   end
   let mut resources = submit_create()
   if resources.error_code != 0 then
     const error_code = resources.error_code
+    remember_window()
     glfw_gl_context_end()
     return error_code
   end
@@ -126,18 +168,17 @@ fn main() -> i32 = do
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
-  println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload. Esc to quit")
+  println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload, Pick. Esc to quit")
 
   let mut max_frames = 0
-  let mut frame_sleep_ms = 16
   if has("MLC_TEXTUI_BENCH") then
     max_frames = 8
-    frame_sleep_ms = 0
   end
 
   let mut state = ui_state_new()
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
+  let mut reported_inspect = -1
   let mut reload_requested = false
   let mut laid_out = layout_ui(
     store,
@@ -156,7 +197,19 @@ fn main() -> i32 = do
     end
     const polled = host_poll_input(buttons, frame_index * 16)
     buttons = polled.buttons
-    const updated = ui_update(store, laid_out.layout, theme, state, polled.input)
+    let mut input = polled.input
+    if input.left_pressed then
+      const hit = hit_test(store, laid_out.layout, theme, input.mouse_x, input.mouse_y)
+      if widget_id_is_none(hit) == false && button_caption(store, hit) == "Pick" then
+        if state.pick_enabled then
+          state = ui_state_with_pick(state, false, widget_id_none())
+        else
+          state = ui_state_with_pick(state, true, hit)
+        end
+        input = input_clear_buttons(input)
+      end
+    end
+    const updated = ui_update(store, laid_out.layout, theme, state, input)
     state = updated.state
     laid_out = layout_ui(
       store,
@@ -169,6 +222,12 @@ fn main() -> i32 = do
     )
     shaping = laid_out.shaping
     cache = laid_out.cache
+    if state.pick_enabled && widget_id_is_none(state.inspected) == false then
+      if state.inspected.index != reported_inspect then
+        println(widget_inspect_report(store, laid_out.layout, state.inspected))
+        reported_inspect = state.inspected.index
+      end
+    end
     let mut event_index = 0
     while event_index < updated.events.length() do
       const owner = updated.events[event_index].widget
@@ -199,15 +258,13 @@ fn main() -> i32 = do
     )
     if submitted.error_code != 0 then
       submit_destroy(submitted.resources)
+      remember_window()
       glfw_gl_context_end()
       return submitted.error_code
     end
     resources = submitted.resources
     shaping = submitted.shaping
     glfw_gl_context_swap_poll()
-    if frame_sleep_ms > 0 then
-      sleep_ms(frame_sleep_ms)
-    end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
       break
@@ -218,6 +275,7 @@ fn main() -> i32 = do
   end
 
   submit_destroy(resources)
+  remember_window()
   glfw_gl_context_end()
   if reload_requested then
     return application_reload_status()

@@ -36,11 +36,8 @@ import {
   push_run_quads,
   ensure_glyph_runs
 } from './submit_text'
-import {
-  submit_clip_push,
-  submit_clip_pop,
-  submit_scissor_apply
-} from './submit_clip'
+import { submit_clip_push, submit_clip_pop, submit_scissor_apply } from './submit_clip'
+import { submit_stroke_rect } from './submit_stroke'
 
 export type SubmitResources = {
   text_renderer: TextRenderer,
@@ -106,7 +103,7 @@ fn submit_solid_fill(
 ) -> SolidRenderer =
   match operation
     | OpFillRect(data) => submit_fill_rect(renderer, window_width, window_height, data)
-    | OpStrokeRect(_) => renderer
+    | OpStrokeRect(data) => submit_stroke_rect(renderer, window_width, window_height, data)
     | OpPushClip(_) => renderer
     | OpPopClip => renderer
     | OpText(_) => renderer

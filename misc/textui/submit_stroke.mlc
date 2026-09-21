@@ -1,0 +1,32 @@
+import { StrokeRectOp } from './draw_op'
+import { SolidRenderer, solid_renderer_rect } from '../gui/solid_renderer'
+import { stroke_frame_rects } from './stroke_frame'
+
+export fn submit_stroke_rect(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  data: StrokeRectOp
+) -> SolidRenderer = do
+  let mut current = renderer
+  const edges = stroke_frame_rects(data.rect, data.line_width)
+  let mut index = 0
+  while index < edges.length() do
+    const edge = edges[index]
+    current = solid_renderer_rect(
+      current,
+      window_width,
+      window_height,
+      edge.x,
+      edge.y,
+      edge.width,
+      edge.height,
+      data.color.red,
+      data.color.green,
+      data.color.blue,
+      data.color.alpha
+    )
+    index = index + 1
+  end
+  return current
+end

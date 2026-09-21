@@ -2,6 +2,7 @@ import { Theme } from './theme'
 import { WidgetStore, WidgetId, widget_id_none, widget_id_is_none } from './store'
 import { LayoutResult } from './layout_result'
 import { handle_press } from './update_pointer_press'
+import { apply_pick_press } from './inspect'
 import { handle_text_drag } from './update_pointer_text'
 import { click_release_events } from './update_pointer_click'
 import { handle_scroll_drag } from './update_scroll'
@@ -36,6 +37,7 @@ fn hover_from_hit(
   store: WidgetStore,
   layout: LayoutResult,
   theme: Theme,
+  pick_enabled: bool,
   x: i32,
   y: i32
 ) -> WidgetId = do
@@ -43,10 +45,16 @@ fn hover_from_hit(
   if widget_id_is_none(hit) then
     return widget_id_none()
   end
+  if pick_enabled then
+    if hit.index == store.root.index then
+      return widget_id_none()
+    end
+    return hit
+  end
   if kind_is_clickable(store.nodes[hit.index].kind) then
     return hit
   end
-  widget_id_none()
+  return widget_id_none()
 end
 
 fn release_pointer(state: UiState) -> UiState =
@@ -69,7 +77,10 @@ export fn update_pointer(
 ) -> PointerUpdate = do
   let mut current = state
   let mut events: [UiEvent] = []
-  if input.left_pressed then
+  if input.left_pressed && current.pick_enabled then
+    current = apply_pick_press(store, layout, theme, current, input)
+  end
+  if input.left_pressed && current.pick_enabled == false then
     current = handle_press(store, layout, theme, current, input)
   end
   if input.left_down then
@@ -86,7 +97,9 @@ export fn update_pointer(
     current.pointer,
     current.last_press,
     current.clipboard,
-    hover_from_hit(store, layout, theme, input.mouse_x, input.mouse_y)
+    hover_from_hit(
+      store, layout, theme, current.pick_enabled, input.mouse_x, input.mouse_y
+    )
   )
   PointerUpdate {
     state: current,

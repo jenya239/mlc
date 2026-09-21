@@ -1,0 +1,69 @@
+import { get_or } from 'Env'
+import {
+  WindowPlacement,
+  window_placement_config_path,
+  window_placement_decode,
+  window_placement_encode,
+  window_placement_load_path,
+  window_placement_save_path
+} from '../window_placement'
+
+fn placement(x: i32, y: i32, width: i32, height: i32) -> WindowPlacement =
+  WindowPlacement { x: x, y: y, width: width, height: height, restored: true }
+
+fn main() -> i32 = do
+  const path = window_placement_config_path()
+  const configured = get_or("XDG_CONFIG_HOME", "")
+  if configured != "" then
+    if path != configured + "/mlc/textui-window" then
+      return -1
+    end
+  else
+    const home = get_or("HOME", "")
+    if home != "" && path != home + "/.config/mlc/textui-window" then
+      return -1
+    end
+  end
+
+  const sample = placement(0 - 40, 12, 900, 700)
+  const decoded = window_placement_decode(window_placement_encode(sample))
+  if decoded.restored == false || decoded.x != 0 - 40 || decoded.y != 12 then
+    return -2
+  end
+  if decoded.width != 900 || decoded.height != 700 then
+    return -2
+  end
+
+  if window_placement_decode("x=1\ny=2\nwidth=10\nheight=700\n").restored then
+    return -3
+  end
+  if window_placement_decode("x=1\nwidth=800\nheight=600\n").restored then
+    return -4
+  end
+  if window_placement_decode("nope").restored then
+    return -4
+  end
+
+  const directory = get_or("TMPDIR", "/tmp")
+  const file_path = directory + "/textui_window_placement_case/placement"
+  const stored = placement(30, 0 - 8, 640, 480)
+  if window_placement_save_path(file_path, stored) == false then
+    return -5
+  end
+  const loaded = window_placement_load_path(file_path)
+  if loaded.restored == false || loaded.x != 30 || loaded.y != 0 - 8 then
+    return -5
+  end
+  if loaded.width != 640 || loaded.height != 480 then
+    return -5
+  end
+  const missing = directory + "/textui_window_placement_missing"
+  if window_placement_load_path(missing).restored then
+    return -6
+  end
+  const extra = window_placement_decode("x=3\ny=4\nwidth=800\nheight=600\nlater=kept\n")
+  if extra.restored == false || extra.x != 3 || extra.y != 4 then
+    return -7
+  end
+  0
+end

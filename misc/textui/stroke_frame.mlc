@@ -1,0 +1,26 @@
+import { Rect, rect_new } from './geometry'
+
+export fn stroke_frame_rects(rect: Rect, line_width: i32) -> [Rect] = do
+  let mut edges: [Rect] = []
+  if line_width <= 0 || rect.width <= 0 || rect.height <= 0 then
+    return edges
+  end
+  if rect.width <= line_width * 2 || rect.height <= line_width * 2 then
+    edges.push(rect)
+    return edges
+  end
+  edges.push(rect_new(rect.x, rect.y, rect.width, line_width))
+  edges.push(rect_new(
+    rect.x, rect.y + rect.height - line_width, rect.width, line_width
+  ))
+  edges.push(rect_new(
+    rect.x, rect.y + line_width, line_width, rect.height - line_width * 2
+  ))
+  edges.push(rect_new(
+    rect.x + rect.width - line_width,
+    rect.y + line_width,
+    line_width,
+    rect.height - line_width * 2
+  ))
+  return edges
+end

@@ -139,6 +139,46 @@ int32_t& cached_window_height() {
   return height;
 }
 
+struct PlacementRequest {
+  bool active = false;
+  int x = 0;
+  int y = 0;
+};
+
+PlacementRequest& placement_request() {
+  static PlacementRequest request;
+  return request;
+}
+
+bool rect_overlaps_work_area(int x, int y, int width, int height) {
+  int monitor_count = 0;
+  GLFWmonitor** monitors = glfwGetMonitors(&monitor_count);
+  if (monitors == nullptr || monitor_count <= 0) {
+    return true;
+  }
+  const int need_x = width < 32 ? 1 : 32;
+  const int need_y = height < 32 ? 1 : 32;
+  for (int index = 0; index < monitor_count; ++index) {
+    int area_x = 0;
+    int area_y = 0;
+    int area_width = 0;
+    int area_height = 0;
+    glfwGetMonitorWorkarea(monitors[index], &area_x, &area_y, &area_width, &area_height);
+    const int left = x > area_x ? x : area_x;
+    const int top = y > area_y ? y : area_y;
+    const int right_edge = x + width;
+    const int area_right = area_x + area_width;
+    const int right = right_edge < area_right ? right_edge : area_right;
+    const int bottom_edge = y + height;
+    const int area_bottom = area_y + area_height;
+    const int bottom = bottom_edge < area_bottom ? bottom_edge : area_bottom;
+    if (right - left >= need_x && bottom - top >= need_y) {
+      return true;
+    }
+  }
+  return false;
+}
+
 struct StandardCursors {
   GLFWcursor* arrow = nullptr;
   GLFWcursor* ew_resize = nullptr;
@@ -239,7 +279,12 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
   }
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-  if (!env_flag_enabled("MLC_GLFW_VISIBLE")) {
+  const bool want_visible = env_flag_enabled("MLC_GLFW_VISIBLE");
+  const bool place = placement_request().active;
+  const int place_x = placement_request().x;
+  const int place_y = placement_request().y;
+  placement_request().active = false;
+  if (!want_visible || place) {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   }
   const int window_width = width > 0 ? width : k_window_width;
@@ -274,6 +319,12 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
   glfwSetWindowSizeCallback(window, on_window_size);
   glfwSetDropCallback(window, on_drop);
   context_window() = window;
+  if (place && rect_overlaps_work_area(place_x, place_y, window_width, window_height)) {
+    glfwSetWindowPos(window, place_x, place_y);
+  }
+  if (want_visible && place) {
+    glfwShowWindow(window);
+  }
   return 0;
 }
 
@@ -337,6 +388,34 @@ int32_t glfw_gl_window_width() {
 
 int32_t glfw_gl_window_height() {
   return cached_window_height();
+}
+
+int32_t glfw_gl_window_x() {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  int x = 0;
+  int y = 0;
+  glfwGetWindowPos(window, &x, &y);
+  return x;
+}
+
+int32_t glfw_gl_window_y() {
+  GLFWwindow* window = context_window();
+  if (window == nullptr) {
+    return 0;
+  }
+  int x = 0;
+  int y = 0;
+  glfwGetWindowPos(window, &x, &y);
+  return y;
+}
+
+void glfw_gl_window_request_position(int32_t x, int32_t y) {
+  placement_request().active = true;
+  placement_request().x = x;
+  placement_request().y = y;
 }
 
 void glfw_gl_window_set_size(int32_t width, int32_t height) {
@@ -757,6 +836,9 @@ double glfw_gl_get_time() { return 0.0; }
 double glfw_gl_anim_unit() { return 0.0; }
 int32_t glfw_gl_window_width() { return 0; }
 int32_t glfw_gl_window_height() { return 0; }
+int32_t glfw_gl_window_x() { return 0; }
+int32_t glfw_gl_window_y() { return 0; }
+void glfw_gl_window_request_position(int32_t, int32_t) {}
 void glfw_gl_window_set_size(int32_t, int32_t) {}
 double glfw_gl_window_content_scale_x() { return 1.0; }
 double glfw_gl_window_content_scale_y() { return 1.0; }

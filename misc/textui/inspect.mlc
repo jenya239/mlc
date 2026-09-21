@@ -1,0 +1,102 @@
+import { Theme, ColorRgba } from './theme'
+import { WidgetStore, WidgetId, WidgetKind, widget_id_is_none, widget_id_equals, overflow_is_hidden } from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp, StrokeRectOp } from './draw_op'
+import { hit_test } from './hit'
+import { UiInput } from './ui_input'
+import {
+  UiState,
+  GrabNone,
+  PointerIdle,
+  ui_state_with,
+  ui_state_with_pick
+} from './ui_state'
+
+fn kind_name(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(_) => "Label"
+    | KindButton(_) => "Button"
+    | KindBox(_) => "Box"
+    | KindScrollView => "ScrollView"
+
+fn kind_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindScrollView => ""
+
+export fn widget_inspect_report(store: WidgetStore, layout: LayoutResult, id: WidgetId) -> string = do
+  if widget_id_is_none(id) then
+    return "—"
+  end
+  const node = store.nodes[id.index]
+  const rect = layout.rects[id.index]
+  let mut overflow = "visible"
+  if overflow_is_hidden(node.overflow) then
+    overflow = "hidden"
+  end
+  let mut text = kind_name(node.kind)
+  text = text + "\nbox " + rect.x.to_string() + "," + rect.y.to_string()
+  text = text + " " + rect.width.to_string() + "x" + rect.height.to_string()
+  text = text + "\noverflow " + overflow
+  text = text + " grow " + node.grow.to_string()
+  const caption = kind_text(node.kind)
+  if caption != "" then
+    text = text + "\ntext " + caption
+  end
+  return text
+end
+
+fn push_stroke(operations: [DrawOp], layout: LayoutResult, id: WidgetId, color: ColorRgba, line_width: i32) -> [DrawOp] = do
+  let mut next = operations
+  const rect = layout.rects[id.index]
+  next.push(OpStrokeRect(StrokeRectOp {
+    rect: rect,
+    color: color,
+    line_width: line_width
+  }))
+  return next
+end
+
+export fn paint_pick_overlay(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if state.pick_enabled == false then
+    return operations
+  end
+  let mut next = operations
+  if widget_id_is_none(state.hover) == false && state.hover.index != store.root.index then
+    if widget_id_equals(state.hover, state.inspected) == false then
+      next = push_stroke(next, layout, state.hover, theme.inspect_hover, 1)
+    end
+  end
+  if widget_id_is_none(state.inspected) == false && state.inspected.index != store.root.index then
+    next = push_stroke(next, layout, state.inspected, theme.inspect_stroke, 2)
+  end
+  return next
+end
+
+export fn apply_pick_press(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> UiState = do
+  const hit = hit_test(store, layout, theme, input.mouse_x, input.mouse_y)
+  const cleared = ui_state_with(
+    state,
+    state.selection,
+    GrabNone,
+    PointerIdle,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
+  return ui_state_with_pick(cleared, true, hit)
+end
