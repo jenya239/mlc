@@ -16,8 +16,18 @@ export type Theme = {
   background: ColorRgba,
   foreground: ColorRgba,
   muted: ColorRgba,
-  selection_background: ColorRgba
+  selection_background: ColorRgba,
+  button_background: ColorRgba,
+  button_hover: ColorRgba,
+  button_pressed: ColorRgba,
+  button_stroke: ColorRgba,
+  scrollbar_track: ColorRgba,
+  scrollbar_thumb: ColorRgba,
+  scrollbar_width: i32
 }
+
+export fn theme_content_inset(theme: Theme) -> i32 =
+  theme.padding
 
 export fn theme_default() -> Theme =
   Theme {
@@ -28,5 +38,12 @@ export fn theme_default() -> Theme =
     background: color_rgba_new(0.07, 0.08, 0.10, 1.0),
     foreground: color_rgba_new(0.91, 0.92, 0.93, 1.0),
     muted: color_rgba_new(0.55, 0.58, 0.62, 1.0),
-    selection_background: color_rgba_new(0.20, 0.40, 0.80, 0.35)
+    selection_background: color_rgba_new(0.20, 0.40, 0.80, 0.35),
+    button_background: color_rgba_new(0.16, 0.19, 0.22, 1.0),
+    button_hover: color_rgba_new(0.23, 0.26, 0.31, 1.0),
+    button_pressed: color_rgba_new(0.11, 0.13, 0.16, 1.0),
+    button_stroke: color_rgba_new(0.36, 0.40, 0.44, 1.0),
+    scrollbar_track: color_rgba_new(0.10, 0.12, 0.15, 1.0),
+    scrollbar_thumb: color_rgba_new(0.42, 0.45, 0.50, 1.0),
+    scrollbar_width: 8
   }

@@ -1,0 +1,218 @@
+import { Rect, rect_new, rect_contains } from './geometry'
+import { Theme } from './theme'
+import { WidgetStore, WidgetId, widget_id_none, kind_is_scroll_view } from './store'
+import { LayoutResult } from './layout_result'
+import { UiState, ui_state_with_scroll_offsets } from './ui_state'
+
+export fn scroll_offset_at(offsets: [i32], index: i32) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  if index >= offsets.length() then
+    return 0
+  end
+  offsets[index]
+end
+
+export fn scroll_offsets_put(offsets: [i32], index: i32, value: i32) -> [i32] = do
+  let mut next = offsets
+  while next.length() <= index do
+    next.push(0)
+  end
+  next.set(index, value)
+  next
+end
+
+export fn scroll_content_child(store: WidgetStore, id: WidgetId) -> WidgetId = do
+  const node = store.nodes[id.index]
+  let mut child_index = 0
+  while child_index < node.children.length() do
+    const child = node.children[child_index]
+    if store.nodes[child.index].visible then
+      return child
+    end
+    child_index = child_index + 1
+  end
+  widget_id_none()
+end
+
+export fn scroll_content_height(store: WidgetStore, layout: LayoutResult, id: WidgetId) -> i32 = do
+  const child = scroll_content_child(store, id)
+  if child.index < 0 then
+    return 0
+  end
+  layout.rects[child.index].height
+end
+
+export fn scroll_max_offset(content_height: i32, viewport_height: i32) -> i32 = do
+  const extra = content_height - viewport_height
+  if extra < 0 then
+    return 0
+  end
+  extra
+end
+
+export fn scroll_clamp_offset(offset: i32, content_height: i32, viewport_height: i32) -> i32 = do
+  const maximum = scroll_max_offset(content_height, viewport_height)
+  if offset < 0 then
+    return 0
+  end
+  if offset > maximum then
+    return maximum
+  end
+  offset
+end
+
+export fn scroll_content_overflows(content_height: i32, viewport_height: i32) -> bool =
+  scroll_max_offset(content_height, viewport_height) > 0
+
+export fn scroll_step(theme: Theme) -> i32 =
+  theme.font_size_pixels * 3
+
+export fn scroll_bar_rect(theme: Theme, viewport: Rect) -> Rect =
+  rect_new(
+    viewport.x + viewport.width - theme.scrollbar_width,
+    viewport.y,
+    theme.scrollbar_width,
+    viewport.height
+  )
+
+export fn scroll_thumb_height(viewport_height: i32, content_height: i32) -> i32 = do
+  if content_height <= 0 then
+    return viewport_height
+  end
+  let mut raw = viewport_height * viewport_height / content_height
+  if raw < 16 then
+    raw = 16
+  end
+  if raw > viewport_height then
+    return viewport_height
+  end
+  raw
+end
+
+export fn scroll_thumb_rect(
+  theme: Theme,
+  viewport: Rect,
+  offset: i32,
+  content_height: i32
+) -> Rect = do
+  const thumb_height = scroll_thumb_height(viewport.height, content_height)
+  const maximum = scroll_max_offset(content_height, viewport.height)
+  let mut span = viewport.height - thumb_height
+  if span < 0 then
+    span = 0
+  end
+  let mut thumb_y = viewport.y
+  if maximum > 0 then
+    thumb_y = viewport.y + offset * span / maximum
+  end
+  rect_new(
+    viewport.x + viewport.width - theme.scrollbar_width,
+    thumb_y,
+    theme.scrollbar_width,
+    thumb_height
+  )
+end
+
+export fn scroll_offset_from_track(
+  viewport: Rect,
+  pointer_y: i32,
+  content_height: i32
+) -> i32 = do
+  const thumb_height = scroll_thumb_height(viewport.height, content_height)
+  let mut span = viewport.height - thumb_height
+  if span < 1 then
+    span = 1
+  end
+  const maximum = scroll_max_offset(content_height, viewport.height)
+  ((pointer_y - viewport.y) - thumb_height / 2) * maximum / span
+end
+
+export fn scroll_set_offset(
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  id: WidgetId,
+  offset: i32
+) -> UiState = do
+  const viewport = layout.rects[id.index]
+  const content_height = scroll_content_height(store, layout, id)
+  const clamped = scroll_clamp_offset(offset, content_height, viewport.height)
+  ui_state_with_scroll_offsets(
+    state,
+    scroll_offsets_put(state.scroll_offsets, id.index, clamped)
+  )
+end
+
+export fn scroll_apply_wheel(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  id: WidgetId,
+  wheel_y: i32
+) -> UiState = do
+  if wheel_y == 0 then
+    return state
+  end
+  const current = scroll_offset_at(state.scroll_offsets, id.index)
+  scroll_set_offset(
+    store,
+    layout,
+    state,
+    id,
+    current + wheel_y * scroll_step(theme)
+  )
+end
+
+export fn scroll_hit_chrome(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32
+) -> bool = do
+  if kind_is_scroll_view(store.nodes[id.index].kind) == false then
+    return false
+  end
+  const viewport = layout.rects[id.index]
+  const content_height = scroll_content_height(store, layout, id)
+  if scroll_content_overflows(content_height, viewport.height) == false then
+    return false
+  end
+  rect_contains(scroll_bar_rect(theme, viewport), x, y)
+end
+
+export fn scroll_find_at(
+  store: WidgetStore,
+  layout: LayoutResult,
+  id: WidgetId,
+  x: i32,
+  y: i32
+) -> WidgetId = do
+  const node = store.nodes[id.index]
+  if node.visible == false then
+    return widget_id_none()
+  end
+  const own_rect = layout.rects[id.index]
+  if kind_is_scroll_view(node.kind) then
+    if rect_contains(own_rect, x, y) == false then
+      return widget_id_none()
+    end
+  end
+  let mut found = widget_id_none()
+  if kind_is_scroll_view(node.kind) && rect_contains(own_rect, x, y) then
+    found = id
+  end
+  let mut child_index = 0
+  while child_index < node.children.length() do
+    const nested = scroll_find_at(store, layout, node.children[child_index], x, y)
+    if nested.index >= 0 then
+      found = nested
+    end
+    child_index = child_index + 1
+  end
+  found
+end

@@ -1,0 +1,11 @@
+import { WidgetId, widget_id_equals } from './store'
+
+export type UiEvent = {
+  widget: WidgetId
+}
+
+export fn ui_event_button_clicked(widget: WidgetId) -> UiEvent =
+  UiEvent { widget: widget }
+
+export fn ui_event_is_click_on(event: UiEvent, widget: WidgetId) -> bool =
+  widget_id_equals(event.widget, widget)

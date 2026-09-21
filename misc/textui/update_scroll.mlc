@@ -1,0 +1,113 @@
+import { rect_contains } from './geometry'
+import { Theme } from './theme'
+import { WidgetStore, WidgetId, widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import {
+  UiState,
+  PointerScroll,
+  grab_is_none,
+  ui_state_with
+} from './ui_state'
+import { UiInput } from './ui_input'
+import {
+  scroll_content_height,
+  scroll_content_overflows,
+  scroll_find_at,
+  scroll_hit_chrome,
+  scroll_max_offset,
+  scroll_offset_at,
+  scroll_offset_from_track,
+  scroll_set_offset,
+  scroll_apply_wheel,
+  scroll_thumb_height,
+  scroll_thumb_rect
+} from './widget_scroll'
+
+export fn begin_scroll_press(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  owner: WidgetId
+) -> UiState = do
+  if scroll_hit_chrome(store, layout, theme, owner, input.mouse_x, input.mouse_y) == false then
+    return state
+  end
+  const viewport = layout.rects[owner.index]
+  const content_height = scroll_content_height(store, layout, owner)
+  const thumb = scroll_thumb_rect(
+    theme,
+    viewport,
+    scroll_offset_at(state.scroll_offsets, owner.index),
+    content_height
+  )
+  let mut next = state
+  if rect_contains(thumb, input.mouse_x, input.mouse_y) == false then
+    next = scroll_set_offset(
+      store,
+      layout,
+      state,
+      owner,
+      scroll_offset_from_track(viewport, input.mouse_y, content_height)
+    )
+  end
+  ui_state_with(
+    next,
+    next.selection,
+    GrabScroll,
+    PointerScrollSession(PointerScroll {
+      owner: owner,
+      origin_y: input.mouse_y,
+      origin_offset: scroll_offset_at(next.scroll_offsets, owner.index)
+    }),
+    next.last_press,
+    next.clipboard,
+    next.hover
+  )
+end
+
+export fn handle_scroll_drag(
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  input: UiInput,
+  session: PointerScroll
+) -> UiState = do
+  const viewport = layout.rects[session.owner.index]
+  const content_height = scroll_content_height(store, layout, session.owner)
+  if scroll_content_overflows(content_height, viewport.height) == false then
+    return state
+  end
+  const thumb = scroll_thumb_height(viewport.height, content_height)
+  let mut span = viewport.height - thumb
+  if span < 1 then
+    span = 1
+  end
+  const maximum = scroll_max_offset(content_height, viewport.height)
+  const moved = (input.mouse_y - session.origin_y) * maximum / span
+  scroll_set_offset(store, layout, state, session.owner, session.origin_offset + moved)
+end
+
+export fn update_wheel(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> UiState = do
+  if grab_is_none(state.grab) == false then
+    return state
+  end
+  if input.wheel_y == 0 then
+    return state
+  end
+  if widget_id_is_none(store.root) then
+    return state
+  end
+  const scroller = scroll_find_at(store, layout, store.root, input.mouse_x, input.mouse_y)
+  if widget_id_is_none(scroller) then
+    return state
+  end
+  scroll_apply_wheel(store, layout, theme, state, scroller, input.wheel_y)
+end

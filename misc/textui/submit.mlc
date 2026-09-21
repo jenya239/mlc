@@ -1,5 +1,6 @@
 import { Theme } from './theme'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { Rect } from './geometry'
 import { TextShapingState, text_shaping_ascender } from '../gui/text_shaping'
 import {
   GlyphAtlas,
@@ -24,6 +25,7 @@ import {
   solid_renderer_begin,
   solid_renderer_rect,
   solid_renderer_flush,
+  solid_renderer_flush_over,
   solid_renderer_destroy
 } from '../gui/solid_renderer'
 import {
@@ -34,6 +36,11 @@ import {
   push_run_quads,
   ensure_glyph_runs
 } from './submit_text'
+import {
+  submit_clip_push,
+  submit_clip_pop,
+  submit_scissor_apply
+} from './submit_clip'
 
 export type SubmitResources = {
   text_renderer: TextRenderer,
@@ -90,6 +97,19 @@ fn submit_fill_rect(
     data.rect.x, data.rect.y, data.rect.width, data.rect.height,
     data.color.red, data.color.green, data.color.blue, data.color.alpha
   )
+
+fn submit_solid_fill(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  operation: DrawOp
+) -> SolidRenderer =
+  match operation
+    | OpFillRect(data) => submit_fill_rect(renderer, window_width, window_height, data)
+    | OpStrokeRect(_) => renderer
+    | OpPushClip(_) => renderer
+    | OpPopClip => renderer
+    | OpText(_) => renderer
 
 fn submit_text_op(
   resources: SubmitResources,
@@ -188,6 +208,41 @@ export fn submit_destroy(resources: SubmitResources) -> i32 = do
   0
 end
 
+fn flush_solid_pass(
+  renderer: SolidRenderer,
+  window_width: i32,
+  window_height: i32,
+  theme: Theme,
+  already_cleared: bool
+) -> i32 = do
+  if already_cleared then
+    return solid_renderer_flush_over(renderer, window_width, window_height)
+  end
+  solid_renderer_flush(
+    renderer, window_width, window_height,
+    theme.background.red, theme.background.green, theme.background.blue
+  )
+end
+
+fn draw_text_batch(
+  text_renderer: TextRenderer,
+  window_width: i32,
+  window_height: i32,
+  theme: Theme,
+  vertex_count: i32
+) -> i32 = do
+  if vertex_count <= 0 then
+    return 0
+  end
+  text_bind_array_buffer(text_renderer.vertex_buffer)
+  text_upload_dynamic_scratch()
+  const batched = text_renderer_set_batch(text_renderer, vertex_count)
+  text_renderer_draw_over_colored(
+    batched, window_width, window_height,
+    theme.foreground.red, theme.foreground.green, theme.foreground.blue, theme.foreground.alpha
+  )
+end
+
 export fn submit_frame(
   resources: SubmitResources,
   shaping: TextShapingState,
@@ -202,81 +257,144 @@ export fn submit_frame(
   let mut atlas_dirty = 0
   let mut vertex_count = 0
   let mut operation_index = 0
+  let mut clips: [Rect] = []
+  let mut already_cleared = false
   while operation_index < operations.length() do
-    match operations[operation_index]
-      | OpFillRect(data) => do
-        solid_renderer = submit_fill_rect(solid_renderer, window_width, window_height, data)
+    const clip_change = match operations[operation_index]
+      | OpPushClip(_) => true
+      | OpPopClip => true
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpText(_) => false
+    if clip_change then
+      const flush_status = flush_solid_pass(
+        solid_renderer, window_width, window_height, theme, already_cleared
+      )
+      if flush_status != 0 then
+        return SubmitFrameResult {
+          resources: resources_with(current, current.text_renderer, solid_renderer),
+          shaping: current_shaping,
+          vertex_count: 0,
+          atlas_dirty: 0,
+          error_code: flush_status
+        }
       end
-      | OpStrokeRect(_) => do
-      end
-      | OpPushClip(_) => do
-      end
-      | OpPopClip => do
-      end
-      | OpText(_) => do
-      end
+      already_cleared = true
+      solid_renderer = solid_renderer_begin(solid_renderer)
+      clips = match operations[operation_index]
+        | OpPushClip(rect) => submit_clip_push(clips, rect)
+        | OpPopClip => submit_clip_pop(clips)
+        | OpFillRect(_) => clips
+        | OpStrokeRect(_) => clips
+        | OpText(_) => clips
+      submit_scissor_apply(window_height, clips)
+    else
+      solid_renderer = submit_solid_fill(
+        solid_renderer, window_width, window_height, operations[operation_index]
+      )
+    end
     operation_index = operation_index + 1
   end
-  const flush_status = solid_renderer_flush(
-    solid_renderer, window_width, window_height,
-    theme.background.red, theme.background.green, theme.background.blue
+  const last_solid = flush_solid_pass(
+    solid_renderer, window_width, window_height, theme, already_cleared
   )
-  if flush_status != 0 then
+  if last_solid != 0 then
     return SubmitFrameResult {
       resources: resources_with(current, current.text_renderer, solid_renderer),
       shaping: current_shaping,
       vertex_count: 0,
       atlas_dirty: 0,
-      error_code: flush_status
+      error_code: last_solid
     }
   end
+  submit_scissor_apply(window_height, [])
   text_scratch_f32_clear()
+  clips = []
   operation_index = 0
   while operation_index < operations.length() do
-    const prepared = match operations[operation_index]
-      | OpFillRect(_) => empty_text_step(current, current_shaping)
-      | OpStrokeRect(_) => empty_text_step(current, current_shaping)
-      | OpPushClip(_) => empty_text_step(current, current_shaping)
-      | OpPopClip => empty_text_step(current, current_shaping)
-      | OpText(data) => submit_text_op(
-        current, current_shaping, theme, window_width, window_height, data
+    const clip_change = match operations[operation_index]
+      | OpPushClip(_) => true
+      | OpPopClip => true
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpText(_) => false
+    if clip_change then
+      if atlas_dirty == 1 then
+        const upload_status = text_renderer_upload_atlas(current.text_renderer)
+        if upload_status != 0 then
+          return SubmitFrameResult {
+            resources: resources_with(current, current.text_renderer, solid_renderer),
+            shaping: current_shaping,
+            vertex_count: vertex_count,
+            atlas_dirty: atlas_dirty,
+            error_code: upload_status
+          }
+        end
+        atlas_dirty = 0
+      end
+      const draw_status = draw_text_batch(
+        current.text_renderer, window_width, window_height, theme, vertex_count
       )
-    if prepared.error_code != 0 then
-      return prepared
+      if draw_status != 0 then
+        return SubmitFrameResult {
+          resources: resources_with(current, current.text_renderer, solid_renderer),
+          shaping: current_shaping,
+          vertex_count: vertex_count,
+          atlas_dirty: atlas_dirty,
+          error_code: draw_status
+        }
+      end
+      text_scratch_f32_clear()
+      vertex_count = 0
+      clips = match operations[operation_index]
+        | OpPushClip(rect) => submit_clip_push(clips, rect)
+        | OpPopClip => submit_clip_pop(clips)
+        | OpFillRect(_) => clips
+        | OpStrokeRect(_) => clips
+        | OpText(_) => clips
+      submit_scissor_apply(window_height, clips)
+    else
+      const prepared = match operations[operation_index]
+        | OpFillRect(_) => empty_text_step(current, current_shaping)
+        | OpStrokeRect(_) => empty_text_step(current, current_shaping)
+        | OpPushClip(_) => empty_text_step(current, current_shaping)
+        | OpPopClip => empty_text_step(current, current_shaping)
+        | OpText(data) => submit_text_op(
+          current, current_shaping, theme, window_width, window_height, data
+        )
+      if prepared.error_code != 0 then
+        return prepared
+      end
+      if prepared.atlas_dirty == 1 then
+        atlas_dirty = 1
+      end
+      vertex_count = vertex_count + prepared.vertex_count
+      current = prepared.resources
+      current_shaping = prepared.shaping
     end
-    if prepared.atlas_dirty == 1 then
-      atlas_dirty = 1
-    end
-    vertex_count = vertex_count + prepared.vertex_count
-    current = prepared.resources
-    current_shaping = prepared.shaping
     operation_index = operation_index + 1
   end
-  let mut text_renderer = current.text_renderer
   if atlas_dirty == 1 then
-    const upload_status = text_renderer_upload_atlas(text_renderer)
+    const upload_status = text_renderer_upload_atlas(current.text_renderer)
     if upload_status != 0 then
       return SubmitFrameResult {
-        resources: resources_with(current, text_renderer, solid_renderer),
+        resources: resources_with(current, current.text_renderer, solid_renderer),
         shaping: current_shaping,
         vertex_count: vertex_count,
-        atlas_dirty: atlas_dirty,
+        atlas_dirty: 1,
         error_code: upload_status
       }
     end
   end
-  text_bind_array_buffer(text_renderer.vertex_buffer)
-  text_upload_dynamic_scratch()
-  text_renderer = text_renderer_set_batch(text_renderer, vertex_count)
-  const draw_status = text_renderer_draw_over_colored(
-    text_renderer, window_width, window_height,
-    theme.foreground.red, theme.foreground.green, theme.foreground.blue, theme.foreground.alpha
+  const final_draw = draw_text_batch(
+    current.text_renderer, window_width, window_height, theme, vertex_count
   )
-  SubmitFrameResult {
-    resources: resources_with(current, text_renderer, solid_renderer),
+  submit_scissor_apply(window_height, [])
+  return SubmitFrameResult {
+    resources: resources_with(current, current.text_renderer, solid_renderer),
     shaping: current_shaping,
     vertex_count: vertex_count,
     atlas_dirty: atlas_dirty,
-    error_code: draw_status
+    error_code: final_draw
   }
 end

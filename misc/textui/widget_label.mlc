@@ -1,4 +1,4 @@
-import { Theme } from './theme'
+import { Theme, theme_content_inset } from './theme'
 import { Rect } from './geometry'
 import { TextLayout } from './text_layout'
 import { text_layout_index_at, text_layout_word_range, ByteRange } from './text_layout_hit'
@@ -8,19 +8,8 @@ export type LabelPreferredSize = {
   height: i32
 }
 
-fn effective_padding(theme: Theme, parent_padding: i32) -> i32 = do
-  if parent_padding != 0 then
-    return parent_padding
-  end
-  theme.padding
-end
-
-export fn label_preferred_size(
-  theme: Theme,
-  parent_padding: i32,
-  layout: TextLayout
-) -> LabelPreferredSize = do
-  const padding = effective_padding(theme, parent_padding)
+export fn label_preferred_size(theme: Theme, layout: TextLayout) -> LabelPreferredSize = do
+  const padding = theme_content_inset(theme)
   LabelPreferredSize {
     width: layout.pixel_width + padding * 2,
     height: layout.pixel_height + padding * 2
@@ -28,7 +17,11 @@ export fn label_preferred_size(
 end
 
 export fn label_index_at(theme: Theme, rect: Rect, layout: TextLayout, x: i32, y: i32) -> i32 =
-  text_layout_index_at(layout, x - rect.x - theme.padding, y - rect.y - theme.padding)
+  text_layout_index_at(
+    layout,
+    x - rect.x - theme_content_inset(theme),
+    y - rect.y - theme_content_inset(theme)
+  )
 
 export fn label_word_range(theme: Theme, rect: Rect, layout: TextLayout, x: i32, y: i32) -> ByteRange =
   text_layout_word_range(layout, label_index_at(theme, rect, layout, x, y))

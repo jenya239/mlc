@@ -1,14 +1,10 @@
 import { Rect, rect_new } from './geometry'
 import { Theme } from './theme'
-import {
-  WidgetStore,
-  WidgetKind,
-  widget_id_is_none
-} from './store'
+import { WidgetStore, widget_id_is_none } from './store'
 import { TextShapingState } from '../gui/text_shaping'
-import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none, text_layout_empty } from './text_layout'
-import { label_preferred_size } from './widget_label'
+import { TextLayout, TextLayoutCache, text_layout_empty } from './text_layout'
 import { LayoutResult, layout_result_from_parts } from './layout_result'
+import { LayoutWork, measure_node, layout_node } from './layout_box'
 
 export type LayoutColumnResult = {
   shaping: TextShapingState,
@@ -16,57 +12,64 @@ export type LayoutColumnResult = {
   layout: LayoutResult
 }
 
-type ChildLayoutResult = {
+fn empty_work(
+  store: WidgetStore,
   shaping: TextShapingState,
   cache: TextLayoutCache,
-  width: i32,
-  height: i32,
-  text_layout: TextLayout
-}
-
-fn box_padding_of(kind: WidgetKind) -> i32 =
-  match kind
-    | KindBox(data) => data.padding
-    | KindLabel(_) => 0
-
-fn box_gap_of(kind: WidgetKind) -> i32 =
-  match kind
-    | KindBox(data) => data.gap
-    | KindLabel(_) => 0
-
-fn effective_gap(theme: Theme, box_gap: i32) -> i32 = do
-  if box_gap > 0 then
-    return box_gap
+  scroll_offsets: [i32]
+) -> LayoutWork = do
+  let mut rects: [Rect] = []
+  let mut text_layouts: [TextLayout] = []
+  let mut index = 0
+  while index < store.nodes.length() do
+    rects.push(rect_new(0, 0, 0, 0))
+    text_layouts.push(text_layout_empty())
+    index = index + 1
   end
-  theme.gap
+  LayoutWork {
+    shaping: shaping,
+    cache: cache,
+    rects: rects,
+    text_layouts: text_layouts,
+    scroll_offsets: scroll_offsets
+  }
 end
 
-fn layout_child(
+fn finish_work(store: WidgetStore, work: LayoutWork) -> LayoutColumnResult =
+  LayoutColumnResult {
+    shaping: work.shaping,
+    cache: work.cache,
+    layout: layout_result_from_parts(store, work.rects, work.text_layouts)
+  }
+
+export fn layout_ui(
+  store: WidgetStore,
+  theme: Theme,
   shaping: TextShapingState,
   cache: TextLayoutCache,
-  theme: Theme,
-  parent_padding: i32,
-  kind: WidgetKind
-) -> ChildLayoutResult =
-  match kind
-    | KindLabel(data) => do
-      const build_result = text_layout_build(shaping, cache, theme, data.text, wrap_width_none())
-      const preferred = label_preferred_size(theme, parent_padding, build_result.layout)
-      ChildLayoutResult {
-        shaping: build_result.shaping,
-        cache: build_result.cache,
-        width: preferred.width,
-        height: preferred.height,
-        text_layout: build_result.layout
-      }
+  viewport_width: i32,
+  viewport_height: i32,
+  scroll_offsets: [i32]
+) -> LayoutColumnResult = do
+  let mut work = empty_work(store, shaping, cache, scroll_offsets)
+  if widget_id_is_none(store.root) then
+    return finish_work(store, work)
+  end
+  let mut width = viewport_width
+  let mut height = viewport_height
+  if width <= 0 || height <= 0 then
+    const measured = measure_node(work, store, theme, store.root)
+    work = measured.work
+    if width <= 0 then
+      width = measured.size.width
     end
-    | KindBox(_) => ChildLayoutResult {
-      shaping: shaping,
-      cache: cache,
-      width: 0,
-      height: 0,
-      text_layout: text_layout_empty()
-    }
+    if height <= 0 then
+      height = measured.size.height
+    end
+  end
+  work = layout_node(work, store, theme, store.root, 0, 0, width, height)
+  finish_work(store, work)
+end
 
 export fn layout_column(
   store: WidgetStore,
@@ -74,57 +77,6 @@ export fn layout_column(
   shaping: TextShapingState,
   cache: TextLayoutCache
 ) -> LayoutColumnResult = do
-  let mut rects: [Rect] = []
-  let mut text_layouts: [TextLayout] = []
-  let mut fill_index = 0
-  while fill_index < store.nodes.length() do
-    rects.push(rect_new(0, 0, 0, 0))
-    text_layouts.push(text_layout_empty())
-    fill_index = fill_index + 1
-  end
-  let mut current_shaping = shaping
-  let mut current_cache = cache
-  if widget_id_is_none(store.root) then
-    return LayoutColumnResult {
-      shaping: current_shaping,
-      cache: current_cache,
-      layout: layout_result_from_parts(store, rects, text_layouts)
-    }
-  end
-  const root = store.nodes[store.root.index]
-  const root_padding = box_padding_of(root.kind)
-  const gap = effective_gap(theme, box_gap_of(root.kind))
-  let mut cursor_y = root_padding
-  let mut max_child_width = 0
-  let mut child_index = 0
-  while child_index < root.children.length() do
-    const child_id = root.children[child_index]
-    const child_node = store.nodes[child_id.index]
-    const child_result = layout_child(
-      current_shaping,
-      current_cache,
-      theme,
-      root_padding,
-      child_node.kind
-    )
-    current_shaping = child_result.shaping
-    current_cache = child_result.cache
-    rects.set(child_id.index, rect_new(root_padding, cursor_y, child_result.width, child_result.height))
-    text_layouts.set(child_id.index, child_result.text_layout)
-    if child_result.width > max_child_width then
-      max_child_width = child_result.width
-    end
-    cursor_y = cursor_y + child_result.height + gap
-    child_index = child_index + 1
-  end
-  let mut total_height = root_padding * 2
-  if root.children.length() > 0 then
-    total_height = cursor_y - gap + root_padding
-  end
-  rects.set(store.root.index, rect_new(0, 0, max_child_width + root_padding * 2, total_height))
-  LayoutColumnResult {
-    shaping: current_shaping,
-    cache: current_cache,
-    layout: layout_result_from_parts(store, rects, text_layouts)
-  }
+  let mut scroll_offsets: [i32] = []
+  layout_ui(store, theme, shaping, cache, 0, 0, scroll_offsets)
 end

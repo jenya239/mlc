@@ -1,15 +1,25 @@
-import { Theme } from './theme'
+import { Theme, theme_content_inset, ColorRgba } from './theme'
 import { rect_new } from './geometry'
 import {
   WidgetStore,
   WidgetId,
   widget_id_is_none,
-  widget_id_equals
+  widget_id_equals,
+  overflow_is_hidden,
+  kind_is_scroll_view
 } from './store'
 import { LayoutResult } from './layout_result'
-import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
 import { Selection, selection_is_empty, selection_none } from './selection'
 import { text_layout_selection_rects } from './text_layout_hit'
+import { UiState, ui_state_new, ui_state_with, pointer_click_owns } from './ui_state'
+import {
+  scroll_content_height,
+  scroll_content_overflows,
+  scroll_bar_rect,
+  scroll_thumb_rect,
+  scroll_offset_at
+} from './widget_scroll'
 
 fn paint_selection(
   theme: Theme,
@@ -26,6 +36,7 @@ fn paint_selection(
     return operations
   end
   const rect = layout.rects[node_index]
+  const inset = theme_content_inset(theme)
   const boxes = text_layout_selection_rects(
     layout.text_layouts[node_index],
     selection.anchor,
@@ -37,8 +48,8 @@ fn paint_selection(
     const box = boxes[box_index]
     updated.push(OpFillRect(FillRectOp {
       rect: rect_new(
-        rect.x + theme.padding + box.x,
-        rect.y + theme.padding + box.y,
+        rect.x + inset + box.x,
+        rect.y + inset + box.y,
         box.width,
         box.height
       ),
@@ -49,45 +60,114 @@ fn paint_selection(
   updated
 end
 
+fn button_fill_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  theme.button_background
+end
+
+fn paint_button(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const inset = theme_content_inset(theme)
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp {
+    rect: rect,
+    color: button_fill_color(theme, state, node_index)
+  }))
+  updated.push(OpStrokeRect(StrokeRectOp {
+    rect: rect,
+    color: theme.button_stroke,
+    line_width: 1
+  }))
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + inset,
+    origin_y: rect.y + inset,
+    color: theme.foreground,
+    text: caption
+  }))
+  updated
+end
+
 fn paint_node(
   theme: Theme,
   store: WidgetStore,
   layout: LayoutResult,
-  selection: Selection,
+  state: UiState,
   node_index: i32,
   operations: [DrawOp]
 ) -> [DrawOp] = do
   const node = store.nodes[node_index]
   const rect = layout.rects[node_index]
+  const inset = theme_content_inset(theme)
   let mut current_operations = match node.kind
     | KindLabel(data) => do
-      let mut updated = paint_selection(theme, layout, selection, node_index, operations)
+      let mut updated = paint_selection(theme, layout, state.selection, node_index, operations)
       updated.push(OpText(TextOp {
-        origin_x: rect.x + theme.padding,
-        origin_y: rect.y + theme.padding,
+        origin_x: rect.x + inset,
+        origin_y: rect.y + inset,
         color: theme.foreground,
         text: data.text
       }))
       updated
     end
+    | KindButton(data) => paint_button(theme, layout, state, node_index, data.text, operations)
     | KindBox(_) => operations
+    | KindScrollView => operations
+  end
+  if overflow_is_hidden(node.overflow) then
+    current_operations.push(OpPushClip(rect))
   end
   let mut child_index = 0
   while child_index < node.children.length() do
     const child_id = node.children[child_index]
     current_operations = paint_node(
-      theme, store, layout, selection, child_id.index, current_operations
+      theme, store, layout, state, child_id.index, current_operations
     )
     child_index = child_index + 1
+  end
+  if overflow_is_hidden(node.overflow) then
+    current_operations.push(OpPopClip)
+  end
+  if kind_is_scroll_view(node.kind) then
+    const content_height = scroll_content_height(store, layout, node.id)
+    if scroll_content_overflows(content_height, rect.height) then
+      const bar = scroll_bar_rect(theme, rect)
+      const thumb = scroll_thumb_rect(
+        theme,
+        rect,
+        scroll_offset_at(state.scroll_offsets, node_index),
+        content_height
+      )
+      current_operations.push(OpFillRect(FillRectOp {
+        rect: bar,
+        color: theme.scrollbar_track
+      }))
+      current_operations.push(OpFillRect(FillRectOp {
+        rect: thumb,
+        color: theme.scrollbar_thumb
+      }))
+    end
   end
   current_operations
 end
 
-export fn paint_selected_frame(
+export fn paint_ui_frame(
   theme: Theme,
   store: WidgetStore,
   layout: LayoutResult,
-  selection: Selection
+  state: UiState
 ) -> [DrawOp] = do
   let mut operations: [DrawOp] = []
   if widget_id_is_none(store.root) then
@@ -98,7 +178,30 @@ export fn paint_selected_frame(
     rect: root_rect,
     color: theme.background
   }))
-  paint_node(theme, store, layout, selection, store.root.index, operations)
+  paint_node(theme, store, layout, state, store.root.index, operations)
+end
+
+export fn paint_selected_frame(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  selection: Selection
+) -> [DrawOp] = do
+  const empty = ui_state_new()
+  paint_ui_frame(
+    theme,
+    store,
+    layout,
+    ui_state_with(
+      empty,
+      selection,
+      empty.grab,
+      empty.pointer,
+      empty.last_press,
+      empty.clipboard,
+      empty.hover
+    )
+  )
 end
 
 export fn paint_frame(theme: Theme, store: WidgetStore, layout: LayoutResult) -> [DrawOp] =

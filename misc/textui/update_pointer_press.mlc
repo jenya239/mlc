@@ -1,16 +1,19 @@
 import { Theme } from './theme'
-import { WidgetStore, WidgetId, widget_id_is_none } from './store'
+import { WidgetStore, WidgetId, widget_id_is_none, kind_is_scroll_view } from './store'
 import { LayoutResult } from './layout_result'
 import { hit_test } from './hit'
-import { kind_is_text_selectable } from './user_select'
+import { kind_is_text_selectable, kind_is_clickable } from './user_select'
+import { begin_scroll_press } from './update_scroll'
 import { label_index_at, label_word_range } from './widget_label'
 import { Selection, selection_none } from './selection'
 import { selection_publish_primary } from './selection_text'
 import { pointer_double_click_ms, pointer_past_slop } from './pointer_slop'
+import { begin_click_press } from './update_pointer_click'
 import {
   UiState,
   PointerDrag,
   LastPress,
+  grab_is_none,
   ui_state_with
 } from './ui_state'
 import { UiInput } from './ui_input'
@@ -60,15 +63,19 @@ fn begin_text_press(
       origin_x: input.mouse_x,
       origin_y: input.mouse_y,
       anchor: range.start,
-      claimed: true
+      mark: range.finish,
+      claimed: true,
+      granularity: DragGranularityWord
     }
     const published = selection_publish_primary(layout, state, selection)
     return ui_state_with(
+      published,
       selection,
       GrabText,
-      PointerActive(drag),
+      PointerText(drag),
       last_press,
-      published.clipboard
+      published.clipboard,
+      published.hover
     )
   end
   const index = label_index_at(
@@ -84,16 +91,31 @@ fn begin_text_press(
     origin_x: input.mouse_x,
     origin_y: input.mouse_y,
     anchor: index,
-    claimed: false
+    mark: index,
+    claimed: false,
+    granularity: DragGranularityChar
   }
   ui_state_with(
+    state,
     selection,
     GrabNone,
-    PointerActive(drag),
+    PointerText(drag),
     last_press,
-    state.clipboard
+    state.clipboard,
+    state.hover
   )
 end
+
+fn clear_pointer(state: UiState) -> UiState =
+  ui_state_with(
+    state,
+    selection_none(),
+    GrabNone,
+    PointerIdle,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
 
 export fn handle_press(
   store: WidgetStore,
@@ -102,25 +124,22 @@ export fn handle_press(
   state: UiState,
   input: UiInput
 ) -> UiState = do
-  const hit = hit_test(store, layout, input.mouse_x, input.mouse_y)
+  const hit = hit_test(store, layout, theme, input.mouse_x, input.mouse_y)
   if widget_id_is_none(hit) then
-    return ui_state_with(
-      selection_none(),
-      GrabNone,
-      PointerIdle,
-      state.last_press,
-      state.clipboard
-    )
+    return clear_pointer(state)
   end
   const node = store.nodes[hit.index]
-  if kind_is_text_selectable(node.kind) == false then
-    return ui_state_with(
-      selection_none(),
-      GrabNone,
-      PointerIdle,
-      state.last_press,
-      state.clipboard
-    )
+  if kind_is_text_selectable(node.kind) then
+    return begin_text_press(layout, theme, state, hit, input)
   end
-  begin_text_press(layout, theme, state, hit, input)
+  if kind_is_clickable(node.kind) then
+    return begin_click_press(state, hit, input)
+  end
+  if kind_is_scroll_view(node.kind) then
+    const scrolled = begin_scroll_press(store, layout, theme, state, input, hit)
+    if grab_is_none(scrolled.grab) == false then
+      return scrolled
+    end
+  end
+  clear_pointer(state)
 end

@@ -1,18 +1,49 @@
-import { WidgetId, widget_id_none } from './store'
+import { WidgetId, widget_id_none, widget_id_equals } from './store'
 import { Selection, selection_none } from './selection'
 import { ClipboardBuffer, clipboard_buffer_empty } from './clipboard'
 
-export type GrabKind = GrabNone | GrabText
+export type GrabKind = GrabNone | GrabText | GrabClick | GrabScroll
+
+export type DragGranularity = DragGranularityChar | DragGranularityWord
 
 export type PointerDrag = {
   owner: WidgetId,
   origin_x: i32,
   origin_y: i32,
   anchor: i32,
-  claimed: bool
+  mark: i32,
+  claimed: bool,
+  granularity: DragGranularity
 }
 
-export type PointerSession = PointerIdle | PointerActive(PointerDrag)
+export fn pointer_drag_claimed(drag: PointerDrag) -> PointerDrag =
+  PointerDrag {
+    owner: drag.owner,
+    origin_x: drag.origin_x,
+    origin_y: drag.origin_y,
+    anchor: drag.anchor,
+    mark: drag.mark,
+    claimed: true,
+    granularity: drag.granularity
+  }
+
+export type PointerClick = {
+  owner: WidgetId,
+  origin_x: i32,
+  origin_y: i32
+}
+
+export type PointerScroll = {
+  owner: WidgetId,
+  origin_y: i32,
+  origin_offset: i32
+}
+
+export type PointerSession =
+  PointerIdle
+  | PointerText(PointerDrag)
+  | PointerClickSession(PointerClick)
+  | PointerScrollSession(PointerScroll)
 
 export type LastPress = {
   owner: WidgetId,
@@ -29,39 +60,71 @@ export type UiState = {
   grab: GrabKind,
   pointer: PointerSession,
   last_press: LastPressSession,
-  clipboard: ClipboardBuffer
+  clipboard: ClipboardBuffer,
+  hover: WidgetId,
+  scroll_offsets: [i32]
 }
 
 export fn grab_is_none(grab: GrabKind) -> bool =
   match grab
     | GrabNone => true
     | GrabText => false
+    | GrabClick => false
+    | GrabScroll => false
 
 export fn grab_is_text(grab: GrabKind) -> bool =
   match grab
     | GrabNone => false
     | GrabText => true
+    | GrabClick => false
+    | GrabScroll => false
 
-export fn ui_state_new() -> UiState =
+export fn pointer_click_owns(pointer: PointerSession, owner: WidgetId) -> bool =
+  match pointer
+    | PointerClickSession(session) => widget_id_equals(session.owner, owner)
+    | PointerIdle => false
+    | PointerText(_) => false
+    | PointerScrollSession(_) => false
+
+export fn ui_state_new() -> UiState = do
+  let mut scroll_offsets: [i32] = []
   UiState {
     selection: selection_none(),
     grab: GrabNone,
     pointer: PointerIdle,
     last_press: LastPressNone,
-    clipboard: clipboard_buffer_empty()
+    clipboard: clipboard_buffer_empty(),
+    hover: widget_id_none(),
+    scroll_offsets: scroll_offsets
   }
+end
 
 export fn ui_state_with(
+  state: UiState,
   selection: Selection,
   grab: GrabKind,
   pointer: PointerSession,
   last_press: LastPressSession,
-  clipboard: ClipboardBuffer
+  clipboard: ClipboardBuffer,
+  hover: WidgetId
 ) -> UiState =
   UiState {
     selection: selection,
     grab: grab,
     pointer: pointer,
     last_press: last_press,
-    clipboard: clipboard
+    clipboard: clipboard,
+    hover: hover,
+    scroll_offsets: state.scroll_offsets
+  }
+
+export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: scroll_offsets
   }

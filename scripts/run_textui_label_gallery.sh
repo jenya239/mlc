@@ -39,10 +39,17 @@ mkdir -p "$OUT_DIR"
 
 "$MLCC" -o "$OUT_DIR" "$ENTRY"
 "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$BIN_OUT"
+if [ "${MLC_TEXTUI_COMPILE_ONLY:-0}" = "1" ]; then
+  echo "[textui gallery] compiled $BIN_OUT" >&2
+  exit 0
+fi
 set +e
 "$BIN_OUT"
 status=$?
 set -e
+if [ "$status" -eq 75 ]; then
+  exec ruby "$ROOT_DIR/scripts/launch_textui_gallery.rb"
+fi
 if [ "$status" -ne 0 ]; then
   echo "[textui gallery] FAIL binary exit=$status" >&2
   exit 1

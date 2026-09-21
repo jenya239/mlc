@@ -70,18 +70,18 @@ fn main() -> i32 = do
   const store = build_stack_store(OverflowVisible)
   const layout = layout_result_from_rects(store, stacked_rects())
   const second_child = store.nodes[2].id
-  const hit_second = hit_test(store, layout, 58, 48)
+  const hit_second = hit_test(store, layout, theme, 58, 48)
   if widget_id_equals(hit_second, second_child) == false then
     return -1
   end
-  const hit_outside = hit_test(store, layout, -1, -1)
+  const hit_outside = hit_test(store, layout, theme, -1, -1)
   if widget_id_is_none(hit_outside) == false then
     return -2
   end
 
   const hidden_store = build_stack_store(OverflowHidden)
   const offset_layout = layout_result_from_rects(hidden_store, offset_child_rects())
-  const hit_clipped = hit_test(hidden_store, offset_layout, 255, 13)
+  const hit_clipped = hit_test(hidden_store, offset_layout, theme, 255, 13)
   if widget_id_is_none(hit_clipped) == false then
     return -3
   end
@@ -89,7 +89,7 @@ fn main() -> i32 = do
   const visible_store = build_stack_store(OverflowVisible)
   const visible_offset_layout = layout_result_from_rects(visible_store, offset_child_rects())
   const overflow_child = visible_store.nodes[2].id
-  const hit_overflow = hit_test(visible_store, visible_offset_layout, 255, 13)
+  const hit_overflow = hit_test(visible_store, visible_offset_layout, theme, 255, 13)
   if widget_id_equals(hit_overflow, overflow_child) == false then
     return -4
   end
@@ -121,6 +121,8 @@ fn main() -> i32 = do
   const still_box = match store.nodes[0].kind
     | KindBox(_) => true
     | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
   if !still_box then
     return -11
   end

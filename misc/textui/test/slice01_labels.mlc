@@ -103,7 +103,14 @@ fn main() -> i32 = do
     background: theme.background,
     foreground: theme.foreground,
     muted: theme.muted,
-    selection_background: theme.selection_background
+    selection_background: theme.selection_background,
+    button_background: theme.button_background,
+    button_hover: theme.button_hover,
+    button_pressed: theme.button_pressed,
+    button_stroke: theme.button_stroke,
+    scrollbar_track: theme.scrollbar_track,
+    scrollbar_thumb: theme.scrollbar_thumb,
+    scrollbar_width: theme.scrollbar_width
   }
   const small_result = layout_column(store, theme, shaping, cache)
   shaping = small_result.shaping
@@ -122,9 +129,29 @@ fn main() -> i32 = do
   const one_layout_result = text_layout_build(shaping, cache, theme, "one", wrap_width_none())
   shaping = one_layout_result.shaping
   cache = one_layout_result.cache
-  const expected_width = one_layout_result.layout.pixel_width + theme.padding * 2
+  const two_layout_result = text_layout_build(shaping, cache, theme, "two", wrap_width_none())
+  shaping = two_layout_result.shaping
+  cache = two_layout_result.cache
+  const three_layout_result = text_layout_build(shaping, cache, theme, "three", wrap_width_none())
+  shaping = three_layout_result.shaping
+  cache = three_layout_result.cache
+  let mut expected_width = one_layout_result.layout.pixel_width + theme.padding * 2
+  const two_width = two_layout_result.layout.pixel_width + theme.padding * 2
+  const three_width = three_layout_result.layout.pixel_width + theme.padding * 2
+  if two_width > expected_width then
+    expected_width = two_width
+  end
+  if three_width > expected_width then
+    expected_width = three_width
+  end
   const expected_height = one_layout_result.layout.pixel_height + theme.padding * 2
   if rect0.width != expected_width then
+    return -4
+  end
+  if rect1.width != expected_width then
+    return -4
+  end
+  if rect2.width != expected_width then
     return -4
   end
   if rect0.height != expected_height then
@@ -143,14 +170,14 @@ fn main() -> i32 = do
 
   const center_x = rect1.x + rect1.width / 2
   const center_y = rect1.y + rect1.height / 2
-  const hit_second = hit_test(store, layout, center_x, center_y)
+  const hit_second = hit_test(store, layout, theme, center_x, center_y)
   if widget_id_equals(hit_second, child1) == false then
     return -6
   end
 
   const root_rect = layout.rects[store.root.index]
   const below_y = root_rect.y + root_rect.height + 50
-  const hit_below = hit_test(store, layout, root_rect.x + 1, below_y)
+  const hit_below = hit_test(store, layout, theme, root_rect.x + 1, below_y)
   if widget_id_is_none(hit_below) == false then
     return -7
   end

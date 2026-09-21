@@ -5,21 +5,27 @@ import { clipboard_set_clipboard } from './clipboard'
 import { UiState, ui_state_with } from './ui_state'
 import { UiInput } from './ui_input'
 
-export fn update_copy(layout: LayoutResult, state: UiState, input: UiInput) -> UiState = do
+export fn clipboard_copy_selection(layout: LayoutResult, state: UiState) -> UiState = do
   if selection_is_empty(state.selection) then
     return state
   end
+  ui_state_with(
+    state,
+    state.selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    clipboard_set_clipboard(state.clipboard, selection_copied_text(layout, state.selection)),
+    state.hover
+  )
+end
+
+export fn update_copy(layout: LayoutResult, state: UiState, input: UiInput) -> UiState = do
   if input.control_down == false then
     return state
   end
   if input.copy_pressed == false then
     return state
   end
-  ui_state_with(
-    state.selection,
-    state.grab,
-    state.pointer,
-    state.last_press,
-    clipboard_set_clipboard(state.clipboard, selection_copied_text(layout, state.selection))
-  )
+  clipboard_copy_selection(layout, state)
 end

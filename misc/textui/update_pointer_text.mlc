@@ -1,0 +1,126 @@
+import { Theme } from './theme'
+import { LayoutResult } from './layout_result'
+import { label_index_at, label_word_range } from './widget_label'
+import { Selection } from './selection'
+import { selection_publish_primary } from './selection_text'
+import { pointer_past_slop } from './pointer_slop'
+import {
+  UiState,
+  PointerDrag,
+  GrabKind,
+  pointer_drag_claimed,
+  ui_state_with
+} from './ui_state'
+import { UiInput } from './ui_input'
+
+fn lesser_index(first: i32, second: i32) -> i32 = do
+  if first <= second then
+    return first
+  end
+  second
+end
+
+fn greater_index(first: i32, second: i32) -> i32 = do
+  if first >= second then
+    return first
+  end
+  second
+end
+
+fn publish_text_drag(
+  layout: LayoutResult,
+  state: UiState,
+  drag: PointerDrag,
+  grab: GrabKind,
+  selection: Selection
+) -> UiState = do
+  const published = selection_publish_primary(layout, state, selection)
+  ui_state_with(
+    published,
+    selection,
+    grab,
+    PointerText(pointer_drag_claimed(drag)),
+    state.last_press,
+    published.clipboard,
+    published.hover
+  )
+end
+
+fn handle_word_drag(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  drag: PointerDrag
+) -> UiState = do
+  const rect = layout.rects[drag.owner.index]
+  const text_layout = layout.text_layouts[drag.owner.index]
+  const hovered = label_word_range(theme, rect, text_layout, input.mouse_x, input.mouse_y)
+  const from_index = lesser_index(drag.anchor, hovered.start)
+  const to_index = greater_index(drag.mark, hovered.finish)
+  const caret_at = label_index_at(theme, rect, text_layout, input.mouse_x, input.mouse_y)
+  let mut focus = to_index
+  let mut bound = from_index
+  if caret_at < drag.anchor then
+    focus = from_index
+    bound = to_index
+  end
+  publish_text_drag(
+    layout,
+    state,
+    drag,
+    GrabText,
+    Selection { owner: drag.owner, anchor: bound, focus: focus }
+  )
+end
+
+fn handle_char_drag(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  drag: PointerDrag
+) -> UiState = do
+  let mut claimed = drag.claimed
+  let mut grab = state.grab
+  if claimed == false && pointer_past_slop(drag.origin_x, drag.origin_y, input.mouse_x, input.mouse_y) then
+    claimed = true
+    grab = GrabText
+  end
+  if claimed == false then
+    return ui_state_with(
+      state,
+      state.selection,
+      grab,
+      PointerText(drag),
+      state.last_press,
+      state.clipboard,
+      state.hover
+    )
+  end
+  const focus = label_index_at(
+    theme,
+    layout.rects[drag.owner.index],
+    layout.text_layouts[drag.owner.index],
+    input.mouse_x,
+    input.mouse_y
+  )
+  publish_text_drag(
+    layout,
+    state,
+    drag,
+    grab,
+    Selection { owner: drag.owner, anchor: drag.anchor, focus: focus }
+  )
+end
+
+export fn handle_text_drag(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  drag: PointerDrag
+) -> UiState =
+  match drag.granularity
+    | DragGranularityWord => handle_word_drag(layout, theme, state, input, drag)
+    | DragGranularityChar => handle_char_drag(layout, theme, state, input, drag)

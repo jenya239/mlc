@@ -62,6 +62,7 @@ fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms:
     left_released: released,
     control_down: false,
     copy_pressed: false,
+    wheel_y: 0,
     now_ms: now_ms
   }
 
@@ -201,6 +202,7 @@ fn main() -> i32 = do
     left_released: false,
     control_down: true,
     copy_pressed: true,
+    wheel_y: 0,
     now_ms: 200
   }
   const copied = ui_update(store, layout, theme, state, copy_input)
@@ -241,6 +243,61 @@ fn main() -> i32 = do
   const painted = paint_selected_frame(theme, store, layout, state.selection)
   if fill_count(painted) < 2 then
     return -11
+  end
+
+  let mut thin_store = widget_store_empty()
+  thin_store = widget_store_add_box(
+    thin_store,
+    widget_id_none(),
+    BoxData { direction: DirectionColumn, padding: 2, gap: 10 },
+    OverflowVisible,
+    0,
+    true
+  )
+  thin_store = widget_store_add_label(
+    thin_store, thin_store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  const thin_laid = layout_column(thin_store, theme, shaping, cache)
+  shaping = thin_laid.shaping
+  cache = thin_laid.cache
+  const thin_label = thin_store.nodes[1].id
+  const thin_rect = thin_laid.layout.rects[thin_label.index]
+  const one_again = text_layout_build(shaping, cache, theme, "one", wrap_width_none())
+  shaping = one_again.shaping
+  cache = one_again.cache
+  if thin_rect.width != one_again.layout.pixel_width + theme.padding * 2 then
+    return -12
+  end
+
+  let mut word_state = ui_state_new()
+  const word_x = rect0.x + rect0.width / 2
+  const word_first_down = ui_update(
+    store, layout, theme, word_state,
+    pointer_at(word_x, mid_y0, true, true, false, 1000)
+  )
+  word_state = word_first_down.state
+  const word_first_up = ui_update(
+    store, layout, theme, word_state,
+    pointer_at(word_x, mid_y0, false, false, true, 1016)
+  )
+  word_state = word_first_up.state
+  const word_second_down = ui_update(
+    store, layout, theme, word_state,
+    pointer_at(word_x, mid_y0, true, true, false, 1032)
+  )
+  word_state = word_second_down.state
+  const word_held = ui_update(
+    store, layout, theme, word_state,
+    pointer_at(word_x, mid_y0, false, true, false, 1048)
+  )
+  word_state = word_held.state
+  const selected_word = text_layout_slice(
+    layout.text_layouts[first.index],
+    word_state.selection.anchor,
+    word_state.selection.focus
+  )
+  if selected_word != "one" then
+    return -13
   end
   0
 end

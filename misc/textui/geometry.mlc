@@ -1,3 +1,11 @@
+export type Size = {
+  width: i32,
+  height: i32
+}
+
+export fn size_new(width: i32, height: i32) -> Size =
+  Size { width: width, height: height }
+
 export type Rect = {
   x: i32,
   y: i32,

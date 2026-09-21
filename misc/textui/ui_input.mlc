@@ -6,6 +6,7 @@ export type UiInput = {
   left_released: bool,
   control_down: bool,
   copy_pressed: bool,
+  wheel_y: i32,
   now_ms: i32
 }
 
@@ -18,5 +19,6 @@ export fn ui_input_idle(now_ms: i32) -> UiInput =
     left_released: false,
     control_down: false,
     copy_pressed: false,
+    wheel_y: 0,
     now_ms: now_ms
   }

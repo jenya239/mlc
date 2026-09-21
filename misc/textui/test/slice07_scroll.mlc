@@ -1,0 +1,196 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_add_scroll_view,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { paint_ui_frame } from '../paint_pass'
+import { ui_state_new } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { hit_test } from '../hit'
+import { DrawOp } from '../draw_op'
+import { scroll_offset_at, scroll_step } from '../widget_scroll'
+
+fn column_data(padding: i32, gap: i32) -> BoxData =
+  BoxData { direction: DirectionColumn, padding: padding, gap: gap }
+
+fn pointer_wheel(x: i32, y: i32, wheel_y: i32, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: wheel_y,
+    now_ms: now_ms
+  }
+
+fn pointer_press(x: i32, y: i32, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: true,
+    left_down: true,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: now_ms
+  }
+
+fn build_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(8, 10), OverflowVisible, 0, true
+  )
+  store = widget_store_add_scroll_view(store, store.root, 1, true)
+  const scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_box(
+    store, scroller, column_data(0, 10), OverflowVisible, 0, true
+  )
+  const inner = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "two" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "three" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "four" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "five" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "six" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "seven" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "Deep" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, store.root, ButtonData { text: "Copy" }, OverflowVisible, 0, true
+  )
+end
+
+fn wheel_notches_to_cover(theme: Theme, pixels: i32) -> i32 = do
+  const step = scroll_step(theme)
+  if pixels <= 0 then
+    return 1
+  end
+  (pixels + step - 1) / step
+end
+
+fn has_push_clip(operations: [DrawOp]) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpPushClip(_) => true
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPopClip => false
+      | OpText(_) => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_store()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut state = ui_state_new()
+  let mut empty_offsets: [i32] = []
+  const first = layout_ui(store, theme, shaping, cache, 240, 160, empty_offsets)
+  shaping = first.shaping
+  cache = first.cache
+  const layout = first.layout
+  const scroller = store.nodes[1].id
+  const inner = store.nodes[2].id
+  const deep = store.nodes[10].id
+  const scroll_rect = layout.rects[scroller.index]
+  const inner_rect = layout.rects[inner.index]
+  const deep_rect = layout.rects[deep.index]
+  if inner_rect.height <= scroll_rect.height then
+    return -1
+  end
+  if deep_rect.y + 4 < scroll_rect.y + scroll_rect.height then
+    return -1
+  end
+  const missed = hit_test(
+    store, layout, theme, deep_rect.x + 8, deep_rect.y + 4
+  )
+  if widget_id_is_none(missed) == false then
+    return -2
+  end
+
+  const clip_bottom = scroll_rect.y + scroll_rect.height
+  const notches = wheel_notches_to_cover(theme, deep_rect.y + 4 - clip_bottom + 1)
+  const wheeled = ui_update(
+    store,
+    layout,
+    theme,
+    state,
+    pointer_wheel(scroll_rect.x + 12, scroll_rect.y + 12, notches, 0)
+  )
+  state = wheeled.state
+  if scroll_offset_at(state.scroll_offsets, scroller.index) <= 0 then
+    return -3
+  end
+  const moved = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets)
+  shaping = moved.shaping
+  cache = moved.cache
+  const moved_deep = moved.layout.rects[deep.index]
+  const hit_deep = hit_test(
+    store, moved.layout, theme, moved_deep.x + 8, moved_deep.y + 4
+  )
+  if hit_deep.index != deep.index then
+    return -4
+  end
+
+  const operations = paint_ui_frame(theme, store, layout, state)
+  if has_push_clip(operations) == false then
+    return -5
+  end
+
+  const jumped = ui_update(
+    store,
+    layout,
+    theme,
+    ui_state_new(),
+    pointer_press(
+      scroll_rect.x + scroll_rect.width - 2,
+      scroll_rect.y + scroll_rect.height - 6,
+      100
+    )
+  )
+  if scroll_offset_at(jumped.state.scroll_offsets, scroller.index) <= 0 then
+    return -6
+  end
+  0
+end

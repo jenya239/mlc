@@ -1,4 +1,5 @@
 import { rect_contains } from './geometry'
+import { Theme } from './theme'
 import {
   WidgetStore,
   WidgetId,
@@ -7,10 +8,12 @@ import {
   overflow_is_hidden
 } from './store'
 import { LayoutResult } from './layout_result'
+import { scroll_hit_chrome } from './widget_scroll'
 
 fn hit_test_node(
   store: WidgetStore,
   layout: LayoutResult,
+  theme: Theme,
   id: WidgetId,
   x: i32,
   y: i32
@@ -25,10 +28,13 @@ fn hit_test_node(
       return widget_id_none()
     end
   end
+  if scroll_hit_chrome(store, layout, theme, id, x, y) then
+    return id
+  end
   let mut child_index = node.children.length() - 1
   while child_index >= 0 do
     const child_id = node.children[child_index]
-    const hit_child = hit_test_node(store, layout, child_id, x, y)
+    const hit_child = hit_test_node(store, layout, theme, child_id, x, y)
     if widget_id_is_none(hit_child) == false then
       return hit_child
     end
@@ -43,11 +49,12 @@ end
 export fn hit_test(
   store: WidgetStore,
   layout: LayoutResult,
+  theme: Theme,
   x: i32,
   y: i32
 ) -> WidgetId = do
   if widget_id_is_none(store.root) then
     return widget_id_none()
   end
-  hit_test_node(store, layout, store.root, x, y)
+  hit_test_node(store, layout, theme, store.root, x, y)
 end

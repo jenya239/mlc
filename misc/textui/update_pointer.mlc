@@ -1,66 +1,26 @@
 import { Theme } from './theme'
-import { WidgetStore } from './store'
+import { WidgetStore, WidgetId, widget_id_none, widget_id_is_none } from './store'
 import { LayoutResult } from './layout_result'
-import { label_index_at } from './widget_label'
-import { Selection } from './selection'
-import { selection_publish_primary } from './selection_text'
-import { pointer_past_slop } from './pointer_slop'
 import { handle_press } from './update_pointer_press'
+import { handle_text_drag } from './update_pointer_text'
+import { click_release_events } from './update_pointer_click'
+import { handle_scroll_drag } from './update_scroll'
+import { hit_test } from './hit'
+import { kind_is_clickable } from './user_select'
 import {
   UiState,
-  PointerDrag,
   ui_state_with
 } from './ui_state'
 import { UiInput } from './ui_input'
+import { UiEvent } from './ui_event'
 
-fn handle_drag(
-  layout: LayoutResult,
-  theme: Theme,
+export type PointerUpdate = {
   state: UiState,
-  input: UiInput,
-  drag: PointerDrag
-) -> UiState = do
-  let mut claimed = drag.claimed
-  let mut grab = state.grab
-  if claimed == false && pointer_past_slop(drag.origin_x, drag.origin_y, input.mouse_x, input.mouse_y) then
-    claimed = true
-    grab = GrabText
-  end
-  if claimed == false then
-    return ui_state_with(
-      state.selection,
-      grab,
-      PointerActive(drag),
-      state.last_press,
-      state.clipboard
-    )
-  end
-  const focus = label_index_at(
-    theme,
-    layout.rects[drag.owner.index],
-    layout.text_layouts[drag.owner.index],
-    input.mouse_x,
-    input.mouse_y
-  )
-  const selection = Selection { owner: drag.owner, anchor: drag.anchor, focus: focus }
-  const next_drag = PointerDrag {
-    owner: drag.owner,
-    origin_x: drag.origin_x,
-    origin_y: drag.origin_y,
-    anchor: drag.anchor,
-    claimed: true
-  }
-  const published = selection_publish_primary(layout, state, selection)
-  ui_state_with(
-    selection,
-    grab,
-    PointerActive(next_drag),
-    state.last_press,
-    published.clipboard
-  )
-end
+  events: [UiEvent]
+}
 
 fn pointer_while_down(
+  store: WidgetStore,
   layout: LayoutResult,
   theme: Theme,
   state: UiState,
@@ -68,15 +28,36 @@ fn pointer_while_down(
 ) -> UiState =
   match state.pointer
     | PointerIdle => state
-    | PointerActive(drag) => handle_drag(layout, theme, state, input, drag)
+    | PointerClickSession(_) => state
+    | PointerText(drag) => handle_text_drag(layout, theme, state, input, drag)
+    | PointerScrollSession(session) => handle_scroll_drag(store, layout, state, input, session)
+
+fn hover_from_hit(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  x: i32,
+  y: i32
+) -> WidgetId = do
+  const hit = hit_test(store, layout, theme, x, y)
+  if widget_id_is_none(hit) then
+    return widget_id_none()
+  end
+  if kind_is_clickable(store.nodes[hit.index].kind) then
+    return hit
+  end
+  widget_id_none()
+end
 
 fn release_pointer(state: UiState) -> UiState =
   ui_state_with(
+    state,
     state.selection,
     GrabNone,
     PointerIdle,
     state.last_press,
-    state.clipboard
+    state.clipboard,
+    state.hover
   )
 
 export fn update_pointer(
@@ -85,16 +66,30 @@ export fn update_pointer(
   theme: Theme,
   state: UiState,
   input: UiInput
-) -> UiState = do
+) -> PointerUpdate = do
   let mut current = state
+  let mut events: [UiEvent] = []
   if input.left_pressed then
     current = handle_press(store, layout, theme, current, input)
   end
   if input.left_down then
-    current = pointer_while_down(layout, theme, current, input)
+    current = pointer_while_down(store, layout, theme, current, input)
   end
   if input.left_released then
-    return release_pointer(current)
+    events = click_release_events(store, layout, theme, current, input)
+    current = release_pointer(current)
   end
-  return current
+  current = ui_state_with(
+    current,
+    current.selection,
+    current.grab,
+    current.pointer,
+    current.last_press,
+    current.clipboard,
+    hover_from_hit(store, layout, theme, input.mouse_x, input.mouse_y)
+  )
+  PointerUpdate {
+    state: current,
+    events: events
+  }
 end

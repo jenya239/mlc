@@ -30,7 +30,22 @@ export type LabelData = {
   text: string
 }
 
-export type WidgetKind = KindBox(BoxData) | KindLabel(LabelData)
+export type ButtonData = {
+  text: string
+}
+
+export type WidgetKind =
+  KindBox(BoxData)
+  | KindLabel(LabelData)
+  | KindButton(ButtonData)
+  | KindScrollView
+
+export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
+  match kind
+    | KindScrollView => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
 
 export type WidgetNode = {
   id: WidgetId,
@@ -64,10 +79,10 @@ fn widget_node_with_children(node: WidgetNode, children: [WidgetId]) -> WidgetNo
     visible: node.visible
   }
 
-export fn widget_store_add_box(
+fn widget_store_append(
   store: WidgetStore,
   parent: WidgetId,
-  data: BoxData,
+  kind: WidgetKind,
   overflow: Overflow,
   grow: i32,
   visible: bool
@@ -77,7 +92,7 @@ export fn widget_store_add_box(
     id: new_id,
     parent: parent,
     children: [],
-    kind: KindBox(data),
+    kind: kind,
     overflow: overflow,
     grow: grow,
     visible: visible
@@ -100,6 +115,16 @@ export fn widget_store_add_box(
   }
 end
 
+export fn widget_store_add_box(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: BoxData,
+  overflow: Overflow,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindBox(data), overflow, grow, visible)
+
 export fn widget_store_add_label(
   store: WidgetStore,
   parent: WidgetId,
@@ -107,31 +132,23 @@ export fn widget_store_add_label(
   overflow: Overflow,
   grow: i32,
   visible: bool
-) -> WidgetStore = do
-  const new_id = WidgetId { index: store.nodes.length() }
-  const new_node = WidgetNode {
-    id: new_id,
-    parent: parent,
-    children: [],
-    kind: KindLabel(data),
-    overflow: overflow,
-    grow: grow,
-    visible: visible
-  }
-  let mut next_nodes = store.nodes
-  next_nodes.push(new_node)
-  if widget_id_is_none(parent) == false then
-    const parent_node = next_nodes[parent.index]
-    let mut parent_children = parent_node.children
-    parent_children.push(new_id)
-    next_nodes.set(parent.index, widget_node_with_children(parent_node, parent_children))
-  end
-  let mut next_root = store.root
-  if widget_id_is_none(store.root) then
-    next_root = new_id
-  end
-  WidgetStore {
-    nodes: next_nodes,
-    root: next_root
-  }
-end
+) -> WidgetStore =
+  widget_store_append(store, parent, KindLabel(data), overflow, grow, visible)
+
+export fn widget_store_add_button(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: ButtonData,
+  overflow: Overflow,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindButton(data), overflow, grow, visible)
+
+export fn widget_store_add_scroll_view(
+  store: WidgetStore,
+  parent: WidgetId,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindScrollView, OverflowHidden, grow, visible)

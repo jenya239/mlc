@@ -3,11 +3,14 @@ import { WidgetStore } from './store'
 import { LayoutResult } from './layout_result'
 import { UiState } from './ui_state'
 import { UiInput } from './ui_input'
+import { UiEvent } from './ui_event'
 import { update_pointer } from './update_pointer'
 import { update_copy } from './update_copy'
+import { update_wheel } from './update_scroll'
 
 export type UiUpdateResult = {
-  state: UiState
+  state: UiState,
+  events: [UiEvent]
 }
 
 export fn ui_update(
@@ -18,7 +21,9 @@ export fn ui_update(
   input: UiInput
 ) -> UiUpdateResult = do
   const after_pointer = update_pointer(store, layout, theme, state, input)
+  const after_wheel = update_wheel(store, layout, theme, after_pointer.state, input)
   UiUpdateResult {
-    state: update_copy(layout, after_pointer, input)
+    state: update_copy(layout, after_wheel, input),
+    events: after_pointer.events
   }
 end

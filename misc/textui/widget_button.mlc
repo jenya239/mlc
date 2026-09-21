@@ -1,0 +1,15 @@
+import { Theme, theme_content_inset } from './theme'
+import { TextLayout } from './text_layout'
+
+export type ButtonPreferredSize = {
+  width: i32,
+  height: i32
+}
+
+export fn button_preferred_size(theme: Theme, layout: TextLayout) -> ButtonPreferredSize = do
+  const padding = theme_content_inset(theme)
+  ButtonPreferredSize {
+    width: layout.pixel_width + padding * 2,
+    height: layout.pixel_height + padding * 2
+  }
+end

@@ -1,0 +1,368 @@
+import { Rect, rect_new, Size, size_new } from './geometry'
+import { Theme } from './theme'
+import {
+  WidgetStore,
+  WidgetKind,
+  WidgetId,
+  BoxData
+} from './store'
+import { TextShapingState } from '../gui/text_shaping'
+import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none } from './text_layout'
+import { label_preferred_size } from './widget_label'
+import { button_preferred_size } from './widget_button'
+import { scroll_offset_at } from './widget_scroll'
+
+export type LayoutWork = {
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rects: [Rect],
+  text_layouts: [TextLayout],
+  scroll_offsets: [i32]
+}
+
+export type MeasureResult = {
+  work: LayoutWork,
+  size: Size
+}
+
+fn box_padding_of(kind: WidgetKind) -> i32 =
+  match kind
+    | KindBox(data) => data.padding
+    | KindLabel(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+
+fn box_gap_of(kind: WidgetKind) -> i32 =
+  match kind
+    | KindBox(data) => data.gap
+    | KindLabel(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+
+fn box_data_is_row(data: BoxData) -> bool =
+  match data.direction
+    | DirectionRow => true
+    | DirectionColumn => false
+
+fn box_is_row(kind: WidgetKind) -> bool =
+  match kind
+    | KindBox(data) => box_data_is_row(data)
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+
+fn effective_gap(theme: Theme, box_gap: i32) -> i32 = do
+  if box_gap > 0 then
+    return box_gap
+  end
+  theme.gap
+end
+
+fn extra_for(grow: i32, extra: i32, grow_total: i32) -> i32 = do
+  if extra <= 0 then
+    return 0
+  end
+  if grow <= 0 then
+    return 0
+  end
+  if grow_total <= 0 then
+    return 0
+  end
+  extra * grow / grow_total
+end
+
+fn work_with_text(work: LayoutWork, index: i32, layout: TextLayout) -> LayoutWork = do
+  let mut text_layouts = work.text_layouts
+  text_layouts.set(index, layout)
+  LayoutWork {
+    shaping: work.shaping,
+    cache: work.cache,
+    rects: work.rects,
+    text_layouts: text_layouts,
+    scroll_offsets: work.scroll_offsets
+  }
+end
+
+fn work_with_rect(work: LayoutWork, index: i32, rect: Rect) -> LayoutWork = do
+  let mut rects = work.rects
+  rects.set(index, rect)
+  LayoutWork {
+    shaping: work.shaping,
+    cache: work.cache,
+    rects: rects,
+    text_layouts: work.text_layouts,
+    scroll_offsets: work.scroll_offsets
+  }
+end
+
+fn visible_children(store: WidgetStore, id: WidgetId) -> [WidgetId] = do
+  let mut children: [WidgetId] = []
+  const node = store.nodes[id.index]
+  let mut index = 0
+  while index < node.children.length() do
+    const child = node.children[index]
+    if store.nodes[child.index].visible then
+      children.push(child)
+    end
+    index = index + 1
+  end
+  children
+end
+
+fn grow_total_of(store: WidgetStore, children: [WidgetId]) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < children.length() do
+    const grow = store.nodes[children[index].index].grow
+    if grow > 0 then
+      total = total + grow
+    end
+    index = index + 1
+  end
+  total
+end
+
+fn measure_caption(
+  work: LayoutWork,
+  theme: Theme,
+  index: i32,
+  text: string,
+  is_button: bool
+) -> MeasureResult = do
+  const built = text_layout_build(work.shaping, work.cache, theme, text, wrap_width_none())
+  let mut width = 0
+  let mut height = 0
+  if is_button then
+    const preferred = button_preferred_size(theme, built.layout)
+    width = preferred.width
+    height = preferred.height
+  else
+    const preferred = label_preferred_size(theme, built.layout)
+    width = preferred.width
+    height = preferred.height
+  end
+  const next = LayoutWork {
+    shaping: built.shaping,
+    cache: built.cache,
+    rects: work.rects,
+    text_layouts: work.text_layouts,
+    scroll_offsets: work.scroll_offsets
+  }
+  MeasureResult {
+    work: work_with_text(next, index, built.layout),
+    size: size_new(width, height)
+  }
+end
+
+export fn measure_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId
+) -> MeasureResult =
+  match store.nodes[id.index].kind
+    | KindLabel(data) => measure_caption(work, theme, id.index, data.text, false)
+    | KindButton(data) => measure_caption(work, theme, id.index, data.text, true)
+    | KindBox(_) => measure_box_node(work, store, theme, id)
+    | KindScrollView => measure_scroll_node(work, store, theme, id)
+
+export fn measure_box_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId
+) -> MeasureResult = do
+  const kind = store.nodes[id.index].kind
+  const padding = box_padding_of(kind)
+  const children = visible_children(store, id)
+  if children.length() == 0 then
+    return MeasureResult {
+      work: work,
+      size: size_new(padding * 2, padding * 2)
+    }
+  end
+  const gap = effective_gap(theme, box_gap_of(kind))
+  const row = box_is_row(kind)
+  let mut current = work
+  let mut main = 0
+  let mut cross = 0
+  let mut child_index = 0
+  while child_index < children.length() do
+    const measured = measure_node(current, store, theme, children[child_index])
+    current = measured.work
+    if row then
+      main = main + measured.size.width
+      if measured.size.height > cross then
+        cross = measured.size.height
+      end
+    else
+      main = main + measured.size.height
+      if measured.size.width > cross then
+        cross = measured.size.width
+      end
+    end
+    child_index = child_index + 1
+  end
+  main = main + gap * (children.length() - 1)
+  if row then
+    return MeasureResult {
+      work: current,
+      size: size_new(main + padding * 2, cross + padding * 2)
+    }
+  end
+  MeasureResult {
+    work: current,
+    size: size_new(cross + padding * 2, main + padding * 2)
+  }
+end
+
+export fn measure_scroll_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId
+) -> MeasureResult = do
+  const children = visible_children(store, id)
+  if children.length() == 0 then
+    return MeasureResult {
+      work: work,
+      size: size_new(0, 0)
+    }
+  end
+  const measured = measure_node(work, store, theme, children[0])
+  MeasureResult {
+    work: measured.work,
+    size: size_new(measured.size.width, 0)
+  }
+end
+
+export fn layout_box_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> LayoutWork = do
+  const kind = store.nodes[id.index].kind
+  const padding = box_padding_of(kind)
+  const children = visible_children(store, id)
+  if children.length() == 0 then
+    return work
+  end
+  const gap = effective_gap(theme, box_gap_of(kind))
+  const row = box_is_row(kind)
+  const inner_x = x + padding
+  const inner_y = y + padding
+  let mut inner_width = width - padding * 2
+  let mut inner_height = height - padding * 2
+  if inner_width < 0 then
+    inner_width = 0
+  end
+  if inner_height < 0 then
+    inner_height = 0
+  end
+  let mut current = work
+  let mut preferred_main: [i32] = []
+  let mut child_index = 0
+  let mut packed = 0
+  while child_index < children.length() do
+    const measured = measure_node(current, store, theme, children[child_index])
+    current = measured.work
+    if row then
+      preferred_main.push(measured.size.width)
+      packed = packed + measured.size.width
+    else
+      preferred_main.push(measured.size.height)
+      packed = packed + measured.size.height
+    end
+    child_index = child_index + 1
+  end
+  packed = packed + gap * (children.length() - 1)
+  let mut extra = inner_height - packed
+  if row then
+    extra = inner_width - packed
+  end
+  const grow_total = grow_total_of(store, children)
+  let mut cursor = inner_y
+  if row then
+    cursor = inner_x
+  end
+  child_index = 0
+  while child_index < children.length() do
+    const child = children[child_index]
+    const grow = store.nodes[child.index].grow
+    const along = preferred_main[child_index] + extra_for(grow, extra, grow_total)
+    if row then
+      current = layout_node(
+        current, store, theme, child, cursor, inner_y, along, inner_height
+      )
+      cursor = cursor + along + gap
+    else
+      current = layout_node(
+        current, store, theme, child, inner_x, cursor, inner_width, along
+      )
+      cursor = cursor + along + gap
+    end
+    child_index = child_index + 1
+  end
+  current
+end
+
+export fn layout_scroll_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> LayoutWork = do
+  let mut current = work_with_rect(work, id.index, rect_new(x, y, width, height))
+  const children = visible_children(store, id)
+  if children.length() == 0 then
+    return current
+  end
+  const child = children[0]
+  const measured = measure_node(current, store, theme, child)
+  current = measured.work
+  const offset = scroll_offset_at(current.scroll_offsets, id.index)
+  layout_node(
+    current,
+    store,
+    theme,
+    child,
+    x,
+    y - offset,
+    width,
+    measured.size.height
+  )
+end
+
+export fn layout_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> LayoutWork =
+  match store.nodes[id.index].kind
+    | KindLabel(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
+    | KindButton(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
+    | KindBox(_) => layout_box_node(
+      work_with_rect(work, id.index, rect_new(x, y, width, height)),
+      store,
+      theme,
+      id,
+      x,
+      y,
+      width,
+      height
+    )
+    | KindScrollView => layout_scroll_node(work, store, theme, id, x, y, width, height)

@@ -3,9 +3,12 @@ import {
   glfw_gl_mouse_y,
   glfw_gl_mouse_left_down,
   glfw_gl_mod_ctrl_down,
-  glfw_gl_take_binding_key
+  glfw_gl_take_binding_key,
+  glfw_gl_take_scroll_y
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { UiInput } from './ui_input'
+
+extern fn f64_to_i32(value: f64) -> i32 = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
 
 export type HostButtons = {
   previous_left_down: i32
@@ -34,6 +37,7 @@ export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
       left_released: left_released,
       control_down: glfw_gl_mod_ctrl_down() != 0,
       copy_pressed: copy_pressed,
+      wheel_y: 0 - f64_to_i32(glfw_gl_take_scroll_y()),
       now_ms: now_ms
     },
     buttons: HostButtons { previous_left_down: left_down_flag }

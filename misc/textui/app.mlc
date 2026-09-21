@@ -12,22 +12,28 @@ import {
 import { theme_default } from './theme'
 import {
   BoxData,
+  ButtonData,
   DirectionColumn,
+  DirectionRow,
   LabelData,
   OverflowVisible,
+  WidgetId,
   WidgetStore,
   widget_id_none,
   widget_store_add_box,
+  widget_store_add_button,
   widget_store_add_label,
+  widget_store_add_scroll_view,
   widget_store_empty
 } from './store'
 import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
-import { layout_column } from './layout_pass'
-import { paint_selected_frame } from './paint_pass'
+import { layout_ui } from './layout_pass'
+import { paint_ui_frame } from './paint_pass'
 import { submit_create, submit_destroy, submit_frame } from './submit'
 import { ui_state_new } from './ui_state'
 import { ui_update } from './ui_update'
+import { clipboard_copy_selection } from './update_copy'
 import { host_buttons_new, host_poll_input } from './host_input'
 
 extern fn sleep_ms(milliseconds: i32) -> unit
@@ -36,8 +42,20 @@ extern fn sleep_ms(milliseconds: i32) -> unit
 fn window_width() -> i32 = 1280
 fn window_height() -> i32 = 800
 
+fn application_reload_status() -> i32 = 75
+
 fn root_box_data() -> BoxData =
   BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
+  match store.nodes[owner.index].kind
+    | KindButton(data) => data.text
+    | KindLabel(_) => ""
+    | KindBox(_) => ""
+    | KindScrollView => ""
+
+fn row_box_data() -> BoxData =
+  BoxData { direction: DirectionRow, padding: 0, gap: 10 }
 
 fn build_label_gallery() -> WidgetStore = do
   let mut store = widget_store_empty()
@@ -49,14 +67,45 @@ fn build_label_gallery() -> WidgetStore = do
     0,
     true
   )
+  store = widget_store_add_scroll_view(store, store.root, 1, true)
+  const scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_box(
+    store, scroller, root_box_data(), OverflowVisible, 0, true
+  )
+  const inner = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_label(
-    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+    store, inner, LabelData { text: "one" }, OverflowVisible, 0, true
   )
   store = widget_store_add_label(
-    store, store.root, LabelData { text: "two" }, OverflowVisible, 0, true
+    store, inner, LabelData { text: "two" }, OverflowVisible, 0, true
   )
-  widget_store_add_label(
-    store, store.root, LabelData { text: "three" }, OverflowVisible, 0, true
+  store = widget_store_add_label(
+    store, inner, LabelData { text: "three" }, OverflowVisible, 0, true
+  )
+  let mut line = 0
+  while line < 18 do
+    store = widget_store_add_label(
+      store,
+      inner,
+      LabelData { text: "Deep " + line.to_string() },
+      OverflowVisible,
+      0,
+      true
+    )
+    line = line + 1
+  end
+  store = widget_store_add_box(
+    store, store.root, row_box_data(), OverflowVisible, 0, true
+  )
+  const row = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Copy" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Ping" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, row, ButtonData { text: "Reload" }, OverflowVisible, 0, true
   )
 end
 
@@ -77,7 +126,7 @@ fn main() -> i32 = do
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
-  println("[textui] label gallery — drag to select, Ctrl+C copies. Esc to quit")
+  println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload. Esc to quit")
 
   let mut max_frames = 0
   let mut frame_sleep_ms = 16
@@ -89,21 +138,57 @@ fn main() -> i32 = do
   let mut state = ui_state_new()
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
+  let mut reload_requested = false
+  let mut laid_out = layout_ui(
+    store,
+    theme,
+    shaping,
+    cache,
+    glfw_gl_window_width(),
+    glfw_gl_window_height(),
+    state.scroll_offsets
+  )
+  shaping = laid_out.shaping
+  cache = laid_out.cache
   while glfw_gl_context_should_close() == 0 do
     if glfw_gl_key_escape_down() != 0 then
       break
     end
-    const laid_out = layout_column(store, theme, shaping, cache)
-    shaping = laid_out.shaping
-    cache = laid_out.cache
     const polled = host_poll_input(buttons, frame_index * 16)
     buttons = polled.buttons
     const updated = ui_update(store, laid_out.layout, theme, state, polled.input)
     state = updated.state
+    laid_out = layout_ui(
+      store,
+      theme,
+      shaping,
+      cache,
+      glfw_gl_window_width(),
+      glfw_gl_window_height(),
+      state.scroll_offsets
+    )
+    shaping = laid_out.shaping
+    cache = laid_out.cache
+    let mut event_index = 0
+    while event_index < updated.events.length() do
+      const owner = updated.events[event_index].widget
+      const caption = button_caption(store, owner)
+      if caption == "Copy" then
+        state = clipboard_copy_selection(laid_out.layout, state)
+        glfw_gl_clipboard_set(state.clipboard.clipboard)
+      end
+      if caption == "Ping" then
+        println("[textui] ping")
+      end
+      if caption == "Reload" then
+        reload_requested = true
+      end
+      event_index = event_index + 1
+    end
     if polled.input.copy_pressed && polled.input.control_down then
       glfw_gl_clipboard_set(state.clipboard.clipboard)
     end
-    const operations = paint_selected_frame(theme, store, laid_out.layout, state.selection)
+    const operations = paint_ui_frame(theme, store, laid_out.layout, state)
     const submitted = submit_frame(
       resources,
       shaping,
@@ -127,10 +212,16 @@ fn main() -> i32 = do
     if max_frames > 0 && frame_index >= max_frames then
       break
     end
+    if reload_requested then
+      break
+    end
   end
 
   submit_destroy(resources)
   glfw_gl_context_end()
+  if reload_requested then
+    return application_reload_status()
+  end
   println("[textui] closed frames=" + frame_index.to_string())
   0
 end

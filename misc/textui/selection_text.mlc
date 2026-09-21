@@ -26,18 +26,22 @@ export fn selection_publish_primary(
 ) -> UiState = do
   if widget_id_is_none(selection.owner) || selection.anchor == selection.focus then
     return ui_state_with(
+      state,
       selection,
       state.grab,
       state.pointer,
       state.last_press,
-      state.clipboard
+      state.clipboard,
+      state.hover
     )
   end
   ui_state_with(
+    state,
     selection,
     state.grab,
     state.pointer,
     state.last_press,
-    clipboard_set_primary(state.clipboard, selection_copied_text(layout, selection))
+    clipboard_set_primary(state.clipboard, selection_copied_text(layout, selection)),
+    state.hover
   )
 end

@@ -1,0 +1,55 @@
+import { Rect, rect_intersect, rect_is_empty } from './geometry'
+import {
+  gl_enable,
+  gl_disable,
+  gl_scissor,
+  gl_scissor_test
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+export fn submit_clip_push(stack: [Rect], rect: Rect) -> [Rect] = do
+  let mut next = stack
+  if stack.length() == 0 then
+    next.push(rect)
+    return next
+  end
+  next.push(rect_intersect(stack[stack.length() - 1], rect))
+  next
+end
+
+export fn submit_clip_pop(stack: [Rect]) -> [Rect] = do
+  let mut next: [Rect] = []
+  if stack.length() == 0 then
+    return next
+  end
+  let mut index = 0
+  const last = stack.length() - 1
+  while index < last do
+    next.push(stack[index])
+    index = index + 1
+  end
+  next
+end
+
+export fn submit_scissor_apply(window_height: i32, stack: [Rect]) -> unit = do
+  if stack.length() == 0 then
+    gl_disable(gl_scissor_test())
+  else
+    const rect = stack[stack.length() - 1]
+    if rect_is_empty(rect) then
+      gl_scissor(0, 0, 0, 0)
+      gl_enable(gl_scissor_test())
+    else
+      let mut width = rect.width
+      let mut height = rect.height
+      if width < 0 then
+        width = 0
+      end
+      if height < 0 then
+        height = 0
+      end
+      const bottom = window_height - (rect.y + height)
+      gl_enable(gl_scissor_test())
+      gl_scissor(rect.x, bottom, width, height)
+    end
+  end
+end

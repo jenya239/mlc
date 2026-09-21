@@ -1,0 +1,141 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  DirectionRow,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_column, layout_ui } from '../layout_pass'
+
+fn column_data(padding: i32, gap: i32) -> BoxData =
+  BoxData { direction: DirectionColumn, padding: padding, gap: gap }
+
+fn row_data(padding: i32, gap: i32) -> BoxData =
+  BoxData { direction: DirectionRow, padding: padding, gap: gap }
+
+fn build_row_gallery() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(8, 10), OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "three" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_box(
+    store, store.root, row_data(0, 10), OverflowVisible, 0, true
+  )
+  const row = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Copy" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Ping" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, row, ButtonData { text: "Reload" }, OverflowVisible, 0, true
+  )
+end
+
+fn build_grow_column() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(8, 0), OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "one" }, OverflowVisible, 0, true
+  )
+  widget_store_add_label(
+    store, store.root, LabelData { text: "two" }, OverflowVisible, 1, true
+  )
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_row_gallery()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const laid_out = layout_column(store, theme, shaping, cache)
+  shaping = laid_out.shaping
+  cache = laid_out.cache
+  const layout = laid_out.layout
+  const first = store.nodes[1].id
+  const second = store.nodes[2].id
+  const copy = store.nodes[4].id
+  const ping = store.nodes[5].id
+  const reload = store.nodes[6].id
+  const first_rect = layout.rects[first.index]
+  const second_rect = layout.rects[second.index]
+  const copy_rect = layout.rects[copy.index]
+  const ping_rect = layout.rects[ping.index]
+  const reload_rect = layout.rects[reload.index]
+  const root_rect = layout.rects[store.root.index]
+  const inner_width = root_rect.width - 16
+
+  if first_rect.width != second_rect.width then
+    return -1
+  end
+  if first_rect.width != inner_width then
+    return -1
+  end
+  if copy_rect.y != ping_rect.y then
+    return -2
+  end
+  if ping_rect.x < copy_rect.x + copy_rect.width then
+    return -2
+  end
+  if reload_rect.y != ping_rect.y then
+    return -2
+  end
+  if reload_rect.x < ping_rect.x + ping_rect.width then
+    return -2
+  end
+  if copy_rect.y < second_rect.y + second_rect.height then
+    return -2
+  end
+
+  const grow_store = build_grow_column()
+  const natural = layout_column(grow_store, theme, shaping, cache)
+  shaping = natural.shaping
+  cache = natural.cache
+  const natural_one = natural.layout.rects[1]
+  const natural_two = natural.layout.rects[2]
+  let mut grown_offsets: [i32] = []
+  const grown = layout_ui(grow_store, theme, shaping, cache, 240, 200, grown_offsets)
+  shaping = grown.shaping
+  cache = grown.cache
+  const grown_root = grown.layout.rects[0]
+  const grown_one = grown.layout.rects[1]
+  const grown_two = grown.layout.rects[2]
+  if grown_root.width != 240 then
+    return -3
+  end
+  if grown_root.height != 200 then
+    return -3
+  end
+  if grown_one.height != natural_one.height then
+    return -4
+  end
+  if grown_two.height <= natural_two.height then
+    return -4
+  end
+  if grown_one.width != 240 - 16 then
+    return -5
+  end
+  if grown_two.width != grown_one.width then
+    return -5
+  end
+  0
+end

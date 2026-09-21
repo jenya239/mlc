@@ -1,0 +1,47 @@
+import { WidgetStore, WidgetId, widget_id_equals, widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import { Theme } from './theme'
+import { hit_test } from './hit'
+import { UiState, PointerClick, ui_state_with } from './ui_state'
+import { UiInput } from './ui_input'
+import { UiEvent, ui_event_button_clicked } from './ui_event'
+
+export fn begin_click_press(state: UiState, owner: WidgetId, input: UiInput) -> UiState =
+  ui_state_with(
+    state,
+    state.selection,
+    GrabClick,
+    PointerClickSession(PointerClick {
+      owner: owner,
+      origin_x: input.mouse_x,
+      origin_y: input.mouse_y
+    }),
+    state.last_press,
+    state.clipboard,
+    owner
+  )
+
+export fn click_release_events(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> [UiEvent] = do
+  let mut events: [UiEvent] = []
+  match state.pointer
+    | PointerIdle => events
+    | PointerText(_) => events
+    | PointerScrollSession(_) => events
+    | PointerClickSession(session) => do
+      const hit = hit_test(store, layout, theme, input.mouse_x, input.mouse_y)
+      if widget_id_is_none(hit) then
+        return events
+      end
+      if widget_id_equals(hit, session.owner) == false then
+        return events
+      end
+      events.push(ui_event_button_clicked(session.owner))
+      events
+    end
+end
