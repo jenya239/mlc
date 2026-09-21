@@ -10,15 +10,15 @@ compile_commands_probe.hpp
 compile_demo.rb
 .tmp_*
 .tmp/
-compiler/out/extern_concurrency_lint.cpp
-compiler/out/extern_concurrency_lint.hpp
 .ccache/
 coverage/
 *.gch
 # Compiled binaries and object files
 *.o
-compiler/out/run_tests
-compiler/out/tests/
+
+# Generated mlcc C++ + binaries. Rebuild: compiler/build.sh (cold: MLCC_FORCE_RUBY=1).
+# CI downloads mlcc into this directory; do not commit it.
+compiler/out/
 
 # run_concurrency_smoke.sh always recompiles these from the adjacent .cpp
 # before running — tracking the binary just causes dirty-diff noise every run.
@@ -29,7 +29,6 @@ runtime/test/test_*
 runtime/test/fuzz_*
 !runtime/test/fuzz_*.cpp
 !runtime/test/fuzz_corpus/
-compiler/out/obj/
 build/obj/
 build/app
 build/*.cpp
@@ -60,11 +59,15 @@ compiler/test_t*.mlc
 compiler/out2/
 compiler/out2_tests/
 compiler/out_modular/
-compiler/out/boot*/
-compiler/out/bootstrap*/
 /out/
 
 .cursor/
+.agents/
+.codex/
+.vscode/
+
+# Draft social posts — not compiler source
+docs/reddit-*.md
 .tmp_checker_split*.py
 tmp/
 
