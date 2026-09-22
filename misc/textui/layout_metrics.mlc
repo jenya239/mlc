@@ -1,0 +1,86 @@
+import { Theme } from './theme'
+import {
+  WidgetStore,
+  WidgetKind,
+  WidgetId,
+  BoxData
+} from './store'
+
+export fn box_padding_of(kind: WidgetKind) -> i32 =
+  match kind
+    | KindBox(data) => data.padding
+    | KindLabel(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+    | KindListView(_) => 0
+    | KindSplitter(_) => 0
+
+export fn box_gap_of(kind: WidgetKind) -> i32 =
+  match kind
+    | KindBox(data) => data.gap
+    | KindLabel(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+    | KindListView(_) => 0
+    | KindSplitter(_) => 0
+
+fn box_data_is_row(data: BoxData) -> bool =
+  match data.direction
+    | DirectionRow => true
+    | DirectionColumn => false
+
+export fn box_is_row(kind: WidgetKind) -> bool =
+  match kind
+    | KindBox(data) => box_data_is_row(data)
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+
+export fn effective_gap(theme: Theme, box_gap: i32) -> i32 = do
+  if box_gap > 0 then
+    return box_gap
+  end
+  return theme.gap
+end
+
+export fn extra_for(grow: i32, extra: i32, grow_total: i32) -> i32 = do
+  if extra <= 0 then
+    return 0
+  end
+  if grow <= 0 then
+    return 0
+  end
+  if grow_total <= 0 then
+    return 0
+  end
+  return extra * grow / grow_total
+end
+
+export fn visible_children(store: WidgetStore, id: WidgetId) -> [WidgetId] = do
+  let mut children: [WidgetId] = []
+  const node = store.nodes[id.index]
+  let mut index = 0
+  while index < node.children.length() do
+    const child = node.children[index]
+    if store.nodes[child.index].visible then
+      children.push(child)
+    end
+    index = index + 1
+  end
+  return children
+end
+
+export fn grow_total_of(store: WidgetStore, children: [WidgetId]) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < children.length() do
+    const grow = store.nodes[children[index].index].grow
+    if grow > 0 then
+      total = total + grow
+    end
+    index = index + 1
+  end
+  return total
+end

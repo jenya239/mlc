@@ -112,7 +112,13 @@ fn main() -> i32 = do
     scrollbar_thumb: theme.scrollbar_thumb,
     scrollbar_width: theme.scrollbar_width,
     inspect_hover: theme.inspect_hover,
-    inspect_stroke: theme.inspect_stroke
+    inspect_stroke: theme.inspect_stroke,
+    list_hover: theme.list_hover,
+    list_selected: theme.list_selected,
+    splitter_sash: theme.splitter_sash,
+    splitter_hover: theme.splitter_hover,
+    splitter_width: theme.splitter_width,
+    splitter_min: theme.splitter_min
   }
   const small_result = layout_column(store, theme, shaping, cache)
   shaping = small_result.shaping

@@ -1,0 +1,142 @@
+import { Rect, rect_new, rect_intersect, rect_is_empty } from './geometry'
+import { Theme } from './theme'
+import { ColorRgba } from './theme'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { LayoutResult } from './layout_result'
+import { UiState } from './ui_state'
+
+export fn list_row_height(theme: Theme) -> i32 = do
+  const height = theme.font_size_pixels + theme.padding * 2
+  if height < 1 then
+    return 1
+  end
+  return height
+end
+
+export fn list_content_height(theme: Theme, row_count: i32) -> i32 =
+  row_count * list_row_height(theme)
+
+export fn list_selected_at(selected: [i32], index: i32) -> i32 = do
+  if index < 0 then
+    return 0 - 1
+  end
+  if index >= selected.length() then
+    return 0 - 1
+  end
+  selected[index]
+end
+
+export fn list_selected_put(selected: [i32], index: i32, value: i32) -> [i32] = do
+  let mut next = selected
+  while next.length() <= index do
+    next.push(0 - 1)
+  end
+  next.set(index, value)
+  return next
+end
+
+export fn list_index_at(rect: Rect, theme: Theme, row_count: i32, y: i32) -> i32 = do
+  if row_count <= 0 then
+    return 0 - 1
+  end
+  if y < rect.y || y >= rect.y + rect.height then
+    return 0 - 1
+  end
+  const index = (y - rect.y) / list_row_height(theme)
+  if index < 0 || index >= row_count then
+    return 0 - 1
+  end
+  return index
+end
+
+export fn list_index_clamped(rect: Rect, theme: Theme, row_count: i32, y: i32) -> i32 = do
+  if row_count <= 0 then
+    return 0 - 1
+  end
+  let mut index = (y - rect.y) / list_row_height(theme)
+  if index < 0 then
+    index = 0
+  end
+  if index >= row_count then
+    index = row_count - 1
+  end
+  return index
+end
+
+fn list_first_row(rect: Rect, clip: Rect, row_height: i32, row_count: i32) -> i32 = do
+  if row_count <= 0 || rect_is_empty(clip) then
+    return row_count
+  end
+  let mut top = clip.y - rect.y
+  if top < 0 then
+    top = 0
+  end
+  let mut index = top / row_height
+  if index < 0 then
+    index = 0
+  end
+  if index > row_count then
+    index = row_count
+  end
+  return index
+end
+
+fn list_last_row(rect: Rect, clip: Rect, row_height: i32, row_count: i32) -> i32 = do
+  if row_count <= 0 || rect_is_empty(clip) then
+    return 0
+  end
+  let mut bottom = clip.y + clip.height - rect.y
+  if bottom < 0 then
+    return 0
+  end
+  let mut index = (bottom + row_height - 1) / row_height
+  if index < 0 then
+    index = 0
+  end
+  if index > row_count then
+    index = row_count
+  end
+  return index
+end
+
+fn push_row_fill(operations: [DrawOp], row: Rect, color: ColorRgba) -> [DrawOp] = do
+  let mut next = operations
+  next.push(OpFillRect(FillRectOp { rect: row, color: color }))
+  return next
+end
+
+export fn paint_list_rows(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  texts: [string],
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  let mut next = operations
+  const row_height = list_row_height(theme)
+  const rect = layout.rects[node_index]
+  const clip = layout.clips[node_index]
+  const selected = list_selected_at(state.list_selected, node_index)
+  const row_count = texts.length()
+  let mut index = list_first_row(rect, clip, row_height, row_count)
+  const last = list_last_row(rect, clip, row_height, row_count)
+  while index < last do
+    const row = rect_new(rect.x, rect.y + index * row_height, rect.width, row_height)
+    if rect_is_empty(rect_intersect(row, clip)) == false then
+      if index == selected then
+        next = push_row_fill(next, row, theme.list_selected)
+      else if state.hover.index == node_index && index == state.list_hover_row then
+        next = push_row_fill(next, row, theme.list_hover)
+      end
+      next.push(OpText(TextOp {
+        origin_x: row.x + theme.padding,
+        origin_y: row.y + theme.padding,
+        color: theme.foreground,
+        text: texts[index]
+      }))
+    end
+    index = index + 1
+  end
+  return next
+end

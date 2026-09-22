@@ -1,9 +1,18 @@
 import { Theme } from './theme'
-import { WidgetStore, WidgetId, widget_id_is_none, kind_is_scroll_view } from './store'
+import {
+  WidgetStore,
+  WidgetId,
+  widget_id_is_none,
+  kind_is_scroll_view,
+  kind_is_list_view,
+  kind_is_splitter
+} from './store'
 import { LayoutResult } from './layout_result'
 import { hit_test } from './hit'
 import { kind_is_text_selectable, kind_is_clickable } from './user_select'
 import { begin_scroll_press } from './update_scroll'
+import { begin_list_press } from './update_list'
+import { begin_split_press } from './update_split'
 import { label_index_at, label_word_range } from './widget_label'
 import { Selection, selection_none } from './selection'
 import { selection_publish_primary } from './selection_text'
@@ -141,5 +150,19 @@ export fn handle_press(
       return scrolled
     end
   end
-  clear_pointer(state)
+  if kind_is_list_view(node.kind) then
+    return begin_list_press(
+      store,
+      layout,
+      theme,
+      state,
+      input,
+      hit,
+      press_count(state, hit, input.mouse_x, input.mouse_y, input.now_ms)
+    )
+  end
+  if kind_is_splitter(node.kind) then
+    return begin_split_press(store, layout, theme, state, input, hit)
+  end
+  return clear_pointer(state)
 end

@@ -1,0 +1,226 @@
+import { Rect, rect_new, rect_contains } from './geometry'
+import { Theme } from './theme'
+import { DrawOp, FillRectOp } from './draw_op'
+import {
+  WidgetStore,
+  WidgetId,
+  BoxDirection,
+  kind_is_splitter
+} from './store'
+import { LayoutResult } from './layout_result'
+import { UiState, pointer_split_owns } from './ui_state'
+
+export type SplitterPlacement = {
+  first: Rect,
+  second: Rect,
+  sash: Rect
+}
+
+fn direction_is_row(direction: BoxDirection) -> bool =
+  match direction
+    | DirectionRow => true
+    | DirectionColumn => false
+
+export fn splitter_ratio_at(ratios: [i32], index: i32, fallback: i32) -> i32 = do
+  if index < 0 || index >= ratios.length() then
+    return fallback
+  end
+  if ratios[index] < 0 then
+    return fallback
+  end
+  return ratios[index]
+end
+
+export fn splitter_ratios_put(ratios: [i32], index: i32, value: i32) -> [i32] = do
+  let mut next = ratios
+  while next.length() <= index do
+    next.push(0 - 1)
+  end
+  next.set(index, value)
+  return next
+end
+
+export fn splitter_start_extent(available: i32, ratio_thousandths: i32, minimum_pane: i32) -> i32 = do
+  if available <= 0 then
+    return 0
+  end
+  if available <= minimum_pane * 2 then
+    return available / 2
+  end
+  let mut start = available * ratio_thousandths / 1000
+  if start < minimum_pane then
+    start = minimum_pane
+  end
+  if start > available - minimum_pane then
+    start = available - minimum_pane
+  end
+  return start
+end
+
+export fn splitter_ratio_from_drag(
+  available: i32,
+  origin_ratio: i32,
+  origin_position: i32,
+  position: i32,
+  minimum_pane: i32
+) -> i32 = do
+  if available <= 0 then
+    return 500
+  end
+  let mut ratio = origin_ratio + (position - origin_position) * 1000 / available
+  if ratio < 0 then
+    ratio = 0
+  end
+  if ratio > 1000 then
+    ratio = 1000
+  end
+  const start = splitter_start_extent(available, ratio, minimum_pane)
+  return start * 1000 / available
+end
+
+export fn splitter_placement(
+  row: bool,
+  ratio_thousandths: i32,
+  minimum_pane: i32,
+  sash_width: i32,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> SplitterPlacement = do
+  let mut main = height
+  if row then
+    main = width
+  end
+  let mut available = main - sash_width
+  if available < 0 then
+    available = 0
+  end
+  const start = splitter_start_extent(available, ratio_thousandths, minimum_pane)
+  let mut finish = available - start
+  if finish < 0 then
+    finish = 0
+  end
+  if row then
+    return SplitterPlacement {
+      first: rect_new(x, y, start, height),
+      second: rect_new(x + start + sash_width, y, finish, height),
+      sash: rect_new(x + start, y, sash_width, height)
+    }
+  end
+  return SplitterPlacement {
+    first: rect_new(x, y, width, start),
+    second: rect_new(x, y + start + sash_width, width, finish),
+    sash: rect_new(x, y + start, width, sash_width)
+  }
+end
+
+export fn splitter_placement_for(
+  store: WidgetStore,
+  ratios: [i32],
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> SplitterPlacement = do
+  const node = store.nodes[id.index]
+  const placed = match node.kind
+    | KindSplitter(data) =>
+      splitter_placement(
+        direction_is_row(data.direction),
+        splitter_ratio_at(ratios, id.index, data.ratio_thousandths),
+        theme.splitter_min,
+        theme.splitter_width,
+        x, y, width, height
+      )
+    | KindBox(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindLabel(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindButton(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindScrollView => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindListView(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+  return placed
+end
+
+fn sash_hit_rect(sash: Rect, row: bool) -> Rect = do
+  if row then
+    return rect_new(sash.x - 2, sash.y, sash.width + 4, sash.height)
+  end
+  return rect_new(sash.x, sash.y - 2, sash.width, sash.height + 4)
+end
+
+fn splitter_is_row(store: WidgetStore, id: WidgetId) -> bool =
+  match store.nodes[id.index].kind
+    | KindSplitter(data) => direction_is_row(data.direction)
+    | KindBox(_) => true
+    | KindLabel(_) => true
+    | KindButton(_) => true
+    | KindScrollView => true
+    | KindListView(_) => true
+
+export fn splitter_laid_sash(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  id: WidgetId
+) -> Rect = do
+  const own = layout.rects[id.index]
+  const node = store.nodes[id.index]
+  let mut child_index = 0
+  let mut found = false
+  let mut first_x = own.x
+  let mut first_y = own.y
+  let mut first_width = 0
+  let mut first_height = 0
+  while child_index < node.children.length() && found == false do
+    const child = node.children[child_index]
+    if store.nodes[child.index].visible then
+      const rect = layout.rects[child.index]
+      first_x = rect.x
+      first_y = rect.y
+      first_width = rect.width
+      first_height = rect.height
+      found = true
+    end
+    child_index = child_index + 1
+  end
+  if splitter_is_row(store, id) then
+    return rect_new(first_x + first_width, own.y, theme.splitter_width, own.height)
+  end
+  return rect_new(own.x, first_y + first_height, own.width, theme.splitter_width)
+end
+
+export fn splitter_sash_hit(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32
+) -> bool = do
+  if kind_is_splitter(store.nodes[id.index].kind) == false then
+    return false
+  end
+  const sash = splitter_laid_sash(store, layout, theme, id)
+  return rect_contains(sash_hit_rect(sash, splitter_is_row(store, id)), x, y)
+end
+
+export fn paint_splitter_sash(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const id = store.nodes[node_index].id
+  const sash = splitter_laid_sash(store, layout, theme, id)
+  let mut color = theme.splitter_sash
+  if state.hover.index == node_index || pointer_split_owns(state.pointer, id) then
+    color = theme.splitter_hover
+  end
+  let mut next = operations
+  next.push(OpFillRect(FillRectOp { rect: sash, color: color }))
+  return next
+end

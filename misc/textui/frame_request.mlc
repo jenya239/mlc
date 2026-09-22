@@ -1,0 +1,158 @@
+import { UiState, GrabKind, PointerSession } from './ui_state'
+
+export type FrameRequest = FrameRequestNone | FrameRequestPaint | FrameRequestLayout
+
+type PointerMark = {
+  code: i32,
+  owner: i32
+}
+
+export type FrameSignature = {
+  viewport_width: i32,
+  viewport_height: i32,
+  scroll_offsets: [i32],
+  splitter_ratios: [i32],
+  list_selected: [i32],
+  list_hover_row: i32,
+  hover_index: i32,
+  selection_owner: i32,
+  selection_anchor: i32,
+  selection_focus: i32,
+  pick_enabled: bool,
+  inspected_index: i32,
+  grab_code: i32,
+  pointer_code: i32,
+  pointer_owner: i32
+}
+
+fn copy_integers(values: [i32]) -> [i32] = do
+  let mut copy: [i32] = []
+  let mut index = 0
+  while index < values.length() do
+    copy.push(values[index])
+    index = index + 1
+  end
+  return copy
+end
+
+fn integers_equal(left: [i32], right: [i32]) -> bool = do
+  if left.length() != right.length() then
+    return false
+  end
+  let mut index = 0
+  while index < left.length() do
+    if left[index] != right[index] then
+      return false
+    end
+    index = index + 1
+  end
+  return true
+end
+
+fn grab_code(grab: GrabKind) -> i32 =
+  match grab
+    | GrabNone => 0
+    | GrabText => 1
+    | GrabClick => 2
+    | GrabScroll => 3
+    | GrabList => 4
+    | GrabSplit => 5
+
+fn pointer_mark(pointer: PointerSession) -> PointerMark =
+  match pointer
+    | PointerIdle => PointerMark { code: 0, owner: 0 - 1 }
+    | PointerText(drag) => PointerMark { code: 1, owner: drag.owner.index }
+    | PointerClickSession(session) => PointerMark { code: 2, owner: session.owner.index }
+    | PointerScrollSession(session) => PointerMark { code: 3, owner: session.owner.index }
+    | PointerListSession(session) => PointerMark { code: 4, owner: session.owner.index }
+    | PointerSplitSession(session) => PointerMark { code: 5, owner: session.owner.index }
+
+export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: i32) -> FrameSignature = do
+  const pointer = pointer_mark(state.pointer)
+  return FrameSignature {
+    viewport_width: viewport_width,
+    viewport_height: viewport_height,
+    scroll_offsets: copy_integers(state.scroll_offsets),
+    splitter_ratios: copy_integers(state.splitter_ratios),
+    list_selected: copy_integers(state.list_selected),
+    list_hover_row: state.list_hover_row,
+    hover_index: state.hover.index,
+    selection_owner: state.selection.owner.index,
+    selection_anchor: state.selection.anchor,
+    selection_focus: state.selection.focus,
+    pick_enabled: state.pick_enabled,
+    inspected_index: state.inspected.index,
+    grab_code: grab_code(state.grab),
+    pointer_code: pointer.code,
+    pointer_owner: pointer.owner
+  }
+end
+
+fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if previous.viewport_width != next.viewport_width then
+    return true
+  end
+  if previous.viewport_height != next.viewport_height then
+    return true
+  end
+  if integers_equal(previous.scroll_offsets, next.scroll_offsets) == false then
+    return true
+  end
+  integers_equal(previous.splitter_ratios, next.splitter_ratios) == false
+end
+
+fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if previous.hover_index != next.hover_index then
+    return true
+  end
+  if previous.list_hover_row != next.list_hover_row then
+    return true
+  end
+  if integers_equal(previous.list_selected, next.list_selected) == false then
+    return true
+  end
+  if previous.selection_owner != next.selection_owner then
+    return true
+  end
+  if previous.selection_anchor != next.selection_anchor then
+    return true
+  end
+  if previous.selection_focus != next.selection_focus then
+    return true
+  end
+  if previous.pick_enabled != next.pick_enabled then
+    return true
+  end
+  if previous.inspected_index != next.inspected_index then
+    return true
+  end
+  if previous.grab_code != next.grab_code then
+    return true
+  end
+  if previous.pointer_code != next.pointer_code then
+    return true
+  end
+  previous.pointer_owner != next.pointer_owner
+end
+
+export fn frame_request(previous: FrameSignature, next: FrameSignature) -> FrameRequest = do
+  if layout_differs(previous, next) then
+    return FrameRequestLayout
+  end
+  if paint_differs(previous, next) then
+    return FrameRequestPaint
+  end
+  FrameRequestNone
+end
+
+export fn frame_request_layouts(request: FrameRequest) -> bool =
+  match request
+    | FrameRequestLayout => true
+    | FrameRequestPaint => false
+    | FrameRequestNone => false
+
+export fn frame_request_paints(request: FrameRequest) -> bool =
+  match request
+    | FrameRequestLayout => true
+    | FrameRequestPaint => true
+    | FrameRequestNone => false

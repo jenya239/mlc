@@ -16,7 +16,8 @@ fn empty_work(
   store: WidgetStore,
   shaping: TextShapingState,
   cache: TextLayoutCache,
-  scroll_offsets: [i32]
+  scroll_offsets: [i32],
+  splitter_ratios: [i32]
 ) -> LayoutWork = do
   let mut rects: [Rect] = []
   let mut text_layouts: [TextLayout] = []
@@ -31,7 +32,8 @@ fn empty_work(
     cache: cache,
     rects: rects,
     text_layouts: text_layouts,
-    scroll_offsets: scroll_offsets
+    scroll_offsets: scroll_offsets,
+    splitter_ratios: splitter_ratios
   }
 end
 
@@ -49,9 +51,10 @@ export fn layout_ui(
   cache: TextLayoutCache,
   viewport_width: i32,
   viewport_height: i32,
-  scroll_offsets: [i32]
+  scroll_offsets: [i32],
+  splitter_ratios: [i32]
 ) -> LayoutColumnResult = do
-  let mut work = empty_work(store, shaping, cache, scroll_offsets)
+  let mut work = empty_work(store, shaping, cache, scroll_offsets, splitter_ratios)
   if widget_id_is_none(store.root) then
     return finish_work(store, work)
   end
@@ -78,5 +81,6 @@ export fn layout_column(
   cache: TextLayoutCache
 ) -> LayoutColumnResult = do
   let mut scroll_offsets: [i32] = []
-  layout_ui(store, theme, shaping, cache, 0, 0, scroll_offsets)
+  let mut splitter_ratios: [i32] = []
+  layout_ui(store, theme, shaping, cache, 0, 0, scroll_offsets, splitter_ratios)
 end

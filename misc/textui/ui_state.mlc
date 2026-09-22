@@ -2,7 +2,7 @@ import { WidgetId, widget_id_none, widget_id_equals } from './store'
 import { Selection, selection_none } from './selection'
 import { ClipboardBuffer, clipboard_buffer_empty } from './clipboard'
 
-export type GrabKind = GrabNone | GrabText | GrabClick | GrabScroll
+export type GrabKind = GrabNone | GrabText | GrabClick | GrabScroll | GrabList | GrabSplit
 
 export type DragGranularity = DragGranularityChar | DragGranularityWord
 
@@ -39,11 +39,23 @@ export type PointerScroll = {
   origin_offset: i32
 }
 
+export type PointerList = {
+  owner: WidgetId
+}
+
+export type PointerSplit = {
+  owner: WidgetId,
+  origin_position: i32,
+  origin_ratio: i32
+}
+
 export type PointerSession =
   PointerIdle
   | PointerText(PointerDrag)
   | PointerClickSession(PointerClick)
   | PointerScrollSession(PointerScroll)
+  | PointerListSession(PointerList)
+  | PointerSplitSession(PointerSplit)
 
 export type LastPress = {
   owner: WidgetId,
@@ -64,7 +76,10 @@ export type UiState = {
   hover: WidgetId,
   scroll_offsets: [i32],
   pick_enabled: bool,
-  inspected: WidgetId
+  inspected: WidgetId,
+  list_selected: [i32],
+  list_hover_row: i32,
+  splitter_ratios: [i32]
 }
 
 export fn grab_is_none(grab: GrabKind) -> bool =
@@ -73,6 +88,8 @@ export fn grab_is_none(grab: GrabKind) -> bool =
     | GrabText => false
     | GrabClick => false
     | GrabScroll => false
+    | GrabList => false
+    | GrabSplit => false
 
 export fn grab_is_text(grab: GrabKind) -> bool =
   match grab
@@ -80,6 +97,8 @@ export fn grab_is_text(grab: GrabKind) -> bool =
     | GrabText => true
     | GrabClick => false
     | GrabScroll => false
+    | GrabList => false
+    | GrabSplit => false
 
 export fn pointer_click_owns(pointer: PointerSession, owner: WidgetId) -> bool =
   match pointer
@@ -87,9 +106,40 @@ export fn pointer_click_owns(pointer: PointerSession, owner: WidgetId) -> bool =
     | PointerIdle => false
     | PointerText(_) => false
     | PointerScrollSession(_) => false
+    | PointerListSession(_) => false
+    | PointerSplitSession(_) => false
+
+export fn pointer_is_list(pointer: PointerSession) -> bool =
+  match pointer
+    | PointerListSession(_) => true
+    | PointerIdle => false
+    | PointerText(_) => false
+    | PointerClickSession(_) => false
+    | PointerScrollSession(_) => false
+    | PointerSplitSession(_) => false
+
+export fn pointer_list_owner(pointer: PointerSession) -> WidgetId =
+  match pointer
+    | PointerListSession(session) => session.owner
+    | PointerIdle => widget_id_none()
+    | PointerText(_) => widget_id_none()
+    | PointerClickSession(_) => widget_id_none()
+    | PointerScrollSession(_) => widget_id_none()
+    | PointerSplitSession(_) => widget_id_none()
+
+export fn pointer_split_owns(pointer: PointerSession, owner: WidgetId) -> bool =
+  match pointer
+    | PointerSplitSession(session) => widget_id_equals(session.owner, owner)
+    | PointerIdle => false
+    | PointerText(_) => false
+    | PointerClickSession(_) => false
+    | PointerScrollSession(_) => false
+    | PointerListSession(_) => false
 
 export fn ui_state_new() -> UiState = do
   let mut scroll_offsets: [i32] = []
+  let mut list_selected: [i32] = []
+  let mut splitter_ratios: [i32] = []
   UiState {
     selection: selection_none(),
     grab: GrabNone,
@@ -99,7 +149,10 @@ export fn ui_state_new() -> UiState = do
     hover: widget_id_none(),
     scroll_offsets: scroll_offsets,
     pick_enabled: false,
-    inspected: widget_id_none()
+    inspected: widget_id_none(),
+    list_selected: list_selected,
+    list_hover_row: 0 - 1,
+    splitter_ratios: splitter_ratios
   }
 end
 
@@ -121,7 +174,10 @@ export fn ui_state_with(
     hover: hover,
     scroll_offsets: state.scroll_offsets,
     pick_enabled: state.pick_enabled,
-    inspected: state.inspected
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios
   }
 
 export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) -> UiState =
@@ -134,7 +190,10 @@ export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) ->
     hover: state.hover,
     scroll_offsets: scroll_offsets,
     pick_enabled: state.pick_enabled,
-    inspected: state.inspected
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios
   }
 
 export fn ui_state_with_pick(state: UiState, pick_enabled: bool, inspected: WidgetId) -> UiState =
@@ -147,5 +206,56 @@ export fn ui_state_with_pick(state: UiState, pick_enabled: bool, inspected: Widg
     hover: state.hover,
     scroll_offsets: state.scroll_offsets,
     pick_enabled: pick_enabled,
-    inspected: inspected
+    inspected: inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios
+  }
+
+export fn ui_state_with_list_selected(state: UiState, list_selected: [i32]) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios
+  }
+
+export fn ui_state_with_list_hover_row(state: UiState, list_hover_row: i32) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: list_hover_row,
+    splitter_ratios: state.splitter_ratios
+  }
+
+export fn ui_state_with_splitter_ratios(state: UiState, splitter_ratios: [i32]) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: splitter_ratios
   }

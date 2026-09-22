@@ -9,6 +9,7 @@ import {
 } from './store'
 import { LayoutResult } from './layout_result'
 import { scroll_hit_chrome } from './widget_scroll'
+import { splitter_sash_hit } from './widget_split'
 
 fn hit_test_node(
   store: WidgetStore,
@@ -29,6 +30,9 @@ fn hit_test_node(
     end
   end
   if scroll_hit_chrome(store, layout, theme, id, x, y) then
+    return id
+  end
+  if splitter_sash_hit(store, layout, theme, id, x, y) then
     return id
   end
   let mut child_index = node.children.length() - 1

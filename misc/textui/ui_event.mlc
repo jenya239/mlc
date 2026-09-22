@@ -1,11 +1,18 @@
 import { WidgetId, widget_id_equals } from './store'
 
 export type UiEvent = {
-  widget: WidgetId
+  widget: WidgetId,
+  activated: bool
 }
 
 export fn ui_event_button_clicked(widget: WidgetId) -> UiEvent =
-  UiEvent { widget: widget }
+  UiEvent { widget: widget, activated: false }
+
+export fn ui_event_row_activated(widget: WidgetId) -> UiEvent =
+  UiEvent { widget: widget, activated: true }
 
 export fn ui_event_is_click_on(event: UiEvent, widget: WidgetId) -> bool =
-  widget_id_equals(event.widget, widget)
+  widget_id_equals(event.widget, widget) && event.activated == false
+
+export fn ui_event_is_activate_on(event: UiEvent, widget: WidgetId) -> bool =
+  widget_id_equals(event.widget, widget) && event.activated

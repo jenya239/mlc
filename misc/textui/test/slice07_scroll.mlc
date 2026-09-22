@@ -126,7 +126,8 @@ fn main() -> i32 = do
   let mut cache = text_layout_cache_new()
   let mut state = ui_state_new()
   let mut empty_offsets: [i32] = []
-  const first = layout_ui(store, theme, shaping, cache, 240, 160, empty_offsets)
+  let mut empty_ratios: [i32] = []
+  const first = layout_ui(store, theme, shaping, cache, 240, 160, empty_offsets, empty_ratios)
   shaping = first.shaping
   cache = first.cache
   const layout = first.layout
@@ -162,7 +163,9 @@ fn main() -> i32 = do
   if scroll_offset_at(state.scroll_offsets, scroller.index) <= 0 then
     return -3
   end
-  const moved = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets)
+  const moved = layout_ui(
+    store, theme, shaping, cache, 240, 160, state.scroll_offsets, state.splitter_ratios
+  )
   shaping = moved.shaping
   cache = moved.cache
   const moved_deep = moved.layout.rects[deep.index]

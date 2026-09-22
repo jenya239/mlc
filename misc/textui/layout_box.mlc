@@ -3,73 +3,38 @@ import { Theme } from './theme'
 import {
   WidgetStore,
   WidgetKind,
-  WidgetId,
-  BoxData
+  WidgetId
 } from './store'
+import {
+  box_padding_of,
+  box_gap_of,
+  box_is_row,
+  effective_gap,
+  extra_for,
+  visible_children,
+  grow_total_of
+} from './layout_metrics'
 import { TextShapingState } from '../gui/text_shaping'
 import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none } from './text_layout'
 import { label_preferred_size } from './widget_label'
 import { button_preferred_size } from './widget_button'
 import { scroll_offset_at } from './widget_scroll'
+import { list_content_height } from './widget_list'
+import { splitter_placement_for } from './widget_split'
 
 export type LayoutWork = {
   shaping: TextShapingState,
   cache: TextLayoutCache,
   rects: [Rect],
   text_layouts: [TextLayout],
-  scroll_offsets: [i32]
+  scroll_offsets: [i32],
+  splitter_ratios: [i32]
 }
 
 export type MeasureResult = {
   work: LayoutWork,
   size: Size
 }
-
-fn box_padding_of(kind: WidgetKind) -> i32 =
-  match kind
-    | KindBox(data) => data.padding
-    | KindLabel(_) => 0
-    | KindButton(_) => 0
-    | KindScrollView => 0
-
-fn box_gap_of(kind: WidgetKind) -> i32 =
-  match kind
-    | KindBox(data) => data.gap
-    | KindLabel(_) => 0
-    | KindButton(_) => 0
-    | KindScrollView => 0
-
-fn box_data_is_row(data: BoxData) -> bool =
-  match data.direction
-    | DirectionRow => true
-    | DirectionColumn => false
-
-fn box_is_row(kind: WidgetKind) -> bool =
-  match kind
-    | KindBox(data) => box_data_is_row(data)
-    | KindLabel(_) => false
-    | KindButton(_) => false
-    | KindScrollView => false
-
-fn effective_gap(theme: Theme, box_gap: i32) -> i32 = do
-  if box_gap > 0 then
-    return box_gap
-  end
-  theme.gap
-end
-
-fn extra_for(grow: i32, extra: i32, grow_total: i32) -> i32 = do
-  if extra <= 0 then
-    return 0
-  end
-  if grow <= 0 then
-    return 0
-  end
-  if grow_total <= 0 then
-    return 0
-  end
-  extra * grow / grow_total
-end
 
 fn work_with_text(work: LayoutWork, index: i32, layout: TextLayout) -> LayoutWork = do
   let mut text_layouts = work.text_layouts
@@ -79,7 +44,8 @@ fn work_with_text(work: LayoutWork, index: i32, layout: TextLayout) -> LayoutWor
     cache: work.cache,
     rects: work.rects,
     text_layouts: text_layouts,
-    scroll_offsets: work.scroll_offsets
+    scroll_offsets: work.scroll_offsets,
+    splitter_ratios: work.splitter_ratios
   }
 end
 
@@ -91,35 +57,9 @@ fn work_with_rect(work: LayoutWork, index: i32, rect: Rect) -> LayoutWork = do
     cache: work.cache,
     rects: rects,
     text_layouts: work.text_layouts,
-    scroll_offsets: work.scroll_offsets
+    scroll_offsets: work.scroll_offsets,
+    splitter_ratios: work.splitter_ratios
   }
-end
-
-fn visible_children(store: WidgetStore, id: WidgetId) -> [WidgetId] = do
-  let mut children: [WidgetId] = []
-  const node = store.nodes[id.index]
-  let mut index = 0
-  while index < node.children.length() do
-    const child = node.children[index]
-    if store.nodes[child.index].visible then
-      children.push(child)
-    end
-    index = index + 1
-  end
-  children
-end
-
-fn grow_total_of(store: WidgetStore, children: [WidgetId]) -> i32 = do
-  let mut total = 0
-  let mut index = 0
-  while index < children.length() do
-    const grow = store.nodes[children[index].index].grow
-    if grow > 0 then
-      total = total + grow
-    end
-    index = index + 1
-  end
-  total
 end
 
 fn measure_caption(
@@ -146,7 +86,8 @@ fn measure_caption(
     cache: built.cache,
     rects: work.rects,
     text_layouts: work.text_layouts,
-    scroll_offsets: work.scroll_offsets
+    scroll_offsets: work.scroll_offsets,
+    splitter_ratios: work.splitter_ratios
   }
   MeasureResult {
     work: work_with_text(next, index, built.layout),
@@ -165,6 +106,11 @@ export fn measure_node(
     | KindButton(data) => measure_caption(work, theme, id.index, data.text, true)
     | KindBox(_) => measure_box_node(work, store, theme, id)
     | KindScrollView => measure_scroll_node(work, store, theme, id)
+    | KindListView(data) => MeasureResult {
+      work: work,
+      size: size_new(0, list_content_height(theme, data.texts.length()))
+    }
+    | KindSplitter(_) => MeasureResult { work: work, size: size_new(0, 0) }
 
 export fn measure_box_node(
   work: LayoutWork,
@@ -366,3 +312,36 @@ export fn layout_node(
       height
     )
     | KindScrollView => layout_scroll_node(work, store, theme, id, x, y, width, height)
+    | KindListView(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
+    | KindSplitter(_) => layout_split_node(work, store, theme, id, x, y, width, height)
+
+export fn layout_split_node(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32
+) -> LayoutWork = do
+  let mut current = work_with_rect(work, id.index, rect_new(x, y, width, height))
+  const children = visible_children(store, id)
+  if children.length() == 0 then
+    return current
+  end
+  const placed = splitter_placement_for(
+    store, current.splitter_ratios, theme, id, x, y, width, height
+  )
+  current = layout_node(
+    current, store, theme, children[0],
+    placed.first.x, placed.first.y, placed.first.width, placed.first.height
+  )
+  if children.length() == 1 then
+    return current
+  end
+  return layout_node(
+    current, store, theme, children[1],
+    placed.second.x, placed.second.y, placed.second.width, placed.second.height
+  )
+end

@@ -6,7 +6,8 @@ import {
   widget_id_is_none,
   widget_id_equals,
   overflow_is_hidden,
-  kind_is_scroll_view
+  kind_is_scroll_view,
+  kind_is_splitter
 } from './store'
 import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
@@ -21,6 +22,8 @@ import {
   scroll_offset_at
 } from './widget_scroll'
 import { paint_pick_overlay } from './inspect'
+import { paint_list_rows } from './widget_list'
+import { paint_splitter_sash } from './widget_split'
 
 fn paint_selection(
   theme: Theme,
@@ -126,6 +129,8 @@ fn paint_node(
     | KindButton(data) => paint_button(theme, layout, state, node_index, data.text, operations)
     | KindBox(_) => operations
     | KindScrollView => operations
+    | KindListView(data) => paint_list_rows(theme, layout, state, node_index, data.texts, operations)
+    | KindSplitter(_) => operations
   end
   if overflow_is_hidden(node.overflow) then
     current_operations.push(OpPushClip(rect))
@@ -161,7 +166,12 @@ fn paint_node(
       }))
     end
   end
-  current_operations
+  if kind_is_splitter(node.kind) then
+    current_operations = paint_splitter_sash(
+      theme, store, layout, state, node_index, current_operations
+    )
+  end
+  return current_operations
 end
 
 export fn paint_ui_frame(

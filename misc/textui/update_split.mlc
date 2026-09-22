@@ -1,0 +1,107 @@
+import { Theme } from './theme'
+import { WidgetStore, WidgetId, BoxDirection } from './store'
+import { LayoutResult } from './layout_result'
+import {
+  UiState,
+  GrabSplit,
+  PointerSplit,
+  PointerSplitSession,
+  ui_state_with,
+  ui_state_with_splitter_ratios
+} from './ui_state'
+import { UiInput } from './ui_input'
+import {
+  splitter_ratio_at,
+  splitter_ratio_from_drag,
+  splitter_ratios_put
+} from './widget_split'
+
+fn splitter_fallback_ratio(store: WidgetStore, id: WidgetId) -> i32 =
+  match store.nodes[id.index].kind
+    | KindSplitter(data) => data.ratio_thousandths
+    | KindBox(_) => 500
+    | KindLabel(_) => 500
+    | KindButton(_) => 500
+    | KindScrollView => 500
+    | KindListView(_) => 500
+
+fn direction_is_row(direction: BoxDirection) -> bool =
+  match direction
+    | DirectionRow => true
+    | DirectionColumn => false
+
+fn splitter_is_row(store: WidgetStore, id: WidgetId) -> bool =
+  match store.nodes[id.index].kind
+    | KindSplitter(data) => direction_is_row(data.direction)
+    | KindBox(_) => true
+    | KindLabel(_) => true
+    | KindButton(_) => true
+    | KindScrollView => true
+    | KindListView(_) => true
+
+fn splitter_available(store: WidgetStore, layout: LayoutResult, theme: Theme, id: WidgetId) -> i32 = do
+  const rect = layout.rects[id.index]
+  let mut main = rect.height
+  if splitter_is_row(store, id) then
+    main = rect.width
+  end
+  let mut available = main - theme.splitter_width
+  if available < 0 then
+    available = 0
+  end
+  return available
+end
+
+export fn begin_split_press(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  owner: WidgetId
+) -> UiState = do
+  const ratio = splitter_ratio_at(state.splitter_ratios, owner.index, splitter_fallback_ratio(store, owner))
+  let mut origin = input.mouse_y
+  if splitter_is_row(store, owner) then
+    origin = input.mouse_x
+  end
+  return ui_state_with(
+    state,
+    state.selection,
+    GrabSplit,
+    PointerSplitSession(PointerSplit {
+      owner: owner,
+      origin_position: origin,
+      origin_ratio: ratio
+    }),
+    state.last_press,
+    state.clipboard,
+    owner
+  )
+end
+
+export fn handle_split_drag(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  session: PointerSplit
+) -> UiState = do
+  const available = splitter_available(store, layout, theme, session.owner)
+  let mut position = input.mouse_y
+  if splitter_is_row(store, session.owner) then
+    position = input.mouse_x
+  end
+  const ratio = splitter_ratio_from_drag(
+    available,
+    session.origin_ratio,
+    session.origin_position,
+    position,
+    theme.splitter_min
+  )
+  return ui_state_with_splitter_ratios(
+    state,
+    splitter_ratios_put(state.splitter_ratios, session.owner.index, ratio)
+  )
+end

@@ -1,0 +1,311 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  DirectionRow,
+  ListData,
+  OverflowVisible,
+  SplitterData,
+  WidgetId,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_add_splitter,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { paint_ui_frame } from '../paint_pass'
+import { GrabKind, ui_state_new } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { selection_is_empty } from '../selection'
+import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from '../ui_event'
+import { hit_test } from '../hit'
+import { DrawOp } from '../draw_op'
+import { list_index_at, list_row_height, list_selected_at } from '../widget_list'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: down,
+    left_released: released,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: now_ms
+  }
+
+fn grab_is_list(grab: GrabKind) -> bool =
+  match grab
+    | GrabList => true
+    | GrabNone => false
+    | GrabText => false
+    | GrabClick => false
+    | GrabScroll => false
+    | GrabSplit => false
+
+fn row_texts() -> [string] = do
+  let mut texts: [string] = []
+  let mut index = 0
+  while index < 10 do
+    texts.push("row" + index.to_string())
+    index = index + 1
+  end
+  texts
+end
+
+fn build_list() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_scroll_view(store, widget_id_none(), 1, true)
+  widget_store_add_list_view(
+    store, store.root, ListData { texts: row_texts() }, 0, true
+  )
+end
+
+fn build_split() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_splitter(
+    store,
+    store.root,
+    SplitterData { direction: DirectionRow, ratio_thousandths: 280 },
+    1,
+    true
+  )
+  const splitter = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_list_view(
+    store, splitter, ListData { texts: row_texts() }, 0, true
+  )
+  widget_store_add_list_view(
+    store, splitter, ListData { texts: row_texts() }, 1, true
+  )
+end
+
+fn has_text(operations: [DrawOp], text: string) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(data) => data.text == text
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn has_selected_fill(operations: [DrawOp], theme: Theme) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.color.red == theme.list_selected.red
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn clicked(events: [UiEvent], owner: WidgetId) -> bool = do
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_click_on(events[index], owner) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn activated(events: [UiEvent], owner: WidgetId) -> bool = do
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_activate_on(events[index], owner) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_list()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  let mut state = ui_state_new()
+  const laid = layout_ui(store, theme, shaping, cache, 200, 90, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const list = store.nodes[1].id
+  const list_rect = laid.layout.rects[list.index]
+  const row_height = list_row_height(theme)
+  if list_rect.height != 10 * row_height then
+    return -1
+  end
+  if list_index_at(list_rect, theme, 10, list_rect.y + row_height * 2 + 1) != 2 then
+    return -2
+  end
+
+  const row_y = list_rect.y + row_height * 2 + 1
+  const pressed = ui_update(
+    store, laid.layout, theme, state, pointer_at(8, row_y, true, true, false, 0)
+  )
+  state = pressed.state
+  if pressed.events.length() != 0 then
+    return -3
+  end
+  if selection_is_empty(state.selection) == false then
+    return -3
+  end
+  if grab_is_list(state.grab) == false then
+    return -3
+  end
+  if list_selected_at(state.list_selected, list.index) != 2 then
+    return -3
+  end
+
+  const dragged = ui_update(
+    store, laid.layout, theme, state, pointer_at(8, list_rect.y + 1, false, true, false, 16)
+  )
+  state = dragged.state
+  if list_selected_at(state.list_selected, list.index) != 0 then
+    return -4
+  end
+
+  const released = ui_update(
+    store, laid.layout, theme, state, pointer_at(8, row_y, false, false, true, 32)
+  )
+  state = released.state
+  const again = ui_update(
+    store, laid.layout, theme, state, pointer_at(8, row_y, true, true, false, 200)
+  )
+  if activated(again.events, list) == false then
+    return -6
+  end
+  if clicked(again.events, list) then
+    return -6
+  end
+
+  const painted = paint_ui_frame(theme, store, laid.layout, dragged.state)
+  if has_text(painted, "row0") == false then
+    return -5
+  end
+  if has_selected_fill(painted, theme) == false then
+    return -5
+  end
+  if has_text(painted, "row9") then
+    return -5
+  end
+
+  const split_store = build_split()
+  const split_laid = layout_ui(
+    split_store, theme, shaping, cache, 1000, 200, state.scroll_offsets, ratios
+  )
+  const splitter = split_store.nodes[1].id
+  const left = split_store.nodes[2].id
+  const left_rect = split_laid.layout.rects[left.index]
+  const right_rect = split_laid.layout.rects[3]
+  const available = 1000 - theme.splitter_width
+  const expected = available * 280 / 1000
+  if left_rect.width != expected && left_rect.width != theme.splitter_min then
+    return -7
+  end
+  if left_rect.width < theme.splitter_min then
+    return -7
+  end
+  if right_rect.x != left_rect.x + left_rect.width + theme.splitter_width then
+    return -7
+  end
+
+  const sash_x = left_rect.x + left_rect.width + 1
+  const sash_hit = hit_test(split_store, split_laid.layout, theme, sash_x, 20)
+  if widget_id_equals(sash_hit, splitter) == false then
+    return -8
+  end
+  const pane_hit = hit_test(split_store, split_laid.layout, theme, left_rect.x + 4, 20)
+  if widget_id_equals(pane_hit, left) == false then
+    return -8
+  end
+
+  let mut split_state = ui_state_new()
+  const sash_press = ui_update(
+    split_store,
+    split_laid.layout,
+    theme,
+    split_state,
+    pointer_at(sash_x, 20, true, true, false, 0)
+  )
+  split_state = sash_press.state
+  const sash_drag = ui_update(
+    split_store,
+    split_laid.layout,
+    theme,
+    split_state,
+    pointer_at(sash_x + 120, 20, false, true, false, 16)
+  )
+  const widened = layout_ui(
+    split_store,
+    theme,
+    shaping,
+    cache,
+    1000,
+    200,
+    sash_drag.state.scroll_offsets,
+    sash_drag.state.splitter_ratios
+  )
+  if widened.layout.rects[left.index].width <= left_rect.width then
+    return -9
+  end
+
+  const collapse_press = ui_update(
+    split_store,
+    split_laid.layout,
+    theme,
+    ui_state_new(),
+    pointer_at(sash_x, 20, true, true, false, 0)
+  )
+  const collapse_drag = ui_update(
+    split_store,
+    split_laid.layout,
+    theme,
+    collapse_press.state,
+    pointer_at(0, 20, false, true, false, 16)
+  )
+  const collapsed = layout_ui(
+    split_store,
+    theme,
+    shaping,
+    cache,
+    1000,
+    200,
+    collapse_drag.state.scroll_offsets,
+    collapse_drag.state.splitter_ratios
+  )
+  if collapsed.layout.rects[left.index].width != theme.splitter_min then
+    return -10
+  end
+  0
+end

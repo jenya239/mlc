@@ -1,0 +1,107 @@
+import { WidgetId } from '../store'
+import { Selection } from '../selection'
+import {
+  GrabClick,
+  PointerClick,
+  PointerClickSession,
+  ui_state_new,
+  ui_state_with,
+  ui_state_with_list_hover_row,
+  ui_state_with_list_selected,
+  ui_state_with_scroll_offsets,
+  ui_state_with_splitter_ratios
+} from '../ui_state'
+import { FrameRequest, frame_request, frame_signature } from '../frame_request'
+
+fn request_code(request: FrameRequest) -> i32 =
+  match request
+    | FrameRequestNone => 0
+    | FrameRequestPaint => 1
+    | FrameRequestLayout => 2
+
+fn main() -> i32 = do
+  const base = ui_state_new()
+  const first = frame_signature(base, 200, 100)
+  const same = frame_signature(base, 200, 100)
+  if request_code(frame_request(first, same)) != 0 then
+    return -1
+  end
+
+  const hovered = ui_state_with(
+    base,
+    base.selection,
+    base.grab,
+    base.pointer,
+    base.last_press,
+    base.clipboard,
+    WidgetId { index: 3 }
+  )
+  const hover_signature = frame_signature(hovered, 200, 100)
+  if request_code(frame_request(first, hover_signature)) != 1 then
+    return -2
+  end
+  if request_code(frame_request(hover_signature, frame_signature(hovered, 200, 100))) != 0 then
+    return -2
+  end
+
+  const row = ui_state_with_list_hover_row(hovered, 4)
+  if request_code(frame_request(hover_signature, frame_signature(row, 200, 100))) != 1 then
+    return -3
+  end
+
+  let mut offsets: [i32] = []
+  offsets.push(12)
+  const scrolled = ui_state_with_scroll_offsets(base, offsets)
+  if request_code(frame_request(first, frame_signature(scrolled, 200, 100))) != 2 then
+    return -4
+  end
+
+  let mut ratios: [i32] = []
+  ratios.push(400)
+  const split = ui_state_with_splitter_ratios(base, ratios)
+  if request_code(frame_request(first, frame_signature(split, 200, 100))) != 2 then
+    return -5
+  end
+
+  if request_code(frame_request(first, frame_signature(base, 240, 100))) != 2 then
+    return -6
+  end
+
+  let mut selected: [i32] = []
+  selected.push(1)
+  const chosen = ui_state_with_list_selected(base, selected)
+  if request_code(frame_request(first, frame_signature(chosen, 200, 100))) != 1 then
+    return -7
+  end
+
+  const marked = ui_state_with(
+    base,
+    Selection { owner: WidgetId { index: 1 }, anchor: 0, focus: 4 },
+    base.grab,
+    base.pointer,
+    base.last_press,
+    base.clipboard,
+    base.hover
+  )
+  if request_code(frame_request(first, frame_signature(marked, 200, 100))) != 1 then
+    return -8
+  end
+
+  const pressed = ui_state_with(
+    base,
+    base.selection,
+    GrabClick,
+    PointerClickSession(PointerClick {
+      owner: WidgetId { index: 4 },
+      origin_x: 1,
+      origin_y: 2
+    }),
+    base.last_press,
+    base.clipboard,
+    base.hover
+  )
+  if request_code(frame_request(first, frame_signature(pressed, 200, 100))) != 1 then
+    return -9
+  end
+  0
+end

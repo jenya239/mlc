@@ -353,8 +353,10 @@ void glfw_gl_context_wait_events_timeout(double timeout_seconds) {
   if (window == nullptr) {
     return;
   }
+  // Negative timeout waits until a GLFW event. Zero polls already-queued events.
   if (timeout_seconds < 0.0) {
-    timeout_seconds = 0.0;
+    glfwWaitEvents();
+    return;
   }
   glfwWaitEventsTimeout(timeout_seconds);
 }

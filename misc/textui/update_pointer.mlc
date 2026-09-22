@@ -6,14 +6,21 @@ import { apply_pick_press } from './inspect'
 import { handle_text_drag } from './update_pointer_text'
 import { click_release_events } from './update_pointer_click'
 import { handle_scroll_drag } from './update_scroll'
+import { handle_list_drag, list_hover_row_at } from './update_list'
+import { handle_split_drag } from './update_split'
 import { hit_test } from './hit'
 import { kind_is_clickable } from './user_select'
+import { kind_is_list_view, kind_is_splitter } from './store'
 import {
   UiState,
-  ui_state_with
+  LastPress,
+  ui_state_with,
+  ui_state_with_list_hover_row,
+  pointer_is_list,
+  pointer_list_owner
 } from './ui_state'
 import { UiInput } from './ui_input'
-import { UiEvent } from './ui_event'
+import { UiEvent, ui_event_row_activated } from './ui_event'
 
 export type PointerUpdate = {
   state: UiState,
@@ -32,6 +39,8 @@ fn pointer_while_down(
     | PointerClickSession(_) => state
     | PointerText(drag) => handle_text_drag(layout, theme, state, input, drag)
     | PointerScrollSession(session) => handle_scroll_drag(store, layout, state, input, session)
+    | PointerListSession(session) => handle_list_drag(store, layout, theme, state, input, session.owner)
+    | PointerSplitSession(session) => handle_split_drag(store, layout, theme, state, input, session)
 
 fn hover_from_hit(
   store: WidgetStore,
@@ -51,11 +60,17 @@ fn hover_from_hit(
     end
     return hit
   end
-  if kind_is_clickable(store.nodes[hit.index].kind) then
+  const kind = store.nodes[hit.index].kind
+  if kind_is_clickable(kind) || kind_is_list_view(kind) || kind_is_splitter(kind) then
     return hit
   end
   return widget_id_none()
 end
+
+fn last_press_count(state: UiState) -> i32 =
+  match state.last_press
+    | LastPressNone => 0
+    | LastPressSome(press) => press.count
 
 fn release_pointer(state: UiState) -> UiState =
   ui_state_with(
@@ -82,6 +97,9 @@ export fn update_pointer(
   end
   if input.left_pressed && current.pick_enabled == false then
     current = handle_press(store, layout, theme, current, input)
+    if pointer_is_list(current.pointer) && last_press_count(current) >= 2 then
+      events.push(ui_event_row_activated(pointer_list_owner(current.pointer)))
+    end
   end
   if input.left_down then
     current = pointer_while_down(store, layout, theme, current, input)
@@ -90,6 +108,9 @@ export fn update_pointer(
     events = click_release_events(store, layout, theme, current, input)
     current = release_pointer(current)
   end
+  const hover = hover_from_hit(
+    store, layout, theme, current.pick_enabled, input.mouse_x, input.mouse_y
+  )
   current = ui_state_with(
     current,
     current.selection,
@@ -97,11 +118,13 @@ export fn update_pointer(
     current.pointer,
     current.last_press,
     current.clipboard,
-    hover_from_hit(
-      store, layout, theme, current.pick_enabled, input.mouse_x, input.mouse_y
-    )
+    hover
   )
-  PointerUpdate {
+  current = ui_state_with_list_hover_row(
+    current,
+    list_hover_row_at(store, layout, theme, hover, input.mouse_y)
+  )
+  return PointerUpdate {
     state: current,
     events: events
   }

@@ -1,0 +1,98 @@
+import { Theme } from './theme'
+import { WidgetStore, WidgetId, WidgetKind, widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import { selection_none } from './selection'
+import { LastPress, LastPressSome } from './ui_state'
+import {
+  UiState,
+  GrabList,
+  PointerList,
+  PointerListSession,
+  ui_state_with,
+  ui_state_with_list_selected
+} from './ui_state'
+import { UiInput } from './ui_input'
+import { list_index_at, list_index_clamped, list_selected_put } from './widget_list'
+
+fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
+  const count = match store.nodes[id.index].kind
+    | KindListView(data) => data.texts.length()
+    | KindBox(_) => 0
+    | KindLabel(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+    | KindSplitter(_) => 0
+  return count
+end
+
+export fn begin_list_press(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  owner: WidgetId,
+  count: i32
+) -> UiState = do
+  const row_count = list_row_count(store, owner)
+  const index = list_index_at(layout.rects[owner.index], theme, row_count, input.mouse_y)
+  const last_press = LastPressSome(LastPress {
+    owner: owner,
+    x: input.mouse_x,
+    y: input.mouse_y,
+    time_ms: input.now_ms,
+    count: count
+  })
+  const pressed = ui_state_with(
+    state,
+    selection_none(),
+    GrabList,
+    PointerListSession(PointerList { owner: owner }),
+    last_press,
+    state.clipboard,
+    owner
+  )
+  if index < 0 then
+    return pressed
+  end
+  return ui_state_with_list_selected(
+    pressed,
+    list_selected_put(state.list_selected, owner.index, index)
+  )
+end
+
+export fn list_hover_row_at(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  hover: WidgetId,
+  y: i32
+) -> i32 = do
+  if widget_id_is_none(hover) then
+    return 0 - 1
+  end
+  const row_count = list_row_count(store, hover)
+  if row_count <= 0 then
+    return 0 - 1
+  end
+  return list_index_at(layout.rects[hover.index], theme, row_count, y)
+end
+
+export fn handle_list_drag(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput,
+  owner: WidgetId
+) -> UiState = do
+  const row_count = list_row_count(store, owner)
+  const index = list_index_clamped(layout.rects[owner.index], theme, row_count, input.mouse_y)
+  if index < 0 then
+    return state
+  end
+  return ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, owner.index, index)
+  )
+end

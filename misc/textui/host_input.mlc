@@ -37,8 +37,10 @@ export type HostPoll = {
 export fn host_buttons_new() -> HostButtons =
   HostButtons { previous_left_down: 0, scroll_remainder: 0.0 }
 
+export fn host_wait_for_input() -> unit =
+  glfw_gl_context_wait_events_timeout(0.0 - 1.0)
+
 export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
-  glfw_gl_context_wait_events_timeout(0.0)
   const left_down_flag = glfw_gl_mouse_left_down()
   const left_pressed = buttons.previous_left_down == 0 && left_down_flag != 0
   const left_released = buttons.previous_left_down != 0 && left_down_flag == 0

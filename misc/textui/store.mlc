@@ -34,11 +34,22 @@ export type ButtonData = {
   text: string
 }
 
+export type ListData = {
+  texts: [string]
+}
+
+export type SplitterData = {
+  direction: BoxDirection,
+  ratio_thousandths: i32
+}
+
 export type WidgetKind =
   KindBox(BoxData)
   | KindLabel(LabelData)
   | KindButton(ButtonData)
   | KindScrollView
+  | KindListView(ListData)
+  | KindSplitter(SplitterData)
 
 export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
   match kind
@@ -46,6 +57,26 @@ export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
     | KindBox(_) => false
     | KindLabel(_) => false
     | KindButton(_) => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+
+export fn kind_is_list_view(kind: WidgetKind) -> bool =
+  match kind
+    | KindListView(_) => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindSplitter(_) => false
+
+export fn kind_is_splitter(kind: WidgetKind) -> bool =
+  match kind
+    | KindSplitter(_) => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
 
 export type WidgetNode = {
   id: WidgetId,
@@ -152,3 +183,21 @@ export fn widget_store_add_scroll_view(
   visible: bool
 ) -> WidgetStore =
   widget_store_append(store, parent, KindScrollView, OverflowHidden, grow, visible)
+
+export fn widget_store_add_list_view(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: ListData,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindListView(data), OverflowVisible, grow, visible)
+
+export fn widget_store_add_splitter(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: SplitterData,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindSplitter(data), OverflowHidden, grow, visible)
