@@ -1,6 +1,7 @@
 import { Theme } from './theme'
 import { LayoutResult } from './layout_result'
 import { label_index_at, label_word_range } from './widget_label'
+import { field_index_at, field_scroll_to_caret } from './widget_field'
 import { Selection } from './selection'
 import { selection_publish_primary } from './selection_text'
 import { pointer_past_slop } from './pointer_slop'
@@ -9,7 +10,8 @@ import {
   PointerDrag,
   GrabKind,
   pointer_drag_claimed,
-  ui_state_with
+  ui_state_with,
+  ui_state_with_field
 } from './ui_state'
 import { UiInput } from './ui_input'
 
@@ -98,19 +100,28 @@ fn handle_char_drag(
       state.hover
     )
   end
-  const focus = label_index_at(
-    theme,
-    layout.rects[drag.owner.index],
-    layout.text_layouts[drag.owner.index],
-    input.mouse_x,
-    input.mouse_y
-  )
-  publish_text_drag(
+  const rect = layout.rects[drag.owner.index]
+  const text_layout = layout.text_layouts[drag.owner.index]
+  let mut scroll_x = 0
+  if drag.owner.index == state.focus.index then
+    scroll_x = state.field_scroll_x
+  end
+  const caret = field_index_at(theme, rect, text_layout, scroll_x, input.mouse_x, input.mouse_y)
+  const dragged = publish_text_drag(
     layout,
     state,
     drag,
     grab,
-    Selection { owner: drag.owner, anchor: drag.anchor, focus: focus }
+    Selection { owner: drag.owner, anchor: drag.anchor, focus: caret }
+  )
+  if drag.owner.index != state.focus.index then
+    return dragged
+  end
+  return ui_state_with_field(
+    dragged,
+    state.focus,
+    caret,
+    field_scroll_to_caret(theme, rect, text_layout, caret, scroll_x)
   )
 end
 

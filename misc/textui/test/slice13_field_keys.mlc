@@ -1,0 +1,239 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  field_data_new,
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { ui_state_new } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { ui_event_is_activate_on, UiEvent } from '../ui_event'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn pointer_at(x: i32, y: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: true,
+    left_down: true,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn key_input(
+  text: string,
+  binding_key: string,
+  control_down: bool,
+  shift_down: bool,
+  backspace_pressed: bool,
+  enter_pressed: bool,
+  paste_text: string
+) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: control_down,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: binding_key,
+    shift_down: shift_down,
+    backspace_pressed: backspace_pressed,
+    enter_pressed: enter_pressed,
+    paste_text: paste_text
+  }
+
+fn build_row() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(
+    store, store.root, field_data_new("abcdef"), 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "label" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, store.root, ButtonData { text: "Go" }, OverflowVisible, 0, true
+  )
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn activated(events: [UiEvent], owner: WidgetId) -> bool = do
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_activate_on(events[index], owner) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut store = build_row()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  let mut state = ui_state_new()
+  let mut laid = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const field = store.nodes[1].id
+  const label = store.nodes[2].id
+  const field_rect = laid.layout.rects[field.index]
+  const label_rect = laid.layout.rects[label.index]
+
+  const pressed = ui_update(
+    store, laid.layout, theme, state, pointer_at(field_rect.x + 2, field_rect.y + 4)
+  )
+  state = pressed.state
+  const typed = ui_update(
+    store, laid.layout, theme, state, key_input("Z", "", false, false, false, false, "")
+  )
+  store = typed.store
+  state = typed.state
+  if field_text(store.nodes[field.index].kind) != "Zabcdef" then
+    return -1
+  end
+  if state.field_caret != 1 then
+    return -1
+  end
+
+  laid = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const erased = ui_update(
+    store, laid.layout, theme, state, key_input("", "", false, false, true, false, "")
+  )
+  store = erased.store
+  state = erased.state
+  if field_text(store.nodes[field.index].kind) != "abcdef" then
+    return -2
+  end
+  if state.field_caret != 0 then
+    return -2
+  end
+
+  laid = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios)
+  const moved = ui_update(
+    store, laid.layout, theme, state, key_input("", "right", false, true, false, false, "")
+  )
+  state = moved.state
+  if widget_id_equals(state.selection.owner, field) == false then
+    return -3
+  end
+  if state.selection.anchor == state.selection.focus then
+    return -3
+  end
+
+  const labeled = ui_update(
+    store, laid.layout, theme, state, pointer_at(label_rect.x + 4, label_rect.y + 4)
+  )
+  state = labeled.state
+  const inserted = ui_update(
+    store, laid.layout, theme, state, key_input("Q", "", false, false, false, false, "")
+  )
+  store = inserted.store
+  state = inserted.state
+  if widget_id_equals(state.focus, field) == false then
+    return -4
+  end
+  if widget_id_equals(state.selection.owner, label) == false then
+    return -4
+  end
+  const edited = field_text(store.nodes[field.index].kind)
+  if edited.byte_size() != 7 || edited.contains("Q") == false then
+    return -4
+  end
+
+  const submitted = ui_update(
+    store, laid.layout, theme, state, key_input("", "", false, false, false, true, "")
+  )
+  if activated(submitted.events, field) == false then
+    return -5
+  end
+  if field_text(submitted.store.nodes[field.index].kind) != edited then
+    return -5
+  end
+  state = submitted.state
+  store = submitted.store
+
+  const selected = ui_update(
+    store, laid.layout, theme, state, key_input("", "a", true, false, false, false, "")
+  )
+  state = selected.state
+  const replaced = ui_update(
+    store, laid.layout, theme, state, key_input("X", "", false, false, false, false, "")
+  )
+  store = replaced.store
+  state = replaced.state
+  if field_text(store.nodes[field.index].kind) != "X" then
+    return -6
+  end
+
+  const pasted = ui_update(
+    store, laid.layout, theme, state, key_input("", "v", true, false, false, false, "ab\ncd")
+  )
+  store = pasted.store
+  state = pasted.state
+  if field_text(store.nodes[field.index].kind) != "Xab" then
+    return -7
+  end
+
+  const marked = ui_update(
+    store, laid.layout, theme, state, key_input("", "a", true, false, false, false, "")
+  )
+  const cut = ui_update(
+    marked.store, laid.layout, theme, marked.state, key_input("", "x", true, false, false, false, "")
+  )
+  if field_text(cut.store.nodes[field.index].kind) != "" then
+    return -8
+  end
+  if cut.state.clipboard.clipboard != "Xab" then
+    return -8
+  end
+  0
+end

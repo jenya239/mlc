@@ -247,6 +247,69 @@ void on_char(GLFWwindow* /*window*/, unsigned int codepoint) {
   append_utf8(pending_text(), codepoint);
 }
 
+std::deque<std::string>& pending_edit_repeats() {
+  static std::deque<std::string> repeats;
+  return repeats;
+}
+
+void discard_one_edit_repeat(const char* name) {
+  std::deque<std::string>& repeats = pending_edit_repeats();
+  for (std::deque<std::string>::iterator item = repeats.begin(); item != repeats.end(); ++item) {
+    if (*item == name) {
+      repeats.erase(item);
+      return;
+    }
+  }
+}
+
+const char* edit_repeat_name(int key, int mods) {
+  switch (key) {
+    case GLFW_KEY_BACKSPACE:
+      return "backspace";
+    case GLFW_KEY_DELETE:
+      return "delete";
+    case GLFW_KEY_LEFT:
+      return "left";
+    case GLFW_KEY_RIGHT:
+      return "right";
+    case GLFW_KEY_HOME:
+      return "home";
+    case GLFW_KEY_END:
+      return "end";
+    case GLFW_KEY_KP_7:
+      // Numpad 7 is Home while Num Lock is off. GLFW reports the physical key.
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "home";
+      }
+      return nullptr;
+    case GLFW_KEY_KP_1:
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "end";
+      }
+      return nullptr;
+    default:
+      return nullptr;
+  }
+}
+
+void on_key(GLFWwindow* /*window*/, int key, int /*scancode*/, int action, int mods) {
+  // glfwGetKey stays pressed and hides GLFW_REPEAT. Home and End are queued
+  // on press as well: a tap is often released before the next poll, and the
+  // numpad pair is a physical key (KP_7 / KP_1) rather than GLFW_KEY_HOME.
+  if (action != GLFW_PRESS && action != GLFW_REPEAT) {
+    return;
+  }
+  const char* name = edit_repeat_name(key, mods);
+  if (name == nullptr) {
+    return;
+  }
+  const bool navigation_jump = key == GLFW_KEY_HOME || key == GLFW_KEY_END ||
+    key == GLFW_KEY_KP_7 || key == GLFW_KEY_KP_1;
+  if (navigation_jump || action == GLFW_REPEAT) {
+    pending_edit_repeats().push_back(name);
+  }
+}
+
 void on_scroll(GLFWwindow* /*window*/, double /*offset_x*/, double offset_y) {
   pending_scroll_y() += offset_y;
 }
@@ -311,10 +374,13 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
   }
   pending_text().clear();
   pending_drop_paths().clear();
+  pending_edit_repeats().clear();
   pending_scroll_y() = 0.0;
   cached_window_width() = window_width;
   cached_window_height() = window_height;
   glfwSetCharCallback(window, on_char);
+  glfwSetKeyCallback(window, on_key);
+  glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
   glfwSetScrollCallback(window, on_scroll);
   glfwSetWindowSizeCallback(window, on_window_size);
   glfwSetDropCallback(window, on_drop);
@@ -369,6 +435,7 @@ void glfw_gl_context_end() {
   glfw_gl_input_test_clear();
   pending_text().clear();
   pending_drop_paths().clear();
+  pending_edit_repeats().clear();
   pending_scroll_y() = 0.0;
   cached_window_width() = 0;
   cached_window_height() = 0;
@@ -591,6 +658,7 @@ void glfw_gl_input_test_clear() {
   input_test_override() = InputTestOverride{};
   pending_text().clear();
   pending_drop_paths().clear();
+  pending_edit_repeats().clear();
   pending_scroll_y() = 0.0;
   clipboard_test_override() = ClipboardTestOverride{};
   mods_test_override() = ModsTestOverride{};
@@ -772,9 +840,11 @@ String glfw_gl_take_binding_key() {
     return String("down");
   }
   if (edge_key_down(GLFW_KEY_HOME, edges.key_home) != 0) {
+    discard_one_edit_repeat("home");
     return String("home");
   }
   if (edge_key_down(GLFW_KEY_END, edges.key_end) != 0) {
+    discard_one_edit_repeat("end");
     return String("end");
   }
   if (edge_key_down(GLFW_KEY_PAGE_UP, edges.key_page_up) != 0) {
@@ -811,6 +881,16 @@ void glfw_gl_mods_test_set(int32_t ctrl_down, int32_t shift_down, int32_t alt_do
 
 void glfw_gl_binding_key_test_push(String key) {
   pending_binding_key() = std::string(key.raw_data(), key.size());
+}
+
+String glfw_gl_take_edit_repeat() {
+  std::deque<std::string>& repeats = pending_edit_repeats();
+  if (repeats.empty()) {
+    return String();
+  }
+  String taken(repeats.front());
+  repeats.pop_front();
+  return taken;
 }
 
 String glfw_gl_take_drop_path() {
@@ -866,6 +946,7 @@ int32_t glfw_gl_mod_ctrl_down() { return 0; }
 int32_t glfw_gl_mod_shift_down() { return 0; }
 int32_t glfw_gl_mod_alt_down() { return 0; }
 String glfw_gl_take_binding_key() { return String(); }
+String glfw_gl_take_edit_repeat() { return String(); }
 void glfw_gl_mods_test_set(int32_t, int32_t, int32_t) {}
 void glfw_gl_binding_key_test_push(String) {}
 

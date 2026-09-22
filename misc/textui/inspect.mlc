@@ -20,6 +20,7 @@ fn kind_name(kind: WidgetKind) -> string =
     | KindScrollView => "ScrollView"
     | KindListView(_) => "ListView"
     | KindSplitter(_) => "Splitter"
+    | KindTextField(_) => "TextField"
 
 fn kind_text(kind: WidgetKind) -> string =
   match kind
@@ -29,6 +30,7 @@ fn kind_text(kind: WidgetKind) -> string =
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
+    | KindTextField(data) => data.text
 
 export fn widget_inspect_report(store: WidgetStore, layout: LayoutResult, id: WidgetId) -> string = do
   if widget_id_is_none(id) then

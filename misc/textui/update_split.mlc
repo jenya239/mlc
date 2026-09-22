@@ -24,6 +24,7 @@ fn splitter_fallback_ratio(store: WidgetStore, id: WidgetId) -> i32 =
     | KindButton(_) => 500
     | KindScrollView => 500
     | KindListView(_) => 500
+    | KindTextField(_) => 500
 
 fn direction_is_row(direction: BoxDirection) -> bool =
   match direction
@@ -38,6 +39,7 @@ fn splitter_is_row(store: WidgetStore, id: WidgetId) -> bool =
     | KindButton(_) => true
     | KindScrollView => true
     | KindListView(_) => true
+    | KindTextField(_) => true
 
 fn splitter_available(store: WidgetStore, layout: LayoutResult, theme: Theme, id: WidgetId) -> i32 = do
   const rect = layout.rects[id.index]

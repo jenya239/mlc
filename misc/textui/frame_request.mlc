@@ -22,7 +22,12 @@ export type FrameSignature = {
   inspected_index: i32,
   grab_code: i32,
   pointer_code: i32,
-  pointer_owner: i32
+  pointer_owner: i32,
+  focus_index: i32,
+  field_caret: i32,
+  field_scroll_x: i32,
+  field_revision: i32,
+  listing_revision: i32
 }
 
 fn copy_integers(values: [i32]) -> [i32] = do
@@ -84,11 +89,22 @@ export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: 
     inspected_index: state.inspected.index,
     grab_code: grab_code(state.grab),
     pointer_code: pointer.code,
-    pointer_owner: pointer.owner
+    pointer_owner: pointer.owner,
+    focus_index: state.focus.index,
+    field_caret: state.field_caret,
+    field_scroll_x: state.field_scroll_x,
+    field_revision: state.field_revision,
+    listing_revision: state.listing_revision
   }
 end
 
 fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if previous.field_revision != next.field_revision then
+    return true
+  end
+  if previous.listing_revision != next.listing_revision then
+    return true
+  end
   if previous.viewport_width != next.viewport_width then
     return true
   end
@@ -132,7 +148,16 @@ fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
   if previous.pointer_code != next.pointer_code then
     return true
   end
-  previous.pointer_owner != next.pointer_owner
+  if previous.pointer_owner != next.pointer_owner then
+    return true
+  end
+  if previous.focus_index != next.focus_index then
+    return true
+  end
+  if previous.field_caret != next.field_caret then
+    return true
+  end
+  previous.field_scroll_x != next.field_scroll_x
 end
 
 export fn frame_request(previous: FrameSignature, next: FrameSignature) -> FrameRequest = do

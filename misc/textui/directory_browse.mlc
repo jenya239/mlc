@@ -1,0 +1,218 @@
+import {
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  kind_is_list_view,
+  kind_is_scroll_view,
+  kind_is_text_field,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_set_field_text,
+  widget_store_set_list_texts
+} from './store'
+import {
+  GrabNone,
+  LastPressNone,
+  PointerIdle,
+  Selection,
+  UiState,
+  ui_state_with,
+  ui_state_with_field,
+  ui_state_with_list_selected,
+  ui_state_with_listing_revision,
+  ui_state_with_scroll_offsets
+} from './ui_state'
+import { UiEvent } from './ui_event'
+import { list_selected_at, list_selected_put } from './widget_list'
+import { scroll_offsets_put } from './widget_scroll'
+import { directory_listing, directory_target, strip_trailing_slash } from './directory_rows'
+
+export type DirectoryView = {
+  store: WidgetStore,
+  state: UiState
+}
+
+fn view_of(store: WidgetStore, state: UiState) -> DirectoryView =
+  DirectoryView { store: store, state: state }
+
+fn nth_list(store: WidgetStore, ordinal: i32) -> WidgetId = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == ordinal then
+        return store.nodes[index].id
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn first_text_field(store: WidgetStore) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_text_field(store.nodes[index].kind) then
+      return store.nodes[index].id
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindTextField(_) => []
+    | KindSplitter(_) => []
+
+fn row_at(texts: [string], selected: i32) -> string = do
+  if selected < 0 || selected >= texts.length() then
+    return ""
+  end
+  return texts[selected]
+end
+
+fn reset_list_selection(state: UiState, list_id: WidgetId) -> UiState = do
+  if widget_id_is_none(list_id) then
+    return state
+  end
+  return ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, list_id.index, 0 - 1)
+  )
+end
+
+fn reset_scroller(store: WidgetStore, state: UiState, list_id: WidgetId) -> UiState = do
+  if widget_id_is_none(list_id) then
+    return state
+  end
+  const parent = store.nodes[list_id.index].parent
+  if widget_id_is_none(parent) then
+    return state
+  end
+  if parent.index < 0 || parent.index >= store.nodes.length() then
+    return state
+  end
+  if kind_is_scroll_view(store.nodes[parent.index].kind) == false then
+    return state
+  end
+  return ui_state_with_scroll_offsets(
+    state,
+    scroll_offsets_put(state.scroll_offsets, parent.index, 0)
+  )
+end
+
+fn release_listing_pointer(state: UiState) -> UiState =
+  ui_state_with(
+    state,
+    state.selection,
+    GrabNone,
+    PointerIdle,
+    LastPressNone,
+    state.clipboard,
+    state.hover
+  )
+
+fn place_path_caret(state: UiState, field_id: WidgetId, caret: i32) -> UiState = do
+  if widget_id_equals(state.focus, field_id) == false then
+    return state
+  end
+  const collapsed = Selection { owner: field_id, anchor: caret, focus: caret }
+  const placed = ui_state_with(
+    state,
+    collapsed,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
+  return ui_state_with_field(placed, field_id, caret, 0)
+end
+
+export fn open_directory(store: WidgetStore, state: UiState, path: string) -> DirectoryView = do
+  const normalized = strip_trailing_slash(path)
+  const listing = directory_listing(normalized)
+  if listing.directories.length() == 0 then
+    return view_of(store, state)
+  end
+  const path_field = first_text_field(store)
+  const directory_list = nth_list(store, 0)
+  const file_list = nth_list(store, 1)
+  let mut next_store = store
+  if widget_id_is_none(path_field) == false then
+    next_store = widget_store_set_field_text(next_store, path_field, normalized)
+  end
+  if widget_id_is_none(directory_list) == false then
+    next_store = widget_store_set_list_texts(next_store, directory_list, listing.directories)
+  end
+  if widget_id_is_none(file_list) == false then
+    next_store = widget_store_set_list_texts(next_store, file_list, listing.files)
+  end
+  let mut next_state = reset_list_selection(release_listing_pointer(state), directory_list)
+  next_state = reset_list_selection(next_state, file_list)
+  next_state = reset_scroller(next_store, next_state, directory_list)
+  next_state = reset_scroller(next_store, next_state, file_list)
+  if widget_id_is_none(path_field) == false then
+    const shown = field_text(next_store.nodes[path_field.index].kind)
+    next_state = place_path_caret(next_state, path_field, shown.byte_size())
+  end
+  next_state = ui_state_with_listing_revision(next_state, state.listing_revision + 1)
+  return view_of(next_store, next_state)
+end
+
+fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId) -> DirectoryView = do
+  if owner.index < 0 || owner.index >= store.nodes.length() then
+    return view_of(store, state)
+  end
+  const node = store.nodes[owner.index]
+  if kind_is_text_field(node.kind) then
+    return open_directory(store, state, field_text(node.kind))
+  end
+  if kind_is_list_view(node.kind) == false then
+    return view_of(store, state)
+  end
+  const path_field = first_text_field(store)
+  if widget_id_is_none(path_field) then
+    return view_of(store, state)
+  end
+  const current = field_text(store.nodes[path_field.index].kind)
+  const row = row_at(
+    list_texts(node.kind),
+    list_selected_at(state.list_selected, owner.index)
+  )
+  const target = directory_target(current, row)
+  if target == "" then
+    return view_of(store, state)
+  end
+  return open_directory(store, state, target)
+end
+
+export fn follow_directory(store: WidgetStore, state: UiState, events: [UiEvent]) -> DirectoryView = do
+  let mut view = view_of(store, state)
+  let mut index = 0
+  while index < events.length() do
+    if events[index].activated then
+      view = follow_activation(view.store, view.state, events[index].widget)
+    end
+    index = index + 1
+  end
+  return view
+end

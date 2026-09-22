@@ -1,0 +1,174 @@
+import { Theme } from './theme'
+import {
+  WidgetStore,
+  WidgetId,
+  WidgetKind,
+  FieldData,
+  FieldMark,
+  field_data_new,
+  widget_store_set_field_data
+} from './store'
+import { LayoutResult } from './layout_result'
+import { Selection } from './selection'
+import { selection_publish_primary } from './selection_text'
+import { field_scroll_to_caret } from './widget_field'
+import {
+  UiState,
+  ui_state_with,
+  ui_state_with_field,
+  ui_state_with_field_revision
+} from './ui_state'
+
+export type FieldKeyResult = {
+  store: WidgetStore,
+  state: UiState,
+  submitted: bool
+}
+
+fn field_data_of(kind: WidgetKind) -> FieldData =
+  match kind
+    | KindTextField(data) => data
+    | KindBox(_) => field_data_new("")
+    | KindLabel(_) => field_data_new("")
+    | KindButton(_) => field_data_new("")
+    | KindScrollView => field_data_new("")
+    | KindListView(_) => field_data_new("")
+    | KindSplitter(_) => field_data_new("")
+
+fn drop_last(marks: [FieldMark]) -> [FieldMark] = do
+  let mut next: [FieldMark] = []
+  let mut index = 0
+  while index < marks.length() - 1 do
+    next.push(marks[index])
+    index = index + 1
+  end
+  return next
+end
+
+fn push_mark(marks: [FieldMark], mark: FieldMark) -> [FieldMark] = do
+  let mut next = marks
+  if next.length() >= 64 then
+    let mut trimmed: [FieldMark] = []
+    let mut index = 1
+    while index < next.length() do
+      trimmed.push(next[index])
+      index = index + 1
+    end
+    next = trimmed
+  end
+  next.push(mark)
+  return next
+end
+
+fn field_anchor(state: UiState, field: WidgetId) -> i32 = do
+  if state.selection.owner.index == field.index then
+    return state.selection.anchor
+  end
+  return state.field_caret
+end
+
+fn place_mark(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  mark: FieldMark
+) -> UiState = do
+  const rect = layout.rects[field.index]
+  const text_layout = layout.text_layouts[field.index]
+  const scroll = field_scroll_to_caret(
+    theme, rect, text_layout, mark.caret, state.field_scroll_x
+  )
+  const selection = Selection { owner: field, anchor: mark.anchor, focus: mark.caret }
+  const placed = ui_state_with(
+    state,
+    selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
+  const focused = ui_state_with_field(placed, field, mark.caret, scroll)
+  const revised = ui_state_with_field_revision(focused, state.field_revision + 1)
+  if mark.anchor == mark.caret then
+    return revised
+  end
+  return selection_publish_primary(layout, revised, selection)
+end
+
+export fn field_push_undo(store: WidgetStore, field: WidgetId, state: UiState) -> WidgetStore = do
+  const data = field_data_of(store.nodes[field.index].kind)
+  const mark = FieldMark {
+    text: data.text,
+    caret: state.field_caret,
+    anchor: field_anchor(state, field)
+  }
+  let mut cleared: [FieldMark] = []
+  return widget_store_set_field_data(store, field, FieldData {
+    text: data.text,
+    undo: push_mark(data.undo, mark),
+    redo: cleared
+  })
+end
+
+fn field_keep(store: WidgetStore, state: UiState) -> FieldKeyResult =
+  FieldKeyResult { store: store, state: state, submitted: false }
+
+export fn field_undo(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId
+) -> FieldKeyResult = do
+  const data = field_data_of(store.nodes[field.index].kind)
+  if data.undo.length() == 0 then
+    return field_keep(store, state)
+  end
+  const mark = data.undo[data.undo.length() - 1]
+  const current = FieldMark {
+    text: data.text,
+    caret: state.field_caret,
+    anchor: field_anchor(state, field)
+  }
+  const written = widget_store_set_field_data(store, field, FieldData {
+    text: mark.text,
+    undo: drop_last(data.undo),
+    redo: push_mark(data.redo, current)
+  })
+  return FieldKeyResult {
+    store: written,
+    state: place_mark(layout, theme, state, field, mark),
+    submitted: false
+  }
+end
+
+export fn field_redo(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId
+) -> FieldKeyResult = do
+  const data = field_data_of(store.nodes[field.index].kind)
+  if data.redo.length() == 0 then
+    return field_keep(store, state)
+  end
+  const mark = data.redo[data.redo.length() - 1]
+  const current = FieldMark {
+    text: data.text,
+    caret: state.field_caret,
+    anchor: field_anchor(state, field)
+  }
+  const written = widget_store_set_field_data(store, field, FieldData {
+    text: mark.text,
+    undo: push_mark(data.undo, current),
+    redo: drop_last(data.redo)
+  })
+  return FieldKeyResult {
+    store: written,
+    state: place_mark(layout, theme, state, field, mark),
+    submitted: false
+  }
+end

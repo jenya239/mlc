@@ -13,6 +13,7 @@ import {
 } from './ui_state'
 import { UiInput } from './ui_input'
 import { list_index_at, list_index_clamped, list_selected_put } from './widget_list'
+import { pointer_double_click_ms } from './pointer_slop'
 
 fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
   const count = match store.nodes[id.index].kind
@@ -22,8 +23,48 @@ fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
     | KindButton(_) => 0
     | KindScrollView => 0
     | KindSplitter(_) => 0
+    | KindTextField(_) => 0
   return count
 end
+
+fn list_repeat_count(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  previous: LastPress,
+  owner: WidgetId,
+  y: i32,
+  now_ms: i32
+) -> i32 = do
+  if previous.owner.index != owner.index then
+    return 1
+  end
+  if now_ms - previous.time_ms > pointer_double_click_ms() then
+    return 1
+  end
+  const row_count = list_row_count(store, owner)
+  const previous_row = list_index_at(layout.rects[owner.index], theme, row_count, previous.y)
+  const current_row = list_index_at(layout.rects[owner.index], theme, row_count, y)
+  if previous_row < 0 || current_row != previous_row then
+    return 1
+  end
+  previous.count + 1
+end
+
+export fn list_press_count(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  owner: WidgetId,
+  y: i32,
+  now_ms: i32
+) -> i32 =
+  match state.last_press
+    | LastPressNone => 1
+    | LastPressSome(previous) => list_repeat_count(
+      store, layout, theme, previous, owner, y, now_ms
+    )
 
 export fn begin_list_press(
   store: WidgetStore,

@@ -140,6 +140,7 @@ export fn splitter_placement_for(
     | KindButton(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindScrollView => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindListView(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindTextField(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
   return placed
 end
 
@@ -158,6 +159,7 @@ fn splitter_is_row(store: WidgetStore, id: WidgetId) -> bool =
     | KindButton(_) => true
     | KindScrollView => true
     | KindListView(_) => true
+    | KindTextField(_) => true
 
 export fn splitter_laid_sash(
   store: WidgetStore,

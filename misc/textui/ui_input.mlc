@@ -7,7 +7,13 @@ export type UiInput = {
   control_down: bool,
   copy_pressed: bool,
   wheel_y: i32,
-  now_ms: i32
+  now_ms: i32,
+  text: string,
+  binding_key: string,
+  shift_down: bool,
+  backspace_pressed: bool,
+  enter_pressed: bool,
+  paste_text: string
 }
 
 export fn ui_input_idle(now_ms: i32) -> UiInput =
@@ -20,5 +26,11 @@ export fn ui_input_idle(now_ms: i32) -> UiInput =
     control_down: false,
     copy_pressed: false,
     wheel_y: 0,
-    now_ms: now_ms
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
   }

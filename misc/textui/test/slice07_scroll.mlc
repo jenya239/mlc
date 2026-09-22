@@ -38,7 +38,13 @@ fn pointer_wheel(x: i32, y: i32, wheel_y: i32, now_ms: i32) -> UiInput =
     control_down: false,
     copy_pressed: false,
     wheel_y: wheel_y,
-    now_ms: now_ms
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
   }
 
 fn pointer_press(x: i32, y: i32, now_ms: i32) -> UiInput =
@@ -51,7 +57,13 @@ fn pointer_press(x: i32, y: i32, now_ms: i32) -> UiInput =
     control_down: false,
     copy_pressed: false,
     wheel_y: 0,
-    now_ms: now_ms
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
   }
 
 fn build_store() -> WidgetStore = do

@@ -3,16 +3,19 @@ import {
   WidgetStore,
   WidgetId,
   widget_id_is_none,
+  widget_id_none,
   kind_is_scroll_view,
   kind_is_list_view,
-  kind_is_splitter
+  kind_is_splitter,
+  kind_is_text_field
 } from './store'
 import { LayoutResult } from './layout_result'
 import { hit_test } from './hit'
 import { kind_is_text_selectable, kind_is_clickable } from './user_select'
 import { begin_scroll_press } from './update_scroll'
-import { begin_list_press } from './update_list'
+import { begin_list_press, list_press_count } from './update_list'
 import { begin_split_press } from './update_split'
+import { begin_field_press } from './update_field'
 import { label_index_at, label_word_range } from './widget_label'
 import { Selection, selection_none } from './selection'
 import { selection_publish_primary } from './selection_text'
@@ -23,7 +26,8 @@ import {
   PointerDrag,
   LastPress,
   grab_is_none,
-  ui_state_with
+  ui_state_with,
+  ui_state_with_field
 } from './ui_state'
 import { UiInput } from './ui_input'
 
@@ -58,6 +62,29 @@ fn begin_text_press(
     time_ms: input.now_ms,
     count: count
   })
+  if count >= 3 then
+    const limit = layout.text_layouts[owner.index].text.byte_size()
+    const selection = Selection { owner: owner, anchor: 0, focus: limit }
+    const drag = PointerDrag {
+      owner: owner,
+      origin_x: input.mouse_x,
+      origin_y: input.mouse_y,
+      anchor: 0,
+      mark: limit,
+      claimed: false,
+      granularity: DragGranularityChar
+    }
+    const published = selection_publish_primary(layout, state, selection)
+    return ui_state_with(
+      published,
+      selection,
+      GrabNone,
+      PointerText(drag),
+      last_press,
+      published.clipboard,
+      published.hover
+    )
+  end
   if count >= 2 then
     const range = label_word_range(
       theme,
@@ -115,6 +142,9 @@ fn begin_text_press(
   )
 end
 
+fn release_focus(state: UiState) -> UiState =
+  ui_state_with_field(state, widget_id_none(), state.field_caret, state.field_scroll_x)
+
 fn clear_pointer(state: UiState) -> UiState =
   ui_state_with(
     state,
@@ -135,34 +165,44 @@ export fn handle_press(
 ) -> UiState = do
   const hit = hit_test(store, layout, theme, input.mouse_x, input.mouse_y)
   if widget_id_is_none(hit) then
-    return clear_pointer(state)
+    return release_focus(clear_pointer(state))
   end
   const node = store.nodes[hit.index]
+  if kind_is_text_field(node.kind) then
+    return begin_field_press(
+      layout,
+      theme,
+      state,
+      hit,
+      input,
+      press_count(state, hit, input.mouse_x, input.mouse_y, input.now_ms)
+    )
+  end
   if kind_is_text_selectable(node.kind) then
     return begin_text_press(layout, theme, state, hit, input)
   end
   if kind_is_clickable(node.kind) then
-    return begin_click_press(state, hit, input)
+    return release_focus(begin_click_press(state, hit, input))
   end
   if kind_is_scroll_view(node.kind) then
     const scrolled = begin_scroll_press(store, layout, theme, state, input, hit)
     if grab_is_none(scrolled.grab) == false then
-      return scrolled
+      return release_focus(scrolled)
     end
   end
   if kind_is_list_view(node.kind) then
-    return begin_list_press(
+    return release_focus(begin_list_press(
       store,
       layout,
       theme,
       state,
       input,
       hit,
-      press_count(state, hit, input.mouse_x, input.mouse_y, input.now_ms)
-    )
+      list_press_count(store, layout, theme, state, hit, input.mouse_y, input.now_ms)
+    ))
   end
   if kind_is_splitter(node.kind) then
-    return begin_split_press(store, layout, theme, state, input, hit)
+    return release_focus(begin_split_press(store, layout, theme, state, input, hit))
   end
-  return clear_pointer(state)
+  return release_focus(clear_pointer(state))
 end

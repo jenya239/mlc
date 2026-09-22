@@ -18,6 +18,7 @@ import {
   ButtonData,
   DirectionColumn,
   DirectionRow,
+  field_data_new,
   ListData,
   OverflowVisible,
   SplitterData,
@@ -30,6 +31,7 @@ import {
   widget_store_add_list_view,
   widget_store_add_scroll_view,
   widget_store_add_splitter,
+  widget_store_add_text_field,
   widget_store_empty
 } from './store'
 import { text_shaping_new } from '../gui/text_shaping'
@@ -42,16 +44,18 @@ import {
   frame_request_paints
 } from './frame_request'
 import { paint_ui_frame } from './paint_pass'
+import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy, submit_frame } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
 import { list_selected_at } from './widget_list'
 import { ui_update } from './ui_update'
 import { clipboard_copy_selection } from './update_copy'
-import { host_buttons_new, host_poll_input, host_wait_for_input } from './host_input'
+import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
 import { WindowPlacement, window_placement_load, window_placement_save } from './window_placement'
+import { follow_directory, open_directory } from './directory_browse'
 
 fn application_reload_status() -> i32 = 75
 
@@ -81,7 +85,13 @@ fn input_clear_buttons(input: UiInput) -> UiInput =
     control_down: input.control_down,
     copy_pressed: input.copy_pressed,
     wheel_y: input.wheel_y,
-    now_ms: input.now_ms
+    now_ms: input.now_ms,
+    text: input.text,
+    binding_key: input.binding_key,
+    shift_down: input.shift_down,
+    backspace_pressed: input.backspace_pressed,
+    enter_pressed: input.enter_pressed,
+    paste_text: input.paste_text
   }
 
 fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
@@ -92,27 +102,10 @@ fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
+    | KindTextField(_) => ""
 
 fn row_box_data() -> BoxData =
   BoxData { direction: DirectionRow, padding: 0, gap: 10 }
-
-fn place_names() -> [string] = do
-  let mut names: [string] = []
-  names.push("Home")
-  names.push("Documents")
-  names.push("Downloads")
-  names
-end
-
-fn file_names() -> [string] = do
-  let mut names: [string] = []
-  let mut index = 0
-  while index < 40 do
-    names.push("file " + index.to_string())
-    index = index + 1
-  end
-  names
-end
 
 fn list_text_at(texts: [string], selected: i32) -> string = do
   if selected < 0 || selected >= texts.length() then
@@ -129,6 +122,7 @@ fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId) -> st
     | KindBox(_) => ""
     | KindScrollView => ""
     | KindSplitter(_) => ""
+    | KindTextField(data) => data.text
 
 fn build_label_gallery() -> WidgetStore = do
   let mut store = widget_store_empty()
@@ -140,6 +134,13 @@ fn build_label_gallery() -> WidgetStore = do
     0,
     true
   )
+  store = widget_store_add_text_field(
+    store,
+    store.root,
+    field_data_new("/home/jenya/workspaces/current/mlc"),
+    0,
+    true
+  )
   store = widget_store_add_splitter(
     store,
     store.root,
@@ -148,13 +149,17 @@ fn build_label_gallery() -> WidgetStore = do
     true
   )
   const splitter = store.nodes[store.nodes.length() - 1].id
+  let mut directory_rows: [string] = []
+  let mut file_rows: [string] = []
+  store = widget_store_add_scroll_view(store, splitter, 0, true)
+  const directory_scroller = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_list_view(
-    store, splitter, ListData { texts: place_names() }, 0, true
+    store, directory_scroller, ListData { texts: directory_rows }, 0, true
   )
   store = widget_store_add_scroll_view(store, splitter, 1, true)
   const scroller = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_list_view(
-    store, scroller, ListData { texts: file_names() }, 0, true
+    store, scroller, ListData { texts: file_rows }, 0, true
   )
   store = widget_store_add_box(
     store, store.root, row_box_data(), OverflowVisible, 0, true
@@ -198,7 +203,7 @@ fn main() -> i32 = do
   end
 
   const theme = theme_default()
-  const store = build_label_gallery()
+  let mut store = build_label_gallery()
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
@@ -210,6 +215,9 @@ fn main() -> i32 = do
   end
 
   let mut state = ui_state_new()
+  const opened = open_directory(store, state, "/home/jenya/workspaces/current/mlc")
+  store = opened.store
+  state = opened.state
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
   let mut reported_inspect = -1
@@ -236,7 +244,7 @@ fn main() -> i32 = do
     if glfw_gl_key_escape_down() != 0 then
       break
     end
-    const polled = host_poll_input(buttons, frame_index * 16)
+    const polled = host_poll_input(buttons, host_now_ms())
     buttons = polled.buttons
     let mut input = polled.input
     if input.left_pressed then
@@ -250,10 +258,26 @@ fn main() -> i32 = do
         input = input_clear_buttons(input)
       end
     end
+    const clipboard_before = state.clipboard.clipboard
     const updated = ui_update(store, laid_out.layout, theme, state, input)
     state = updated.state
-    const next_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
-    const request = frame_request(presented, next_signature)
+    store = updated.store
+    let mut activation_index = 0
+    while activation_index < updated.events.length() do
+      if updated.events[activation_index].activated then
+        println(
+          "[textui] activate " + activated_row_text(
+            store, state, updated.events[activation_index].widget
+          )
+        )
+      end
+      activation_index = activation_index + 1
+    end
+    const browsed = follow_directory(store, state, updated.events)
+    store = browsed.store
+    state = browsed.state
+    const early_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
+    const request = frame_request(presented, early_signature)
     if frame_request_layouts(request) then
       laid_out = layout_ui(
         store,
@@ -267,7 +291,9 @@ fn main() -> i32 = do
       )
       shaping = laid_out.shaping
       cache = laid_out.cache
+      state = field_align_scroll(store, laid_out.layout, theme, state)
     end
+    const next_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
     if state.pick_enabled && widget_id_is_none(state.inspected) == false then
       if state.inspected.index != reported_inspect then
         println(widget_inspect_report(store, laid_out.layout, state.inspected))
@@ -288,12 +314,13 @@ fn main() -> i32 = do
       if caption == "Reload" then
         reload_requested = true
       end
-      if updated.events[event_index].activated then
-        println("[textui] activate " + activated_row_text(store, state, owner))
-      end
       event_index = event_index + 1
     end
     if polled.input.copy_pressed && polled.input.control_down then
+      glfw_gl_clipboard_set(state.clipboard.clipboard)
+    end
+    const cut_pressed = (polled.input.binding_key == "x" && polled.input.control_down) || (polled.input.binding_key == "delete" && polled.input.shift_down)
+    if cut_pressed && state.clipboard.clipboard != clipboard_before then
       glfw_gl_clipboard_set(state.clipboard.clipboard)
     end
     let mut paints = frame_request_paints(request)

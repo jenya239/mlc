@@ -1,0 +1,243 @@
+import { get_or } from 'Env'
+import {
+  BoxData,
+  DirectionColumn,
+  ListData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_add_text_field,
+  widget_store_empty,
+  widget_store_set_field_text
+} from '../store'
+import { UiState, ui_state_new, ui_state_with_field, ui_state_with_list_selected, ui_state_with_listing_revision, ui_state_with_scroll_offsets } from '../ui_state'
+import { UiEvent, ui_event_row_activated } from '../ui_event'
+import { list_selected_put } from '../widget_list'
+import { scroll_offset_at, scroll_offsets_put } from '../widget_scroll'
+import { frame_request, frame_request_layouts, frame_signature } from '../frame_request'
+import { directory_listing, directory_target, join_path, parent_path } from '../directory_rows'
+import { DirectoryView, follow_directory, open_directory } from '../directory_browse'
+
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn empty_rows() -> [string] = do
+  let mut rows: [string] = []
+  rows
+end
+
+fn build_browser() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(store, store.root, field_data_new(""), 0, true)
+  store = widget_store_add_scroll_view(store, store.root, 0, true)
+  const directory_scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_list_view(
+    store, directory_scroller, ListData { texts: empty_rows() }, 0, true
+  )
+  store = widget_store_add_scroll_view(store, store.root, 1, true)
+  const file_scroller = store.nodes[store.nodes.length() - 1].id
+  widget_store_add_list_view(
+    store, file_scroller, ListData { texts: empty_rows() }, 0, true
+  )
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn list_rows(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindTextField(_) => []
+    | KindSplitter(_) => []
+
+fn follow_row(store: WidgetStore, state: UiState, list_index: i32, row: i32) -> DirectoryView = do
+  const selected = ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, list_index, row)
+  )
+  let mut events: [UiEvent] = []
+  events.push(ui_event_row_activated(WidgetId { index: list_index }))
+  follow_directory(store, selected, events)
+end
+
+fn main() -> i32 = do
+  if parent_path("/a/b") != "/a" then
+    return -1
+  end
+  if parent_path("/a") != "/" then
+    return -2
+  end
+  if parent_path("/") != "/" then
+    return -3
+  end
+  if join_path("/", "name") != "/name" then
+    return -4
+  end
+  if join_path("/a", "b") != "/a/b" then
+    return -5
+  end
+  if directory_target("/a/b", "..") != "/a" then
+    return -6
+  end
+  if directory_target("/a", "sub/") != "/a/sub" then
+    return -7
+  end
+  if directory_target("/a", "note.txt") != "" then
+    return -8
+  end
+
+  const fixture = get_or("TEXTUI_FM_FIXTURE", "")
+  if fixture == "" then
+    return -9
+  end
+  if create_directories(fixture + "/sub") == false then
+    return -10
+  end
+  if create_directories(fixture + "/bdir") == false then
+    return -11
+  end
+  if write_string(fixture + "/a.txt", "a") == false then
+    return -12
+  end
+  if write_string(fixture + "/note.txt", "n") == false then
+    return -13
+  end
+
+  const listing = directory_listing(fixture)
+  if listing.directories.length() != 3 then
+    return -14
+  end
+  if listing.directories[0] != ".." then
+    return -15
+  end
+  if listing.directories[1] != "bdir/" then
+    return -16
+  end
+  if listing.directories[2] != "sub/" then
+    return -17
+  end
+  if listing.files.length() != 2 then
+    return -18
+  end
+  if listing.files[0] != "a.txt" then
+    return -19
+  end
+  if listing.files[1] != "note.txt" then
+    return -20
+  end
+  if directory_listing(fixture + "/missing").directories.length() != 0 then
+    return -21
+  end
+
+  const store = build_browser()
+  const opened = open_directory(store, ui_state_new(), fixture + "/")
+  if opened.state.listing_revision != 1 then
+    return -22
+  end
+  if field_text(opened.store.nodes[1].kind) != fixture then
+    return -23
+  end
+  if list_rows(opened.store.nodes[3].kind)[2] != "sub/" then
+    return -24
+  end
+  if list_rows(opened.store.nodes[5].kind)[0] != "a.txt" then
+    return -25
+  end
+  if opened.state.focus.index != -1 then
+    return -26
+  end
+
+  const file_hit = follow_row(opened.store, opened.state, 5, 0)
+  if file_hit.state.listing_revision != 1 then
+    return -27
+  end
+  if field_text(file_hit.store.nodes[1].kind) != fixture then
+    return -28
+  end
+
+  const scrolled = ui_state_with_scroll_offsets(
+    file_hit.state,
+    scroll_offsets_put(file_hit.state.scroll_offsets, 4, 40)
+  )
+  const child = follow_row(file_hit.store, scrolled, 3, 2)
+  if field_text(child.store.nodes[1].kind) != fixture + "/sub" then
+    return -29
+  end
+  if child.state.listing_revision != 2 then
+    return -30
+  end
+  if child.state.focus.index != -1 then
+    return -31
+  end
+  if scroll_offset_at(child.state.scroll_offsets, 2) != 0 then
+    return -32
+  end
+  if scroll_offset_at(child.state.scroll_offsets, 4) != 0 then
+    return -33
+  end
+
+  const parent = follow_row(child.store, child.state, 3, 0)
+  if field_text(parent.store.nodes[1].kind) != fixture then
+    return -34
+  end
+  if list_rows(parent.store.nodes[5].kind)[1] != "note.txt" then
+    return -35
+  end
+
+  const invalid_store = widget_store_set_field_text(
+    parent.store, WidgetId { index: 1 }, fixture + "/missing"
+  )
+  let mut invalid_events: [UiEvent] = []
+  invalid_events.push(ui_event_row_activated(WidgetId { index: 1 }))
+  const invalid = follow_directory(invalid_store, parent.state, invalid_events)
+  if invalid.state.listing_revision != parent.state.listing_revision then
+    return -36
+  end
+  if list_rows(invalid.store.nodes[5].kind)[0] != "a.txt" then
+    return -37
+  end
+
+  const focused_state = ui_state_with_field(ui_state_new(), WidgetId { index: 1 }, 0, 9)
+  const focused = open_directory(store, focused_state, fixture)
+  if focused.state.field_caret != fixture.byte_size() then
+    return -38
+  end
+  if focused.state.field_scroll_x != 0 then
+    return -39
+  end
+  if focused.state.focus.index != 1 then
+    return -40
+  end
+
+  const base = frame_signature(ui_state_new(), 20, 20)
+  const changed = frame_signature(ui_state_with_listing_revision(ui_state_new(), 1), 20, 20)
+  if frame_request_layouts(frame_request(base, changed)) == false then
+    return -41
+  end
+  0
+end

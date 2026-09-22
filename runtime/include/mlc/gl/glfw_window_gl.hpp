@@ -61,6 +61,7 @@ int32_t glfw_gl_mod_ctrl_down();
 int32_t glfw_gl_mod_shift_down();
 int32_t glfw_gl_mod_alt_down();
 String glfw_gl_take_binding_key();
+String glfw_gl_take_edit_repeat();
 void glfw_gl_mods_test_set(int32_t ctrl_down, int32_t shift_down, int32_t alt_down);
 void glfw_gl_binding_key_test_push(String key);
 

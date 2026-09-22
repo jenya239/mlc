@@ -125,6 +125,7 @@ fn main() -> i32 = do
     | KindScrollView => false
     | KindListView(_) => false
     | KindSplitter(_) => false
+    | KindTextField(_) => false
   if !still_box then
     return -11
   end

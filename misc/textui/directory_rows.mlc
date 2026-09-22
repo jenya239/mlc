@@ -1,0 +1,109 @@
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_names(path: string) -> [string]
+  = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
+extern fn list_dir_is_directory_flags(path: string) -> [i32]
+  = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+type DirEntry = {
+  name: string,
+  is_directory: i32
+}
+
+export type DirectoryListing = {
+  directories: [string],
+  files: [string]
+}
+
+export fn strip_trailing_slash(path: string) -> string = do
+  const size = path.byte_size()
+  if size <= 1 then
+    return path
+  end
+  if path.byte_at(size - 1) != "/" then
+    return path
+  end
+  return path.byte_substring(0, size - 1)
+end
+
+export fn parent_path(path: string) -> string = do
+  const normalized = strip_trailing_slash(path)
+  const size = normalized.byte_size()
+  if size <= 1 then
+    return "/"
+  end
+  let mut index = size - 1
+  while index > 0 do
+    if normalized.byte_at(index) == "/" then
+      return normalized.byte_substring(0, index)
+    end
+    index = index - 1
+  end
+  return "/"
+end
+
+export fn join_path(parent: string, name: string) -> string = do
+  if parent == "/" then
+    return "/" + name
+  end
+  return parent + "/" + name
+end
+
+export fn directory_target(path: string, row: string) -> string = do
+  if row == ".." then
+    return parent_path(path)
+  end
+  const size = row.byte_size()
+  if size <= 0 then
+    return ""
+  end
+  if row.byte_at(size - 1) != "/" then
+    return ""
+  end
+  return join_path(strip_trailing_slash(path), row.byte_substring(0, size - 1))
+end
+
+fn list_entries(path: string) -> [DirEntry] = do
+  const names = list_dir_names(path)
+  const flags = list_dir_is_directory_flags(path)
+  let mut entries: [DirEntry] = []
+  let mut index = 0
+  const count = names.length()
+  if flags.length() != count then
+    return entries
+  end
+  while index < count do
+    entries.push(DirEntry { name: names[index], is_directory: flags[index] })
+    index = index + 1
+  end
+  return entries
+end
+
+fn empty_listing() -> DirectoryListing = do
+  let mut directories: [string] = []
+  let mut files: [string] = []
+  return DirectoryListing { directories: directories, files: files }
+end
+
+export fn directory_listing(path: string) -> DirectoryListing = do
+  const normalized = strip_trailing_slash(path)
+  if is_directory(normalized) == false then
+    return empty_listing()
+  end
+  const entries = list_entries(normalized)
+  let mut directories: [string] = []
+  let mut files: [string] = []
+  directories.push("..")
+  let mut index = 0
+  while index < entries.length() do
+    const entry = entries[index]
+    if entry.is_directory != 0 then
+      directories.push(entry.name + "/")
+    end
+    if entry.is_directory == 0 then
+      files.push(entry.name)
+    end
+    index = index + 1
+  end
+  return DirectoryListing { directories: directories, files: files }
+end

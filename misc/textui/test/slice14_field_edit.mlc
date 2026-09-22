@@ -1,0 +1,194 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  OverflowVisible,
+  WidgetKind,
+  WidgetStore,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { ui_state_new } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn pointer_at(x: i32, y: i32, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: true,
+    left_down: true,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn key_input(
+  text: string,
+  binding_key: string,
+  control_down: bool,
+  shift_down: bool,
+  backspace_pressed: bool
+) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: control_down,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: binding_key,
+    shift_down: shift_down,
+    backspace_pressed: backspace_pressed,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn build_field(text: string) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_field(store, store.root, field_data_new(text), 0, true)
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+
+  let mut store = build_field("/home/x")
+  let mut state = ui_state_new()
+  let mut laid = layout_ui(store, theme, shaping, cache, 240, 80, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const path_field = store.nodes[1].id
+  const path_rect = laid.layout.rects[path_field.index]
+  const focused = ui_update(
+    store, laid.layout, theme, state, pointer_at(path_rect.x + 2, path_rect.y + 4, 0)
+  )
+  state = focused.state
+  const jumped = ui_update(
+    store, laid.layout, theme, state, key_input("", "right", true, false, false)
+  )
+  if jumped.state.field_caret != 5 then
+    return -1
+  end
+
+  store = build_field("ab/cd")
+  state = ui_state_new()
+  laid = layout_ui(store, theme, shaping, cache, 240, 80, state.scroll_offsets, ratios)
+  const field = store.nodes[1].id
+  const rect = laid.layout.rects[field.index]
+  const pressed = ui_update(
+    store, laid.layout, theme, state, pointer_at(rect.x + 2, rect.y + 4, 0)
+  )
+  state = pressed.state
+  const ended = ui_update(
+    store, laid.layout, theme, state, key_input("", "end", false, false, false)
+  )
+  state = ended.state
+  const erased = ui_update(
+    store, laid.layout, theme, state, key_input("", "", true, false, true)
+  )
+  store = erased.store
+  state = erased.state
+  if field_text(store.nodes[field.index].kind) != "ab/" then
+    return -2
+  end
+  if state.field_caret != 3 then
+    return -2
+  end
+
+  const typed = ui_update(
+    store, laid.layout, theme, state, key_input("Z", "", false, false, false)
+  )
+  store = typed.store
+  state = typed.state
+  const undone = ui_update(
+    store, laid.layout, theme, state, key_input("", "z", true, false, false)
+  )
+  store = undone.store
+  state = undone.state
+  if field_text(store.nodes[field.index].kind) != "ab/" then
+    return -3
+  end
+  if state.field_caret != 3 then
+    return -3
+  end
+
+  const redone = ui_update(
+    store, laid.layout, theme, state, key_input("", "y", true, false, false)
+  )
+  store = redone.store
+  state = redone.state
+  if field_text(store.nodes[field.index].kind) != "ab/Z" then
+    return -4
+  end
+
+  const branched = ui_update(
+    store, laid.layout, theme, state, key_input("Q", "", false, false, false)
+  )
+  store = branched.store
+  state = branched.state
+  const stuck = ui_update(
+    store, laid.layout, theme, state, key_input("", "y", true, false, false)
+  )
+  if field_text(stuck.store.nodes[field.index].kind) != "ab/ZQ" then
+    return -5
+  end
+
+  store = build_field("abcdef")
+  state = ui_state_new()
+  laid = layout_ui(store, theme, shaping, cache, 240, 80, state.scroll_offsets, ratios)
+  const letters = store.nodes[1].id
+  const letter_rect = laid.layout.rects[letters.index]
+  const first = ui_update(
+    store, laid.layout, theme, state, pointer_at(letter_rect.x + 2, letter_rect.y + 4, 0)
+  )
+  const second = ui_update(
+    store, laid.layout, theme, first.state, pointer_at(letter_rect.x + 2, letter_rect.y + 4, 100)
+  )
+  const third = ui_update(
+    store, laid.layout, theme, second.state, pointer_at(letter_rect.x + 2, letter_rect.y + 4, 200)
+  )
+  if third.state.selection.anchor != 0 || third.state.selection.focus != 6 then
+    return -6
+  end
+  if third.state.field_caret != 6 then
+    return -6
+  end
+  0
+end

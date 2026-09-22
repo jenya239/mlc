@@ -1,0 +1,108 @@
+import { Theme } from './theme'
+import { WidgetId } from './store'
+import { LayoutResult } from './layout_result'
+import { Selection } from './selection'
+import { selection_publish_primary } from './selection_text'
+import { text_layout_word_range } from './text_layout_hit'
+import {
+  UiState,
+  PointerDrag,
+  PointerText,
+  LastPress,
+  LastPressSome,
+  GrabKind,
+  GrabNone,
+  GrabText,
+  DragGranularity,
+  DragGranularityChar,
+  DragGranularityWord,
+  ui_state_with,
+  ui_state_with_field
+} from './ui_state'
+import { UiInput } from './ui_input'
+import { field_index_at, field_scroll_to_caret } from './widget_field'
+
+fn finish_field_press(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  owner: WidgetId,
+  input: UiInput,
+  count: i32,
+  anchor: i32,
+  caret: i32,
+  claimed: bool,
+  grab: GrabKind,
+  granularity: DragGranularity,
+  previous_scroll: i32
+) -> UiState = do
+  const rect = layout.rects[owner.index]
+  const text_layout = layout.text_layouts[owner.index]
+  const scroll = field_scroll_to_caret(theme, rect, text_layout, caret, previous_scroll)
+  const last_press = LastPressSome(LastPress {
+    owner: owner,
+    x: input.mouse_x,
+    y: input.mouse_y,
+    time_ms: input.now_ms,
+    count: count
+  })
+  const selection = Selection { owner: owner, anchor: anchor, focus: caret }
+  const pressed = ui_state_with(
+    state,
+    selection,
+    grab,
+    PointerText(PointerDrag {
+      owner: owner,
+      origin_x: input.mouse_x,
+      origin_y: input.mouse_y,
+      anchor: anchor,
+      mark: caret,
+      claimed: claimed,
+      granularity: granularity
+    }),
+    last_press,
+    state.clipboard,
+    state.hover
+  )
+  const focused = ui_state_with_field(pressed, owner, caret, scroll)
+  if anchor == caret then
+    return focused
+  end
+  return selection_publish_primary(layout, focused, selection)
+end
+
+export fn begin_field_press(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  owner: WidgetId,
+  input: UiInput,
+  count: i32
+) -> UiState = do
+  const rect = layout.rects[owner.index]
+  const text_layout = layout.text_layouts[owner.index]
+  let mut previous_scroll = 0
+  if state.focus.index == owner.index then
+    previous_scroll = state.field_scroll_x
+  end
+  const index = field_index_at(
+    theme, rect, text_layout, previous_scroll, input.mouse_x, input.mouse_y
+  )
+  if count >= 3 then
+    return finish_field_press(
+      layout, theme, state, owner, input, count,
+      0, text_layout.text.byte_size(), false, GrabNone, DragGranularityChar, previous_scroll
+    )
+  end
+  if count >= 2 then
+    const range = text_layout_word_range(text_layout, index)
+    return finish_field_press(
+      layout, theme, state, owner, input, count,
+      range.start, range.finish, true, GrabText, DragGranularityWord, previous_scroll
+    )
+  end
+  return finish_field_press(
+    layout, theme, state, owner, input, count,
+    index, index, false, GrabNone, DragGranularityChar, previous_scroll
+  )
+end

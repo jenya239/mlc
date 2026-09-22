@@ -1,0 +1,198 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  field_data_new,
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { paint_ui_frame } from '../paint_pass'
+import { ui_state_new, ui_state_with_field } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { ui_update } from '../ui_update'
+import { DrawOp } from '../draw_op'
+import { field_scroll_to_caret } from '../widget_field'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn pointer_at(x: i32, y: i32, pressed: bool) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: pressed,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn build_row() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(
+    store, store.root, field_data_new("abcdef"), 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "label" }, OverflowVisible, 0, true
+  )
+  widget_store_add_button(
+    store, store.root, ButtonData { text: "Go" }, OverflowVisible, 0, true
+  )
+end
+
+fn long_text() -> string =
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+
+fn build_long_field() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_field(
+    store, store.root, field_data_new(long_text()), 0, true
+  )
+end
+
+fn text_origin(operations: [DrawOp], text: string) -> i32 = do
+  let mut index = 0
+  let mut origin = 0 - 1
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(data) => data.text == text
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      const placed = match operations[index]
+        | OpText(data) => data.origin_x
+        | OpFillRect(_) => 0
+        | OpStrokeRect(_) => 0
+        | OpPushClip(_) => 0
+        | OpPopClip => 0
+      origin = placed
+    end
+    index = index + 1
+  end
+  origin
+end
+
+fn has_caret(operations: [DrawOp]) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.rect.width == 1
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_row()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  let mut state = ui_state_new()
+  const laid = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const field = store.nodes[1].id
+  const label = store.nodes[2].id
+  const button = store.nodes[3].id
+  const field_rect = laid.layout.rects[field.index]
+  const label_rect = laid.layout.rects[label.index]
+  const button_rect = laid.layout.rects[button.index]
+
+  const pressed = ui_update(
+    store, laid.layout, theme, state, pointer_at(field_rect.x + 2, field_rect.y + 4, true)
+  )
+  state = pressed.state
+  if widget_id_equals(state.focus, field) == false then
+    return -1
+  end
+  if state.selection.anchor != state.selection.focus then
+    return -1
+  end
+  if state.field_caret != state.selection.focus then
+    return -1
+  end
+  if widget_id_equals(state.selection.owner, field) == false then
+    return -1
+  end
+
+  const labeled = ui_update(
+    store, laid.layout, theme, state, pointer_at(label_rect.x + 4, label_rect.y + 4, true)
+  )
+  state = labeled.state
+  if widget_id_equals(state.focus, field) == false then
+    return -2
+  end
+  if widget_id_equals(state.selection.owner, label) == false then
+    return -2
+  end
+
+  const cleared = ui_update(
+    store, laid.layout, theme, state, pointer_at(button_rect.x + 4, button_rect.y + 4, true)
+  )
+  if widget_id_is_none(cleared.state.focus) == false then
+    return -3
+  end
+
+  const long_store = build_long_field()
+  const long_laid = layout_ui(
+    long_store, theme, shaping, cache, 80, 80, state.scroll_offsets, ratios
+  )
+  const long_field = long_store.nodes[1].id
+  const long_rect = long_laid.layout.rects[long_field.index]
+  const long_layout = long_laid.layout.text_layouts[long_field.index]
+  const scrolled = field_scroll_to_caret(
+    theme, long_rect, long_layout, long_layout.text.byte_size(), 0
+  )
+  if scrolled <= 0 then
+    return -4
+  end
+
+  const painted_state = ui_state_with_field(pressed.state, field, pressed.state.field_caret, 20)
+  const painted = paint_ui_frame(theme, store, laid.layout, painted_state)
+  const origin = text_origin(painted, "abcdef")
+  if origin != field_rect.x + theme.padding - 20 then
+    return -5
+  end
+  if has_caret(painted) == false then
+    return -6
+  end
+  0
+end

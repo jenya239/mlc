@@ -42,7 +42,13 @@ fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms:
     control_down: false,
     copy_pressed: false,
     wheel_y: 0,
-    now_ms: now_ms
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
   }
 
 fn grab_is_list(grab: GrabKind) -> bool =
@@ -207,6 +213,32 @@ fn main() -> i32 = do
   end
   if clicked(again.events, list) then
     return -6
+  end
+  state = again.state
+  const late = ui_update(
+    store, laid.layout, theme, state, pointer_at(8, row_y, true, true, false, 700)
+  )
+  if activated(late.events, list) then
+    return -7
+  end
+  const shifted = ui_update(
+    store, laid.layout, theme, late.state, pointer_at(8, row_y + 10, true, true, false, 800)
+  )
+  if activated(shifted.events, list) == false then
+    return -8
+  end
+  if list_selected_at(shifted.state.list_selected, list.index) != 2 then
+    return -8
+  end
+  const other_row = ui_update(
+    store,
+    laid.layout,
+    theme,
+    shifted.state,
+    pointer_at(8, row_y + row_height, true, true, false, 900)
+  )
+  if activated(other_row.events, list) then
+    return -9
   end
 
   const painted = paint_ui_frame(theme, store, laid.layout, dragged.state)

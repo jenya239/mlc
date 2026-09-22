@@ -1,0 +1,372 @@
+import { Theme } from './theme'
+import {
+  WidgetStore,
+  WidgetId,
+  widget_id_is_none,
+  kind_is_text_field,
+  widget_store_set_field_text
+} from './store'
+import { LayoutResult } from './layout_result'
+import { Selection, selection_start, selection_finish } from './selection'
+import { selection_publish_primary } from './selection_text'
+import { clipboard_set_clipboard } from './clipboard'
+import { field_caption, field_scroll_to_caret } from './widget_field'
+import { text_layout_boundary_before, text_layout_boundary_after, text_word_before, text_word_after } from './text_layout_hit'
+import {
+  UiState,
+  ui_state_with,
+  ui_state_with_field,
+  ui_state_with_field_revision
+} from './ui_state'
+import { UiInput } from './ui_input'
+import { FieldKeyResult, field_push_undo, field_undo, field_redo } from './field_history'
+
+fn field_key_keep(store: WidgetStore, state: UiState) -> FieldKeyResult =
+  FieldKeyResult { store: store, state: state, submitted: false }
+
+fn clamp_index(index: i32, limit: i32) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  if index > limit then
+    return limit
+  end
+  return index
+end
+
+fn first_line(text: string) -> string = do
+  let mut index = 0
+  const size = text.byte_size()
+  while index < size do
+    const byte = text.byte_at(index)
+    if byte == "\n" || byte == "\r" then
+      return text.byte_substring(0, index)
+    end
+    index = index + 1
+  end
+  return text
+end
+
+fn splice_text(text: string, start: i32, finish: i32, insertion: string) -> string = do
+  const head = text.byte_substring(0, start)
+  const tail = text.byte_substring(finish, text.byte_size() - finish)
+  return head + insertion + tail
+end
+
+fn with_caret(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  caret: i32,
+  selection: Selection
+) -> UiState = do
+  const rect = layout.rects[field.index]
+  const text_layout = layout.text_layouts[field.index]
+  const scroll = field_scroll_to_caret(
+    theme, rect, text_layout, caret, state.field_scroll_x
+  )
+  const placed = ui_state_with(
+    state,
+    selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
+  return ui_state_with_field(placed, field, caret, scroll)
+end
+
+fn apply_insertion(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string,
+  insertion: string,
+  start: i32,
+  finish: i32
+) -> FieldKeyResult = do
+  if insertion.byte_size() == 0 && start == finish then
+    return field_key_keep(store, state)
+  end
+  const noted = field_push_undo(store, field, state)
+  const next_text = splice_text(current, start, finish, insertion)
+  const caret = start + insertion.byte_size()
+  let mut selection = state.selection
+  if state.selection.owner.index == field.index || start != finish then
+    selection = Selection { owner: field, anchor: caret, focus: caret }
+  end
+  const written = widget_store_set_field_text(noted, field, next_text)
+  const placed = with_caret(layout, theme, state, field, caret, selection)
+  return FieldKeyResult {
+    store: written,
+    state: ui_state_with_field_revision(placed, state.field_revision + 1),
+    submitted: false
+  }
+end
+
+fn field_owns_range(state: UiState, field: WidgetId) -> bool =
+  state.selection.owner.index == field.index && state.selection.anchor != state.selection.focus
+
+fn delete_span(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string,
+  start: i32,
+  finish: i32
+) -> FieldKeyResult =
+  apply_insertion(store, layout, theme, state, field, current, "", start, finish)
+
+fn backspace_span(state: UiState, field: WidgetId, layout: LayoutResult, limit: i32) -> Selection = do
+  if field_owns_range(state, field) then
+    return Selection {
+      owner: field,
+      anchor: clamp_index(selection_start(state.selection), limit),
+      focus: clamp_index(selection_finish(state.selection), limit)
+    }
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  Selection {
+    owner: field,
+    anchor: text_layout_boundary_before(layout.text_layouts[field.index], caret),
+    focus: caret
+  }
+end
+
+fn delete_forward_span(state: UiState, field: WidgetId, layout: LayoutResult, limit: i32) -> Selection = do
+  if field_owns_range(state, field) then
+    return Selection {
+      owner: field,
+      anchor: clamp_index(selection_start(state.selection), limit),
+      focus: clamp_index(selection_finish(state.selection), limit)
+    }
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  Selection {
+    owner: field,
+    anchor: caret,
+    focus: text_layout_boundary_after(layout.text_layouts[field.index], caret)
+  }
+end
+
+fn move_caret(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  caret: i32,
+  extend_selection: bool
+) -> UiState = do
+  if extend_selection then
+    let mut anchor = state.field_caret
+    if state.selection.owner.index == field.index then
+      anchor = state.selection.anchor
+    end
+    const selection = Selection { owner: field, anchor: anchor, focus: caret }
+    const placed = with_caret(layout, theme, state, field, caret, selection)
+    if anchor == caret then
+      return placed
+    end
+    return selection_publish_primary(layout, placed, selection)
+  end
+  if state.selection.owner.index == field.index then
+    return with_caret(
+      layout, theme, state, field, caret, Selection { owner: field, anchor: caret, focus: caret }
+    )
+  end
+  return with_caret(layout, theme, state, field, caret, state.selection)
+end
+
+fn horizontal_destination(
+  state: UiState,
+  field: WidgetId,
+  layout: LayoutResult,
+  toward_end: bool,
+  extend_selection: bool
+) -> i32 = do
+  const text_layout = layout.text_layouts[field.index]
+  const limit = text_layout.text.byte_size()
+  if extend_selection == false && field_owns_range(state, field) then
+    if toward_end then
+      return clamp_index(selection_finish(state.selection), limit)
+    end
+    return clamp_index(selection_start(state.selection), limit)
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  if toward_end then
+    return text_layout_boundary_after(text_layout, caret)
+  end
+  return text_layout_boundary_before(text_layout, caret)
+end
+
+fn cut_range(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string
+) -> FieldKeyResult = do
+  if field_owns_range(state, field) == false then
+    return field_key_keep(store, state)
+  end
+  const limit = current.byte_size()
+  const start = clamp_index(selection_start(state.selection), limit)
+  const finish = clamp_index(selection_finish(state.selection), limit)
+  const removed = current.byte_substring(start, finish - start)
+  const deleted = delete_span(store, layout, theme, state, field, current, start, finish)
+  const clipped = ui_state_with(
+    deleted.state,
+    deleted.state.selection,
+    deleted.state.grab,
+    deleted.state.pointer,
+    deleted.state.last_press,
+    clipboard_set_clipboard(deleted.state.clipboard, removed),
+    deleted.state.hover
+  )
+  return FieldKeyResult { store: deleted.store, state: clipped, submitted: false }
+end
+
+fn select_all(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string
+) -> FieldKeyResult = do
+  const limit = current.byte_size()
+  const selection = Selection { owner: field, anchor: 0, focus: limit }
+  const placed = with_caret(layout, theme, state, field, limit, selection)
+  if limit == 0 then
+    return FieldKeyResult { store: store, state: placed, submitted: false }
+  end
+  return FieldKeyResult {
+    store: store,
+    state: selection_publish_primary(layout, placed, selection),
+    submitted: false
+  }
+end
+
+export fn update_field_keys(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> FieldKeyResult = do
+  if widget_id_is_none(state.focus) then
+    return field_key_keep(store, state)
+  end
+  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
+    return field_key_keep(store, state)
+  end
+  if kind_is_text_field(store.nodes[state.focus.index].kind) == false then
+    return field_key_keep(store, state)
+  end
+  const field = state.focus
+  const current = field_caption(store.nodes[field.index].kind)
+  const limit = current.byte_size()
+  if input.control_down && input.binding_key == "z" && input.shift_down then
+    return field_redo(store, layout, theme, state, field)
+  end
+  if input.control_down && input.binding_key == "y" then
+    return field_redo(store, layout, theme, state, field)
+  end
+  if input.control_down && input.binding_key == "z" then
+    return field_undo(store, layout, theme, state, field)
+  end
+  if input.control_down == false && input.text.byte_size() > 0 then
+    const caret = clamp_index(state.field_caret, limit)
+    let mut start = caret
+    let mut finish = caret
+    if field_owns_range(state, field) then
+      start = clamp_index(selection_start(state.selection), limit)
+      finish = clamp_index(selection_finish(state.selection), limit)
+    end
+    return apply_insertion(
+      store, layout, theme, state, field, current, first_line(input.text), start, finish
+    )
+  end
+  if input.control_down && input.binding_key == "v" then
+    const caret = clamp_index(state.field_caret, limit)
+    let mut start = caret
+    let mut finish = caret
+    if field_owns_range(state, field) then
+      start = clamp_index(selection_start(state.selection), limit)
+      finish = clamp_index(selection_finish(state.selection), limit)
+    end
+    return apply_insertion(
+      store, layout, theme, state, field, current, first_line(input.paste_text), start, finish
+    )
+  end
+  if input.backspace_pressed && input.control_down && field_owns_range(state, field) == false then
+    const caret = clamp_index(state.field_caret, limit)
+    return delete_span(
+      store, layout, theme, state, field, current, text_word_before(current, caret), caret
+    )
+  end
+  if input.backspace_pressed then
+    const span = backspace_span(state, field, layout, limit)
+    return delete_span(store, layout, theme, state, field, current, span.anchor, span.focus)
+  end
+  if input.binding_key == "delete" && input.shift_down then
+    return cut_range(store, layout, theme, state, field, current)
+  end
+  if input.binding_key == "delete" && input.control_down && field_owns_range(state, field) == false then
+    const caret = clamp_index(state.field_caret, limit)
+    return delete_span(
+      store, layout, theme, state, field, current, caret, text_word_after(current, caret)
+    )
+  end
+  if input.binding_key == "delete" then
+    const span = delete_forward_span(state, field, layout, limit)
+    return delete_span(store, layout, theme, state, field, current, span.anchor, span.focus)
+  end
+  if input.control_down && input.binding_key == "x" then
+    return cut_range(store, layout, theme, state, field, current)
+  end
+  if input.control_down && input.binding_key == "a" then
+    return select_all(store, layout, theme, state, field, current)
+  end
+  if input.binding_key == "left" || input.binding_key == "right" then
+    const toward_end = input.binding_key == "right"
+    let mut caret = 0
+    if input.control_down then
+      const origin = clamp_index(state.field_caret, limit)
+      if toward_end then
+        caret = text_word_after(current, origin)
+      else
+        caret = text_word_before(current, origin)
+      end
+    else
+      caret = horizontal_destination(state, field, layout, toward_end, input.shift_down)
+    end
+    return FieldKeyResult {
+      store: store,
+      state: move_caret(layout, theme, state, field, caret, input.shift_down),
+      submitted: false
+    }
+  end
+  if input.binding_key == "home" || input.binding_key == "end" then
+    let mut caret = 0
+    if input.binding_key == "end" then
+      caret = limit
+    end
+    return FieldKeyResult {
+      store: store,
+      state: move_caret(layout, theme, state, field, caret, input.shift_down),
+      submitted: false
+    }
+  end
+  if input.enter_pressed && input.control_down == false then
+    return FieldKeyResult { store: store, state: state, submitted: true }
+  end
+  return field_key_keep(store, state)
+end

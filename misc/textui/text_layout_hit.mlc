@@ -102,6 +102,49 @@ export fn text_layout_selection_rects(
   rects
 end
 
+fn byte_is_word(text: string, index: i32) -> bool = do
+  if index < 0 || index >= text.byte_size() then
+    return false
+  end
+  return word_character_set().contains(text.byte_at(index))
+end
+
+export fn text_word_before(text: string, index: i32) -> i32 = do
+  let mut cursor = index
+  if cursor > text.byte_size() then
+    cursor = text.byte_size()
+  end
+  if cursor <= 0 then
+    return 0
+  end
+  cursor = cursor - 1
+  while cursor > 0 && byte_is_word(text, cursor) == false do
+    cursor = cursor - 1
+  end
+  while cursor > 0 && byte_is_word(text, cursor - 1) do
+    cursor = cursor - 1
+  end
+  return cursor
+end
+
+export fn text_word_after(text: string, index: i32) -> i32 = do
+  let mut cursor = index
+  const limit = text.byte_size()
+  if cursor < 0 then
+    cursor = 0
+  end
+  if cursor >= limit then
+    return limit
+  end
+  while cursor < limit && byte_is_word(text, cursor) == false do
+    cursor = cursor + 1
+  end
+  while cursor < limit && byte_is_word(text, cursor) do
+    cursor = cursor + 1
+  end
+  return cursor
+end
+
 fn word_character_set() -> string =
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
@@ -134,4 +177,30 @@ export fn text_layout_word_range(layout: TextLayout, byte_index: i32) -> ByteRan
     finish = finish + 1
   end
   ByteRange { start: start, finish: finish }
+end
+
+export fn text_layout_boundary_before(layout: TextLayout, index: i32) -> i32 = do
+  let mut boundary = 0
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    const offset = layout.clusters[cluster_index].byte_offset
+    if offset < index && offset >= boundary then
+      boundary = offset
+    end
+    cluster_index = cluster_index + 1
+  end
+  return boundary
+end
+
+export fn text_layout_boundary_after(layout: TextLayout, index: i32) -> i32 = do
+  let mut boundary = layout.text.byte_size()
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    const offset = layout.clusters[cluster_index].byte_offset
+    if offset > index && offset < boundary then
+      boundary = offset
+    end
+    cluster_index = cluster_index + 1
+  end
+  return boundary
 end

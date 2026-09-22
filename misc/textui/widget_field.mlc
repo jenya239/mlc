@@ -1,0 +1,171 @@
+import { Rect, rect_new } from './geometry'
+import { Theme, theme_content_inset } from './theme'
+import {
+  WidgetStore,
+  WidgetKind,
+  WidgetId,
+  widget_id_equals,
+  widget_id_is_none,
+  kind_is_text_field
+} from './store'
+import { TextLayout } from './text_layout'
+import { text_layout_caret_x, text_layout_index_at, text_layout_selection_rects } from './text_layout_hit'
+import { LayoutResult } from './layout_result'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { Selection, selection_is_empty } from './selection'
+import { UiState, ui_state_with_field } from './ui_state'
+
+fn content_width(theme: Theme, rect: Rect) -> i32 = do
+  let mut width = rect.width - theme_content_inset(theme) * 2
+  if width < 1 then
+    width = 1
+  end
+  return width
+end
+
+export fn field_caption(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+export fn field_index_at(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  scroll_x: i32,
+  x: i32,
+  y: i32
+) -> i32 =
+  text_layout_index_at(
+    layout,
+    x - rect.x - theme_content_inset(theme) + scroll_x,
+    y - rect.y - theme_content_inset(theme)
+  )
+
+export fn field_scroll_to_caret(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  caret: i32,
+  previous_scroll: i32
+) -> i32 = do
+  const visible = content_width(theme, rect)
+  const caret_x = text_layout_caret_x(layout, caret)
+  let mut scroll = previous_scroll
+  if caret_x - scroll < 0 then
+    scroll = caret_x
+  end
+  if caret_x - scroll > visible then
+    scroll = caret_x - visible
+  end
+  if scroll < 0 then
+    scroll = 0
+  end
+  return scroll
+end
+
+fn paint_field_selection(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  selection: Selection,
+  scroll_x: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if selection_is_empty(selection) then
+    return operations
+  end
+  const inset = theme_content_inset(theme)
+  const boxes = text_layout_selection_rects(layout, selection.anchor, selection.focus)
+  let mut updated = operations
+  let mut box_index = 0
+  while box_index < boxes.length() do
+    const box = boxes[box_index]
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(
+        rect.x + inset + box.x - scroll_x,
+        rect.y + inset + box.y,
+        box.width,
+        box.height
+      ),
+      color: theme.selection_background
+    }))
+    box_index = box_index + 1
+  end
+  return updated
+end
+
+export fn paint_text_field(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  text: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const text_layout = layout.text_layouts[node_index]
+  const inset = theme_content_inset(theme)
+  const owner = WidgetId { index: node_index }
+  let mut scroll_x = 0
+  if widget_id_equals(state.focus, owner) then
+    scroll_x = state.field_scroll_x
+  end
+  let mut updated = operations
+  if widget_id_equals(state.selection.owner, owner) then
+    updated = paint_field_selection(theme, rect, text_layout, state.selection, scroll_x, updated)
+  end
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + inset - scroll_x,
+    origin_y: rect.y + inset,
+    color: theme.foreground,
+    text: text
+  }))
+  if widget_id_equals(state.focus, owner) then
+    let mut caret_height = text_layout.pixel_height
+    if caret_height < 1 then
+      caret_height = 1
+    end
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(
+        rect.x + inset - scroll_x + text_layout_caret_x(text_layout, state.field_caret),
+        rect.y + inset,
+        1,
+        caret_height
+      ),
+      color: theme.foreground
+    }))
+  end
+  return updated
+end
+
+export fn field_align_scroll(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState
+) -> UiState = do
+  if widget_id_is_none(state.focus) then
+    return state
+  end
+  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
+    return state
+  end
+  if kind_is_text_field(store.nodes[state.focus.index].kind) == false then
+    return state
+  end
+  const rect = layout.rects[state.focus.index]
+  const text_layout = layout.text_layouts[state.focus.index]
+  const scroll = field_scroll_to_caret(
+    theme, rect, text_layout, state.field_caret, state.field_scroll_x
+  )
+  if scroll == state.field_scroll_x then
+    return state
+  end
+  return ui_state_with_field(state, state.focus, state.field_caret, scroll)
+end

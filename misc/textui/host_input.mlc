@@ -3,8 +3,14 @@ import {
   glfw_gl_mouse_y,
   glfw_gl_mouse_left_down,
   glfw_gl_mod_ctrl_down,
+  glfw_gl_mod_shift_down,
   glfw_gl_take_binding_key,
-  glfw_gl_take_scroll_y
+  glfw_gl_take_edit_repeat,
+  glfw_gl_take_scroll_y,
+  glfw_gl_take_text,
+  glfw_gl_key_backspace_down,
+  glfw_gl_key_enter_down,
+  glfw_gl_clipboard_get
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { UiInput } from './ui_input'
 
@@ -12,9 +18,13 @@ extern fn f64_to_i32(value: f64) -> i32 = "mlc::math::f64_to_i32" from "mlc/math
 extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 extern fn glfw_gl_context_wait_events_timeout(timeout_seconds: f64) -> unit
   = "mlc::gl::glfw_gl_context_wait_events_timeout" from "mlc/gl/glfw_window_gl.hpp"
+extern fn glfw_gl_get_time() -> f64
+  = "mlc::gl::glfw_gl_get_time" from "mlc/gl/glfw_window_gl.hpp"
 
 export type HostButtons = {
   previous_left_down: i32,
+  previous_backspace: i32,
+  previous_enter: i32,
   scroll_remainder: f64
 }
 
@@ -35,10 +45,18 @@ export type HostPoll = {
 }
 
 export fn host_buttons_new() -> HostButtons =
-  HostButtons { previous_left_down: 0, scroll_remainder: 0.0 }
+  HostButtons {
+    previous_left_down: 0,
+    previous_backspace: 0,
+    previous_enter: 0,
+    scroll_remainder: 0.0
+  }
 
 export fn host_wait_for_input() -> unit =
   glfw_gl_context_wait_events_timeout(0.0 - 1.0)
+
+export fn host_now_ms() -> i32 =
+  f64_to_i32(glfw_gl_get_time() * 1000.0)
 
 export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
   const left_down_flag = glfw_gl_mouse_left_down()
@@ -46,21 +64,48 @@ export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
   const left_released = buttons.previous_left_down != 0 && left_down_flag == 0
   const key = glfw_gl_take_binding_key()
   const copy_pressed = key == "c" || key == "insert"
+  const control_down = glfw_gl_mod_ctrl_down() != 0
+  const backspace_down = glfw_gl_key_backspace_down()
+  const enter_down = glfw_gl_key_enter_down()
+  let mut binding_key = key
+  let mut backspace_pressed = buttons.previous_backspace == 0 && backspace_down != 0
+  let mut repeat = ""
+  if key == "" then
+    repeat = glfw_gl_take_edit_repeat()
+  end
+  if repeat == "backspace" then
+    backspace_pressed = true
+  end
+  if repeat != "" && repeat != "backspace" then
+    binding_key = repeat
+  end
+  let mut paste_text = ""
+  if key == "v" && control_down then
+    paste_text = glfw_gl_clipboard_get()
+  end
   const wheel = wheel_sample(buttons.scroll_remainder, glfw_gl_take_scroll_y())
-  HostPoll {
+  return HostPoll {
     input: UiInput {
       mouse_x: glfw_gl_mouse_x(),
       mouse_y: glfw_gl_mouse_y(),
       left_pressed: left_pressed,
       left_down: left_down_flag != 0,
       left_released: left_released,
-      control_down: glfw_gl_mod_ctrl_down() != 0,
+      control_down: control_down,
       copy_pressed: copy_pressed,
       wheel_y: 0 - wheel.steps,
-      now_ms: now_ms
+      now_ms: now_ms,
+      text: glfw_gl_take_text(),
+      binding_key: binding_key,
+      shift_down: glfw_gl_mod_shift_down() != 0,
+      backspace_pressed: backspace_pressed,
+      enter_pressed: buttons.previous_enter == 0 && enter_down != 0,
+      paste_text: paste_text
     },
     buttons: HostButtons {
       previous_left_down: left_down_flag,
+      previous_backspace: backspace_down,
+      previous_enter: enter_down,
       scroll_remainder: wheel.remainder
     }
   }

@@ -43,6 +43,24 @@ export type SplitterData = {
   ratio_thousandths: i32
 }
 
+export type FieldMark = {
+  text: string,
+  caret: i32,
+  anchor: i32
+}
+
+export type FieldData = {
+  text: string,
+  undo: [FieldMark],
+  redo: [FieldMark]
+}
+
+export fn field_data_new(text: string) -> FieldData = do
+  let mut undo: [FieldMark] = []
+  let mut redo: [FieldMark] = []
+  return FieldData { text: text, undo: undo, redo: redo }
+end
+
 export type WidgetKind =
   KindBox(BoxData)
   | KindLabel(LabelData)
@@ -50,6 +68,7 @@ export type WidgetKind =
   | KindScrollView
   | KindListView(ListData)
   | KindSplitter(SplitterData)
+  | KindTextField(FieldData)
 
 export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
   match kind
@@ -59,6 +78,7 @@ export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
     | KindButton(_) => false
     | KindListView(_) => false
     | KindSplitter(_) => false
+    | KindTextField(_) => false
 
 export fn kind_is_list_view(kind: WidgetKind) -> bool =
   match kind
@@ -68,6 +88,7 @@ export fn kind_is_list_view(kind: WidgetKind) -> bool =
     | KindButton(_) => false
     | KindScrollView => false
     | KindSplitter(_) => false
+    | KindTextField(_) => false
 
 export fn kind_is_splitter(kind: WidgetKind) -> bool =
   match kind
@@ -77,6 +98,17 @@ export fn kind_is_splitter(kind: WidgetKind) -> bool =
     | KindButton(_) => false
     | KindScrollView => false
     | KindListView(_) => false
+    | KindTextField(_) => false
+
+export fn kind_is_text_field(kind: WidgetKind) -> bool =
+  match kind
+    | KindTextField(_) => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
 
 export type WidgetNode = {
   id: WidgetId,
@@ -97,6 +129,17 @@ export fn widget_store_empty() -> WidgetStore =
   WidgetStore {
     nodes: [],
     root: widget_id_none()
+  }
+
+fn widget_node_with_kind(node: WidgetNode, kind: WidgetKind) -> WidgetNode =
+  WidgetNode {
+    id: node.id,
+    parent: node.parent,
+    children: node.children,
+    kind: kind,
+    overflow: node.overflow,
+    grow: node.grow,
+    visible: node.visible
   }
 
 fn widget_node_with_children(node: WidgetNode, children: [WidgetId]) -> WidgetNode =
@@ -201,3 +244,70 @@ export fn widget_store_add_splitter(
   visible: bool
 ) -> WidgetStore =
   widget_store_append(store, parent, KindSplitter(data), OverflowHidden, grow, visible)
+
+export fn widget_store_add_text_field(
+  store: WidgetStore,
+  parent: WidgetId,
+  data: FieldData,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(store, parent, KindTextField(data), OverflowHidden, grow, visible)
+
+export fn widget_store_set_list_texts(store: WidgetStore, id: WidgetId, texts: [string]) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindListView(_) => KindListView(ListData { texts: texts })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindButton(data) => KindButton(data)
+    | KindScrollView => KindScrollView
+    | KindTextField(data) => KindTextField(data)
+    | KindSplitter(data) => KindSplitter(data)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return WidgetStore { nodes: nodes, root: store.root }
+end
+
+export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindTextField(data) => KindTextField(FieldData {
+      text: text,
+      undo: data.undo,
+      redo: data.redo
+    })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindButton(data) => KindButton(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return WidgetStore { nodes: nodes, root: store.root }
+end
+
+export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: FieldData) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindTextField(_) => KindTextField(data)
+    | KindBox(box) => KindBox(box)
+    | KindLabel(label) => KindLabel(label)
+    | KindButton(button) => KindButton(button)
+    | KindScrollView => KindScrollView
+    | KindListView(list) => KindListView(list)
+    | KindSplitter(splitter) => KindSplitter(splitter)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return WidgetStore { nodes: nodes, root: store.root }
+end

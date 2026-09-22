@@ -55,7 +55,13 @@ fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool, now_ms:
     control_down: false,
     copy_pressed: false,
     wheel_y: 0,
-    now_ms: now_ms
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
   }
 
 fn clicked_owner(events: [UiEvent], owner: WidgetId) -> bool = do

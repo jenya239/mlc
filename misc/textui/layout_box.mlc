@@ -111,6 +111,7 @@ export fn measure_node(
       size: size_new(0, list_content_height(theme, data.texts.length()))
     }
     | KindSplitter(_) => MeasureResult { work: work, size: size_new(0, 0) }
+    | KindTextField(data) => measure_caption(work, theme, id.index, data.text, false)
 
 export fn measure_box_node(
   work: LayoutWork,
@@ -314,6 +315,7 @@ export fn layout_node(
     | KindScrollView => layout_scroll_node(work, store, theme, id, x, y, width, height)
     | KindListView(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindSplitter(_) => layout_split_node(work, store, theme, id, x, y, width, height)
+    | KindTextField(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
 
 export fn layout_split_node(
   work: LayoutWork,

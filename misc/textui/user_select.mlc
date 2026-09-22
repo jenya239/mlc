@@ -10,6 +10,7 @@ export fn kind_user_select(kind: WidgetKind) -> UserSelect =
     | KindScrollView => UserSelectNone
     | KindListView(_) => UserSelectNone
     | KindSplitter(_) => UserSelectNone
+    | KindTextField(_) => UserSelectText
 
 export fn kind_is_text_selectable(kind: WidgetKind) -> bool =
   match kind_user_select(kind)
@@ -24,3 +25,4 @@ export fn kind_is_clickable(kind: WidgetKind) -> bool =
     | KindScrollView => false
     | KindListView(_) => false
     | KindSplitter(_) => false
+    | KindTextField(_) => false
