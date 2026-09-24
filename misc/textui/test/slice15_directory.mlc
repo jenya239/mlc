@@ -13,9 +13,9 @@ import {
   widget_store_add_list_view,
   widget_store_add_scroll_view,
   widget_store_add_text_field,
-  widget_store_empty,
-  widget_store_set_field_text
+  widget_store_empty
 } from '../store'
+import { widget_store_set_field_text } from '../widget_field'
 import { UiState, ui_state_new, ui_state_with_field, ui_state_with_list_selected, ui_state_with_listing_revision, ui_state_with_scroll_offsets } from '../ui_state'
 import { UiEvent, ui_event_row_activated } from '../ui_event'
 import { list_selected_put } from '../widget_list'
@@ -60,6 +60,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindTextField(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindButton(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
@@ -70,6 +71,7 @@ fn list_rows(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindTextField(_) => []

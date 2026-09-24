@@ -24,6 +24,8 @@ import {
 } from './widget_scroll'
 import { paint_pick_overlay } from './inspect'
 import { paint_list_rows } from './widget_list'
+import { paint_icon_widget } from './icon'
+import { menu_list_id } from './menu'
 import { paint_splitter_sash } from './widget_split'
 import { field_caption, paint_text_field } from './widget_field'
 
@@ -116,6 +118,9 @@ fn paint_node(
   operations: [DrawOp]
 ) -> [DrawOp] = do
   const node = store.nodes[node_index]
+  if node.visible == false then
+    return operations
+  end
   const rect = layout.rects[node_index]
   const inset = theme_content_inset(theme)
   let mut current_operations = match node.kind
@@ -129,10 +134,21 @@ fn paint_node(
       }))
       updated
     end
+    | KindIcon(data) => paint_icon_widget(
+      operations, theme, rect.x, rect.y, rect.width, rect.height, data.name
+    )
     | KindButton(data) => paint_button(theme, layout, state, node_index, data.text, operations)
     | KindBox(_) => operations
     | KindScrollView => operations
-    | KindListView(data) => paint_list_rows(theme, layout, state, node_index, data.texts, operations)
+    | KindListView(data) => paint_list_rows(
+      theme,
+      layout,
+      state,
+      node_index,
+      data.texts,
+      operations,
+      menu_list_id(store).index != node_index
+    )
     | KindSplitter(_) => operations
     | KindTextField(_) => operations
   end

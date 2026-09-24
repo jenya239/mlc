@@ -11,7 +11,8 @@ import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { FrameSignature, frame_signature_hover_only } from './frame_request'
 import { UiState } from './ui_state'
-import { list_row_height, list_row_inset, list_selected_at } from './widget_list'
+import { list_row_height, list_row_inset, list_selected_at, list_text_dx } from './widget_list'
+import { list_icon_name, paint_named_icon } from './icon'
 import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
 import { menu_list_id } from './menu'
 import { kind_is_clickable } from './user_select'
@@ -25,6 +26,7 @@ fn button_text(kind: WidgetKind) -> string =
     | KindButton(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
@@ -35,6 +37,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindSplitter(_) => []
@@ -248,22 +251,37 @@ fn paint_list_change(
   const menu = menu_list_id(store).index == list_index
   const rest = list_rest_color(theme, store, list_index)
   const limit = row_right_limit(theme, store, layout, list_index)
+  const row_clip = clip_to_limit(clip, limit)
   let mut patched = operations
-  patched.push(OpPushClip(clip_to_limit(clip, limit)))
+  patched.push(OpPushClip(row_clip))
   let mut index = 0
   while index < rows.length() do
     const row = rows[index]
-    patched.push(OpFillRect(FillRectOp {
-      rect: damage_row_rect(list_rect, row, row_count, row_height, menu, limit),
-      color: row_fill_color(theme, rest, row, new_hover, new_selected)
-    }))
+    const fill = damage_row_rect(list_rect, row, row_count, row_height, menu, limit)
+    if rect_is_empty(fill) == false then
+      patched.push(OpFillRect(FillRectOp {
+        rect: fill,
+        color: row_fill_color(theme, rest, row, new_hover, new_selected)
+      }))
+    end
     index = index + 1
   end
   index = 0
   while index < rows.length() do
     const row = rows[index]
+    if menu == false then
+      const icon_size = theme.font_size_pixels
+      patched = paint_named_icon(
+        patched,
+        list_icon_name(texts[row]),
+        list_rect.x + theme.padding,
+        list_rect.y + row * row_height + (row_height - icon_size) / 2,
+        icon_size,
+        theme.foreground
+      )
+    end
     patched.push(OpText(TextOp {
-      origin_x: list_rect.x + theme.padding,
+      origin_x: list_rect.x + theme.padding + list_text_dx(theme, menu == false),
       origin_y: list_rect.y + row * row_height + list_row_inset(theme),
       color: theme.foreground,
       text: texts[row]
@@ -315,9 +333,10 @@ export fn submit_ui_frame(
   presented: FrameSignature,
   next: FrameSignature,
   window_width: i32,
-  window_height: i32
+  window_height: i32,
+  composed: bool
 ) -> SubmitFrameResult = do
-  if frame_signature_hover_only(presented, next) then
+  if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) then
     const damage = paint_hover_damage(theme, store, layout, state, presented, next)
     if damage.length() > 0 then
       return submit_frame(

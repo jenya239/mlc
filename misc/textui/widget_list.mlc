@@ -3,6 +3,7 @@ import { Theme } from './theme'
 import { ColorRgba } from './theme'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { LayoutResult } from './layout_result'
+import { list_icon_name, paint_named_icon } from './icon'
 import { UiState } from './ui_state'
 
 export fn list_row_inset(theme: Theme) -> i32 = do
@@ -14,7 +15,11 @@ export fn list_row_inset(theme: Theme) -> i32 = do
 end
 
 export fn list_row_height(theme: Theme) -> i32 = do
-  const height = theme.font_size_pixels + list_row_inset(theme) * 2
+  let mut descender = theme.font_size_pixels / 4
+  if descender < 1 then
+    descender = 1
+  end
+  const height = theme.font_size_pixels + list_row_inset(theme) * 2 + descender
   if height < 1 then
     return 1
   end
@@ -113,13 +118,21 @@ fn push_row_fill(operations: [DrawOp], row: Rect, color: ColorRgba) -> [DrawOp] 
   return next
 end
 
+export fn list_text_dx(theme: Theme, show_icons: bool) -> i32 = do
+  if show_icons == false then
+    return 0
+  end
+  return theme.font_size_pixels + list_row_inset(theme)
+end
+
 export fn paint_list_rows(
   theme: Theme,
   layout: LayoutResult,
   state: UiState,
   node_index: i32,
   texts: [string],
-  operations: [DrawOp]
+  operations: [DrawOp],
+  show_icons: bool
 ) -> [DrawOp] = do
   let mut next = operations
   const row_height = list_row_height(theme)
@@ -137,8 +150,19 @@ export fn paint_list_rows(
       else if state.hover.index == node_index && index == state.list_hover_row then
         next = push_row_fill(next, row, theme.list_hover)
       end
+      if show_icons then
+        const icon_size = theme.font_size_pixels
+        next = paint_named_icon(
+          next,
+          list_icon_name(texts[index]),
+          row.x + theme.padding,
+          row.y + (row_height - icon_size) / 2,
+          icon_size,
+          theme.foreground
+        )
+      end
       next.push(OpText(TextOp {
-        origin_x: row.x + theme.padding,
+        origin_x: row.x + theme.padding + list_text_dx(theme, show_icons),
         origin_y: row.y + list_row_inset(theme),
         color: theme.foreground,
         text: texts[index]

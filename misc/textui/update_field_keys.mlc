@@ -3,14 +3,13 @@ import {
   WidgetStore,
   WidgetId,
   widget_id_is_none,
-  kind_is_text_field,
-  widget_store_set_field_text
+  kind_is_text_field
 } from './store'
 import { LayoutResult } from './layout_result'
 import { Selection, selection_start, selection_finish } from './selection'
 import { selection_publish_primary } from './selection_text'
 import { clipboard_set_clipboard } from './clipboard'
-import { field_caption, field_scroll_to_caret } from './widget_field'
+import { field_caption, field_scroll_to_caret, widget_store_set_field_text } from './widget_field'
 import { text_layout_boundary_before, text_layout_boundary_after, text_word_before, text_word_after } from './text_layout_hit'
 import {
   UiState,

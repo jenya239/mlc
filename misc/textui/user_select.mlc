@@ -5,6 +5,7 @@ export type UserSelect = UserSelectNone | UserSelectText
 export fn kind_user_select(kind: WidgetKind) -> UserSelect =
   match kind
     | KindLabel(_) => UserSelectText
+    | KindIcon(_) => UserSelectText
     | KindBox(_) => UserSelectNone
     | KindButton(_) => UserSelectNone
     | KindScrollView => UserSelectNone
@@ -21,6 +22,7 @@ export fn kind_is_clickable(kind: WidgetKind) -> bool =
   match kind
     | KindButton(_) => true
     | KindLabel(_) => false
+    | KindIcon(_) => false
     | KindBox(_) => false
     | KindScrollView => false
     | KindListView(_) => false

@@ -38,6 +38,10 @@ export type ListData = {
   texts: [string]
 }
 
+export type IconData = {
+  name: string
+}
+
 export type SplitterData = {
   direction: BoxDirection,
   ratio_thousandths: i32
@@ -69,6 +73,7 @@ export type WidgetKind =
   | KindListView(ListData)
   | KindSplitter(SplitterData)
   | KindTextField(FieldData)
+  | KindIcon(IconData)
 
 export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
   match kind
@@ -79,6 +84,7 @@ export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
     | KindListView(_) => false
     | KindSplitter(_) => false
     | KindTextField(_) => false
+    | KindIcon(_) => false
 
 export fn kind_is_list_view(kind: WidgetKind) -> bool =
   match kind
@@ -89,6 +95,7 @@ export fn kind_is_list_view(kind: WidgetKind) -> bool =
     | KindScrollView => false
     | KindSplitter(_) => false
     | KindTextField(_) => false
+    | KindIcon(_) => false
 
 export fn kind_is_splitter(kind: WidgetKind) -> bool =
   match kind
@@ -99,6 +106,7 @@ export fn kind_is_splitter(kind: WidgetKind) -> bool =
     | KindScrollView => false
     | KindListView(_) => false
     | KindTextField(_) => false
+    | KindIcon(_) => false
 
 export fn kind_is_text_field(kind: WidgetKind) -> bool =
   match kind
@@ -109,6 +117,7 @@ export fn kind_is_text_field(kind: WidgetKind) -> bool =
     | KindScrollView => false
     | KindListView(_) => false
     | KindSplitter(_) => false
+    | KindIcon(_) => false
 
 export type WidgetNode = {
   id: WidgetId,
@@ -126,6 +135,7 @@ export type WidgetStore = {
   overlay: WidgetId,
   about: WidgetId,
   menu: WidgetId,
+  dialog: WidgetId,
   place_x: i32,
   place_y: i32,
   placed: bool
@@ -134,11 +144,11 @@ export type WidgetStore = {
 export fn widget_store_empty() -> WidgetStore = do
   let mut nodes: [WidgetNode] = []
   return widget_store_make(
-    nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false
+    nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false
   )
 end
 
-fn widget_node_with_kind(node: WidgetNode, kind: WidgetKind) -> WidgetNode =
+export fn widget_node_with_kind(node: WidgetNode, kind: WidgetKind) -> WidgetNode =
   WidgetNode {
     id: node.id,
     parent: node.parent,
@@ -160,7 +170,7 @@ fn widget_node_with_children(node: WidgetNode, children: [WidgetId]) -> WidgetNo
     visible: node.visible
   }
 
-fn widget_store_append(
+export fn widget_store_append(
   store: WidgetStore,
   parent: WidgetId,
   kind: WidgetKind,
@@ -191,7 +201,7 @@ fn widget_store_append(
     next_root = new_id
   end
   return widget_store_make(
-    next_nodes, next_root, store.overlay, store.about, store.menu,
+    next_nodes, next_root, store.overlay, store.about, store.menu, store.dialog,
     store.place_x, store.place_y, store.placed
   )
 end
@@ -274,46 +284,7 @@ export fn widget_store_set_list_texts(store: WidgetStore, id: WidgetId, texts: [
     | KindScrollView => KindScrollView
     | KindTextField(data) => KindTextField(data)
     | KindSplitter(data) => KindSplitter(data)
-  let mut nodes = store.nodes
-  nodes.set(id.index, widget_node_with_kind(node, next_kind))
-  return widget_store_keep(nodes, store)
-end
-
-export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
-  if id.index < 0 || id.index >= store.nodes.length() then
-    return store
-  end
-  const node = store.nodes[id.index]
-  const next_kind = match node.kind
-    | KindTextField(data) => KindTextField(FieldData {
-      text: text,
-      undo: data.undo,
-      redo: data.redo
-    })
-    | KindBox(data) => KindBox(data)
-    | KindLabel(data) => KindLabel(data)
-    | KindButton(data) => KindButton(data)
-    | KindScrollView => KindScrollView
-    | KindListView(data) => KindListView(data)
-    | KindSplitter(data) => KindSplitter(data)
-  let mut nodes = store.nodes
-  nodes.set(id.index, widget_node_with_kind(node, next_kind))
-  return widget_store_keep(nodes, store)
-end
-
-export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: FieldData) -> WidgetStore = do
-  if id.index < 0 || id.index >= store.nodes.length() then
-    return store
-  end
-  const node = store.nodes[id.index]
-  const next_kind = match node.kind
-    | KindTextField(_) => KindTextField(data)
-    | KindBox(box) => KindBox(box)
-    | KindLabel(label) => KindLabel(label)
-    | KindButton(button) => KindButton(button)
-    | KindScrollView => KindScrollView
-    | KindListView(list) => KindListView(list)
-    | KindSplitter(splitter) => KindSplitter(splitter)
+    | KindIcon(data) => KindIcon(data)
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
   return widget_store_keep(nodes, store)
@@ -336,6 +307,7 @@ fn widget_store_make(
   overlay: WidgetId,
   about: WidgetId,
   menu: WidgetId,
+  dialog: WidgetId,
   place_x: i32,
   place_y: i32,
   placed: bool
@@ -346,44 +318,45 @@ fn widget_store_make(
     overlay: overlay,
     about: about,
     menu: menu,
+    dialog: dialog,
     place_x: place_x,
     place_y: place_y,
     placed: placed
   }
 
-fn widget_store_keep(nodes: [WidgetNode], store: WidgetStore) -> WidgetStore =
+export fn widget_store_keep(nodes: [WidgetNode], store: WidgetStore) -> WidgetStore =
   widget_store_make(
-    nodes,
-    store.root,
-    store.overlay,
-    store.about,
-    store.menu,
-    store.place_x,
-    store.place_y,
-    store.placed
+    nodes, store.root, store.overlay, store.about, store.menu, store.dialog,
+    store.place_x, store.place_y, store.placed
   )
 
 export fn widget_store_with_overlay(store: WidgetStore, overlay: WidgetId) -> WidgetStore =
   widget_store_make(
-    store.nodes, store.root, overlay, store.about, store.menu,
+    store.nodes, store.root, overlay, store.about, store.menu, store.dialog,
     store.place_x, store.place_y, store.placed
   )
 
 export fn widget_store_with_about(store: WidgetStore, about: WidgetId) -> WidgetStore =
   widget_store_make(
-    store.nodes, store.root, store.overlay, about, store.menu,
+    store.nodes, store.root, store.overlay, about, store.menu, store.dialog,
     store.place_x, store.place_y, store.placed
   )
 
 export fn widget_store_with_menu(store: WidgetStore, menu: WidgetId) -> WidgetStore =
   widget_store_make(
-    store.nodes, store.root, store.overlay, store.about, menu,
+    store.nodes, store.root, store.overlay, store.about, menu, store.dialog,
+    store.place_x, store.place_y, store.placed
+  )
+
+export fn widget_store_with_dialog(store: WidgetStore, dialog: WidgetId) -> WidgetStore =
+  widget_store_make(
+    store.nodes, store.root, store.overlay, store.about, store.menu, dialog,
     store.place_x, store.place_y, store.placed
   )
 
 export fn widget_store_with_place(store: WidgetStore, place_x: i32, place_y: i32, placed: bool) -> WidgetStore =
   widget_store_make(
-    store.nodes, store.root, store.overlay, store.about, store.menu,
+    store.nodes, store.root, store.overlay, store.about, store.menu, store.dialog,
     place_x, place_y, placed
   )
 

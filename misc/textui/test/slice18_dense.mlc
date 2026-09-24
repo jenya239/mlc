@@ -12,9 +12,9 @@ import {
   widget_store_add_list_view,
   widget_store_add_scroll_view,
   widget_store_add_text_field,
-  widget_store_empty,
-  widget_store_set_field_text
+  widget_store_empty
 } from '../store'
+import { widget_store_set_field_text } from '../widget_field'
 import { ui_state_new } from '../ui_state'
 import { theme_default } from '../theme'
 import {
@@ -60,6 +60,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindTextField(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindButton(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
@@ -70,6 +71,7 @@ fn list_rows(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindTextField(_) => []

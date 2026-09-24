@@ -4,8 +4,11 @@ import {
   WidgetStore,
   WidgetKind,
   WidgetId,
+  FieldData,
   widget_id_equals,
   widget_id_is_none,
+  widget_node_with_kind,
+  widget_store_keep,
   kind_is_text_field
 } from './store'
 import { TextLayout } from './text_layout'
@@ -32,6 +35,7 @@ export fn field_caption(kind: WidgetKind) -> string =
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
+    | KindIcon(_) => ""
 
 export fn field_index_at(
   theme: Theme,
@@ -168,4 +172,46 @@ export fn field_align_scroll(
     return state
   end
   return ui_state_with_field(state, state.focus, state.field_caret, scroll)
+end
+
+export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindTextField(data) => KindTextField(FieldData {
+      text: text,
+      undo: data.undo,
+      redo: data.redo
+    })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindButton(data) => KindButton(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+    | KindIcon(data) => KindIcon(data)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return widget_store_keep(nodes, store)
+end
+
+export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: FieldData) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindTextField(_) => KindTextField(data)
+    | KindBox(box) => KindBox(box)
+    | KindLabel(label) => KindLabel(label)
+    | KindButton(button) => KindButton(button)
+    | KindScrollView => KindScrollView
+    | KindListView(list) => KindListView(list)
+    | KindSplitter(splitter) => KindSplitter(splitter)
+    | KindIcon(icon) => KindIcon(icon)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return widget_store_keep(nodes, store)
 end

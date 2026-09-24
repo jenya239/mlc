@@ -8,9 +8,9 @@ import {
   widget_id_equals,
   widget_id_is_none,
   widget_id_none,
-  widget_store_set_field_text,
   widget_store_set_list_texts
 } from './store'
+import { widget_store_set_field_text } from './widget_field'
 import {
   GrabNone,
   LastPressNone,
@@ -67,6 +67,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindTextField(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindButton(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
@@ -77,6 +78,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindTextField(_) => []

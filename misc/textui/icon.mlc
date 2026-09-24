@@ -1,0 +1,341 @@
+import { rect_new } from './geometry'
+import { ColorRgba, Theme } from './theme'
+import { DrawOp, FillRectOp, StrokeRectOp } from './draw_op'
+import {
+  IconData,
+  OverflowVisible,
+  WidgetId,
+  WidgetStore,
+  widget_store_append
+} from './store'
+
+fn push_fill(
+  operations: [DrawOp],
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  if width <= 0 || height <= 0 then
+    return operations
+  end
+  let mut next = operations
+  next.push(OpFillRect(FillRectOp {
+    rect: rect_new(x, y, width, height),
+    color: color
+  }))
+  return next
+end
+
+fn push_stroke(
+  operations: [DrawOp],
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  color: ColorRgba,
+  line_width: i32
+) -> [DrawOp] = do
+  if width <= 0 || height <= 0 then
+    return operations
+  end
+  let mut next = operations
+  next.push(OpStrokeRect(StrokeRectOp {
+    rect: rect_new(x, y, width, height),
+    color: color,
+    line_width: line_width
+  }))
+  return next
+end
+
+fn part(box: i32, numerator: i32) -> i32 =
+  box * numerator / 100
+
+fn stroke_width(size: i32) -> i32 = do
+  let mut width = size * 8 / 100
+  if width < 1 then
+    width = 1
+  end
+  return width
+end
+
+fn paint_wedge(
+  operations: [DrawOp],
+  left: i32,
+  top: i32,
+  box: i32,
+  color: ColorRgba,
+  pointing_down: bool
+) -> [DrawOp] = do
+  let mut next = operations
+  const rows = part(box, 42)
+  if rows < 1 then
+    return operations
+  end
+  let mut row = 0
+  while row < rows do
+    let mut span = box * (row + 1) / rows
+    if pointing_down then
+      span = box * (rows - row) / rows
+    end
+    if span < 1 then
+      span = 1
+    end
+    if span > box then
+      span = box
+    end
+    const x = left + (box - span) / 2
+    next = push_fill(next, x, top + row, span, 1, color)
+    row = row + 1
+  end
+  return next
+end
+
+fn paint_folder(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba) -> [DrawOp] = do
+  let mut next = push_fill(
+    operations,
+    left,
+    top + part(box, 12),
+    part(box, 38),
+    part(box, 22),
+    color
+  )
+  return push_fill(next, left, top + part(box, 28), box, part(box, 62), color)
+end
+
+fn paint_home(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba) -> [DrawOp] = do
+  const roof = paint_wedge(operations, left, top, box, color, false)
+  return push_fill(
+    roof,
+    left + part(box, 18),
+    top + part(box, 42),
+    part(box, 64),
+    part(box, 50),
+    color
+  )
+end
+
+fn paint_trash(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba) -> [DrawOp] = do
+  let mut next = push_fill(
+    operations,
+    left + part(box, 12),
+    top + part(box, 8),
+    part(box, 76),
+    part(box, 12),
+    color
+  )
+  return push_fill(
+    next,
+    left + part(box, 22),
+    top + part(box, 24),
+    part(box, 56),
+    part(box, 66),
+    color
+  )
+end
+
+fn paint_downloads(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba, width: i32) -> [DrawOp] = do
+  let mut next = push_fill(
+    operations,
+    left + box / 2,
+    top + part(box, 8),
+    width,
+    part(box, 54),
+    color
+  )
+  next = paint_wedge(next, left, top + part(box, 36), box, color, true)
+  return push_fill(next, left + part(box, 12), top + part(box, 88), part(box, 76), width, color)
+end
+
+fn paint_pictures(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba, width: i32) -> [DrawOp] = do
+  let mut next = push_stroke(
+    operations,
+    left,
+    top + part(box, 12),
+    box,
+    part(box, 76),
+    color,
+    width
+  )
+  next = push_fill(
+    next,
+    left + part(box, 22),
+    top + part(box, 28),
+    part(box, 20),
+    part(box, 20),
+    color
+  )
+  return paint_wedge(next, left, top + part(box, 48), box, color, false)
+end
+
+fn paint_music(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba, width: i32) -> [DrawOp] = do
+  let mut next = push_fill(
+    operations,
+    left + part(box, 16),
+    top + part(box, 56),
+    part(box, 32),
+    part(box, 32),
+    color
+  )
+  next = push_fill(next, left + part(box, 46), top + part(box, 16), width, part(box, 56), color)
+  return push_fill(next, left + part(box, 46), top + part(box, 16), part(box, 36), width, color)
+end
+
+fn paint_documents(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba, width: i32) -> [DrawOp] = do
+  let mut next = push_fill(
+    operations,
+    left + part(box, 8),
+    top + part(box, 22),
+    part(box, 70),
+    part(box, 68),
+    color
+  )
+  return push_stroke(
+    next,
+    left + part(box, 22),
+    top + part(box, 8),
+    part(box, 70),
+    part(box, 68),
+    color,
+    width
+  )
+end
+
+fn paint_file(operations: [DrawOp], left: i32, top: i32, box: i32, color: ColorRgba, width: i32) -> [DrawOp] = do
+  let mut next = push_stroke(
+    operations,
+    left + part(box, 16),
+    top + part(box, 8),
+    part(box, 68),
+    part(box, 84),
+    color,
+    width
+  )
+  const fold_x = left + part(box, 52)
+  const fold_y = top + part(box, 8)
+  next = push_fill(next, fold_x, fold_y, part(box, 32), width, color)
+  next = push_fill(next, fold_x, fold_y, width, part(box, 24), color)
+  return push_fill(next, fold_x, fold_y + part(box, 24), part(box, 32), width, color)
+end
+
+export fn paint_named_icon(
+  operations: [DrawOp],
+  name: string,
+  x: i32,
+  y: i32,
+  size: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  if size <= 1 then
+    return operations
+  end
+  let mut inset = part(size, 8)
+  if inset < 1 then
+    inset = 1
+  end
+  const left = x + inset
+  const top = y + inset
+  const box = size - inset * 2
+  const width = stroke_width(size)
+  if name == "folder" then
+    return paint_folder(operations, left, top, box, color)
+  end
+  if name == "home" then
+    return paint_home(operations, left, top, box, color)
+  end
+  if name == "trash" then
+    return paint_trash(operations, left, top, box, color)
+  end
+  if name == "downloads" then
+    return paint_downloads(operations, left, top, box, color, width)
+  end
+  if name == "pictures" then
+    return paint_pictures(operations, left, top, box, color, width)
+  end
+  if name == "music" then
+    return paint_music(operations, left, top, box, color, width)
+  end
+  if name == "documents" then
+    return paint_documents(operations, left, top, box, color, width)
+  end
+  return paint_file(operations, left, top, box, color, width)
+end
+
+fn place_icon(name: string) -> string = do
+  if name == "home" || name == "Home" then
+    return "home"
+  end
+  if name == "documents" || name == "Documents" then
+    return "documents"
+  end
+  if name == "downloads" || name == "Downloads" then
+    return "downloads"
+  end
+  if name == "pictures" || name == "Pictures" then
+    return "pictures"
+  end
+  if name == "music" || name == "Music" then
+    return "music"
+  end
+  if name == "trash" || name == "Trash" then
+    return "trash"
+  end
+  return ""
+end
+
+export fn list_icon_name(text: string) -> string = do
+  if text == ".." then
+    return "folder"
+  end
+  const size = text.byte_size()
+  if size > 0 && text.byte_at(size - 1) == "/" then
+    const place = place_icon(text.byte_substring(0, size - 1))
+    if place != "" then
+      return place
+    end
+    return "folder"
+  end
+  const place = place_icon(text)
+  if place != "" then
+    return place
+  end
+  return "file"
+end
+
+export fn paint_icon_widget(
+  operations: [DrawOp],
+  theme: Theme,
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  name: string
+) -> [DrawOp] = do
+  const size = theme.font_size_pixels
+  let mut origin_x = x
+  let mut origin_y = y
+  if width > size then
+    origin_x = x + (width - size) / 2
+  end
+  if height > size then
+    origin_y = y + (height - size) / 2
+  end
+  return paint_named_icon(operations, name, origin_x, origin_y, size, theme.foreground)
+end
+
+export fn widget_store_add_icon(
+  store: WidgetStore,
+  parent: WidgetId,
+  name: string,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(
+    store,
+    parent,
+    KindIcon(IconData { name: name }),
+    OverflowVisible,
+    grow,
+    visible
+  )

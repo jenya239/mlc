@@ -42,6 +42,7 @@ import { WindowPlacement, window_placement_load, window_placement_save } from '.
 import { follow_directory, open_directory } from './directory_browse'
 import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
 import { attach_file_menu, menu_apply, menu_host_step } from './menu'
+import { DialogTarget, attach_dialog, dialog_host } from './dialog'
 
 fn application_reload_status() -> i32 = 75
 
@@ -81,6 +82,7 @@ fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
   match store.nodes[owner.index].kind
     | KindButton(data) => data.text
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindBox(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
@@ -98,6 +100,7 @@ fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId) -> st
   match store.nodes[owner.index].kind
     | KindListView(data) => list_text_at(data.texts, list_selected_at(state.list_selected, owner.index))
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindButton(_) => ""
     | KindBox(_) => ""
     | KindScrollView => ""
@@ -128,7 +131,7 @@ fn main() -> i32 = do
     return error_code
   end
   const theme = theme_default()
-  let mut store = attach_file_menu(attach_about_card(build_label_gallery()))
+  let mut store = attach_dialog(attach_file_menu(attach_about_card(build_label_gallery())))
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
@@ -161,6 +164,9 @@ fn main() -> i32 = do
   shaping = laid_out.shaping
   cache = laid_out.cache
   let mut presented = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
+  let mut composed = false
+  let mut target_list = 0 - 1
+  let mut target_row = 0 - 1
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut right_was_down = false
@@ -184,10 +190,16 @@ fn main() -> i32 = do
     const polled = host_poll_input(buttons, host_now_ms())
     buttons = polled.buttons
     let mut input = polled.input
-    const menued = menu_host_step(store, laid_out.layout, theme, state, glfw_gl_mouse_right_down() != 0, right_was_down, input.mouse_x, input.mouse_y)
+    const menued = menu_host_step(
+      store, laid_out.layout, theme, state,
+      glfw_gl_mouse_right_down() != 0, right_was_down,
+      input.mouse_x, input.mouse_y, target_list, target_row
+    )
     store = menued.store
     state = menued.state
     right_was_down = menued.right_down
+    target_list = menued.target_list
+    target_row = menued.target_row
     if input.left_pressed then
       const hit = hit_test(store, laid_out.layout, theme, input.mouse_x, input.mouse_y)
       if widget_id_is_none(hit) == false && button_caption(store, hit) == "Pick" then
@@ -209,6 +221,11 @@ fn main() -> i32 = do
     const chosen = menu_apply(store, state, updated.events)
     store = chosen.store
     state = chosen.state
+    const prompted = dialog_host(
+      store, state, updated.events, DialogTarget { list_index: target_list, row: target_row }
+    )
+    store = prompted.store
+    state = prompted.state
     let mut activation_index = 0
     while activation_index < updated.events.length() do
       if updated.events[activation_index].activated then
@@ -302,8 +319,10 @@ fn main() -> i32 = do
         presented,
         next_signature,
         glfw_gl_window_width(),
-        glfw_gl_window_height()
+        glfw_gl_window_height(),
+        composed
       )
+      composed = true
       if submitted.error_code != 0 then
         submit_destroy(submitted.resources)
         remember_window()

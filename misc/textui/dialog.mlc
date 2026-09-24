@@ -1,0 +1,352 @@
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  DirectionRow,
+  LabelData,
+  OverflowHidden,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  field_data_new,
+  kind_is_list_view,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_node_with_kind,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_add_text_field,
+  widget_store_keep,
+  widget_store_set_list_texts,
+  widget_store_set_visible,
+  widget_store_with_dialog,
+  widget_store_with_overlay,
+  widget_store_with_place
+} from './store'
+import { widget_store_set_field_text } from './widget_field'
+import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from './ui_event'
+import {
+  UiState,
+  ui_state_with_field,
+  ui_state_with_field_revision,
+  ui_state_with_list_selected,
+  ui_state_with_listing_revision
+} from './ui_state'
+import { field_caption } from './widget_field'
+import { list_selected_at, list_selected_put } from './widget_list'
+import {
+  OverlayView,
+  overlay_dismiss,
+  ui_state_with_overlay_open,
+  ui_state_with_overlay_revision
+} from './overlay'
+
+fn view_of(store: WidgetStore, state: UiState) -> OverlayView =
+  OverlayView { store: store, state: state }
+
+export type DialogTarget = {
+  list_index: i32,
+  row: i32
+}
+
+fn layer_box() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn card_box() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 16, gap: 10 }
+
+fn action_box() -> BoxData =
+  BoxData { direction: DirectionRow, padding: 0, gap: 10 }
+
+fn child_at(store: WidgetStore, parent: WidgetId, ordinal: i32) -> WidgetId = do
+  if widget_id_is_none(parent) then
+    return widget_id_none()
+  end
+  if parent.index < 0 || parent.index >= store.nodes.length() then
+    return widget_id_none()
+  end
+  const children = store.nodes[parent.index].children
+  if ordinal < 0 || ordinal >= children.length() then
+    return widget_id_none()
+  end
+  return children[ordinal]
+end
+
+fn dialog_card(store: WidgetStore) -> WidgetId =
+  child_at(store, store.dialog, 0)
+
+export fn dialog_field_id(store: WidgetStore) -> WidgetId =
+  child_at(store, dialog_card(store), 2)
+
+export fn dialog_ok_id(store: WidgetStore) -> WidgetId =
+  child_at(store, child_at(store, dialog_card(store), 3), 1)
+
+fn dialog_title_id(store: WidgetStore) -> WidgetId =
+  child_at(store, dialog_card(store), 0)
+
+export fn dialog_message_id(store: WidgetStore) -> WidgetId =
+  child_at(store, dialog_card(store), 1)
+
+export fn dialog_cancel_id(store: WidgetStore) -> WidgetId =
+  child_at(store, child_at(store, dialog_card(store), 3), 0)
+
+fn set_label_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, KindLabel(LabelData { text: text })))
+  return widget_store_keep(nodes, store)
+end
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindIcon(icon) => icon.name
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn list_texts_of(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindIcon(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+
+fn menu_list_id(store: WidgetStore) -> WidgetId =
+  child_at(store, store.menu, 0)
+
+fn file_row(text: string) -> bool = do
+  if text == ".." || text.byte_size() == 0 then
+    return false
+  end
+  return text.byte_at(text.byte_size() - 1) != "/"
+end
+
+fn texts_replaced(texts: [string], row: i32, text: string) -> [string] = do
+  let mut next: [string] = []
+  let mut index = 0
+  while index < texts.length() do
+    if index == row then
+      next.push(text)
+    end
+    if index != row then
+      next.push(texts[index])
+    end
+    index = index + 1
+  end
+  return next
+end
+
+fn texts_removed(texts: [string], row: i32) -> [string] = do
+  let mut next: [string] = []
+  let mut index = 0
+  while index < texts.length() do
+    if index != row then
+      next.push(texts[index])
+    end
+    index = index + 1
+  end
+  return next
+end
+
+export fn attach_dialog(store: WidgetStore) -> WidgetStore = do
+  const layer = widget_store_add_box(store, widget_id_none(), layer_box(), OverflowHidden, 0, false)
+  const card = widget_store_add_box(layer, layer.nodes[layer.nodes.length() - 1].id, card_box(), OverflowHidden, 0, true)
+  const titled = widget_store_add_label(card, card.nodes[card.nodes.length() - 1].id, LabelData { text: "Rename" }, OverflowVisible, 0, true)
+  const card_id = titled.nodes[titled.nodes.length() - 2].id
+  const messaged = widget_store_add_label(titled, card_id, LabelData { text: "" }, OverflowVisible, 0, false)
+  const fielded = widget_store_add_text_field(messaged, card_id, field_data_new(""), 0, false)
+  const actions = widget_store_add_box(fielded, card_id, action_box(), OverflowHidden, 0, true)
+  const action_id = actions.nodes[actions.nodes.length() - 1].id
+  const cancel = widget_store_add_button(actions, action_id, ButtonData { text: "Cancel" }, OverflowVisible, 0, true)
+  const confirmed = widget_store_add_button(cancel, action_id, ButtonData { text: "OK" }, OverflowVisible, 0, true)
+  return widget_store_with_dialog(confirmed, layer.nodes[layer.nodes.length() - 1].id)
+end
+
+export fn dialog_present(
+  store: WidgetStore,
+  state: UiState,
+  title: string,
+  body: string,
+  show_field: bool
+) -> OverlayView = do
+  if widget_id_is_none(store.dialog) then
+    return view_of(store, state)
+  end
+  let mut next = widget_store_with_overlay(store, store.dialog)
+  next = widget_store_with_place(next, 0, 0, false)
+  if widget_id_is_none(store.about) == false then
+    next = widget_store_set_visible(next, store.about, false)
+  end
+  if widget_id_is_none(store.menu) == false then
+    next = widget_store_set_visible(next, store.menu, false)
+  end
+  next = widget_store_set_visible(next, store.dialog, true)
+  next = set_label_text(next, dialog_title_id(next), title)
+  next = set_label_text(next, dialog_message_id(next), body)
+  next = widget_store_set_visible(next, dialog_message_id(next), show_field == false)
+  let mut field_text = ""
+  if show_field then
+    field_text = body
+  end
+  next = widget_store_set_field_text(next, dialog_field_id(next), field_text)
+  next = widget_store_set_visible(next, dialog_field_id(next), show_field)
+  let mut focused = ui_state_with_field(state, widget_id_none(), 0, 0)
+  if show_field then
+    focused = ui_state_with_field(state, dialog_field_id(next), body.byte_size(), 0)
+  end
+  return view_of(
+    next,
+    ui_state_with_overlay_revision(
+      ui_state_with_field_revision(
+        ui_state_with_overlay_open(focused, true),
+        focused.field_revision + 1
+      ),
+      state.overlay_revision + 1
+    )
+  )
+end
+
+fn target_row(store: WidgetStore, list_id: WidgetId, target: DialogTarget, state: UiState) -> i32 = do
+  if widget_id_equals(list_id, menu_list_id(store)) then
+    return 0 - 1
+  end
+  let mut row = target.row
+  if target.list_index < 0 then
+    row = list_selected_at(state.list_selected, list_id.index)
+  end
+  if target.list_index >= 0 && list_id.index != target.list_index then
+    return 0 - 1
+  end
+  if row < 0 then
+    return 0 - 1
+  end
+  const text = list_texts_of(store.nodes[list_id.index].kind)
+  if row >= text.length() then
+    return 0 - 1
+  end
+  if file_row(text[row]) == false then
+    return 0 - 1
+  end
+  return row
+end
+
+fn apply_row(store: WidgetStore, state: UiState, target: DialogTarget, deleting: bool) -> OverlayView = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const id = store.nodes[index].id
+    if kind_is_list_view(store.nodes[index].kind) then
+      const row = target_row(store, id, target, state)
+      if row >= 0 then
+        const texts = list_texts_of(store.nodes[index].kind)
+        let mut replacement = ""
+        const field_id = dialog_field_id(store)
+        if widget_id_is_none(field_id) == false then
+          replacement = field_caption(store.nodes[field_id.index].kind)
+        end
+        let mut next_texts = texts_replaced(texts, row, replacement)
+        if deleting then
+          next_texts = texts_removed(texts, row)
+        end
+        let mut next = widget_store_set_list_texts(store, id, next_texts)
+        let mut selected = state
+        if row >= next_texts.length() then
+          selected = ui_state_with_list_selected(
+            state,
+            list_selected_put(state.list_selected, id.index, 0 - 1)
+          )
+        end
+        return view_of(next, ui_state_with_listing_revision(selected, state.listing_revision + 1))
+      end
+    end
+    index = index + 1
+  end
+  return view_of(store, state)
+end
+
+fn dialog_commit(store: WidgetStore, state: UiState, target: DialogTarget) -> OverlayView = do
+  const title_id = dialog_title_id(store)
+  let mut deleting = false
+  if widget_id_is_none(title_id) == false then
+    if label_text(store.nodes[title_id.index].kind) == "Delete" then
+      deleting = true
+    end
+  end
+  const changed = apply_row(store, state, target, deleting)
+  return overlay_dismiss(changed.store, changed.state)
+end
+
+fn menu_choice(store: WidgetStore, state: UiState) -> string = do
+  const list_id = menu_list_id(store)
+  if widget_id_is_none(list_id) then
+    return ""
+  end
+  const row = list_selected_at(state.list_selected, list_id.index)
+  const texts = list_texts_of(store.nodes[list_id.index].kind)
+  if row < 0 || row >= texts.length() then
+    return ""
+  end
+  return texts[row]
+end
+
+fn file_body(store: WidgetStore, state: UiState, target: DialogTarget) -> string = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const id = store.nodes[index].id
+    if kind_is_list_view(store.nodes[index].kind) then
+      const row = target_row(store, id, target, state)
+      if row >= 0 then
+        return list_texts_of(store.nodes[index].kind)[row]
+      end
+    end
+    index = index + 1
+  end
+  return ""
+end
+
+export fn dialog_host(
+  store: WidgetStore,
+  state: UiState,
+  events: [UiEvent],
+  target: DialogTarget
+) -> OverlayView = do
+  let mut view = view_of(store, state)
+  let mut index = 0
+  while index < events.length() do
+    const event = events[index]
+    if ui_event_is_activate_on(event, menu_list_id(view.store)) then
+      const choice = menu_choice(view.store, view.state)
+      const body = file_body(view.store, view.state, target)
+      if choice == "Rename" then
+        view = dialog_present(view.store, view.state, "Rename", body, true)
+      end
+      if choice == "Delete" then
+        view = dialog_present(view.store, view.state, "Delete", body, false)
+      end
+    end
+    if ui_event_is_click_on(event, dialog_ok_id(view.store)) then
+      view = dialog_commit(view.store, view.state, target)
+    end
+    if ui_event_is_activate_on(event, dialog_field_id(view.store)) then
+      view = dialog_commit(view.store, view.state, target)
+    end
+    if ui_event_is_click_on(event, dialog_cancel_id(view.store)) then
+      view = overlay_dismiss(view.store, view.state)
+    end
+    index = index + 1
+  end
+  return view
+end

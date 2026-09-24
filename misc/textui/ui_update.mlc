@@ -1,14 +1,15 @@
 import { Theme } from './theme'
-import { WidgetStore } from './store'
+import { WidgetStore, widget_id_equals, widget_id_is_none } from './store'
 import { LayoutResult } from './layout_result'
 import { UiState } from './ui_state'
 import { UiInput } from './ui_input'
-import { UiEvent, ui_event_row_activated } from './ui_event'
+import { UiEvent, ui_event_button_clicked, ui_event_row_activated } from './ui_event'
 import { update_pointer } from './update_pointer'
 import { update_copy } from './update_copy'
 import { update_wheel } from './update_scroll'
 import { update_field_keys } from './update_field_keys'
 import { menu_follow_hover, menu_keys } from './menu'
+import { dialog_ok_id } from './dialog'
 
 export type UiUpdateResult = {
   state: UiState,
@@ -38,6 +39,20 @@ export fn ui_update(
       index = index + 1
     end
     return UiUpdateResult { state: keyed.state, events: events, store: store }
+  end
+  if state.overlay_open && widget_id_equals(store.overlay, store.dialog) then
+    const keyed = update_field_keys(store, layout, theme, after_pointer.state, input)
+    let mut events = after_pointer.events
+    if keyed.submitted then
+      events.push(ui_event_row_activated(keyed.state.focus))
+    end
+    if input.enter_pressed && keyed.submitted == false then
+      const accept = dialog_ok_id(store)
+      if widget_id_is_none(accept) == false then
+        events.push(ui_event_button_clicked(accept))
+      end
+    end
+    return UiUpdateResult { state: keyed.state, events: events, store: keyed.store }
   end
   if state.overlay_open then
     return UiUpdateResult {

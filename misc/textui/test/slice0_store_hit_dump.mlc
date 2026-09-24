@@ -121,6 +121,7 @@ fn main() -> i32 = do
   const still_box = match store.nodes[0].kind
     | KindBox(_) => true
     | KindLabel(_) => false
+    | KindIcon(_) => false
     | KindButton(_) => false
     | KindScrollView => false
     | KindListView(_) => false

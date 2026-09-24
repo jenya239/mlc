@@ -5,13 +5,12 @@ import {
   WidgetKind,
   FieldData,
   FieldMark,
-  field_data_new,
-  widget_store_set_field_data
+  field_data_new
 } from './store'
 import { LayoutResult } from './layout_result'
 import { Selection } from './selection'
 import { selection_publish_primary } from './selection_text'
-import { field_scroll_to_caret } from './widget_field'
+import { field_scroll_to_caret, widget_store_set_field_data } from './widget_field'
 import {
   UiState,
   ui_state_with,
@@ -30,6 +29,7 @@ fn field_data_of(kind: WidgetKind) -> FieldData =
     | KindTextField(data) => data
     | KindBox(_) => field_data_new("")
     | KindLabel(_) => field_data_new("")
+    | KindIcon(_) => field_data_new("")
     | KindButton(_) => field_data_new("")
     | KindScrollView => field_data_new("")
     | KindListView(_) => field_data_new("")

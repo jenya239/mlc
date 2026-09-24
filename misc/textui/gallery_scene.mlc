@@ -17,6 +17,7 @@ import {
   widget_store_empty,
   WidgetStore
 } from './store'
+import { widget_store_add_icon } from './icon'
 
 fn root_box_data() -> BoxData =
   BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
@@ -34,11 +35,21 @@ export fn build_label_gallery() -> WidgetStore = do
     0,
     true
   )
-  store = widget_store_add_text_field(
+  store = widget_store_add_box(
     store,
     store.root,
-    field_data_new("/home/jenya/workspaces/current/mlc"),
+    row_box_data(),
+    OverflowVisible,
     0,
+    true
+  )
+  const path_row = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_icon(store, path_row, "folder", 0, true)
+  store = widget_store_add_text_field(
+    store,
+    path_row,
+    field_data_new("/home/jenya/workspaces/current/mlc"),
+    1,
     true
   )
   store = widget_store_add_splitter(

@@ -25,7 +25,7 @@ import {
   widget_store_with_place
 } from './store'
 import { UiEvent } from './ui_event'
-import { UiState } from './ui_state'
+import { UiState, ui_state_with_field } from './ui_state'
 import { LayoutWork, layout_node, measure_node, work_with_rect } from './layout_box'
 import { visible_children } from './layout_metrics'
 
@@ -117,6 +117,7 @@ fn list_texts_of(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindSplitter(_) => []
@@ -251,6 +252,9 @@ export fn overlay_present(store: WidgetStore, state: UiState) -> OverlayView = d
     if widget_id_is_none(store.menu) == false then
       next = widget_store_set_visible(next, store.menu, false)
     end
+    if widget_id_is_none(store.dialog) == false then
+      next = widget_store_set_visible(next, store.dialog, false)
+    end
   end
   next = widget_store_with_place(next, 0, 0, false)
   next = widget_store_set_visible(next, next.overlay, true)
@@ -261,6 +265,14 @@ export fn overlay_present(store: WidgetStore, state: UiState) -> OverlayView = d
       state.overlay_revision + 1
     )
   )
+end
+
+fn dismissed_state(store: WidgetStore, state: UiState) -> UiState = do
+  const closed = ui_state_with_overlay_open(state, false)
+  if widget_id_equals(store.overlay, store.dialog) == false then
+    return closed
+  end
+  return ui_state_with_field(closed, widget_id_none(), 0, 0)
 end
 
 export fn overlay_dismiss(store: WidgetStore, state: UiState) -> OverlayView = do
@@ -274,7 +286,7 @@ export fn overlay_dismiss(store: WidgetStore, state: UiState) -> OverlayView = d
       0,
       false
     ),
-    ui_state_with_overlay_open(state, false)
+    dismissed_state(store, state)
   )
 end
 
@@ -283,6 +295,7 @@ fn button_text(kind: WidgetKind) -> string =
     | KindButton(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
@@ -303,7 +316,7 @@ export fn overlay_apply(store: WidgetStore, state: UiState, events: [UiEvent]) -
     if event.activated == false && button_text_at(view.store, event.widget) == "About" then
       view = overlay_present(view.store, view.state)
     end
-    if event.activated == false && widget_id_equals(event.widget, view.store.overlay) then
+    if event.activated == false && widget_id_equals(event.widget, view.store.overlay) && widget_id_equals(view.store.overlay, view.store.dialog) == false then
       view = overlay_dismiss(view.store, view.state)
     end
     if event.activated == false && button_text_at(view.store, event.widget) == "Close" then

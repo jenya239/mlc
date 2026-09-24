@@ -39,7 +39,9 @@ export type MenuRelease = {
 export type MenuHost = {
   store: WidgetStore,
   state: UiState,
-  right_down: bool
+  right_down: bool,
+  target_list: i32,
+  target_row: i32
 }
 
 fn layer_box() -> BoxData =
@@ -53,6 +55,7 @@ fn list_texts_of(kind: WidgetKind) -> [string] =
     | KindListView(data) => data.texts
     | KindBox(_) => []
     | KindLabel(_) => []
+    | KindIcon(_) => []
     | KindButton(_) => []
     | KindScrollView => []
     | KindSplitter(_) => []
@@ -104,6 +107,9 @@ export fn menu_open(store: WidgetStore, state: UiState, x: i32, y: i32) -> Overl
   let mut next = store
   if widget_id_is_none(store.about) == false then
     next = widget_store_set_visible(next, store.about, false)
+  end
+  if widget_id_is_none(store.dialog) == false then
+    next = widget_store_set_visible(next, store.dialog, false)
   end
   next = widget_store_with_overlay(next, store.menu)
   next = widget_store_with_place(next, x, y, true)
@@ -311,8 +317,20 @@ export fn menu_apply(store: WidgetStore, state: UiState, events: [UiEvent]) -> O
   return view
 end
 
-fn host_unchanged(store: WidgetStore, state: UiState, right_down: bool) -> MenuHost =
-  MenuHost { store: store, state: state, right_down: right_down }
+fn host_unchanged(
+  store: WidgetStore,
+  state: UiState,
+  right_down: bool,
+  target_list: i32,
+  target_row: i32
+) -> MenuHost =
+  MenuHost {
+    store: store,
+    state: state,
+    right_down: right_down,
+    target_list: target_list,
+    target_row: target_row
+  }
 
 export fn menu_host_step(
   store: WidgetStore,
@@ -322,25 +340,27 @@ export fn menu_host_step(
   right_down: bool,
   right_was_down: bool,
   x: i32,
-  y: i32
+  y: i32,
+  target_list: i32,
+  target_row: i32
 ) -> MenuHost = do
   const pressed = right_down && right_was_down == false
   if pressed == false then
-    return host_unchanged(store, state, right_down)
+    return host_unchanged(store, state, right_down, target_list, target_row)
   end
   if state.overlay_open && store.placed then
     const closed = overlay_dismiss(store, state)
-    return host_unchanged(closed.store, closed.state, right_down)
+    return host_unchanged(closed.store, closed.state, right_down, target_list, target_row)
   end
   if state.overlay_open then
-    return host_unchanged(store, state, right_down)
+    return host_unchanged(store, state, right_down, target_list, target_row)
   end
   const hit = hit_test(store, layout, theme, x, y)
   if widget_id_is_none(hit) then
-    return host_unchanged(store, state, right_down)
+    return host_unchanged(store, state, right_down, target_list, target_row)
   end
   if kind_is_list_view(store.nodes[hit.index].kind) == false then
-    return host_unchanged(store, state, right_down)
+    return host_unchanged(store, state, right_down, target_list, target_row)
   end
   const row = list_index_at(
     layout.rects[hit.index],
@@ -349,8 +369,14 @@ export fn menu_host_step(
     y
   )
   if file_row(list_row_text(store.nodes[hit.index].kind, row)) == false then
-    return host_unchanged(store, state, right_down)
+    return host_unchanged(store, state, right_down, target_list, target_row)
   end
   const opened = menu_open(store, state, x, y)
-  return host_unchanged(opened.store, opened.state, right_down)
+  return MenuHost {
+    store: opened.store,
+    state: opened.state,
+    right_down: right_down,
+    target_list: hit.index,
+    target_row: row
+  }
 end

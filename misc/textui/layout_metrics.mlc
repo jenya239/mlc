@@ -10,6 +10,7 @@ export fn box_padding_of(kind: WidgetKind) -> i32 =
   match kind
     | KindBox(data) => data.padding
     | KindLabel(_) => 0
+    | KindIcon(_) => 0
     | KindButton(_) => 0
     | KindScrollView => 0
     | KindListView(_) => 0
@@ -20,6 +21,7 @@ export fn box_gap_of(kind: WidgetKind) -> i32 =
   match kind
     | KindBox(data) => data.gap
     | KindLabel(_) => 0
+    | KindIcon(_) => 0
     | KindButton(_) => 0
     | KindScrollView => 0
     | KindListView(_) => 0
@@ -35,6 +37,7 @@ export fn box_is_row(kind: WidgetKind) -> bool =
   match kind
     | KindBox(data) => box_data_is_row(data)
     | KindLabel(_) => false
+    | KindIcon(_) => false
     | KindButton(_) => false
     | KindScrollView => false
     | KindListView(_) => false

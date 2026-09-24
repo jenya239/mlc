@@ -20,6 +20,7 @@ fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
     | KindListView(data) => data.texts.length()
     | KindBox(_) => 0
     | KindLabel(_) => 0
+    | KindIcon(_) => 0
     | KindButton(_) => 0
     | KindScrollView => 0
     | KindSplitter(_) => 0

@@ -1,0 +1,36 @@
+import { color_rgba_new } from '../theme'
+import { DrawOp } from '../draw_op'
+import { list_icon_name, paint_named_icon } from '../icon'
+
+fn main() -> i32 = do
+  if list_icon_name("..") != "folder" then
+    return -1
+  end
+  if list_icon_name("src/") != "folder" then
+    return -2
+  end
+  if list_icon_name("note.txt") != "file" then
+    return -3
+  end
+  if list_icon_name("Downloads/") != "downloads" then
+    return -4
+  end
+  if list_icon_name("Music") != "music" then
+    return -5
+  end
+  let mut operations: [DrawOp] = []
+  const color = color_rgba_new(1.0, 1.0, 1.0, 1.0)
+  const folder = paint_named_icon(operations, "folder", 0, 0, 12, color)
+  if folder.length() < 2 then
+    return -6
+  end
+  const file = paint_named_icon(folder, "file", 0, 0, 12, color)
+  if file.length() <= folder.length() then
+    return -7
+  end
+  const home = paint_named_icon(operations, "home", 0, 0, 12, color)
+  if home.length() < 2 then
+    return -8
+  end
+  0
+end

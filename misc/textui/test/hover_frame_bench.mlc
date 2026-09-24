@@ -157,7 +157,8 @@ fn main() -> i32 = do
       first_signature,
       second_signature,
       width,
-      height
+      height,
+      true
     )
     resources = painted.resources
     shaping = painted.shaping

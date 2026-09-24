@@ -1,0 +1,294 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  ListData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_list_view,
+  widget_store_empty
+} from '../store'
+import { widget_store_set_field_text } from '../widget_field'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { UiInput } from '../ui_input'
+import { UiEvent, ui_event_button_clicked, ui_event_row_activated } from '../ui_event'
+import { ui_state_new, ui_state_with_list_selected } from '../ui_state'
+import { list_selected_put } from '../widget_list'
+import { ui_update } from '../ui_update'
+import { overlay_apply } from '../overlay'
+import { attach_file_menu, menu_list_id } from '../menu'
+import {
+  DialogTarget,
+  attach_dialog,
+  dialog_cancel_id,
+  dialog_field_id,
+  dialog_host,
+  dialog_message_id,
+  dialog_ok_id
+} from '../dialog'
+
+fn saved_target() -> DialogTarget =
+  DialogTarget { list_index: 0 - 1, row: 0 - 1 }
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn list_head_is(texts: [string], text: string) -> bool = do
+  let mut matched = false
+  if texts.length() > 0 then
+    if texts[0] == text then
+      matched = true
+    end
+  end
+  matched
+end
+
+fn list_opens_with(kind: WidgetKind, text: string) -> bool =
+  match kind
+    | KindListView(data) => list_head_is(data.texts, text)
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindIcon(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+
+fn texts_at(texts: [string], row: i32) -> string = do
+  let mut text = ""
+  if row >= 0 then
+    if row < texts.length() then
+      text = texts[row]
+    end
+  end
+  text
+end
+
+fn row_text(kind: WidgetKind, row: i32) -> string =
+  match kind
+    | KindListView(data) => texts_at(data.texts, row)
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn row_count(kind: WidgetKind) -> i32 =
+  match kind
+    | KindListView(data) => data.texts.length()
+    | KindBox(_) => 0
+    | KindLabel(_) => 0
+    | KindIcon(_) => 0
+    | KindButton(_) => 0
+    | KindScrollView => 0
+    | KindSplitter(_) => 0
+    | KindTextField(_) => 0
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindIcon(icon) => icon.name
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn shown(store: WidgetStore, id: WidgetId) -> bool = do
+  let mut visible = false
+  if id.index >= 0 then
+    if id.index < store.nodes.length() then
+      visible = store.nodes[id.index].visible
+    end
+  end
+  visible
+end
+
+fn find_list(store: WidgetStore, text: string) -> i32 = do
+  let mut found = 0 - 1
+  let mut index = 0
+  while index < store.nodes.length() do
+    if list_opens_with(store.nodes[index].kind, text) then
+      found = index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn build_page() -> WidgetStore = do
+  let mut rows: [string] = []
+  rows.push("note.txt")
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(store, widget_id_none(), column_data(), OverflowVisible, 0, true)
+  store = widget_store_add_list_view(store, store.root, ListData { texts: rows }, 0, true)
+  attach_dialog(attach_file_menu(store))
+end
+
+fn enter_key() -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: true,
+    paste_text: ""
+  }
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_page()
+  const file_index = find_list(store, "note.txt")
+  if file_index < 0 then
+    return -1
+  end
+  const menu_id = menu_list_id(store)
+  if menu_id.index < 0 then
+    return -2
+  end
+  let mut state = ui_state_with_list_selected(
+    ui_state_new(),
+    list_selected_put(
+      list_selected_put(ui_state_new().list_selected, file_index, 0),
+      menu_id.index,
+      0
+    )
+  )
+  let mut open_events: [UiEvent] = []
+  open_events.push(ui_event_row_activated(menu_id))
+  const opened_file = dialog_host(store, state, open_events, saved_target())
+  if opened_file.state.overlay_open then
+    return -3
+  end
+
+  state = ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, menu_id.index, 1)
+  )
+  const renaming = dialog_host(store, state, open_events, saved_target())
+  if renaming.state.overlay_open == false then
+    return -4
+  end
+  if renaming.store.placed then
+    return -5
+  end
+  const field_id = dialog_field_id(renaming.store)
+  if field_text(renaming.store.nodes[field_id.index].kind) != "note.txt" then
+    return -6
+  end
+  if shown(renaming.store, field_id) == false then
+    return -7
+  end
+  let mut scrim_events: [UiEvent] = []
+  scrim_events.push(ui_event_button_clicked(renaming.store.overlay))
+  const scrim = overlay_apply(renaming.store, renaming.state, scrim_events)
+  if scrim.state.overlay_open == false then
+    return -8
+  end
+
+  let mut cancel_events: [UiEvent] = []
+  cancel_events.push(ui_event_button_clicked(dialog_cancel_id(renaming.store)))
+  const cancelled = dialog_host(scrim.store, scrim.state, cancel_events, saved_target())
+  if cancelled.state.overlay_open then
+    return -9
+  end
+  if row_text(cancelled.store.nodes[file_index].kind, 0) != "note.txt" then
+    return -10
+  end
+
+  const typed = widget_store_set_field_text(renaming.store, field_id, "renamed.txt")
+  let mut accept_events: [UiEvent] = []
+  accept_events.push(ui_event_button_clicked(dialog_ok_id(typed)))
+  const accepted = dialog_host(typed, renaming.state, accept_events, saved_target())
+  if accepted.state.overlay_open then
+    return -11
+  end
+  if row_text(accepted.store.nodes[file_index].kind, 0) != "renamed.txt" then
+    return -12
+  end
+
+  state = ui_state_with_list_selected(
+    accepted.state,
+    list_selected_put(accepted.state.list_selected, menu_id.index, 2)
+  )
+  const deleting = dialog_host(accepted.store, state, open_events, saved_target())
+  if deleting.state.overlay_open == false then
+    return -13
+  end
+  const message_id = dialog_message_id(deleting.store)
+  if label_text(deleting.store.nodes[message_id.index].kind) != "renamed.txt" then
+    return -14
+  end
+  if shown(deleting.store, dialog_field_id(deleting.store)) then
+    return -15
+  end
+  let mut delete_events: [UiEvent] = []
+  delete_events.push(ui_event_button_clicked(dialog_ok_id(deleting.store)))
+  const deleted = dialog_host(deleting.store, deleting.state, delete_events, saved_target())
+  if row_count(deleted.store.nodes[file_index].kind) != 0 then
+    return -16
+  end
+
+  const rename_state = ui_state_with_list_selected(
+    ui_state_new(),
+    list_selected_put(
+      list_selected_put(ui_state_new().list_selected, file_index, 0),
+      menu_id.index,
+      1
+    )
+  )
+  const again = dialog_host(store, rename_state, open_events, saved_target())
+  const edited = widget_store_set_field_text(
+    again.store, dialog_field_id(again.store), "typed.txt"
+  )
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  const laid = layout_ui(
+    edited, theme, shaping, cache, 240, 160, again.state.scroll_offsets, ratios
+  )
+  shaping = laid.shaping
+  cache = laid.cache
+  const keyed = ui_update(edited, laid.layout, theme, again.state, enter_key())
+  const submitted = dialog_host(keyed.store, keyed.state, keyed.events, saved_target())
+  if row_text(submitted.store.nodes[file_index].kind, 0) != "typed.txt" then
+    return -17
+  end
+  if submitted.state.overlay_open then
+    return -18
+  end
+  if widget_id_is_none(submitted.state.focus) == false then
+    return -19
+  end
+  0
+end

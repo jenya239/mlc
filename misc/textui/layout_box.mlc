@@ -103,6 +103,10 @@ export fn measure_node(
 ) -> MeasureResult =
   match store.nodes[id.index].kind
     | KindLabel(data) => measure_caption(work, theme, id.index, data.text, false)
+    | KindIcon(_) => MeasureResult {
+      work: work,
+      size: size_new(theme.font_size_pixels, theme.font_size_pixels)
+    }
     | KindButton(data) => measure_caption(work, theme, id.index, data.text, true)
     | KindBox(_) => measure_box_node(work, store, theme, id)
     | KindScrollView => measure_scroll_node(work, store, theme, id)
@@ -301,6 +305,7 @@ export fn layout_node(
 ) -> LayoutWork =
   match store.nodes[id.index].kind
     | KindLabel(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
+    | KindIcon(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindButton(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindBox(_) => layout_box_node(
       work_with_rect(work, id.index, rect_new(x, y, width, height)),

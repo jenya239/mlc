@@ -114,6 +114,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindTextField(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
+    | KindIcon(_) => ""
     | KindButton(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
