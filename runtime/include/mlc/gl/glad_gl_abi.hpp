@@ -147,6 +147,80 @@ inline void vertex_attrib_pointer_offset(
 inline void draw_arrays(int32_t mode, int32_t first, int32_t count) {
   glDrawArrays(static_cast<GLenum>(mode), first, count);
 }
+inline void uniform_1f(int32_t location, double value) {
+  glUniform1f(location, static_cast<GLfloat>(value));
+}
+inline int32_t gen_framebuffer() {
+  GLuint framebuffer = 0;
+  glGenFramebuffers(1, &framebuffer);
+  return static_cast<int32_t>(framebuffer);
+}
+inline void delete_framebuffer(int32_t framebuffer) {
+  const GLuint handle = static_cast<GLuint>(framebuffer);
+  glDeleteFramebuffers(1, &handle);
+}
+inline void bind_framebuffer(int32_t target, int32_t framebuffer) {
+  glBindFramebuffer(static_cast<GLenum>(target), static_cast<GLuint>(framebuffer));
+}
+inline void framebuffer_texture(
+  int32_t target,
+  int32_t attachment,
+  int32_t texture_target,
+  int32_t texture
+) {
+  glFramebufferTexture2D(
+    static_cast<GLenum>(target),
+    static_cast<GLenum>(attachment),
+    static_cast<GLenum>(texture_target),
+    static_cast<GLuint>(texture),
+    0
+  );
+}
+inline void tex_image_rgba(int32_t width, int32_t height) {
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    GL_RGBA8,
+    width,
+    height,
+    0,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    nullptr
+  );
+}
+inline void blit_framebuffer(
+  int32_t source_x0,
+  int32_t source_y0,
+  int32_t source_x1,
+  int32_t source_y1,
+  int32_t destination_x0,
+  int32_t destination_y0,
+  int32_t destination_x1,
+  int32_t destination_y1,
+  int32_t mask,
+  int32_t filter
+) {
+  glBlitFramebuffer(
+    source_x0,
+    source_y0,
+    source_x1,
+    source_y1,
+    destination_x0,
+    destination_y0,
+    destination_x1,
+    destination_y1,
+    static_cast<GLbitfield>(mask),
+    static_cast<GLenum>(filter)
+  );
+}
+inline int32_t framebuffer_is_complete(int32_t target) {
+  const GLenum status = glCheckFramebufferStatus(static_cast<GLenum>(target));
+  if (status == GL_FRAMEBUFFER_COMPLETE) {
+    return 1;
+  }
+  return 0;
+}
 
 inline int32_t gen_texture() {
   GLuint texture = 0;
@@ -480,6 +554,30 @@ inline void gl_vertex_attrib_pointer_offset(
 }
 inline void gl_draw_arrays(int32_t mode, int32_t first, int32_t count) {
   glad_abi::draw_arrays(mode, first, count);
+}
+inline void gl_uniform_1f(int32_t location, double value) {
+  glad_abi::uniform_1f(location, value);
+}
+inline int32_t gl_gen_framebuffer() { return glad_abi::gen_framebuffer(); }
+inline void gl_delete_framebuffer(int32_t framebuffer) {
+  glad_abi::delete_framebuffer(framebuffer);
+}
+inline void gl_bind_framebuffer(int32_t target, int32_t framebuffer) {
+  glad_abi::bind_framebuffer(target, framebuffer);
+}
+inline void gl_framebuffer_texture(
+  int32_t target,
+  int32_t attachment,
+  int32_t texture_target,
+  int32_t texture
+) {
+  glad_abi::framebuffer_texture(target, attachment, texture_target, texture);
+}
+inline void gl_tex_image_rgba(int32_t width, int32_t height) {
+  glad_abi::tex_image_rgba(width, height);
+}
+inline int32_t gl_framebuffer_is_complete(int32_t target) {
+  return glad_abi::framebuffer_is_complete(target);
 }
 inline int32_t gl_gen_texture() { return glad_abi::gen_texture(); }
 inline void gl_delete_texture(int32_t texture) { glad_abi::delete_texture(texture); }

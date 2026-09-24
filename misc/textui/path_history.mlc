@@ -1,0 +1,64 @@
+export type PathHistory = {
+  back: [string],
+  forward: [string]
+}
+
+export type PathTravel = {
+  history: PathHistory,
+  path: string,
+  moved: bool
+}
+
+export fn path_history_empty() -> PathHistory = do
+  let mut back: [string] = []
+  let mut forward: [string] = []
+  return PathHistory { back: back, forward: forward }
+end
+
+fn drop_last(paths: [string]) -> [string] = do
+  let mut next: [string] = []
+  let mut index = 0
+  while index < paths.length() - 1 do
+    next.push(paths[index])
+    index = index + 1
+  end
+  return next
+end
+
+export fn path_history_visit(history: PathHistory, from_path: string, to_path: string) -> PathHistory = do
+  if from_path == to_path || from_path == "" then
+    return history
+  end
+  let mut back = history.back
+  back.push(from_path)
+  let mut forward: [string] = []
+  return PathHistory { back: back, forward: forward }
+end
+
+export fn path_history_back(history: PathHistory, current: string) -> PathTravel = do
+  if history.back.length() == 0 then
+    return PathTravel { history: history, path: current, moved: false }
+  end
+  const destination = history.back[history.back.length() - 1]
+  let mut forward = history.forward
+  forward.push(current)
+  return PathTravel {
+    history: PathHistory { back: drop_last(history.back), forward: forward },
+    path: destination,
+    moved: true
+  }
+end
+
+export fn path_history_forward(history: PathHistory, current: string) -> PathTravel = do
+  if history.forward.length() == 0 then
+    return PathTravel { history: history, path: current, moved: false }
+  end
+  const destination = history.forward[history.forward.length() - 1]
+  let mut back = history.back
+  back.push(current)
+  return PathTravel {
+    history: PathHistory { back: back, forward: drop_last(history.forward) },
+    path: destination,
+    moved: true
+  }
+end

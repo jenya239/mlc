@@ -1,0 +1,49 @@
+import { WidgetId, WidgetStore } from './store'
+import { UiState } from './ui_state'
+import { open_directory } from './directory_browse'
+import { PathHistory, path_history_back, path_history_forward, path_history_visit } from './path_history'
+import { path_bar_current, path_bar_is_back, path_bar_is_forward, path_bar_target } from './path_bar'
+
+export type PathClick = {
+  store: WidgetStore,
+  state: UiState,
+  history: PathHistory,
+  changed: bool
+}
+
+fn click_of(store: WidgetStore, state: UiState, history: PathHistory, changed: bool) -> PathClick =
+  PathClick { store: store, state: state, history: history, changed: changed }
+
+export fn apply_path_click(
+  store: WidgetStore,
+  state: UiState,
+  history: PathHistory,
+  owner: WidgetId
+) -> PathClick = do
+  if path_bar_is_back(store, owner) then
+    const traveled = path_history_back(history, path_bar_current(store))
+    if traveled.moved then
+      const opened = open_directory(store, state, traveled.path)
+      return click_of(opened.store, opened.state, traveled.history, true)
+    end
+  end
+  if path_bar_is_forward(store, owner) then
+    const traveled = path_history_forward(history, path_bar_current(store))
+    if traveled.moved then
+      const opened = open_directory(store, state, traveled.path)
+      return click_of(opened.store, opened.state, traveled.history, true)
+    end
+  end
+  const current = path_bar_current(store)
+  const crumb = path_bar_target(store, owner, current)
+  if crumb != "" && crumb != current then
+    const opened = open_directory(store, state, crumb)
+    return click_of(
+      opened.store,
+      opened.state,
+      path_history_visit(history, current, crumb),
+      true
+    )
+  end
+  return click_of(store, state, history, false)
+end

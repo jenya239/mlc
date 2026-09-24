@@ -25,9 +25,11 @@ import {
 import { paint_pick_overlay } from './inspect'
 import { paint_list_rows } from './widget_list'
 import { paint_icon_widget } from './icon'
+import { paint_checkbox } from './checkbox'
 import { menu_list_id } from './menu'
 import { paint_splitter_sash } from './widget_split'
 import { field_caption, paint_text_field } from './widget_field'
+import { path_bar_is_crumb } from './path_bar'
 
 fn paint_selection(
   theme: Theme,
@@ -79,6 +81,48 @@ fn button_fill_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba
   theme.button_background
 end
 
+fn path_band_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  theme.background
+end
+
+export fn paint_path_crumb(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  let mut band_height = layout.text_layouts[node_index].pixel_height
+  if band_height < 1 then
+    band_height = theme.font_size_pixels
+  end
+  let mut band_y = rect.y + (rect.height - band_height) / 2
+  if band_y < rect.y then
+    band_y = rect.y
+  end
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp {
+    rect: rect_new(rect.x, band_y, rect.width, band_height),
+    color: path_band_color(theme, state, node_index)
+  }))
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + 2,
+    origin_y: band_y,
+    color: theme.foreground,
+    text: caption
+  }))
+  updated
+end
+
 export fn paint_button(
   theme: Theme,
   layout: LayoutResult,
@@ -109,6 +153,21 @@ export fn paint_button(
   updated
 end
 
+fn paint_kind_button(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if path_bar_is_crumb(store, WidgetId { index: node_index }) then
+    return paint_path_crumb(theme, layout, state, node_index, caption, operations)
+  end
+  return paint_button(theme, layout, state, node_index, caption, operations)
+end
+
 fn paint_node(
   theme: Theme,
   store: WidgetStore,
@@ -137,7 +196,12 @@ fn paint_node(
     | KindIcon(data) => paint_icon_widget(
       operations, theme, rect.x, rect.y, rect.width, rect.height, data.name
     )
-    | KindButton(data) => paint_button(theme, layout, state, node_index, data.text, operations)
+    | KindButton(data) => paint_kind_button(
+      theme, store, layout, state, node_index, data.text, operations
+    )
+    | KindCheckbox(data) => paint_checkbox(
+      theme, layout, state, node_index, data.text, data.checked, operations
+    )
     | KindBox(_) => operations
     | KindScrollView => operations
     | KindListView(data) => paint_list_rows(

@@ -1,0 +1,33 @@
+import { directory_name_visible } from '../directory_rows'
+import { widget_id_none, widget_store_empty } from '../store'
+import { checkbox_is_checked, checkbox_toggle, widget_store_add_checkbox } from '../checkbox'
+
+fn main() -> i32 = do
+  if directory_name_visible("..", false) == false then
+    return -1
+  end
+  if directory_name_visible(".secret", false) then
+    return -2
+  end
+  if directory_name_visible(".secret", true) == false then
+    return -3
+  end
+  if directory_name_visible("note.txt", false) == false then
+    return -4
+  end
+  let mut store = widget_store_empty()
+  store = widget_store_add_checkbox(store, widget_id_none(), "Hidden", false, 0, true)
+  const box = store.nodes[store.nodes.length() - 1].id
+  if checkbox_is_checked(store) then
+    return -5
+  end
+  store = checkbox_toggle(store, box)
+  if checkbox_is_checked(store) == false then
+    return -6
+  end
+  store = checkbox_toggle(store, box)
+  if checkbox_is_checked(store) then
+    return -7
+  end
+  0
+end

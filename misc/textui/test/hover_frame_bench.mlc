@@ -19,6 +19,7 @@ import { frame_signature, frame_signature_hover_only } from '../frame_request'
 import { UiState, ui_state_new, ui_state_with, ui_state_with_list_hover_row } from '../ui_state'
 import { paint_hover_damage, submit_ui_frame } from '../hover_damage'
 import { submit_create, submit_destroy } from '../submit'
+import { cursor_lens_bind, cursor_lens_create, cursor_lens_destroy, cursor_lens_present } from '../cursor_lens'
 import { submit_painted_layers } from '../submit_layers'
 import {
   glfw_gl_context_begin,
@@ -106,11 +107,13 @@ fn main() -> i32 = do
   end
   glfw_gl_swap_interval(0)
   let mut resources = submit_create()
+  let mut lens = cursor_lens_create()
   if resources.error_code != 0 then
     glfw_gl_context_end()
     return resources.error_code
   end
   const overlay = paint_overlay_frame(theme, store, laid.layout, on_second)
+  lens = cursor_lens_bind(lens, width, height, 1)
   const warmed = submit_painted_layers(
     resources, shaping, theme, full, overlay, width, height
   )
@@ -121,6 +124,7 @@ fn main() -> i32 = do
   end
   resources = warmed.resources
   shaping = warmed.shaping
+  lens = cursor_lens_present(lens, 0, 0, width, height, true, 1)
   glfw_gl_context_swap_poll()
   let mut sample = 0
   let mut full_min_us = 1000000000
@@ -129,11 +133,13 @@ fn main() -> i32 = do
     const sample_started = glfw_gl_get_time()
     const tree = paint_tree_frame(theme, store, laid.layout, on_second)
     const layer = paint_overlay_frame(theme, store, laid.layout, on_second)
+    lens = cursor_lens_bind(lens, width, height, 1)
     const painted = submit_painted_layers(
       resources, shaping, theme, tree, layer, width, height
     )
     resources = painted.resources
     shaping = painted.shaping
+    lens = cursor_lens_present(lens, 0, 0, width, height, true, 1)
     glfw_gl_context_swap_poll()
     const sample_us = elapsed_us(sample_started, glfw_gl_get_time())
     if sample_us < full_min_us then
@@ -147,6 +153,7 @@ fn main() -> i32 = do
   const damage_started = glfw_gl_get_time()
   while sample < samples do
     const sample_started = glfw_gl_get_time()
+    lens = cursor_lens_bind(lens, width, height, 1)
     const painted = submit_ui_frame(
       resources,
       shaping,
@@ -162,6 +169,7 @@ fn main() -> i32 = do
     )
     resources = painted.resources
     shaping = painted.shaping
+    lens = cursor_lens_present(lens, 0, 0, width, height, false, 1)
     glfw_gl_context_swap_poll()
     const sample_us = elapsed_us(sample_started, glfw_gl_get_time())
     if sample_us < damage_min_us then
@@ -171,6 +179,7 @@ fn main() -> i32 = do
   end
   const damage_us = average_us(damage_started, glfw_gl_get_time())
   submit_destroy(resources)
+  cursor_lens_destroy(lens)
   glfw_gl_context_end()
   println(
     "hover_full_us=" + full_us.to_string() + " hover_full_min_us=" + full_min_us.to_string() + " hover_damage_us=" + damage_us.to_string() + " hover_damage_min_us=" + damage_min_us.to_string() + " budget_us=1000 samples=" + samples.to_string()

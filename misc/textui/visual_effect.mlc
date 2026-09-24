@@ -1,0 +1,143 @@
+import {
+  ButtonData,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_node_with_kind,
+  widget_store_keep
+} from './store'
+import { Theme } from './theme'
+import { LayoutResult } from './layout_result'
+import { UiState, ui_state_with_listing_revision } from './ui_state'
+import { clipboard_copy_selection } from './update_copy'
+import { stress_listing_set, stress_pane_width } from './stress_listing'
+
+export type ToolbarStep = {
+  store: WidgetStore,
+  state: UiState,
+  dense_enabled: bool,
+  effect_mode: i32,
+  reload: bool,
+  copied: bool
+}
+
+fn effect_caption(mode: i32) -> string = do
+  if mode == 2 then
+    return "Cyber"
+  end
+  if mode == 0 then
+    return "Off"
+  end
+  return "Lens"
+end
+
+fn effect_caption_matches(text: string) -> bool = do
+  if text == "Lens" then
+    return true
+  end
+  if text == "Cyber" then
+    return true
+  end
+  if text == "Matrix" then
+    return true
+  end
+  return text == "Off"
+end
+
+fn next_effect_mode(mode: i32) -> i32 = do
+  if mode == 1 then
+    return 2
+  end
+  if mode == 2 then
+    return 0
+  end
+  return 1
+end
+
+fn renamed_button(kind: WidgetKind, text: string) -> WidgetKind =
+  match kind
+    | KindButton(_) => KindButton(ButtonData { text: text })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindCheckbox(data) => KindCheckbox(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+    | KindTextField(data) => KindTextField(data)
+    | KindIcon(data) => KindIcon(data)
+
+fn set_button_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  const node = store.nodes[id.index]
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, renamed_button(node.kind, text)))
+  return widget_store_keep(nodes, store)
+end
+
+fn step_of(
+  store: WidgetStore,
+  state: UiState,
+  dense_enabled: bool,
+  effect_mode: i32,
+  reload: bool,
+  copied: bool
+) -> ToolbarStep =
+  ToolbarStep {
+    store: store,
+    state: state,
+    dense_enabled: dense_enabled,
+    effect_mode: effect_mode,
+    reload: reload,
+    copied: copied
+  }
+
+export fn effect_wait_seconds(mode: i32) -> f64 = do
+  if mode == 0 then
+    return 0.0 - 1.0
+  end
+  return 0.016
+end
+
+export fn apply_toolbar(
+  store: WidgetStore,
+  state: UiState,
+  theme: Theme,
+  layout: LayoutResult,
+  owner: WidgetId,
+  caption: string,
+  dense_enabled: bool,
+  effect_mode: i32
+) -> ToolbarStep = do
+  if caption == "Copy" then
+    return step_of(store, clipboard_copy_selection(layout, state), dense_enabled, effect_mode, false, true)
+  end
+  if caption == "Ping" then
+    println("[textui] ping")
+    return step_of(store, state, dense_enabled, effect_mode, false, false)
+  end
+  if caption == "Reload" then
+    return step_of(store, state, dense_enabled, effect_mode, true, false)
+  end
+  if caption == "Dense" then
+    const stressed = stress_listing_set(
+      store,
+      state,
+      theme,
+      stress_pane_width(layout, store, 0),
+      stress_pane_width(layout, store, 1),
+      dense_enabled == false
+    )
+    return step_of(stressed.store, stressed.state, stressed.enabled, effect_mode, false, false)
+  end
+  if effect_caption_matches(caption) then
+    const mode = next_effect_mode(effect_mode)
+    return step_of(
+      set_button_text(store, owner, effect_caption(mode)),
+      ui_state_with_listing_revision(state, state.listing_revision + 1),
+      dense_enabled,
+      mode,
+      false,
+      false
+    )
+  end
+  return step_of(store, state, dense_enabled, effect_mode, false, false)
+end

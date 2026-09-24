@@ -1,0 +1,214 @@
+import { rect_new } from './geometry'
+import { ColorRgba, Theme, theme_content_inset } from './theme'
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
+import { LayoutResult } from './layout_result'
+import { UiState, pointer_click_owns } from './ui_state'
+import {
+  CheckboxData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_equals,
+  widget_node_with_kind,
+  widget_store_append,
+  widget_store_keep
+} from './store'
+
+fn push_fill(
+  operations: [DrawOp],
+  x: i32,
+  y: i32,
+  width: i32,
+  height: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  if width <= 0 || height <= 0 then
+    return operations
+  end
+  let mut next = operations
+  next.push(OpFillRect(FillRectOp {
+    rect: rect_new(x, y, width, height),
+    color: color
+  }))
+  return next
+end
+
+fn paint_segment(
+  operations: [DrawOp],
+  x0: i32,
+  y0: i32,
+  x1: i32,
+  y1: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  let mut next = operations
+  const steps = 5
+  let mut step = 0
+  while step <= steps do
+    const x = x0 + (x1 - x0) * step / steps
+    const y = y0 + (y1 - y0) * step / steps
+    next = push_fill(next, x, y, 2, 2, color)
+    step = step + 1
+  end
+  return next
+end
+
+fn box_fill(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  return theme.button_background
+end
+
+export fn checkbox_caption(kind: WidgetKind) -> string =
+  match kind
+    | KindCheckbox(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+export fn checkbox_mark(kind: WidgetKind) -> bool =
+  match kind
+    | KindCheckbox(data) => data.checked
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+    | KindIcon(_) => false
+
+export fn kind_is_checkbox(kind: WidgetKind) -> bool =
+  match kind
+    | KindCheckbox(_) => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+    | KindIcon(_) => false
+
+export fn checkbox_is_checked(store: WidgetStore) -> bool = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const found = match store.nodes[index].kind
+      | KindCheckbox(data) => data.checked
+      | KindBox(_) => false
+      | KindLabel(_) => false
+      | KindButton(_) => false
+      | KindScrollView => false
+      | KindListView(_) => false
+      | KindSplitter(_) => false
+      | KindTextField(_) => false
+      | KindIcon(_) => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
+fn flipped_checkbox(data: CheckboxData) -> WidgetKind =
+  KindCheckbox(CheckboxData { text: data.text, checked: data.checked == false })
+
+export fn checkbox_toggle(store: WidgetStore, id: WidgetId) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindCheckbox(data) => flipped_checkbox(data)
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindButton(data) => KindButton(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+    | KindTextField(data) => KindTextField(data)
+    | KindIcon(data) => KindIcon(data)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return widget_store_keep(nodes, store)
+end
+
+export fn widget_store_add_checkbox(
+  store: WidgetStore,
+  parent: WidgetId,
+  text: string,
+  checked: bool,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_append(
+    store,
+    parent,
+    KindCheckbox(CheckboxData { text: text, checked: checked }),
+    OverflowVisible,
+    grow,
+    visible
+  )
+
+export fn paint_checkbox(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  text: string,
+  checked: bool,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const inset = theme_content_inset(theme)
+  const box = theme.font_size_pixels
+  const box_x = rect.x + inset
+  const box_y = rect.y + (rect.height - box) / 2
+  let mut next = operations
+  next.push(OpFillRect(FillRectOp {
+    rect: rect_new(box_x, box_y, box, box),
+    color: box_fill(theme, state, node_index)
+  }))
+  next.push(OpStrokeRect(StrokeRectOp {
+    rect: rect_new(box_x, box_y, box, box),
+    color: theme.button_stroke,
+    line_width: 1
+  }))
+  if checked then
+    next = paint_segment(
+      next,
+      box_x + box * 20 / 100,
+      box_y + box * 52 / 100,
+      box_x + box * 42 / 100,
+      box_y + box * 74 / 100,
+      theme.foreground
+    )
+    next = paint_segment(
+      next,
+      box_x + box * 42 / 100,
+      box_y + box * 74 / 100,
+      box_x + box * 82 / 100,
+      box_y + box * 26 / 100,
+      theme.foreground
+    )
+  end
+  next.push(OpText(TextOp {
+    origin_x: box_x + box + inset,
+    origin_y: rect.y + inset,
+    color: theme.foreground,
+    text: text
+  }))
+  return next
+end

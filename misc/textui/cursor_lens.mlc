@@ -1,0 +1,350 @@
+import {
+  gl_active_texture,
+  gl_attach_shader,
+  gl_bind_buffer,
+  gl_bind_framebuffer,
+  gl_bind_texture,
+  gl_blit_framebuffer,
+  gl_buffer_data_scratch,
+  gl_compile_shader,
+  gl_create_program,
+  gl_create_shader,
+  gl_delete_buffer,
+  gl_delete_framebuffer,
+  gl_delete_program,
+  gl_delete_shader,
+  gl_delete_texture,
+  gl_disable,
+  gl_draw_arrays,
+  gl_enable_vertex_attrib_array,
+  gl_framebuffer_is_complete,
+  gl_framebuffer_texture,
+  gl_gen_buffer,
+  gl_gen_framebuffer,
+  gl_gen_texture,
+  gl_get_attrib_location_string,
+  gl_get_program_iv_value,
+  gl_get_shader_iv_value,
+  gl_get_uniform_location_string,
+  gl_link_program,
+  gl_scratch_f32_clear,
+  gl_scissor_test,
+  gl_scratch_f32_push,
+  gl_shader_source_string,
+  gl_tex_image_rgba,
+  gl_tex_parameter_i,
+  gl_uniform_1f,
+  gl_uniform_1i,
+  gl_uniform_4f,
+  gl_use_program,
+  gl_vertex_attrib_pointer_offset,
+  gl_viewport
+} from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
+
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+extern fn glfw_gl_get_time() -> f64 = "mlc::gl::glfw_gl_get_time" from "mlc/gl/glfw_window_gl.hpp"
+
+fn gl_vertex_shader() -> i32 = 35633
+fn gl_fragment_shader() -> i32 = 35632
+fn gl_compile_status() -> i32 = 35713
+fn gl_link_status() -> i32 = 35714
+fn gl_array_buffer() -> i32 = 34962
+fn gl_static_draw() -> i32 = 35044
+fn gl_float() -> i32 = 5126
+fn gl_triangles() -> i32 = 4
+fn gl_texture_2d() -> i32 = 3553
+fn gl_texture0() -> i32 = 33984
+fn gl_linear() -> i32 = 9729
+fn gl_clamp_to_edge() -> i32 = 33071
+fn gl_texture_min_filter() -> i32 = 10241
+fn gl_texture_mag_filter() -> i32 = 10240
+fn gl_texture_wrap_s() -> i32 = 10242
+fn gl_texture_wrap_t() -> i32 = 10243
+fn gl_framebuffer() -> i32 = 36160
+fn gl_read_framebuffer() -> i32 = 36008
+fn gl_draw_framebuffer() -> i32 = 36009
+fn gl_color_buffer_bit() -> i32 = 16384
+fn gl_nearest() -> i32 = 9728
+fn gl_color_attachment0() -> i32 = 36064
+fn gl_blend() -> i32 = 3042
+
+fn vertex_source() -> string =
+  "attribute vec2 a_pos;\nvarying vec2 v_uv;\nvoid main() {\n  v_uv = a_pos * 0.5 + 0.5;\n  gl_Position = vec4(a_pos, 0.0, 1.0);\n}\n"
+
+fn fragment_source() -> string =
+  "varying vec2 v_uv;\nuniform sampler2D u_scene;\nuniform vec4 u_pointer;\nuniform float u_time;\nuniform int u_mode;\nvoid main() {\n  vec2 resolution = u_pointer.zw;\n  vec2 pixel = v_uv * resolution;\n  vec2 delta = pixel - u_pointer.xy;\n  float radius2 = dot(delta, delta);\n  float mask = clamp(1.0 - radius2 * (1.0 / 22500.0), 0.0, 1.0);\n  mask = mask * mask;\n  vec3 plain = texture2D(u_scene, pixel / resolution).rgb;\n  if (u_mode == 2) {\n    float band = floor(pixel.y / 5.0);\n    float glitch = step(0.97, fract(sin(band + u_time * 9.0) * 43758.5)) * 10.0 * mask;\n    vec3 sample = texture2D(u_scene, (pixel - vec2(glitch, 0.0)) / resolution).rgb;\n    float scan = 0.72 + 0.28 * step(0.5, fract(pixel.y * 0.22));\n    vec3 cyber = sample * scan;\n    cyber.r += 0.28 * mask;\n    cyber.b += 0.55 * mask;\n    gl_FragColor = vec4(mix(plain, cyber, mask), 1.0);\n    return;\n  }\n  vec2 sample_uv = (pixel - delta * mask * 0.28) / resolution;\n  vec3 color = texture2D(u_scene, sample_uv).rgb;\n  float pulse = 0.72 + 0.28 * sin(u_time * 1.7);\n  color += vec3(0.22, 0.4, 0.85) * mask * pulse;\n  gl_FragColor = vec4(color, 1.0);\n}\n"
+
+export type CursorLens = {
+  program: i32,
+  buffer: i32,
+  texture: i32,
+  framebuffer: i32,
+  width: i32,
+  height: i32,
+  scene_location: i32,
+  pointer_location: i32,
+  time_location: i32,
+  position_location: i32,
+  patch_left: i32,
+  patch_bottom: i32,
+  patch_right: i32,
+  patch_top: i32
+}
+
+fn lens_make(
+  program: i32,
+  buffer: i32,
+  texture: i32,
+  framebuffer: i32,
+  width: i32,
+  height: i32,
+  scene_location: i32,
+  pointer_location: i32,
+  time_location: i32,
+  position_location: i32,
+  patch_left: i32,
+  patch_bottom: i32,
+  patch_right: i32,
+  patch_top: i32
+) -> CursorLens =
+  CursorLens {
+    program: program,
+    buffer: buffer,
+    texture: texture,
+    framebuffer: framebuffer,
+    width: width,
+    height: height,
+    scene_location: scene_location,
+    pointer_location: pointer_location,
+    time_location: time_location,
+    position_location: position_location,
+    patch_left: patch_left,
+    patch_bottom: patch_bottom,
+    patch_right: patch_right,
+    patch_top: patch_top
+  }
+
+fn lens_off() -> CursorLens =
+  lens_make(-1, 0, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0, 0, 0)
+
+fn upload_quad(buffer: i32) -> i32 = do
+  gl_scratch_f32_clear()
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(1.0)
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(1.0)
+  gl_scratch_f32_push(1.0)
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(1.0)
+  gl_scratch_f32_push(1.0)
+  gl_scratch_f32_push(0.0 - 1.0)
+  gl_scratch_f32_push(1.0)
+  gl_bind_buffer(gl_array_buffer(), buffer)
+  return gl_buffer_data_scratch(gl_array_buffer(), gl_static_draw())
+end
+
+fn compile_program() -> i32 = do
+  const vertex_shader = gl_create_shader(gl_vertex_shader())
+  gl_shader_source_string(vertex_shader, vertex_source())
+  gl_compile_shader(vertex_shader)
+  if gl_get_shader_iv_value(vertex_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    return -1
+  end
+  const fragment_shader = gl_create_shader(gl_fragment_shader())
+  gl_shader_source_string(fragment_shader, fragment_source())
+  gl_compile_shader(fragment_shader)
+  if gl_get_shader_iv_value(fragment_shader, gl_compile_status()) == 0 then
+    gl_delete_shader(vertex_shader)
+    gl_delete_shader(fragment_shader)
+    return -1
+  end
+  const program = gl_create_program()
+  gl_attach_shader(program, vertex_shader)
+  gl_attach_shader(program, fragment_shader)
+  gl_link_program(program)
+  gl_delete_shader(vertex_shader)
+  gl_delete_shader(fragment_shader)
+  if gl_get_program_iv_value(program, gl_link_status()) == 0 then
+    gl_delete_program(program)
+    return -1
+  end
+  return program
+end
+
+export fn cursor_lens_create() -> CursorLens = do
+  const program = compile_program()
+  if program < 0 then
+    return lens_off()
+  end
+  const buffer = gl_gen_buffer()
+  upload_quad(buffer)
+  const texture = gl_gen_texture()
+  const framebuffer = gl_gen_framebuffer()
+  gl_use_program(program)
+  const scene_location = gl_get_uniform_location_string(program, "u_scene")
+  const pointer_location = gl_get_uniform_location_string(program, "u_pointer")
+  const time_location = gl_get_uniform_location_string(program, "u_time")
+  const position_location = gl_get_attrib_location_string(program, "a_pos")
+  return lens_make(
+    program, buffer, texture, framebuffer, 0, 0,
+    scene_location, pointer_location, time_location, position_location, 0, 0, 0, 0
+  )
+end
+
+export fn cursor_lens_destroy(lens: CursorLens) -> i32 = do
+  if lens.program > 0 then
+    gl_delete_program(lens.program)
+  end
+  if lens.buffer > 0 then
+    gl_delete_buffer(lens.buffer)
+  end
+  if lens.texture > 0 then
+    gl_delete_texture(lens.texture)
+  end
+  if lens.framebuffer > 0 then
+    gl_delete_framebuffer(lens.framebuffer)
+  end
+  return 0
+end
+
+fn attach_target(lens: CursorLens, width: i32, height: i32) -> CursorLens = do
+  gl_bind_texture(gl_texture_2d(), lens.texture)
+  gl_tex_image_rgba(width, height)
+  gl_tex_parameter_i(gl_texture_2d(), gl_texture_min_filter(), gl_linear())
+  gl_tex_parameter_i(gl_texture_2d(), gl_texture_mag_filter(), gl_linear())
+  gl_tex_parameter_i(gl_texture_2d(), gl_texture_wrap_s(), gl_clamp_to_edge())
+  gl_tex_parameter_i(gl_texture_2d(), gl_texture_wrap_t(), gl_clamp_to_edge())
+  gl_bind_framebuffer(gl_framebuffer(), lens.framebuffer)
+  gl_framebuffer_texture(
+    gl_framebuffer(), gl_color_attachment0(), gl_texture_2d(), lens.texture
+  )
+  if gl_framebuffer_is_complete(gl_framebuffer()) == 0 then
+    gl_bind_framebuffer(gl_framebuffer(), 0)
+    return lens_off()
+  end
+  return lens_make(
+    lens.program, lens.buffer, lens.texture, lens.framebuffer, width, height,
+    lens.scene_location, lens.pointer_location, lens.time_location, lens.position_location,
+    0, 0, 0, 0
+  )
+end
+
+export fn cursor_lens_bind(lens: CursorLens, width: i32, height: i32, mode: i32) -> CursorLens = do
+  if mode == 0 then
+    gl_bind_framebuffer(gl_framebuffer(), 0)
+    return lens
+  end
+  if lens.program < 0 || width < 1 || height < 1 then
+    return lens
+  end
+  let mut next = lens
+  if lens.width != width || lens.height != height then
+    next = attach_target(lens, width, height)
+  end
+  if next.program < 0 then
+    return next
+  end
+  gl_bind_framebuffer(gl_framebuffer(), next.framebuffer)
+  gl_viewport(0, 0, width, height)
+  return next
+end
+
+fn ndc(pixel: i32, span: i32) -> f64 =
+  i32_to_f64(pixel) / i32_to_f64(span) * 2.0 - 1.0
+
+fn clamp_edge(value: i32, limit: i32) -> i32 = do
+  if value < 0 then
+    return 0
+  end
+  if value > limit then
+    return limit
+  end
+  return value
+end
+
+fn push_patch(left: f64, bottom: f64, right: f64, top: f64) -> i32 = do
+  gl_scratch_f32_clear()
+  gl_scratch_f32_push(left)
+  gl_scratch_f32_push(bottom)
+  gl_scratch_f32_push(right)
+  gl_scratch_f32_push(bottom)
+  gl_scratch_f32_push(left)
+  gl_scratch_f32_push(top)
+  gl_scratch_f32_push(right)
+  gl_scratch_f32_push(bottom)
+  gl_scratch_f32_push(right)
+  gl_scratch_f32_push(top)
+  gl_scratch_f32_push(left)
+  gl_scratch_f32_push(top)
+  return gl_buffer_data_scratch(gl_array_buffer(), gl_static_draw())
+end
+
+fn blit_rect(left: i32, bottom: i32, right: i32, top: i32) -> unit = do
+  gl_blit_framebuffer(
+    left, bottom, right, top,
+    left, bottom, right, top,
+    gl_color_buffer_bit(), gl_nearest()
+  )
+end
+
+export fn cursor_lens_show_window() -> unit =
+  gl_bind_framebuffer(gl_draw_framebuffer(), 0)
+
+export fn cursor_lens_present(
+  lens: CursorLens,
+  pointer_x: i32,
+  pointer_y: i32,
+  window_width: i32,
+  window_height: i32,
+  copy_all: bool,
+  mode: i32
+) -> CursorLens = do
+  if mode == 0 || lens.program < 0 || lens.width < 1 || lens.height < 1 then
+    return lens
+  end
+  gl_bind_framebuffer(gl_read_framebuffer(), lens.framebuffer)
+  gl_bind_framebuffer(gl_draw_framebuffer(), 0)
+  gl_disable(gl_scissor_test())
+  if copy_all then
+    blit_rect(0, 0, window_width, window_height)
+  end
+  if copy_all == false && lens.patch_right > lens.patch_left then
+    blit_rect(lens.patch_left, lens.patch_bottom, lens.patch_right, lens.patch_top)
+  end
+  const cursor_y = window_height - pointer_y
+  const left = clamp_edge(pointer_x - 176, window_width)
+  const right = clamp_edge(pointer_x + 176, window_width)
+  const bottom = clamp_edge(cursor_y - 176, window_height)
+  const top = clamp_edge(cursor_y + 176, window_height)
+  gl_disable(gl_blend())
+  gl_viewport(0, 0, window_width, window_height)
+  gl_use_program(lens.program)
+  gl_active_texture(gl_texture0())
+  gl_bind_texture(gl_texture_2d(), lens.texture)
+  gl_uniform_1i(lens.scene_location, 0)
+  gl_uniform_1i(gl_get_uniform_location_string(lens.program, "u_mode"), mode)
+  gl_uniform_4f(
+    lens.pointer_location,
+    i32_to_f64(pointer_x),
+    i32_to_f64(cursor_y),
+    i32_to_f64(window_width),
+    i32_to_f64(window_height)
+  )
+  gl_uniform_1f(lens.time_location, glfw_gl_get_time())
+  gl_bind_buffer(gl_array_buffer(), lens.buffer)
+  push_patch(
+    ndc(left, window_width), ndc(bottom, window_height),
+    ndc(right, window_width), ndc(top, window_height)
+  )
+  gl_enable_vertex_attrib_array(lens.position_location)
+  gl_vertex_attrib_pointer_offset(lens.position_location, 2, gl_float(), 0, 8, 0)
+  gl_draw_arrays(gl_triangles(), 0, 6)
+  return lens_make(
+    lens.program, lens.buffer, lens.texture, lens.framebuffer, lens.width, lens.height,
+    lens.scene_location, lens.pointer_location, lens.time_location, lens.position_location,
+    left, bottom, right, top
+  )
+end

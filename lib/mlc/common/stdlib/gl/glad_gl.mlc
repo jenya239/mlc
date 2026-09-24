@@ -114,6 +114,35 @@ export extern fn gl_vertex_attrib_pointer_offset(
   = "mlc::gl::glad_abi::vertex_attrib_pointer_offset" from "mlc/gl/glad_gl_abi.hpp"
 export extern fn gl_draw_arrays(mode: i32, first: i32, count: i32) -> unit
   = "mlc::gl::glad_abi::draw_arrays" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_uniform_1f(location: i32, value: f64) -> unit
+  = "mlc::gl::glad_abi::uniform_1f" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_gen_framebuffer() -> i32
+  = "mlc::gl::glad_abi::gen_framebuffer" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_delete_framebuffer(framebuffer: i32) -> unit
+  = "mlc::gl::glad_abi::delete_framebuffer" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_bind_framebuffer(target: i32, framebuffer: i32) -> unit
+  = "mlc::gl::glad_abi::bind_framebuffer" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_framebuffer_texture(
+  target: i32, attachment: i32, texture_target: i32, texture: i32
+) -> unit
+  = "mlc::gl::glad_abi::framebuffer_texture" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_tex_image_rgba(width: i32, height: i32) -> unit
+  = "mlc::gl::glad_abi::tex_image_rgba" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_blit_framebuffer(
+  source_x0: i32,
+  source_y0: i32,
+  source_x1: i32,
+  source_y1: i32,
+  destination_x0: i32,
+  destination_y0: i32,
+  destination_x1: i32,
+  destination_y1: i32,
+  mask: i32,
+  filter: i32
+) -> unit
+  = "mlc::gl::glad_abi::blit_framebuffer" from "mlc/gl/glad_gl_abi.hpp"
+export extern fn gl_framebuffer_is_complete(target: i32) -> i32
+  = "mlc::gl::glad_abi::framebuffer_is_complete" from "mlc/gl/glad_gl_abi.hpp"
 
 export extern fn gl_gen_texture() -> i32
   = "mlc::gl::glad_abi::gen_texture" from "mlc/gl/glad_gl_abi.hpp"

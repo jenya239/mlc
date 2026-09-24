@@ -32,6 +32,7 @@ export fn field_caption(kind: WidgetKind) -> string =
     | KindBox(_) => ""
     | KindLabel(_) => ""
     | KindButton(_) => ""
+    | KindCheckbox(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
@@ -188,6 +189,7 @@ export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: st
     | KindBox(data) => KindBox(data)
     | KindLabel(data) => KindLabel(data)
     | KindButton(data) => KindButton(data)
+    | KindCheckbox(data) => KindCheckbox(data)
     | KindScrollView => KindScrollView
     | KindListView(data) => KindListView(data)
     | KindSplitter(data) => KindSplitter(data)
@@ -207,6 +209,7 @@ export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: Fi
     | KindBox(box) => KindBox(box)
     | KindLabel(label) => KindLabel(label)
     | KindButton(button) => KindButton(button)
+    | KindCheckbox(button) => KindCheckbox(button)
     | KindScrollView => KindScrollView
     | KindListView(list) => KindListView(list)
     | KindSplitter(splitter) => KindSplitter(splitter)

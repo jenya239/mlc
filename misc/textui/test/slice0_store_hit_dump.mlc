@@ -123,6 +123,7 @@ fn main() -> i32 = do
     | KindLabel(_) => false
     | KindIcon(_) => false
     | KindButton(_) => false
+    | KindCheckbox(_) => false
     | KindScrollView => false
     | KindListView(_) => false
     | KindSplitter(_) => false

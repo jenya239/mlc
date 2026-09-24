@@ -34,6 +34,11 @@ export type ButtonData = {
   text: string
 }
 
+export type CheckboxData = {
+  text: string,
+  checked: bool
+}
+
 export type ListData = {
   texts: [string]
 }
@@ -69,6 +74,7 @@ export type WidgetKind =
   KindBox(BoxData)
   | KindLabel(LabelData)
   | KindButton(ButtonData)
+  | KindCheckbox(CheckboxData)
   | KindScrollView
   | KindListView(ListData)
   | KindSplitter(SplitterData)
@@ -81,6 +87,7 @@ export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
     | KindBox(_) => false
     | KindLabel(_) => false
     | KindButton(_) => false
+    | KindCheckbox(_) => false
     | KindListView(_) => false
     | KindSplitter(_) => false
     | KindTextField(_) => false
@@ -92,6 +99,7 @@ export fn kind_is_list_view(kind: WidgetKind) -> bool =
     | KindBox(_) => false
     | KindLabel(_) => false
     | KindButton(_) => false
+    | KindCheckbox(_) => false
     | KindScrollView => false
     | KindSplitter(_) => false
     | KindTextField(_) => false
@@ -103,6 +111,7 @@ export fn kind_is_splitter(kind: WidgetKind) -> bool =
     | KindBox(_) => false
     | KindLabel(_) => false
     | KindButton(_) => false
+    | KindCheckbox(_) => false
     | KindScrollView => false
     | KindListView(_) => false
     | KindTextField(_) => false
@@ -114,6 +123,7 @@ export fn kind_is_text_field(kind: WidgetKind) -> bool =
     | KindBox(_) => false
     | KindLabel(_) => false
     | KindButton(_) => false
+    | KindCheckbox(_) => false
     | KindScrollView => false
     | KindListView(_) => false
     | KindSplitter(_) => false
@@ -281,6 +291,7 @@ export fn widget_store_set_list_texts(store: WidgetStore, id: WidgetId, texts: [
     | KindBox(data) => KindBox(data)
     | KindLabel(data) => KindLabel(data)
     | KindButton(data) => KindButton(data)
+    | KindCheckbox(data) => KindCheckbox(data)
     | KindScrollView => KindScrollView
     | KindTextField(data) => KindTextField(data)
     | KindSplitter(data) => KindSplitter(data)

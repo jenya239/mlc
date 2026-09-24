@@ -85,7 +85,23 @@ fn empty_listing() -> DirectoryListing = do
   return DirectoryListing { directories: directories, files: files }
 end
 
-export fn directory_listing(path: string) -> DirectoryListing = do
+export fn directory_name_visible(name: string, show_hidden: bool) -> bool = do
+  if show_hidden then
+    return true
+  end
+  if name == ".." then
+    return true
+  end
+  if name.byte_size() == 0 then
+    return true
+  end
+  if name.byte_at(0) == "." then
+    return false
+  end
+  return true
+end
+
+export fn directory_listing(path: string, show_hidden: bool) -> DirectoryListing = do
   const normalized = strip_trailing_slash(path)
   if is_directory(normalized) == false then
     return empty_listing()
@@ -97,11 +113,13 @@ export fn directory_listing(path: string) -> DirectoryListing = do
   let mut index = 0
   while index < entries.length() do
     const entry = entries[index]
-    if entry.is_directory != 0 then
-      directories.push(entry.name + "/")
-    end
-    if entry.is_directory == 0 then
-      files.push(entry.name)
+    if directory_name_visible(entry.name, show_hidden) then
+      if entry.is_directory != 0 then
+        directories.push(entry.name + "/")
+      end
+      if entry.is_directory == 0 then
+        files.push(entry.name)
+      end
     end
     index = index + 1
   end

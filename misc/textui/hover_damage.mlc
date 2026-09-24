@@ -1,6 +1,7 @@
 import { Rect, rect_is_empty, rect_new } from './geometry'
 import { ColorRgba, Theme } from './theme'
 import {
+  WidgetId,
   WidgetKind,
   WidgetStore,
   kind_is_list_view,
@@ -16,14 +17,18 @@ import { list_icon_name, paint_named_icon } from './icon'
 import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
 import { menu_list_id } from './menu'
 import { kind_is_clickable } from './user_select'
-import { paint_button, paint_overlay_frame, paint_tree_frame } from './paint_pass'
+import { paint_button, paint_overlay_frame, paint_path_crumb, paint_tree_frame } from './paint_pass'
+import { path_bar_is_crumb } from './path_bar'
+import { checkbox_caption, checkbox_mark, kind_is_checkbox, paint_checkbox } from './checkbox'
 import { TextShapingState } from '../gui/text_shaping'
 import { SubmitFrameResult, SubmitResources, submit_frame } from './submit'
 import { submit_painted_layers } from './submit_layers'
+import { cursor_lens_show_window } from './cursor_lens'
 
 fn button_text(kind: WidgetKind) -> string =
   match kind
     | KindButton(data) => data.text
+    | KindCheckbox(data) => data.text
     | KindBox(_) => ""
     | KindLabel(_) => ""
     | KindIcon(_) => ""
@@ -39,6 +44,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindLabel(_) => []
     | KindIcon(_) => []
     | KindButton(_) => []
+    | KindCheckbox(_) => []
     | KindScrollView => []
     | KindSplitter(_) => []
     | KindTextField(_) => []
@@ -87,6 +93,22 @@ fn append_button(
   end
   if kind_is_clickable(store.nodes[index].kind) == false then
     return operations
+  end
+  if kind_is_checkbox(store.nodes[index].kind) then
+    return paint_checkbox(
+      theme,
+      layout,
+      state,
+      index,
+      checkbox_caption(store.nodes[index].kind),
+      checkbox_mark(store.nodes[index].kind),
+      operations
+    )
+  end
+  if path_bar_is_crumb(store, WidgetId { index: index }) then
+    return paint_path_crumb(
+      theme, layout, state, index, button_text(store.nodes[index].kind), operations
+    )
   end
   paint_button(
     theme, layout, state, index, button_text(store.nodes[index].kind), operations
@@ -339,8 +361,15 @@ export fn submit_ui_frame(
   if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) then
     const damage = paint_hover_damage(theme, store, layout, state, presented, next)
     if damage.length() > 0 then
-      return submit_frame(
+      const into_texture = submit_frame(
         resources, shaping, theme, damage, window_width, window_height, false
+      )
+      if into_texture.error_code != 0 then
+        return into_texture
+      end
+      cursor_lens_show_window()
+      return submit_frame(
+        into_texture.resources, into_texture.shaping, theme, damage, window_width, window_height, false
       )
     end
   end

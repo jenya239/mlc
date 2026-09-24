@@ -21,6 +21,7 @@ import { button_preferred_size } from './widget_button'
 import { scroll_offset_at } from './widget_scroll'
 import { list_content_height } from './widget_list'
 import { splitter_placement_for } from './widget_split'
+import { path_bar_is_crumb } from './path_bar'
 
 export type LayoutWork = {
   shaping: TextShapingState,
@@ -95,6 +96,43 @@ fn measure_caption(
   }
 end
 
+fn measure_checkbox(
+  work: LayoutWork,
+  theme: Theme,
+  index: i32,
+  text: string
+) -> MeasureResult = do
+  const measured = measure_caption(work, theme, index, text, true)
+  return MeasureResult {
+    work: measured.work,
+    size: size_new(
+      measured.size.width + theme.font_size_pixels + theme.padding,
+      measured.size.height
+    )
+  }
+end
+
+fn measure_button_kind(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  id: WidgetId,
+  text: string
+) -> MeasureResult = do
+  const crumb = path_bar_is_crumb(store, id)
+  const measured = measure_caption(work, theme, id.index, text, crumb == false)
+  if crumb == false then
+    return measured
+  end
+  return MeasureResult {
+    work: measured.work,
+    size: size_new(
+      measured.size.width - theme.padding * 2 + 4,
+      measured.size.height - theme.padding * 2
+    )
+  }
+end
+
 export fn measure_node(
   work: LayoutWork,
   store: WidgetStore,
@@ -107,7 +145,8 @@ export fn measure_node(
       work: work,
       size: size_new(theme.font_size_pixels, theme.font_size_pixels)
     }
-    | KindButton(data) => measure_caption(work, theme, id.index, data.text, true)
+    | KindButton(data) => measure_button_kind(work, store, theme, id, data.text)
+    | KindCheckbox(data) => measure_checkbox(work, theme, id.index, data.text)
     | KindBox(_) => measure_box_node(work, store, theme, id)
     | KindScrollView => measure_scroll_node(work, store, theme, id)
     | KindListView(data) => MeasureResult {
@@ -307,6 +346,7 @@ export fn layout_node(
     | KindLabel(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindIcon(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindButton(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
+    | KindCheckbox(_) => work_with_rect(work, id.index, rect_new(x, y, width, height))
     | KindBox(_) => layout_box_node(
       work_with_rect(work, id.index, rect_new(x, y, width, height)),
       store,

@@ -1,0 +1,278 @@
+import {
+  BoxData,
+  ButtonData,
+  DirectionRow,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  kind_is_text_field,
+  widget_id_is_none,
+  widget_node_with_kind,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_text_field,
+  widget_store_keep,
+  widget_store_set_visible,
+  field_data_new
+} from './store'
+import { widget_store_add_icon } from './icon'
+
+fn path_row_of(store: WidgetStore) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_text_field(store.nodes[index].kind) then
+      return store.nodes[index].parent
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn button_ordinal(store: WidgetStore, id: WidgetId) -> i32 = do
+  const row = path_row_of(store)
+  if widget_id_is_none(row) then
+    return 0 - 1
+  end
+  let mut seen = 0
+  let mut index = 0
+  const children = store.nodes[row.index].children
+  while index < children.length() do
+    const child = children[index]
+    const is_button = match store.nodes[child.index].kind
+      | KindButton(_) => true
+      | KindBox(_) => false
+      | KindLabel(_) => false
+      | KindCheckbox(_) => false
+      | KindScrollView => false
+      | KindListView(_) => false
+      | KindSplitter(_) => false
+      | KindTextField(_) => false
+      | KindIcon(_) => false
+    if is_button then
+      if child.index == id.index then
+        return seen
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return 0 - 1
+end
+
+fn set_button(store: WidgetStore, id: WidgetId, text: string, visible: bool) -> WidgetStore = do
+  const node = store.nodes[id.index]
+  const next_kind = match node.kind
+    | KindButton(_) => KindButton(ButtonData { text: text })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindCheckbox(data) => KindCheckbox(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+    | KindTextField(data) => KindTextField(data)
+    | KindIcon(data) => KindIcon(data)
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, next_kind))
+  return widget_store_set_visible(widget_store_keep(nodes, store), id, visible)
+end
+
+fn crumb_ids(store: WidgetStore) -> [WidgetId] = do
+  let mut crumbs: [WidgetId] = []
+  const row = path_row_of(store)
+  if widget_id_is_none(row) then
+    return crumbs
+  end
+  let mut seen = 0
+  let mut index = 0
+  const children = store.nodes[row.index].children
+  while index < children.length() do
+    const child = children[index]
+    const is_button = match store.nodes[child.index].kind
+      | KindButton(_) => true
+      | KindBox(_) => false
+      | KindLabel(_) => false
+      | KindCheckbox(_) => false
+      | KindScrollView => false
+      | KindListView(_) => false
+      | KindSplitter(_) => false
+      | KindTextField(_) => false
+      | KindIcon(_) => false
+    if is_button then
+      if seen >= 2 then
+        crumbs.push(child)
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return crumbs
+end
+
+export fn path_segments(path: string) -> [string] = do
+  let mut segments: [string] = []
+  segments.push("/")
+  if path == "" || path == "/" then
+    return segments
+  end
+  let mut start = 1
+  let mut index = 1
+  while index <= path.byte_size() do
+    const at_end = index == path.byte_size()
+    let mut slash = false
+    if at_end == false && path.byte_at(index) == "/" then
+      slash = true
+    end
+    if at_end || slash then
+      if index > start then
+        segments.push(path.byte_substring(start, index - start))
+      end
+      start = index + 1
+    end
+    index = index + 1
+  end
+  return segments
+end
+
+export fn path_prefix(path: string, count: i32) -> string = do
+  const segments = path_segments(path)
+  if count <= 1 || segments.length() <= 1 then
+    return "/"
+  end
+  let mut limit = count
+  if limit > segments.length() then
+    limit = segments.length()
+  end
+  let mut built = ""
+  let mut index = 1
+  while index < limit do
+    built = built + "/" + segments[index]
+    index = index + 1
+  end
+  return built
+end
+
+fn shown_last_index(segment_count: i32, crumb_count: i32, skip: i32) -> i32 = do
+  let mut last_index = 0
+  let mut scan = 0
+  let mut shown = 0
+  while scan < segment_count do
+    if skip <= 0 || scan == 0 || scan >= skip then
+      if shown < crumb_count then
+        last_index = scan
+        shown = shown + 1
+      end
+    end
+    scan = scan + 1
+  end
+  return last_index
+end
+
+fn crumb_caption(segment: string, index: i32, last_index: i32) -> string = do
+  if index == 0 then
+    return "/"
+  end
+  if index == last_index then
+    return segment
+  end
+  return segment + "/"
+end
+
+export fn path_bar_sync(store: WidgetStore, path: string) -> WidgetStore = do
+  const segments = path_segments(path)
+  const crumbs = crumb_ids(store)
+  let mut next = store
+  let mut index = 0
+  let mut shown = 0
+  const skip = segments.length() - crumbs.length() + 1
+  const last_index = shown_last_index(segments.length(), crumbs.length(), skip)
+  while index < segments.length() do
+    if skip <= 0 || index == 0 || index >= skip then
+      if shown < crumbs.length() then
+        next = set_button(next, crumbs[shown], crumb_caption(segments[index], index, last_index), true)
+        shown = shown + 1
+      end
+    end
+    index = index + 1
+  end
+  while shown < crumbs.length() do
+    next = set_button(next, crumbs[shown], "", false)
+    shown = shown + 1
+  end
+  return next
+end
+
+export fn path_bar_current(store: WidgetStore) -> string = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const text = match store.nodes[index].kind
+      | KindTextField(data) => data.text
+      | KindBox(_) => ""
+      | KindLabel(_) => ""
+      | KindButton(_) => ""
+      | KindCheckbox(_) => ""
+      | KindScrollView => ""
+      | KindListView(_) => ""
+      | KindSplitter(_) => ""
+      | KindIcon(_) => ""
+    if text != "" then
+      return text
+    end
+    index = index + 1
+  end
+  return "/"
+end
+
+export fn path_bar_is_crumb(store: WidgetStore, id: WidgetId) -> bool =
+  button_ordinal(store, id) >= 2
+
+export fn path_bar_is_back(store: WidgetStore, id: WidgetId) -> bool =
+  button_ordinal(store, id) == 0
+
+export fn path_bar_is_forward(store: WidgetStore, id: WidgetId) -> bool =
+  button_ordinal(store, id) == 1
+
+export fn path_bar_target(store: WidgetStore, id: WidgetId, path: string) -> string = do
+  const ordinal = button_ordinal(store, id)
+  if ordinal < 2 then
+    return ""
+  end
+  const crumbs = crumb_ids(store)
+  const slot = ordinal - 2
+  if slot < 0 || slot >= crumbs.length() then
+    return ""
+  end
+  if store.nodes[crumbs[slot].index].visible == false then
+    return ""
+  end
+  const segments = path_segments(path)
+  let mut count = slot + 1
+  if segments.length() > crumbs.length() then
+    const skip = segments.length() - crumbs.length() + 1
+    if slot == 0 then
+      count = 1
+    end
+    if slot > 0 then
+      count = skip + slot
+    end
+  end
+  return path_prefix(path, count)
+end
+
+fn row_data() -> BoxData =
+  BoxData { direction: DirectionRow, padding: 0, gap: 2 }
+
+export fn add_path_row(store: WidgetStore, parent: WidgetId, path: string) -> WidgetStore = do
+  let mut next = widget_store_add_box(store, parent, row_data(), OverflowVisible, 0, true)
+  const row = next.nodes[next.nodes.length() - 1].id
+  next = widget_store_add_button(next, row, ButtonData { text: "Back" }, OverflowVisible, 0, true)
+  next = widget_store_add_button(next, row, ButtonData { text: "Forward" }, OverflowVisible, 0, true)
+  next = widget_store_add_icon(next, row, "folder", 0, true)
+  let mut slot = 0
+  while slot < 8 do
+    next = widget_store_add_button(next, row, ButtonData { text: "" }, OverflowVisible, 0, false)
+    slot = slot + 1
+  end
+  next = widget_store_add_text_field(next, row, field_data_new(path), 1, false)
+  return path_bar_sync(next, path)
+end

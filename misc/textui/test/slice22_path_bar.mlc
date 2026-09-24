@@ -1,0 +1,42 @@
+import { path_prefix, path_segments } from '../path_bar'
+import {
+  path_history_back,
+  path_history_empty,
+  path_history_forward,
+  path_history_visit
+} from '../path_history'
+
+fn main() -> i32 = do
+  const segments = path_segments("/home/jenya")
+  if segments.length() != 3 then
+    return -1
+  end
+  if segments[0] != "/" || segments[1] != "home" || segments[2] != "jenya" then
+    return -2
+  end
+  if path_prefix("/home/jenya", 1) != "/" then
+    return -3
+  end
+  if path_prefix("/home/jenya", 2) != "/home" then
+    return -4
+  end
+  if path_prefix("/home/jenya", 3) != "/home/jenya" then
+    return -5
+  end
+  const visited = path_history_visit(path_history_empty(), "/home", "/home/jenya")
+  if visited.back.length() != 1 || visited.forward.length() != 0 then
+    return -6
+  end
+  const back = path_history_back(visited, "/home/jenya")
+  if back.moved == false || back.path != "/home" then
+    return -7
+  end
+  if back.history.forward.length() != 1 || back.history.forward[0] != "/home/jenya" then
+    return -8
+  end
+  const forward = path_history_forward(back.history, "/home")
+  if forward.moved == false || forward.path != "/home/jenya" then
+    return -9
+  end
+  0
+end

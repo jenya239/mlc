@@ -57,6 +57,7 @@ fn list_texts_of(kind: WidgetKind) -> [string] =
     | KindLabel(_) => []
     | KindIcon(_) => []
     | KindButton(_) => []
+    | KindCheckbox(_) => []
     | KindScrollView => []
     | KindSplitter(_) => []
     | KindTextField(_) => []

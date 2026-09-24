@@ -62,6 +62,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindLabel(_) => ""
     | KindIcon(_) => ""
     | KindButton(_) => ""
+    | KindCheckbox(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
@@ -73,6 +74,7 @@ fn list_rows(kind: WidgetKind) -> [string] =
     | KindLabel(_) => []
     | KindIcon(_) => []
     | KindButton(_) => []
+    | KindCheckbox(_) => []
     | KindScrollView => []
     | KindTextField(_) => []
     | KindSplitter(_) => []
@@ -130,7 +132,7 @@ fn main() -> i32 = do
     return -13
   end
 
-  const listing = directory_listing(fixture)
+  const listing = directory_listing(fixture, true)
   if listing.directories.length() != 3 then
     return -14
   end
@@ -152,7 +154,7 @@ fn main() -> i32 = do
   if listing.files[1] != "note.txt" then
     return -20
   end
-  if directory_listing(fixture + "/missing").directories.length() != 0 then
+  if directory_listing(fixture + "/missing", true).directories.length() != 0 then
     return -21
   end
 

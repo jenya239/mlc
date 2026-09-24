@@ -17,7 +17,6 @@ import {
 import { theme_default } from './theme'
 import { WidgetId, WidgetStore, widget_id_is_none } from './store'
 import { build_label_gallery } from './gallery_scene'
-import { stress_listing_set, stress_pane_width } from './stress_listing'
 import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
 import { layout_ui } from './layout_pass'
@@ -25,21 +24,31 @@ import {
   frame_signature,
   frame_request,
   frame_request_layouts,
-  frame_request_paints
+  frame_request_paints, frame_signature_hover_only
 } from './frame_request'
 import { submit_ui_frame } from './hover_damage'
+import {
+  cursor_lens_bind,
+  cursor_lens_create,
+  cursor_lens_destroy,
+  cursor_lens_present
+} from './cursor_lens'
 import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
 import { list_selected_at } from './widget_list'
 import { ui_update } from './ui_update'
-import { clipboard_copy_selection } from './update_copy'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
+import { apply_toolbar, effect_wait_seconds } from './visual_effect'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
 import { WindowPlacement, window_placement_load, window_placement_save } from './window_placement'
-import { follow_directory, open_directory } from './directory_browse'
+import { follow_directory, open_directory, refresh_hidden } from './directory_browse'
+import { kind_is_checkbox } from './checkbox'
+import { path_history_empty, path_history_visit } from './path_history'
+import { path_bar_current } from './path_bar'
+import { apply_path_click } from './path_travel'
 import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
 import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 import { DialogTarget, attach_dialog, dialog_host } from './dialog'
@@ -81,6 +90,7 @@ fn input_clear_buttons(input: UiInput) -> UiInput =
 fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
   match store.nodes[owner.index].kind
     | KindButton(data) => data.text
+    | KindCheckbox(data) => data.text
     | KindLabel(_) => ""
     | KindIcon(_) => ""
     | KindBox(_) => ""
@@ -102,6 +112,7 @@ fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId) -> st
     | KindLabel(_) => ""
     | KindIcon(_) => ""
     | KindButton(_) => ""
+    | KindCheckbox(_) => ""
     | KindBox(_) => ""
     | KindScrollView => ""
     | KindSplitter(_) => ""
@@ -124,6 +135,7 @@ fn main() -> i32 = do
   end
   glfw_gl_swap_interval(0)
   let mut resources = submit_create()
+  let mut lens = cursor_lens_create()
   if resources.error_code != 0 then
     const error_code = resources.error_code
     remember_window()
@@ -167,12 +179,14 @@ fn main() -> i32 = do
   let mut composed = false
   let mut target_list = 0 - 1
   let mut target_row = 0 - 1
+  let mut path_history = path_history_empty()
+  let mut effect_mode = 1
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut right_was_down = false
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
-      host_wait_for_input()
+      host_wait_for_input(effect_wait_seconds(effect_mode))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0
@@ -237,10 +251,24 @@ fn main() -> i32 = do
       end
       activation_index = activation_index + 1
     end
+    const path_before_browse = path_bar_current(store)
     const revision_before_browse = state.listing_revision
+    let mut hidden_index = 0
+    while hidden_index < updated.events.length() do
+      const hidden_owner = updated.events[hidden_index].widget
+      if hidden_owner.index >= 0 && hidden_owner.index < store.nodes.length() then
+        if kind_is_checkbox(store.nodes[hidden_owner.index].kind) then
+          const refreshed = refresh_hidden(store, state, hidden_owner)
+          store = refreshed.store
+          state = refreshed.state
+        end
+      end
+      hidden_index = hidden_index + 1
+    end
     const browsed = follow_directory(store, state, updated.events)
     store = browsed.store
     state = browsed.state
+    path_history = path_history_visit(path_history, path_before_browse, path_bar_current(store))
     if state.listing_revision != revision_before_browse then
       dense_enabled = false
     end
@@ -271,29 +299,26 @@ fn main() -> i32 = do
     let mut event_index = 0
     while event_index < updated.events.length() do
       const owner = updated.events[event_index].widget
-      const caption = button_caption(store, owner)
-      if caption == "Copy" then
-        state = clipboard_copy_selection(laid_out.layout, state)
-        glfw_gl_clipboard_set(state.clipboard.clipboard)
+      const stepped = apply_path_click(store, state, path_history, owner)
+      store = stepped.store
+      state = stepped.state
+      path_history = stepped.history
+      if stepped.changed then
+        dense_enabled = false
       end
-      if caption == "Ping" then
-        println("[textui] ping")
-      end
-      if caption == "Reload" then
+      const acted = apply_toolbar(
+        store, state, theme, laid_out.layout, owner, button_caption(store, owner),
+        dense_enabled, effect_mode
+      )
+      store = acted.store
+      state = acted.state
+      dense_enabled = acted.dense_enabled
+      effect_mode = acted.effect_mode
+      if acted.reload then
         reload_requested = true
       end
-      if caption == "Dense" then
-        const stressed = stress_listing_set(
-          store,
-          state,
-          theme,
-          stress_pane_width(laid_out.layout, store, 0),
-          stress_pane_width(laid_out.layout, store, 1),
-          dense_enabled == false
-        )
-        store = stressed.store
-        state = stressed.state
-        dense_enabled = stressed.enabled
+      if acted.copied then
+        glfw_gl_clipboard_set(state.clipboard.clipboard)
       end
       event_index = event_index + 1
     end
@@ -308,7 +333,10 @@ fn main() -> i32 = do
     if frame_index == 0 then
       paints = true
     end
+    const window_width = glfw_gl_window_width()
+    const window_height = glfw_gl_window_height()
     if paints then
+      lens = cursor_lens_bind(lens, window_width, window_height, effect_mode)
       const submitted = submit_ui_frame(
         resources,
         shaping,
@@ -318,22 +346,28 @@ fn main() -> i32 = do
         state,
         presented,
         next_signature,
-        glfw_gl_window_width(),
-        glfw_gl_window_height(),
+        window_width,
+        window_height,
         composed
       )
       composed = true
       if submitted.error_code != 0 then
         submit_destroy(submitted.resources)
+        cursor_lens_destroy(lens)
         remember_window()
         glfw_gl_context_end()
         return submitted.error_code
       end
       resources = submitted.resources
       shaping = submitted.shaping
+      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, frame_index == 0 || frame_signature_hover_only(presented, next_signature) == false, effect_mode)
       presented = next_signature
       glfw_gl_context_swap_poll()
       sample_after_present = true
+    end
+    if paints == false && composed && effect_mode != 0 then
+      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, false, effect_mode)
+      glfw_gl_context_swap_poll()
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
@@ -345,6 +379,7 @@ fn main() -> i32 = do
   end
 
   submit_destroy(resources)
+  cursor_lens_destroy(lens)
   remember_window()
   glfw_gl_context_end()
   if reload_requested then

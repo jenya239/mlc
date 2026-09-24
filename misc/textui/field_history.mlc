@@ -31,6 +31,7 @@ fn field_data_of(kind: WidgetKind) -> FieldData =
     | KindLabel(_) => field_data_new("")
     | KindIcon(_) => field_data_new("")
     | KindButton(_) => field_data_new("")
+    | KindCheckbox(_) => field_data_new("")
     | KindScrollView => field_data_new("")
     | KindListView(_) => field_data_new("")
     | KindSplitter(_) => field_data_new("")

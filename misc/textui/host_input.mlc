@@ -52,8 +52,8 @@ export fn host_buttons_new() -> HostButtons =
     scroll_remainder: 0.0
   }
 
-export fn host_wait_for_input() -> unit =
-  glfw_gl_context_wait_events_timeout(0.0 - 1.0)
+export fn host_wait_for_input(seconds: f64) -> unit =
+  glfw_gl_context_wait_events_timeout(seconds)
 
 export fn host_now_ms() -> i32 =
   f64_to_i32(glfw_gl_get_time() * 1000.0)

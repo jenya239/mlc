@@ -27,6 +27,8 @@ import { UiEvent } from './ui_event'
 import { list_selected_at, list_selected_put } from './widget_list'
 import { scroll_offsets_put } from './widget_scroll'
 import { directory_listing, directory_target, strip_trailing_slash } from './directory_rows'
+import { checkbox_is_checked, checkbox_toggle } from './checkbox'
+import { path_bar_sync } from './path_bar'
 
 export type DirectoryView = {
   store: WidgetStore,
@@ -69,6 +71,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindLabel(_) => ""
     | KindIcon(_) => ""
     | KindButton(_) => ""
+    | KindCheckbox(_) => ""
     | KindScrollView => ""
     | KindListView(_) => ""
     | KindSplitter(_) => ""
@@ -80,6 +83,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindLabel(_) => []
     | KindIcon(_) => []
     | KindButton(_) => []
+    | KindCheckbox(_) => []
     | KindScrollView => []
     | KindTextField(_) => []
     | KindSplitter(_) => []
@@ -151,7 +155,7 @@ end
 
 export fn open_directory(store: WidgetStore, state: UiState, path: string) -> DirectoryView = do
   const normalized = strip_trailing_slash(path)
-  const listing = directory_listing(normalized)
+  const listing = directory_listing(normalized, checkbox_is_checked(store))
   if listing.directories.length() == 0 then
     return view_of(store, state)
   end
@@ -177,7 +181,7 @@ export fn open_directory(store: WidgetStore, state: UiState, path: string) -> Di
     next_state = place_path_caret(next_state, path_field, shown.byte_size())
   end
   next_state = ui_state_with_listing_revision(next_state, state.listing_revision + 1)
-  return view_of(next_store, next_state)
+  return view_of(path_bar_sync(next_store, normalized), next_state)
 end
 
 fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId) -> DirectoryView = do
@@ -205,6 +209,15 @@ fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId) -> Dir
     return view_of(store, state)
   end
   return open_directory(store, state, target)
+end
+
+export fn refresh_hidden(store: WidgetStore, state: UiState, id: WidgetId) -> DirectoryView = do
+  const toggled = checkbox_toggle(store, id)
+  const path_field = first_text_field(toggled)
+  if widget_id_is_none(path_field) then
+    return view_of(toggled, state)
+  end
+  return open_directory(toggled, state, field_text(toggled.nodes[path_field.index].kind))
 end
 
 export fn follow_directory(store: WidgetStore, state: UiState, events: [UiEvent]) -> DirectoryView = do
