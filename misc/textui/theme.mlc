@@ -31,7 +31,10 @@ export type Theme = {
   splitter_sash: ColorRgba,
   splitter_hover: ColorRgba,
   splitter_width: i32,
-  splitter_min: i32
+  splitter_min: i32,
+  overlay_scrim: ColorRgba,
+  overlay_background: ColorRgba,
+  overlay_stroke: ColorRgba
 }
 
 export fn theme_content_inset(theme: Theme) -> i32 =
@@ -40,7 +43,7 @@ export fn theme_content_inset(theme: Theme) -> i32 =
 export fn theme_default() -> Theme =
   Theme {
     font_path: "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    font_size_pixels: 14,
+    font_size_pixels: 12,
     padding: 8,
     gap: 10,
     background: color_rgba_new(0.07, 0.08, 0.10, 1.0),
@@ -61,5 +64,8 @@ export fn theme_default() -> Theme =
     splitter_sash: color_rgba_new(0.16, 0.19, 0.22, 1.0),
     splitter_hover: color_rgba_new(0.42, 0.45, 0.50, 1.0),
     splitter_width: 6,
-    splitter_min: 80
+    splitter_min: 80,
+    overlay_scrim: color_rgba_new(0.0, 0.0, 0.0, 0.45),
+    overlay_background: color_rgba_new(0.12, 0.14, 0.17, 1.0),
+    overlay_stroke: color_rgba_new(0.36, 0.40, 0.44, 1.0)
   }

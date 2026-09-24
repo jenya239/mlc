@@ -1,0 +1,24 @@
+import { Theme } from './theme'
+import { DrawOp } from './draw_op'
+import { TextShapingState } from '../gui/text_shaping'
+import { SubmitResources, SubmitFrameResult, submit_frame } from './submit'
+
+export fn submit_painted_layers(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  underlay: [DrawOp],
+  overlay: [DrawOp],
+  window_width: i32,
+  window_height: i32
+) -> SubmitFrameResult = do
+  const under = submit_frame(
+    resources, shaping, theme, underlay, window_width, window_height, true
+  )
+  if under.error_code != 0 then
+    return under
+  end
+  return submit_frame(
+    under.resources, under.shaping, theme, overlay, window_width, window_height, false
+  )
+end

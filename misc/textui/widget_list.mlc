@@ -5,8 +5,16 @@ import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { LayoutResult } from './layout_result'
 import { UiState } from './ui_state'
 
+export fn list_row_inset(theme: Theme) -> i32 = do
+  let mut inset = theme.font_size_pixels / 6
+  if inset < 1 then
+    inset = 1
+  end
+  inset
+end
+
 export fn list_row_height(theme: Theme) -> i32 = do
-  const height = theme.font_size_pixels + theme.padding * 2
+  const height = theme.font_size_pixels + list_row_inset(theme) * 2
   if height < 1 then
     return 1
   end
@@ -131,7 +139,7 @@ export fn paint_list_rows(
       end
       next.push(OpText(TextOp {
         origin_x: row.x + theme.padding,
-        origin_y: row.y + theme.padding,
+        origin_y: row.y + list_row_inset(theme),
         color: theme.foreground,
         text: texts[index]
       }))

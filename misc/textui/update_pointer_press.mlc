@@ -2,6 +2,7 @@ import { Theme } from './theme'
 import {
   WidgetStore,
   WidgetId,
+  widget_id_equals,
   widget_id_is_none,
   widget_id_none,
   kind_is_scroll_view,
@@ -21,6 +22,7 @@ import { Selection, selection_none } from './selection'
 import { selection_publish_primary } from './selection_text'
 import { pointer_double_click_ms, pointer_past_slop } from './pointer_slop'
 import { begin_click_press } from './update_pointer_click'
+import { menu_list_id } from './menu'
 import {
   UiState,
   PointerDrag,
@@ -168,6 +170,12 @@ export fn handle_press(
     return release_focus(clear_pointer(state))
   end
   const node = store.nodes[hit.index]
+  if widget_id_is_none(store.overlay) == false && hit.index == store.overlay.index then
+    return release_focus(begin_click_press(state, hit, input))
+  end
+  if store.placed && widget_id_equals(hit, menu_list_id(store)) then
+    return release_focus(begin_click_press(state, hit, input))
+  end
   if kind_is_text_field(node.kind) then
     return begin_field_press(
       layout,

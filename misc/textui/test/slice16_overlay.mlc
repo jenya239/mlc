@@ -1,0 +1,271 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { paint_ui_frame } from '../paint_pass'
+import { hit_test } from '../hit'
+import { DrawOp } from '../draw_op'
+import { UiInput } from '../ui_input'
+import { UiEvent, ui_event_button_clicked } from '../ui_event'
+import { ui_state_new, ui_state_with, ui_state_with_field } from '../ui_state'
+import { ui_update } from '../ui_update'
+import { attach_about_card, overlay_apply } from '../overlay'
+import { frame_signature } from '../frame_request'
+import { paint_hover_damage } from '../hover_damage'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn typed(text: string) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: down,
+    left_released: released,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn scrim_count(theme: Theme, operations: [DrawOp]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.color.alpha == theme.overlay_scrim.alpha
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+      | OpText(_) => false
+    if found then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn button_caption(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn close_button_index(store: WidgetStore) -> i32 = do
+  let mut found = 0 - 1
+  let mut index = 0
+  while index < store.nodes.length() do
+    if button_caption(store.nodes[index].kind) == "Close" then
+      found = index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn text_count(operations: [DrawOp], text: string) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(data) => data.text == text
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn build_page() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(store, store.root, field_data_new(""), 0, true)
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "under" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, store.root, ButtonData { text: "About" }, OverflowVisible, 0, true
+  )
+  attach_about_card(store)
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const store = build_page()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  let mut state = ui_state_new()
+  const laid = layout_ui(store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios)
+  shaping = laid.shaping
+  cache = laid.cache
+  const root_rect = laid.layout.rects[store.root.index]
+  if root_rect.width != 240 || root_rect.height != 160 then
+    return -1
+  end
+  const label = store.nodes[2].id
+  const label_rect = laid.layout.rects[label.index]
+  const label_hit = hit_test(
+    store, laid.layout, theme, label_rect.x + 2, label_rect.y + 2
+  )
+  if label_hit.index != label.index then
+    return -2
+  end
+  if scrim_count(theme, paint_ui_frame(theme, store, laid.layout, state)) != 0 then
+    return -3
+  end
+
+  state = ui_state_with_field(state, WidgetId { index: 1 }, 0, 0)
+  const typed_z = ui_update(store, laid.layout, theme, state, typed("Z"))
+  state = typed_z.state
+  if field_text(typed_z.store.nodes[1].kind) != "Z" then
+    return -4
+  end
+
+  let mut about_events: [UiEvent] = []
+  about_events.push(ui_event_button_clicked(store.nodes[3].id))
+  const opened = overlay_apply(typed_z.store, state, about_events)
+  if opened.state.overlay_open == false then
+    return -5
+  end
+  if opened.store.nodes[opened.store.overlay.index].visible == false then
+    return -5
+  end
+  if scrim_count(theme, paint_ui_frame(theme, opened.store, laid.layout, opened.state)) == 0 then
+    return -6
+  end
+  const scrim = hit_test(opened.store, laid.layout, theme, 1, 1)
+  if scrim.index != opened.store.overlay.index then
+    return -7
+  end
+  const covered = hit_test(
+    opened.store, laid.layout, theme, label_rect.x + 2, label_rect.y + 2
+  )
+  if covered.index == label.index then
+    return -8
+  end
+
+  const blocked = ui_update(opened.store, laid.layout, theme, opened.state, typed("Q"))
+  if field_text(blocked.store.nodes[1].kind) != "Z" then
+    return -9
+  end
+
+  const pressed = ui_update(
+    opened.store, laid.layout, theme, opened.state, pointer_at(1, 1, true, true, false)
+  )
+  const released = ui_update(
+    pressed.store, laid.layout, theme, pressed.state, pointer_at(1, 1, false, false, true)
+  )
+  const closed = overlay_apply(released.store, released.state, released.events)
+  if closed.state.overlay_open then
+    return -10
+  end
+  if closed.store.nodes[closed.store.overlay.index].visible then
+    return -10
+  end
+  if field_text(closed.store.nodes[1].kind) != "Z" then
+    return -11
+  end
+  if scrim_count(theme, paint_ui_frame(theme, closed.store, laid.layout, closed.state)) != 0 then
+    return -12
+  end
+  const close_index = close_button_index(closed.store)
+  const on_close = ui_state_with(
+    closed.state,
+    closed.state.selection,
+    closed.state.grab,
+    closed.state.pointer,
+    closed.state.last_press,
+    closed.state.clipboard,
+    WidgetId { index: close_index }
+  )
+  const on_about = ui_state_with(
+    closed.state,
+    closed.state.selection,
+    closed.state.grab,
+    closed.state.pointer,
+    closed.state.last_press,
+    closed.state.clipboard,
+    store.nodes[3].id
+  )
+  const damage = paint_hover_damage(
+    theme,
+    closed.store,
+    laid.layout,
+    on_about,
+    frame_signature(on_close, 240, 160),
+    frame_signature(on_about, 240, 160)
+  )
+  if text_count(damage, "Close") != 0 then
+    return -13
+  end
+  if text_count(damage, "About") == 0 then
+    return -14
+  end
+  0
+end

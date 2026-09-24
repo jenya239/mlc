@@ -50,6 +50,27 @@ fn hit_test_node(
   widget_id_none()
 end
 
+fn hit_test_children(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  id: WidgetId,
+  x: i32,
+  y: i32
+) -> WidgetId = do
+  const node = store.nodes[id.index]
+  let mut child_index = node.children.length() - 1
+  while child_index >= 0 do
+    const child_id = node.children[child_index]
+    const hit_child = hit_test_node(store, layout, theme, child_id, x, y)
+    if widget_id_is_none(hit_child) == false then
+      return hit_child
+    end
+    child_index = child_index - 1
+  end
+  widget_id_none()
+end
+
 export fn hit_test(
   store: WidgetStore,
   layout: LayoutResult,
@@ -57,6 +78,18 @@ export fn hit_test(
   x: i32,
   y: i32
 ) -> WidgetId = do
+  if widget_id_is_none(store.overlay) == false then
+    if store.nodes[store.overlay.index].visible then
+      const layer_hit = hit_test_node(store, layout, theme, store.overlay, x, y)
+      if widget_id_is_none(layer_hit) == false then
+        return layer_hit
+      end
+      const child_hit = hit_test_children(store, layout, theme, store.overlay, x, y)
+      if widget_id_is_none(child_hit) == false then
+        return child_hit
+      end
+    end
+  end
   if widget_id_is_none(store.root) then
     return widget_id_none()
   end

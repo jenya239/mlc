@@ -1,0 +1,155 @@
+import { get_or } from 'Env'
+import {
+  BoxData,
+  DirectionColumn,
+  ListData,
+  OverflowVisible,
+  WidgetKind,
+  WidgetStore,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_add_text_field,
+  widget_store_empty,
+  widget_store_set_field_text
+} from '../store'
+import { ui_state_new } from '../ui_state'
+import { theme_default } from '../theme'
+import {
+  stress_columns_for_width,
+  stress_file_size,
+  stress_listing_set,
+  stress_row_count
+} from '../stress_listing'
+
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn empty_rows() -> [string] = do
+  let mut rows: [string] = []
+  rows
+end
+
+fn build_browser() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(store, store.root, field_data_new(""), 0, true)
+  store = widget_store_add_scroll_view(store, store.root, 0, true)
+  const directory_scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_list_view(
+    store, directory_scroller, ListData { texts: empty_rows() }, 0, true
+  )
+  store = widget_store_add_scroll_view(store, store.root, 1, true)
+  const file_scroller = store.nodes[store.nodes.length() - 1].id
+  widget_store_add_list_view(
+    store, file_scroller, ListData { texts: empty_rows() }, 0, true
+  )
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn list_rows(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindTextField(_) => []
+    | KindSplitter(_) => []
+
+fn suffix_of(text: string, count: i32) -> string = do
+  const text_size = text.byte_size()
+  let mut suffix = ""
+  if text_size >= count then
+    suffix = text.byte_substring(text_size - count, count)
+  end
+  suffix
+end
+
+fn main() -> i32 = do
+  const fixture = get_or("TEXTUI_FM_FIXTURE", "")
+  if fixture == "" then
+    return -1
+  end
+  if create_directories(fixture) == false then
+    return -2
+  end
+  if write_string(fixture + "/alpha.txt", "a") == false then
+    return -3
+  end
+  const theme = theme_default()
+  const directory_width = 800
+  const file_width = 1600
+  const directory_columns = stress_columns_for_width(theme, directory_width)
+  const file_columns = stress_columns_for_width(theme, file_width)
+  let mut store = build_browser()
+  const field = store.nodes[1].id
+  store = widget_store_set_field_text(store, field, fixture)
+  const stressed = stress_listing_set(
+    store, ui_state_new(), theme, directory_width, file_width, true
+  )
+  if stressed.enabled == false then
+    return -4
+  end
+  if stressed.state.listing_revision != 1 then
+    return -5
+  end
+  if field_text(stressed.store.nodes[1].kind) != fixture then
+    return -6
+  end
+  const directories = list_rows(stressed.store.nodes[3].kind)
+  const files = list_rows(stressed.store.nodes[5].kind)
+  if directories.length() != stress_row_count() then
+    return -7
+  end
+  if files.length() != stress_row_count() then
+    return -8
+  end
+  if directories[0].byte_size() != directory_columns then
+    return -9
+  end
+  if files[0].byte_size() != file_columns then
+    return -10
+  end
+  if suffix_of(files[0], stress_file_size().byte_size()) != stress_file_size() then
+    return -11
+  end
+  if files[0] == files[1] then
+    return -12
+  end
+  if directories[0].byte_at(directories[0].byte_size() - 1) == "/" then
+    return -13
+  end
+  const restored = stress_listing_set(
+    stressed.store, stressed.state, theme, directory_width, file_width, false
+  )
+  if restored.enabled then
+    return -14
+  end
+  const restored_files = list_rows(restored.store.nodes[5].kind)
+  if restored_files.length() != 1 then
+    return -15
+  end
+  if restored_files[0] != "alpha.txt" then
+    return -16
+  end
+  0
+end

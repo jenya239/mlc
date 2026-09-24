@@ -1,0 +1,86 @@
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  DirectionRow,
+  ListData,
+  OverflowVisible,
+  SplitterData,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_add_splitter,
+  widget_store_add_text_field,
+  widget_store_empty,
+  WidgetStore
+} from './store'
+
+fn root_box_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn row_box_data() -> BoxData =
+  BoxData { direction: DirectionRow, padding: 0, gap: 10 }
+
+export fn build_label_gallery() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    root_box_data(),
+    OverflowVisible,
+    0,
+    true
+  )
+  store = widget_store_add_text_field(
+    store,
+    store.root,
+    field_data_new("/home/jenya/workspaces/current/mlc"),
+    0,
+    true
+  )
+  store = widget_store_add_splitter(
+    store,
+    store.root,
+    SplitterData { direction: DirectionRow, ratio_thousandths: 280 },
+    1,
+    true
+  )
+  const splitter = store.nodes[store.nodes.length() - 1].id
+  let mut directory_rows: [string] = []
+  let mut file_rows: [string] = []
+  store = widget_store_add_scroll_view(store, splitter, 0, true)
+  const directory_scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_list_view(
+    store, directory_scroller, ListData { texts: directory_rows }, 0, true
+  )
+  store = widget_store_add_scroll_view(store, splitter, 1, true)
+  const scroller = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_list_view(
+    store, scroller, ListData { texts: file_rows }, 0, true
+  )
+  store = widget_store_add_box(
+    store, store.root, row_box_data(), OverflowVisible, 0, true
+  )
+  const row = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Copy" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Ping" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Reload" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Pick" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "About" }, OverflowVisible, 0, true
+  )
+  return widget_store_add_button(
+    store, row, ButtonData { text: "Dense" }, OverflowVisible, 0, true
+  )
+end

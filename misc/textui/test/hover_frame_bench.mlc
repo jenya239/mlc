@@ -1,0 +1,187 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  ListData,
+  OverflowVisible,
+  WidgetId,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_ui } from '../layout_pass'
+import { paint_overlay_frame, paint_tree_frame } from '../paint_pass'
+import { frame_signature, frame_signature_hover_only } from '../frame_request'
+import { UiState, ui_state_new, ui_state_with, ui_state_with_list_hover_row } from '../ui_state'
+import { paint_hover_damage, submit_ui_frame } from '../hover_damage'
+import { submit_create, submit_destroy } from '../submit'
+import { submit_painted_layers } from '../submit_layers'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_context_swap_poll,
+  glfw_gl_swap_interval
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+extern fn glfw_gl_get_time() -> f64
+  = "mlc::gl::glfw_gl_get_time" from "mlc/gl/glfw_window_gl.hpp"
+extern fn f64_to_i32(value: f64) -> i32
+  = "mlc::math::f64_to_i32" from "mlc/math/math.hpp"
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn hover_state(state: UiState, list_id: WidgetId, row: i32) -> UiState =
+  ui_state_with_list_hover_row(
+    ui_state_with(
+      state,
+      state.selection,
+      state.grab,
+      state.pointer,
+      state.last_press,
+      state.clipboard,
+      list_id
+    ),
+    row
+  )
+
+fn elapsed_us(started: f64, finished: f64) -> i32 =
+  f64_to_i32((finished - started) * 1000000.0)
+
+fn average_us(started: f64, finished: f64) -> i32 =
+  f64_to_i32((finished - started) * 100000.0)
+
+fn main() -> i32 = do
+  const width = 2560
+  const height = 1440
+  const samples = 10
+  const theme = theme_default()
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 1, true
+  )
+  store = widget_store_add_scroll_view(store, store.root, 1, true)
+  const scroll = store.nodes[store.nodes.length() - 1].id
+  let mut texts: [string] = []
+  let mut row_index = 0
+  while row_index < 80 do
+    texts.push("file-" + row_index.to_string())
+    row_index = row_index + 1
+  end
+  store = widget_store_add_list_view(store, scroll, ListData { texts: texts }, 0, true)
+  const list_id = store.nodes[store.nodes.length() - 1].id
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  const idle = ui_state_new()
+  const laid = layout_ui(
+    store, theme, shaping, cache, width, height, idle.scroll_offsets, ratios
+  )
+  shaping = laid.shaping
+  cache = laid.cache
+  const on_first = hover_state(idle, list_id, 0)
+  const on_second = hover_state(idle, list_id, 1)
+  const first_signature = frame_signature(on_first, width, height)
+  const second_signature = frame_signature(on_second, width, height)
+  if frame_signature_hover_only(first_signature, second_signature) == false then
+    return -1
+  end
+  const damage = paint_hover_damage(
+    theme, store, laid.layout, on_second, first_signature, second_signature
+  )
+  if damage.length() == 0 || damage.length() > 16 then
+    return -2
+  end
+  const full = paint_tree_frame(theme, store, laid.layout, on_second)
+  if full.length() < 40 then
+    return -3
+  end
+  const begun = glfw_gl_context_begin(width, height)
+  if begun != 0 then
+    return begun
+  end
+  glfw_gl_swap_interval(0)
+  let mut resources = submit_create()
+  if resources.error_code != 0 then
+    glfw_gl_context_end()
+    return resources.error_code
+  end
+  const overlay = paint_overlay_frame(theme, store, laid.layout, on_second)
+  const warmed = submit_painted_layers(
+    resources, shaping, theme, full, overlay, width, height
+  )
+  if warmed.error_code != 0 then
+    submit_destroy(warmed.resources)
+    glfw_gl_context_end()
+    return warmed.error_code
+  end
+  resources = warmed.resources
+  shaping = warmed.shaping
+  glfw_gl_context_swap_poll()
+  let mut sample = 0
+  let mut full_min_us = 1000000000
+  const full_started = glfw_gl_get_time()
+  while sample < samples do
+    const sample_started = glfw_gl_get_time()
+    const tree = paint_tree_frame(theme, store, laid.layout, on_second)
+    const layer = paint_overlay_frame(theme, store, laid.layout, on_second)
+    const painted = submit_painted_layers(
+      resources, shaping, theme, tree, layer, width, height
+    )
+    resources = painted.resources
+    shaping = painted.shaping
+    glfw_gl_context_swap_poll()
+    const sample_us = elapsed_us(sample_started, glfw_gl_get_time())
+    if sample_us < full_min_us then
+      full_min_us = sample_us
+    end
+    sample = sample + 1
+  end
+  const full_us = average_us(full_started, glfw_gl_get_time())
+  sample = 0
+  let mut damage_min_us = 1000000000
+  const damage_started = glfw_gl_get_time()
+  while sample < samples do
+    const sample_started = glfw_gl_get_time()
+    const painted = submit_ui_frame(
+      resources,
+      shaping,
+      theme,
+      store,
+      laid.layout,
+      on_second,
+      first_signature,
+      second_signature,
+      width,
+      height
+    )
+    resources = painted.resources
+    shaping = painted.shaping
+    glfw_gl_context_swap_poll()
+    const sample_us = elapsed_us(sample_started, glfw_gl_get_time())
+    if sample_us < damage_min_us then
+      damage_min_us = sample_us
+    end
+    sample = sample + 1
+  end
+  const damage_us = average_us(damage_started, glfw_gl_get_time())
+  submit_destroy(resources)
+  glfw_gl_context_end()
+  println(
+    "hover_full_us=" + full_us.to_string() + " hover_full_min_us=" + full_min_us.to_string() + " hover_damage_us=" + damage_us.to_string() + " hover_damage_min_us=" + damage_min_us.to_string() + " budget_us=1000 samples=" + samples.to_string()
+  )
+  if damage_min_us <= 0 then
+    return -4
+  end
+  if damage_min_us * 3 >= full_min_us then
+    return -5
+  end
+  if damage_min_us > 1000 then
+    return -6
+  end
+  0
+end

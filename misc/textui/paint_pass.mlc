@@ -1,5 +1,5 @@
 import { Theme, theme_content_inset, ColorRgba } from './theme'
-import { rect_new } from './geometry'
+import { rect_inset, rect_new } from './geometry'
 import {
   WidgetStore,
   WidgetId,
@@ -77,7 +77,7 @@ fn button_fill_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba
   theme.button_background
 end
 
-fn paint_button(
+export fn paint_button(
   theme: Theme,
   layout: LayoutResult,
   state: UiState,
@@ -87,15 +87,16 @@ fn paint_button(
 ) -> [DrawOp] = do
   const rect = layout.rects[node_index]
   const inset = theme_content_inset(theme)
+  const border = 1
   let mut updated = operations
   updated.push(OpFillRect(FillRectOp {
-    rect: rect,
+    rect: rect_inset(rect, border),
     color: button_fill_color(theme, state, node_index)
   }))
   updated.push(OpStrokeRect(StrokeRectOp {
     rect: rect,
     color: theme.button_stroke,
-    line_width: 1
+    line_width: border
   }))
   updated.push(OpText(TextOp {
     origin_x: rect.x + inset,
@@ -187,7 +188,7 @@ fn paint_node(
   return current_operations
 end
 
-export fn paint_ui_frame(
+export fn paint_tree_frame(
   theme: Theme,
   store: WidgetStore,
   layout: LayoutResult,
@@ -202,8 +203,79 @@ export fn paint_ui_frame(
     rect: root_rect,
     color: theme.background
   }))
-  const painted = paint_node(theme, store, layout, state, store.root.index, operations)
-  return paint_pick_overlay(theme, store, layout, state, painted)
+  return paint_node(theme, store, layout, state, store.root.index, operations)
+end
+
+export fn paint_overlay_frame(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState
+) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  return paint_pick_overlay(
+    theme,
+    store,
+    layout,
+    state,
+    paint_overlay_layer(theme, store, layout, state, operations)
+  )
+end
+
+export fn paint_ui_frame(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState
+) -> [DrawOp] = do
+  let mut operations = paint_tree_frame(theme, store, layout, state)
+  const overlay = paint_overlay_frame(theme, store, layout, state)
+  let mut index = 0
+  while index < overlay.length() do
+    operations.push(overlay[index])
+    index = index + 1
+  end
+  return operations
+end
+
+fn paint_overlay_layer(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if widget_id_is_none(store.overlay) then
+    return operations
+  end
+  if store.nodes[store.overlay.index].visible == false then
+    return operations
+  end
+  const layer_rect = layout.rects[store.overlay.index]
+  let mut next = operations
+  if store.placed == false then
+    next.push(OpFillRect(FillRectOp { rect: layer_rect, color: theme.overlay_scrim }))
+  end
+  const children = store.nodes[store.overlay.index].children
+  let mut card_rect = rect_new(0, 0, 0, 0)
+  let mut has_card = false
+  if children.length() > 0 then
+    card_rect = layout.rects[children[0].index]
+    has_card = true
+    next.push(OpFillRect(FillRectOp {
+      rect: rect_inset(card_rect, 1),
+      color: theme.overlay_background
+    }))
+  end
+  next = paint_node(theme, store, layout, state, store.overlay.index, next)
+  if has_card then
+    next.push(OpStrokeRect(StrokeRectOp {
+      rect: card_rect,
+      color: theme.overlay_stroke,
+      line_width: 1
+    }))
+  end
+  return next
 end
 
 export fn paint_selected_frame(

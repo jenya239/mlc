@@ -27,7 +27,9 @@ export type FrameSignature = {
   field_caret: i32,
   field_scroll_x: i32,
   field_revision: i32,
-  listing_revision: i32
+  listing_revision: i32,
+  overlay_open: bool,
+  overlay_revision: i32
 }
 
 fn copy_integers(values: [i32]) -> [i32] = do
@@ -94,11 +96,16 @@ export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: 
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 end
 
 fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if previous.overlay_revision != next.overlay_revision then
+    return true
+  end
   if previous.field_revision != next.field_revision then
     return true
   end
@@ -118,6 +125,9 @@ fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
 end
 
 fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if previous.overlay_open != next.overlay_open then
+    return true
+  end
   if previous.hover_index != next.hover_index then
     return true
   end
@@ -158,6 +168,55 @@ fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
     return true
   end
   previous.field_scroll_x != next.field_scroll_x
+end
+
+export fn frame_signature_hover_only(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if layout_differs(previous, next) then
+    return false
+  end
+  if previous.overlay_open != next.overlay_open then
+    return false
+  end
+  if previous.selection_owner != next.selection_owner then
+    return false
+  end
+  if previous.selection_anchor != next.selection_anchor then
+    return false
+  end
+  if previous.selection_focus != next.selection_focus then
+    return false
+  end
+  if previous.pick_enabled != next.pick_enabled then
+    return false
+  end
+  if previous.inspected_index != next.inspected_index then
+    return false
+  end
+  if previous.grab_code != next.grab_code then
+    return false
+  end
+  if previous.pointer_code != next.pointer_code then
+    return false
+  end
+  if previous.pointer_owner != next.pointer_owner then
+    return false
+  end
+  if previous.focus_index != next.focus_index then
+    return false
+  end
+  if previous.field_caret != next.field_caret then
+    return false
+  end
+  if previous.field_scroll_x != next.field_scroll_x then
+    return false
+  end
+  if previous.hover_index != next.hover_index then
+    return true
+  end
+  if previous.list_hover_row != next.list_hover_row then
+    return true
+  end
+  integers_equal(previous.list_selected, next.list_selected) == false
 end
 
 export fn frame_request(previous: FrameSignature, next: FrameSignature) -> FrameRequest = do

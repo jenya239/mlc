@@ -8,6 +8,7 @@ import { update_pointer } from './update_pointer'
 import { update_copy } from './update_copy'
 import { update_wheel } from './update_scroll'
 import { update_field_keys } from './update_field_keys'
+import { menu_follow_hover, menu_keys } from './menu'
 
 export type UiUpdateResult = {
   state: UiState,
@@ -22,7 +23,29 @@ export fn ui_update(
   state: UiState,
   input: UiInput
 ) -> UiUpdateResult = do
+  const previous_hover = state.hover
+  const previous_row = state.list_hover_row
   const after_pointer = update_pointer(store, layout, theme, state, input)
+  if state.overlay_open && store.placed then
+    const tracked = menu_follow_hover(
+      store, after_pointer.state, previous_hover, previous_row
+    )
+    const keyed = menu_keys(store, tracked, input)
+    let mut events = after_pointer.events
+    let mut index = 0
+    while index < keyed.events.length() do
+      events.push(keyed.events[index])
+      index = index + 1
+    end
+    return UiUpdateResult { state: keyed.state, events: events, store: store }
+  end
+  if state.overlay_open then
+    return UiUpdateResult {
+      state: after_pointer.state,
+      events: after_pointer.events,
+      store: store
+    }
+  end
   const after_wheel = update_wheel(store, layout, theme, after_pointer.state, input)
   const keyed = update_field_keys(store, layout, theme, after_wheel, input)
   let mut events = after_pointer.events

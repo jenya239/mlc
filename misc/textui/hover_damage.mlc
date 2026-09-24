@@ -1,0 +1,337 @@
+import { Rect, rect_is_empty, rect_new } from './geometry'
+import { ColorRgba, Theme } from './theme'
+import {
+  WidgetKind,
+  WidgetStore,
+  kind_is_list_view,
+  kind_is_scroll_view,
+  widget_id_is_none
+} from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { FrameSignature, frame_signature_hover_only } from './frame_request'
+import { UiState } from './ui_state'
+import { list_row_height, list_row_inset, list_selected_at } from './widget_list'
+import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
+import { menu_list_id } from './menu'
+import { kind_is_clickable } from './user_select'
+import { paint_button, paint_overlay_frame, paint_tree_frame } from './paint_pass'
+import { TextShapingState } from '../gui/text_shaping'
+import { SubmitFrameResult, SubmitResources, submit_frame } from './submit'
+import { submit_painted_layers } from './submit_layers'
+
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+
+fn hover_is_patchable(store: WidgetStore, index: i32) -> bool = do
+  if index < 0 then
+    return true
+  end
+  if index >= store.nodes.length() then
+    return false
+  end
+  if kind_is_clickable(store.nodes[index].kind) then
+    return true
+  end
+  kind_is_list_view(store.nodes[index].kind)
+end
+
+fn node_is_shown(store: WidgetStore, index: i32) -> bool = do
+  let mut current = index
+  while current >= 0 && current < store.nodes.length() do
+    if store.nodes[current].visible == false then
+      return false
+    end
+    const parent = store.nodes[current].parent
+    if widget_id_is_none(parent) then
+      return true
+    end
+    current = parent.index
+  end
+  return false
+end
+
+fn append_button(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  operations: [DrawOp],
+  index: i32
+) -> [DrawOp] = do
+  if index < 0 || index >= store.nodes.length() then
+    return operations
+  end
+  if node_is_shown(store, index) == false then
+    return operations
+  end
+  if kind_is_clickable(store.nodes[index].kind) == false then
+    return operations
+  end
+  paint_button(
+    theme, layout, state, index, button_text(store.nodes[index].kind), operations
+  )
+end
+
+fn push_row(rows: [i32], row: i32, row_count: i32) -> [i32] = do
+  if row < 0 || row >= row_count then
+    return rows
+  end
+  let mut index = 0
+  while index < rows.length() do
+    if rows[index] == row then
+      return rows
+    end
+    index = index + 1
+  end
+  let mut next = rows
+  next.push(row)
+  return next
+end
+
+fn list_rest_color(theme: Theme, store: WidgetStore, list_index: i32) -> ColorRgba = do
+  const menu_list = menu_list_id(store)
+  if widget_id_is_none(menu_list) == false && menu_list.index == list_index then
+    return theme.overlay_background
+  end
+  theme.background
+end
+
+fn row_right_limit(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  list_index: i32
+) -> i32 = do
+  const parent = store.nodes[list_index].parent
+  if widget_id_is_none(parent) then
+    return 0 - 1
+  end
+  if parent.index < 0 || parent.index >= store.nodes.length() then
+    return 0 - 1
+  end
+  if kind_is_scroll_view(store.nodes[parent.index].kind) == false then
+    return 0 - 1
+  end
+  const viewport = layout.rects[parent.index]
+  const content_height = scroll_content_height(store, layout, parent)
+  if scroll_content_overflows(content_height, viewport.height) == false then
+    return 0 - 1
+  end
+  viewport.x + viewport.width - theme.scrollbar_width
+end
+
+fn clip_to_limit(clip: Rect, limit: i32) -> Rect = do
+  if limit < 0 then
+    return clip
+  end
+  let mut right = clip.x + clip.width
+  if right > limit then
+    right = limit
+  end
+  let mut width = right - clip.x
+  if width < 0 then
+    width = 0
+  end
+  return rect_new(clip.x, clip.y, width, clip.height)
+end
+
+fn damage_row_rect(
+  list_rect: Rect,
+  row: i32,
+  row_count: i32,
+  row_height: i32,
+  menu: bool,
+  limit: i32
+) -> Rect = do
+  let mut x = list_rect.x
+  let mut y = list_rect.y + row * row_height
+  let mut width = list_rect.width
+  let mut height = row_height
+  if menu then
+    x = x + 1
+    width = width - 2
+    if row == 0 then
+      y = y + 1
+      height = height - 1
+    end
+    if row == row_count - 1 then
+      height = height - 1
+    end
+  end
+  if limit >= 0 && x + width > limit then
+    width = limit - x
+  end
+  if width < 0 then
+    width = 0
+  end
+  if height < 0 then
+    height = 0
+  end
+  return rect_new(x, y, width, height)
+end
+
+fn row_fill_color(
+  theme: Theme,
+  rest: ColorRgba,
+  row: i32,
+  hover_row: i32,
+  selected_row: i32
+) -> ColorRgba = do
+  if row == selected_row then
+    return theme.list_selected
+  end
+  if row == hover_row then
+    return theme.list_hover
+  end
+  rest
+end
+
+fn paint_list_change(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  presented: FrameSignature,
+  next: FrameSignature,
+  operations: [DrawOp],
+  list_index: i32
+) -> [DrawOp] = do
+  const texts = list_texts(store.nodes[list_index].kind)
+  const row_count = texts.length()
+  if row_count <= 0 then
+    return operations
+  end
+  const clip = layout.clips[list_index]
+  if rect_is_empty(clip) then
+    return operations
+  end
+  let mut old_hover = 0 - 1
+  if presented.hover_index == list_index then
+    old_hover = presented.list_hover_row
+  end
+  let mut new_hover = 0 - 1
+  if next.hover_index == list_index then
+    new_hover = next.list_hover_row
+  end
+  const old_selected = list_selected_at(presented.list_selected, list_index)
+  const new_selected = list_selected_at(next.list_selected, list_index)
+  if old_hover == new_hover && old_selected == new_selected then
+    return operations
+  end
+  let mut rows: [i32] = []
+  rows = push_row(rows, old_hover, row_count)
+  rows = push_row(rows, new_hover, row_count)
+  rows = push_row(rows, old_selected, row_count)
+  rows = push_row(rows, new_selected, row_count)
+  if rows.length() == 0 then
+    return operations
+  end
+  const list_rect = layout.rects[list_index]
+  const row_height = list_row_height(theme)
+  const menu = menu_list_id(store).index == list_index
+  const rest = list_rest_color(theme, store, list_index)
+  const limit = row_right_limit(theme, store, layout, list_index)
+  let mut patched = operations
+  patched.push(OpPushClip(clip_to_limit(clip, limit)))
+  let mut index = 0
+  while index < rows.length() do
+    const row = rows[index]
+    patched.push(OpFillRect(FillRectOp {
+      rect: damage_row_rect(list_rect, row, row_count, row_height, menu, limit),
+      color: row_fill_color(theme, rest, row, new_hover, new_selected)
+    }))
+    index = index + 1
+  end
+  index = 0
+  while index < rows.length() do
+    const row = rows[index]
+    patched.push(OpText(TextOp {
+      origin_x: list_rect.x + theme.padding,
+      origin_y: list_rect.y + row * row_height + list_row_inset(theme),
+      color: theme.foreground,
+      text: texts[row]
+    }))
+    index = index + 1
+  end
+  patched.push(OpPopClip)
+  return patched
+end
+
+export fn paint_hover_damage(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  presented: FrameSignature,
+  next: FrameSignature
+) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  if hover_is_patchable(store, presented.hover_index) == false then
+    return operations
+  end
+  if hover_is_patchable(store, next.hover_index) == false then
+    return operations
+  end
+  if presented.hover_index != next.hover_index then
+    operations = append_button(theme, store, layout, state, operations, presented.hover_index)
+    operations = append_button(theme, store, layout, state, operations, next.hover_index)
+  end
+  let mut index = 0
+  while index < store.nodes.length() do
+    if node_is_shown(store, index) && kind_is_list_view(store.nodes[index].kind) then
+      operations = paint_list_change(
+        theme, store, layout, presented, next, operations, index
+      )
+    end
+    index = index + 1
+  end
+  return operations
+end
+
+export fn submit_ui_frame(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  presented: FrameSignature,
+  next: FrameSignature,
+  window_width: i32,
+  window_height: i32
+) -> SubmitFrameResult = do
+  if frame_signature_hover_only(presented, next) then
+    const damage = paint_hover_damage(theme, store, layout, state, presented, next)
+    if damage.length() > 0 then
+      return submit_frame(
+        resources, shaping, theme, damage, window_width, window_height, false
+      )
+    end
+  end
+  return submit_painted_layers(
+    resources,
+    shaping,
+    theme,
+    paint_tree_frame(theme, store, layout, state),
+    paint_overlay_frame(theme, store, layout, state),
+    window_width,
+    window_height
+  )
+end

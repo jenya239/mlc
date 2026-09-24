@@ -360,8 +360,8 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     return -2;
   }
   glfwMakeContextCurrent(window);
-  // Visible interactive windows: vsync caps uncapped paint (SwapInterval 0)
-  // which burns a core on hover/pointer-dirty paths. Headless/automated stays 0.
+  // Default vsync. textui overrides to 0: a frame is painted only when the
+  // signature changes, so an uncapped swap does not spin on a still pointer.
   if (env_flag_enabled("MLC_GLFW_VISIBLE")) {
     glfwSwapInterval(1);
   } else {
@@ -392,6 +392,13 @@ int32_t glfw_gl_context_begin(int32_t width, int32_t height) {
     glfwShowWindow(window);
   }
   return 0;
+}
+
+void glfw_gl_swap_interval(int32_t interval) {
+  if (context_window() == nullptr) {
+    return;
+  }
+  glfwSwapInterval(interval);
 }
 
 int32_t glfw_gl_context_should_close() {
@@ -910,6 +917,7 @@ void glfw_gl_drop_path_test_push(String path) {
 #else
 
 int32_t glfw_gl_context_begin(int32_t, int32_t) { return -100; }
+void glfw_gl_swap_interval(int32_t) {}
 int32_t glfw_gl_context_should_close() { return 1; }
 void glfw_gl_context_swap_poll() {}
 void glfw_gl_context_wait_events_timeout(double) {}

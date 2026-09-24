@@ -1,0 +1,315 @@
+import { rect_new } from './geometry'
+import { label_preferred_size } from './widget_label'
+import { list_content_height } from './widget_list'
+import { text_layout_build, wrap_width_none } from './text_layout'
+import { Theme } from './theme'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  LabelData,
+  OverflowHidden,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_set_visible,
+  widget_store_with_about,
+  widget_store_with_overlay,
+  widget_store_with_place
+} from './store'
+import { UiEvent } from './ui_event'
+import { UiState } from './ui_state'
+import { LayoutWork, layout_node, measure_node, work_with_rect } from './layout_box'
+import { visible_children } from './layout_metrics'
+
+export type OverlayView = {
+  store: WidgetStore,
+  state: UiState
+}
+
+fn view_of(store: WidgetStore, state: UiState) -> OverlayView =
+  OverlayView { store: store, state: state }
+
+export fn ui_state_with_overlay_open(state: UiState, overlay_open: bool) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios,
+    focus: state.focus,
+    field_caret: state.field_caret,
+    field_scroll_x: state.field_scroll_x,
+    field_revision: state.field_revision,
+    listing_revision: state.listing_revision,
+    overlay_open: overlay_open,
+    overlay_revision: state.overlay_revision
+  }
+
+export fn ui_state_with_overlay_revision(state: UiState, overlay_revision: i32) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: state.list_selected,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios,
+    focus: state.focus,
+    field_caret: state.field_caret,
+    field_scroll_x: state.field_scroll_x,
+    field_revision: state.field_revision,
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: overlay_revision
+  }
+
+fn layer_box() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn card_box() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 16, gap: 10 }
+
+export fn attach_about_card(store: WidgetStore) -> WidgetStore = do
+  let mut next = widget_store_add_box(
+    store, widget_id_none(), layer_box(), OverflowHidden, 0, false
+  )
+  const layer = next.nodes[next.nodes.length() - 1].id
+  next = widget_store_with_overlay(next, layer)
+  next = widget_store_with_about(next, layer)
+  next = widget_store_add_box(next, layer, card_box(), OverflowVisible, 0, true)
+  const card = next.nodes[next.nodes.length() - 1].id
+  next = widget_store_add_label(
+    next, card, LabelData { text: "textui" }, OverflowVisible, 0, true
+  )
+  return widget_store_add_button(
+    next, card, ButtonData { text: "Close" }, OverflowVisible, 0, true
+  )
+end
+
+type PlacedSize = {
+  work: LayoutWork,
+  width: i32,
+  height: i32
+}
+
+fn list_texts_of(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+
+fn placed_list_size(work: LayoutWork, theme: Theme, texts: [string]) -> PlacedSize = do
+  let mut current = work
+  let mut width = 0
+  let mut index = 0
+  while index < texts.length() do
+    const built = text_layout_build(
+      current.shaping, current.cache, theme, texts[index], wrap_width_none()
+    )
+    const preferred = label_preferred_size(theme, built.layout)
+    current = LayoutWork {
+      shaping: built.shaping,
+      cache: built.cache,
+      rects: current.rects,
+      text_layouts: current.text_layouts,
+      scroll_offsets: current.scroll_offsets,
+      splitter_ratios: current.splitter_ratios
+    }
+    if preferred.width > width then
+      width = preferred.width
+    end
+    index = index + 1
+  end
+  return PlacedSize {
+    work: current,
+    width: width,
+    height: list_content_height(theme, texts.length())
+  }
+end
+
+fn clamp_origin(origin: i32, size: i32, limit: i32) -> i32 = do
+  let mut next = origin
+  if next + size > limit then
+    next = limit - size
+  end
+  if next < 0 then
+    next = 0
+  end
+  return next
+end
+
+fn layout_placed_child(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  child: WidgetId,
+  viewport_width: i32,
+  viewport_height: i32
+) -> LayoutWork = do
+  const texts = list_texts_of(store.nodes[child.index].kind)
+  const sized = placed_list_size(work, theme, texts)
+  let mut width = sized.width
+  let mut height = sized.height
+  if width > viewport_width then
+    width = viewport_width
+  end
+  if height > viewport_height then
+    height = viewport_height
+  end
+  let mut origin_y = store.place_y
+  if origin_y + height > viewport_height then
+    origin_y = store.place_y - height
+  end
+  return layout_node(
+    sized.work,
+    store,
+    theme,
+    child,
+    clamp_origin(store.place_x, width, viewport_width),
+    clamp_origin(origin_y, height, viewport_height),
+    width,
+    height
+  )
+end
+
+export fn layout_overlay_layer(
+  work: LayoutWork,
+  store: WidgetStore,
+  theme: Theme,
+  viewport_width: i32,
+  viewport_height: i32
+) -> LayoutWork = do
+  if widget_id_is_none(store.overlay) then
+    return work
+  end
+  let mut current = work_with_rect(
+    work,
+    store.overlay.index,
+    rect_new(0, 0, viewport_width, viewport_height)
+  )
+  const children = visible_children(store, store.overlay)
+  if children.length() == 0 then
+    return current
+  end
+  const card = children[0]
+  if store.placed then
+    return layout_placed_child(current, store, theme, card, viewport_width, viewport_height)
+  end
+  const measured = measure_node(current, store, theme, card)
+  current = measured.work
+  let mut origin_x = (viewport_width - measured.size.width) / 2
+  let mut origin_y = (viewport_height - measured.size.height) / 2
+  if origin_x < 0 then
+    origin_x = 0
+  end
+  if origin_y < 0 then
+    origin_y = 0
+  end
+  return layout_node(
+    current,
+    store,
+    theme,
+    card,
+    origin_x,
+    origin_y,
+    measured.size.width,
+    measured.size.height
+  )
+end
+
+export fn overlay_present(store: WidgetStore, state: UiState) -> OverlayView = do
+  if widget_id_is_none(store.overlay) && widget_id_is_none(store.about) then
+    return view_of(store, state)
+  end
+  let mut next = store
+  if widget_id_is_none(store.about) == false then
+    next = widget_store_with_overlay(next, store.about)
+    if widget_id_is_none(store.menu) == false then
+      next = widget_store_set_visible(next, store.menu, false)
+    end
+  end
+  next = widget_store_with_place(next, 0, 0, false)
+  next = widget_store_set_visible(next, next.overlay, true)
+  return view_of(
+    next,
+    ui_state_with_overlay_revision(
+      ui_state_with_overlay_open(state, true),
+      state.overlay_revision + 1
+    )
+  )
+end
+
+export fn overlay_dismiss(store: WidgetStore, state: UiState) -> OverlayView = do
+  if widget_id_is_none(store.overlay) then
+    return view_of(store, state)
+  end
+  return view_of(
+    widget_store_with_place(
+      widget_store_set_visible(store, store.overlay, false),
+      0,
+      0,
+      false
+    ),
+    ui_state_with_overlay_open(state, false)
+  )
+end
+
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn button_text_at(store: WidgetStore, id: WidgetId) -> string = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return ""
+  end
+  return button_text(store.nodes[id.index].kind)
+end
+
+export fn overlay_apply(store: WidgetStore, state: UiState, events: [UiEvent]) -> OverlayView = do
+  let mut view = view_of(store, state)
+  let mut index = 0
+  while index < events.length() do
+    const event = events[index]
+    if event.activated == false && button_text_at(view.store, event.widget) == "About" then
+      view = overlay_present(view.store, view.state)
+    end
+    if event.activated == false && widget_id_equals(event.widget, view.store.overlay) then
+      view = overlay_dismiss(view.store, view.state)
+    end
+    if event.activated == false && button_text_at(view.store, event.widget) == "Close" then
+      view = overlay_dismiss(view.store, view.state)
+    end
+    index = index + 1
+  end
+  return view
+end

@@ -1,0 +1,307 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { rect_new } from '../geometry'
+import { layout_ui } from '../layout_pass'
+import { layout_result_from_rects } from '../layout_result'
+import { paint_ui_frame } from '../paint_pass'
+import { hit_test } from '../hit'
+import { DrawOp } from '../draw_op'
+import { UiInput } from '../ui_input'
+import { ui_state_new } from '../ui_state'
+import { ui_update } from '../ui_update'
+import { list_row_height, list_selected_at } from '../widget_list'
+import { frame_request, frame_request_layouts, frame_signature } from '../frame_request'
+import { attach_file_menu, menu_apply, menu_list_id, menu_open } from '../menu'
+import { overlay_apply } from '../overlay'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn keyed(binding_key: string, enter_pressed: bool) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: binding_key,
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: enter_pressed,
+    paste_text: ""
+  }
+
+fn pointer_key(x: i32, y: i32, binding_key: string) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: binding_key,
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn pointer_at(x: i32, y: i32, pressed: bool, down: bool, released: bool) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: pressed,
+    left_down: down,
+    left_released: released,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn selected_mark(selected: bool) -> i32 = do
+  let mut mark = 0
+  if selected then
+    mark = 1
+  end
+  mark
+end
+
+fn stroke_mark(stroke: bool) -> i32 = do
+  let mut mark = 0
+  if stroke then
+    mark = 2
+  end
+  mark
+end
+
+fn chrome_mark(theme: Theme, operation: DrawOp) -> i32 =
+  match operation
+    | OpFillRect(data) => selected_mark(data.color.red == theme.list_selected.red)
+    | OpStrokeRect(data) => stroke_mark(data.color.red == theme.overlay_stroke.red)
+    | OpPushClip(_) => 0
+    | OpPopClip => 0
+    | OpText(_) => 0
+
+fn border_after_row(theme: Theme, operations: [DrawOp]) -> bool = do
+  let mut fill_at = 0 - 1
+  let mut stroke_at = 0 - 1
+  let mut index = 0
+  while index < operations.length() do
+    const mark = chrome_mark(theme, operations[index])
+    if mark == 1 then
+      fill_at = index
+    end
+    if mark == 2 then
+      stroke_at = index
+    end
+    index = index + 1
+  end
+  fill_at >= 0 && stroke_at > fill_at
+end
+
+fn scrim_count(theme: Theme, operations: [DrawOp]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.color.alpha == theme.overlay_scrim.alpha
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+      | OpText(_) => false
+    if found then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn build_page() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_label(
+    store, store.root, LabelData { text: "under" }, OverflowVisible, 0, true
+  )
+  attach_file_menu(store)
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut ratios: [i32] = []
+  const idle = ui_state_new()
+  let mut state = idle
+  const store = build_page()
+  const opened = menu_open(store, state, 10, 10)
+  state = opened.state
+  let mut laid = layout_ui(
+    opened.store, theme, shaping, cache, 240, 160, state.scroll_offsets, ratios
+  )
+  shaping = laid.shaping
+  cache = laid.cache
+  const list_id = menu_list_id(opened.store)
+  const menu_rect = laid.layout.rects[list_id.index]
+  if menu_rect.x != 10 || menu_rect.y != 10 then
+    return -1
+  end
+  if menu_rect.height != list_row_height(theme) * 3 then
+    return -2
+  end
+  const painted = paint_ui_frame(theme, opened.store, laid.layout, state)
+  if scrim_count(theme, painted) != 0 then
+    return -3
+  end
+  if border_after_row(theme, painted) == false then
+    return -17
+  end
+  const moved = ui_update(opened.store, laid.layout, theme, state, keyed("down", false))
+  if list_selected_at(moved.state.list_selected, list_id.index) != 1 then
+    return -13
+  end
+  const ended = ui_update(opened.store, laid.layout, theme, moved.state, keyed("end", false))
+  if list_selected_at(ended.state.list_selected, list_id.index) != 2 then
+    return -14
+  end
+  state = ui_update(opened.store, laid.layout, theme, ended.state, keyed("home", false)).state
+  if list_selected_at(state.list_selected, list_id.index) != 0 then
+    return -15
+  end
+  const entered = ui_update(opened.store, laid.layout, theme, state, keyed("", true))
+  if entered.events.length() != 1 || entered.events[0].activated == false then
+    return -16
+  end
+  const row_hit = hit_test(opened.store, laid.layout, theme, menu_rect.x + 2, menu_rect.y + 2)
+  if row_hit.index != list_id.index then
+    return -4
+  end
+  const row_y = menu_rect.y + list_row_height(theme) + 1
+  const hovered = ui_update(
+    opened.store,
+    laid.layout,
+    theme,
+    state,
+    pointer_at(menu_rect.x + 2, row_y, false, false, false)
+  )
+  if list_selected_at(hovered.state.list_selected, list_id.index) != 1 then
+    return -18
+  end
+  const stepped = ui_update(
+    opened.store,
+    laid.layout,
+    theme,
+    hovered.state,
+    pointer_key(menu_rect.x + 2, row_y, "down")
+  )
+  if list_selected_at(stepped.state.list_selected, list_id.index) != 2 then
+    return -19
+  end
+  const rested = ui_update(
+    opened.store,
+    laid.layout,
+    theme,
+    stepped.state,
+    pointer_at(menu_rect.x + 2, row_y, false, false, false)
+  )
+  if list_selected_at(rested.state.list_selected, list_id.index) != 2 then
+    return -20
+  end
+  let mut bare_rects = laid.layout.rects
+  bare_rects.set(opened.store.overlay.index, rect_new(0, 0, 0, 0))
+  const bare_layer = layout_result_from_rects(opened.store, bare_rects)
+  const bare_hit = hit_test(opened.store, bare_layer, theme, menu_rect.x + 2, menu_rect.y + 2)
+  if bare_hit.index != list_id.index then
+    return -21
+  end
+
+  const pressed = ui_update(
+    opened.store,
+    laid.layout,
+    theme,
+    state,
+    pointer_at(menu_rect.x + 2, menu_rect.y + 2, true, true, false)
+  )
+  const released = ui_update(
+    pressed.store,
+    laid.layout,
+    theme,
+    pressed.state,
+    pointer_at(menu_rect.x + 2, menu_rect.y + 2, false, false, true)
+  )
+  if released.events.length() != 1 || released.events[0].activated == false then
+    return -5
+  end
+  if list_selected_at(released.state.list_selected, list_id.index) != 0 then
+    return -6
+  end
+  const closed = menu_apply(released.store, released.state, released.events)
+  if closed.state.overlay_open then
+    return -7
+  end
+
+  const again = menu_open(closed.store, closed.state, 220, 150)
+  laid = layout_ui(
+    again.store, theme, shaping, cache, 240, 160, again.state.scroll_offsets, ratios
+  )
+  const flipped = laid.layout.rects[menu_list_id(again.store).index]
+  if flipped.x + flipped.width > 240 || flipped.y + flipped.height > 160 then
+    return -8
+  end
+  if flipped.y >= 150 then
+    return -9
+  end
+  const outside_press = ui_update(
+    again.store, laid.layout, theme, again.state, pointer_at(1, 1, true, true, false)
+  )
+  const outside_release = ui_update(
+    outside_press.store,
+    laid.layout,
+    theme,
+    outside_press.state,
+    pointer_at(1, 1, false, false, true)
+  )
+  if outside_release.events.length() != 1 || outside_release.events[0].activated then
+    return -10
+  end
+  const dismissed = overlay_apply(outside_release.store, outside_release.state, outside_release.events)
+  if dismissed.state.overlay_open then
+    return -11
+  end
+  const before = frame_signature(idle, 240, 160)
+  const after = frame_signature(opened.state, 240, 160)
+  if frame_request_layouts(frame_request(before, after)) == false then
+    return -12
+  end
+  0
+end

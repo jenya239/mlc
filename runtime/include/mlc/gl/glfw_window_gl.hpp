@@ -11,6 +11,7 @@ namespace gl {
 // GL entry points live in glad_gl_abi / vendored glad.
 
 int32_t glfw_gl_context_begin(int32_t width, int32_t height);
+void glfw_gl_swap_interval(int32_t interval);
 int32_t glfw_gl_context_should_close();
 void glfw_gl_context_swap_poll();
 // TRACK_EDITOR_IDLE_BUSY_LOOP_92PCT_CPU STEP=2 — idle path (WaitEventsTimeout).

@@ -49,6 +49,21 @@ end
 export fn rect_is_empty(rect: Rect) -> bool =
   rect.width == 0 || rect.height == 0
 
+export fn rect_inset(rect: Rect, amount: i32) -> Rect = do
+  if amount <= 0 then
+    return rect
+  end
+  let mut width = rect.width - amount * 2
+  let mut height = rect.height - amount * 2
+  if width < 0 then
+    width = 0
+  end
+  if height < 0 then
+    height = 0
+  end
+  return rect_new(rect.x + amount, rect.y + amount, width, height)
+end
+
 export fn rect_intersect(first: Rect, second: Rect) -> Rect = do
   const left = maximum_i32(first.x, second.x)
   const top = maximum_i32(first.y, second.y)

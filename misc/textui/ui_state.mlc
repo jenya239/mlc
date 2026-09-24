@@ -84,7 +84,9 @@ export type UiState = {
   field_caret: i32,
   field_scroll_x: i32,
   field_revision: i32,
-  listing_revision: i32
+  listing_revision: i32,
+  overlay_open: bool,
+  overlay_revision: i32
 }
 
 export fn grab_is_none(grab: GrabKind) -> bool =
@@ -162,7 +164,9 @@ export fn ui_state_new() -> UiState = do
     field_caret: 0,
     field_scroll_x: 0,
     field_revision: 0,
-    listing_revision: 0
+    listing_revision: 0,
+    overlay_open: false,
+    overlay_revision: 0
   }
 end
 
@@ -192,7 +196,9 @@ export fn ui_state_with(
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) -> UiState =
@@ -213,7 +219,9 @@ export fn ui_state_with_scroll_offsets(state: UiState, scroll_offsets: [i32]) ->
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_pick(state: UiState, pick_enabled: bool, inspected: WidgetId) -> UiState =
@@ -234,7 +242,9 @@ export fn ui_state_with_pick(state: UiState, pick_enabled: bool, inspected: Widg
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_list_selected(state: UiState, list_selected: [i32]) -> UiState =
@@ -255,7 +265,9 @@ export fn ui_state_with_list_selected(state: UiState, list_selected: [i32]) -> U
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_list_hover_row(state: UiState, list_hover_row: i32) -> UiState =
@@ -276,7 +288,9 @@ export fn ui_state_with_list_hover_row(state: UiState, list_hover_row: i32) -> U
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_splitter_ratios(state: UiState, splitter_ratios: [i32]) -> UiState =
@@ -297,7 +311,9 @@ export fn ui_state_with_splitter_ratios(state: UiState, splitter_ratios: [i32]) 
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_field(
@@ -323,7 +339,9 @@ export fn ui_state_with_field(
     field_caret: field_caret,
     field_scroll_x: field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_field_revision(state: UiState, field_revision: i32) -> UiState =
@@ -344,7 +362,9 @@ export fn ui_state_with_field_revision(state: UiState, field_revision: i32) -> U
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: field_revision,
-    listing_revision: state.listing_revision
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }
 
 export fn ui_state_with_listing_revision(state: UiState, listing_revision: i32) -> UiState =
@@ -365,5 +385,7 @@ export fn ui_state_with_listing_revision(state: UiState, listing_revision: i32) 
     field_caret: state.field_caret,
     field_scroll_x: state.field_scroll_x,
     field_revision: state.field_revision,
-    listing_revision: listing_revision
+    listing_revision: listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
   }

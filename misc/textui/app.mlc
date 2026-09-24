@@ -1,6 +1,7 @@
 import { has } from 'Env'
 import {
   glfw_gl_context_begin,
+  glfw_gl_swap_interval,
   glfw_gl_context_should_close,
   glfw_gl_context_swap_poll,
   glfw_gl_context_end,
@@ -10,30 +11,13 @@ import {
   glfw_gl_window_y,
   glfw_gl_window_request_position,
   glfw_gl_key_escape_down,
+  glfw_gl_mouse_right_down,
   glfw_gl_clipboard_set
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { theme_default } from './theme'
-import {
-  BoxData,
-  ButtonData,
-  DirectionColumn,
-  DirectionRow,
-  field_data_new,
-  ListData,
-  OverflowVisible,
-  SplitterData,
-  WidgetId,
-  WidgetStore,
-  widget_id_none,
-  widget_id_is_none,
-  widget_store_add_box,
-  widget_store_add_button,
-  widget_store_add_list_view,
-  widget_store_add_scroll_view,
-  widget_store_add_splitter,
-  widget_store_add_text_field,
-  widget_store_empty
-} from './store'
+import { WidgetId, WidgetStore, widget_id_is_none } from './store'
+import { build_label_gallery } from './gallery_scene'
+import { stress_listing_set, stress_pane_width } from './stress_listing'
 import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
 import { layout_ui } from './layout_pass'
@@ -43,9 +27,9 @@ import {
   frame_request_layouts,
   frame_request_paints
 } from './frame_request'
-import { paint_ui_frame } from './paint_pass'
+import { submit_ui_frame } from './hover_damage'
 import { field_align_scroll } from './widget_field'
-import { submit_create, submit_destroy, submit_frame } from './submit'
+import { submit_create, submit_destroy } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
 import { list_selected_at } from './widget_list'
 import { ui_update } from './ui_update'
@@ -56,6 +40,8 @@ import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
 import { WindowPlacement, window_placement_load, window_placement_save } from './window_placement'
 import { follow_directory, open_directory } from './directory_browse'
+import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
+import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 
 fn application_reload_status() -> i32 = 75
 
@@ -71,9 +57,6 @@ fn remember_window() -> bool = do
     restored: true
   })
 end
-
-fn root_box_data() -> BoxData =
-  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
 
 fn input_clear_buttons(input: UiInput) -> UiInput =
   UiInput {
@@ -104,9 +87,6 @@ fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
 
-fn row_box_data() -> BoxData =
-  BoxData { direction: DirectionRow, padding: 0, gap: 10 }
-
 fn list_text_at(texts: [string], selected: i32) -> string = do
   if selected < 0 || selected >= texts.length() then
     return ""
@@ -124,61 +104,6 @@ fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId) -> st
     | KindSplitter(_) => ""
     | KindTextField(data) => data.text
 
-fn build_label_gallery() -> WidgetStore = do
-  let mut store = widget_store_empty()
-  store = widget_store_add_box(
-    store,
-    widget_id_none(),
-    root_box_data(),
-    OverflowVisible,
-    0,
-    true
-  )
-  store = widget_store_add_text_field(
-    store,
-    store.root,
-    field_data_new("/home/jenya/workspaces/current/mlc"),
-    0,
-    true
-  )
-  store = widget_store_add_splitter(
-    store,
-    store.root,
-    SplitterData { direction: DirectionRow, ratio_thousandths: 280 },
-    1,
-    true
-  )
-  const splitter = store.nodes[store.nodes.length() - 1].id
-  let mut directory_rows: [string] = []
-  let mut file_rows: [string] = []
-  store = widget_store_add_scroll_view(store, splitter, 0, true)
-  const directory_scroller = store.nodes[store.nodes.length() - 1].id
-  store = widget_store_add_list_view(
-    store, directory_scroller, ListData { texts: directory_rows }, 0, true
-  )
-  store = widget_store_add_scroll_view(store, splitter, 1, true)
-  const scroller = store.nodes[store.nodes.length() - 1].id
-  store = widget_store_add_list_view(
-    store, scroller, ListData { texts: file_rows }, 0, true
-  )
-  store = widget_store_add_box(
-    store, store.root, row_box_data(), OverflowVisible, 0, true
-  )
-  const row = store.nodes[store.nodes.length() - 1].id
-  store = widget_store_add_button(
-    store, row, ButtonData { text: "Copy" }, OverflowVisible, 0, true
-  )
-  store = widget_store_add_button(
-    store, row, ButtonData { text: "Ping" }, OverflowVisible, 0, true
-  )
-  store = widget_store_add_button(
-    store, row, ButtonData { text: "Reload" }, OverflowVisible, 0, true
-  )
-  widget_store_add_button(
-    store, row, ButtonData { text: "Pick" }, OverflowVisible, 0, true
-  )
-end
-
 fn main() -> i32 = do
   let mut open_width = 1280
   let mut open_height = 800
@@ -194,6 +119,7 @@ fn main() -> i32 = do
   if begin_status != 0 then
     return begin_status
   end
+  glfw_gl_swap_interval(0)
   let mut resources = submit_create()
   if resources.error_code != 0 then
     const error_code = resources.error_code
@@ -201,13 +127,12 @@ fn main() -> i32 = do
     glfw_gl_context_end()
     return error_code
   end
-
   const theme = theme_default()
-  let mut store = build_label_gallery()
+  let mut store = attach_file_menu(attach_about_card(build_label_gallery()))
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
-  println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload, Pick. Esc to quit")
+  println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload, Pick, Dense. Esc to quit")
 
   let mut max_frames = 0
   if has("MLC_TEXTUI_BENCH") then
@@ -218,6 +143,7 @@ fn main() -> i32 = do
   const opened = open_directory(store, state, "/home/jenya/workspaces/current/mlc")
   store = opened.store
   state = opened.state
+  let mut dense_enabled = false
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
   let mut reported_inspect = -1
@@ -236,17 +162,32 @@ fn main() -> i32 = do
   cache = laid_out.cache
   let mut presented = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
   let mut sample_after_present = true
+  let mut escape_was_down = false
+  let mut right_was_down = false
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input()
     end
     sample_after_present = false
-    if glfw_gl_key_escape_down() != 0 then
+    const escape_down = glfw_gl_key_escape_down() != 0
+    const escape_pressed = escape_down && escape_was_down == false
+    const overlay_was_open = state.overlay_open
+    if escape_pressed && overlay_was_open then
+      const closed = overlay_dismiss(store, state)
+      store = closed.store
+      state = closed.state
+    end
+    if escape_pressed && overlay_was_open == false then
       break
     end
+    escape_was_down = escape_down
     const polled = host_poll_input(buttons, host_now_ms())
     buttons = polled.buttons
     let mut input = polled.input
+    const menued = menu_host_step(store, laid_out.layout, theme, state, glfw_gl_mouse_right_down() != 0, right_was_down, input.mouse_x, input.mouse_y)
+    store = menued.store
+    state = menued.state
+    right_was_down = menued.right_down
     if input.left_pressed then
       const hit = hit_test(store, laid_out.layout, theme, input.mouse_x, input.mouse_y)
       if widget_id_is_none(hit) == false && button_caption(store, hit) == "Pick" then
@@ -262,6 +203,12 @@ fn main() -> i32 = do
     const updated = ui_update(store, laid_out.layout, theme, state, input)
     state = updated.state
     store = updated.store
+    const layered = overlay_apply(store, state, updated.events)
+    store = layered.store
+    state = layered.state
+    const chosen = menu_apply(store, state, updated.events)
+    store = chosen.store
+    state = chosen.state
     let mut activation_index = 0
     while activation_index < updated.events.length() do
       if updated.events[activation_index].activated then
@@ -273,9 +220,13 @@ fn main() -> i32 = do
       end
       activation_index = activation_index + 1
     end
+    const revision_before_browse = state.listing_revision
     const browsed = follow_directory(store, state, updated.events)
     store = browsed.store
     state = browsed.state
+    if state.listing_revision != revision_before_browse then
+      dense_enabled = false
+    end
     const early_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
     const request = frame_request(presented, early_signature)
     if frame_request_layouts(request) then
@@ -314,6 +265,19 @@ fn main() -> i32 = do
       if caption == "Reload" then
         reload_requested = true
       end
+      if caption == "Dense" then
+        const stressed = stress_listing_set(
+          store,
+          state,
+          theme,
+          stress_pane_width(laid_out.layout, store, 0),
+          stress_pane_width(laid_out.layout, store, 1),
+          dense_enabled == false
+        )
+        store = stressed.store
+        state = stressed.state
+        dense_enabled = stressed.enabled
+      end
       event_index = event_index + 1
     end
     if polled.input.copy_pressed && polled.input.control_down then
@@ -328,12 +292,15 @@ fn main() -> i32 = do
       paints = true
     end
     if paints then
-      const operations = paint_ui_frame(theme, store, laid_out.layout, state)
-      const submitted = submit_frame(
+      const submitted = submit_ui_frame(
         resources,
         shaping,
         theme,
-        operations,
+        store,
+        laid_out.layout,
+        state,
+        presented,
+        next_signature,
         glfw_gl_window_width(),
         glfw_gl_window_height()
       )

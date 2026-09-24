@@ -122,14 +122,21 @@ export type WidgetNode = {
 
 export type WidgetStore = {
   nodes: [WidgetNode],
-  root: WidgetId
+  root: WidgetId,
+  overlay: WidgetId,
+  about: WidgetId,
+  menu: WidgetId,
+  place_x: i32,
+  place_y: i32,
+  placed: bool
 }
 
-export fn widget_store_empty() -> WidgetStore =
-  WidgetStore {
-    nodes: [],
-    root: widget_id_none()
-  }
+export fn widget_store_empty() -> WidgetStore = do
+  let mut nodes: [WidgetNode] = []
+  return widget_store_make(
+    nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false
+  )
+end
 
 fn widget_node_with_kind(node: WidgetNode, kind: WidgetKind) -> WidgetNode =
   WidgetNode {
@@ -183,10 +190,10 @@ fn widget_store_append(
   if widget_id_is_none(store.root) then
     next_root = new_id
   end
-  WidgetStore {
-    nodes: next_nodes,
-    root: next_root
-  }
+  return widget_store_make(
+    next_nodes, next_root, store.overlay, store.about, store.menu,
+    store.place_x, store.place_y, store.placed
+  )
 end
 
 export fn widget_store_add_box(
@@ -269,7 +276,7 @@ export fn widget_store_set_list_texts(store: WidgetStore, id: WidgetId, texts: [
     | KindSplitter(data) => KindSplitter(data)
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
-  return WidgetStore { nodes: nodes, root: store.root }
+  return widget_store_keep(nodes, store)
 end
 
 export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
@@ -291,7 +298,7 @@ export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: st
     | KindSplitter(data) => KindSplitter(data)
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
-  return WidgetStore { nodes: nodes, root: store.root }
+  return widget_store_keep(nodes, store)
 end
 
 export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: FieldData) -> WidgetStore = do
@@ -309,5 +316,82 @@ export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: Fi
     | KindSplitter(splitter) => KindSplitter(splitter)
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
-  return WidgetStore { nodes: nodes, root: store.root }
+  return widget_store_keep(nodes, store)
+end
+
+fn widget_node_with_visible(node: WidgetNode, visible: bool) -> WidgetNode =
+  WidgetNode {
+    id: node.id,
+    parent: node.parent,
+    children: node.children,
+    kind: node.kind,
+    overflow: node.overflow,
+    grow: node.grow,
+    visible: visible
+  }
+
+fn widget_store_make(
+  nodes: [WidgetNode],
+  root: WidgetId,
+  overlay: WidgetId,
+  about: WidgetId,
+  menu: WidgetId,
+  place_x: i32,
+  place_y: i32,
+  placed: bool
+) -> WidgetStore =
+  WidgetStore {
+    nodes: nodes,
+    root: root,
+    overlay: overlay,
+    about: about,
+    menu: menu,
+    place_x: place_x,
+    place_y: place_y,
+    placed: placed
+  }
+
+fn widget_store_keep(nodes: [WidgetNode], store: WidgetStore) -> WidgetStore =
+  widget_store_make(
+    nodes,
+    store.root,
+    store.overlay,
+    store.about,
+    store.menu,
+    store.place_x,
+    store.place_y,
+    store.placed
+  )
+
+export fn widget_store_with_overlay(store: WidgetStore, overlay: WidgetId) -> WidgetStore =
+  widget_store_make(
+    store.nodes, store.root, overlay, store.about, store.menu,
+    store.place_x, store.place_y, store.placed
+  )
+
+export fn widget_store_with_about(store: WidgetStore, about: WidgetId) -> WidgetStore =
+  widget_store_make(
+    store.nodes, store.root, store.overlay, about, store.menu,
+    store.place_x, store.place_y, store.placed
+  )
+
+export fn widget_store_with_menu(store: WidgetStore, menu: WidgetId) -> WidgetStore =
+  widget_store_make(
+    store.nodes, store.root, store.overlay, store.about, menu,
+    store.place_x, store.place_y, store.placed
+  )
+
+export fn widget_store_with_place(store: WidgetStore, place_x: i32, place_y: i32, placed: bool) -> WidgetStore =
+  widget_store_make(
+    store.nodes, store.root, store.overlay, store.about, store.menu,
+    place_x, place_y, placed
+  )
+
+export fn widget_store_set_visible(store: WidgetStore, id: WidgetId, visible: bool) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_visible(nodes[id.index], visible))
+  return widget_store_keep(nodes, store)
 end

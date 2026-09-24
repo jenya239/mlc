@@ -5,6 +5,7 @@ import { handle_press } from './update_pointer_press'
 import { apply_pick_press } from './inspect'
 import { handle_text_drag } from './update_pointer_text'
 import { click_release_events } from './update_pointer_click'
+import { menu_release } from './menu'
 import { handle_scroll_drag } from './update_scroll'
 import { handle_list_drag, list_hover_row_at } from './update_list'
 import { handle_split_drag } from './update_split'
@@ -104,7 +105,13 @@ export fn update_pointer(
   if input.left_down then
     current = pointer_while_down(store, layout, theme, current, input)
   end
-  if input.left_released then
+  const menu_gesture = store.placed && current.overlay_open
+  if input.left_released && menu_gesture then
+    const released = menu_release(store, layout, theme, current, input)
+    events = released.events
+    current = release_pointer(released.state)
+  end
+  if input.left_released && menu_gesture == false then
     events = click_release_events(store, layout, theme, current, input)
     current = release_pointer(current)
   end

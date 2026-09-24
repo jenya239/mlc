@@ -49,7 +49,7 @@ fn work_with_text(work: LayoutWork, index: i32, layout: TextLayout) -> LayoutWor
   }
 end
 
-fn work_with_rect(work: LayoutWork, index: i32, rect: Rect) -> LayoutWork = do
+export fn work_with_rect(work: LayoutWork, index: i32, rect: Rect) -> LayoutWork = do
   let mut rects = work.rects
   rects.set(index, rect)
   LayoutWork {

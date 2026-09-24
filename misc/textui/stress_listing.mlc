@@ -1,0 +1,248 @@
+import { Theme } from './theme'
+import { LayoutResult } from './layout_result'
+import {
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  kind_is_list_view,
+  kind_is_scroll_view,
+  kind_is_text_field,
+  widget_id_is_none,
+  widget_id_none,
+  widget_store_set_list_texts
+} from './store'
+import {
+  UiState,
+  ui_state_with_list_selected,
+  ui_state_with_listing_revision,
+  ui_state_with_scroll_offsets
+} from './ui_state'
+import { list_selected_put } from './widget_list'
+import { scroll_offsets_put } from './widget_scroll'
+import { open_directory } from './directory_browse'
+
+export type StressListing = {
+  store: WidgetStore,
+  state: UiState,
+  enabled: bool
+}
+
+export fn stress_row_count() -> i32 = 4096
+
+export fn stress_file_size() -> string = "9223372036854775807"
+
+fn stress_alphabet() -> string =
+  "abcdefghijklmnopqrstuvwxyz0123456789"
+
+fn stress_filler() -> string = do
+  let mut filler = ""
+  let mut repeat = 0
+  while repeat < 48 do
+    filler = filler + stress_alphabet()
+    repeat = repeat + 1
+  end
+  return filler
+end
+
+fn clip_columns(text: string, columns: i32) -> string = do
+  let mut count = columns
+  if count < 1 then
+    count = 1
+  end
+  if text.byte_size() <= count then
+    return text
+  end
+  return text.byte_substring(0, count)
+end
+
+fn dense_name(filler: string, index: i32, columns: i32) -> string =
+  clip_columns(index.to_string() + "-" + filler, columns)
+
+fn dense_file_row(filler: string, index: i32, columns: i32) -> string = do
+  const size_text = stress_file_size()
+  let mut name_columns = columns - size_text.byte_size() - 1
+  if name_columns < 1 then
+    name_columns = 1
+  end
+  return dense_name(filler, index, name_columns) + " " + size_text
+end
+
+fn fill_rows(filler: string, columns: i32, files: bool) -> [string] = do
+  let mut rows: [string] = []
+  let mut index = 0
+  while index < stress_row_count() do
+    if files then
+      rows.push(dense_file_row(filler, index, columns))
+    end
+    if files == false then
+      rows.push(dense_name(filler, index, columns))
+    end
+    index = index + 1
+  end
+  return rows
+end
+
+export fn stress_columns_for_width(theme: Theme, width: i32) -> i32 = do
+  let mut step = theme.font_size_pixels * 3 / 5
+  if step < 1 then
+    step = 1
+  end
+  let mut usable = width - theme.padding * 2
+  if usable < step then
+    usable = step
+  end
+  return usable / step
+end
+
+fn nth_list(store: WidgetStore, ordinal: i32) -> WidgetId = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == ordinal then
+        return store.nodes[index].id
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn first_text_field(store: WidgetStore) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_text_field(store.nodes[index].kind) then
+      return store.nodes[index].id
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+export fn stress_pane_width(layout: LayoutResult, store: WidgetStore, ordinal: i32) -> i32 = do
+  const list_id = nth_list(store, ordinal)
+  if widget_id_is_none(list_id) then
+    return 2560
+  end
+  if list_id.index < 0 || list_id.index >= layout.rects.length() then
+    return 2560
+  end
+  const width = layout.rects[list_id.index].width
+  if width < 1 then
+    return 2560
+  end
+  return width
+end
+
+fn clear_selection(state: UiState, list_id: WidgetId) -> UiState = do
+  if widget_id_is_none(list_id) then
+    return state
+  end
+  return ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, list_id.index, 0 - 1)
+  )
+end
+
+fn clear_scroll(store: WidgetStore, state: UiState, list_id: WidgetId) -> UiState = do
+  if widget_id_is_none(list_id) then
+    return state
+  end
+  const parent = store.nodes[list_id.index].parent
+  if widget_id_is_none(parent) then
+    return state
+  end
+  if parent.index < 0 || parent.index >= store.nodes.length() then
+    return state
+  end
+  if kind_is_scroll_view(store.nodes[parent.index].kind) == false then
+    return state
+  end
+  return ui_state_with_scroll_offsets(
+    state,
+    scroll_offsets_put(state.scroll_offsets, parent.index, 0)
+  )
+end
+
+fn install_rows(
+  store: WidgetStore,
+  state: UiState,
+  directory_rows: [string],
+  file_rows: [string]
+) -> StressListing = do
+  const directory_list = nth_list(store, 0)
+  const file_list = nth_list(store, 1)
+  let mut next_store = store
+  if widget_id_is_none(directory_list) == false then
+    next_store = widget_store_set_list_texts(next_store, directory_list, directory_rows)
+  end
+  if widget_id_is_none(file_list) == false then
+    next_store = widget_store_set_list_texts(next_store, file_list, file_rows)
+  end
+  let mut next_state = clear_selection(state, directory_list)
+  next_state = clear_selection(next_state, file_list)
+  next_state = clear_scroll(next_store, next_state, directory_list)
+  next_state = clear_scroll(next_store, next_state, file_list)
+  next_state = ui_state_with_listing_revision(next_state, state.listing_revision + 1)
+  return StressListing { store: next_store, state: next_state, enabled: true }
+end
+
+fn enable_dense(
+  store: WidgetStore,
+  state: UiState,
+  theme: Theme,
+  directory_width: i32,
+  file_width: i32
+) -> StressListing = do
+  const filler = stress_filler()
+  const directory_columns = stress_columns_for_width(theme, directory_width)
+  const file_columns = stress_columns_for_width(theme, file_width)
+  println(
+    "[textui] dense rows=" + stress_row_count().to_string() + " file_size=" + stress_file_size()
+  )
+  return install_rows(
+    store,
+    state,
+    fill_rows(filler, directory_columns, false),
+    fill_rows(filler, file_columns, true)
+  )
+end
+
+fn disable_dense(store: WidgetStore, state: UiState) -> StressListing = do
+  const path_field = first_text_field(store)
+  let mut path = ""
+  if widget_id_is_none(path_field) == false then
+    path = field_text(store.nodes[path_field.index].kind)
+  end
+  const opened = open_directory(store, state, path)
+  if opened.state.listing_revision == state.listing_revision then
+    return StressListing { store: store, state: state, enabled: true }
+  end
+  println("[textui] dense off")
+  return StressListing { store: opened.store, state: opened.state, enabled: false }
+end
+
+export fn stress_listing_set(
+  store: WidgetStore,
+  state: UiState,
+  theme: Theme,
+  directory_width: i32,
+  file_width: i32,
+  enabled: bool
+) -> StressListing = do
+  if enabled then
+    return enable_dense(store, state, theme, directory_width, file_width)
+  end
+  return disable_dense(store, state)
+end

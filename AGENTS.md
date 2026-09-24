@@ -34,6 +34,7 @@ Low-level UI cannot be “vibe-coded” without a measurable loop. Architecture 
 - Widgets / chrome produce paint data; only the shared renderer path issues OpenGL.
 - **`misc/textui/`:** one concern per file, hard max 400 lines (`scripts/run_textui_file_size.rb`). No god-host (`app.mlc` wires the frame only). Split in the same STEP; no size allowlist.
 - A static UI (idle, hit-stable pointer) must not reshape text / rebuild O(doc) glyph lists every frame.
+- **textui hover budget (2026-09-23).** A hover / selection change paints only the rows that changed (`submit_ui_frame` → `paint_hover_damage`) and the gallery presents with `glfw_gl_swap_interval(0)`. Harness: `bash scripts/run_textui_hover_bench.sh` at 2560×1440, 80 rows, 10 samples. Gate: `hover_damage_min_us` ≤ **1000** and `hover_damage_min_us * 3 < hover_full_min_us` (`hover_damage_*` is the gallery path, not a hand-rolled submit). Run this bench after any `misc/textui/` paint, submit, hit, or frame-loop change; exit 0 required. Do not raise the budget. Do not restore SwapInterval 1 on that window.
 - One measured bottleneck per Green step. If the target metric does not move → revert or narrow; do not ship “cleaner” without numbers.
 - Optional deeper GL traces (`apitrace`) are allowed for diagnosis; they do not replace scripted pass/fail gates.
 

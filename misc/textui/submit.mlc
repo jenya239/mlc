@@ -246,7 +246,8 @@ export fn submit_frame(
   theme: Theme,
   operations: [DrawOp],
   window_width: i32,
-  window_height: i32
+  window_height: i32,
+  clear_framebuffer: bool
 ) -> SubmitFrameResult = do
   let mut solid_renderer = solid_renderer_begin(resources.solid_renderer)
   let mut current = resources
@@ -255,7 +256,7 @@ export fn submit_frame(
   let mut vertex_count = 0
   let mut operation_index = 0
   let mut clips: [Rect] = []
-  let mut already_cleared = false
+  let mut already_cleared = clear_framebuffer == false
   while operation_index < operations.length() do
     const clip_change = match operations[operation_index]
       | OpPushClip(_) => true
