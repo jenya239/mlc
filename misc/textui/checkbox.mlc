@@ -101,6 +101,18 @@ export fn kind_is_checkbox(kind: WidgetKind) -> bool =
     | KindTextField(_) => false
     | KindIcon(_) => false
 
+export fn checkbox_named_checked(store: WidgetStore, caption: string) -> bool = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const kind = store.nodes[index].kind
+    if checkbox_caption(kind) == caption && checkbox_mark(kind) then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
 export fn checkbox_is_checked(store: WidgetStore) -> bool = do
   let mut index = 0
   while index < store.nodes.length() do
@@ -143,6 +155,21 @@ export fn checkbox_toggle(store: WidgetStore, id: WidgetId) -> WidgetStore = do
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
   return widget_store_keep(nodes, store)
+end
+
+export fn checkbox_set_named(store: WidgetStore, caption: string, checked: bool) -> WidgetStore = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const kind = store.nodes[index].kind
+    if checkbox_caption(kind) == caption then
+      if checkbox_mark(kind) != checked then
+        return checkbox_toggle(store, store.nodes[index].id)
+      end
+      return store
+    end
+    index = index + 1
+  end
+  return store
 end
 
 export fn widget_store_add_checkbox(

@@ -74,7 +74,7 @@ fn file_row(text: string) -> bool = do
   if text == ".." || text.byte_size() == 0 then
     return false
   end
-  return text.byte_at(text.byte_size() - 1) != "/"
+  return true
 end
 
 export fn menu_list_id(store: WidgetStore) -> WidgetId = do

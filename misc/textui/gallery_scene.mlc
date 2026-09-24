@@ -78,7 +78,8 @@ export fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_button(
     store, row, ButtonData { text: "About" }, OverflowVisible, 0, true
   )
-  return widget_store_add_button(
+  store = widget_store_add_button(
     store, row, ButtonData { text: "Dense" }, OverflowVisible, 0, true
   )
+  return widget_store_add_checkbox(store, row, "Jail", true, 0, true)
 end

@@ -1,0 +1,97 @@
+import { DirectoryListing, directory_listing } from './directory_rows'
+
+fn drop_last(segments: [string]) -> [string] = do
+  let mut kept: [string] = []
+  let mut index = 0
+  while index < segments.length() - 1 do
+    kept.push(segments[index])
+    index = index + 1
+  end
+  return kept
+end
+
+export fn normalize_path(path: string) -> string = do
+  let mut segments: [string] = []
+  let mut start = 0
+  let mut index = 0
+  const absolute = path.byte_size() > 0 && path.byte_at(0) == "/"
+  while index <= path.byte_size() do
+    const at_end = index == path.byte_size()
+    let mut slash = false
+    if at_end == false && path.byte_at(index) == "/" then
+      slash = true
+    end
+    if at_end || slash then
+      const length = index - start
+      if length > 0 then
+        const segment = path.byte_substring(start, length)
+        if segment == ".." && segments.length() > 0 then
+          segments = drop_last(segments)
+        end
+        if segment != ".." && segment != "." then
+          segments.push(segment)
+        end
+      end
+      start = index + 1
+    end
+    index = index + 1
+  end
+  let mut built = ""
+  let mut cursor = 0
+  while cursor < segments.length() do
+    built = built + "/" + segments[cursor]
+    cursor = cursor + 1
+  end
+  if built == "" && absolute then
+    return "/"
+  end
+  return built
+end
+
+export fn path_inside_jail(root: string, path: string) -> bool = do
+  if root == "" then
+    return true
+  end
+  const base = normalize_path(root)
+  const next = normalize_path(path)
+  if next == base then
+    return true
+  end
+  if next.byte_size() <= base.byte_size() then
+    return false
+  end
+  return next.byte_substring(0, base.byte_size() + 1) == base + "/"
+end
+
+fn without_parent(listing: DirectoryListing) -> DirectoryListing = do
+  if listing.directories.length() == 0 then
+    return listing
+  end
+  if listing.directories[0] != ".." then
+    return listing
+  end
+  let mut directories: [string] = []
+  let mut index = 1
+  while index < listing.directories.length() do
+    directories.push(listing.directories[index])
+    index = index + 1
+  end
+  return DirectoryListing { directories: directories, files: listing.files }
+end
+
+export fn listing_at_jail_root(
+  listing: DirectoryListing,
+  path: string,
+  root: string
+) -> DirectoryListing = do
+  if root == "" then
+    return listing
+  end
+  if normalize_path(path) != normalize_path(root) then
+    return listing
+  end
+  return without_parent(listing)
+end
+
+export fn jailed_listing(path: string, show_hidden: bool, root: string) -> DirectoryListing =
+  listing_at_jail_root(directory_listing(path, show_hidden), path, root)

@@ -26,8 +26,9 @@ import {
 import { UiEvent } from './ui_event'
 import { list_selected_at, list_selected_put } from './widget_list'
 import { scroll_offsets_put } from './widget_scroll'
-import { directory_listing, directory_target, strip_trailing_slash } from './directory_rows'
-import { checkbox_is_checked, checkbox_toggle } from './checkbox'
+import { directory_listing, directory_target } from './directory_rows'
+import { listing_at_jail_root, normalize_path, path_inside_jail } from './directory_jail'
+import { checkbox_named_checked, checkbox_toggle } from './checkbox'
 import { path_bar_sync } from './path_bar'
 
 export type DirectoryView = {
@@ -153,9 +154,16 @@ fn place_path_caret(state: UiState, field_id: WidgetId, caret: i32) -> UiState =
   return ui_state_with_field(placed, field_id, caret, 0)
 end
 
-export fn open_directory(store: WidgetStore, state: UiState, path: string) -> DirectoryView = do
-  const normalized = strip_trailing_slash(path)
-  const listing = directory_listing(normalized, checkbox_is_checked(store))
+fn open_directory_in(store: WidgetStore, state: UiState, path: string, root: string) -> DirectoryView = do
+  const normalized = normalize_path(path)
+  if path_inside_jail(root, normalized) == false then
+    return view_of(store, state)
+  end
+  const listing = listing_at_jail_root(
+    directory_listing(normalized, checkbox_named_checked(store, "Hidden")),
+    normalized,
+    root
+  )
   if listing.directories.length() == 0 then
     return view_of(store, state)
   end
@@ -184,13 +192,16 @@ export fn open_directory(store: WidgetStore, state: UiState, path: string) -> Di
   return view_of(path_bar_sync(next_store, normalized), next_state)
 end
 
-fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId) -> DirectoryView = do
+export fn open_directory(store: WidgetStore, state: UiState, path: string) -> DirectoryView =
+  open_directory_in(store, state, path, "")
+
+fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId, root: string) -> DirectoryView = do
   if owner.index < 0 || owner.index >= store.nodes.length() then
     return view_of(store, state)
   end
   const node = store.nodes[owner.index]
   if kind_is_text_field(node.kind) then
-    return open_directory(store, state, field_text(node.kind))
+    return open_directory_in(store, state, field_text(node.kind), root)
   end
   if kind_is_list_view(node.kind) == false then
     return view_of(store, state)
@@ -208,26 +219,46 @@ fn follow_activation(store: WidgetStore, state: UiState, owner: WidgetId) -> Dir
   if target == "" then
     return view_of(store, state)
   end
-  return open_directory(store, state, target)
+  return open_directory_in(store, state, target, root)
 end
 
-export fn refresh_hidden(store: WidgetStore, state: UiState, id: WidgetId) -> DirectoryView = do
+fn refresh_hidden_in(store: WidgetStore, state: UiState, id: WidgetId, root: string) -> DirectoryView = do
   const toggled = checkbox_toggle(store, id)
   const path_field = first_text_field(toggled)
   if widget_id_is_none(path_field) then
     return view_of(toggled, state)
   end
-  return open_directory(toggled, state, field_text(toggled.nodes[path_field.index].kind))
+  return open_directory_in(toggled, state, field_text(toggled.nodes[path_field.index].kind), root)
 end
 
-export fn follow_directory(store: WidgetStore, state: UiState, events: [UiEvent]) -> DirectoryView = do
+export fn refresh_hidden(store: WidgetStore, state: UiState, id: WidgetId) -> DirectoryView =
+  refresh_hidden_in(store, state, id, "")
+
+fn follow_directory_in(store: WidgetStore, state: UiState, events: [UiEvent], root: string) -> DirectoryView = do
   let mut view = view_of(store, state)
   let mut index = 0
   while index < events.length() do
     if events[index].activated then
-      view = follow_activation(view.store, view.state, events[index].widget)
+      view = follow_activation(view.store, view.state, events[index].widget, root)
     end
     index = index + 1
   end
   return view
 end
+
+export fn follow_directory(store: WidgetStore, state: UiState, events: [UiEvent]) -> DirectoryView =
+  follow_directory_in(store, state, events, "")
+
+export fn follow_directory_jailed(
+  store: WidgetStore,
+  state: UiState,
+  events: [UiEvent],
+  root: string
+) -> DirectoryView =
+  follow_directory_in(store, state, events, root)
+
+export fn refresh_hidden_jailed(store: WidgetStore, state: UiState, id: WidgetId, root: string) -> DirectoryView =
+  refresh_hidden_in(store, state, id, root)
+
+export fn open_directory_jailed(store: WidgetStore, state: UiState, path: string, root: string) -> DirectoryView =
+  open_directory_in(store, state, path, root)

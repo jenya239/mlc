@@ -1,0 +1,89 @@
+import { DirectoryView, open_directory_jailed } from './directory_browse'
+import { path_inside_jail } from './directory_jail'
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { UiState } from './ui_state'
+import { WidgetStore } from './store'
+
+extern fn rename_file(old_path: string, new_path: string) -> bool
+  = "mlc::file::rename_file_value" from "mlc/io/file_abi.hpp" blocking
+extern fn remove_tree(path: string) -> bool
+  = "mlc::file::remove_tree_value" from "mlc/io/file_abi.hpp" blocking
+extern fn read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn view_of(store: WidgetStore, state: UiState) -> DirectoryView =
+  DirectoryView { store: store, state: state }
+
+fn ends_with_slash(text: string) -> bool = do
+  if text.byte_size() == 0 then
+    return false
+  end
+  return text.byte_at(text.byte_size() - 1) == "/"
+end
+
+fn strip_one_slash(text: string) -> string = do
+  if ends_with_slash(text) == false then
+    return text
+  end
+  return text.byte_substring(0, text.byte_size() - 1)
+end
+
+fn contains_slash(text: string) -> bool = do
+  let mut index = 0
+  while index < text.byte_size() do
+    if text.byte_at(index) == "/" then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
+fn entry_path(directory: string, entry: string) -> string =
+  join_path(strip_trailing_slash(directory), strip_one_slash(entry))
+
+export fn jailed_file_text(root: string, directory: string, entry: string) -> string = do
+  if root == "" || entry == "" || entry == ".." || ends_with_slash(entry) then
+    return ""
+  end
+  const path = entry_path(directory, entry)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  return read_to_string(path)
+end
+
+export fn mutate_named_entry(
+  store: WidgetStore,
+  state: UiState,
+  root: string,
+  directory: string,
+  entry: string,
+  deleting: bool,
+  replacement: string
+) -> DirectoryView = do
+  if root == "" || entry == "" || entry == ".." then
+    return view_of(store, state)
+  end
+  const source = entry_path(directory, entry)
+  if path_inside_jail(root, source) == false then
+    return view_of(store, state)
+  end
+  let mut changed = false
+  if deleting then
+    changed = remove_tree(source)
+  end
+  if deleting == false then
+    const name = strip_one_slash(replacement)
+    if name != "" && name != ".." && name != "." && contains_slash(name) == false then
+      const destination = join_path(strip_trailing_slash(directory), name)
+      if path_inside_jail(root, destination) then
+        changed = rename_file(source, destination)
+      end
+    end
+  end
+  if changed == false then
+    return view_of(store, state)
+  end
+  return open_directory_jailed(store, state, directory, root)
+end

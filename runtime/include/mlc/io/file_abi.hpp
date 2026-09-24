@@ -62,6 +62,23 @@ inline bool remove_file_value(String path) {
   return remove_file(path);
 }
 
+inline bool rename_file_value(String old_path, String new_path) {
+  return rename_file(old_path, new_path);
+}
+
+inline bool remove_tree_value(String path) {
+  try {
+    std::error_code error_code;
+    const auto removed = std::filesystem::remove_all(path.as_std_string(), error_code);
+    if (error_code) {
+      return false;
+    }
+    return removed > 0;
+  } catch (...) {
+    return false;
+  }
+}
+
 // TRACK_EDITOR_HYGIENE §107m — pre-read size so oversized opens refuse without loading.
 // Returns byte size, or -1 on error / non-regular / overflow past i32.
 inline int32_t file_byte_size_value(String path) {

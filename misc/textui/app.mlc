@@ -36,22 +36,24 @@ import {
 import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
-import { list_selected_at } from './widget_list'
+import { activated_row_text } from './row_label'
 import { ui_update } from './ui_update'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
 import { apply_toolbar, effect_wait_seconds } from './visual_effect'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
-import { WindowPlacement, window_placement_load, window_placement_save } from './window_placement'
-import { follow_directory, open_directory, refresh_hidden } from './directory_browse'
-import { kind_is_checkbox } from './checkbox'
+import { WindowPlacement, window_placement_save } from './window_placement'
+import { gallery_start, window_session_load, window_session_store } from './window_session'
+import { follow_directory_jailed, open_directory_jailed } from './directory_browse'
+import { apply_checkbox_click } from './jail_switch'
 import { path_history_empty, path_history_visit } from './path_history'
 import { path_bar_current } from './path_bar'
-import { apply_path_click } from './path_travel'
+import { apply_path_click_jailed } from './path_travel'
 import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
 import { attach_file_menu, menu_apply, menu_host_step } from './menu'
-import { DialogTarget, attach_dialog, dialog_host } from './dialog'
+import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
+import { image_preview_frame, image_preview_release } from './image_preview'
 
 fn application_reload_status() -> i32 = 75
 
@@ -99,35 +101,14 @@ fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
 
-fn list_text_at(texts: [string], selected: i32) -> string = do
-  if selected < 0 || selected >= texts.length() then
-    return ""
-  end
-  texts[selected]
-end
-
-fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId) -> string =
-  match store.nodes[owner.index].kind
-    | KindListView(data) => list_text_at(data.texts, list_selected_at(state.list_selected, owner.index))
-    | KindLabel(_) => ""
-    | KindIcon(_) => ""
-    | KindButton(_) => ""
-    | KindCheckbox(_) => ""
-    | KindBox(_) => ""
-    | KindScrollView => ""
-    | KindSplitter(_) => ""
-    | KindTextField(data) => data.text
-
 fn main() -> i32 = do
   let mut open_width = 1280
   let mut open_height = 800
-  if has("MLC_TEXTUI_BENCH") == false then
-    const loaded = window_placement_load()
-    if loaded.restored then
-      open_width = loaded.width
-      open_height = loaded.height
-      glfw_gl_window_request_position(loaded.x, loaded.y)
-    end
+  const session = window_session_load()
+  if has("MLC_TEXTUI_BENCH") == false && session.placement.restored then
+    open_width = session.placement.width
+    open_height = session.placement.height
+    glfw_gl_window_request_position(session.placement.x, session.placement.y)
   end
   const begin_status = glfw_gl_context_begin(open_width, open_height)
   if begin_status != 0 then
@@ -155,7 +136,11 @@ fn main() -> i32 = do
   end
 
   let mut state = ui_state_new()
-  const opened = open_directory(store, state, "/home/jenya/workspaces/current/mlc")
+  const started = gallery_start(store, session)
+  store = started.store
+  let mut sandbox_root = started.sandbox
+  let mut jail_root = started.jail_root
+  const opened = open_directory_jailed(store, state, started.path, jail_root)
   store = opened.store
   state = opened.state
   let mut dense_enabled = false
@@ -180,7 +165,8 @@ fn main() -> i32 = do
   let mut target_list = 0 - 1
   let mut target_row = 0 - 1
   let mut path_history = path_history_empty()
-  let mut effect_mode = 1
+  let mut effect_mode = started.effect_mode
+  let mut saved_session = ""
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut right_was_down = false
@@ -256,16 +242,15 @@ fn main() -> i32 = do
     let mut hidden_index = 0
     while hidden_index < updated.events.length() do
       const hidden_owner = updated.events[hidden_index].widget
-      if hidden_owner.index >= 0 && hidden_owner.index < store.nodes.length() then
-        if kind_is_checkbox(store.nodes[hidden_owner.index].kind) then
-          const refreshed = refresh_hidden(store, state, hidden_owner)
-          store = refreshed.store
-          state = refreshed.state
-        end
-      end
+      const switched = apply_checkbox_click(
+        store, state, hidden_owner, sandbox_root, jail_root
+      )
+      store = switched.store
+      state = switched.state
+      jail_root = switched.root
       hidden_index = hidden_index + 1
     end
-    const browsed = follow_directory(store, state, updated.events)
+    const browsed = follow_directory_jailed(store, state, updated.events, jail_root)
     store = browsed.store
     state = browsed.state
     path_history = path_history_visit(path_history, path_before_browse, path_bar_current(store))
@@ -299,7 +284,7 @@ fn main() -> i32 = do
     let mut event_index = 0
     while event_index < updated.events.length() do
       const owner = updated.events[event_index].widget
-      const stepped = apply_path_click(store, state, path_history, owner)
+      const stepped = apply_path_click_jailed(store, state, path_history, owner, jail_root)
       store = stepped.store
       state = stepped.state
       path_history = stepped.history
@@ -360,14 +345,26 @@ fn main() -> i32 = do
       end
       resources = submitted.resources
       shaping = submitted.shaping
-      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, frame_index == 0 || frame_signature_hover_only(presented, next_signature) == false, effect_mode)
+      const clean_window = frame_index == 0 || frame_signature_hover_only(presented, next_signature) == false
+      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, clean_window, effect_mode)
+      let mut clean_flag = 0
+      if clean_window then
+        clean_flag = 1
+      end
+      image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, clean_flag, effect_mode, lens.framebuffer)
       presented = next_signature
       glfw_gl_context_swap_poll()
       sample_after_present = true
     end
     if paints == false && composed && effect_mode != 0 then
       lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, false, effect_mode)
+      image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, 0, effect_mode, lens.framebuffer)
       glfw_gl_context_swap_poll()
+    end
+    if paints == false && (composed == false || effect_mode == 0) then
+      if image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, 0, effect_mode, lens.framebuffer) != 0 then
+        glfw_gl_context_swap_poll()
+      end
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
@@ -376,11 +373,17 @@ fn main() -> i32 = do
     if reload_requested then
       break
     end
+    saved_session = window_session_store(
+      saved_session, store, effect_mode, sandbox_root, jail_root
+    )
   end
 
   submit_destroy(resources)
   cursor_lens_destroy(lens)
-  remember_window()
+  image_preview_release()
+  saved_session = window_session_store(
+    saved_session, store, effect_mode, sandbox_root, jail_root
+  )
   glfw_gl_context_end()
   if reload_requested then
     return application_reload_status()

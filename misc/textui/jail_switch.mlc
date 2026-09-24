@@ -1,0 +1,51 @@
+import { checkbox_caption, checkbox_mark, checkbox_toggle, kind_is_checkbox } from './checkbox'
+import { DirectoryView, open_directory_jailed, refresh_hidden_jailed } from './directory_browse'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { UiState } from './ui_state'
+import { WidgetId, WidgetStore } from './store'
+
+export type JailSwitch = {
+  store: WidgetStore,
+  state: UiState,
+  root: string
+}
+
+fn kept(store: WidgetStore, state: UiState, root: string) -> JailSwitch =
+  JailSwitch { store: store, state: state, root: root }
+
+fn from_view(view: DirectoryView, root: string) -> JailSwitch =
+  JailSwitch { store: view.store, state: view.state, root: root }
+
+export fn apply_checkbox_click(
+  store: WidgetStore,
+  state: UiState,
+  id: WidgetId,
+  sandbox_root: string,
+  jail_root: string
+) -> JailSwitch = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return kept(store, state, jail_root)
+  end
+  const kind = store.nodes[id.index].kind
+  if kind_is_checkbox(kind) == false then
+    return kept(store, state, jail_root)
+  end
+  const caption = checkbox_caption(kind)
+  if caption == "Hidden" then
+    return from_view(refresh_hidden_jailed(store, state, id, jail_root), jail_root)
+  end
+  if caption != "Jail" then
+    return kept(store, state, jail_root)
+  end
+  const toggled = checkbox_toggle(store, id)
+  let mut next_root = ""
+  if checkbox_mark(toggled.nodes[id.index].kind) then
+    next_root = sandbox_root
+  end
+  let mut path = path_bar_current(toggled)
+  if next_root != "" && path_inside_jail(next_root, path) == false then
+    path = next_root
+  end
+  return from_view(open_directory_jailed(toggled, state, path, next_root), next_root)
+end

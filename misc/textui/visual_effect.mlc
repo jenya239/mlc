@@ -22,6 +22,9 @@ export type ToolbarStep = {
 }
 
 fn effect_caption(mode: i32) -> string = do
+  if mode == 3 then
+    return "Fractal"
+  end
   if mode == 2 then
     return "Cyber"
   end
@@ -41,6 +44,9 @@ fn effect_caption_matches(text: string) -> bool = do
   if text == "Matrix" then
     return true
   end
+  if text == "Fractal" then
+    return true
+  end
   return text == "Off"
 end
 
@@ -49,6 +55,9 @@ fn next_effect_mode(mode: i32) -> i32 = do
     return 2
   end
   if mode == 2 then
+    return 3
+  end
+  if mode == 3 then
     return 0
   end
   return 1
@@ -66,11 +75,34 @@ fn renamed_button(kind: WidgetKind, text: string) -> WidgetKind =
     | KindTextField(data) => KindTextField(data)
     | KindIcon(data) => KindIcon(data)
 
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
 fn set_button_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
   const node = store.nodes[id.index]
   let mut nodes = store.nodes
   nodes.set(id.index, widget_node_with_kind(node, renamed_button(node.kind, text)))
   return widget_store_keep(nodes, store)
+end
+
+export fn show_effect_mode(store: WidgetStore, mode: i32) -> WidgetStore = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if effect_caption_matches(button_text(store.nodes[index].kind)) then
+      return set_button_text(store, store.nodes[index].id, effect_caption(mode))
+    end
+    index = index + 1
+  end
+  return store
 end
 
 fn step_of(

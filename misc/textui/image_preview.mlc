@@ -1,0 +1,94 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { WidgetId, WidgetKind, WidgetStore } from './store'
+import { UiState } from './ui_state'
+
+extern fn image_preview_load(path: string) -> i32
+  = "mlc::image_preview::load_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_present(pointer_x: i32, pointer_y: i32, window_width: i32, window_height: i32, clean_window: i32, effect_mode: i32, scene_framebuffer: i32) -> i32
+  = "mlc::image_preview::present_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_discard() -> unit
+  = "mlc::image_preview::discard" from "mlc/gl/image_preview.hpp" blocking
+export extern fn write_sample_png(path: string, seed: i32) -> bool
+  = "mlc::image_preview::write_sample_png_value" from "mlc/gl/image_preview.hpp" blocking
+
+fn ends_with(text: string, suffix: string) -> bool = do
+  if text.byte_size() < suffix.byte_size() then
+    return false
+  end
+  return text.byte_substring(text.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn image_file_name(name: string) -> bool = do
+  if ends_with(name, ".png") || ends_with(name, ".PNG") then
+    return true
+  end
+  if ends_with(name, ".jpg") || ends_with(name, ".JPG") || ends_with(name, ".jpeg") || ends_with(name, ".JPEG") then
+    return true
+  end
+  return ends_with(name, ".webp") || ends_with(name, ".WEBP")
+end
+
+fn list_text_at(texts: [string], row: i32) -> string = do
+  if row < 0 || row >= texts.length() then
+    return ""
+  end
+  return texts[row]
+end
+
+fn row_name(kind: WidgetKind, row: i32) -> string =
+  match kind
+    | KindListView(data) => list_text_at(data.texts, row)
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn hovered_row_name(store: WidgetStore, state: UiState) -> string = do
+  const owner = state.hover
+  if owner.index < 0 || owner.index >= store.nodes.length() then
+    return ""
+  end
+  return row_name(store.nodes[owner.index].kind, state.list_hover_row)
+end
+
+fn hovered_image_path(store: WidgetStore, state: UiState, root: string) -> string = do
+  if state.overlay_open then
+    return ""
+  end
+  const name = hovered_row_name(store, state)
+  if image_file_name(name) == false then
+    return ""
+  end
+  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  return path
+end
+
+export fn image_preview_frame(
+  store: WidgetStore,
+  state: UiState,
+  root: string,
+  pointer_x: i32,
+  pointer_y: i32,
+  window_width: i32,
+  window_height: i32,
+  clean_window: i32,
+  effect_mode: i32,
+  scene_framebuffer: i32
+) -> i32 = do
+  image_preview_load(hovered_image_path(store, state, root))
+  return image_preview_present(
+    pointer_x, pointer_y, window_width, window_height, clean_window, effect_mode, scene_framebuffer
+  )
+end
+
+export fn image_preview_release() -> unit =
+  image_preview_discard()

@@ -1,0 +1,26 @@
+export fn texts_replaced(texts: [string], row: i32, text: string) -> [string] = do
+  let mut next: [string] = []
+  let mut index = 0
+  while index < texts.length() do
+    if index == row then
+      next.push(text)
+    end
+    if index != row then
+      next.push(texts[index])
+    end
+    index = index + 1
+  end
+  return next
+end
+
+export fn texts_removed(texts: [string], row: i32) -> [string] = do
+  let mut next: [string] = []
+  let mut index = 0
+  while index < texts.length() do
+    if index != row then
+      next.push(texts[index])
+    end
+    index = index + 1
+  end
+  return next
+end

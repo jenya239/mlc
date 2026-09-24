@@ -1,0 +1,32 @@
+import { DirectoryListing } from '../directory_rows'
+import { listing_at_jail_root, normalize_path, path_inside_jail } from '../directory_jail'
+
+fn main() -> i32 = do
+  if normalize_path("/jail/../etc") != "/etc" then
+    return 0 - 1
+  end
+  if path_inside_jail("/jail", "/jail/Home") == false then
+    return 0 - 2
+  end
+  if path_inside_jail("/jail", "/jail/../etc") then
+    return 0 - 3
+  end
+  if path_inside_jail("/jail", "/jail2") then
+    return 0 - 4
+  end
+  let mut directories: [string] = []
+  directories.push("..")
+  directories.push("Home/")
+  let mut files: [string] = []
+  files.push("file_00.txt")
+  const listing = DirectoryListing { directories: directories, files: files }
+  const rooted = listing_at_jail_root(listing, "/jail", "/jail")
+  if rooted.directories.length() != 1 || rooted.directories[0] != "Home/" then
+    return 0 - 5
+  end
+  const child = listing_at_jail_root(listing, "/jail/Home", "/jail")
+  if child.directories.length() != 2 || child.directories[0] != ".." then
+    return 0 - 6
+  end
+  0
+end

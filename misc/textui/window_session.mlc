@@ -1,0 +1,215 @@
+import { has } from 'Env'
+import {
+  glfw_gl_window_height,
+  glfw_gl_window_width,
+  glfw_gl_window_x,
+  glfw_gl_window_y
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { checkbox_named_checked, checkbox_set_named } from './checkbox'
+import { path_inside_jail } from './directory_jail'
+import { sandbox_root_from } from './fm_sandbox'
+import { path_bar_current } from './path_bar'
+import { WidgetStore } from './store'
+import { show_effect_mode } from './visual_effect'
+import {
+  WindowPlacement,
+  window_placement_config_path,
+  window_placement_decode
+} from './window_placement'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+extern fn directory_exists(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+export type WindowSession = {
+  placement: WindowPlacement,
+  jail: bool,
+  hidden: bool,
+  effect_mode: i32,
+  path: string,
+  sandbox: string
+}
+
+export type GalleryStart = {
+  store: WidgetStore,
+  sandbox: string,
+  jail_root: string,
+  path: string,
+  effect_mode: i32
+}
+
+fn absent_session() -> WindowSession =
+  WindowSession {
+    placement: WindowPlacement { x: 0, y: 0, width: 1280, height: 800, restored: false },
+    jail: true,
+    hidden: false,
+    effect_mode: 1,
+    path: "",
+    sandbox: ""
+  }
+
+fn starts_with(text: string, prefix: string) -> bool = do
+  if text.byte_size() < prefix.byte_size() then
+    return false
+  end
+  return text.byte_substring(0, prefix.byte_size()) == prefix
+end
+
+fn suffix_after(text: string, prefix: string) -> string =
+  text.byte_substring(prefix.byte_size(), text.byte_size() - prefix.byte_size())
+
+fn flag_on(text: string) -> bool =
+  text == "1"
+
+fn effect_mode_from(text: string) -> i32 = do
+  if text == "0" then
+    return 0
+  end
+  if text == "2" then
+    return 2
+  end
+  if text == "3" then
+    return 3
+  end
+  return 1
+end
+
+fn read_session(text: string) -> WindowSession = do
+  let mut jail = true
+  let mut hidden = false
+  let mut effect_mode = 1
+  let mut path = ""
+  let mut sandbox = ""
+  let mut line_start = 0
+  let mut index = 0
+  const length = text.byte_size()
+  while index <= length do
+    if index == length || text.byte_at(index) == "\n" then
+      const line_length = index - line_start
+      if line_length > 0 then
+        const line = text.byte_substring(line_start, line_length)
+        if starts_with(line, "jail=") then
+          jail = flag_on(suffix_after(line, "jail="))
+        end
+        if starts_with(line, "hidden=") then
+          hidden = flag_on(suffix_after(line, "hidden="))
+        end
+        if starts_with(line, "effect=") then
+          effect_mode = effect_mode_from(suffix_after(line, "effect="))
+        end
+        if starts_with(line, "path=") then
+          path = suffix_after(line, "path=")
+        end
+        if starts_with(line, "sandbox=") then
+          sandbox = suffix_after(line, "sandbox=")
+        end
+      end
+      line_start = index + 1
+    end
+    index = index + 1
+  end
+  return WindowSession {
+    placement: window_placement_decode(text),
+    jail: jail,
+    hidden: hidden,
+    effect_mode: effect_mode,
+    path: path,
+    sandbox: sandbox
+  }
+end
+
+export fn window_session_load() -> WindowSession = do
+  const path = window_placement_config_path()
+  if path == "" || file_exists(path) == false then
+    return absent_session()
+  end
+  return read_session(file_read_to_string(path))
+end
+
+fn flag_text(value: bool) -> string = do
+  if value then
+    return "1"
+  end
+  return "0"
+end
+
+fn encode_session(
+  store: WidgetStore,
+  effect_mode: i32,
+  sandbox: string,
+  jail_root: string
+) -> string = do
+  const placement = WindowPlacement {
+    x: glfw_gl_window_x(),
+    y: glfw_gl_window_y(),
+    width: glfw_gl_window_width(),
+    height: glfw_gl_window_height(),
+    restored: true
+  }
+  return "x=" + placement.x.to_string() + "\n" +
+    "y=" + placement.y.to_string() + "\n" +
+    "width=" + placement.width.to_string() + "\n" +
+    "height=" + placement.height.to_string() + "\n" +
+    "jail=" + flag_text(jail_root != "") + "\n" +
+    "hidden=" + flag_text(checkbox_named_checked(store, "Hidden")) + "\n" +
+    "effect=" + effect_mode.to_string() + "\n" +
+    "sandbox=" + sandbox + "\n" +
+    "path=" + path_bar_current(store) + "\n"
+end
+
+export fn window_session_store(
+  previous: string,
+  store: WidgetStore,
+  effect_mode: i32,
+  sandbox: string,
+  jail_root: string
+) -> string = do
+  if has("MLC_TEXTUI_BENCH") then
+    return previous
+  end
+  const text = encode_session(store, effect_mode, sandbox, jail_root)
+  if text == previous then
+    return previous
+  end
+  const path = window_placement_config_path()
+  if path != "" then
+    file_write_string(path, text)
+  end
+  return text
+end
+
+export fn gallery_start(store: WidgetStore, session: WindowSession) -> GalleryStart = do
+  let mut next = checkbox_set_named(store, "Jail", session.jail)
+  next = checkbox_set_named(next, "Hidden", session.hidden)
+  next = show_effect_mode(next, session.effect_mode)
+  const sandbox = sandbox_root_from(session.sandbox)
+  let mut jail_root = ""
+  if session.jail then
+    jail_root = sandbox
+  end
+  let mut path = sandbox
+  if session.jail == false then
+    path = "/"
+  end
+  if session.path != "" && directory_exists(session.path) then
+    if session.jail == false || path_inside_jail(sandbox, session.path) then
+      path = session.path
+    end
+  end
+  if path == "" then
+    path = "/home/jenya/workspaces/current/mlc"
+    jail_root = ""
+  end
+  return GalleryStart {
+    store: next,
+    sandbox: sandbox,
+    jail_root: jail_root,
+    path: path,
+    effect_mode: session.effect_mode
+  }
+end

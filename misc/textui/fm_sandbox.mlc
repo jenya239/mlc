@@ -1,0 +1,58 @@
+import { write_sample_png } from './image_preview'
+
+extern fn make_temp_directory(prefix: string) -> string
+  = "mlc::file::make_temp_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn directory_exists(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+fn place_names() -> [string] = do
+  let mut names: [string] = []
+  names.push("Home")
+  names.push("Documents")
+  names.push("Downloads")
+  names.push("Pictures")
+  names.push("Music")
+  names.push("Trash")
+  return names
+end
+
+fn two_digits(value: i32) -> string = do
+  if value < 10 then
+    return "0" + value.to_string()
+  end
+  return value.to_string()
+end
+
+export fn seed_fm_sandbox() -> string = do
+  const root = make_temp_directory("mlc-textui-")
+  if root == "" then
+    return ""
+  end
+  let mut place = 0
+  const places = place_names()
+  while place < places.length() do
+    create_directories(root + "/" + places[place])
+    place = place + 1
+  end
+  let mut index = 0
+  while index < 48 do
+    write_string(root + "/file_" + two_digits(index) + ".txt", "file " + two_digits(index))
+    index = index + 1
+  end
+  write_string(root + "/.secret", "secret")
+  write_sample_png(root + "/preview.png", 1)
+  write_sample_png(root + "/sunset.png", 2)
+  write_sample_png(root + "/tile.png", 3)
+  return root
+end
+
+export fn sandbox_root_from(saved: string) -> string = do
+  if saved != "" && directory_exists(saved) then
+    return saved
+  end
+  return seed_fm_sandbox()
+end
