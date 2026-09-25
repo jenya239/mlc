@@ -1,15 +1,24 @@
 import { join_path, strip_trailing_slash } from './directory_rows'
 import { path_inside_jail } from './directory_jail'
 import { path_bar_current } from './path_bar'
-import { WidgetId, WidgetKind, WidgetStore } from './store'
+import { WidgetId, WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
+import { LayoutResult } from './layout_result'
 import { UiState } from './ui_state'
 
 extern fn image_preview_load(path: string) -> i32
   = "mlc::image_preview::load_value" from "mlc/gl/image_preview.hpp" blocking
-extern fn image_preview_present(pointer_x: i32, pointer_y: i32, window_width: i32, window_height: i32, clean_window: i32, effect_mode: i32, scene_framebuffer: i32) -> i32
-  = "mlc::image_preview::present_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_arm_rect(dest_x: i32, dest_y: i32, dest_width: i32, dest_height: i32, effect_mode: i32, scene_framebuffer: i32) -> unit
+  = "mlc::image_preview::arm_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_draw_background(window_width: i32, window_height: i32, full_paint: i32) -> unit
+  = "mlc::image_preview::draw_background_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_discard() -> unit
   = "mlc::image_preview::discard" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_is_playing() -> i32
+  = "mlc::image_preview::playing_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_needs_paint_flag() -> i32
+  = "mlc::image_preview::needs_paint_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_is_background() -> i32
+  = "mlc::image_preview::background_value" from "mlc/gl/image_preview.hpp" blocking
 export extern fn write_sample_png(path: string, seed: i32) -> bool
   = "mlc::image_preview::write_sample_png_value" from "mlc/gl/image_preview.hpp" blocking
 
@@ -27,7 +36,19 @@ fn image_file_name(name: string) -> bool = do
   if ends_with(name, ".jpg") || ends_with(name, ".JPG") || ends_with(name, ".jpeg") || ends_with(name, ".JPEG") then
     return true
   end
-  return ends_with(name, ".webp") || ends_with(name, ".WEBP")
+  if ends_with(name, ".webp") || ends_with(name, ".WEBP") then
+    return true
+  end
+  if ends_with(name, ".mp4") || ends_with(name, ".MP4") || ends_with(name, ".m4v") || ends_with(name, ".M4V") then
+    return true
+  end
+  if ends_with(name, ".mov") || ends_with(name, ".MOV") || ends_with(name, ".mkv") || ends_with(name, ".MKV") then
+    return true
+  end
+  if ends_with(name, ".webm") || ends_with(name, ".WEBM") || ends_with(name, ".avi") || ends_with(name, ".AVI") then
+    return true
+  end
+  return ends_with(name, ".ogv") || ends_with(name, ".OGV")
 end
 
 fn list_text_at(texts: [string], row: i32) -> string = do
@@ -57,7 +78,7 @@ fn hovered_row_name(store: WidgetStore, state: UiState) -> string = do
   return row_name(store.nodes[owner.index].kind, state.list_hover_row)
 end
 
-fn hovered_image_path(store: WidgetStore, state: UiState, root: string) -> string = do
+export fn hovered_image_path(store: WidgetStore, state: UiState, root: string) -> string = do
   if state.overlay_open then
     return ""
   end
@@ -72,23 +93,53 @@ fn hovered_image_path(store: WidgetStore, state: UiState, root: string) -> strin
   return path
 end
 
-export fn image_preview_frame(
+export fn image_preview_file_pane(store: WidgetStore) -> WidgetId = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return store.nodes[index].parent
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+export fn image_preview_arm(
   store: WidgetStore,
   state: UiState,
+  layout: LayoutResult,
   root: string,
-  pointer_x: i32,
-  pointer_y: i32,
-  window_width: i32,
-  window_height: i32,
-  clean_window: i32,
   effect_mode: i32,
   scene_framebuffer: i32
-) -> i32 = do
+) -> unit = do
   image_preview_load(hovered_image_path(store, state, root))
-  return image_preview_present(
-    pointer_x, pointer_y, window_width, window_height, clean_window, effect_mode, scene_framebuffer
-  )
+  const pane = image_preview_file_pane(store)
+  if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.rects.length() then
+    image_preview_arm_rect(0, 0, 0, 0, effect_mode, scene_framebuffer)
+  else
+    const rect = layout.clips[pane.index]
+    image_preview_arm_rect(rect.x, rect.y, rect.width, rect.height, effect_mode, scene_framebuffer)
+  end
 end
+
+export fn image_preview_draw(window_width: i32, window_height: i32, clear_framebuffer: bool) -> unit = do
+  if clear_framebuffer then
+    image_preview_draw_background(window_width, window_height, 1)
+  end
+end
+
+export fn image_preview_needs_paint() -> i32 =
+  image_preview_needs_paint_flag()
+
+export fn image_preview_background() -> i32 =
+  image_preview_is_background()
 
 export fn image_preview_release() -> unit =
   image_preview_discard()
+
+export fn image_preview_playing() -> i32 =
+  image_preview_is_playing()

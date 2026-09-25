@@ -129,6 +129,19 @@ export fn effect_wait_seconds(mode: i32) -> f64 = do
   return 0.016
 end
 
+export fn frame_wait_seconds(mode: i32, preview_playing: i32, music_running: i32) -> f64 = do
+  if mode != 0 then
+    return 0.016
+  end
+  if preview_playing != 0 then
+    return 0.08
+  end
+  if music_running != 0 then
+    return 0.5
+  end
+  return 0.0 - 1.0
+end
+
 export fn apply_toolbar(
   store: WidgetStore,
   state: UiState,

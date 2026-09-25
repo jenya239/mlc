@@ -81,5 +81,17 @@ export fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_button(
     store, row, ButtonData { text: "Dense" }, OverflowVisible, 0, true
   )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Prev" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "0:00 [----------------] 0:00" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Next" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: "Play" }, OverflowVisible, 0, true
+  )
   return widget_store_add_checkbox(store, row, "Jail", true, 0, true)
 end

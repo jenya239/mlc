@@ -18,6 +18,7 @@ import { scroll_content_height, scroll_content_overflows } from './widget_scroll
 import { menu_list_id } from './menu'
 import { kind_is_clickable } from './user_select'
 import { paint_button, paint_overlay_frame, paint_path_crumb, paint_tree_frame } from './paint_pass'
+import { paint_preview_caption } from './preview_caption'
 import { path_bar_is_crumb } from './path_bar'
 import { checkbox_caption, checkbox_mark, kind_is_checkbox, paint_checkbox } from './checkbox'
 import { TextShapingState } from '../gui/text_shaping'
@@ -356,7 +357,8 @@ export fn submit_ui_frame(
   next: FrameSignature,
   window_width: i32,
   window_height: i32,
-  composed: bool
+  composed: bool,
+  root: string
 ) -> SubmitFrameResult = do
   if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) then
     const damage = paint_hover_damage(theme, store, layout, state, presented, next)
@@ -377,7 +379,7 @@ export fn submit_ui_frame(
     resources,
     shaping,
     theme,
-    paint_tree_frame(theme, store, layout, state),
+    paint_preview_caption(theme, store, layout, state, root, paint_tree_frame(theme, store, layout, state)),
     paint_overlay_frame(theme, store, layout, state),
     window_width,
     window_height

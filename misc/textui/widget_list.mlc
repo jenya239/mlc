@@ -1,10 +1,29 @@
 import { Rect, rect_new, rect_intersect, rect_is_empty } from './geometry'
 import { Theme } from './theme'
 import { ColorRgba } from './theme'
-import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
 import { LayoutResult } from './layout_result'
 import { list_icon_name, paint_named_icon } from './icon'
+import { WidgetStore, WidgetId, kind_is_list_view, widget_id_is_none } from './store'
 import { UiState } from './ui_state'
+import { scroll_content_child } from './widget_scroll'
+
+extern fn image_preview_background() -> i32
+  = "mlc::image_preview::background_value" from "mlc/gl/image_preview.hpp" blocking
+
+fn readable_color(color: ColorRgba) -> ColorRgba = do
+  if image_preview_background() == 0 then
+    return color
+  end
+  return ColorRgba { red: color.red, green: color.green, blue: color.blue, alpha: 0.78 }
+end
+
+fn row_fill_color(color: ColorRgba) -> ColorRgba = do
+  if image_preview_background() == 0 then
+    return color
+  end
+  return ColorRgba { red: color.red, green: color.green, blue: color.blue, alpha: 0.45 }
+end
 
 export fn list_row_inset(theme: Theme) -> i32 = do
   let mut inset = theme.font_size_pixels / 6
@@ -145,10 +164,21 @@ export fn paint_list_rows(
   while index < last do
     const row = rect_new(rect.x, rect.y + index * row_height, rect.width, row_height)
     if rect_is_empty(rect_intersect(row, clip)) == false then
+      let mut ink = theme.foreground
+      if state.hover.index == node_index then
+        ink = readable_color(theme.foreground)
+      end
       if index == selected then
-        next = push_row_fill(next, row, theme.list_selected)
+        let mut fill = theme.list_inactive
+        if state.focus.index == node_index then
+          fill = theme.list_selected
+        end
+        if state.hover.index == node_index then
+          fill = row_fill_color(fill)
+        end
+        next = push_row_fill(next, row, fill)
       else if state.hover.index == node_index && index == state.list_hover_row then
-        next = push_row_fill(next, row, theme.list_hover)
+        next = push_row_fill(next, row, row_fill_color(theme.list_hover))
       end
       if show_icons then
         const icon_size = theme.font_size_pixels
@@ -158,17 +188,44 @@ export fn paint_list_rows(
           row.x + theme.padding,
           row.y + (row_height - icon_size) / 2,
           icon_size,
-          theme.foreground
+          ink
         )
       end
       next.push(OpText(TextOp {
         origin_x: row.x + theme.padding + list_text_dx(theme, show_icons),
         origin_y: row.y + list_row_inset(theme),
-        color: theme.foreground,
+        color: ink,
         text: texts[index]
       }))
     end
     index = index + 1
   end
   return next
+end
+
+export fn paint_focused_list_ring(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const child = scroll_content_child(store, WidgetId { index: node_index })
+  if widget_id_is_none(child) then
+    return operations
+  end
+  if state.focus.index != child.index then
+    return operations
+  end
+  if kind_is_list_view(store.nodes[child.index].kind) == false then
+    return operations
+  end
+  let mut next = operations
+  next.push(OpStrokeRect(StrokeRectOp {
+    rect: layout.rects[node_index],
+    color: theme.button_stroke,
+    line_width: 1
+  }))
+  next
 end

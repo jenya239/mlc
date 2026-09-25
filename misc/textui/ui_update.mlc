@@ -8,13 +8,15 @@ import { update_pointer } from './update_pointer'
 import { update_copy } from './update_copy'
 import { update_wheel } from './update_scroll'
 import { update_field_keys } from './update_field_keys'
+import { update_list_keys } from './list_keys'
 import { menu_follow_hover, menu_keys } from './menu'
 import { dialog_ok_id } from './dialog'
 
 export type UiUpdateResult = {
   state: UiState,
   events: [UiEvent],
-  store: WidgetStore
+  store: WidgetStore,
+  list_back: bool
 }
 
 export fn ui_update(
@@ -38,7 +40,7 @@ export fn ui_update(
       events.push(keyed.events[index])
       index = index + 1
     end
-    return UiUpdateResult { state: keyed.state, events: events, store: store }
+    return UiUpdateResult { state: keyed.state, events: events, store: store, list_back: false }
   end
   if state.overlay_open && widget_id_equals(store.overlay, store.dialog) then
     const keyed = update_field_keys(store, layout, theme, after_pointer.state, input)
@@ -52,24 +54,30 @@ export fn ui_update(
         events.push(ui_event_button_clicked(accept))
       end
     end
-    return UiUpdateResult { state: keyed.state, events: events, store: keyed.store }
+    return UiUpdateResult { state: keyed.state, events: events, store: keyed.store, list_back: false }
   end
   if state.overlay_open then
     return UiUpdateResult {
       state: after_pointer.state,
       events: after_pointer.events,
-      store: store
+      store: store,
+      list_back: false
     }
   end
   const after_wheel = update_wheel(store, layout, theme, after_pointer.state, input)
   const keyed = update_field_keys(store, layout, theme, after_wheel, input)
+  const listed = update_list_keys(store, layout, theme, keyed.state, input)
   let mut events = after_pointer.events
   if keyed.submitted then
     events.push(ui_event_row_activated(keyed.state.focus))
   end
+  if listed.activate then
+    events.push(ui_event_row_activated(listed.state.focus))
+  end
   UiUpdateResult {
-    state: update_copy(layout, keyed.state, input),
+    state: update_copy(layout, listed.state, input),
     events: events,
-    store: keyed.store
+    store: keyed.store,
+    list_back: listed.back
   }
 end

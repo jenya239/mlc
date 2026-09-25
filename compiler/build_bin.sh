@@ -82,6 +82,20 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   if [ -f /usr/include/png.h ] && [ -f /usr/include/jpeglib.h ] && [ -f /usr/include/webp/decode.h ]; then
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/image_preview.cpp")
     TEXT_LIBS+=(-lpng -ljpeg -lwebp)
+    if pkg-config --exists libavformat && pkg-config --exists libavcodec && pkg-config --exists libswscale && pkg-config --exists libavutil; then
+      RT_SRC+=("$ROOT_DIR/runtime/src/gl/video_preview.cpp")
+      # shellcheck disable=SC2207
+      TEXT_CFLAGS+=($(pkg-config --cflags libavformat libavcodec libswscale libavutil))
+      # shellcheck disable=SC2207
+      TEXT_LIBS+=($(pkg-config --libs libavformat libavcodec libswscale libavutil))
+    fi
+    if pkg-config --exists libpulse-simple && pkg-config --exists libswresample; then
+      RT_SRC+=("$ROOT_DIR/runtime/src/audio/music_player.cpp")
+      # shellcheck disable=SC2207
+      TEXT_CFLAGS+=($(pkg-config --cflags libpulse-simple libswresample))
+      # shellcheck disable=SC2207
+      TEXT_LIBS+=($(pkg-config --libs libpulse-simple libswresample))
+    fi
   fi
   if pkg-config --exists freetype2 && pkg-config --exists harfbuzz; then
     RT_SRC+=("$ROOT_DIR/runtime/src/gl/text_window_helpers.cpp")

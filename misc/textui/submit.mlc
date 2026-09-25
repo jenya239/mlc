@@ -1,4 +1,5 @@
 import { Theme } from './theme'
+import { image_preview_draw } from './image_preview'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { Rect } from './geometry'
 import { TextShapingState, text_shaping_ascender } from '../gui/text_shaping'
@@ -306,6 +307,7 @@ export fn submit_frame(
     }
   end
   submit_scissor_apply(window_height, [])
+  image_preview_draw(window_width, window_height, clear_framebuffer)
   text_scratch_f32_clear()
   clips = []
   operation_index = 0

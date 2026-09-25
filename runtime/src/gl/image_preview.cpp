@@ -1,27 +1,21 @@
 #include "mlc/gl/image_preview.hpp"
+#include "mlc/gl/video_preview.hpp"
 
 #include "mlc/gl/glad_gl.hpp"
-
-#if __has_include(<GLFW/glfw3.h>)
-#ifndef GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_NONE
-#endif
-#include <GLFW/glfw3.h>
-#define MLC_PREVIEW_HAS_GLFW 1
-#else
-#define MLC_PREVIEW_HAS_GLFW 0
-#endif
 
 #include <png.h>
 #include <jpeglib.h>
 #include <webp/decode.h>
 
 #include <csetjmp>
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
 #include <new>
 #include <cstring>
 #include <filesystem>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace mlc {
@@ -37,26 +31,55 @@ struct Slot {
   std::vector<uint8_t> pixels;
   int32_t width = 0;
   int32_t height = 0;
+  int32_t source_width = 0;
+  int32_t source_height = 0;
   bool failed = false;
   bool used = false;
 };
+
+int32_t decoded_source_width = 0;
+int32_t decoded_source_height = 0;
 
 Slot slots[k_slots];
 int32_t current_slot = -1;
 int32_t clock_hand = 0;
 
 GLuint picture = 0;
-GLuint backup = 0;
 GLuint program = 0;
 GLuint buffer = 0;
-GLint picture_size[2] = {0, 0};
-int32_t shown_left = 0;
-int32_t shown_bottom = 0;
-int32_t shown_right = 0;
-int32_t shown_top = 0;
-int32_t shown_pointer_x = -1;
-int32_t shown_pointer_y = -1;
-bool shown = false;
+bool paint_needed = false;
+bool picture_armed = false;
+int32_t armed_x = 0;
+int32_t armed_y = 0;
+int32_t armed_width = 0;
+int32_t armed_height = 0;
+int32_t armed_effect = 0;
+int32_t armed_framebuffer = 0;
+std::string shown_key;
+bool video_mode = false;
+std::string video_path;
+std::vector<uint8_t> live_pixels;
+int32_t live_width = 0;
+int32_t live_height = 0;
+uint64_t live_serial = 0;
+
+bool video_extension(const std::string& path) {
+  const auto slash = path.find_last_of('/');
+  const std::string name = slash == std::string::npos ? path : path.substr(slash + 1);
+  std::string lower = name;
+  for (char& character : lower) {
+    if (character >= 'A' && character <= 'Z') {
+      character = static_cast<char>(character - 'A' + 'a');
+    }
+  }
+  const std::string suffixes[] = {".mp4", ".m4v", ".mov", ".mkv", ".webm", ".avi", ".ogv"};
+  for (const std::string& suffix : suffixes) {
+    if (lower.size() >= suffix.size() && lower.compare(lower.size() - suffix.size(), suffix.size(), suffix) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 int32_t fit_size(int32_t width, int32_t height, int32_t* out_width, int32_t* out_height) {
   if (width < 1 || height < 1) {
@@ -150,6 +173,8 @@ bool decode_png(const std::string& path, std::vector<uint8_t>* pixels, int32_t* 
   png_read_image(reader, rows.data());
   png_destroy_read_struct(&reader, &info, nullptr);
   std::fclose(file);
+  decoded_source_width = static_cast<int32_t>(image_width);
+  decoded_source_height = static_cast<int32_t>(image_height);
   *width = static_cast<int32_t>(image_width);
   *height = static_cast<int32_t>(image_height);
   *pixels = std::move(rgba);
@@ -186,6 +211,8 @@ bool decode_jpeg(const std::string& path, std::vector<uint8_t>* pixels, int32_t*
   jpeg_create_decompress(&info);
   jpeg_stdio_src(&info, file);
   jpeg_read_header(&info, TRUE);
+  decoded_source_width = static_cast<int32_t>(info.image_width);
+  decoded_source_height = static_cast<int32_t>(info.image_height);
   info.out_color_space = JCS_RGB;
   info.scale_num = 1;
   info.scale_denom = 1;
@@ -253,6 +280,8 @@ bool decode_webp(const std::string& path, std::vector<uint8_t>* pixels, int32_t*
   if (decoded == nullptr) {
     return false;
   }
+  decoded_source_width = image_width;
+  decoded_source_height = image_height;
   *width = image_width;
   *height = image_height;
   pixels->assign(decoded, decoded + static_cast<size_t>(image_width) * static_cast<size_t>(image_height) * 4);
@@ -351,53 +380,8 @@ void ensure_gl() {
   const char* fragment =
     "varying vec2 v_uv;\n"
     "uniform sampler2D u_picture;\n"
-    "uniform float u_plain;\n"
-    "uniform float u_mode;\n"
-    "uniform float u_time;\n"
     "void main() {\n"
-    "  if (u_plain > 0.5) {\n"
-    "    gl_FragColor = vec4(texture2D(u_picture, v_uv).rgb, 1.0);\n"
-    "    return;\n"
-    "  }\n"
-    "  vec2 centered = v_uv - vec2(0.5);\n"
-    "  float radius = length(centered);\n"
-    "  float mask = clamp(1.0 - radius * radius * 4.0, 0.0, 1.0);\n"
-    "  mask = mask * mask;\n"
-    "  vec3 color = texture2D(u_picture, v_uv).rgb;\n"
-    "  if (u_mode > 0.5 && u_mode < 1.5) {\n"
-    "    vec2 sample_uv = v_uv - centered * mask * 0.18;\n"
-    "    color = texture2D(u_picture, sample_uv).rgb;\n"
-    "    float pulse = 0.72 + 0.28 * sin(u_time * 1.7);\n"
-    "    color += vec3(0.22, 0.4, 0.85) * mask * pulse;\n"
-    "  }\n"
-    "  if (u_mode > 2.5) {\n"
-    "    vec2 seed = vec2(0.3 * sin(u_time * 0.4), 0.3 * cos(u_time * 0.33));\n"
-    "    vec2 z = (v_uv - vec2(0.5)) * 2.2;\n"
-    "    float shade = 0.0;\n"
-    "    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + seed;\n"
-    "    shade += step(dot(z, z), 4.0);\n"
-    "    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + seed;\n"
-    "    shade += step(dot(z, z), 4.0);\n"
-    "    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + seed;\n"
-    "    shade += step(dot(z, z), 4.0);\n"
-    "    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + seed;\n"
-    "    shade += step(dot(z, z), 4.0);\n"
-    "    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + seed;\n"
-    "    shade += step(dot(z, z), 4.0);\n"
-    "    vec3 fractal = mix(vec3(0.04, 0.07, 0.14), vec3(0.4, 0.65, 1.0), shade * 0.2);\n"
-    "    fractal += vec3(0.8, 0.22, 0.5) * shade * 0.08;\n"
-    "    color = mix(color, fractal, 0.78);\n"
-    "  }\n"
-    "  if (u_mode > 1.5 && u_mode < 2.5) {\n"
-    "    float band = floor(v_uv.y * 80.0);\n"
-    "    float glitch = step(0.97, fract(sin(band + u_time * 9.0) * 43758.5)) * 0.045;\n"
-    "    float scan = 0.72 + 0.28 * step(0.5, fract(v_uv.y * 48.0));\n"
-    "    color = texture2D(u_picture, v_uv - vec2(glitch, 0.0)).rgb * scan;\n"
-    "    color.r += 0.28 * mask;\n"
-    "    color.b += 0.55 * mask;\n"
-    "  }\n"
-    "  float round_mask = smoothstep(0.56, 0.42, max(abs(centered.x), abs(centered.y)));\n"
-    "  gl_FragColor = vec4(color, 0.84 * round_mask);\n"
+    "  gl_FragColor = vec4(texture2D(u_picture, v_uv).rgb, 1.0);\n"
     "}\n";
   const GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex);
   const GLuint fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment);
@@ -408,15 +392,24 @@ void ensure_gl() {
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
   glGenTextures(1, &picture);
-  glGenTextures(1, &backup);
   glBindTexture(GL_TEXTURE_2D, picture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glBindTexture(GL_TEXTURE_2D, backup);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, k_box, k_box, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glGenBuffers(1, &buffer);
+}
+
+void upload_rgba(const uint8_t* pixels, int32_t width, int32_t height) {
+  glBindTexture(GL_TEXTURE_2D, picture);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+  glTexImage2D(
+    GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+    GL_RGBA, GL_UNSIGNED_BYTE, pixels
+  );
 }
 
 void upload_picture() {
@@ -424,32 +417,21 @@ void upload_picture() {
     return;
   }
   const Slot& slot = slots[current_slot];
-  glBindTexture(GL_TEXTURE_2D, picture);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexImage2D(
-    GL_TEXTURE_2D, 0, GL_RGBA8, slot.width, slot.height, 0,
-    GL_RGBA, GL_UNSIGNED_BYTE, slot.pixels.data()
-  );
-  picture_size[0] = slot.width;
-  picture_size[1] = slot.height;
+  upload_rgba(slot.pixels.data(), slot.width, slot.height);
 }
 
-void draw_quad(GLuint texture, int32_t left, int32_t bottom, int32_t right, int32_t top, int32_t window_width, int32_t window_height, bool image, int32_t effect_mode, float time_seconds) {
+void draw_quad(int32_t left, int32_t bottom, int32_t right, int32_t top, int32_t window_width, int32_t window_height) {
   const float x0 = static_cast<float>(left) / static_cast<float>(window_width) * 2.0f - 1.0f;
   const float x1 = static_cast<float>(right) / static_cast<float>(window_width) * 2.0f - 1.0f;
   const float y0 = static_cast<float>(bottom) / static_cast<float>(window_height) * 2.0f - 1.0f;
   const float y1 = static_cast<float>(top) / static_cast<float>(window_height) * 2.0f - 1.0f;
-  const float u1 = image ? 1.0f : static_cast<float>(right - left) / static_cast<float>(k_box);
-  const float v1 = image ? 1.0f : static_cast<float>(top - bottom) / static_cast<float>(k_box);
-  const float v_bottom = image ? v1 : 0.0f;
-  const float v_top = image ? 0.0f : v1;
   const float vertices[] = {
-    x0, y0, 0.0f, v_bottom,
-    x1, y0, u1, v_bottom,
-    x0, y1, 0.0f, v_top,
-    x0, y1, 0.0f, v_top,
-    x1, y0, u1, v_bottom,
-    x1, y1, u1, v_top
+    x0, y0, 0.0f, 1.0f,
+    x1, y0, 1.0f, 1.0f,
+    x0, y1, 0.0f, 0.0f,
+    x0, y1, 0.0f, 0.0f,
+    x1, y0, 1.0f, 1.0f,
+    x1, y1, 1.0f, 0.0f
   };
   glUseProgram(program);
   glBindBuffer(GL_ARRAY_BUFFER, buffer);
@@ -461,53 +443,238 @@ void draw_quad(GLuint texture, int32_t left, int32_t bottom, int32_t right, int3
   glVertexAttribPointer(static_cast<GLuint>(position), 2, GL_FLOAT, GL_FALSE, 16, reinterpret_cast<void*>(0));
   glVertexAttribPointer(static_cast<GLuint>(uv), 2, GL_FLOAT, GL_FALSE, 16, reinterpret_cast<void*>(8));
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, picture);
   glUniform1i(glGetUniformLocation(program, "u_picture"), 0);
-  glUniform1f(glGetUniformLocation(program, "u_plain"), image ? 0.0f : 1.0f);
-  glUniform1f(glGetUniformLocation(program, "u_mode"), static_cast<float>(effect_mode));
-  glUniform1f(glGetUniformLocation(program, "u_time"), time_seconds);
-  if (image) {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  } else {
-    glDisable(GL_BLEND);
-  }
-  glDrawArrays(GL_TRIANGLES, 0, 6);
   glDisable(GL_BLEND);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void restore_shown(int32_t window_width, int32_t window_height, int32_t scene_framebuffer) {
-  if (shown == false) {
+void bind_draw(int32_t framebuffer) {
+  if (framebuffer > 0) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(framebuffer));
     return;
   }
-  if (scene_framebuffer > 0) {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(scene_framebuffer));
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(
-      shown_left, shown_bottom, shown_right, shown_top,
-      shown_left, shown_bottom, shown_right, shown_top,
-      GL_COLOR_BUFFER_BIT, GL_NEAREST
-    );
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  } else {
-    draw_quad(backup, shown_left, shown_bottom, shown_right, shown_top, window_width, window_height, false, 0, 0.0f);
-  }
-  shown = false;
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-void capture_rect(int32_t left, int32_t bottom, int32_t right, int32_t top) {
-  glBindTexture(GL_TEXTURE_2D, backup);
-  glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, left, bottom, right - left, top - bottom);
+struct SharedStill {
+  std::mutex mutex;
+  std::condition_variable condition;
+  std::string path;
+  bool stopping = false;
+  bool path_changed = false;
+  std::vector<uint8_t> pixels;
+  int32_t width = 0;
+  int32_t height = 0;
+  int32_t source_width = 0;
+  int32_t source_height = 0;
+  bool failed = false;
+  uint64_t serial = 0;
+};
+
+SharedStill& shared_still() {
+  static SharedStill still;
+  return still;
+}
+
+std::thread& still_thread() {
+  static std::thread thread;
+  return thread;
+}
+
+uint64_t still_seen = 0;
+
+void still_main() {
+  SharedStill& still = shared_still();
+  while (true) {
+    std::string path;
+    {
+      std::unique_lock<std::mutex> guard(still.mutex);
+      still.condition.wait(guard, [&] { return still.stopping || still.path_changed; });
+      if (still.stopping && still.path.empty()) {
+        return;
+      }
+      path = still.path;
+      still.path_changed = false;
+    }
+    if (path.empty()) {
+      continue;
+    }
+    std::vector<uint8_t> decoded;
+    int32_t decoded_width = 0;
+    int32_t decoded_height = 0;
+    int32_t fitted_width = 0;
+    int32_t fitted_height = 0;
+    std::vector<uint8_t> fitted;
+    const bool decoded_ok = decode_file(path, &decoded, &decoded_width, &decoded_height)
+      && fit_size(decoded_width, decoded_height, &fitted_width, &fitted_height) != 0;
+    if (decoded_ok) {
+      fitted = scale_rgba(decoded.data(), decoded_width, decoded_height, fitted_width, fitted_height);
+    }
+    std::lock_guard<std::mutex> guard(still.mutex);
+    if (still.path != path || still.path_changed) {
+      continue;
+    }
+    still.failed = decoded_ok == false || fitted.empty();
+    still.width = still.failed ? 0 : fitted_width;
+    still.height = still.failed ? 0 : fitted_height;
+    still.source_width = still.failed ? 0 : decoded_source_width;
+    still.source_height = still.failed ? 0 : decoded_source_height;
+    still.pixels = std::move(fitted);
+    still.serial += 1;
+  }
+}
+
+void ensure_still() {
+  std::thread& thread = still_thread();
+  if (thread.joinable()) {
+    return;
+  }
+  thread = std::thread(still_main);
+}
+
+void still_watch(const std::string& path) {
+  SharedStill& still = shared_still();
+  {
+    std::lock_guard<std::mutex> guard(still.mutex);
+    if (still.path == path) {
+      return;
+    }
+    still.path = path;
+    still.path_changed = true;
+    still.failed = false;
+  }
+  still.condition.notify_all();
+  ensure_still();
+}
+
+int32_t picture_edge(bool width_edge, bool source_edge) {
+  if (video_mode) {
+    if (width_edge) {
+      return live_width;
+    }
+    return live_height;
+  }
+  if (current_slot >= 0 && slots[current_slot].failed == false && slots[current_slot].width > 0) {
+    if (source_edge && slots[current_slot].source_width > 0) {
+      if (width_edge) {
+        return slots[current_slot].source_width;
+      }
+      return slots[current_slot].source_height;
+    }
+    if (width_edge) {
+      return slots[current_slot].width;
+    }
+    return slots[current_slot].height;
+  }
+  SharedStill& still = shared_still();
+  std::lock_guard<std::mutex> guard(still.mutex);
+  if (still.path != shown_key || still.path_changed || still.failed) {
+    return 0;
+  }
+  if (source_edge && still.source_width > 0) {
+    if (width_edge) {
+      return still.source_width;
+    }
+    return still.source_height;
+  }
+  if (width_edge) {
+    return still.width;
+  }
+  return still.height;
+}
+
+bool still_pending() {
+  SharedStill& still = shared_still();
+  std::lock_guard<std::mutex> guard(still.mutex);
+  return still.serial != still_seen && still.path_changed == false;
+}
+
+void still_publish() {
+  SharedStill& still = shared_still();
+  std::vector<uint8_t> pixels;
+  int32_t width = 0;
+  int32_t height = 0;
+  int32_t source_width = 0;
+  int32_t source_height = 0;
+  bool failed = false;
+  std::string path;
+  {
+    std::lock_guard<std::mutex> guard(still.mutex);
+    if (still.serial == still_seen || still.path_changed) {
+      return;
+    }
+    pixels = still.pixels;
+    width = still.width;
+    height = still.height;
+    source_width = still.source_width;
+    source_height = still.source_height;
+    failed = still.failed;
+    path = still.path;
+    still_seen = still.serial;
+  }
+  if (path != shown_key) {
+    return;
+  }
+  const int32_t index = claim_slot();
+  slots[index].used = true;
+  slots[index].path = path;
+  slots[index].pixels = std::move(pixels);
+  slots[index].width = width;
+  slots[index].height = height;
+  slots[index].source_width = source_width;
+  slots[index].source_height = source_height;
+  slots[index].failed = failed;
+  current_slot = index;
+  if (failed == false && width > 0) {
+    paint_needed = true;
+  }
+}
+
+void still_shutdown() {
+  SharedStill& still = shared_still();
+  {
+    std::lock_guard<std::mutex> guard(still.mutex);
+    still.stopping = true;
+    still.path.clear();
+    still.path_changed = true;
+  }
+  still.condition.notify_all();
+  std::thread& thread = still_thread();
+  if (thread.joinable()) {
+    thread.join();
+  }
 }
 
 }  // namespace
 
 int32_t load_value(mlc::String path) {
   const std::string key = path.as_std_string();
+  if (key != shown_key) {
+    shown_key = key;
+    paint_needed = true;
+  }
   if (key.empty()) {
+    video_clear();
+    video_mode = false;
+    video_path.clear();
+    live_width = 0;
     current_slot = -1;
     return 0;
   }
+  if (video_extension(key)) {
+    current_slot = -1;
+    video_mode = true;
+    if (video_path != key) {
+      video_path = key;
+    }
+    video_watch(key);
+    return 1;
+  }
+  video_clear();
+  video_mode = false;
+  video_path.clear();
+  live_width = 0;
   const int32_t existing = find_slot(key);
   if (existing >= 0) {
     current_slot = existing;
@@ -516,50 +683,22 @@ int32_t load_value(mlc::String path) {
     }
     return 1;
   }
-  const int32_t index = claim_slot();
-  slots[index].used = true;
-  slots[index].path = key;
-  slots[index].pixels.clear();
-  slots[index].width = 0;
-  slots[index].height = 0;
-  slots[index].failed = true;
-  current_slot = index;
-  std::vector<uint8_t> decoded;
-  int32_t decoded_width = 0;
-  int32_t decoded_height = 0;
-  if (decode_file(key, &decoded, &decoded_width, &decoded_height) == false) {
-    return 0;
-  }
-  int32_t fitted_width = 0;
-  int32_t fitted_height = 0;
-  if (fit_size(decoded_width, decoded_height, &fitted_width, &fitted_height) == 0) {
-    return 0;
-  }
-  slots[index].pixels = scale_rgba(decoded.data(), decoded_width, decoded_height, fitted_width, fitted_height);
-  slots[index].width = fitted_width;
-  slots[index].height = fitted_height;
-  slots[index].failed = false;
-  return 1;
-}
-
-float effect_time() {
-#if MLC_PREVIEW_HAS_GLFW
-  return static_cast<float>(glfwGetTime());
-#else
-  return 0.0f;
-#endif
+  current_slot = -1;
+  still_watch(key);
+  return 0;
 }
 
 int32_t present_value(
-  int32_t pointer_x,
-  int32_t pointer_y,
+  int32_t dest_x,
+  int32_t dest_y,
+  int32_t dest_width,
+  int32_t dest_height,
   int32_t window_width,
   int32_t window_height,
-  int32_t clean_window,
   int32_t effect_mode,
   int32_t scene_framebuffer
 ) {
-  if (effect_mode == 0) {
+  if (effect_mode == 0 || scene_framebuffer <= 0) {
     scene_framebuffer = 0;
   }
   if (window_width < 1 || window_height < 1) {
@@ -569,45 +708,35 @@ int32_t present_value(
   if (program == 0) {
     return 0;
   }
-  const bool ready = current_slot >= 0 && slots[current_slot].failed == false && slots[current_slot].width > 0;
-  if (ready == false) {
-    if (shown == false || clean_window != 0) {
-      shown = false;
-      return 0;
-    }
-    glDisable(GL_BLEND);
-    glDisable(GL_SCISSOR_TEST);
-    glViewport(0, 0, window_width, window_height);
-    restore_shown(window_width, window_height, scene_framebuffer);
-    return 1;
+  if (dest_width < 1 || dest_height < 1) {
+    return 0;
   }
+  if (video_mode == false) {
+    still_publish();
+  }
+  const bool fresh_video = video_mode && video_take_frame(&live_pixels, &live_width, &live_height, &live_serial);
+  const bool ready = video_mode
+    ? live_width > 0
+    : current_slot >= 0 && slots[current_slot].failed == false && slots[current_slot].width > 0;
+  if (ready == false) {
+    return 0;
+  }
+  bind_draw(scene_framebuffer);
   glDisable(GL_BLEND);
   glDisable(GL_SCISSOR_TEST);
   glViewport(0, 0, window_width, window_height);
-  if (clean_window == 0) {
-    restore_shown(window_width, window_height, scene_framebuffer);
-  }
-  shown = false;
-  const int32_t source_width = slots[current_slot].width;
-  const int32_t source_height = slots[current_slot].height;
-  const int32_t shorter = window_width < window_height ? window_width : window_height;
-  int32_t budget = shorter * 42 / 100;
-  if (budget > k_box) {
-    budget = k_box;
-  }
-  if (budget > shorter - 32) {
-    budget = shorter - 32;
-  }
-  if (budget < 1) {
-    budget = 1;
-  }
-  int32_t card_width = budget;
-  int32_t card_height = budget;
-  if (source_width >= source_height && source_width > 0) {
-    card_height = budget * source_height / source_width;
-  }
-  if (source_height > source_width && source_height > 0) {
-    card_width = budget * source_width / source_height;
+  const int32_t source_width = video_mode ? live_width : slots[current_slot].width;
+  const int32_t source_height = video_mode ? live_height : slots[current_slot].height;
+  int32_t card_width = source_width;
+  int32_t card_height = source_height;
+  if (source_width > dest_width || source_height > dest_height) {
+    if (dest_width * source_height <= dest_height * source_width) {
+      card_width = dest_width;
+      card_height = source_width > 0 ? dest_width * source_height / source_width : dest_height;
+    } else {
+      card_height = dest_height;
+      card_width = source_height > 0 ? dest_height * source_width / source_height : dest_width;
+    }
   }
   if (card_width < 1) {
     card_width = 1;
@@ -615,63 +744,117 @@ int32_t present_value(
   if (card_height < 1) {
     card_height = 1;
   }
-  int32_t left = pointer_x + 24;
-  if (left + card_width > window_width) {
-    left = pointer_x - card_width - 24;
+  if (card_width > dest_width) {
+    card_width = dest_width;
   }
-  if (left < 0) {
-    left = 0;
+  if (card_height > dest_height) {
+    card_height = dest_height;
   }
-  if (left + card_width > window_width) {
-    left = window_width - card_width;
-  }
-  if (left < 0) {
-    left = 0;
-  }
-  int32_t top = window_height - pointer_y + card_height + 16;
-  if (top > window_height) {
-    top = window_height;
-  }
-  int32_t bottom = top - card_height;
-  if (bottom < 0) {
-    bottom = 0;
-    top = card_height;
-    if (top > window_height) {
-      top = window_height;
-      bottom = 0;
-    }
-  }
-  const int32_t right = left + card_width > window_width ? window_width : left + card_width;
+  const int32_t left = dest_x + (dest_width - card_width) / 2;
+  const int32_t origin_y = dest_y + (dest_height - card_height) / 2;
+  const int32_t top = window_height - origin_y;
+  const int32_t bottom = top - card_height;
+  const int32_t right = left + card_width;
   if (right - left < 1 || top - bottom < 1) {
     return 0;
   }
-  if (scene_framebuffer <= 0) {
-    capture_rect(left, bottom, right, top);
+  bind_draw(scene_framebuffer);
+  if (video_mode) {
+    if (fresh_video) {
+      upload_rgba(live_pixels.data(), live_width, live_height);
+    }
+  } else {
+    upload_picture();
   }
-  upload_picture();
-  draw_quad(picture, left, bottom, right, top, window_width, window_height, true, effect_mode, effect_time());
-  shown_left = left;
-  shown_bottom = bottom;
-  shown_right = right;
-  shown_top = top;
-  shown_pointer_x = pointer_x;
-  shown_pointer_y = pointer_y;
-  shown = true;
+  const int32_t scissor_bottom = window_height - (dest_y + dest_height);
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(dest_x, scissor_bottom, dest_width, dest_height);
+  draw_quad(left, bottom, right, top, window_width, window_height);
+  glDisable(GL_SCISSOR_TEST);
+  paint_needed = false;
   return 1;
 }
 
+void arm_value(
+  int32_t dest_x,
+  int32_t dest_y,
+  int32_t dest_width,
+  int32_t dest_height,
+  int32_t effect_mode,
+  int32_t scene_framebuffer
+) {
+  if (dest_width < 1 || dest_height < 1) {
+    if (picture_armed) {
+      paint_needed = true;
+    }
+    picture_armed = false;
+    return;
+  }
+  picture_armed = true;
+  armed_x = dest_x;
+  armed_y = dest_y;
+  armed_width = dest_width;
+  armed_height = dest_height;
+  armed_effect = effect_mode;
+  armed_framebuffer = scene_framebuffer;
+}
+
+void draw_background_value(int32_t window_width, int32_t window_height, int32_t full_paint) {
+  if (full_paint == 0 || picture_armed == false) {
+    return;
+  }
+  present_value(
+    armed_x, armed_y, armed_width, armed_height,
+    window_width, window_height, armed_effect, armed_framebuffer
+  );
+}
+
+int32_t needs_paint_value() {
+  if (video_mode && video_frame_pending(live_serial)) {
+    return 1;
+  }
+  if (video_mode == false && still_pending()) {
+    return 1;
+  }
+  return paint_needed ? 1 : 0;
+}
+
+int32_t background_value() {
+  return picture_armed ? 1 : 0;
+}
+
+int32_t picture_width_value() {
+  return picture_edge(true, true);
+}
+
+int32_t picture_height_value() {
+  return picture_edge(false, true);
+}
+
+int32_t picture_fit_width_value() {
+  return picture_edge(true, false);
+}
+
+int32_t picture_fit_height_value() {
+  return picture_edge(false, false);
+}
+
+int32_t playing_value() {
+  return video_is_active() ? 1 : 0;
+}
+
 void discard() {
+  still_shutdown();
+  video_shutdown();
+  video_mode = false;
   if (program != 0) {
     glDeleteProgram(program);
     glDeleteTextures(1, &picture);
-    glDeleteTextures(1, &backup);
     glDeleteBuffers(1, &buffer);
   }
   program = 0;
   picture = 0;
-  backup = 0;
   buffer = 0;
-  shown = false;
   current_slot = -1;
 }
 

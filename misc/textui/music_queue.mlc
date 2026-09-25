@@ -1,0 +1,152 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { WidgetId, WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
+import { UiState } from './ui_state'
+import { list_selected_at } from './widget_list'
+
+export type MusicQueue = {
+  paths: string,
+  start: i32
+}
+
+fn ends_with(text: string, suffix: string) -> bool = do
+  if text.byte_size() < suffix.byte_size() then
+    return false
+  end
+  return text.byte_substring(text.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn audio_file_name(name: string) -> bool = do
+  if ends_with(name, ".mp3") || ends_with(name, ".MP3") || ends_with(name, ".flac") || ends_with(name, ".FLAC") then
+    return true
+  end
+  if ends_with(name, ".ogg") || ends_with(name, ".OGG") || ends_with(name, ".wav") || ends_with(name, ".WAV") then
+    return true
+  end
+  return ends_with(name, ".m4a") || ends_with(name, ".M4A")
+end
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindIcon(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindTextField(_) => []
+    | KindSplitter(_) => []
+
+fn file_list(store: WidgetStore) -> WidgetId = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return store.nodes[index].id
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn clock_text(milliseconds: i32) -> string = do
+  let mut seconds = milliseconds / 1000
+  if seconds < 0 then
+    seconds = 0
+  end
+  const minutes = seconds / 60
+  const remain = seconds - minutes * 60
+  if remain < 10 then
+    return minutes.to_string() + ":0" + remain.to_string()
+  end
+  return minutes.to_string() + ":" + remain.to_string()
+end
+
+fn bar_cells(position: i32, duration: i32) -> string = do
+  let mut filled = 0
+  if duration > 0 then
+    filled = position * 16 / duration
+  end
+  if filled < 0 then
+    filled = 0
+  end
+  if filled > 16 then
+    filled = 16
+  end
+  let mut cells = ""
+  let mut index = 0
+  while index < 16 do
+    if index < filled then
+      cells = cells + "#"
+    end
+    if index >= filled then
+      cells = cells + "-"
+    end
+    index = index + 1
+  end
+  return cells
+end
+
+export fn progress_caption(name: string, position: i32, duration: i32) -> string = do
+  const bar = clock_text(position) + " [" + bar_cells(position, duration) + "] " + clock_text(duration)
+  if name == "" then
+    return bar
+  end
+  return name + "  " + bar
+end
+
+export fn folder_queue(store: WidgetStore, state: UiState, root: string, chosen: string) -> MusicQueue = do
+  const list = file_list(store)
+  if widget_id_is_none(list) then
+    return MusicQueue { paths: "", start: 0 }
+  end
+  const names = list_texts(store.nodes[list.index].kind)
+  const directory = strip_trailing_slash(path_bar_current(store))
+  let mut paths = ""
+  let mut start = 0
+  let mut count = 0
+  let mut index = 0
+  while index < names.length() do
+    const name = names[index]
+    if audio_file_name(name) then
+      const path = join_path(directory, name)
+      if path_inside_jail(root, path) then
+        if paths != "" then
+          paths = paths + "\n"
+        end
+        if chosen != "" && path == chosen then
+          start = count
+        end
+        paths = paths + path
+        count = count + 1
+      end
+    end
+    index = index + 1
+  end
+  if chosen == "" then
+    const selected = list_selected_at(state.list_selected, list.index)
+    if selected >= 0 && selected < names.length() && audio_file_name(names[selected]) then
+      const selected_path = join_path(directory, names[selected])
+      let mut cursor = 0
+      let mut audio_index = 0
+      while cursor < names.length() do
+        if audio_file_name(names[cursor]) && names[cursor] == names[selected] then
+          start = audio_index
+        end
+        if audio_file_name(names[cursor]) then
+          audio_index = audio_index + 1
+        end
+        cursor = cursor + 1
+      end
+      if path_inside_jail(root, selected_path) == false then
+        start = 0
+      end
+    end
+  end
+  return MusicQueue { paths: paths, start: start }
+end

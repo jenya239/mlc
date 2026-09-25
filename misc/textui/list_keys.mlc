@@ -1,0 +1,221 @@
+import { Theme } from './theme'
+import {
+  WidgetStore,
+  WidgetId,
+  kind_is_list_view,
+  kind_is_scroll_view,
+  widget_id_is_none,
+  widget_id_none
+} from './store'
+import { LayoutResult } from './layout_result'
+import { UiState, ui_state_with_list_selected, ui_state_with_scroll_offsets } from './ui_state'
+import { UiInput } from './ui_input'
+import {
+  list_content_height,
+  list_row_height,
+  list_selected_at,
+  list_selected_put
+} from './widget_list'
+import {
+  scroll_clamp_offset,
+  scroll_offset_at,
+  scroll_offsets_put
+} from './widget_scroll'
+
+export type ListKeyResult = {
+  state: UiState,
+  activate: bool,
+  back: bool
+}
+
+fn kept(state: UiState) -> ListKeyResult =
+  ListKeyResult { state: state, activate: false, back: false }
+
+fn list_count(store: WidgetStore, id: WidgetId) -> i32 = do
+  const count = match store.nodes[id.index].kind
+    | KindListView(data) => data.texts.length()
+    | KindBox(_) => 0
+    | KindLabel(_) => 0
+    | KindIcon(_) => 0
+    | KindButton(_) => 0
+    | KindCheckbox(_) => 0
+    | KindScrollView => 0
+    | KindSplitter(_) => 0
+    | KindTextField(_) => 0
+  count
+end
+
+fn focused_list(store: WidgetStore, state: UiState) -> WidgetId = do
+  if widget_id_is_none(state.focus) then
+    return widget_id_none()
+  end
+  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
+    return widget_id_none()
+  end
+  if kind_is_list_view(store.nodes[state.focus.index].kind) == false then
+    return widget_id_none()
+  end
+  state.focus
+end
+
+fn scroll_parent(store: WidgetStore, list_id: WidgetId) -> WidgetId = do
+  const parent = store.nodes[list_id.index].parent
+  if widget_id_is_none(parent) then
+    return widget_id_none()
+  end
+  if parent.index < 0 || parent.index >= store.nodes.length() then
+    return widget_id_none()
+  end
+  if kind_is_scroll_view(store.nodes[parent.index].kind) == false then
+    return widget_id_none()
+  end
+  parent
+end
+
+fn page_rows(store: WidgetStore, layout: LayoutResult, theme: Theme, list_id: WidgetId) -> i32 = do
+  const parent = scroll_parent(store, list_id)
+  if widget_id_is_none(parent) then
+    return 1
+  end
+  const row_height = list_row_height(theme)
+  if row_height <= 0 then
+    return 1
+  end
+  let mut rows = layout.rects[parent.index].height / row_height
+  rows = rows - 1
+  if rows < 1 then
+    return 1
+  end
+  rows
+end
+
+fn reveal_row(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  list_id: WidgetId,
+  index: i32
+) -> UiState = do
+  if index < 0 then
+    return state
+  end
+  const parent = scroll_parent(store, list_id)
+  if widget_id_is_none(parent) then
+    return state
+  end
+  const row_height = list_row_height(theme)
+  const top = index * row_height
+  const bottom = top + row_height
+  const view = layout.rects[parent.index].height
+  let mut offset = scroll_offset_at(state.scroll_offsets, parent.index)
+  if top < offset then
+    offset = top
+  end
+  if bottom > offset + view then
+    offset = bottom - view
+  end
+  const content = list_content_height(theme, list_count(store, list_id))
+  const clamped = scroll_clamp_offset(offset, content, view)
+  ui_state_with_scroll_offsets(
+    state,
+    scroll_offsets_put(state.scroll_offsets, parent.index, clamped)
+  )
+end
+
+fn place_row(state: UiState, list_id: WidgetId, index: i32) -> UiState =
+  ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, list_id.index, index)
+  )
+
+fn moved(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  list_id: WidgetId,
+  index: i32
+) -> ListKeyResult = do
+  if index < 0 then
+    return kept(state)
+  end
+  const placed = place_row(state, list_id, index)
+  ListKeyResult {
+    state: reveal_row(store, layout, theme, placed, list_id, index),
+    activate: false,
+    back: false
+  }
+end
+
+fn clamp_move(current: i32, delta: i32, count: i32) -> i32 = do
+  if count <= 0 then
+    return 0 - 1
+  end
+  if current < 0 then
+    if delta < 0 then
+      return count - 1
+    end
+    return 0
+  end
+  let mut next = current + delta
+  if next < 0 then
+    next = 0
+  end
+  if next >= count then
+    next = count - 1
+  end
+  next
+end
+
+export fn update_list_keys(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  input: UiInput
+) -> ListKeyResult = do
+  const list_id = focused_list(store, state)
+  if widget_id_is_none(list_id) then
+    return kept(state)
+  end
+  if input.control_down then
+    return kept(state)
+  end
+  const count = list_count(store, list_id)
+  const current = list_selected_at(state.list_selected, list_id.index)
+  if input.binding_key == "down" then
+    return moved(store, layout, theme, state, list_id, clamp_move(current, 1, count))
+  end
+  if input.binding_key == "up" then
+    return moved(store, layout, theme, state, list_id, clamp_move(current, 0 - 1, count))
+  end
+  if input.binding_key == "page_down" then
+    return moved(
+      store, layout, theme, state, list_id,
+      clamp_move(current, page_rows(store, layout, theme, list_id), count)
+    )
+  end
+  if input.binding_key == "page_up" then
+    return moved(
+      store, layout, theme, state, list_id,
+      clamp_move(current, 0 - page_rows(store, layout, theme, list_id), count)
+    )
+  end
+  if input.binding_key == "home" then
+    return moved(store, layout, theme, state, list_id, clamp_move(0 - 1, 1, count))
+  end
+  if input.binding_key == "end" then
+    return moved(store, layout, theme, state, list_id, clamp_move(0 - 1, 0 - 1, count))
+  end
+  if input.enter_pressed || input.binding_key == "right" then
+    if current < 0 || current >= count then
+      return kept(state)
+    end
+    return ListKeyResult { state: state, activate: true, back: false }
+  end
+  if input.backspace_pressed || input.binding_key == "left" then
+    return ListKeyResult { state: state, activate: false, back: true }
+  end
+  kept(state)
+end

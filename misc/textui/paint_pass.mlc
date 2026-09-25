@@ -23,7 +23,7 @@ import {
   scroll_offset_at
 } from './widget_scroll'
 import { paint_pick_overlay } from './inspect'
-import { paint_list_rows } from './widget_list'
+import { paint_focused_list_ring, paint_list_rows } from './widget_list'
 import { paint_icon_widget } from './icon'
 import { paint_checkbox } from './checkbox'
 import { menu_list_id } from './menu'
@@ -259,6 +259,9 @@ fn paint_node(
         color: theme.scrollbar_thumb
       }))
     end
+    current_operations = paint_focused_list_ring(
+      theme, store, layout, state, node_index, current_operations
+    )
   end
   if kind_is_splitter(node.kind) then
     current_operations = paint_splitter_sash(

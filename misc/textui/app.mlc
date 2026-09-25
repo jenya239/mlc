@@ -30,22 +30,22 @@ import { submit_ui_frame } from './hover_damage'
 import {
   cursor_lens_bind,
   cursor_lens_create,
-  cursor_lens_destroy,
-  cursor_lens_present
+  cursor_lens_destroy
 } from './cursor_lens'
+import { scene_finish } from './scene_present'
 import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
 import { activated_row_text } from './row_label'
 import { ui_update } from './ui_update'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
-import { apply_toolbar, effect_wait_seconds } from './visual_effect'
+import { apply_toolbar, frame_wait_seconds } from './visual_effect'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
 import { WindowPlacement, window_placement_save } from './window_placement'
 import { gallery_start, window_session_load, window_session_store } from './window_session'
-import { follow_directory_jailed, open_directory_jailed } from './directory_browse'
+import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
 import { apply_checkbox_click } from './jail_switch'
 import { path_history_empty, path_history_visit } from './path_history'
 import { path_bar_current } from './path_bar'
@@ -53,8 +53,8 @@ import { apply_path_click_jailed } from './path_travel'
 import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
 import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
-import { image_preview_frame, image_preview_release } from './image_preview'
-
+import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
+import { music_host, music_playing, music_release } from './music_host'
 fn application_reload_status() -> i32 = 75
 
 fn remember_window() -> bool = do
@@ -172,7 +172,7 @@ fn main() -> i32 = do
   let mut right_was_down = false
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
-      host_wait_for_input(effect_wait_seconds(effect_mode))
+      host_wait_for_input(frame_wait_seconds(effect_mode, image_preview_playing(), music_playing()))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0
@@ -250,13 +250,19 @@ fn main() -> i32 = do
       jail_root = switched.root
       hidden_index = hidden_index + 1
     end
-    const browsed = follow_directory_jailed(store, state, updated.events, jail_root)
+    let mut browsed = follow_directory_jailed(store, state, updated.events, jail_root)
+    if updated.list_back then
+      browsed = open_parent_jailed(browsed.store, browsed.state, jail_root)
+    end
     store = browsed.store
     state = browsed.state
     path_history = path_history_visit(path_history, path_before_browse, path_bar_current(store))
     if state.listing_revision != revision_before_browse then
       dense_enabled = false
     end
+    const heard = music_host(store, state, laid_out.layout, theme, updated.events, jail_root, input.mouse_x, input.mouse_y, input.left_down)
+    store = heard.store
+    state = heard.state
     const early_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
     const request = frame_request(presented, early_signature)
     if frame_request_layouts(request) then
@@ -320,8 +326,13 @@ fn main() -> i32 = do
     end
     const window_width = glfw_gl_window_width()
     const window_height = glfw_gl_window_height()
+    image_preview_arm(store, state, laid_out.layout, jail_root, effect_mode, lens.framebuffer)
+    if image_preview_needs_paint() != 0 then
+      paints = true
+    end
     if paints then
       lens = cursor_lens_bind(lens, window_width, window_height, effect_mode)
+      image_preview_arm(store, state, laid_out.layout, jail_root, effect_mode, lens.framebuffer)
       const submitted = submit_ui_frame(
         resources,
         shaping,
@@ -333,7 +344,8 @@ fn main() -> i32 = do
         next_signature,
         window_width,
         window_height,
-        composed
+        composed,
+        jail_root
       )
       composed = true
       if submitted.error_code != 0 then
@@ -346,25 +358,14 @@ fn main() -> i32 = do
       resources = submitted.resources
       shaping = submitted.shaping
       const clean_window = frame_index == 0 || frame_signature_hover_only(presented, next_signature) == false
-      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, clean_window, effect_mode)
-      let mut clean_flag = 0
-      if clean_window then
-        clean_flag = 1
-      end
-      image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, clean_flag, effect_mode, lens.framebuffer)
+      lens = scene_finish(lens, input.mouse_x, input.mouse_y, window_width, window_height, clean_window, effect_mode)
       presented = next_signature
       glfw_gl_context_swap_poll()
       sample_after_present = true
     end
     if paints == false && composed && effect_mode != 0 then
-      lens = cursor_lens_present(lens, input.mouse_x, input.mouse_y, window_width, window_height, false, effect_mode)
-      image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, 0, effect_mode, lens.framebuffer)
+      lens = scene_finish(lens, input.mouse_x, input.mouse_y, window_width, window_height, false, effect_mode)
       glfw_gl_context_swap_poll()
-    end
-    if paints == false && (composed == false || effect_mode == 0) then
-      if image_preview_frame(store, state, jail_root, input.mouse_x, input.mouse_y, window_width, window_height, 0, effect_mode, lens.framebuffer) != 0 then
-        glfw_gl_context_swap_poll()
-      end
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
@@ -381,6 +382,7 @@ fn main() -> i32 = do
   submit_destroy(resources)
   cursor_lens_destroy(lens)
   image_preview_release()
+  music_release()
   saved_session = window_session_store(
     saved_session, store, effect_mode, sandbox_root, jail_root
   )

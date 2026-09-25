@@ -26,7 +26,7 @@ import {
 import { UiEvent } from './ui_event'
 import { list_selected_at, list_selected_put } from './widget_list'
 import { scroll_offsets_put } from './widget_scroll'
-import { directory_listing, directory_target } from './directory_rows'
+import { directory_listing, directory_target, parent_path } from './directory_rows'
 import { listing_at_jail_root, normalize_path, path_inside_jail } from './directory_jail'
 import { checkbox_named_checked, checkbox_toggle } from './checkbox'
 import { path_bar_sync } from './path_bar'
@@ -262,3 +262,19 @@ export fn refresh_hidden_jailed(store: WidgetStore, state: UiState, id: WidgetId
 
 export fn open_directory_jailed(store: WidgetStore, state: UiState, path: string, root: string) -> DirectoryView =
   open_directory_in(store, state, path, root)
+
+export fn open_parent_jailed(store: WidgetStore, state: UiState, root: string) -> DirectoryView = do
+  const path_field = first_text_field(store)
+  if widget_id_is_none(path_field) then
+    return view_of(store, state)
+  end
+  const current = normalize_path(field_text(store.nodes[path_field.index].kind))
+  if root != "" && current == normalize_path(root) then
+    return view_of(store, state)
+  end
+  const parent = parent_path(current)
+  if parent == current then
+    return view_of(store, state)
+  end
+  open_directory_in(store, state, parent, root)
+end

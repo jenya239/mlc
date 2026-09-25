@@ -1,0 +1,12 @@
+import { CursorLens, cursor_lens_present } from './cursor_lens'
+
+export fn scene_finish(
+  lens: CursorLens,
+  pointer_x: i32,
+  pointer_y: i32,
+  window_width: i32,
+  window_height: i32,
+  clean_window: bool,
+  mode: i32
+) -> CursorLens =
+  cursor_lens_present(lens, pointer_x, pointer_y, window_width, window_height, clean_window, mode)

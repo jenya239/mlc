@@ -276,6 +276,34 @@ const char* edit_repeat_name(int key, int mods) {
       return "home";
     case GLFW_KEY_END:
       return "end";
+    case GLFW_KEY_UP:
+      return "up";
+    case GLFW_KEY_DOWN:
+      return "down";
+    case GLFW_KEY_PAGE_UP:
+      return "page_up";
+    case GLFW_KEY_PAGE_DOWN:
+      return "page_down";
+    case GLFW_KEY_KP_8:
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "up";
+      }
+      return nullptr;
+    case GLFW_KEY_KP_2:
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "down";
+      }
+      return nullptr;
+    case GLFW_KEY_KP_9:
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "page_up";
+      }
+      return nullptr;
+    case GLFW_KEY_KP_3:
+      if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
+        return "page_down";
+      }
+      return nullptr;
     case GLFW_KEY_KP_7:
       // Numpad 7 is Home while Num Lock is off. GLFW reports the physical key.
       if ((mods & GLFW_MOD_NUM_LOCK) == 0) {
@@ -307,6 +335,11 @@ void on_key(GLFWwindow* /*window*/, int key, int /*scancode*/, int action, int m
     key == GLFW_KEY_KP_7 || key == GLFW_KEY_KP_1;
   if (navigation_jump || action == GLFW_REPEAT) {
     pending_edit_repeats().push_back(name);
+  }
+  const bool keypad_move = key == GLFW_KEY_KP_8 || key == GLFW_KEY_KP_2 ||
+    key == GLFW_KEY_KP_9 || key == GLFW_KEY_KP_3;
+  if (action == GLFW_PRESS && keypad_move && pending_binding_key().empty()) {
+    pending_binding_key() = name;
   }
 }
 
@@ -626,7 +659,10 @@ int32_t glfw_gl_key_enter_down() {
   if (window == nullptr) {
     return 0;
   }
-  return glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ? 1 : 0;
+  if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+    return 1;
+  }
+  return glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS ? 1 : 0;
 }
 
 String glfw_gl_take_text() {

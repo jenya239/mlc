@@ -1,0 +1,259 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { activated_row_text } from './row_label'
+import { folder_queue, progress_caption } from './music_queue'
+import { hit_test } from './hit'
+import { LayoutResult } from './layout_result'
+import { Theme } from './theme'
+import {
+  ButtonData,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_is_none,
+  widget_node_with_kind,
+  widget_store_keep
+} from './store'
+import { UiEvent } from './ui_event'
+import { UiState, ui_state_with_listing_revision } from './ui_state'
+
+extern fn music_play_list(paths: string, start_index: i32) -> unit
+  = "mlc::music_player::play_list_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_next() -> unit
+  = "mlc::music_player::next_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_previous() -> unit
+  = "mlc::music_player::previous_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_seek(milliseconds: i32) -> unit
+  = "mlc::music_player::seek_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_toggle() -> unit
+  = "mlc::music_player::toggle_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_release_player() -> unit
+  = "mlc::music_player::release_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_active() -> i32
+  = "mlc::music_player::active_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_paused() -> i32
+  = "mlc::music_player::paused_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_position_milliseconds() -> i32
+  = "mlc::music_player::position_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_duration_milliseconds() -> i32
+  = "mlc::music_player::duration_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_title() -> string
+  = "mlc::music_player::title_value" from "mlc/audio/music_player.hpp" blocking
+
+export type MusicView = {
+  store: WidgetStore,
+  state: UiState
+}
+
+fn ends_with(text: string, suffix: string) -> bool = do
+  if text.byte_size() < suffix.byte_size() then
+    return false
+  end
+  return text.byte_substring(text.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn audio_file_name(name: string) -> bool = do
+  if ends_with(name, ".mp3") || ends_with(name, ".MP3") || ends_with(name, ".flac") || ends_with(name, ".FLAC") then
+    return true
+  end
+  if ends_with(name, ".ogg") || ends_with(name, ".OGG") || ends_with(name, ".wav") || ends_with(name, ".WAV") then
+    return true
+  end
+  return ends_with(name, ".m4a") || ends_with(name, ".M4A")
+end
+
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn renamed_button(kind: WidgetKind, text: string) -> WidgetKind =
+  match kind
+    | KindButton(_) => KindButton(ButtonData { text: text })
+    | KindBox(data) => KindBox(data)
+    | KindLabel(data) => KindLabel(data)
+    | KindCheckbox(data) => KindCheckbox(data)
+    | KindScrollView => KindScrollView
+    | KindListView(data) => KindListView(data)
+    | KindSplitter(data) => KindSplitter(data)
+    | KindTextField(data) => KindTextField(data)
+    | KindIcon(data) => KindIcon(data)
+
+fn transport_caption(text: string) -> bool = do
+  if text.byte_size() >= 5 && text.byte_substring(0, 5) == "Pause" then
+    return true
+  end
+  return text.byte_size() >= 4 && text.byte_substring(0, 4) == "Play"
+end
+
+fn find_transport(store: WidgetStore) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if transport_caption(button_text(store.nodes[index].kind)) then
+      return store.nodes[index].id
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn set_button_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  if widget_id_is_none(id) then
+    return store
+  end
+  const node = store.nodes[id.index]
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, renamed_button(node.kind, text)))
+  return widget_store_keep(nodes, store)
+end
+
+fn caption_now() -> string = do
+  if music_active() != 0 && music_paused() == 0 then
+    return "Pause"
+  end
+  return "Play"
+end
+
+fn progress_button(text: string) -> bool = do
+  let mut index = 0
+  while index + 2 <= text.byte_size() do
+    if text.byte_substring(index, 2) == " [" then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
+fn find_progress(store: WidgetStore) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    if progress_button(button_text(store.nodes[index].kind)) then
+      return store.nodes[index].id
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+fn start_folder(store: WidgetStore, state: UiState, root: string, chosen: string) -> unit = do
+  const queue = folder_queue(store, state, root, chosen)
+  if queue.paths != "" then
+    music_play_list(queue.paths, queue.start)
+  end
+end
+
+fn seek_at(layout: LayoutResult, id: WidgetId, mouse_x: i32) -> unit = do
+  if widget_id_is_none(id) == false && id.index >= 0 && id.index < layout.rects.length() then
+    const rect = layout.rects[id.index]
+    if rect.width > 0 then
+      let mut local = mouse_x - rect.x
+      if local < 0 then
+        local = 0
+      end
+      if local > rect.width then
+        local = rect.width
+      end
+      const duration = music_duration_milliseconds()
+      if duration > 0 then
+        music_seek(local * duration / rect.width)
+      end
+    end
+  end
+end
+
+fn audio_path(store: WidgetStore, state: UiState, owner: WidgetId, root: string) -> string = do
+  const name = activated_row_text(store, state, owner)
+  if audio_file_name(name) == false then
+    return ""
+  end
+  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  return path
+end
+
+export fn music_playing() -> i32 = do
+  if music_active() == 0 || music_paused() != 0 then
+    return 0
+  end
+  return 1
+end
+
+export fn music_release() -> unit =
+  music_release_player()
+
+export fn music_host(
+  store: WidgetStore,
+  state: UiState,
+  layout: LayoutResult,
+  theme: Theme,
+  events: [UiEvent],
+  root: string,
+  mouse_x: i32,
+  mouse_y: i32,
+  left_down: bool
+) -> MusicView = do
+  let mut next_store = store
+  let mut index = 0
+  while index < events.length() do
+    const event = events[index]
+    if event.activated then
+      const path = audio_path(next_store, state, event.widget, root)
+      if path != "" then
+        start_folder(next_store, state, root, path)
+      end
+    end
+    if event.activated == false && widget_id_is_none(event.widget) == false then
+      const caption = button_text(next_store.nodes[event.widget.index].kind)
+      if caption == "Prev" then
+        music_previous()
+      end
+      if caption == "Next" then
+        music_next()
+      end
+      if transport_caption(caption) && music_active() != 0 then
+        music_toggle()
+      end
+      if transport_caption(caption) && music_active() == 0 then
+        start_folder(next_store, state, root, "")
+      end
+    end
+    index = index + 1
+  end
+  const progress = find_progress(next_store)
+  if left_down && widget_id_is_none(progress) == false then
+    const hit = hit_test(next_store, layout, theme, mouse_x, mouse_y)
+    if widget_id_is_none(hit) == false && hit.index == progress.index then
+      seek_at(layout, progress, mouse_x)
+    end
+  end
+  let mut changed = false
+  const play_caption = caption_now()
+  const transport = find_transport(next_store)
+  if widget_id_is_none(transport) == false && button_text(next_store.nodes[transport.index].kind) != play_caption then
+    next_store = set_button_text(next_store, transport, play_caption)
+    changed = true
+  end
+  const bar = progress_caption(music_title(), music_position_milliseconds(), music_duration_milliseconds())
+  if widget_id_is_none(progress) == false && button_text(next_store.nodes[progress.index].kind) != bar then
+    next_store = set_button_text(next_store, progress, bar)
+    changed = true
+  end
+  if changed then
+    return MusicView {
+      store: next_store,
+      state: ui_state_with_listing_revision(state, state.listing_revision + 1)
+    }
+  end
+  return MusicView { store: next_store, state: state }
+end
