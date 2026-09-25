@@ -3,6 +3,9 @@ import { path_inside_jail } from './directory_jail'
 import { path_bar_current } from './path_bar'
 import { WidgetId, WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
 import { LayoutResult } from './layout_result'
+import { Rect, rect_new } from './geometry'
+import { Theme } from './theme'
+import { list_row_height } from './widget_list'
 import { UiState } from './ui_state'
 
 extern fn image_preview_load(path: string) -> i32
@@ -19,6 +22,10 @@ extern fn image_preview_needs_paint_flag() -> i32
   = "mlc::image_preview::needs_paint_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_is_background() -> i32
   = "mlc::image_preview::background_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_fit_width() -> i32
+  = "mlc::image_preview::picture_fit_width_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_fit_height() -> i32
+  = "mlc::image_preview::picture_fit_height_value" from "mlc/gl/image_preview.hpp" blocking
 export extern fn write_sample_png(path: string, seed: i32) -> bool
   = "mlc::image_preview::write_sample_png_value" from "mlc/gl/image_preview.hpp" blocking
 
@@ -49,6 +56,92 @@ fn image_file_name(name: string) -> bool = do
     return true
   end
   return ends_with(name, ".ogv") || ends_with(name, ".OGV")
+end
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+    | KindIcon(_) => []
+
+fn file_list_texts(store: WidgetStore) -> [string] = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return list_texts(store.nodes[index].kind)
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  let mut empty: [string] = []
+  return empty
+end
+
+fn file_list_index(store: WidgetStore) -> i32 = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return index
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return 0 - 1
+end
+
+fn mean_name_end(store: WidgetStore, layout: LayoutResult, theme: Theme, text_start: i32) -> i32 = do
+  const list_index = file_list_index(store)
+  const texts = file_list_texts(store)
+  if list_index < 0 || texts.length() < 1 || list_index >= layout.rects.length() then
+    return text_start
+  end
+  const row_height = list_row_height(theme)
+  if row_height < 1 then
+    return text_start
+  end
+  const content = layout.rects[list_index]
+  let mut clip = content
+  if list_index < layout.clips.length() then
+    clip = layout.clips[list_index]
+  end
+  let mut first = (clip.y - content.y) / row_height
+  if first < 0 then
+    first = 0
+  end
+  if first > texts.length() then
+    first = texts.length()
+  end
+  let mut last = (clip.y + clip.height - content.y + row_height - 1) / row_height
+  if last < first then
+    last = first
+  end
+  if last > texts.length() then
+    last = texts.length()
+  end
+  let mut sum = 0
+  let mut count = 0
+  let mut index = first
+  while index < last do
+    sum = sum + texts[index].byte_size()
+    count = count + 1
+    index = index + 1
+  end
+  if count < 1 then
+    return text_start
+  end
+  return text_start + (sum / count) * theme.font_size_pixels * 6 / 10
 end
 
 fn list_text_at(texts: [string], row: i32) -> string = do
@@ -108,22 +201,90 @@ export fn image_preview_file_pane(store: WidgetStore) -> WidgetId = do
   return widget_id_none()
 end
 
+fn contained_width(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
+  if source_width > dest_width || source_height > dest_height then
+    if dest_width * source_height <= dest_height * source_width then
+      return dest_width
+    end
+    if source_height > 0 then
+      return dest_height * source_width / source_height
+    end
+  end
+  return source_width
+end
+
+fn contained_height(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
+  if source_width > dest_width || source_height > dest_height then
+    if dest_width * source_height <= dest_height * source_width then
+      if source_width > 0 then
+        return dest_width * source_height / source_width
+      end
+      return dest_height
+    end
+    return dest_height
+  end
+  return source_height
+end
+
+export fn preview_side_rect(store: WidgetStore, layout: LayoutResult, theme: Theme) -> Rect = do
+  const pane = image_preview_file_pane(store)
+  if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.clips.length() then
+    return rect_new(0, 0, 0, 0)
+  end
+  const rect = layout.clips[pane.index]
+  const fit_width = image_preview_fit_width()
+  const fit_height = image_preview_fit_height()
+  if fit_width < 1 || fit_height < 1 || rect.width < 1 || rect.height < 1 then
+    return rect
+  end
+  let mut card_width = contained_width(fit_width, fit_height, rect.width, rect.height)
+  let mut card_height = contained_height(fit_width, fit_height, rect.width, rect.height)
+  if card_width < 1 then
+    card_width = 1
+  end
+  if card_height < 1 then
+    card_height = 1
+  end
+  if card_width > rect.width then
+    card_width = rect.width
+  end
+  if card_height > rect.height then
+    card_height = rect.height
+  end
+  const icon_span = theme.font_size_pixels + theme.font_size_pixels / 6
+  const text_start = rect.x + theme.padding + icon_span
+  const name_end = mean_name_end(store, layout, theme, text_start)
+  const right = rect.x + rect.width
+  let mut center = (name_end + right) / 2
+  if center < rect.x then
+    center = rect.x
+  end
+  if center > right then
+    center = right
+  end
+  let mut left = center - card_width / 2
+  if left < rect.x then
+    left = rect.x
+  end
+  if left + card_width > right then
+    left = right - card_width
+  end
+  const top = rect.y + (rect.height - card_height) / 2
+  return rect_new(left, top, card_width, card_height)
+end
+
 export fn image_preview_arm(
   store: WidgetStore,
   state: UiState,
   layout: LayoutResult,
+  theme: Theme,
   root: string,
   effect_mode: i32,
   scene_framebuffer: i32
 ) -> unit = do
   image_preview_load(hovered_image_path(store, state, root))
-  const pane = image_preview_file_pane(store)
-  if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.rects.length() then
-    image_preview_arm_rect(0, 0, 0, 0, effect_mode, scene_framebuffer)
-  else
-    const rect = layout.clips[pane.index]
-    image_preview_arm_rect(rect.x, rect.y, rect.width, rect.height, effect_mode, scene_framebuffer)
-  end
+  const band = preview_side_rect(store, layout, theme)
+  image_preview_arm_rect(band.x, band.y, band.width, band.height, effect_mode, scene_framebuffer)
 end
 
 export fn image_preview_draw(window_width: i32, window_height: i32, clear_framebuffer: bool) -> unit = do

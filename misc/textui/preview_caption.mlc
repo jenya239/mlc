@@ -3,16 +3,12 @@ import { WidgetStore, widget_id_is_none } from './store'
 import { LayoutResult } from './layout_result'
 import { DrawOp, TextOp } from './draw_op'
 import { UiState } from './ui_state'
-import { hovered_image_path, image_preview_file_pane } from './image_preview'
+import { hovered_image_path, image_preview_file_pane, preview_side_rect } from './image_preview'
 
 extern fn image_preview_picture_width() -> i32
   = "mlc::image_preview::picture_width_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_picture_height() -> i32
   = "mlc::image_preview::picture_height_value" from "mlc/gl/image_preview.hpp" blocking
-extern fn image_preview_fit_width() -> i32
-  = "mlc::image_preview::picture_fit_width_value" from "mlc/gl/image_preview.hpp" blocking
-extern fn image_preview_fit_height() -> i32
-  = "mlc::image_preview::picture_fit_height_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn preview_file_byte_size(path: string) -> i32
   = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
 
@@ -64,32 +60,6 @@ fn preview_caption_text(path: string, width: i32, height: i32) -> string = do
   return append_piece(text, extension_label(path))
 end
 
-fn contained_size(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
-  if source_width > dest_width || source_height > dest_height then
-    if dest_width * source_height <= dest_height * source_width then
-      return dest_width
-    end
-    if source_height > 0 then
-      return dest_height * source_width / source_height
-    end
-    return dest_width
-  end
-  return source_width
-end
-
-fn contained_height(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
-  if source_width > dest_width || source_height > dest_height then
-    if dest_width * source_height <= dest_height * source_width then
-      if source_width > 0 then
-        return dest_width * source_height / source_width
-      end
-      return dest_height
-    end
-    return dest_height
-  end
-  return source_height
-end
-
 fn caption_top(image_top: i32, image_height: i32, pane_top: i32, pane_height: i32, line: i32) -> i32 = do
   const below = image_top + image_height + 4
   if below + line <= pane_top + pane_height then
@@ -114,48 +84,29 @@ export fn paint_preview_caption(
   if path == "" then
     return operations
   end
+  const card = preview_side_rect(store, layout, theme)
+  if card.width < 1 || card.height < 1 then
+    return operations
+  end
   const pane = image_preview_file_pane(store)
   if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.clips.length() then
     return operations
   end
-  const rect = layout.clips[pane.index]
-  if rect.width < 1 || rect.height < 1 then
-    return operations
-  end
+  const clip = layout.clips[pane.index]
   const picture_width = image_preview_picture_width()
   const picture_height = image_preview_picture_height()
-  const fit_width = image_preview_fit_width()
-  const fit_height = image_preview_fit_height()
   const caption = preview_caption_text(path, picture_width, picture_height)
   if caption == "" then
     return operations
   end
-  let mut origin_x = rect.x + 8
-  let mut origin_y = rect.y + rect.height - theme.font_size_pixels - 8
-  if fit_width > 0 && fit_height > 0 then
-    let mut card_width = contained_size(fit_width, fit_height, rect.width, rect.height)
-    let mut card_height = contained_height(fit_width, fit_height, rect.width, rect.height)
-    if card_width < 1 then
-      card_width = 1
-    end
-    if card_height < 1 then
-      card_height = 1
-    end
-    if card_width > rect.width then
-      card_width = rect.width
-    end
-    if card_height > rect.height then
-      card_height = rect.height
-    end
-    origin_x = rect.x + (rect.width - card_width) / 2
-    origin_y = caption_top(
-      rect.y + (rect.height - card_height) / 2,
-      card_height,
-      rect.y,
-      rect.height,
-      theme.font_size_pixels
-    )
-  end
+  const origin_x = card.x
+  const origin_y = caption_top(
+    card.y,
+    card.height,
+    clip.y,
+    clip.height,
+    theme.font_size_pixels
+  )
   let mut next = operations
   next.push(OpText(TextOp {
     origin_x: origin_x,

@@ -326,13 +326,13 @@ fn main() -> i32 = do
     end
     const window_width = glfw_gl_window_width()
     const window_height = glfw_gl_window_height()
-    image_preview_arm(store, state, laid_out.layout, jail_root, effect_mode, lens.framebuffer)
+    image_preview_arm(store, state, laid_out.layout, theme, jail_root, effect_mode, lens.framebuffer)
     if image_preview_needs_paint() != 0 then
       paints = true
     end
     if paints then
       lens = cursor_lens_bind(lens, window_width, window_height, effect_mode)
-      image_preview_arm(store, state, laid_out.layout, jail_root, effect_mode, lens.framebuffer)
+      image_preview_arm(store, state, laid_out.layout, theme, jail_root, effect_mode, lens.framebuffer)
       const submitted = submit_ui_frame(
         resources,
         shaping,
