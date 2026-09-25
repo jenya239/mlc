@@ -137,7 +137,7 @@ export fn frame_wait_seconds(mode: i32, preview_playing: i32, music_running: i32
     return 0.08
   end
   if music_running != 0 then
-    return 0.5
+    return 0.033
   end
   return 0.0 - 1.0
 end

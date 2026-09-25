@@ -1,4 +1,6 @@
 import { CursorLens, cursor_lens_present } from './cursor_lens'
+import { image_preview_bars_draw } from './image_preview'
+import { glfw_gl_context_swap_poll } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 export fn scene_finish(
   lens: CursorLens,
@@ -10,3 +12,25 @@ export fn scene_finish(
   mode: i32
 ) -> CursorLens =
   cursor_lens_present(lens, pointer_x, pointer_y, window_width, window_height, clean_window, mode)
+
+export fn idle_scene(
+  lens: CursorLens,
+  pointer_x: i32,
+  pointer_y: i32,
+  window_width: i32,
+  window_height: i32,
+  mode: i32,
+  music_running: i32
+) -> CursorLens = do
+  if music_running != 0 then
+    image_preview_bars_draw(window_width, window_height)
+  end
+  let mut next = lens
+  if mode != 0 then
+    next = cursor_lens_present(lens, pointer_x, pointer_y, window_width, window_height, false, mode)
+  end
+  if mode != 0 || music_running != 0 then
+    glfw_gl_context_swap_poll()
+  end
+  return next
+end

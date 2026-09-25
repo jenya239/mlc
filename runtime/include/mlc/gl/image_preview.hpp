@@ -16,6 +16,8 @@ void arm_value(
   int32_t scene_framebuffer
 );
 void draw_background_value(int32_t window_width, int32_t window_height, int32_t full_paint);
+void bars_arm_value(int32_t dest_x, int32_t dest_y, int32_t dest_width, int32_t dest_height, int32_t scene_framebuffer);
+void bars_draw_value(int32_t window_width, int32_t window_height);
 int32_t needs_paint_value();
 int32_t background_value();
 int32_t picture_width_value();

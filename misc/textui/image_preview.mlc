@@ -1,7 +1,8 @@
 import { join_path, strip_trailing_slash } from './directory_rows'
 import { path_inside_jail } from './directory_jail'
 import { path_bar_current } from './path_bar'
-import { WidgetId, WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
+import { WidgetId, WidgetKind, WidgetStore, kind_is_box, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
+import { music_playing } from './music_host'
 import { LayoutResult } from './layout_result'
 import { Rect, rect_new } from './geometry'
 import { Theme } from './theme'
@@ -14,6 +15,10 @@ extern fn image_preview_arm_rect(dest_x: i32, dest_y: i32, dest_width: i32, dest
   = "mlc::image_preview::arm_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_draw_background(window_width: i32, window_height: i32, full_paint: i32) -> unit
   = "mlc::image_preview::draw_background_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_bars_arm(dest_x: i32, dest_y: i32, dest_width: i32, dest_height: i32, scene_framebuffer: i32) -> unit
+  = "mlc::image_preview::bars_arm_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_bars_draw_now(window_width: i32, window_height: i32) -> unit
+  = "mlc::image_preview::bars_draw_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_discard() -> unit
   = "mlc::image_preview::discard" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_is_playing() -> i32
@@ -24,6 +29,10 @@ extern fn image_preview_is_background() -> i32
   = "mlc::image_preview::background_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_fit_width() -> i32
   = "mlc::image_preview::picture_fit_width_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_picture_width() -> i32
+  = "mlc::image_preview::picture_width_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn image_preview_picture_height() -> i32
+  = "mlc::image_preview::picture_height_value" from "mlc/gl/image_preview.hpp" blocking
 extern fn image_preview_fit_height() -> i32
   = "mlc::image_preview::picture_fit_height_value" from "mlc/gl/image_preview.hpp" blocking
 export extern fn write_sample_png(path: string, seed: i32) -> bool
@@ -202,28 +211,23 @@ export fn image_preview_file_pane(store: WidgetStore) -> WidgetId = do
 end
 
 fn contained_width(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
-  if source_width > dest_width || source_height > dest_height then
-    if dest_width * source_height <= dest_height * source_width then
-      return dest_width
-    end
-    if source_height > 0 then
-      return dest_height * source_width / source_height
-    end
+  if source_width < 1 || source_height < 1 || dest_width < 1 || dest_height < 1 then
+    return 0
   end
-  return source_width
+  if dest_width * source_height <= dest_height * source_width then
+    return dest_width
+  end
+  return dest_height * source_width / source_height
 end
 
 fn contained_height(source_width: i32, source_height: i32, dest_width: i32, dest_height: i32) -> i32 = do
-  if source_width > dest_width || source_height > dest_height then
-    if dest_width * source_height <= dest_height * source_width then
-      if source_width > 0 then
-        return dest_width * source_height / source_width
-      end
-      return dest_height
-    end
-    return dest_height
+  if source_width < 1 || source_height < 1 || dest_width < 1 || dest_height < 1 then
+    return 0
   end
-  return source_height
+  if dest_width * source_height <= dest_height * source_width then
+    return dest_width * source_height / source_width
+  end
+  return dest_height
 end
 
 export fn preview_side_rect(store: WidgetStore, layout: LayoutResult, theme: Theme) -> Rect = do
@@ -232,45 +236,63 @@ export fn preview_side_rect(store: WidgetStore, layout: LayoutResult, theme: The
     return rect_new(0, 0, 0, 0)
   end
   const rect = layout.clips[pane.index]
-  const fit_width = image_preview_fit_width()
-  const fit_height = image_preview_fit_height()
-  if fit_width < 1 || fit_height < 1 || rect.width < 1 || rect.height < 1 then
-    return rect
+  let mut aspect_width = image_preview_picture_width()
+  let mut aspect_height = image_preview_picture_height()
+  if aspect_width < 1 || aspect_height < 1 then
+    aspect_width = image_preview_fit_width()
+    aspect_height = image_preview_fit_height()
   end
-  let mut card_width = contained_width(fit_width, fit_height, rect.width, rect.height)
-  let mut card_height = contained_height(fit_width, fit_height, rect.width, rect.height)
+  if aspect_width < 1 || aspect_height < 1 || rect.width < 1 || rect.height < 1 then
+    return rect_new(0, 0, 0, 0)
+  end
+  const margin = theme.padding
+  const icon_span = theme.font_size_pixels + theme.font_size_pixels / 6
+  const text_start = rect.x + margin + icon_span
+  let mut band_left = mean_name_end(store, layout, theme, text_start) + margin
+  const band_right = rect.x + rect.width - theme.padding * 4
+  const band_top = rect.y + margin
+  let mut band_height = rect.height - margin * 2
+  if band_height < 1 then
+    band_height = rect.height
+  end
+  if band_left < rect.x + margin then
+    band_left = rect.x + margin
+  end
+  if band_left >= band_right then
+    return rect_new(0, 0, 0, 0)
+  end
+  const band_width = band_right - band_left
+  let mut card_width = contained_width(aspect_width, aspect_height, band_width, band_height)
+  let mut card_height = contained_height(aspect_width, aspect_height, band_width, band_height)
+  if card_width > band_width && card_width > 0 then
+    card_height = card_height * band_width / card_width
+    card_width = band_width
+  end
+  if card_height > band_height && card_height > 0 then
+    card_width = card_width * band_height / card_height
+    card_height = band_height
+  end
   if card_width < 1 then
     card_width = 1
   end
   if card_height < 1 then
     card_height = 1
   end
-  if card_width > rect.width then
-    card_width = rect.width
-  end
-  if card_height > rect.height then
-    card_height = rect.height
-  end
-  const icon_span = theme.font_size_pixels + theme.font_size_pixels / 6
-  const text_start = rect.x + theme.padding + icon_span
-  const name_end = mean_name_end(store, layout, theme, text_start)
-  const right = rect.x + rect.width
-  let mut center = (name_end + right) / 2
-  if center < rect.x then
-    center = rect.x
-  end
-  if center > right then
-    center = right
-  end
-  let mut left = center - card_width / 2
-  if left < rect.x then
-    left = rect.x
-  end
-  if left + card_width > right then
-    left = right - card_width
-  end
-  const top = rect.y + (rect.height - card_height) / 2
+  const left = band_left + (band_width - card_width) / 2
+  const top = band_top + (band_height - card_height) / 2
   return rect_new(left, top, card_width, card_height)
+end
+
+fn equalizer_rect(store: WidgetStore, layout: LayoutResult) -> Rect = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const node = store.nodes[index]
+    if node.grow > 0 && kind_is_box(node.kind) && index < layout.rects.length() then
+      return layout.rects[index]
+    end
+    index = index + 1
+  end
+  return rect_new(0, 0, 0, 0)
 end
 
 export fn image_preview_arm(
@@ -285,13 +307,24 @@ export fn image_preview_arm(
   image_preview_load(hovered_image_path(store, state, root))
   const band = preview_side_rect(store, layout, theme)
   image_preview_arm_rect(band.x, band.y, band.width, band.height, effect_mode, scene_framebuffer)
+  const stage = equalizer_rect(store, layout)
+  if music_playing() == 0 then
+    image_preview_bars_arm(0, 0, 0, 0, scene_framebuffer)
+  end
+  if music_playing() != 0 then
+    image_preview_bars_arm(stage.x, stage.y, stage.width, stage.height, scene_framebuffer)
+  end
 end
 
 export fn image_preview_draw(window_width: i32, window_height: i32, clear_framebuffer: bool) -> unit = do
   if clear_framebuffer then
     image_preview_draw_background(window_width, window_height, 1)
+    image_preview_bars_draw_now(window_width, window_height)
   end
 end
+
+export fn image_preview_bars_draw(window_width: i32, window_height: i32) -> unit =
+  image_preview_bars_draw_now(window_width, window_height)
 
 export fn image_preview_needs_paint() -> i32 =
   image_preview_needs_paint_flag()

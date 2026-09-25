@@ -10,6 +10,7 @@ extern "C" {
 
 #include <chrono>
 #include <atomic>
+#include <cmath>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
@@ -23,6 +24,77 @@ namespace {
 
 constexpr int32_t k_rate = 44100;
 constexpr int32_t k_channels = 2;
+constexpr int32_t k_bands = 128;
+constexpr int32_t k_transform_length = 256;
+
+std::atomic<int32_t> band_levels[k_bands];
+std::atomic<uint32_t> band_serial{0};
+
+void note_levels(const int16_t* samples, int32_t frame_count) {
+  if (frame_count < 2) {
+    return;
+  }
+  float real_part[k_transform_length];
+  float imag_part[k_transform_length];
+  const int32_t used = frame_count < k_transform_length ? frame_count : k_transform_length;
+  for (int32_t index = 0; index < k_transform_length; index += 1) {
+    real_part[index] = 0.0f;
+    imag_part[index] = 0.0f;
+  }
+  for (int32_t index = 0; index < used; index += 1) {
+    const float window = 0.5f - 0.5f * std::cos(6.2831853f * static_cast<float>(index) / static_cast<float>(used));
+    const int32_t left = samples[static_cast<size_t>(index) * k_channels];
+    const int32_t right = samples[static_cast<size_t>(index) * k_channels + 1];
+    real_part[index] = window * static_cast<float>(left + right) / 65536.0f;
+  }
+  for (int32_t index = 0; index < k_transform_length; index += 1) {
+    int32_t reversed = 0;
+    int32_t value = index;
+    for (int32_t bit = 0; bit < 8; bit += 1) {
+      reversed = (reversed << 1) | (value & 1);
+      value >>= 1;
+    }
+    if (reversed > index) {
+      const float swap_real = real_part[index];
+      real_part[index] = real_part[reversed];
+      real_part[reversed] = swap_real;
+    }
+  }
+  for (int32_t span = 1; span < k_transform_length; span <<= 1) {
+    const float angle = -3.14159265f / static_cast<float>(span);
+    const float turn_real = std::cos(angle);
+    const float turn_imag = std::sin(angle);
+    for (int32_t start = 0; start < k_transform_length; start += span * 2) {
+      float factor_real = 1.0f;
+      float factor_imag = 0.0f;
+      for (int32_t offset = 0; offset < span; offset += 1) {
+        const int32_t even = start + offset;
+        const int32_t odd = even + span;
+        const float mixed_real = factor_real * real_part[odd] - factor_imag * imag_part[odd];
+        const float mixed_imag = factor_real * imag_part[odd] + factor_imag * real_part[odd];
+        real_part[odd] = real_part[even] - mixed_real;
+        imag_part[odd] = imag_part[even] - mixed_imag;
+        real_part[even] += mixed_real;
+        imag_part[even] += mixed_imag;
+        const float next_real = factor_real * turn_real - factor_imag * turn_imag;
+        factor_imag = factor_real * turn_imag + factor_imag * turn_real;
+        factor_real = next_real;
+      }
+    }
+  }
+  for (int32_t band = 0; band < k_bands; band += 1) {
+    const int32_t bin = band + 1;
+    const float magnitude = std::sqrt(real_part[bin] * real_part[bin] + imag_part[bin] * imag_part[bin]);
+    float scaled = std::log10(1.0f + magnitude) / 2.0f;
+    if (scaled > 1.0f) {
+      scaled = 1.0f;
+    }
+    const int32_t next = static_cast<int32_t>(scaled * 255.0f);
+    const int32_t previous = band_levels[band].load();
+    band_levels[band].store(next > previous * 3 / 4 ? next : previous * 3 / 4);
+  }
+  band_serial.fetch_add(1);
+}
 
 struct SharedMusic {
   std::mutex mutex;
@@ -66,7 +138,12 @@ bool wait_if_paused(const std::string& path) {
 
 void play_path(const std::string& path) {
   SharedMusic& music = shared_music();
-  music.position_milliseconds.store(0);
+  const int32_t pending_seek = music.seek_milliseconds.load();
+  if (pending_seek >= 0) {
+    music.position_milliseconds.store(pending_seek);
+  } else {
+    music.position_milliseconds.store(0);
+  }
   music.duration_milliseconds.store(0);
   AVFormatContext* format = nullptr;
   if (avformat_open_input(&format, path.c_str(), nullptr, nullptr) < 0) {
@@ -169,6 +246,7 @@ void play_path(const std::string& path) {
           }
           samples_written += converted;
           music.position_milliseconds.store(static_cast<int32_t>(samples_written * 1000 / k_rate));
+          note_levels(output.data(), converted);
         }
         av_frame_unref(frame);
       }
@@ -280,6 +358,20 @@ void play_list_value(mlc::String paths, int32_t start_index) {
   play_value(mlc::String(queue[static_cast<size_t>(index)]));
 }
 
+void restore_value(mlc::String paths, int32_t start_index, int32_t position_milliseconds, int32_t paused) {
+  if (position_milliseconds < 0) {
+    position_milliseconds = 0;
+  }
+  play_list_value(paths, start_index);
+  SharedMusic& music = shared_music();
+  music.seek_milliseconds.store(position_milliseconds);
+  music.position_milliseconds.store(position_milliseconds);
+  if (paused != 0) {
+    std::lock_guard<std::mutex> guard(music.mutex);
+    music.paused = true;
+  }
+}
+
 void step_queue(int32_t delta) {
   SharedMusic& music = shared_music();
   std::string path;
@@ -364,6 +456,44 @@ int32_t position_value() {
 
 int32_t duration_value() {
   return shared_music().duration_milliseconds.load();
+}
+
+int32_t band_level_value(int32_t band) {
+  if (band < 0 || band >= k_bands) {
+    return 0;
+  }
+  return band_levels[band].load();
+}
+
+mlc::String path_value() {
+  SharedMusic& music = shared_music();
+  std::lock_guard<std::mutex> guard(music.mutex);
+  if (music.active == false) {
+    return mlc::String("");
+  }
+  return mlc::String(music.path);
+}
+
+mlc::String queue_value() {
+  SharedMusic& music = shared_music();
+  std::lock_guard<std::mutex> guard(music.mutex);
+  if (music.active == false) {
+    return mlc::String("");
+  }
+  std::string joined;
+  for (size_t index = 0; index < music.queue.size(); index += 1) {
+    if (index > 0) {
+      joined.push_back('\n');
+    }
+    joined += music.queue[index];
+  }
+  return mlc::String(std::move(joined));
+}
+
+int32_t queue_index_value() {
+  SharedMusic& music = shared_music();
+  std::lock_guard<std::mutex> guard(music.mutex);
+  return music.queue_index;
 }
 
 mlc::String title_value() {

@@ -81,6 +81,18 @@ export type WidgetKind =
   | KindTextField(FieldData)
   | KindIcon(IconData)
 
+export fn kind_is_box(kind: WidgetKind) -> bool =
+  match kind
+    | KindBox(_) => true
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindCheckbox(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+    | KindIcon(_) => false
+
 export fn kind_is_scroll_view(kind: WidgetKind) -> bool =
   match kind
     | KindScrollView => true

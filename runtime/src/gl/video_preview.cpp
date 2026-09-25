@@ -82,9 +82,17 @@ void fit_side(int32_t source_width, int32_t source_height, int32_t* width, int32
 
 bool publish_scaled(AVFrame* frame, SwsContext** scaler, int32_t* scaler_width, int32_t* scaler_height) {
   av_frame_apply_cropping(frame, 0);
+  int32_t display_width = frame->width;
+  const AVRational sample_aspect = frame->sample_aspect_ratio;
+  if (sample_aspect.num > 0 && sample_aspect.den > 0) {
+    display_width = frame->width * sample_aspect.num / sample_aspect.den;
+  }
+  if (display_width < 1) {
+    display_width = frame->width;
+  }
   int32_t target_width = 0;
   int32_t target_height = 0;
-  fit_side(frame->width, frame->height, &target_width, &target_height);
+  fit_side(display_width, frame->height, &target_width, &target_height);
   if (*scaler == nullptr || *scaler_width != frame->width || *scaler_height != frame->height) {
     if (*scaler != nullptr) {
       sws_freeContext(*scaler);
@@ -303,6 +311,18 @@ bool video_is_active() {
   SharedVideo& video = shared_video();
   std::lock_guard<std::mutex> guard(video.mutex);
   return video.active;
+}
+
+void video_displayed_size(int32_t* width, int32_t* height) {
+  SharedVideo& video = shared_video();
+  std::lock_guard<std::mutex> guard(video.mutex);
+  if (video.active == false || video.path_changed || video.width < 1 || video.height < 1) {
+    *width = 0;
+    *height = 0;
+    return;
+  }
+  *width = video.width;
+  *height = video.height;
 }
 
 bool video_frame_pending(uint64_t serial) {

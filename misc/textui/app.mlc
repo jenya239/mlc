@@ -32,7 +32,7 @@ import {
   cursor_lens_create,
   cursor_lens_destroy
 } from './cursor_lens'
-import { scene_finish } from './scene_present'
+import { idle_scene, scene_finish } from './scene_present'
 import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy } from './submit'
 import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
@@ -44,7 +44,7 @@ import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { UiInput } from './ui_input'
 import { WindowPlacement, window_placement_save } from './window_placement'
-import { gallery_start, window_session_load, window_session_store } from './window_session'
+import { gallery_start, session_with_directory, window_session_load, window_session_store } from './window_session'
 import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
 import { apply_checkbox_click } from './jail_switch'
 import { path_history_empty, path_history_visit } from './path_history'
@@ -143,7 +143,8 @@ fn main() -> i32 = do
   const opened = open_directory_jailed(store, state, started.path, jail_root)
   store = opened.store
   state = opened.state
-  let mut dense_enabled = false
+  state = session_with_directory(state, store, session)
+  let mut dense_enabled = session.dense
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
   let mut reported_inspect = -1
@@ -363,9 +364,8 @@ fn main() -> i32 = do
       glfw_gl_context_swap_poll()
       sample_after_present = true
     end
-    if paints == false && composed && effect_mode != 0 then
-      lens = scene_finish(lens, input.mouse_x, input.mouse_y, window_width, window_height, false, effect_mode)
-      glfw_gl_context_swap_poll()
+    if paints == false && composed then
+      lens = idle_scene(lens, input.mouse_x, input.mouse_y, window_width, window_height, effect_mode, music_playing())
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
@@ -375,17 +375,17 @@ fn main() -> i32 = do
       break
     end
     saved_session = window_session_store(
-      saved_session, store, effect_mode, sandbox_root, jail_root
+      saved_session, store, effect_mode, sandbox_root, jail_root, state.splitter_ratios, dense_enabled
     )
   end
 
+  saved_session = window_session_store(
+    saved_session, store, effect_mode, sandbox_root, jail_root, state.splitter_ratios, dense_enabled
+  )
   submit_destroy(resources)
   cursor_lens_destroy(lens)
   image_preview_release()
   music_release()
-  saved_session = window_session_store(
-    saved_session, store, effect_mode, sandbox_root, jail_root
-  )
   glfw_gl_context_end()
   if reload_requested then
     return application_reload_status()

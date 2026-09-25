@@ -93,5 +93,6 @@ export fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_button(
     store, row, ButtonData { text: "Play" }, OverflowVisible, 0, true
   )
-  return widget_store_add_checkbox(store, row, "Jail", true, 0, true)
+  store = widget_store_add_checkbox(store, row, "Jail", true, 0, true)
+  return widget_store_add_box(store, row, row_box_data(), OverflowVisible, 1, true)
 end

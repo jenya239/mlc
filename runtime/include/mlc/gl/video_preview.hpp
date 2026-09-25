@@ -12,6 +12,7 @@ void video_clear();
 void video_shutdown();
 bool video_is_active();
 bool video_frame_pending(uint64_t serial);
+void video_displayed_size(int32_t* width, int32_t* height);
 bool video_take_frame(std::vector<uint8_t>* pixels, int32_t* width, int32_t* height, uint64_t* serial);
 
 }  // namespace image_preview

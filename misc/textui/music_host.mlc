@@ -40,6 +40,14 @@ extern fn music_duration_milliseconds() -> i32
   = "mlc::music_player::duration_value" from "mlc/audio/music_player.hpp" blocking
 extern fn music_title() -> string
   = "mlc::music_player::title_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_path() -> string
+  = "mlc::music_player::path_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_queue_paths() -> string
+  = "mlc::music_player::queue_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_queue_index() -> i32
+  = "mlc::music_player::queue_index_value" from "mlc/audio/music_player.hpp" blocking
+extern fn music_restore_player(paths: string, start_index: i32, position_milliseconds: i32, paused: i32) -> unit
+  = "mlc::music_player::restore_value" from "mlc/audio/music_player.hpp" blocking
 
 export type MusicView = {
   store: WidgetStore,
@@ -191,6 +199,44 @@ end
 
 export fn music_release() -> unit =
   music_release_player()
+
+export fn music_track() -> string =
+  music_path()
+
+export fn music_queue_text() -> string =
+  music_queue_paths()
+
+export fn music_track_index() -> i32 =
+  music_queue_index()
+
+export fn music_position_seconds() -> i32 = do
+  let mut seconds = music_position_milliseconds() / 1000
+  if seconds < 0 then
+    seconds = 0
+  end
+  return seconds
+end
+
+export fn music_is_paused() -> bool =
+  music_paused() != 0
+
+export fn music_restore(track: string, queue: string, index: i32, position_seconds: i32, paused: bool) -> unit = do
+  let mut paths = queue
+  if track != "" && paths == "" then
+    paths = track
+  end
+  if track != "" then
+    let mut milliseconds = position_seconds * 1000
+    if milliseconds < 0 then
+      milliseconds = 0
+    end
+    let mut paused_flag = 0
+    if paused then
+      paused_flag = 1
+    end
+    music_restore_player(paths, index, milliseconds, paused_flag)
+  end
+end
 
 export fn music_host(
   store: WidgetStore,

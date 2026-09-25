@@ -1,5 +1,6 @@
 #include "mlc/gl/image_preview.hpp"
 #include "mlc/gl/video_preview.hpp"
+#include "mlc/audio/music_player.hpp"
 
 #include "mlc/gl/glad_gl.hpp"
 
@@ -62,6 +63,7 @@ std::vector<uint8_t> live_pixels;
 int32_t live_width = 0;
 int32_t live_height = 0;
 uint64_t live_serial = 0;
+uint64_t live_uploaded = 0;
 
 bool video_extension(const std::string& path) {
   const auto slash = path.find_last_of('/');
@@ -495,6 +497,10 @@ void still_main() {
         return;
       }
       path = still.path;
+      still.width = 0;
+      still.height = 0;
+      still.source_width = 0;
+      still.source_height = 0;
       still.path_changed = false;
     }
     if (path.empty()) {
@@ -550,10 +556,13 @@ void still_watch(const std::string& path) {
 
 int32_t picture_edge(bool width_edge, bool source_edge) {
   if (video_mode) {
+    int32_t displayed_width = 0;
+    int32_t displayed_height = 0;
+    video_displayed_size(&displayed_width, &displayed_height);
     if (width_edge) {
-      return live_width;
+      return displayed_width;
     }
-    return live_height;
+    return displayed_height;
   }
   if (current_slot >= 0 && slots[current_slot].failed == false && slots[current_slot].width > 0) {
     if (source_edge && slots[current_slot].source_width > 0) {
@@ -646,6 +655,49 @@ void still_shutdown() {
   }
 }
 
+GLuint bars_program = 0;
+GLuint bars_buffer = 0;
+int32_t bars_x = 0;
+int32_t bars_y = 0;
+int32_t bars_width = 0;
+int32_t bars_height = 0;
+int32_t bars_framebuffer = 0;
+
+void ensure_bars() {
+  if (bars_program != 0) {
+    return;
+  }
+  const char* vertex =
+    "attribute vec2 a_pos;\n"
+    "attribute vec2 a_uv;\n"
+    "varying vec2 v_uv;\n"
+    "void main() {\n"
+    "  v_uv = a_uv;\n"
+    "  gl_Position = vec4(a_pos, 0.0, 1.0);\n"
+    "}\n";
+  const char* fragment =
+    "varying vec2 v_uv;\n"
+    "uniform float u_level[128];\n"
+    "void main() {\n"
+    "  float index = floor(min(v_uv.x, 0.999) * 128.0);\n"
+    "  float level = u_level[int(index)];\n"
+    "  float column = fract(v_uv.x * 128.0);\n"
+    "  float inside = step(0.12, column) * step(column, 0.88);\n"
+    "  float on = step(v_uv.y, level) * inside;\n"
+    "  vec3 color = mix(vec3(0.07, 0.08, 0.10), vec3(0.35, 0.62, 0.95), on);\n"
+    "  gl_FragColor = vec4(color, 1.0);\n"
+    "}\n";
+  const GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex);
+  const GLuint fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment);
+  bars_program = glCreateProgram();
+  glAttachShader(bars_program, vertex_shader);
+  glAttachShader(bars_program, fragment_shader);
+  glLinkProgram(bars_program);
+  glDeleteShader(vertex_shader);
+  glDeleteShader(fragment_shader);
+  glGenBuffers(1, &bars_buffer);
+}
+
 }  // namespace
 
 int32_t load_value(mlc::String path) {
@@ -667,6 +719,9 @@ int32_t load_value(mlc::String path) {
     video_mode = true;
     if (video_path != key) {
       video_path = key;
+      live_width = 0;
+      live_height = 0;
+      live_uploaded = 0;
     }
     video_watch(key);
     return 1;
@@ -675,6 +730,7 @@ int32_t load_value(mlc::String path) {
   video_mode = false;
   video_path.clear();
   live_width = 0;
+  live_height = 0;
   const int32_t existing = find_slot(key);
   if (existing >= 0) {
     current_slot = existing;
@@ -708,9 +764,6 @@ int32_t present_value(
   if (program == 0) {
     return 0;
   }
-  if (dest_width < 1 || dest_height < 1) {
-    return 0;
-  }
   if (video_mode == false) {
     still_publish();
   }
@@ -718,50 +771,38 @@ int32_t present_value(
   const bool ready = video_mode
     ? live_width > 0
     : current_slot >= 0 && slots[current_slot].failed == false && slots[current_slot].width > 0;
-  if (ready == false) {
+  if (ready == false || dest_width < 1 || dest_height < 1) {
+    if (fresh_video || paint_needed) {
+      paint_needed = true;
+    }
+    return 0;
+  }
+  const int32_t shown_width = video_mode ? live_width : slots[current_slot].source_width > 0 ? slots[current_slot].source_width : slots[current_slot].width;
+  const int32_t shown_height = video_mode ? live_height : slots[current_slot].source_height > 0 ? slots[current_slot].source_height : slots[current_slot].height;
+  const int64_t width_span = static_cast<int64_t>(dest_width) * shown_height;
+  const int64_t height_span = static_cast<int64_t>(dest_height) * shown_width;
+  const int64_t span_difference = width_span > height_span ? width_span - height_span : height_span - width_span;
+  const int64_t span_tolerance = shown_width > shown_height ? shown_width : shown_height;
+  if (shown_width < 1 || shown_height < 1 || span_difference > span_tolerance) {
+    paint_needed = true;
     return 0;
   }
   bind_draw(scene_framebuffer);
   glDisable(GL_BLEND);
   glDisable(GL_SCISSOR_TEST);
   glViewport(0, 0, window_width, window_height);
-  const int32_t source_width = video_mode ? live_width : slots[current_slot].width;
-  const int32_t source_height = video_mode ? live_height : slots[current_slot].height;
-  int32_t card_width = source_width;
-  int32_t card_height = source_height;
-  if (source_width > dest_width || source_height > dest_height) {
-    if (dest_width * source_height <= dest_height * source_width) {
-      card_width = dest_width;
-      card_height = source_width > 0 ? dest_width * source_height / source_width : dest_height;
-    } else {
-      card_height = dest_height;
-      card_width = source_height > 0 ? dest_height * source_width / source_height : dest_width;
-    }
-  }
-  if (card_width < 1) {
-    card_width = 1;
-  }
-  if (card_height < 1) {
-    card_height = 1;
-  }
-  if (card_width > dest_width) {
-    card_width = dest_width;
-  }
-  if (card_height > dest_height) {
-    card_height = dest_height;
-  }
-  const int32_t left = dest_x + (dest_width - card_width) / 2;
-  const int32_t origin_y = dest_y + (dest_height - card_height) / 2;
-  const int32_t top = window_height - origin_y;
-  const int32_t bottom = top - card_height;
-  const int32_t right = left + card_width;
+  const int32_t left = dest_x;
+  const int32_t right = dest_x + dest_width;
+  const int32_t top = window_height - dest_y;
+  const int32_t bottom = top - dest_height;
   if (right - left < 1 || top - bottom < 1) {
     return 0;
   }
   bind_draw(scene_framebuffer);
   if (video_mode) {
-    if (fresh_video) {
+    if (live_serial != live_uploaded && live_width > 0 && live_pixels.empty() == false) {
       upload_rgba(live_pixels.data(), live_width, live_height);
+      live_uploaded = live_serial;
     }
   } else {
     upload_picture();
@@ -797,6 +838,60 @@ void arm_value(
   armed_height = dest_height;
   armed_effect = effect_mode;
   armed_framebuffer = scene_framebuffer;
+}
+
+void bars_arm_value(
+  int32_t dest_x,
+  int32_t dest_y,
+  int32_t dest_width,
+  int32_t dest_height,
+  int32_t scene_framebuffer
+) {
+  bars_x = dest_x;
+  bars_y = dest_y;
+  bars_width = dest_width;
+  bars_height = dest_height;
+  bars_framebuffer = scene_framebuffer;
+}
+
+void bars_draw_value(int32_t window_width, int32_t window_height) {
+  if (bars_width < 8 || bars_height < 4 || window_width < 1 || window_height < 1) {
+    return;
+  }
+  ensure_bars();
+  if (bars_program == 0) {
+    return;
+  }
+  bind_draw(bars_framebuffer);
+  glViewport(0, 0, window_width, window_height);
+  const float x0 = static_cast<float>(bars_x) / static_cast<float>(window_width) * 2.0f - 1.0f;
+  const float x1 = static_cast<float>(bars_x + bars_width) / static_cast<float>(window_width) * 2.0f - 1.0f;
+  const float y1 = static_cast<float>(window_height - bars_y) / static_cast<float>(window_height) * 2.0f - 1.0f;
+  const float y0 = static_cast<float>(window_height - (bars_y + bars_height)) / static_cast<float>(window_height) * 2.0f - 1.0f;
+  const float vertices[] = {
+    x0, y0, 0.0f, 0.0f, x1, y0, 1.0f, 0.0f, x0, y1, 0.0f, 1.0f,
+    x0, y1, 0.0f, 1.0f, x1, y0, 1.0f, 0.0f, x1, y1, 1.0f, 1.0f
+  };
+  glUseProgram(bars_program);
+  glBindBuffer(GL_ARRAY_BUFFER, bars_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+  const GLint position = glGetAttribLocation(bars_program, "a_pos");
+  const GLint uv = glGetAttribLocation(bars_program, "a_uv");
+  glEnableVertexAttribArray(static_cast<GLuint>(position));
+  glEnableVertexAttribArray(static_cast<GLuint>(uv));
+  glVertexAttribPointer(static_cast<GLuint>(position), 2, GL_FLOAT, GL_FALSE, 16, reinterpret_cast<void*>(0));
+  glVertexAttribPointer(static_cast<GLuint>(uv), 2, GL_FLOAT, GL_FALSE, 16, reinterpret_cast<void*>(8));
+  float levels[128];
+  for (int32_t band = 0; band < 128; band += 1) {
+    levels[band] = static_cast<float>(mlc::music_player::band_level_value(band)) / 255.0f;
+  }
+  glUniform1fv(glGetUniformLocation(bars_program, "u_level"), 128, levels);
+  const int32_t scissor_bottom = window_height - (bars_y + bars_height);
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(bars_x, scissor_bottom, bars_width, bars_height);
+  glDisable(GL_BLEND);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDisable(GL_SCISSOR_TEST);
 }
 
 void draw_background_value(int32_t window_width, int32_t window_height, int32_t full_paint) {

@@ -15,7 +15,7 @@ export type WindowPlacement = {
   restored: bool
 }
 
-type ParsedInteger = {
+export type ParsedInteger = {
   value: i32,
   ok: bool
 }
@@ -51,7 +51,7 @@ fn digit_value(character: string) -> i32 = do
   return 0 - 1
 end
 
-fn parse_integer(text: string) -> ParsedInteger = do
+export fn parse_integer(text: string) -> ParsedInteger = do
   if text.byte_size() == 0 then
     return ParsedInteger { value: 0, ok: false }
   end
