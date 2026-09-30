@@ -1,0 +1,18 @@
+import { probe_curl_version } from './probe_library.mlc'
+
+fn text_starts_with(text: string, prefix: string) -> bool = do
+  let mut matched = false
+  if text.byte_size() >= prefix.byte_size() then
+    matched = text.byte_substring(0, prefix.byte_size()) == prefix
+  end
+  matched
+end
+
+fn main() -> i32 = do
+  const version = probe_curl_version()
+  println(version)
+  if text_starts_with(version, "libcurl/") == false then
+    return 1
+  end
+  0
+end

@@ -1,0 +1,7 @@
+extern lib "curl"
+
+extern fn library_version_text() -> string =
+  "mlc::curl_abi::library_version_text" from "mlc/net/curl_abi.hpp" thread_safe
+
+export fn probe_curl_version() -> string =
+  library_version_text()
