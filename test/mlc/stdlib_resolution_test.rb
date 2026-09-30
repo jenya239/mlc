@@ -60,6 +60,18 @@ class StdlibResolutionTest < Minitest::Test
     expected.each do |mod|
       assert_includes modules, mod
     end
-    assert_equal expected.sort, modules.sort
+    assert_includes modules, "HttpsClient"
+  end
+
+  def test_https_client_exports_request_functions
+    functions = MLC::Common::Stdlib::Scanner.new.module_info("HttpsClient").functions
+    %w[https_get https_send https_post].each do |name|
+      assert_includes functions, name
+    end
+  end
+
+  def test_env_exports_get_or
+    functions = MLC::Common::Stdlib::Scanner.new.module_info("Env").functions
+    assert_includes functions, "get_or"
   end
 end

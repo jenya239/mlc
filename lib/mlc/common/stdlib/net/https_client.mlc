@@ -24,7 +24,7 @@ import {
   TransportFailed
 } from './https_request.mlc'
 
-import * as https_client_link from '../../../../../misc/lib/https_client_link.mlc'
+extern lib "curl"
 
 extern fn perform_request(
   method: string,

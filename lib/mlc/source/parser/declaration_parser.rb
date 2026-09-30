@@ -7,6 +7,10 @@ module MLC
       # Declaration parsing - modules, imports, functions, type declarations
       # Auto-extracted from parser.rb during refactoring
       module DeclarationParser
+        EXTERN_CONCURRENCY_ATTRIBUTE_NAMES = %w[blocking thread_safe thread_affine].freeze
+
+        attr_reader :trailing_token
+
         def parse_function(external: false, exported: false, is_async: false)
           consume(:FN)
           name_token = consume(:IDENTIFIER)
@@ -45,6 +49,7 @@ module MLC
               extern_c_name = consume(:STRING_LITERAL).value
               consume(:FROM)
               extern_header = consume(:STRING_LITERAL).value
+              skip_extern_concurrency_attributes
             else
               body = parse_expression
             end
@@ -65,6 +70,47 @@ module MLC
               extern_header: extern_header
             )
           end
+        end
+
+        def consume_extern_library_name
+          consume(:IDENTIFIER)
+          unless current.type == :STRING_LITERAL
+            raise MLC::CompileError, "Expected library name string after extern lib, got #{current.type}"
+          end
+
+          consume(:STRING_LITERAL)
+        end
+
+        def skip_extern_concurrency_attributes
+          nil while skip_one_extern_concurrency_attribute
+        end
+
+        def skip_one_extern_concurrency_attribute
+          if current.type == :OPERATOR && current.value == "!"
+            return false unless extern_concurrency_attribute_name?(peek_ahead(1))
+
+            skip_token
+          elsif !extern_concurrency_attribute_name?(current)
+            return false
+          end
+          name = consume(:IDENTIFIER).value
+          skip_thread_affine_parenthesis(name)
+          true
+        end
+
+        def extern_concurrency_attribute_name?(token)
+          token&.type == :IDENTIFIER && EXTERN_CONCURRENCY_ATTRIBUTE_NAMES.include?(token.value)
+        end
+
+        def skip_thread_affine_parenthesis(name)
+          return unless name == "thread_affine"
+          return unless current.type == :LPAREN
+
+          skip_token
+          return unless current.type == :IDENTIFIER
+
+          skip_token
+          skip_token if current.type == :RPAREN
         end
 
         def parse_import_decl
@@ -434,10 +480,10 @@ module MLC
               declarations << parse_function(is_async: true)
 
             when :EXTERN
-              # Parse external declaration
               consume(:EXTERN)
-              case current.type
-              when :FN
+              if current.type == :IDENTIFIER && current.value == "lib"
+                consume_extern_library_name
+              elsif current.type == :FN
                 declarations << parse_function(external: true)
               else
                 expect_token!(:FN, current)
@@ -456,6 +502,8 @@ module MLC
               break
             end
           end
+
+          @trailing_token = eof? ? nil : current
 
           MLC::Source::AST::Program.new(
             module_decl: module_decl,
