@@ -67,11 +67,11 @@ class MLCIntArithStdlibTest < Minitest::Test
           let saturated = saturating_add(2147483647, 1)
           let ok = unwrap_or_neg1(checked_add(2, 3))
           let overflow = unwrap_or_neg1(checked_add(2147483647, 1))
-          if wrapped == -2147483648 && saturated == 2147483647 && ok == 5 && overflow == -1 {
+          if wrapped == -2147483648 && saturated == 2147483647 && ok == 5 && overflow == -1 then
             0
-          } else {
+          else
             1
-          }
+          end
         end
       MLC
       result = MLC.build_project(

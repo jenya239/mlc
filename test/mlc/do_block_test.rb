@@ -180,4 +180,22 @@ class DoBlockTest < Minitest::Test
            "42 should be result expr, got #{body.result_expr.class}"
     assert_equal 42, body.result_expr.value
   end
+
+  def test_brace_if_inside_do_does_not_take_the_block_end
+    source = <<~MLCORA
+      fn test() -> i32 = do
+        if 1 == 0 {
+          0
+        } else {
+          1
+        }
+        42
+      end
+    MLCORA
+
+    ast = MLC.parse(source)
+    body = ast.declarations.first.body
+    assert_equal 1, body.statements.length
+    assert_equal 42, body.result_expr.value
+  end
 end

@@ -51,14 +51,17 @@ class MLCMatchGuardCppTest < Minitest::Test
 
       fn probe(op: Op) -> void =
         match op {
-          Hit(value) => print(mlc::String("got return value")),
-          Miss => print(mlc::String("miss"))
+          Hit(value) => do
+            let ignored = print("got return value")
+          end,
+          Miss => {}
         }
     SRC
 
     cpp = MLC.to_cpp(source)
 
-    assert_match(/if \(std::holds_alternative<Hit>\(op\)\)[^{]+\{[^}]+return;/, cpp)
+    assert_match(/\[&\]\(const Hit& hit\) -> void \{.*?mlc::String\("got return value"\)/m, cpp)
+    assert_match(/got return value.*?\[&\]\(const Miss& miss\) -> void/m, cpp)
     refute_match(/got return value[^;]*\}\s+print/, cpp)
   end
 end

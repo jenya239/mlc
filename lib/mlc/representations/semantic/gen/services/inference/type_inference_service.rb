@@ -673,11 +673,7 @@ end
             # Type predicates
             def numeric_type?(type)
               if type.is_a?(SemanticIR::TypeVariable)
-                type_str = type.name.to_s
-                type_param = current_type_params.find { |tp| tp.name == type_str }
-                return false if type_param && Array(type_param.trait_bounds).compact.any?
-
-                return true
+                return numeric_constrained_type_variable?(type)
               end
 
               type_str = normalized_type_name(type_name(type))
@@ -686,6 +682,17 @@ end
               # Check if this is a generic type parameter with Numeric constraint
               type_param = current_type_params.find { |tp| tp.name == type_str }
               type_param && type_param.constraint == "Numeric"
+            end
+
+            def numeric_constrained_type_variable?(type)
+              parameter = current_type_params.find { |candidate| candidate.name == type.name.to_s }
+              bounds = Array(parameter&.trait_bounds).compact
+              return bounds.include?("Numeric") if bounds.any?
+
+              constraint = type.constraint
+              return true if constraint.nil? || constraint.to_s.empty?
+
+              constraint.to_s == "Numeric"
             end
 
             def string_type?(type)

@@ -540,11 +540,13 @@ module MLC
           then_line = then_token&.line || if_token.line
 
           # Parse then branch
+          then_braced = current.type == :LBRACE
           then_branch, then_end_consumed = parse_if_branch_expression(then_line: then_line)
 
           # Parse else branch — only if then-branch didn't consume its own 'end'
           else_branch = nil
           else_end_consumed = false
+          else_braced = false
           if !then_end_consumed && current.type == :ELSE
             else_token = consume(:ELSE)
             else_line = else_token.line
@@ -554,12 +556,13 @@ module MLC
                                                nested, nested_end = parse_if_or_unless_expression(inside_block: inside_block)
                                                [wrap_block_like_expr(nested), nested_end]
                                              else
+                                               else_braced = current.type == :LBRACE
                                                parse_if_branch_expression(then_line: else_line)
                                              end
           end
 
-          # Consume trailing 'end' only if neither branch already consumed one.
-          did_consume = !then_end_consumed && !else_end_consumed && current.type == :END
+          # A brace body is already closed. The following `end` belongs to an outer `do`.
+          did_consume = !then_braced && !else_braced && !then_end_consumed && !else_end_consumed && current.type == :END
           consume(:END) if did_consume
 
           # For unless, invert condition: unless x = if !x
