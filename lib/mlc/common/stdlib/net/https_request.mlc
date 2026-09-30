@@ -1,0 +1,272 @@
+//! @module std/net/https_request
+//! @category net
+//! @type pure
+//!
+//! Request checks and response-header parsing with no curl and no network.
+//! Failure codes: 1 InvalidRequest, 2 ResolveFailed, 3 ConnectFailed,
+//! 4 TimedOut, 5 CertificateRejected, 6 ResponseTooLarge.
+//! Any other code, including 0, is TransportFailed.
+
+module HttpsRequests
+
+export type HttpsHeader = { name: string, value: string }
+
+export type HttpsRequest = {
+  method: string,
+  url: string,
+  headers: [HttpsHeader],
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string
+}
+
+export type HttpsResponse = {
+  status: i32,
+  headers: [HttpsHeader],
+  body: string
+}
+
+export type HttpsFailureKind =
+  InvalidRequest
+  | ResolveFailed
+  | ConnectFailed
+  | TimedOut
+  | CertificateRejected
+  | ResponseTooLarge
+  | TransportFailed
+
+export type HttpsFailure = { kind: HttpsFailureKind, message: string }
+
+export type HttpsResult = HttpsOk(HttpsResponse) | HttpsErr(HttpsFailure)
+
+export type HttpsStatusClass =
+  Informational
+  | Success
+  | Redirect
+  | ClientError
+  | ServerError
+  | OtherStatus
+
+fn text_starts_with(text: string, prefix: string) -> bool = do
+  let mut matched = false
+  if text.length() >= prefix.length() then
+    matched = text.substring(0, prefix.length()) == prefix
+  end
+  matched
+end
+
+fn text_has_forbidden_url_character(text: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < text.length() && found == false do
+    const character = text.char_at(index)
+    if character < " " || character > "~" || character == " " then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn text_has_control_character(text: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < text.length() && found == false do
+    if text.char_at(index) < " " then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn url_has_host(url: string) -> bool = do
+  let mut present = false
+  if text_starts_with(url, "https://") && url.length() > 8 then
+    present = url.char_at(8) != "/"
+  end
+  present
+end
+
+fn header_name_rejected(name: string) -> bool = do
+  let mut rejected = name.length() == 0
+  let mut index = 0
+  while index < name.length() && rejected == false do
+    const character = name.char_at(index)
+    if character == ":" || character == " " || character < " " || character > "~" then
+      rejected = true
+    end
+    index = index + 1
+  end
+  rejected
+end
+
+fn header_value_rejected(value: string) -> bool = do
+  let mut rejected = false
+  let mut index = 0
+  while index < value.length() && rejected == false do
+    const character = value.char_at(index)
+    if character == "\r" || character == "\n" then
+      rejected = true
+    end
+    index = index + 1
+  end
+  rejected
+end
+
+fn headers_problem(headers: [HttpsHeader]) -> string = do
+  let mut index = 0
+  let mut problem = ""
+  while index < headers.length() && problem == "" do
+    if header_name_rejected(headers[index].name) then
+      problem = "header name rejected"
+    end
+    if problem == "" && header_value_rejected(headers[index].value) then
+      problem = "header value rejected"
+    end
+    index = index + 1
+  end
+  problem
+end
+
+export fn https_request_problem(request: HttpsRequest) -> string = do
+  let mut problem = ""
+  if request.method != "GET" && request.method != "POST" then
+    problem = "method must be GET or POST"
+  end
+  if problem == "" && (text_has_forbidden_url_character(request.url) || text_starts_with(request.url, "https://") == false || url_has_host(request.url) == false) then
+    problem = "url must be https with a host"
+  end
+  if problem == "" then
+    problem = headers_problem(request.headers)
+  end
+  if problem == "" && request.method == "GET" && request.body.length() > 0 then
+    problem = "GET body must be empty"
+  end
+  if problem == "" && (request.timeout_milliseconds < 1 || request.timeout_milliseconds > 600000) then
+    problem = "timeout out of range"
+  end
+  if problem == "" && (request.max_response_bytes < 1 || request.max_response_bytes > 16777216) then
+    problem = "response limit out of range"
+  end
+  if problem == "" && text_has_control_character(request.ca_bundle_path) then
+    problem = "certificate bundle path rejected"
+  end
+  problem
+end
+
+export fn https_header_lines(headers: [HttpsHeader]) -> string = do
+  let mut lines = ""
+  let mut index = 0
+  while index < headers.length() do
+    lines = lines + headers[index].name + ": " + headers[index].value + "\n"
+    index = index + 1
+  end
+  lines
+end
+
+fn trim_spaces(text: string) -> string = do
+  let mut start = 0
+  let mut end_index = text.length()
+  while start < end_index && (text.char_at(start) == " " || text.char_at(start) == "\t") do
+    start = start + 1
+  end
+  while end_index > start && (text.char_at(end_index - 1) == " " || text.char_at(end_index - 1) == "\t") do
+    end_index = end_index - 1
+  end
+  text.substring(start, end_index - start)
+end
+
+fn line_end_index(raw: string, start: i32) -> i32 = do
+  let mut end_index = start
+  while end_index < raw.length() && raw.char_at(end_index) != "\n" do
+    end_index = end_index + 1
+  end
+  end_index
+end
+
+fn strip_trailing_cr(line: string) -> string = do
+  let mut stripped = line
+  if line.length() > 0 && line.char_at(line.length() - 1) == "\r" then
+    stripped = line.substring(0, line.length() - 1)
+  end
+  stripped
+end
+
+fn last_status_start(raw: string) -> i32 = do
+  let mut start = 0
+  let mut last = 0
+  while start < raw.length() do
+    const end_index = line_end_index(raw, start)
+    const line = strip_trailing_cr(raw.substring(start, end_index - start))
+    if text_starts_with(line, "HTTP/") then
+      last = start
+    end
+    if end_index < raw.length() then
+      start = end_index + 1
+    else
+      start = raw.length()
+    end
+  end
+  last
+end
+
+export fn parse_response_header_block(raw: string) -> [HttpsHeader] = do
+  let mut headers: [HttpsHeader] = []
+  let mut start = last_status_start(raw)
+  while start < raw.length() do
+    const end_index = line_end_index(raw, start)
+    const line = strip_trailing_cr(raw.substring(start, end_index - start))
+    if text_starts_with(line, "HTTP/") == false then
+      const colon = line.index_of(":")
+      if colon >= 0 then
+        const name = line.substring(0, colon)
+        const value = trim_spaces(line.substring(colon + 1, line.length() - colon - 1))
+        headers.push(HttpsHeader { name: name, value: value })
+      end
+    end
+    if end_index < raw.length() then
+      start = end_index + 1
+    else
+      start = raw.length()
+    end
+  end
+  headers
+end
+
+export fn https_find_header(headers: [HttpsHeader], name: string) -> string = do
+  let mut index = 0
+  let mut found = ""
+  let mut seen = false
+  while index < headers.length() && seen == false do
+    if headers[index].name.lower() == name.lower() then
+      found = headers[index].value
+      seen = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+export fn https_status_class(status: i32) -> HttpsStatusClass =
+  if status >= 100 && status <= 199 then Informational
+  else if status >= 200 && status <= 299 then Success
+  else if status >= 300 && status <= 399 then Redirect
+  else if status >= 400 && status <= 499 then ClientError
+  else if status >= 500 && status <= 599 then ServerError
+  else OtherStatus
+  end
+
+export fn https_status_is_retryable(status: i32) -> bool =
+  status == 429 || status == 500 || status == 502 || status == 503 || status == 504
+
+export fn https_failure_kind_from_code(code: i32) -> HttpsFailureKind =
+  if code == 1 then InvalidRequest
+  else if code == 2 then ResolveFailed
+  else if code == 3 then ConnectFailed
+  else if code == 4 then TimedOut
+  else if code == 5 then CertificateRejected
+  else if code == 6 then ResponseTooLarge
+  else TransportFailed
+  end

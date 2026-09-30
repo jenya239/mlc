@@ -1,0 +1,99 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  https_send,
+  https_live_handle_count
+} from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+import {
+  https_find_header,
+  https_status_class,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  Informational,
+  Success,
+  Redirect,
+  ClientError,
+  ServerError,
+  OtherStatus
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn is_ok(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => true,
+    HttpsErr(_) => false
+  }
+
+fn ok_status(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => -1
+  }
+
+fn ok_body(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body,
+    HttpsErr(_) => ""
+  }
+
+fn ok_header(result: HttpsResult, name: string) -> string =
+  match result {
+    HttpsOk(response) => https_find_header(response.headers, name),
+    HttpsErr(_) => ""
+  }
+
+fn status_is_client_error(status: i32) -> bool =
+  match https_status_class(status) {
+    ClientError => true,
+    Informational => false,
+    Success => false,
+    Redirect => false,
+    ServerError => false,
+    OtherStatus => false
+  }
+
+fn request_for(method: string, path: string, headers: [HttpsHeader], body: string) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
+    url: "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + path,
+    headers: headers,
+    body: body,
+    timeout_milliseconds: 5000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", "")
+  }
+
+fn main() -> i32 = do
+  let mut code = 0
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" then
+    code = 1
+  end
+  if code == 0 then
+    const got = https_send(request_for("GET", "/echo", [], ""))
+    if is_ok(got) == false || ok_status(got) != 200 || ok_body(got) != "" || ok_header(got, "content-type") == "" then
+      code = 2
+    end
+  end
+  if code == 0 then
+    const posted = https_send(request_for(
+      "POST",
+      "/echo",
+      [HttpsHeader { name: "Content-Type", value: "application/json" }],
+      "{\"k\":1}"
+    ))
+    if is_ok(posted) == false || ok_body(posted) != "{\"k\":1}" then
+      code = 3
+    end
+  end
+  if code == 0 then
+    const missing = https_send(request_for("GET", "/status/404", [], ""))
+    if is_ok(missing) == false || ok_status(missing) != 404 || status_is_client_error(404) == false then
+      code = 4
+    end
+  end
+  if code == 0 && https_live_handle_count() != 0 then
+    code = 5
+  end
+  code
+end

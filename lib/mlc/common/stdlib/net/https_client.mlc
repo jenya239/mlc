@@ -1,0 +1,131 @@
+//! @module std/net/https_client
+//! @category net
+//! @type mixed
+//!
+//! Blocking HTTPS GET and POST. Validation and header parsing stay in
+//! https_request.mlc. Curl is reached only through curl_abi.hpp.
+//! https_live_handle_count exists for leak checks in tests.
+
+module HttpsClient
+
+import {
+  https_request_problem,
+  https_header_lines,
+  parse_response_header_block,
+  https_failure_kind_from_code,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResponse,
+  HttpsFailure,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  TransportFailed
+} from './https_request.mlc'
+
+import * as https_client_link from '../../../../../misc/lib/https_client_link.mlc'
+
+extern fn perform_request(
+  method: string,
+  url: string,
+  header_lines: string,
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string
+) -> i32 =
+  "mlc::curl_abi::perform_request" from "mlc/net/curl_abi.hpp" blocking
+
+extern fn result_status(handle: i32) -> i32 =
+  "mlc::curl_abi::result_status" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_failure_code(handle: i32) -> i32 =
+  "mlc::curl_abi::result_failure_code" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_message(handle: i32) -> string =
+  "mlc::curl_abi::result_message" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_header_block(handle: i32) -> string =
+  "mlc::curl_abi::result_header_block" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_body(handle: i32) -> string =
+  "mlc::curl_abi::result_body" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn release_result(handle: i32) -> i32 =
+  "mlc::curl_abi::release_result" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn live_result_count() -> i32 =
+  "mlc::curl_abi::live_result_count" from "mlc/net/curl_abi.hpp" thread_safe
+
+fn result_from_handle(handle: i32) -> HttpsResult = do
+  const status = result_status(handle)
+  const failure_code = result_failure_code(handle)
+  const message = result_message(handle)
+  const header_block = result_header_block(handle)
+  const body = result_body(handle)
+  release_result(handle)
+  if failure_code != 0 then
+    HttpsErr(HttpsFailure {
+      kind: https_failure_kind_from_code(failure_code),
+      message: message
+    })
+  else
+    HttpsOk(HttpsResponse {
+      status: status,
+      headers: parse_response_header_block(header_block),
+      body: body
+    })
+  end
+end
+
+fn send_after_validation(request: HttpsRequest) -> HttpsResult = do
+  const handle = perform_request(
+    request.method,
+    request.url,
+    https_header_lines(request.headers),
+    request.body,
+    request.timeout_milliseconds,
+    request.max_response_bytes,
+    request.ca_bundle_path
+  )
+  if handle < 0 then
+    HttpsErr(HttpsFailure { kind: TransportFailed, message: "result table full" })
+  else
+    result_from_handle(handle)
+  end
+end
+
+export fn https_send(request: HttpsRequest) -> HttpsResult = do
+  const problem = https_request_problem(request)
+  if problem != "" then
+    HttpsErr(HttpsFailure { kind: InvalidRequest, message: problem })
+  else
+    send_after_validation(request)
+  end
+end
+
+export fn https_get(url: string, headers: [HttpsHeader]) -> HttpsResult =
+  https_send(HttpsRequest {
+    method: "GET",
+    url: url,
+    headers: headers,
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  })
+
+export fn https_post(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
+  https_send(HttpsRequest {
+    method: "POST",
+    url: url,
+    headers: headers,
+    body: body,
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  })
+
+export fn https_live_handle_count() -> i32 =
+  live_result_count()

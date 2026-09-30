@@ -1,0 +1,389 @@
+import {
+  https_request_problem,
+  https_header_lines,
+  parse_response_header_block,
+  https_find_header,
+  https_status_class,
+  https_status_is_retryable,
+  https_failure_kind_from_code,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResponse,
+  HttpsFailure,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  CertificateRejected,
+  ResponseTooLarge,
+  TransportFailed,
+  Informational,
+  Success,
+  Redirect,
+  ClientError,
+  ServerError,
+  OtherStatus
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn baseline() -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_method(method: string) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_url(url: string) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: url,
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_header(name: string, value: string) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [HttpsHeader { name: name, value: value }],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_body(method: string, body: string) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
+    url: "https://example.com/path",
+    headers: [],
+    body: body,
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_timeout(timeout_milliseconds: i32) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: timeout_milliseconds,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ""
+  }
+
+fn with_limit(max_response_bytes: i32) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: max_response_bytes,
+    ca_bundle_path: ""
+  }
+
+fn with_bundle(ca_bundle_path: string) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ca_bundle_path
+  }
+
+fn rejected(request: HttpsRequest) -> bool =
+  https_request_problem(request) != ""
+
+fn accepted(request: HttpsRequest) -> bool =
+  https_request_problem(request) == ""
+
+fn check_request() -> i32 = do
+  let mut code = 0
+  const request = baseline()
+  const first = https_request_problem(request)
+  const second = https_request_problem(request)
+  if first != "" || first != second then
+    code = 1
+  end
+  if code == 0 && accepted(with_method("POST")) == false then
+    code = 2
+  end
+  if code == 0 && accepted(with_body("POST", "payload")) == false then
+    code = 3
+  end
+  if code == 0 && rejected(with_method("PUT")) == false then
+    code = 4
+  end
+  if code == 0 && rejected(with_method("get")) == false then
+    code = 5
+  end
+  if code == 0 && rejected(with_url("http://example.com/path")) == false then
+    code = 6
+  end
+  if code == 0 && rejected(with_url("example.com/path")) == false then
+    code = 7
+  end
+  if code == 0 && rejected(with_url("https://")) == false then
+    code = 8
+  end
+  if code == 0 && rejected(with_url("https:///missing-host")) == false then
+    code = 9
+  end
+  if code == 0 && rejected(with_url("https://example.com/a b")) == false then
+    code = 10
+  end
+  if code == 0 && rejected(with_url("https://example.com/a\rb")) == false then
+    code = 11
+  end
+  if code == 0 && rejected(with_url("https://example.com/a\nb")) == false then
+    code = 12
+  end
+  if code == 0 && rejected(with_header("", "value")) == false then
+    code = 13
+  end
+  if code == 0 && rejected(with_header("Bad:Name", "value")) == false then
+    code = 14
+  end
+  if code == 0 && rejected(with_header("Bad Name", "value")) == false then
+    code = 15
+  end
+  if code == 0 && rejected(with_header("Name", "a\rvalue")) == false then
+    code = 16
+  end
+  if code == 0 && rejected(with_header("Name", "a\nvalue")) == false then
+    code = 17
+  end
+  if code == 0 && accepted(with_header("Name", "value")) == false then
+    code = 18
+  end
+  if code == 0 && rejected(with_body("GET", "x")) == false then
+    code = 19
+  end
+  if code == 0 && rejected(with_timeout(0)) == false then
+    code = 20
+  end
+  if code == 0 && rejected(with_timeout(600001)) == false then
+    code = 21
+  end
+  if code == 0 && accepted(with_timeout(1)) == false then
+    code = 22
+  end
+  if code == 0 && accepted(with_timeout(600000)) == false then
+    code = 23
+  end
+  if code == 0 && rejected(with_limit(0)) == false then
+    code = 24
+  end
+  if code == 0 && rejected(with_limit(16777217)) == false then
+    code = 25
+  end
+  if code == 0 && accepted(with_limit(1)) == false then
+    code = 26
+  end
+  if code == 0 && accepted(with_limit(16777216)) == false then
+    code = 27
+  end
+  if code == 0 && accepted(with_bundle("")) == false then
+    code = 28
+  end
+  if code == 0 && rejected(with_bundle("certs/\nbundle.pem")) == false then
+    code = 29
+  end
+  if code == 0 && accepted(with_bundle("certs/bundle.pem")) == false then
+    code = 30
+  end
+  code
+end
+
+fn check_header_lines() -> i32 = do
+  let mut code = 0
+  const lines = https_header_lines([
+    HttpsHeader { name: "Name", value: "value" },
+    HttpsHeader { name: "Second", value: "two" }
+  ])
+  if lines != "Name: value\nSecond: two\n" then
+    code = 31
+  end
+  if code == 0 && https_header_lines([]) != "" then
+    code = 32
+  end
+  code
+end
+
+fn check_parse() -> i32 = do
+  let mut code = 0
+  const raw = "HTTP/1.1 100 Continue\r\nX-Early: drop\r\n\r\nHTTP/1.1 302 Found\r\nLocation: /next\r\n\r\nHTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nX-Token:  ab \r\nNoColon\r\nX-Dup: one\r\nX-Dup: two\r\n"
+  const headers = parse_response_header_block(raw)
+  if headers.length() != 4 then
+    code = 33
+  end
+  if code == 0 && https_find_header(headers, "x-early") != "" then
+    code = 34
+  end
+  if code == 0 && https_find_header(headers, "content-type") != "text/plain" then
+    code = 35
+  end
+  if code == 0 && https_find_header(headers, "X-Token") != "ab" then
+    code = 36
+  end
+  if code == 0 && (headers[2].name != "X-Dup" || headers[2].value != "one") then
+    code = 37
+  end
+  if code == 0 && (headers[3].name != "X-Dup" || headers[3].value != "two") then
+    code = 38
+  end
+  code
+end
+
+fn status_code(status: i32) -> i32 =
+  match https_status_class(status) {
+    Informational => 1,
+    Success => 2,
+    Redirect => 3,
+    ClientError => 4,
+    ServerError => 5,
+    OtherStatus => 6
+  }
+
+fn failure_code(code: i32) -> i32 =
+  match https_failure_kind_from_code(code) {
+    InvalidRequest => 1,
+    ResolveFailed => 2,
+    ConnectFailed => 3,
+    TimedOut => 4,
+    CertificateRejected => 5,
+    ResponseTooLarge => 6,
+    TransportFailed => 7
+  }
+
+fn check_status() -> i32 = do
+  let mut code = 0
+  if status_code(200) != 2 then
+    code = 39
+  end
+  if code == 0 && status_code(302) != 3 then
+    code = 40
+  end
+  if code == 0 && status_code(404) != 4 then
+    code = 41
+  end
+  if code == 0 && status_code(503) != 5 then
+    code = 42
+  end
+  if code == 0 && status_code(99) != 6 then
+    code = 43
+  end
+  if code == 0 && status_code(700) != 6 then
+    code = 44
+  end
+  if code == 0 && https_status_is_retryable(429) == false then
+    code = 45
+  end
+  if code == 0 && https_status_is_retryable(500) == false then
+    code = 46
+  end
+  if code == 0 && https_status_is_retryable(502) == false then
+    code = 47
+  end
+  if code == 0 && https_status_is_retryable(503) == false then
+    code = 48
+  end
+  if code == 0 && https_status_is_retryable(504) == false then
+    code = 49
+  end
+  if code == 0 && https_status_is_retryable(200) then
+    code = 50
+  end
+  if code == 0 && https_status_is_retryable(400) then
+    code = 51
+  end
+  if code == 0 && https_status_is_retryable(404) then
+    code = 52
+  end
+  if code == 0 && https_status_is_retryable(501) then
+    code = 53
+  end
+  if code == 0 && failure_code(1) != 1 then
+    code = 54
+  end
+  if code == 0 && failure_code(2) != 2 then
+    code = 55
+  end
+  if code == 0 && failure_code(3) != 3 then
+    code = 56
+  end
+  if code == 0 && failure_code(4) != 4 then
+    code = 57
+  end
+  if code == 0 && failure_code(5) != 5 then
+    code = 58
+  end
+  if code == 0 && failure_code(6) != 6 then
+    code = 59
+  end
+  if code == 0 && failure_code(7) != 7 then
+    code = 60
+  end
+  if code == 0 && failure_code(0) != 7 then
+    code = 61
+  end
+  if code == 0 && failure_code(99) != 7 then
+    code = 62
+  end
+  const failure = HttpsFailure { kind: TimedOut, message: "timed out" }
+  const result = HttpsErr(failure)
+  const response = HttpsResponse { status: 200, headers: [], body: "" }
+  const ok_result = HttpsOk(response)
+  if code == 0 && failure_message(result) != "timed out" then
+    code = 63
+  end
+  if code == 0 && failure_message(ok_result) != "" then
+    code = 64
+  end
+  code
+end
+
+fn failure_message(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(_) => "",
+    HttpsErr(failure) => failure.message
+  }
+
+fn main() -> i32 = do
+  let mut code = check_request()
+  if code == 0 then
+    code = check_header_lines()
+  end
+  if code == 0 then
+    code = check_parse()
+  end
+  if code == 0 then
+    code = check_status()
+  end
+  code
+end
