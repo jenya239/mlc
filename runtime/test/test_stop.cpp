@@ -1,5 +1,5 @@
 // StopSource / StopToken smoke (TRACK_CONCURRENCY_V2 STEP=5).
-// g++ -std=c++20 -pthread -I../include -o test_stop test_stop.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_stop test_stop.cpp
 
 #include "mlc/concurrency/stop.hpp"
 #include <atomic>

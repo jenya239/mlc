@@ -1,5 +1,5 @@
 // Mutex stress (TRACK_CONCURRENCY_TEST_HARNESS STEP=3).
-// g++ -std=c++20 -pthread -I../include -o stress_mutex stress_mutex.cpp
+// clang++ -std=c++20 -pthread -I../include -o stress_mutex stress_mutex.cpp
 
 #include "mlc/concurrency/mutex.hpp"
 

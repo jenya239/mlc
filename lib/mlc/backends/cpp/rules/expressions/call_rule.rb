@@ -191,7 +191,7 @@ module MLC
             end
 
             # mut parameters lower to non-const C++ references. Prvalues must be captured in a local
-            # before invoking the callee (otherwise g++ rejects binding).
+            # before invoking the callee (otherwise clang++ rejects binding).
             def lower_call_with_cpp_mutable_actual_argument_holders(
               call_expression,
               callee_expression,

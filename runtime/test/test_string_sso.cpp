@@ -1,6 +1,6 @@
 // Tests for mlc::String SSO (Small String Optimization)
 // Compile:
-//   g++ -std=c++20 -I../include -o test_string_sso test_string_sso.cpp ../src/core/string.cpp
+//   clang++ -std=c++20 -I../include -o test_string_sso test_string_sso.cpp ../src/core/string.cpp
 
 #include "mlc/core/string.hpp"
 #include <cassert>

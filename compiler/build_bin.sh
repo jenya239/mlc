@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fast parallel build of a directory of .cpp files into a binary.
 # Usage: build_bin.sh <cpp_dir> <binary_out> [extra_include_dir]
-# Respects MLC_CXX (default: ccache clang++ > ccache g++ > g++) and MLC_JOBS.
+# Respects MLC_CXX (default: ccache clang++ > clang++) and MLC_JOBS.
 # Object files persist in <cpp_dir>/obj/<tag>/ for incremental rebuild (ccache-friendly).
 # MLCC_OBJ_CLEAN=1 wipes obj/<tag>/ before compile.
 # MLCC_DEV=1 → compile with -O0 -g (obj tag: dev).

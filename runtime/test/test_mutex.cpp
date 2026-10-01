@@ -1,5 +1,5 @@
 // Mutex scoped lock smoke (TRACK_CONCURRENCY STEP=6).
-// g++ -std=c++20 -pthread -I../include -o test_mutex test_mutex.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_mutex test_mutex.cpp
 
 #include "mlc/concurrency/mutex.hpp"
 #include "mlc/core/array.hpp"

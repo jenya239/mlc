@@ -309,7 +309,7 @@ class PipeOperatorTest < Minitest::Test
     File.write(source_file, cpp_code)
 
     compile_result = system(
-      "g++ -std=c++20 -I #{runtime_dir}/include -o #{binary_file} #{source_file} 2>/tmp/mlc_pipe_compile_error.txt"
+      "clang++ -std=c++20 -I #{runtime_dir}/include -o #{binary_file} #{source_file} 2>/tmp/mlc_pipe_compile_error.txt"
     )
     assert compile_result, "Compilation failed:\n#{File.read("/tmp/mlc_pipe_compile_error.txt")}\n\nCode:\n#{cpp_code}"
 

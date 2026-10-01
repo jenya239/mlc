@@ -211,7 +211,7 @@ def assert_cpp_compiles_and_runs(cpp_code)
     File.write(source_path, cpp_code)
 
     compile_cmd = [
-      "g++",
+      "clang++",
       "-std=c++20",
       "-I", "#{runtime_dir}/include",
       source_path,

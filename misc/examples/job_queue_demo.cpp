@@ -1,7 +1,7 @@
 // JobQueue demo (TRACK_STDLIB_JOB_QUEUE).
 // C++-only v1 — no MLC module. Gate: scripts/run_job_queue_gate.sh
 //
-// g++ -std=c++20 -pthread -I../../runtime/include -o job_queue_demo \
+// clang++ -std=c++20 -pthread -I../../runtime/include -o job_queue_demo \
 //   job_queue_demo.cpp && ./job_queue_demo
 
 #include "mlc/concurrency/job_queue.hpp"

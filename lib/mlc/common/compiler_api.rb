@@ -190,7 +190,7 @@ module MLC
       Diagnostics::ErrorCollector.new(max_errors: max_errors)
     end
 
-    # Compile project in modular mode: per-module .hpp/.cpp, optional g++ build.
+    # Compile project in modular mode: per-module .hpp/.cpp, optional clang++ build.
     # @param entry_path [String] Path to entry .mlc file
     # @param out_dir [String] Output directory for generated files
     # @param root_dir [String, nil] Root for resolving imports (default: entry dir)
@@ -204,7 +204,7 @@ module MLC
       ).compile
     end
 
-    # Compile project and build executable with g++.
+    # Compile project and build executable with clang++.
     # @param binary_name [String] Output binary name (default: "app")
     # @return [Hash] { binary: path, cpp_files: [...], hpp_files: [...] }
     def build_project(entry_path:, out_dir:, root_dir: nil, binary_name: "app")

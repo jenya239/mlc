@@ -1,5 +1,5 @@
 // Демонстрация управления памятью для массивов Aurora
-// Компилировать: g++ -std=c++11 -o memory_demo memory_lifetime_demo.cpp
+// Компилировать: clang++ -std=c++11 -o memory_demo memory_lifetime_demo.cpp
 // Запустить: ./memory_demo
 
 #include <iostream>

@@ -1,5 +1,5 @@
 // Deterministic TestScheduler smoke (TRACK_CONCURRENCY_TEST_HARNESS STEP=1).
-// g++ -std=c++20 -pthread -I../include -o test_scheduler test_scheduler.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_scheduler test_scheduler.cpp
 
 #include "mlc/concurrency/testing/channel.hpp"
 #include "mlc/concurrency/testing/mutex.hpp"

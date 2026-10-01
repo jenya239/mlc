@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# Progress during modular compile/link (semantic → codegen → g++): stderr lines prefixed with "[mlc build]".
+# Progress during modular compile/link (semantic → codegen → clang++): stderr lines prefixed with "[mlc build]".
 # Example: MLCC_BUILD_VERBOSE=1 compiler/build.sh
 #
 # Default: mlcc-only (skip when fresh, rebuild via mlcc + build_bin.sh when stale).

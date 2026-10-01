@@ -600,7 +600,7 @@ runtime/src runtime/include`: zero matches) before this step. Confirmed
 portability, it is always present (`ldconfig -p | grep libutil`).
 
 Empirically measured (not assumed) the exact bytes a PTY actually produces,
-via a standalone `g++` probe linking `pty_abi.cpp` directly (no `mlcc`
+via a standalone `clang++` probe linking `pty_abi.cpp` directly (no `mlcc`
 round-trip needed for this measurement) before writing test assertions:
 - `/bin/echo hello` through a freshly `forkpty`'d master, drained with
   `pty_read_until_eof`: **`"hello\r\n"`** (7 bytes) — the PTY's default

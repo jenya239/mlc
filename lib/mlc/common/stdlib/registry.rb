@@ -38,6 +38,12 @@ module MLC
           namespace: "mlc::json",
           path: "data/json.mlc"
         },
+        "std/data/yaml" => {
+          category: "data",
+          type: :extern,
+          namespace: "mlc::yaml",
+          path: "data/yaml.mlc"
+        },
         "std/graphics/graphics" => {
           category: "graphics",
           type: :extern,
@@ -129,6 +135,7 @@ module MLC
         "IO" => "std/io/io",
         "File" => "std/io/file",
         "Json" => "std/data/json",
+        "Yaml" => "std/data/yaml",
         "Math" => "std/math/math",
         "Graphics" => "std/graphics/graphics",
         "Tcp" => "std/net/tcp",

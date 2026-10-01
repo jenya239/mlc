@@ -91,13 +91,13 @@ compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через
 
 # Сборка
 compiler/build.sh                                   # Ruby → mlcc
-MLCC_BOOTSTRAP=1 compiler/build.sh                 # Ruby → mlcc → mlcc_bootstrap (g++)
+MLCC_BOOTSTRAP=1 compiler/build.sh                 # Ruby → mlcc → mlcc_bootstrap (clang++)
 ```
 
 ### Self-hosted mlcc — проверка (не пропускать)
 
 - `rake test_compiler_mlc` обновляет **run_tests** через Ruby; **`compiler/out/mlcc` от этого не пересобирается**. После правок в `compiler/**` нужен **`compiler/build.sh`** для актуального mlcc.
-- Не считать работу завершённой без проверки self-host: свежий `mlcc` → трансляция **`compiler/main.mlc`** (`mlcc -o <dir> …`); при сомнениях — **`g++`** по выходу. При нехватке места в `/tmp` задать **`TMPDIR`** в дереве репозитория.
+- Не считать работу завершённой без проверки self-host: свежий `mlcc` → трансляция **`compiler/main.mlc`** (`mlcc -o <dir> …`); при сомнениях — **`clang++`** по выходу. При нехватке места в `/tmp` задать **`TMPDIR`** в дереве репозитория.
 - Правило в репозитории: `.cursor/rules/mlcc-self-host-verification.mdc`.
 
 ### Важные соглашения

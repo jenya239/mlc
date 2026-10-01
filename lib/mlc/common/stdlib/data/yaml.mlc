@@ -1,0 +1,38 @@
+//! @module std/data/yaml
+//! @category data
+//! @type extern
+//! @namespace mlc::yaml
+
+extern lib "yaml"
+
+export type YamlValue =
+  | YamlNull
+  | YamlBool(bool)
+  | YamlNumber(f64)
+  | YamlString(str)
+  | YamlArray(YamlValue[])
+  | YamlObject(Map<str, YamlValue>)
+
+extern fn parse_yaml(text: str) -> YamlValue
+extern fn stringify_yaml(value: YamlValue) -> str
+
+extern fn yaml_get(object: YamlValue, key: str) -> Option<YamlValue>
+extern fn yaml_keys(object: YamlValue) -> str[]
+
+export fn yaml_null() -> YamlValue =
+  YamlNull
+
+export fn yaml_bool(boolean: bool) -> YamlValue =
+  YamlBool(boolean)
+
+export fn yaml_number(number: f64) -> YamlValue =
+  YamlNumber(number)
+
+export fn yaml_string(text: str) -> YamlValue =
+  YamlString(text)
+
+export fn yaml_array(items: YamlValue[]) -> YamlValue =
+  YamlArray(items)
+
+export fn yaml_object(object_map: Map<str, YamlValue>) -> YamlValue =
+  YamlObject(object_map)

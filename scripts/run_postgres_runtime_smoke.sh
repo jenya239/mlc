@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INCLUDE="$ROOT/runtime/include"
 SOURCE="$ROOT/runtime/test/test_postgres.cpp"
 OUT="$ROOT/runtime/test/test_postgres"
-CXX="${CXX:-g++}"
+CXX="${CXX:-clang++}"
 
 find_libpq() {
   if echo '#include <libpq-fe.h>' | "$CXX" -E -x c++ - >/dev/null 2>&1; then

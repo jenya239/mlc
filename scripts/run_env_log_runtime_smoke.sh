@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INCLUDE="$ROOT/runtime/include"
 SOURCE="$ROOT/runtime/test/test_env_log.cpp"
 OUT="$ROOT/runtime/test/test_env_log"
-CXX="${CXX:-g++}"
+CXX="${CXX:-clang++}"
 
 "$CXX" -std=c++20 "-I${INCLUDE}" -o "$OUT" "$SOURCE"
 "$OUT"

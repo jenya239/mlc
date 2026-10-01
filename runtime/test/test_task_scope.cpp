@@ -1,5 +1,5 @@
 // TaskScope smoke (TRACK_CONCURRENCY_TASKSCOPE STEP=2).
-// g++ -std=c++20 -pthread -I../include -o test_task_scope test_task_scope.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_task_scope test_task_scope.cpp
 
 #include "mlc/concurrency/task_scope.hpp"
 #include <atomic>

@@ -33,7 +33,7 @@ bash scripts/dev_gate_fast.sh
    .tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
    diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
    ```
-   Use `build_bin.sh`, not bare `g++` — parallel + ccache.
+   Use `build_bin.sh`, not bare `clang++` — parallel + ccache.
 4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
 
 **Tier C — CI / release:** `.github/workflows/build-mlcc-once.yml` or manual full Tier B on clean tree.

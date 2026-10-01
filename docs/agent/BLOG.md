@@ -184,7 +184,7 @@ Lowers to `std::variant` + `std::visit` (see root `README.md`).
 
 - No LSP, package manager, or language spec site yet
 - Minimal stdlib; playground not hosted
-- Full `MLCC_BOOTSTRAP=1` g++ link of fresh emit is a known rough edge; day-to-day `mlcc` binary + codegen determinism check works
+- Full `MLCC_BOOTSTRAP=1` clang++ link of fresh emit is a known rough edge; day-to-day `mlcc` binary + codegen determinism check works
 
 ### Media placeholders
 

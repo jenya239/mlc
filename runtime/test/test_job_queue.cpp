@@ -1,5 +1,5 @@
 // JobQueue smoke (TRACK_STDLIB_JOB_QUEUE STEP=2).
-// g++ -std=c++20 -pthread -I../include -o test_job_queue test_job_queue.cpp && ./test_job_queue
+// clang++ -std=c++20 -pthread -I../include -o test_job_queue test_job_queue.cpp && ./test_job_queue
 
 #include "mlc/concurrency/job_queue.hpp"
 

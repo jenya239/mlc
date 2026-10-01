@@ -1,5 +1,5 @@
 // AtomicI32 concurrent fetch_add (TRACK_CONCURRENCY_ATOMICS).
-// g++ -std=c++20 -pthread -I../include -o test_atomic test_atomic.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_atomic test_atomic.cpp
 
 #include "mlc/concurrency/atomic.hpp"
 #include <iostream>

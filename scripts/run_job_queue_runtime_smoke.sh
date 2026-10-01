@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INCLUDE="$ROOT/runtime/include"
 SOURCE="$ROOT/runtime/test/test_job_queue.cpp"
 OUT="$ROOT/runtime/test/test_job_queue"
-CXX="${CXX:-g++}"
+CXX="${CXX:-clang++}"
 
 "$CXX" -std=c++20 -pthread "-I${INCLUDE}" -o "$OUT" "$SOURCE"
 "$OUT"

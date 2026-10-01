@@ -4,6 +4,7 @@ import { TypeVariant, FieldDef, TypeExpr, TyString, TyI32, TyBool, TyUnit, TyNam
 import { CppDeclaration, CppFnDef, CppDeclarationSequence, CppExpression, CppStatement, CppCall, CppBinary, CppMember, CppStdHashSpecialization } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import * as hash_stmt_helpers from '../../cpp_emit/hash_stmt_helpers'
+import { cpp_safe } from '../cpp_naming'
 
 fn make_string_constructor(text: string) -> Shared<CppExpression> =
   Shared.new(CppCall(
@@ -517,6 +518,13 @@ fn derive_json_cpp_type(field_type: Shared<TypeExpr>) -> string =
       else if name == 'str' then 'mlc::String'
       else if name == 'i32' then 'int'
       else if name == 'bool' then 'bool'
+      else if name == 'i8' then 'int8_t'
+      else if name == 'i16' then 'int16_t'
+      else if name == 'u8' then 'uint8_t'
+      else if name == 'u16' then 'uint16_t'
+      else if name == 'u32' then 'uint32_t'
+      else if name == 'u64' then 'uint64_t'
+      else if name == 'usize' then 'size_t'
       else name
       end,
     TyArray(inner) => 'mlc::Array<' + derive_json_cpp_type(inner) + ">",
@@ -547,8 +555,10 @@ fn derive_json_encode_field(access: string, field_type: Shared<TypeExpr>) -> str
       else if name == 'f64' then 'mlc::json::json_number(static_cast<double>(' + access + '))'
       else if name == 'u8' then 'mlc::json::json_number(static_cast<double>(' + access + '))'
       else if name == 'usize' then 'mlc::json::json_number(static_cast<double>(' + access + '))'
+      else if name == 'i8' || name == 'i16' || name == 'u16' || name == 'u32' || name == 'u64' then
+        'mlc::json::json_number(static_cast<double>(' + access + '))'
       else
-        'mlc::json::json_string(mlc::to_string(' + access + '))'
+        name + '_to_json(' + access + ")"
       end,
     TyArray(inner) =>
       '[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(' + access +
@@ -566,6 +576,35 @@ fn derive_json_encode_field(access: string, field_type: Shared<TypeExpr>) -> str
     TyAssoc(_, _) => 'mlc::json::json_null()'
   }
 
+fn derive_json_decode_integer(
+  value_expr: string,
+  field_name: string,
+  cpp_type: string,
+  minimum: string,
+  maximum: string,
+  indent: string
+) -> string =
+  indent + 'if (!' + value_expr + '.is_number()) {\n' +
+  indent + '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("number")));\n' +
+  indent + '}\n' +
+  indent + 'double __number_' + field_name + ' = *' + value_expr + '.as_number();\n' +
+  indent + 'if (!(__number_' + field_name + ' == __number_' + field_name + ') || __number_' + field_name + ' < ' + minimum + ' || __number_' + field_name + ' > ' + maximum + ' || __number_' + field_name + ' != static_cast<double>(static_cast<long long>(__number_' + field_name + '))) {\n' +
+  indent + '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("integer")));\n' +
+  indent + '}\n' +
+  indent + cpp_type + ' __decoded_' + field_name + ' = static_cast<' + cpp_type + '>(__number_' + field_name + ');\n'
+
+fn derive_json_decode_named_integer(value_expr: string, field_name: string, name: string, indent: string) -> string =
+  if name == 'i8' then derive_json_decode_integer(value_expr, field_name, 'int8_t', '-128.0', '127.0', indent)
+  else if name == 'i16' then derive_json_decode_integer(value_expr, field_name, 'int16_t', '-32768.0', '32767.0', indent)
+  else if name == 'i64' then derive_json_decode_integer(value_expr, field_name, 'int64_t', '-9007199254740992.0', '9007199254740992.0', indent)
+  else if name == 'u8' then derive_json_decode_integer(value_expr, field_name, 'uint8_t', '0.0', '255.0', indent)
+  else if name == 'u16' then derive_json_decode_integer(value_expr, field_name, 'uint16_t', '0.0', '65535.0', indent)
+  else if name == 'u32' then derive_json_decode_integer(value_expr, field_name, 'uint32_t', '0.0', '4294967295.0', indent)
+  else if name == 'u64' then derive_json_decode_integer(value_expr, field_name, 'uint64_t', '0.0', '9007199254740992.0', indent)
+  else if name == 'usize' then derive_json_decode_integer(value_expr, field_name, 'size_t', '0.0', '9007199254740992.0', indent)
+  else ''
+  end
+
 fn derive_json_extract_required(value_expr: string, field_name: string, field_type: Shared<TypeExpr>, indent: string) -> string =
   match field_type {
     TyString =>
@@ -579,10 +618,7 @@ fn derive_json_extract_required(value_expr: string, field_name: string, field_ty
       indent + '}\n' +
       indent + 'bool __decoded_' + field_name + ' = *' + value_expr + '.as_bool();\n',
     TyI32 =>
-      indent + 'if (!' + value_expr + '.is_number()) {\n' +
-      indent + '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("number")));\n' +
-      indent + '}\n' +
-      indent + 'int __decoded_' + field_name + ' = static_cast<int>(*' + value_expr + '.as_number());\n',
+      derive_json_decode_integer(value_expr, field_name, 'int', '-2147483648.0', '2147483647.0', indent),
     TyNamed(name) =>
       if name == 'string' then
         derive_json_extract_required(value_expr, field_name, Shared.new(TyString), indent)
@@ -592,12 +628,23 @@ fn derive_json_extract_required(value_expr: string, field_name: string, field_ty
         derive_json_extract_required(value_expr, field_name, Shared.new(TyBool), indent)
       else if name == 'i32' then
         derive_json_extract_required(value_expr, field_name, Shared.new(TyI32), indent)
-      else
+      else if derive_json_decode_named_integer(value_expr, field_name, name, indent) != '' then
+        derive_json_decode_named_integer(value_expr, field_name, name, indent)
+      else if name == 'f32' || name == 'f64' then
         const cpp_type = derive_json_cpp_type(field_type)
         indent + 'if (!' + value_expr + '.is_number()) {\n' +
         indent + '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("number")));\n' +
         indent + '}\n' +
         indent + cpp_type + ' __decoded_' + field_name + ' = static_cast<' + cpp_type + '>(*' + value_expr + '.as_number());\n'
+      else
+        indent + derive_json_cpp_type(field_type) + ' __decoded_' + field_name + ';\n' +
+        indent + '{\n' +
+        indent + '  auto __nested_' + field_name + ' = ' + name + '_from_json(' + value_expr + ');\n' +
+        indent + '  if (!std::holds_alternative<mlc::result::Ok<' + name + '>>(__nested_' + field_name + ')) {\n' +
+        indent + '    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_' + field_name + ')._0);\n' +
+        indent + '  }\n' +
+        indent + '  __decoded_' + field_name + ' = std::get<mlc::result::Ok<' + name + '>>(__nested_' + field_name + ')._0;\n' +
+        indent + '}\n'
       end,
     TyArray(inner) =>
       indent + 'if (!' + value_expr + '.is_array()) {\n' +
@@ -612,8 +659,17 @@ fn derive_json_extract_required(value_expr: string, field_name: string, field_ty
       indent + '  }\n' +
       indent + '}\n',
     TyGeneric(name, type_arguments) =>
-      indent + 'return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("unsupported")));\n' +
-      indent + derive_json_cpp_type(field_type) + ' __decoded_' + field_name + '{};\n',
+      if name == 'Option' && type_arguments.length() == 1 then
+        const inner = type_arguments[0]
+        indent + 'std::optional<' + derive_json_cpp_type(inner) + '> __decoded_' + field_name + ' = std::nullopt;\n' +
+        indent + 'if (!' + value_expr + '.is_null()) {\n' +
+        derive_json_extract_required(value_expr, field_name + '_some', inner, indent + '  ') +
+        indent + '  __decoded_' + field_name + ' = __decoded_' + field_name + '_some;\n' +
+        indent + '}\n'
+      else
+        indent + 'return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("unsupported")));\n' +
+        indent + derive_json_cpp_type(field_type) + ' __decoded_' + field_name + '{};\n'
+      end,
     TyUnit =>
       indent + 'return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("unsupported")));\n' +
       indent + derive_json_cpp_type(field_type) + ' __decoded_' + field_name + '{};\n',
@@ -630,39 +686,40 @@ fn derive_json_extract_required(value_expr: string, field_name: string, field_ty
 
 fn derive_json_decode_record_field(field_definition: Shared<FieldDef>) -> string = do
   const field_name = field_definition.name
+  const member_name = cpp_safe(field_name)
   const field_type = field_definition.type_value
   match field_type {
     TyGeneric(name, type_arguments) =>
       if name == 'Option' && type_arguments.length() == 1 then
         const inner = type_arguments[0]
-        '  std::optional<' + derive_json_cpp_type(inner) + '> ' + field_name + ' = std::nullopt;\n' +
+        '  std::optional<' + derive_json_cpp_type(inner) + '> ' + member_name + ' = std::nullopt;\n' +
         '  {\n' +
-        '    auto __opt_' + field_name + ' = mlc::json::json_get(value, mlc::String("' + field_name + '"));\n' +
+        '    auto __opt_' + field_name + ' = mlc::json::json_get(__json_value, mlc::String("' + field_name + '"));\n' +
         '    if (__opt_' + field_name + '.has_value() && !__opt_' + field_name + '->is_null()) {\n' +
         derive_json_extract_required('__opt_' + field_name + '.value()', field_name, inner, '      ') +
-        '      ' + field_name + ' = __decoded_' + field_name + ';\n' +
+        '      ' + member_name + ' = __decoded_' + field_name + ';\n' +
         '    }\n' +
         '  }\n'
       else
-        '  ' + derive_json_cpp_type(field_type) + " " + field_name + ';\n' +
+        '  ' + derive_json_cpp_type(field_type) + " " + member_name + ';\n' +
         '  {\n' +
-        '    auto __opt_' + field_name + ' = mlc::json::json_get(value, mlc::String("' + field_name + '"));\n' +
+        '    auto __opt_' + field_name + ' = mlc::json::json_get(__json_value, mlc::String("' + field_name + '"));\n' +
         '    if (!__opt_' + field_name + '.has_value()) {\n' +
         '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("' + field_name + '")));\n' +
         '    }\n' +
         derive_json_extract_required('__opt_' + field_name + '.value()', field_name, field_type, '    ') +
-        '    ' + field_name + ' = __decoded_' + field_name + ';\n' +
+        '    ' + member_name + ' = __decoded_' + field_name + ';\n' +
         '  }\n'
       end,
     _ =>
-      '  ' + derive_json_cpp_type(field_type) + " " + field_name + ';\n' +
+      '  ' + derive_json_cpp_type(field_type) + " " + member_name + ';\n' +
       '  {\n' +
-      '    auto __opt_' + field_name + ' = mlc::json::json_get(value, mlc::String("' + field_name + '"));\n' +
+      '    auto __opt_' + field_name + ' = mlc::json::json_get(__json_value, mlc::String("' + field_name + '"));\n' +
       '    if (!__opt_' + field_name + '.has_value()) {\n' +
       '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("' + field_name + '")));\n' +
       '    }\n' +
       derive_json_extract_required('__opt_' + field_name + '.value()', field_name, field_type, '    ') +
-      '    ' + field_name + ' = __decoded_' + field_name + ';\n' +
+      '    ' + member_name + ' = __decoded_' + field_name + ';\n' +
       '  }\n'
   }
 end
@@ -673,7 +730,7 @@ fn derive_json_record_to_json_body(field_definitions: [Shared<FieldDef>]) -> str
   while index < field_definitions.length() do
     const field_definition = field_definitions[index]
     lines = lines + '  object = mlc::json::json_set(object, mlc::String("' + field_definition.name +
-      '"), ' + derive_json_encode_field('self.' + field_definition.name, field_definition.type_value) + ');\n'
+      '"), ' + derive_json_encode_field('self.' + cpp_safe(field_definition.name), field_definition.type_value) + ');\n'
     index = index + 1
   end
   lines + '  return object;\n'
@@ -681,7 +738,7 @@ end
 
 fn derive_json_record_from_json_body(type_name: string, field_definitions: [Shared<FieldDef>]) -> string = do
   let mut lines =
-    '  if (!value.is_object()) {\n' +
+    '  if (!__json_value.is_object()) {\n' +
     '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(""), mlc::String("object")));\n' +
     '  }\n'
   let mut index = 0
@@ -693,7 +750,7 @@ fn derive_json_record_from_json_body(type_name: string, field_definitions: [Shar
   index = 0
   while index < field_definitions.length() do
     if index > 0 then inits = inits + ', ' end
-    inits = inits + "." + field_definitions[index].name + ' = ' + field_definitions[index].name
+    inits = inits + "." + cpp_safe(field_definitions[index].name) + ' = ' + cpp_safe(field_definitions[index].name)
     index = index + 1
   end
   lines + '  return mlc::result::Ok<' + type_name + '>(' + type_name + "{" + inits + '});\n'
@@ -731,7 +788,7 @@ fn derive_json_record_cpp(type_name: string, field_definitions: [Shared<FieldDef
     json_function_definition(
       'mlc::result::Result<' + type_name + ', mlc::json::JsonError>',
       type_name + '_from_json',
-      ['const mlc::json::JsonValue& value'],
+      ['const mlc::json::JsonValue& __json_value'],
       derive_json_record_from_json_body(type_name, field_definitions))
   ]))
 
@@ -782,7 +839,7 @@ fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
         '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
         '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
         '    object = mlc::json::json_set(object, mlc::String("value"), ' +
-        derive_json_encode_field('std::get<' + name + '>(self).' + field_definitions[0].name, field_definitions[0].type_value) +
+        derive_json_encode_field('std::get<' + name + '>(self).' + cpp_safe(field_definitions[0].name), field_definitions[0].type_value) +
         ');\n' +
         '    return object;\n' +
         '  }\n'
@@ -796,7 +853,7 @@ fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
         while index < field_definitions.length() do
           lines = lines + '    fields.push_back(' +
             derive_json_encode_field(
-              'std::get<' + name + '>(self).' + field_definitions[index].name,
+              'std::get<' + name + '>(self).' + cpp_safe(field_definitions[index].name),
               field_definitions[index].type_value) +
             ');\n'
           index = index + 1
@@ -821,7 +878,7 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
         '  }\n'
       else if field_types.length() == 1 then
         '  if (tag == mlc::String("' + name + '")) {\n' +
-        '    auto __opt_value = mlc::json::json_get(value, mlc::String("value"));\n' +
+        '    auto __opt_value = mlc::json::json_get(__json_value, mlc::String("value"));\n' +
         '    if (!__opt_value.has_value()) {\n' +
         '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("value")));\n' +
         '    }\n' +
@@ -831,7 +888,7 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
       else
         let mut lines =
           '  if (tag == mlc::String("' + name + '")) {\n' +
-          '    auto __opt_fields = mlc::json::json_get(value, mlc::String("fields"));\n' +
+          '    auto __opt_fields = mlc::json::json_get(__json_value, mlc::String("fields"));\n' +
           '    if (!__opt_fields.has_value() || !__opt_fields->is_array()) {\n' +
           '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("fields"), mlc::String("array")));\n' +
           '    }\n' +
@@ -859,17 +916,17 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
       else if field_definitions.length() == 1 then
         const field_name = field_definitions[0].name
         '  if (tag == mlc::String("' + name + '")) {\n' +
-        '    auto __opt_value = mlc::json::json_get(value, mlc::String("value"));\n' +
+        '    auto __opt_value = mlc::json::json_get(__json_value, mlc::String("value"));\n' +
         '    if (!__opt_value.has_value()) {\n' +
         '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("value")));\n' +
         '    }\n' +
         derive_json_extract_required('__opt_value.value()', name + '_payload', field_definitions[0].type_value, '    ') +
-        '    return mlc::result::Ok<' + type_name + '>(' + name + '{.' + field_name + ' = __decoded_' + name + '_payload});\n' +
+        '    return mlc::result::Ok<' + type_name + '>(' + name + '{.' + cpp_safe(field_name) + ' = __decoded_' + name + '_payload});\n' +
         '  }\n'
       else
         let mut lines =
           '  if (tag == mlc::String("' + name + '")) {\n' +
-          '    auto __opt_fields = mlc::json::json_get(value, mlc::String("fields"));\n' +
+          '    auto __opt_fields = mlc::json::json_get(__json_value, mlc::String("fields"));\n' +
           '    if (!__opt_fields.has_value() || !__opt_fields->is_array()) {\n' +
           '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("fields"), mlc::String("array")));\n' +
           '    }\n' +
@@ -888,7 +945,7 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
             field_definitions[index].type_value,
             '    ')
           if index > 0 then inits = inits + ', ' end
-          inits = inits + "." + field_name + ' = __decoded_' + name + "_" + field_name
+          inits = inits + "." + cpp_safe(field_name) + ' = __decoded_' + name + "_" + field_name
           index = index + 1
         end
         lines + '    return mlc::result::Ok<' + type_name + '>(' + name + "{" + inits + '});\n' + '  }\n'
@@ -940,16 +997,16 @@ fn derive_json_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Sh
     json_function_definition(
       'mlc::result::Result<' + type_name + ', mlc::json::JsonError>',
       type_name + '_from_json',
-      ['const mlc::json::JsonValue& value'],
-      '  if (value.is_string()) {\n' +
-      '    mlc::String tag = *value.as_string();\n' +
+      ['const mlc::json::JsonValue& __json_value'],
+      '  if (__json_value.is_string()) {\n' +
+      '    mlc::String tag = *__json_value.as_string();\n' +
       unit_string_body +
       '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("tag"), mlc::String("known unit variant")));\n' +
       '  }\n' +
-      '  if (!value.is_object()) {\n' +
+      '  if (!__json_value.is_object()) {\n' +
       '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(""), mlc::String("object or string")));\n' +
       '  }\n' +
-      '  auto __opt_tag = mlc::json::json_get(value, mlc::String("tag"));\n' +
+      '  auto __opt_tag = mlc::json::json_get(__json_value, mlc::String("tag"));\n' +
       '  if (!__opt_tag.has_value() || !__opt_tag->is_string()) {\n' +
       '    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("tag")));\n' +
       '  }\n' +

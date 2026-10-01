@@ -11,7 +11,7 @@ MLCC="${MLCC:-$ROOT/compiler/out/mlcc}"
 RT_INC="$ROOT/runtime/include"
 RT_SRC="$ROOT/runtime/src/io/io.cpp $ROOT/runtime/src/core/string.cpp"
 RUN_RUBY=(bundle exec ruby "$ROOT/bin/mlc")
-CXX="${MLC_CXX:-g++}"
+CXX="${MLC_CXX:-clang++}"
 JOBS="${MLC_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 
 if [[ ! -x "$MLCC" ]]; then

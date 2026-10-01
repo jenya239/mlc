@@ -40,6 +40,24 @@ Known deferrals (not blockers for close): OpenAPI client stubs not wired to
 `fetch` / mock HTTP server (`API_CLIENT.md` §8.4); `rake test_compiler_mlc`
 blocked by pre-existing Ruby parse fail on `spawn_capture.mlc`.
 
+## Post-close findings (2026-10-01)
+
+Трек остаётся closed.
+
+- `derive { Json }` покрывает вложенный record, массив, `Option` и проверку
+  диапазона целых. `i64`, `u64`, `usize` точны до ±2^53. `JsonNumber` остаётся
+  `f64`.
+- Поле `Map`, `Shared` или функция — диагностика чекера (mlcc E069). Generic
+  derive — E072.
+- `json.mlc` и `json.hpp` остаются разными представлениями. `parse_json`
+  текста, который не является JSON, возвращает `JsonNull`.
+- OpenAPI-генератор пишет `[T]`, вариант с суффиксом `Case` и `ApiResult<T>`.
+  `fetch` по-прежнему не подключён (§8.4).
+- Сумма, содержащая саму себя, и две суммы, содержащие друг друга, не
+  оборачиваются в `struct { std::variant _; }`. clang++ отвергает неполный тип.
+  Это пробел lowering типов, не отдельное правило Json. `Display`/`Eq`/`Ord`/`Hash`
+  с `self._` на нециклической сумме — отдельный дефект.
+
 ## Out of scope (см. `API_CLIENT.md` §6)
 
 - Настоящая async-интеграция `fetch()` — отдельная задача.

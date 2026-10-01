@@ -1,5 +1,5 @@
 // Isolate smoke (TRACK_CONCURRENCY_ISOLATE STEP=2).
-// g++ -std=c++20 -pthread -I../include -o test_isolate test_isolate.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_isolate test_isolate.cpp
 
 #include "mlc/concurrency/isolate.hpp"
 

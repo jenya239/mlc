@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INCLUDE="$ROOT/runtime/include"
 SOURCE="$ROOT/runtime/test/test_crypto.cpp"
 OUT="$ROOT/runtime/test/test_crypto"
-CXX="${CXX:-g++}"
+CXX="${CXX:-clang++}"
 
 find_sodium() {
   if echo '#include <sodium.h>' | "$CXX" -E -x c++ - >/dev/null 2>&1; then

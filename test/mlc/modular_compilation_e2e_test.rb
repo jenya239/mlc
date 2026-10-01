@@ -45,7 +45,7 @@ class ModularCompilationE2ETest < Minitest::Test
     assert_includes File.read(File.join(out_dir, "main.hpp")), "#include \"foo.hpp\""
   end
 
-  # Step 21: g++ compiles and links → executable
+  # Step 21: clang++ compiles and links → executable
   def test_build_project_produces_runnable_binary
     src_dir = File.join(@tmpdir, "src")
     out_dir = File.join(@tmpdir, "out")

@@ -509,4 +509,40 @@ fn main() -> i32 = 0
 
 Core `JsonValue` parse/stringify in C++ runtime. Typed record/sum (de)serialization
 via `derive { Json }` (API_CLIENT track closed). No dedicated misc demo for
-manual `parse_json` calls.
+manual `parse_json` calls. `JsonNumber` is `f64`. Integer fields accept only
+finite integral values inside the type range; `i64`, `u64`, and `usize` are
+exact only through ±2^53 (9007199254740992). A fraction, NaN, or out-of-range
+number is `TypeMismatch` with expected type `integer`. `json.mlc` describes
+`JsonValue` as an MLC sum and objects as `Map<str, JsonValue>`; the C++ runtime
+is a separate `std::variant`, and objects are `nlohmann::json`. `parse_json` of
+text that is not JSON returns `JsonNull`, the same value as JSON `null`.
+A sum that contains itself, and two sums that contain each other, are not
+supported: both compilers emit `using Name = std::variant<...>`, and clang++
+rejects the incomplete variant member.
+
+## Yaml
+
+Module: [`lib/mlc/common/stdlib/data/yaml.mlc`](../lib/mlc/common/stdlib/data/yaml.mlc)
+(`import … from "Yaml"`). Runtime: `mlc/yaml/yaml.hpp`, linked with `-lyaml`
+(libyaml 0.2.5). The header is not part of `mlc.hpp`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `YamlValue` | `YamlNull \| YamlBool \| YamlNumber(f64) \| YamlString \| YamlArray \| YamlObject` | One YAML document |
+| `parse_yaml` | `(text: str) -> YamlValue` | Parse one document |
+| `stringify_yaml` | `(value: YamlValue) -> str` | Emit one document |
+| `yaml_get` / `yaml_keys` | object helpers | First matching key, then the key list |
+
+### Limitations
+
+`parse_yaml` reads one YAML 1.1 document through libyaml. Plain scalars use the
+1.1 words: `yes`/`no`/`on`/`off`/`y`/`n` are bools, and an empty plain scalar
+is null. Quoted text stays a string, including `"true"`. Numbers are `f64`.
+A second document, a tag outside `tag:yaml.org,2002:{str,int,float,bool,null,seq,map}`,
+an unknown alias, or an alias into a node that is still open fails. The failure
+text is `multiple documents`, `tag`, `unknown alias`, `cyclic alias`, `scalar`,
+`key`, or the libyaml syntax text. Merge keys stay ordinary keys named `<<`.
+Hex and octal plain tokens stay strings. `yaml.mlc` describes `YamlValue` as an
+MLC sum and objects as `Map<str, YamlValue>`; the C++ runtime is a separate
+`std::variant`, and objects are an ordered list of pairs. `derive { Yaml }` is
+not implemented.

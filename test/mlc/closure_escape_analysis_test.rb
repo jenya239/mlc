@@ -103,7 +103,7 @@ class ClosureEscapeAnalysisTest < Minitest::Test
 
       root = File.expand_path("../..", __dir__)
       compile_ok = system(
-        "g++", "-std=c++20", "-I", File.join(root, "runtime/include"),
+        "clang++", "-std=c++20", "-I", File.join(root, "runtime/include"),
         cpp_path,
         File.join(root, "runtime/src/io/io.cpp"),
         File.join(root, "runtime/src/core/string.cpp"),

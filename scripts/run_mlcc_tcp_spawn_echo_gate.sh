@@ -21,7 +21,7 @@ echo "[mlcc tcp spawn echo] link server" >&2
 MLCC_PCH=0 MLCC_DEV=1 MLCC_ENTRY_BASENAME=tcp_spawn_echo_mlcc compiler/build_bin.sh "$out_dir" "$out_dir/tcp_spawn_echo"
 
 echo "[mlcc tcp spawn echo] link client" >&2
-"${CXX:-g++}" -std=c++20 -O0 -pthread -o "$out_dir/tcp_echo_client" runtime/test/tcp_echo_client.cpp
+"${CXX:-clang++}" -std=c++20 -O0 -pthread -o "$out_dir/tcp_echo_client" runtime/test/tcp_echo_client.cpp
 
 port_file="$out_dir/tcp_spawn_port.txt"
 marker_a="$out_dir/tcp_spawn_marker_a.txt"

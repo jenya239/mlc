@@ -1,5 +1,5 @@
 // ThreadPool smoke (TRACK_CONCURRENCY_ISOLATE STEP=1).
-// g++ -std=c++20 -pthread -I../include -o test_thread_pool test_thread_pool.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_thread_pool test_thread_pool.cpp
 
 #include "mlc/concurrency/thread_pool.hpp"
 

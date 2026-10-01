@@ -1,6 +1,6 @@
 // Channel stress matrix Layer 2 (TRACK_CONCURRENCY_TEST_HARNESS T2+T5).
 // Mode A: real threads. Cancel-during-send/recv via StopToken (T5).
-// g++ -std=c++20 -pthread -I../include -o stress_channel stress_channel.cpp
+// clang++ -std=c++20 -pthread -I../include -o stress_channel stress_channel.cpp
 
 #include "mlc/concurrency/channel.hpp"
 #include "mlc/concurrency/stop.hpp"

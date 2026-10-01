@@ -11,7 +11,7 @@ alwaysApply: true
 
 - `bundle exec rake test_compiler_mlc` собирает и запускает **`compiler/out/run_tests`** через **Ruby** `ModularCompiler`. Это **не** пересобирает **`compiler/out/mlcc`**.
 - Актуальный бинарь mlcc после правок в `compiler/**/*.mlc`: **`compiler/build.sh`** (или явный путь из `docs`, если иной).
-- **Полная самосборка** в смысле проекта: свежий `mlcc` успешно транслирует **`compiler/main.mlc`** во все модули C++ (`mlcc -o <dir> compiler/main.mlc`) и при регрессиях — **линковка** `g++` по сгенерированным `.cpp`. При переполнении `/tmp` использовать **`TMPDIR`** внутри репозитория.
+- **Полная самосборка** в смысле проекта: свежий `mlcc` успешно транслирует **`compiler/main.mlc`** во все модули C++ (`mlcc -o <dir> compiler/main.mlc`) и при регрессиях — **линковка** `clang++` по сгенерированным `.cpp`. При переполнении `/tmp` использовать **`TMPDIR`** внутри репозитория.
 
 ## Требование к агенту
 
@@ -21,11 +21,11 @@ alwaysApply: true
 
 ## Проверка идентичности (self-hosting correctness)
 
-После любых изменений codegen или checker: собрать mlcc2 из C++ сгенерированного mlcc, запустить mlcc2 на том же исходнике, убедиться что вывод идентичен. Собирать mlcc2 через **`compiler/build_bin.sh`** (параллельно + PCH + mold-линк), не голым однопоточным `g++ *.cpp` — тот же результат за 2–4× меньшее время (см. `docs/agent/TRACK_BUILD_SPEED2.md`, измерение 2026-07-03: 750–1283s → 328s). `g++` остаётся независимым компилятором для кросс-проверки (`MLC_CXX=g++`), просто не голым вызовом:
+После любых изменений codegen или checker: собрать mlcc2 из C++ сгенерированного mlcc, запустить mlcc2 на том же исходнике, убедиться что вывод идентичен. Собирать mlcc2 через **`compiler/build_bin.sh`** (параллельно + PCH + mold-линк, компилятор `clang++`), не голым однопоточным `clang++ *.cpp` — тот же результат за 2–4× меньшее время (см. `docs/agent/TRACK_BUILD_SPEED2.md`, измерение 2026-07-03: 750–1283s → 328s).
 
 ```bash
 compiler/out/mlcc -o /tmp/mlc_p1 compiler/main.mlc
-MLC_CXX=g++ compiler/build_bin.sh /tmp/mlc_p1 /tmp/mlcc2
+compiler/build_bin.sh /tmp/mlc_p1 /tmp/mlcc2
 /tmp/mlcc2 -o /tmp/mlc_p2 compiler/main.mlc
 diff -r /tmp/mlc_p1 /tmp/mlc_p2 --exclude=obj  # должно быть IDENTICAL
 ```
@@ -37,12 +37,12 @@ diff -r /tmp/mlc_p1 /tmp/mlc_p2 --exclude=obj  # должно быть IDENTICAL
 ## Производительность (бенчмарк трансляции MLC→C++)
 
 Ориентир (50+ модулей `compiler/main.mlc`):
-- **mlcc** (g++ -O2): ~4–5s
+- **mlcc** (clang++ -O2): ~4–5s
 - **Ruby**: ~15–20s (без startup)
 
 При изменениях codegen или алгоритмов checker: замерять время трансляции с помощью `time compiler/out/mlcc -o /tmp/... compiler/main.mlc`. Регрессия >2× относительно ориентира — повод для анализа.
 
-Замер Ruby (только трансляция, без startup и g++):
+Замер Ruby (только трансляция, без startup и clang++):
 ```bash
 bundle exec ruby -e '
 require "mlc/common/index"; require "mlc/common/modular_compilation/modular_compiler"

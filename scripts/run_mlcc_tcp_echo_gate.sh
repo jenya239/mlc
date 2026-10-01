@@ -21,7 +21,7 @@ echo "[mlcc tcp echo] link server" >&2
 MLCC_ENTRY_BASENAME=tcp_echo_mlcc compiler/build_bin.sh "$out_dir" "$out_dir/tcp_echo"
 
 echo "[mlcc tcp echo] link client" >&2
-"${CXX:-g++}" -std=c++20 -O0 -o "$out_dir/tcp_echo_client" runtime/test/tcp_echo_client.cpp
+"${CXX:-clang++}" -std=c++20 -O0 -o "$out_dir/tcp_echo_client" runtime/test/tcp_echo_client.cpp
 
 port_file="$out_dir/tcp_echo_port.txt"
 rm -f "$port_file"

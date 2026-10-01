@@ -1,5 +1,5 @@
 // Supervisor smoke (TRACK_CONCURRENCY_SUPERVISOR STEP=1–5).
-// g++ -std=c++20 -pthread -I../include -o test_supervisor test_supervisor.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_supervisor test_supervisor.cpp
 
 #include "mlc/concurrency/supervisor.hpp"
 

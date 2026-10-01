@@ -7,7 +7,7 @@ require "etc"
 module MLC
   module Common
     module ModularCompilation
-      # Compiles a project in modular mode: per-module .hpp and .cpp, optional g++ build.
+      # Compiles a project in modular mode: per-module .hpp and .cpp, optional clang++ build.
       # Steps 19-21 of modular compilation plan.
       PARALLEL_JOBS = begin
         n = ENV["MLC_JOBS"].to_i

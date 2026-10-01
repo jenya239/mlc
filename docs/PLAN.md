@@ -13,7 +13,7 @@ Codegen строит **CppAST** (`compiler/cpp_ir/cpp_ast.mlc`) и печата�
 ### Производительность
 
 - Маленькие программы (например `fibonacci.mlc`): нативный `mlcc` на порядки быстрее полного запуска Ruby (у Ruby большой startup).
-- Полная трансляция `compiler/main.mlc`: ориентир порядка **нескольких секунд** у `mlcc` (native) против **десятков секунд** у Ruby только на `ModularCompiler#compile` (без g++); замеры держать в правиле `.cursor/rules/mlcc-self-host-verification.mdc`.
+- Полная трансляция `compiler/main.mlc`: ориентир порядка **нескольких секунд** у `mlcc` (native) против **десятков секунд** у Ruby только на `ModularCompiler#compile` (без clang++); замеры держать в правиле `.cursor/rules/mlcc-self-host-verification.mdc`.
 - Рост числа деклараций: избегать наивного `fold` по большим структурам с COW-`Map` при копировании аккумулятора (пример исправления: `build_registry` — мутация одного `TypeRegistry` через `ref mut`, см. `compiler/checker/registry.mlc`).
 
 ### Проблемы структуры
@@ -60,7 +60,7 @@ Source
 - Нет побочных эффектов, скрытых в операторах
 - Позволяет: dead code elimination, constant folding, inlining
 
-Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без g++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed**).
+Типы, dump, structural verifier, lowering, `--dump-mir` — все 10 шагов done. Продолжение (VM/интерпретатор без clang++) — [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md) (open, Epic 0–4 **done** STEP=12; Epic 5 **NOT authorized**. [TRACK_VM_TRAMPOLINE](archive/tracks/TRACK_VM_TRAMPOLINE.md) **closed**; [TRACK_VM_BLOCK_ID_COLLISION](archive/tracks/TRACK_VM_BLOCK_ID_COLLISION.md) **closed**; [TRACK_VM_LOWERING_GAPS](archive/tracks/TRACK_VM_LOWERING_GAPS.md) **closed**; [TRACK_CLI_STDIN](archive/tracks/TRACK_CLI_STDIN.md) **closed**; [TRACK_LANG_INT_OVERFLOW](archive/tracks/TRACK_LANG_INT_OVERFLOW.md) **closed**).
 
 ### C++ AST (приоритет: Phase 2)
 
@@ -1168,7 +1168,7 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 
 ### Phase 2.9: Build speed — **done**
 
-**Цель:** убрать bottleneck g++ link (90–200s): persistent obj, ccache, mold/lld, dev `-O0`. mlcc codegen ~2s — не трогать.
+**Цель:** убрать bottleneck clang++ link (90–200s): persistent obj, ccache, mold/lld, dev `-O0`. mlcc codegen ~2s — не трогать.
 
 Треки: [TRACK_BUILD_SPEED](archive/tracks/TRACK_BUILD_SPEED.md),
 [TRACK_BUILD_SPEED2](archive/tracks/TRACK_BUILD_SPEED2.md),
@@ -1177,7 +1177,7 @@ Subset-парсер для `import "foo.h"`: include, using, struct, fn proto, e
 clang++ — дефолт (`compiler/scripts/select_cxx.sh`). BUILD_SPEED3: CI ccache +
 ftime-trace after CLOSURE_ESCAPE → decision **c** (no Shared/Array/`std::function`
 `extern template`; no ninja). **Не путать** с [TRACK_MIR_VM_FULL](agent/TRACK_MIR_VM_FULL.md)
-(интерпретация без g++, не скорость *сборки*). C++20 modules — вне скоупа.
+(интерпретация без clang++, не скорость *сборки*). C++20 modules — вне скоупа.
 
 ### Phase 4: Self-hosting completeness — **done** ([TRACK_BOOTSTRAP_LINK](archive/tracks/TRACK_BOOTSTRAP_LINK.md) closed 2026-07-03)
 

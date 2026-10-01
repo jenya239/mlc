@@ -13,7 +13,7 @@
 | | **MIR VM** (существует) | **MLC Script VM** (этот документ, design-only) |
 |---|---|---|
 | Что это | Tree-walking интерпретатор над MIR — debug/bootstrap инструмент компилятора | Отдельная встраиваемая (embeddable) VM для динамического профиля языка |
-| Зачем | `mlcc --run` без `g++`; self-host proof-of-concept; CI parity против C++ backend | Запуск `mlc script`-модулей (implicit `dyn`) в игровых/UI/конфиг/серверных скриптах |
+| Зачем | `mlcc --run` без `clang++`; self-host proof-of-concept; CI parity против C++ backend | Запуск `mlc script`-модулей (implicit `dyn`) в игровых/UI/конфиг/серверных скриптах |
 | Код живёт в | `compiler/vm/` (часть self-hosted `mlcc`) | **Не создавать в `compiler/vm/`.** Отдельный top-level каталог `script_vm/` (design-only, каталога пока нет) |
 | Трек | [agent/TRACK_MIR_VM_FULL.md](agent/TRACK_MIR_VM_FULL.md) | [agent/TRACK_MLC_SCRIPT_VM.md](agent/TRACK_MLC_SCRIPT_VM.md) |
 | Bytecode | Нет — прямой обход `MirStmt`/`MirTerminator` structs | Да — регистровый bytecode (§4) |
@@ -24,7 +24,7 @@
 | Целевой язык | Тот же статический MLC, что компилируется в C++ (просто другой backend для дев-цикла) | Отдельный **script profile** того же синтаксиса — implicit `dyn`, а не полноценный статический MLC |
 | Замена C++ release backend | Нет, никогда (явный non-goal) | Нет — это третий путь исполнения, не замена AOT |
 
-Если задача про `mlcc --run`, `compiler/vm/`, self-host bootstrap без `g++` —
+Если задача про `mlcc --run`, `compiler/vm/`, self-host bootstrap без `clang++` —
 это **MIR VM**, читать `TRACK_MIR_VM_FULL.md`, не этот документ.
 
 Если задача про `dyn`, bytecode, embeddable runtime, JIT, GC — это

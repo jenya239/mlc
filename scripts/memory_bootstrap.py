@@ -29,7 +29,7 @@ BOOTSTRAP = [
         "type": "command",
         "scope": "repo",
         "confidence": "high",
-        "content": "Build speed: use build_bin.sh (ccache/parallel), not bare g++ link.",
+        "content": "Build speed: use build_bin.sh (ccache/parallel), not bare clang++ link.",
         "evidence": {"files": ["compiler/build_bin.sh", "docs/agent/TRACK_BUILD_SPEED.md"]},
     },
     {

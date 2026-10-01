@@ -1,5 +1,5 @@
 // Arc atomic refcount smoke (TRACK_CONCURRENCY STEP=5).
-// g++ -std=c++20 -pthread -I../include -o test_arc test_arc.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_arc test_arc.cpp
 
 #include "mlc/concurrency/arc.hpp"
 #include <iostream>

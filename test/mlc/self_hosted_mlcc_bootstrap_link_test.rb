@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-# Full toolchain: Ruby builds mlcc, mlcc emits compiler/out/bootstrap/*.cpp, g++ links mlcc_bootstrap.
+# Full toolchain: Ruby builds mlcc, mlcc emits compiler/out/bootstrap/*.cpp, clang++ links mlcc_bootstrap.
 # Slow (~minutes); enable with MLC_REQUIRE_BOOTSTRAP_LINK=1 (CI gate when bootstrap must stay green).
 class SelfHostedMlccBootstrapLinkTest < Minitest::Test
   def test_mlcc_bootstrap_binary_links

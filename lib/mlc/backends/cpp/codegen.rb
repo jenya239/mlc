@@ -737,7 +737,7 @@ module MLC
     mlc::json::JsonValue #{name}_to_json(const #{name}& self) noexcept {
       #{to_json_body}
     }
-    mlc::result::Result<#{name}, mlc::json::JsonError> #{name}_from_json(const mlc::json::JsonValue& value) noexcept {
+    mlc::result::Result<#{name}, mlc::json::JsonError> #{name}_from_json(const mlc::json::JsonValue& __json_value) noexcept {
       #{from_json_body}
     }
   CPP
@@ -763,7 +763,7 @@ def derive_json_sum_to_json_body(name, type)
       lines << "  return mlc::json::json_string(mlc::String(\"#{vname}\"));"
     elsif fields.length == 1
       field = fields.first
-      field_access = "std::get<#{vname}>(#{access}).#{field[:name] || "field0"}"
+      field_access = "std::get<#{vname}>(#{access}).#{sanitize_identifier(field[:name] || "field0")}"
       encoded = derive_json_encode_field(field_access, field[:type])
       lines << "  mlc::json::JsonValue object = mlc::json::json_object();"
       lines << "  object = mlc::json::json_set(object, mlc::String(\"tag\"), mlc::json::json_string(mlc::String(\"#{vname}\")));"
@@ -774,7 +774,7 @@ def derive_json_sum_to_json_body(name, type)
       lines << "  object = mlc::json::json_set(object, mlc::String(\"tag\"), mlc::json::json_string(mlc::String(\"#{vname}\")));"
       lines << "  std::vector<mlc::json::JsonValue> fields;"
       fields.each do |field|
-        field_access = "std::get<#{vname}>(#{access}).#{field[:name] || "field0"}"
+        field_access = "std::get<#{vname}>(#{access}).#{sanitize_identifier(field[:name] || "field0")}"
         encoded = derive_json_encode_field(field_access, field[:type])
         lines << "  fields.push_back(#{encoded});"
       end
@@ -789,8 +789,8 @@ end
 
 def derive_json_sum_from_json_body(name, type)
   lines = []
-  lines << "if (value.is_string()) {"
-  lines << "  mlc::String tag = *value.as_string();"
+  lines << "if (__json_value.is_string()) {"
+  lines << "  mlc::String tag = *__json_value.as_string();"
   type.variants.each do |variant|
     next unless Array(variant[:fields]).empty?
 
@@ -801,10 +801,10 @@ def derive_json_sum_from_json_body(name, type)
   end
   lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"tag\"), mlc::String(\"known unit variant\")));"
   lines << "}"
-  lines << "if (!value.is_object()) {"
+  lines << "if (!__json_value.is_object()) {"
   lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"\"), mlc::String(\"object or string\")));"
   lines << "}"
-  lines << "auto __opt_tag = mlc::json::json_get(value, mlc::String(\"tag\"));"
+  lines << "auto __opt_tag = mlc::json::json_get(__json_value, mlc::String(\"tag\"));"
   lines << "if (!__opt_tag.has_value() || !__opt_tag->is_string()) {"
   lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String(\"tag\")));"
   lines << "}"
@@ -818,14 +818,14 @@ def derive_json_sum_from_json_body(name, type)
     elsif fields.length == 1
       field = fields.first
       field_name = field[:name] || "field0"
-      lines << "  auto __opt_value = mlc::json::json_get(value, mlc::String(\"value\"));"
+      lines << "  auto __opt_value = mlc::json::json_get(__json_value, mlc::String(\"value\"));"
       lines << "  if (!__opt_value.has_value()) {"
       lines << "    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String(\"value\")));"
       lines << "  }"
       lines.concat(derive_json_extract_required("__opt_value.value()", "#{vname}_payload", field[:type], "  "))
-      lines << "  return mlc::result::Ok<#{name}>(#{vname}{.#{field_name} = __decoded_#{vname}_payload});"
+      lines << "  return mlc::result::Ok<#{name}>(#{vname}{.#{sanitize_identifier(field_name)} = __decoded_#{vname}_payload});"
     else
-      lines << "  auto __opt_fields = mlc::json::json_get(value, mlc::String(\"fields\"));"
+      lines << "  auto __opt_fields = mlc::json::json_get(__json_value, mlc::String(\"fields\"));"
       lines << "  if (!__opt_fields.has_value() || !__opt_fields->is_array()) {"
       lines << "    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"fields\"), mlc::String(\"array\")));"
       lines << "  }"
@@ -839,7 +839,7 @@ def derive_json_sum_from_json_body(name, type)
       end
       inits = fields.each_with_index.map do |field, index|
         field_name = field[:name] || "field#{index}"
-        ".#{field_name} = __decoded_#{vname}_#{field_name}"
+        ".#{sanitize_identifier(field_name)} = __decoded_#{vname}_#{field_name}"
       end.join(", ")
       lines << "  return mlc::result::Ok<#{name}>(#{vname}{#{inits}});"
     end
@@ -854,7 +854,7 @@ end
           lines = ["mlc::json::JsonValue object = mlc::json::json_object();"]
           type.fields.each do |field|
             field_name = field[:name]
-            encoded = derive_json_encode_field("self.#{field_name}", field[:type])
+            encoded = derive_json_encode_field("self.#{sanitize_identifier(field_name)}", field[:type])
             lines << "object = mlc::json::json_set(object, mlc::String(\"#{field_name}\"), #{encoded});"
           end
           lines << "return object;"
@@ -863,14 +863,14 @@ end
 
         def derive_json_from_json_body(name, type)
           lines = []
-          lines << "if (!value.is_object()) {"
+          lines << "if (!__json_value.is_object()) {"
           lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"\"), mlc::String(\"object\")));"
           lines << "}"
           type.fields.each do |field|
             field_name = field[:name]
             lines.concat(derive_json_decode_field(field_name, field[:type]))
           end
-          field_inits = type.fields.map { |field| ".#{field[:name]} = #{field[:name]}" }.join(", ")
+          field_inits = type.fields.map { |field| ".#{sanitize_identifier(field[:name])} = #{sanitize_identifier(field[:name])}" }.join(", ")
           lines << "return mlc::result::Ok<#{name}>(#{name}{#{field_inits}});"
           lines.join("\n  ")
         end
@@ -899,7 +899,7 @@ end
             when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize", "f32", "f64"
               "mlc::json::json_number(static_cast<double>(#{access}))"
             else
-              "mlc::json::json_string(mlc::to_string(#{access}))"
+              "#{field_type.name}_to_json(#{access})"
             end
           else
             "mlc::json::json_null()"
@@ -908,20 +908,21 @@ end
 
 
         def derive_json_decode_field(field_name, field_type)
+          member_name = sanitize_identifier(field_name)
           lines = []
           if field_type.is_a?(SemanticIR::GenericType)
             base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
             if base == "Option"
               inner = field_type.type_args.first
               cpp_inner = derive_json_cpp_type(inner)
-              lines << "std::optional<#{cpp_inner}> #{field_name} = std::nullopt;"
+              lines << "std::optional<#{cpp_inner}> #{member_name} = std::nullopt;"
               lines << "{"
-              lines << "  auto __opt_#{field_name} = mlc::json::json_get(value, mlc::String(\"#{field_name}\"));"
+              lines << "  auto __opt_#{field_name} = mlc::json::json_get(__json_value, mlc::String(\"#{field_name}\"));"
               lines << "  if (__opt_#{field_name}.has_value() && !__opt_#{field_name}->is_null()) {"
               derive_json_extract_required("__opt_#{field_name}.value()", field_name, inner, "    ").each do |line|
                 lines << "  #{line}"
               end
-              lines << "    #{field_name} = __decoded_#{field_name};"
+              lines << "    #{member_name} = __decoded_#{field_name};"
               lines << "  }"
               lines << "}"
               return lines
@@ -929,14 +930,14 @@ end
           end
 
           cpp_type = derive_json_cpp_type(field_type)
-          lines << "#{cpp_type} #{field_name};"
+          lines << "#{cpp_type} #{member_name};"
           lines << "{"
-          lines << "  auto __opt_#{field_name} = mlc::json::json_get(value, mlc::String(\"#{field_name}\"));"
+          lines << "  auto __opt_#{field_name} = mlc::json::json_get(__json_value, mlc::String(\"#{field_name}\"));"
           lines << "  if (!__opt_#{field_name}.has_value()) {"
           lines << "    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String(\"#{field_name}\")));"
           lines << "  }"
           lines.concat(derive_json_extract_required("__opt_#{field_name}.value()", field_name, field_type, "  "))
-          lines << "  #{field_name} = __decoded_#{field_name};"
+          lines << "  #{member_name} = __decoded_#{field_name};"
           lines << "}"
           lines
         end
@@ -958,6 +959,19 @@ end
             lines << "#{indent}    __decoded_#{field_name}.push_back(__decoded_#{field_name}_item);"
             lines << "#{indent}  }"
             lines << "#{indent}}"
+          when SemanticIR::GenericType
+            base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
+            if base == "Option"
+              inner = field_type.type_args.first
+              lines << "#{indent}std::optional<#{derive_json_cpp_type(inner)}> __decoded_#{field_name} = std::nullopt;"
+              lines << "#{indent}if (!#{value_expr}.is_null()) {"
+              lines.concat(derive_json_extract_required(value_expr, "#{field_name}_some", inner, "#{indent}  "))
+              lines << "#{indent}  __decoded_#{field_name} = __decoded_#{field_name}_some;"
+              lines << "#{indent}}"
+            else
+              lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
+              lines << "#{indent}#{derive_json_cpp_type(field_type)} __decoded_#{field_name}{};"
+            end
           when SemanticIR::Type
             case field_type.name
             when "string", "str"
@@ -970,15 +984,33 @@ end
               lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"bool\")));"
               lines << "#{indent}}"
               lines << "#{indent}bool __decoded_#{field_name} = *#{value_expr}.as_bool();"
-            when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize", "f32", "f64"
+            when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize"
+              cpp_type = derive_json_cpp_type(field_type)
+              minimum, maximum = derive_json_integer_bounds(field_type.name)
+              lines << "#{indent}if (!#{value_expr}.is_number()) {"
+              lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"number\")));"
+              lines << "#{indent}}"
+              lines << "#{indent}double __number_#{field_name} = *#{value_expr}.as_number();"
+              lines << "#{indent}if (!(__number_#{field_name} == __number_#{field_name}) || __number_#{field_name} < #{minimum} || __number_#{field_name} > #{maximum} || __number_#{field_name} != static_cast<double>(static_cast<long long>(__number_#{field_name}))) {"
+              lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"integer\")));"
+              lines << "#{indent}}"
+              lines << "#{indent}#{cpp_type} __decoded_#{field_name} = static_cast<#{cpp_type}>(__number_#{field_name});"
+            when "f32", "f64"
               cpp_type = derive_json_cpp_type(field_type)
               lines << "#{indent}if (!#{value_expr}.is_number()) {"
               lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"number\")));"
               lines << "#{indent}}"
               lines << "#{indent}#{cpp_type} __decoded_#{field_name} = static_cast<#{cpp_type}>(*#{value_expr}.as_number());"
             else
-              lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
-              lines << "#{indent}#{derive_json_cpp_type(field_type)} __decoded_#{field_name}{};"
+              type_name = field_type.name
+              lines << "#{indent}#{type_name} __decoded_#{field_name};"
+              lines << "#{indent}{"
+              lines << "#{indent}  auto __nested_#{field_name} = #{type_name}_from_json(#{value_expr});"
+              lines << "#{indent}  if (!std::holds_alternative<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})) {"
+              lines << "#{indent}    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_#{field_name})._0);"
+              lines << "#{indent}  }"
+              lines << "#{indent}  __decoded_#{field_name} = std::get<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})._0;"
+              lines << "#{indent}}"
             end
           else
             lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
@@ -987,6 +1019,20 @@ end
           lines
         end
 
+
+                def derive_json_integer_bounds(name)
+          {
+            "i8" => ["-128.0", "127.0"],
+            "i16" => ["-32768.0", "32767.0"],
+            "i32" => ["-2147483648.0", "2147483647.0"],
+            "i64" => ["-9007199254740992.0", "9007199254740992.0"],
+            "u8" => ["0.0", "255.0"],
+            "u16" => ["0.0", "65535.0"],
+            "u32" => ["0.0", "4294967295.0"],
+            "u64" => ["0.0", "9007199254740992.0"],
+            "usize" => ["0.0", "9007199254740992.0"]
+          }.fetch(name)
+        end
 
                 def derive_json_cpp_type(field_type)
           case field_type

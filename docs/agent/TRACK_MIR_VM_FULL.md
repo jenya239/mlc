@@ -46,7 +46,7 @@ see `PLAN.md` §2.9 note).
 | B | `build_mir_program_from_semantic_items_checked` on `--run` | done |
 | C | Variant ctor via MIR metadata | **done** |
 
-**Goal (north star):** `mlcc --run compiler/main.mlc -o /tmp/out` compiles a small program end-to-end without `g++`, with parity vs C++ backend on a growing corpus.
+**Goal (north star):** `mlcc --run compiler/main.mlc -o /tmp/out` compiles a small program end-to-end without `clang++`, with parity vs C++ backend on a growing corpus.
 
 **Explicitly out of scope:** bytecode file format, JIT, GC, replacing C++ release backend.
 
@@ -189,7 +189,7 @@ Incremental: run `--run` on increasing **slices** of `compiler/`, not whole tree
 | 17 | `vm/*` (dogfood) | `--run` vm_hello via vm |
 | 18 | `driver/cli.mlc` + pipeline hook | `--check-only` path |
 | 19 | Modular compile Ruby path unchanged; VM path for merged single module | integration |
-| 20 | `compiler/main.mlc` full `--run` | self-host smoke (no g++) |
+| 20 | `compiler/main.mlc` full `--run` | self-host smoke (no clang++) |
 
 **Estimate (agent-hours, cumulative):** Epic 0�3 ~40�60h; Epic 4 ~20�30h; Epic 5 ~80�150h ? **~150�250h** total to STEP 20 if no major design dead-ends.
 
@@ -241,7 +241,7 @@ Pre-trampoline: 2e6 did not finish in 15s even with unlimited stack (host recurs
 **Practical expectation after full success:**
 
 - **Daily dev:** still use native `mlcc` / `build.sh`
-- **`--run`:** CI parity checks, bootstrap experiments, environments without g++
+- **`--run`:** CI parity checks, bootstrap experiments, environments without clang++
 - **Self-host VM mlcc:** proof-of-concept, not performance-competitive
 
 Order-of-magnitude: if native self-host compile is **8 min**, VM self-host might be **~2�8 hours** (very rough; measure at STEP 17�20).
@@ -291,7 +291,7 @@ Every new language feature ? MIR lower + VM native + often C++ codegen. Three pl
 ## 6. Success criteria (STEP 20)
 
 ```bash
-# No g++ on PATH
+# No clang++ on PATH
 mlcc --run compiler/main.mlc -o /tmp/vm_out --check-only some_fixture.mlc
 echo $?  # 0
 ```

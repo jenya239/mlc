@@ -1,6 +1,6 @@
 // Env runtime smoke (TRACK_STDLIB_LOGIC_TO_MLC STEP=3).
 // Log JSON-lines moved to MLC — see misc/examples/log_mlc_smoke.mlc.
-// g++ -std=c++20 -I../include -o test_env_log test_env_log.cpp && ./test_env_log
+// clang++ -std=c++20 -I../include -o test_env_log test_env_log.cpp && ./test_env_log
 
 #include "mlc/env/env_abi.hpp"
 

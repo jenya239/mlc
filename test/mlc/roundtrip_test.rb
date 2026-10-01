@@ -74,7 +74,7 @@ class MLCRoundtripTest < Minitest::Test
       File.write(source_path, full_cpp)
 
       compile_cmd = [
-        "g++", "-std=c++20",
+        "clang++", "-std=c++20",
         "-I", "#{runtime_dir}/include",
         "-o", binary_path,
         source_path

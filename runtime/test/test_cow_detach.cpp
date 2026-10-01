@@ -1,5 +1,5 @@
 // COW detach semantics (TRACK_CONCURRENCY STEP=1).
-// g++ -std=c++20 -I../include -o test_cow_detach test_cow_detach.cpp
+// clang++ -std=c++20 -I../include -o test_cow_detach test_cow_detach.cpp
 
 #include "mlc/core/array.hpp"
 #include "mlc/core/hashmap.hpp"

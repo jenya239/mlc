@@ -83,7 +83,7 @@ class MLCTcpStdlibTest < Minitest::Test
       client_source = File.expand_path("../../runtime/test/tcp_echo_client.cpp", __dir__)
       client_binary = File.join(dir, "tcp_echo_client")
       compile_ok = system(
-        "g++", "-std=c++20", "-O0",
+        "clang++", "-std=c++20", "-O0",
         "-o", client_binary,
         client_source
       )

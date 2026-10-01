@@ -9,10 +9,10 @@ Parent: [PLAN.md](PLAN.md), [STDLIB_BACKEND.md](STDLIB_BACKEND.md) §2 (HTTP
 |-----------|------|-----------|
 | HTTP-клиент | `lib/mlc/common/stdlib/net/https_client.mlc`; thin `runtime/include/mlc/net/curl_abi.hpp` | libcurl, `https_send`/`https_get`/`https_post`. TLS: `scripts/run_https_client_gate.sh`. Блокирующий вызов, без стриминга. Заглушка `fetch` в `http.mlc` не является этим клиентом |
 | JSON runtime (C++) | `runtime/include/mlc/json/json.hpp:19-28` | `std::variant<monostate, bool, double, mlc::String, vector<JsonValue>, nlohmann::json>` — числа `double`, объекты — настоящий `nlohmann::json` map |
-| JSON язык (MLC) | `lib/mlc/common/stdlib/data/json.mlc:10-16` | `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)` — **aligned** with C++ `double` + object map (STEP=1, 2026-07-09) |
-| `derive` | `compiler/checker/check/derive_validation.mlc:12-15` | Поддерживает `Display, Eq, Ord, Hash`. Механизм готов, список расширяем — codegen-правило в `compiler/codegen/decl.mlc` |
-| Типизированная (де)сериализация | — | **Нет.** Работа с ответом API — вручную через `json_get`/`as_string`/`as_number` по generic-дереву |
-| OpenAPI codegen | — | Нет |
+| JSON язык (MLC) | `lib/mlc/common/stdlib/data/json.mlc` | `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)`. Объекты C++ runtime — `nlohmann::json`, не этот `Map`. `parse_json` текста, который не является JSON, возвращает `JsonNull` |
+| `derive` | `compiler/checker/check/derive_validation.mlc` | `Display`, `Eq`, `Ord`, `Hash`, `Json`. Generic `Json` — E072. Поле `Map`, `Shared` или функция — E069 |
+| Типизированная (де)сериализация | `derive { Json }` | Record и нерекурсивная сумма, включая вложенный record, массив и `Option`. Целые сужаются из `f64`; `i64`, `u64`, `usize` точны до ±2^53 |
+| OpenAPI codegen | `scripts/openapi_codegen.rb` | Mini Petstore: `[T]`, вариант `NameCase(Name)`, `ApiResult<T>`. Тела функций — `Err`, `fetch` не вызывается |
 
 ## 2. Предпосылка: исправить рассинхронизацию JSON-типа — **done** 2026-07-09
 
@@ -34,21 +34,26 @@ fn to_json(self: User) -> JsonValue
 fn from_json(value: JsonValue) -> Result<User, JsonError>
 ```
 
-Конвенции (зафиксировать при реализации, не оставлять неявными):
+Конвенции реализации:
 
-- Имя JSON-ключа = имя поля as-is (snake_case уже совпадает со стилем MLC);
-  переименование полей (`#[json(rename = "...")]`-класс атрибутов) — не в
-  первой версии, отдельный follow-up при реальной необходимости.
-- `Option<T>` поле → отсутствующий или `null` JSON-ключ маппится в `None`;
-  присутствующий — в `Some(value)`. Не путать "ключ отсутствует" и "ключ
-  null" в первой версии (оба → `None`).
+- Имя JSON-ключа = имя поля. Ключевое слово C++ в идентификаторе проходит
+  sanitize (`class` → `class_`). Параметр `from_json` — `__json_value`.
+  Атрибутов переименования полей нет.
+- `Option<T>`: отсутствующий ключ и JSON `null` оба дают пустой
+  `std::optional`.
 - Sum-типы (`type Status = Active | Inactive(string) | Pair(i64, string)`) →
   tagged representation (**зафиксировано** STEP=3, 2026-07-09):
   - unit-вариант → JSON-строка `"Active"`;
   - один payload → `{"tag":"Inactive","value":...}`;
   - несколько payload → `{"tag":"Pair","fields":[...]}`.
-- `JsonError` — новый тип (`MissingField(string) | TypeMismatch(string, string)
-  | ...`), не существует сегодня ни в runtime, ни в языке.
+- `JsonError` = `MissingField(string) | TypeMismatch(string, string)`.
+  Вторая строка — ожидаемый тип (`integer`, `number`, `string`,
+  `known unit variant`, `array length N`).
+- Поле `Map`, `Shared` или функция: диагностика чекера, в mlcc код E069.
+  Generic `derive { Json }`: E072.
+- Сумма, которая содержит саму себя, и две суммы, которые содержат друг
+  друга, не поддерживаются. Оба компилятора оставляют
+  `using Name = std::variant<...>`, clang++ отвергает неполный тип члена.
 
 ## 4. OpenAPI codegen
 
@@ -109,8 +114,16 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
 
 1. **done** — `derive_json_test.rb` record round-trip (`i64`/`string`/`Option`/`Array`).
 2. **done** — sum tagged Json round-trip (unit / 1-field / N-field).
-3. **done** — `JsonError` variants carry field/type detail (`MissingField`/`TypeMismatch`/…).
-4. **partial / deferred** — OpenAPI codegen emits types + client stubs from mini Petstore
-   (`openapi_codegen_test.rb` 5/0); live mock-server + `fetch` parse **not** wired
-   (out of MVP close; follow-up if needed).
-5. **done** — self-host `mlcc`→`mlcc2`→`diff` identical; `regression_gate.sh` 20/0.
+3. **done for `JsonError` labels** — `MissingField` / `TypeMismatch` with the
+   field name and an expected-type word. `Map`, `Shared`, a function field,
+   and a generic derive are checker diagnostics (E069 / E072), not `JsonError`.
+   A recursive sum is rejected by clang++, not by the checker.
+4. **partial** — `scripts/openapi_codegen.rb` emits mini Petstore that `mlcc`
+   and `clang++ -fsyntax-only` accept (`[T]`, `PetCase(Pet)`, `ApiResult<T>`).
+   Client bodies return `Err` and do not call `fetch`. Live mock-server stays
+   deferred.
+5. **done for the compiler binary** — self-host `mlcc`→`mlcc2`→`diff` identical
+   (`regression_gate.sh` 20/0 on 2026-07-09; the same empty diff after the
+   2026-10-01 Json checker and codegen edits). That diff does not exercise
+   `derive { Json }`, because `compiler/` does not derive it. Behavior is
+   `test/mlc/derive_json_test.rb` on Ruby and mlcc.

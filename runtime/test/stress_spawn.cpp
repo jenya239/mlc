@@ -1,5 +1,5 @@
 // spawn_task stress (TRACK_CONCURRENCY_TEST_HARNESS STEP=3).
-// g++ -std=c++20 -pthread -I../include -o stress_spawn stress_spawn.cpp
+// clang++ -std=c++20 -pthread -I../include -o stress_spawn stress_spawn.cpp
 
 #include "mlc/concurrency/spawn.hpp"
 #include "mlc/core/task.hpp"

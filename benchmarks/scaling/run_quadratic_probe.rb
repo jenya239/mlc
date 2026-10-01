@@ -7,7 +7,7 @@
 #   ruby run_quadratic_probe.rb [suite] [min] [max] [steps]
 #   ruby run_quadratic_probe.rb functions 64 4096 7
 #
-# Repeats each scale REPEATS times, uses median wall ms (mlcc only, no g++).
+# Repeats each scale REPEATS times, uses median wall ms (mlcc only, no clang++).
 # Exponent b > SOFT suggests super-linear growth worth profiling; b > HARD is a strong red flag.
 
 require "fileutils"

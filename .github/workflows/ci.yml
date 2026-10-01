@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install C++ toolchain (clang, ccache, mold)
-        run: sudo apt-get update && sudo apt-get install -y clang ccache mold g++
+        run: sudo apt-get update && sudo apt-get install -y clang ccache mold
 
       - name: Cache ccache
         uses: actions/cache@v4

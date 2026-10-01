@@ -1,5 +1,5 @@
 // Channel smoke tests (TRACK_CONCURRENCY STEP=2).
-// g++ -std=c++20 -pthread -I../include -o test_channel test_channel.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_channel test_channel.cpp
 
 #include "mlc/concurrency/channel.hpp"
 #include "mlc/core/string.hpp"

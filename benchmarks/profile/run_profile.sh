@@ -37,7 +37,7 @@ if [ "${GPROF:-0}" = "1" ]; then
   echo ""
   echo "=== gprof (manual rebuild with -pg) ==="
   echo "  mlcc -o $OUT/gprof_emit $MAIN"
-  echo "  g++ -std=c++20 -pg -O2 -I $OUT/gprof_emit -I $ROOT/runtime/include \\"
+  echo "  clang++ -std=c++20 -pg -O2 -I $OUT/gprof_emit -I $ROOT/runtime/include \\"
   echo "    $OUT/gprof_emit/*.cpp $ROOT/runtime/src/core/*.cpp $ROOT/runtime/src/io/*.cpp \\"
   echo "    -o $OUT/mlcc_prof"
   echo "  $OUT/mlcc_prof -o $OUT/gprof_run $MAIN"

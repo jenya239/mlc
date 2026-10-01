@@ -4,7 +4,7 @@
 #
 # Usage: triple_bootstrap.sh [mlcc_binary] [work_dir]
 #
-# Steps (compiler chosen by build_bin.sh: MLC_CXX override > clang++ > g++):
+# Steps (compiler chosen by build_bin.sh: MLC_CXX override > clang++):
 #   1. mlcc  → /work/bs1/*.cpp → build_bin.sh → mlcc2
 #   2. mlcc2 → /work/bs2/*.cpp → build_bin.sh → mlcc3
 #   3. mlcc3 → /work/bs3/*.cpp

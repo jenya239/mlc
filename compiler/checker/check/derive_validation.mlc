@@ -87,6 +87,72 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
 fn derive_hash_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =
   variants.flat_map(variant => derive_hash_field_errors_for_variant(variant, diagnostic_span))
 
+fn derive_json_type_problem(type_expression: Shared<TypeExpr>) -> string =
+  match type_expression {
+    TyShared(_) => "Shared",
+    TyFn(_, _) => "function",
+    TyArray(inner) => derive_json_type_problem(inner),
+    TyGeneric(name, type_arguments) =>
+      if name == "Option" && type_arguments.length() == 1 then
+        derive_json_type_problem(type_arguments[0])
+      else if name == "Map" then
+        "Map"
+      else
+        ""
+      end,
+    _ => ""
+  }
+
+fn derive_json_field_error(
+  variant_label: string,
+  field_label: string,
+  type_expression: Shared<TypeExpr>,
+  diagnostic_span: Span
+) -> [Diagnostic] = do
+  const problem = derive_json_type_problem(type_expression)
+  if problem == "" then []
+  else
+    [ diagnostic_error_with_code(
+      'derive Json: unsupported field type for "' + field_label + '" in ' + variant_label
+        + ' (' + problem + ")",
+      diagnostic_span,
+      diagnostic_code_e069()) ]
+  end
+end
+
+fn derive_json_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic_span: Span) -> [Diagnostic] =
+  match variant {
+    VarUnit(_, _) => do
+      const diagnostics_none: [Diagnostic] = []
+      diagnostics_none
+    end,
+    VarTuple(variant_name, field_types, _) =>
+      field_types.flat_map(field_type =>
+        derive_json_field_error(
+          `variant '${variant_name}'`, "payload", field_type, diagnostic_span)),
+    VarRecord(variant_name, field_defs, _) =>
+      field_defs.flat_map(field_definition =>
+        derive_json_field_error(
+          `variant '${variant_name}'`, field_definition.name, field_definition.type_value, diagnostic_span))
+  }
+
+fn derive_json_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =
+  variants.flat_map(variant => derive_json_field_errors_for_variant(variant, diagnostic_span))
+
+fn derive_json_clause_diagnostics(
+  type_parameter_names: [string],
+  variants: [Shared<TypeVariant>],
+  diagnostic_span: Span
+) -> [Diagnostic] =
+  if type_parameter_names.length() > 0 then
+    [diagnostic_error_with_code(
+      'derive Json is not supported for generic types in this version',
+      diagnostic_span,
+      diagnostic_code_e072())]
+  else
+    derive_json_errors_for_variants(variants, diagnostic_span)
+  end
+
 type Derive_clause_trait_scan_fold_state = Derive_clause_trait_scan_fold_state {
   diagnostics: [Diagnostic],
   seen_traits: Map<string, bool>,
@@ -128,15 +194,29 @@ fn derive_clause_diagnostics_after_trait_scan(
 ) -> [Diagnostic] =
   if string_list_contains_derive_trait(derive_trait_names, 'Hash') then
     if type_parameter_names.length() > 0 then
-      trait_scan_diagnostics.concat([diagnostic_error_with_code(
+      const hash_diagnostics = trait_scan_diagnostics.concat([diagnostic_error_with_code(
         'derive Hash is not supported for generic types in this version',
         diagnostic_span,
         diagnostic_code_e072())])
+      if string_list_contains_derive_trait(derive_trait_names, 'Json') then
+        diagnostics_append(hash_diagnostics, derive_json_clause_diagnostics(type_parameter_names, variants, diagnostic_span))
+      else
+        hash_diagnostics
+      end
     else
-      diagnostics_append(
+      const hash_diagnostics = diagnostics_append(
         trait_scan_diagnostics,
         derive_hash_errors_for_variants(variants, diagnostic_span))
+      if string_list_contains_derive_trait(derive_trait_names, 'Json') then
+        diagnostics_append(hash_diagnostics, derive_json_clause_diagnostics(type_parameter_names, variants, diagnostic_span))
+      else
+        hash_diagnostics
+      end
     end
+  else if string_list_contains_derive_trait(derive_trait_names, 'Json') then
+    diagnostics_append(
+      trait_scan_diagnostics,
+      derive_json_clause_diagnostics(type_parameter_names, variants, diagnostic_span))
   else
     trait_scan_diagnostics
   end

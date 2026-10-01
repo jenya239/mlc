@@ -93,7 +93,7 @@ export fn should_use_string_match_if_chain(subject: Shared<SemanticExpression>, 
   end
 
 // --cpp-mode=fast-build: large std::visit(overloaded{N lambdas}) sites cost real
-// clang++/g++ template-instantiation time as N grows (measured: many 18-75-arm
+// clang++ template-instantiation time as N grows (measured: many 18-75-arm
 // sites in this codebase's own sum types). Above the threshold, reuse the
 // already-production-proven if-chain generator (match_guarded_gen.mlc) instead -
 // it does not require an explicit wildcard arm to close the chain safely (falls

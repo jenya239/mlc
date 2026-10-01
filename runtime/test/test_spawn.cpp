@@ -1,5 +1,5 @@
 // spawn_task + Task smoke (TRACK_CONCURRENCY STEP=3).
-// g++ -std=c++20 -pthread -I../include -o test_spawn test_spawn.cpp
+// clang++ -std=c++20 -pthread -I../include -o test_spawn test_spawn.cpp
 
 #include "mlc/concurrency/spawn.hpp"
 #include "mlc/core/task.hpp"

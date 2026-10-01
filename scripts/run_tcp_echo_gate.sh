@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 # Runtime C++ smoke (bind/accept/echo in-process)
-g++ -std=c++20 -pthread -I runtime/include -o /tmp/mlc_test_tcp runtime/test/test_tcp.cpp
+clang++ -std=c++20 -pthread -I runtime/include -o /tmp/mlc_test_tcp runtime/test/test_tcp.cpp
 /tmp/mlc_test_tcp
 rm -f /tmp/mlc_test_tcp
 # MLC server + client roundtrip

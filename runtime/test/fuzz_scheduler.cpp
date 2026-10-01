@@ -3,7 +3,7 @@
 //   fuzz_scheduler <seed>
 //   fuzz_scheduler --random <count> [seed0]
 // Env: MLC_SCHEDULER_SEED (single-seed mode if argv omitted).
-// g++ -std=c++20 -pthread -I../include -o fuzz_scheduler fuzz_scheduler.cpp
+// clang++ -std=c++20 -pthread -I../include -o fuzz_scheduler fuzz_scheduler.cpp
 
 #include "mlc/concurrency/testing/channel.hpp"
 #include "mlc/concurrency/testing/mutex.hpp"

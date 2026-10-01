@@ -6,7 +6,7 @@ require_relative "../test_helper"
 # as a ternary (C++ forbids mixing void branch with push_back branch).
 class UnitVoidIfFunctionCppTest < Minitest::Test
   # When a void function is spelled `fn f(...) -> () = if ...` (not only `do ... end`),
-  # the C++ lowerer must emit an if-statement, not a ternary, or g++ rejects mixed
+  # the C++ lowerer must emit an if-statement, not a ternary, or clang++ rejects mixed
   # void / value branches. Same for the last expression of `do ... end` when it is
   # a unit if. Long else-if chains lower to nested ternary IIFEs: unify branch types
   # with a trailing `()`, and use a value-returning helper plus assignment (lexer
