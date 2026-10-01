@@ -19,7 +19,7 @@ API-таблицы и демо-сниппеты по MLC-модулям — в
 
 | Компонент | Файл | Состояние |
 |-----------|------|-----------|
-| HTTP клиент | `runtime/include/mlc/net/http.hpp` | libcurl-обёртка, `fetch`/`fetch_sync`, только исходящие запросы. `fetch()` — псевдо-async (`std::async` + блокирующий `.get()` внутри `Task`, не настоящая интеграция с event loop) |
+| HTTP клиент | `lib/mlc/common/stdlib/net/https_client.mlc` (`HttpsClient`); thin `runtime/include/mlc/net/curl_abi.hpp` | **MLC-reachable, блокирующий, curl, без стриминга**. GET/POST, проверка TLS, гейт `scripts/run_https_client_gate.sh`. API: [STDLIB_REFERENCE § HttpsClient](STDLIB_REFERENCE.md#httpsclient). Заглушка `http.mlc` / `http.hpp` — не этот клиент |
 | JSON | `runtime/include/mlc/json/json.hpp`; `std/data/json.mlc` | `JsonValue` + parse/stringify; MLC API: [STDLIB_REFERENCE § Json](STDLIB_REFERENCE.md#json). Typed derive: [API_CLIENT.md](API_CLIENT.md) |
 | Concurrency | `runtime/include/mlc/concurrency/` | `channel.hpp`, `mutex.hpp`, `arc.hpp`, `stop.hpp`, `task_scope.hpp`, `thread_pool.hpp`, `job_queue.hpp`, `isolate.hpp`, `supervisor.hpp` — фундамент есть (`CONCURRENCY_V2`); JobQueue **closed**; Supervisor C++ v1 **closed** ([TRACK_CONCURRENCY_SUPERVISOR](archive/tracks/TRACK_CONCURRENCY_SUPERVISOR.md)) |
 | TCP сервер | `runtime/include/mlc/net/tcp.hpp`; `std/net/tcp.mlc` | **есть, MLC-reachable** (blocking; no TLS). API: [STDLIB_REFERENCE § Tcp](STDLIB_REFERENCE.md#tcp). `Tcp`+`spawn`: `misc/examples/tcp_spawn_echo_mlcc.mlc` ([TRACK_PIPELINE_MERGE_TCP_SPAWN](archive/tracks/TRACK_PIPELINE_MERGE_TCP_SPAWN.md) **closed**) |

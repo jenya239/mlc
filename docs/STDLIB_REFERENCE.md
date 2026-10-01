@@ -14,6 +14,7 @@ module surface — out of scope here.
 
 - [Tcp](#tcp)
 - [HttpServer](#httpserver)
+- [HttpsClient](#httpsclient)
 - [WebSocket](#websocket)
 - [Postgres](#postgres)
 - [Crypto](#crypto)
@@ -148,6 +149,57 @@ timeout via `Tcp.set_recv_timeout`, `serve_static` with traversal/`404`/
 `Content-Type`. No `[HttpRoute]` table API. Forever accept has no MLC drain
 API (process signal abandons in-flight handlers — see STDLIB_BACKEND §1
 shutdown subsection). TLS / HTTP/2 out of scope.
+
+## HttpsClient
+
+Modules: [`lib/mlc/common/stdlib/net/https_client.mlc`](../lib/mlc/common/stdlib/net/https_client.mlc)
+(`HttpsClient`) and [`lib/mlc/common/stdlib/net/https_request.mlc`](../lib/mlc/common/stdlib/net/https_request.mlc)
+(`HttpsRequests`). TLS and HTTP/1.1 go through libcurl in
+`runtime/include/mlc/net/curl_abi.hpp` (`mlc::curl_abi`). Import the `.mlc`
+paths directly.
+
+Demo: [`misc/examples/https_get_demo.mlc`](../misc/examples/https_get_demo.mlc).
+Gate: `HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh` (steps 1–5).
+Live default-CA check is separate: `HTTPS_LIVE=1 bash scripts/run_https_client_live_smoke.sh`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `HttpsHeader` | `{ name: string, value: string }` | One header |
+| `HttpsRequest` | `{ method, url, headers: [HttpsHeader], body, timeout_milliseconds: i32, max_response_bytes: i32, ca_bundle_path }` | Request. Defaults at `https_get` / `https_post`: 30000 ms, 4194304 bytes, empty CA path |
+| `HttpsResponse` | `{ status: i32, headers: [HttpsHeader], body: string }` | Response |
+| `HttpsFailureKind` | `InvalidRequest \| ResolveFailed \| ConnectFailed \| TimedOut \| CertificateRejected \| ResponseTooLarge \| TransportFailed` | Failure class |
+| `HttpsFailure` | `{ kind: HttpsFailureKind, message: string }` | Failure |
+| `HttpsResult` | `HttpsOk(HttpsResponse) \| HttpsErr(HttpsFailure)` | Outcome. Not stdlib `Result` |
+| `HttpsStatusClass` | `Informational \| Success \| Redirect \| ClientError \| ServerError \| OtherStatus` | Status class |
+| `https_request_problem` | `(request: HttpsRequest) -> string` | Empty string means the request is acceptable |
+| `https_header_lines` | `(headers: [HttpsHeader]) -> string` | `Name: value\n` lines |
+| `parse_response_header_block` | `(raw: string) -> [HttpsHeader]` | Headers of the last response block |
+| `https_find_header` | `(headers: [HttpsHeader], name: string) -> string` | Case-insensitive lookup |
+| `https_status_class` | `(status: i32) -> HttpsStatusClass` | |
+| `https_status_is_retryable` | `(status: i32) -> bool` | 429, 500, 502, 503, 504 |
+| `https_failure_kind_from_code` | `(code: i32) -> HttpsFailureKind` | 1..6 map to the specific kinds; any other code is `TransportFailed` |
+| `https_send` | `(request: HttpsRequest) -> HttpsResult` | Blocking call |
+| `https_get` | `(url: string, headers: [HttpsHeader]) -> HttpsResult` | GET with defaults |
+| `https_post` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | POST with defaults |
+| `https_live_handle_count` | `() -> i32` | Live result slots; tests use this for leaks |
+
+### Example (excerpt from demo)
+
+Source: [`misc/examples/https_get_demo.mlc`](../misc/examples/https_get_demo.mlc).
+The key is read from the environment and sent as `Authorization`. Status and body length go to stdout. The log line does not contain the key.
+
+```mlc
+const key = get_or("HTTPS_DEMO_KEY", "")
+println("status=" + ok_status(result).to_string() + " body_bytes=" + ok_body(result).length().to_string())
+info("https get ok")
+```
+
+### Limitations (from STDLIB_BACKEND §1)
+
+MLC-reachable, blocking, libcurl, no streaming. GET and POST only. Redirects
+are off. Proxy environment variables are ignored. Empty `ca_bundle_path` uses
+libcurl's default CA store. The failure message is curl's error text and does
+not include request headers. `lib/mlc/common/stdlib/net/http.mlc` stays a stub.
 
 ## WebSocket
 

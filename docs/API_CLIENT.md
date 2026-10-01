@@ -7,7 +7,7 @@ Parent: [PLAN.md](PLAN.md), [STDLIB_BACKEND.md](STDLIB_BACKEND.md) §2 (HTTP
 
 | Компонент | Файл | Состояние |
 |-----------|------|-----------|
-| HTTP-клиент | `runtime/include/mlc/net/http.hpp` | libcurl, `fetch`/`fetch_sync`, TLS работает. `fetch()` — псевдо-async (`std::async` + блокирующий `.get()` внутри `Task`) |
+| HTTP-клиент | `lib/mlc/common/stdlib/net/https_client.mlc`; thin `runtime/include/mlc/net/curl_abi.hpp` | libcurl, `https_send`/`https_get`/`https_post`. TLS: `scripts/run_https_client_gate.sh`. Блокирующий вызов, без стриминга. Заглушка `fetch` в `http.mlc` не является этим клиентом |
 | JSON runtime (C++) | `runtime/include/mlc/json/json.hpp:19-28` | `std::variant<monostate, bool, double, mlc::String, vector<JsonValue>, nlohmann::json>` — числа `double`, объекты — настоящий `nlohmann::json` map |
 | JSON язык (MLC) | `lib/mlc/common/stdlib/data/json.mlc:10-16` | `JsonNumber(f64)`, `JsonObject(Map<str, JsonValue>)` — **aligned** with C++ `double` + object map (STEP=1, 2026-07-09) |
 | `derive` | `compiler/checker/check/derive_validation.mlc:12-15` | Поддерживает `Display, Eq, Ord, Hash`. Механизм готов, список расширяем — codegen-правило в `compiler/codegen/decl.mlc` |

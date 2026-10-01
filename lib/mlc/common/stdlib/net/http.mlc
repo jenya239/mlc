@@ -4,6 +4,7 @@
 
 // HTTP client module - node-fetch style API
 // Note: Full implementation pending - requires reference types, tuples, await
+// HTTPS requests: HttpsClient in https_client.mlc; gate scripts/run_https_client_gate.sh.
 
 // HTTP method enum
 export type HttpMethod = Get | Post | Put | Delete | Patch | Head | Options

@@ -1,0 +1,101 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { https_send } from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+import {
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  CertificateRejected,
+  ResponseTooLarge,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn is_ok(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => true,
+    HttpsErr(_) => false
+  }
+
+fn ok_status(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => -1
+  }
+
+fn ok_body(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body,
+    HttpsErr(_) => ""
+  }
+
+fn certificate_rejected(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => false,
+    HttpsErr(failure) => match failure.kind {
+      CertificateRejected => true,
+      InvalidRequest => false,
+      ResolveFailed => false,
+      ConnectFailed => false,
+      TimedOut => false,
+      ResponseTooLarge => false,
+      TransportFailed => false
+    }
+  }
+
+fn send_get(url: string, ca_bundle_path: string) -> HttpsResult =
+  https_send(HttpsRequest {
+    method: "GET",
+    url: url,
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ca_bundle_path
+  })
+
+fn send_post(url: string, body: string, ca_bundle_path: string) -> HttpsResult =
+  https_send(HttpsRequest {
+    method: "POST",
+    url: url,
+    headers: [HttpsHeader { name: "Content-Type", value: "application/json" }],
+    body: body,
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: ca_bundle_path
+  })
+
+fn main() -> i32 = do
+  let mut code = 0
+  const ca_bundle_path = get_or("SSL_CERT_FILE", "")
+  if get_or("HTTPS_LIVE_URL", "") == "" || get_or("HTTPS_LIVE_POST_URL", "") == "" then
+    code = 1
+  end
+  if code == 0 then
+    const got = send_get(get_or("HTTPS_LIVE_URL", ""), ca_bundle_path)
+    if is_ok(got) == false || ok_status(got) < 200 || ok_status(got) > 299 || ok_body(got) == "" then
+      code = 2
+    end
+  end
+  if code == 0 then
+    const posted = send_post(
+      get_or("HTTPS_LIVE_POST_URL", ""),
+      "{\"marker\":\"mlc-https-live-marker\"}",
+      ca_bundle_path
+    )
+    if is_ok(posted) == false || ok_body(posted).index_of("mlc-https-live-marker") < 0 then
+      code = 3
+    end
+  end
+  if code == 0 && get_or("HTTPS_LIVE_BAD_URL", "") != "" then
+    const rejected = send_get(get_or("HTTPS_LIVE_BAD_URL", ""), ca_bundle_path)
+    if certificate_rejected(rejected) == false then
+      code = 4
+    end
+  end
+  code
+end

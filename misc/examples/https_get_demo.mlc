@@ -1,0 +1,52 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { info } from '../../lib/mlc/common/stdlib/log/logger.mlc'
+import { https_send } from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+import {
+  HttpsHeader, HttpsRequest, HttpsResult, HttpsOk, HttpsErr
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn is_ok(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => true
+    HttpsErr(_) => false
+  }
+
+fn ok_status(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status
+    HttpsErr(_) => 0
+  }
+
+fn ok_body(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body
+    HttpsErr(_) => ""
+  }
+
+fn main() -> i32 = do
+  let mut code = 0
+  const url = get_or("HTTPS_DEMO_URL", "")
+  const key = get_or("HTTPS_DEMO_KEY", "")
+  const ca_bundle_path = get_or("SSL_CERT_FILE", "")
+  if url == "" then
+    code = 1
+  else
+    const result = https_send(HttpsRequest {
+      method: "GET",
+      url: url,
+      headers: [HttpsHeader { name: "Authorization", value: key }],
+      body: "",
+      timeout_milliseconds: 30000,
+      max_response_bytes: 4194304,
+      ca_bundle_path: ca_bundle_path
+    })
+    if is_ok(result) then
+      println("status=" + ok_status(result).to_string() + " body_bytes=" + ok_body(result).length().to_string())
+      info("https get ok")
+    else
+      info("https get failed")
+      code = 2
+    end
+  end
+  code
+end

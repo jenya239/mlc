@@ -1,0 +1,171 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  https_send,
+  https_live_handle_count
+} from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+import {
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  CertificateRejected,
+  ResponseTooLarge,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+extern fn read_count_text(path: string) -> string =
+  "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn failure_kind_code(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(_) => 0,
+    HttpsErr(failure) => match failure.kind {
+      InvalidRequest => 1,
+      ResolveFailed => 2,
+      ConnectFailed => 3,
+      TimedOut => 4,
+      CertificateRejected => 5,
+      ResponseTooLarge => 6,
+      TransportFailed => 7
+    }
+  }
+
+fn failure_message(result: HttpsResult) -> string =
+  match result {
+    HttpsErr(failure) => failure.message,
+    HttpsOk(_) => ""
+  }
+
+fn request_for(
+  url: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string
+) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: url,
+    headers: [HttpsHeader { name: "Authorization", value: "Bearer SENTINEL" }],
+    body: "",
+    timeout_milliseconds: timeout_milliseconds,
+    max_response_bytes: max_response_bytes,
+    ca_bundle_path: ca_bundle_path
+  }
+
+fn main() -> i32 = do
+  let mut code = 0
+  let mut leaked = 0
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_WRONG_PORT", "") == "" || get_or("HTTPS_TEST_SILENT_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" || get_or("HTTPS_TEST_CLOSED_PORT", "") == "" || get_or("HTTPS_TEST_CONNECTION_COUNT", "") == "" then
+    code = 1
+  end
+  if code == 0 then
+    const missing_authority = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + "/echo",
+      5000,
+      4194304,
+      ""
+    ))
+    if failure_message(missing_authority).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(missing_authority) != 5 then
+      code = 2
+    end
+  end
+  if code == 0 then
+    const wrong_host = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_WRONG_PORT", "") + "/echo",
+      5000,
+      4194304,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    if failure_message(wrong_host).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(wrong_host) != 5 then
+      code = 3
+    end
+  end
+  if code == 0 then
+    const silent = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_SILENT_PORT", "") + "/silent",
+      500,
+      4194304,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    if failure_message(silent).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(silent) != 4 then
+      code = 4
+    end
+  end
+  if code == 0 then
+    const too_large = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + "/big",
+      5000,
+      65536,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    if failure_message(too_large).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(too_large) != 6 then
+      code = 5
+    end
+  end
+  if code == 0 then
+    const closed = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_CLOSED_PORT", "") + "/",
+      2000,
+      4194304,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    if failure_message(closed).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(closed) != 3 then
+      code = 6
+    end
+  end
+  if code == 0 then
+    const before_count = read_count_text(get_or("HTTPS_TEST_CONNECTION_COUNT", ""))
+    const plain_http = https_send(request_for(
+      "http://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + "/echo",
+      5000,
+      4194304,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    const injected = https_send(request_for(
+      "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + "/echo\r\n",
+      5000,
+      4194304,
+      get_or("HTTPS_TEST_CA", "")
+    ))
+    const after_count = read_count_text(get_or("HTTPS_TEST_CONNECTION_COUNT", ""))
+    if failure_message(plain_http).index_of("SENTINEL") >= 0 || failure_message(injected).index_of("SENTINEL") >= 0 then
+      leaked = 1
+    end
+    if failure_kind_code(plain_http) != 1 then
+      code = 7
+    end
+    if code == 0 && failure_kind_code(injected) != 1 then
+      code = 8
+    end
+    if code == 0 && before_count != after_count then
+      code = 9
+    end
+  end
+  if code == 0 && leaked != 0 then
+    code = 10
+  end
+  if code == 0 && https_live_handle_count() != 0 then
+    code = 11
+  end
+  code
+end
