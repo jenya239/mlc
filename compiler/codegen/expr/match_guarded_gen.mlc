@@ -366,7 +366,7 @@ fn array_pattern_elements_are_simple(element_patterns: [Shared<Pattern>]) -> boo
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
       PatternCtor(_, sub_patterns, _) => do
-        if constructor_subpatterns_are_name_bindings(sub_patterns) then do end
+        if constructor_subpatterns_are_supported_fields(sub_patterns) then do end
         else do
           simple = false
         end
@@ -718,6 +718,7 @@ fn one_array_name_constructor_statements(
             payload_indexes,
             payload_cursor + 1,
             array_access,
+            no_finish_statements(),
             context,
             gen_stmts,
             eval_expr_fn))
@@ -942,6 +943,7 @@ fn nested_constructor_field_if(
   payload_indexes: [i32],
   payload_cursor: i32,
   array_access: string,
+  finish_statements: [Shared<CppStatement>],
   subject: Shared<SemanticExpression>,
   use_void: bool,
   arm_context: CodegenContext,
@@ -984,6 +986,7 @@ fn nested_constructor_field_if(
           payload_indexes,
           payload_cursor,
           array_access,
+          finish_statements,
           context,
           gen_stmts,
           eval_expr_fn))
@@ -1005,6 +1008,7 @@ fn statements_after_constructor(
   payload_indexes: [i32],
   payload_cursor: i32,
   array_access: string,
+  finish_statements: [Shared<CppStatement>],
   subject: Shared<SemanticExpression>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
@@ -1023,6 +1027,8 @@ fn statements_after_constructor(
       context,
       gen_stmts,
       eval_expr_fn)
+  else if finish_statements.length() > 0 then
+    finish_statements
   else
     guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn)
   end
@@ -1072,8 +1078,8 @@ fn context_with_cyclic_array_pattern_bindings(
                   bound_context = bound_context.add_value(binding_name)
                 end,
                 PatternCtor(_, constructor_fields, _) => do
-                  if constructor_subpatterns_are_name_bindings(constructor_fields) then
-                    bound_context = context_with_name_constructor_bindings(bound_context, constructor_fields)
+                  if constructor_subpatterns_are_supported_fields(constructor_fields) then
+                    bound_context = context_with_constructor_field_bindings(bound_context, constructor_fields)
                   end
                 end,
                 _ => do end
@@ -1094,7 +1100,7 @@ fn context_with_cyclic_array_pattern_bindings(
   bound_context
 end
 
-fn context_with_name_constructor_bindings(
+fn context_with_constructor_field_bindings(
   arm_context: CodegenContext,
   sub_patterns: [Shared<Pattern>]
 ) -> CodegenContext = do
@@ -1105,11 +1111,21 @@ fn context_with_name_constructor_bindings(
       PatternIdent(binding_name, _) => do
         bound_context = bound_context.add_value(binding_name)
       end,
+      PatternCtor(_, constructor_fields, _) => do
+        if constructor_subpatterns_are_supported_fields(constructor_fields) then
+          bound_context = context_with_constructor_field_bindings(bound_context, constructor_fields)
+        end
+      end,
       _ => do end
     }
     index = index + 1
   end
   bound_context
+end
+
+fn no_finish_statements() -> [Shared<CppStatement>] = do
+  let mut statements: [Shared<CppStatement>] = []
+  statements
 end
 
 fn name_constructor_element_statements(
@@ -1118,9 +1134,13 @@ fn name_constructor_element_statements(
   payload_cursor: i32,
   array_access: string,
   continuation: [Shared<CppStatement>],
-  arm_context: CodegenContext,
+  arm: Shared<SemanticMatchArm>,
   subject: Shared<SemanticExpression>,
-  context: CodegenContext
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> [Shared<CppStatement>] = do
   if payload_cursor >= payload_indexes.length() then
     continuation
@@ -1139,21 +1159,57 @@ fn name_constructor_element_statements(
         let mut then_statements: [Shared<CppStatement>] = []
         then_statements.push(
           variant_get_const_ref_statement(variant_type_name, lower_name, payload_sum_name))
-        const no_nested_indexes: [i32] = []
-        const bound_fields = constructor_field_ident_statements(
-          constructor_name, sub_patterns, lower_name, no_nested_indexes, arm_context, context)
-        then_statements = append_cpp_statements(then_statements, bound_fields.field_binding_statements)
-        then_statements = append_cpp_statements(
-          then_statements,
-          name_constructor_element_statements(
-            element_patterns,
-            payload_indexes,
-            payload_cursor + 1,
-            array_access,
-            continuation,
-            bound_fields.arm_context,
-            subject,
-            context))
+        const later_elements = name_constructor_element_statements(
+          element_patterns,
+          payload_indexes,
+          payload_cursor + 1,
+          array_access,
+          continuation,
+          arm,
+          subject,
+          use_void,
+          arm_context,
+          context,
+          gen_stmts,
+          eval_expr_fn)
+        if constructor_subpatterns_are_name_bindings(sub_patterns) then do
+          const no_nested_indexes: [i32] = []
+          const bound_fields = constructor_field_ident_statements(
+            constructor_name, sub_patterns, lower_name, no_nested_indexes, arm_context, context)
+          then_statements = append_cpp_statements(then_statements, bound_fields.field_binding_statements)
+          then_statements = append_cpp_statements(then_statements, later_elements)
+        end
+        end
+        if constructor_subpatterns_are_name_bindings(sub_patterns) == false then do
+          const empty_patterns: [Shared<Pattern>] = []
+          const empty_indexes: [i32] = []
+          const empty_resume: [NestedMatchResume] = []
+          then_statements = append_cpp_statements(
+            then_statements,
+            constructor_inner_statements(
+              arm,
+              constructor_name,
+              sub_patterns,
+              lower_name,
+              subject,
+              use_void,
+              arm_context,
+              '',
+              empty_patterns,
+              '',
+              empty_indexes,
+              0,
+              empty_resume,
+              empty_patterns,
+              empty_indexes,
+              0,
+              '',
+              later_elements,
+              context,
+              gen_stmts,
+              eval_expr_fn))
+        end
+        end
         statements.push(emit_helpers.make_if_cpp_statement(
           variant_holds_alternative_expression(variant_type_name, payload_sum_name),
           emit_helpers.make_block_cpp_statement(then_statements),
@@ -1172,9 +1228,13 @@ fn cyclic_array_pattern_if_statement(
   sum_name: string,
   array_access: string,
   continuation: [Shared<CppStatement>],
-  arm_context: CodegenContext,
+  arm: Shared<SemanticMatchArm>,
   subject: Shared<SemanticExpression>,
-  context: CodegenContext
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> Shared<CppStatement> = do
   const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
   let mut condition_text = array_access + '.size()' + size_comparison + element_patterns.length().to_string()
@@ -1191,7 +1251,7 @@ fn cyclic_array_pattern_if_statement(
         if sub_patterns.length() == 0 then
           condition_text = condition_text + ' && std::holds_alternative<' + context.resolve(inner_name) + '>((*' + array_access + "[" + element_index.to_string() + "])._)"
         end
-        if sub_patterns.length() != 0 && constructor_subpatterns_are_name_bindings(sub_patterns) then
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) then
           payload_indexes.push(element_index)
         end
       end,
@@ -1211,9 +1271,13 @@ fn cyclic_array_pattern_if_statement(
       0,
       array_access,
       continuation,
-      arm_context,
+      arm,
       subject,
-      context)
+      use_void,
+      arm_context,
+      context,
+      gen_stmts,
+      eval_expr_fn)
   end
   inner_statements = append_cpp_statements(inner_statements, body)
   emit_helpers.make_if_cpp_statement(
@@ -1227,9 +1291,13 @@ fn statements_inside_cyclic_array_fields(
   sub_patterns: [Shared<Pattern>],
   lower_name: string,
   continuation: [Shared<CppStatement>],
-  arm_context: CodegenContext,
+  arm: Shared<SemanticMatchArm>,
   subject: Shared<SemanticExpression>,
-  context: CodegenContext
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> [Shared<CppStatement>] = do
   const field_indexes = cyclic_array_pattern_field_indexes(constructor_name, sub_patterns, context)
   let mut wrapped = continuation
@@ -1245,9 +1313,13 @@ fn statements_inside_cyclic_array_fields(
           cyclic_array_field_sum_name_at(constructor_name, field_index, context),
           lower_name + "." + constructor_field_member_name(context, constructor_name, field_index),
           wrapped,
-          arm_context,
+          arm,
           subject,
-          context)
+          use_void,
+          arm_context,
+          context,
+          gen_stmts,
+          eval_expr_fn)
         wrapped = [array_if]
       end,
       _ => do end
@@ -1274,6 +1346,7 @@ fn constructor_inner_statements(
   payload_indexes: [i32],
   payload_cursor: i32,
   array_access: string,
+  finish_statements: [Shared<CppStatement>],
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
@@ -1309,6 +1382,7 @@ fn constructor_inner_statements(
       payload_indexes,
       payload_cursor,
       array_access,
+      finish_statements,
       subject,
       use_void,
       pattern_context,
@@ -1329,6 +1403,7 @@ fn constructor_inner_statements(
       payload_indexes,
       payload_cursor,
       array_access,
+      finish_statements,
       subject,
       use_void,
       pattern_context,
@@ -1350,6 +1425,7 @@ fn constructor_inner_statements(
       payload_indexes,
       payload_cursor,
       array_access,
+      finish_statements,
       subject,
       use_void,
       pattern_context,
@@ -1365,6 +1441,7 @@ fn constructor_inner_statements(
       payload_indexes,
       payload_cursor,
       array_access,
+      finish_statements,
       subject,
       context,
       gen_stmts,
@@ -1372,7 +1449,17 @@ fn constructor_inner_statements(
   end
   end
   const wrapped_continuation = statements_inside_cyclic_array_fields(
-    constructor_name, sub_patterns, lower_name, continuation, pattern_context, subject, context)
+    constructor_name,
+    sub_patterns,
+    lower_name,
+    continuation,
+    arm,
+    subject,
+    use_void,
+    pattern_context,
+    context,
+    gen_stmts,
+    eval_expr_fn)
   append_cpp_statements(bound_fields.field_binding_statements, wrapped_continuation)
 end
 
@@ -1417,6 +1504,7 @@ fn gen_boxed_nested_constructor_arm_statements(
       empty_indexes,
       0,
       '',
+      no_finish_statements(),
       context,
       gen_stmts,
       eval_expr_fn))

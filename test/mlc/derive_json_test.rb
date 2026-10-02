@@ -1697,6 +1697,40 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_element_constructor", checker, link_user_translation: true)
   end
 
+  def test_nested_constructor_inside_an_array_element_array_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn deep(tree: Tree) -> i32 = match tree
+        | Kids([Node(Kids([Node(Node(left, _), _)]), _)]) => label(left)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn present() -> Tree = Kids([Node(Kids([Node(Node(Leaf, Leaf), Leaf)]), Leaf)])
+      fn shallow() -> Tree = Kids([Node(Kids([Node(Leaf, Leaf)]), Leaf)])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, ".size() == 1"
+
+    checker = <<~CPP
+      int main() {
+        if (deep(present()) != 1) return 1;
+        if (deep(shallow()) != 3) return 2;
+        if (deep(Tree(Leaf{})) != 4) return 3;
+        if (deep(bare()) != 5) return 4;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_element_nested", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
