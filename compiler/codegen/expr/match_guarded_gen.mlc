@@ -350,6 +350,29 @@ fn constructor_subpatterns_are_name_bindings(sub_patterns: [Shared<Pattern>]) ->
   names_only
 end
 
+fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut supported = true
+  let mut nested_constructor_count = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, inner_patterns, _) => do
+        if constructor_subpatterns_are_name_bindings(inner_patterns) then do
+          nested_constructor_count = nested_constructor_count + 1
+        end else do
+          supported = false
+        end
+        end
+      end,
+      _ => do supported = false end
+    }
+    index = index + 1
+  end
+  supported && nested_constructor_count <= 1
+end
+
 fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
   let mut index = 0
   let mut bindings_only = true
@@ -359,11 +382,11 @@ fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
       PatternCtor(_, sub_patterns, _) => do
-        if sub_patterns.length() != 0 && constructor_subpatterns_are_name_bindings(sub_patterns) then do
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) then do
           field_constructor_count = field_constructor_count + 1
         end
         end
-        if sub_patterns.length() != 0 && constructor_subpatterns_are_name_bindings(sub_patterns) == false then do
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) == false then do
           bindings_only = false
         end
         end
@@ -668,6 +691,105 @@ fn cyclic_array_constructor_arm_statements(
   ]
 end
 
+fn first_boxed_nested_constructor_index(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> i32 = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut index = 0
+  let mut found = -1
+  let mut count = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatternCtor(_, inner_patterns, _) => do
+        if constructor_subpatterns_are_name_bindings(inner_patterns) &&
+            constructor_info.boxed_positions.contains(index) then do
+          found = index
+          count = count + 1
+        end
+        end
+      end,
+      _ => do end
+    }
+    index = index + 1
+  end
+  if count == 1 then found else -1 end
+end
+
+fn gen_boxed_nested_constructor_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  nested_index: i32,
+  variant_access_expression: string,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const qualified_name = context.resolve(constructor_name)
+  const lower_name = cpp_safe(lower_first(constructor_name))
+  const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_type_name = qualified_name + type_argument
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut arm_context = context
+  let mut then_statements: [Shared<CppStatement>] = []
+  then_statements.push(
+    variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if index != nested_index then
+      match sub_patterns[index] {
+        PatternIdent(binding_name, _) => do
+          arm_context = arm_context.add_value(binding_name)
+          const member_name = constructor_field_member_name(context, constructor_name, index)
+          if constructor_info.boxed_positions.contains(index) then do
+            then_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = (*' + lower_name + "." + member_name + "); "))
+          end
+          end
+          if constructor_info.boxed_positions.contains(index) == false then do
+            then_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = ' + lower_name + "." + member_name + "; "))
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  match sub_patterns[nested_index] {
+    PatternCtor(inner_name, inner_patterns, _) => do
+      const member_name = constructor_field_member_name(context, constructor_name, nested_index)
+      then_statements.push(emit_helpers.make_fragment_cpp_statement(
+        'const auto& __cyclic_inner_sum = (*' + lower_name + "." + member_name + "); "))
+      then_statements = append_cpp_statements(
+        then_statements,
+        gen_guarded_constructor_arm_statements(
+          arm,
+          inner_name,
+          inner_patterns,
+          '__cyclic_inner_sum._',
+          subject,
+          use_void,
+          arm_context,
+          gen_stmts,
+          eval_expr_fn))
+    end,
+    _ => do end
+  }
+  const constructor_arm_result = [
+    emit_helpers.make_if_cpp_statement(
+      variant_holds_alternative_expression(variant_type_name, variant_access_expression),
+      emit_helpers.make_block_cpp_statement(then_statements),
+      emit_helpers.make_block_cpp_statement([]))
+  ]
+  constructor_arm_result
+end
+
 fn gen_guarded_constructor_arm_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
@@ -686,6 +808,11 @@ fn gen_guarded_constructor_arm_statements(
   if constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context) then
     return cyclic_array_constructor_arm_statements(
       arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
+  end
+  const nested_constructor_index = first_boxed_nested_constructor_index(constructor_name, sub_patterns, context)
+  if nested_constructor_index >= 0 then
+    return gen_boxed_nested_constructor_arm_statements(
+      arm, constructor_name, sub_patterns, nested_constructor_index, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
   end
   const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))

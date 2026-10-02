@@ -970,13 +970,27 @@ module MLC
               (element[:fields] || element[:bindings] || []).empty?
             end
 
+            def cyclic_array_shallow_constructor?(element)
+              return false unless element.is_a?(Hash) && element[:kind] == :constructor
+
+              fields = element[:fields] || element[:bindings] || []
+              fields.all? { |field| cyclic_array_name_element?(field) }
+            end
+
             def cyclic_array_field_constructor?(element)
               return false unless element.is_a?(Hash) && element[:kind] == :constructor
 
               fields = element[:fields] || element[:bindings] || []
               return false if fields.empty?
 
-              fields.all? { |field| cyclic_array_name_element?(field) }
+              nested_constructors = fields.count { |field|
+                cyclic_array_shallow_constructor?(field) && !cyclic_array_name_element?(field)
+              }
+              return false if nested_constructors > 1
+
+              fields.all? { |field|
+                cyclic_array_name_element?(field) || cyclic_array_shallow_constructor?(field)
+              }
             end
 
             def cyclic_array_pattern_simple?(pattern)
@@ -1066,7 +1080,10 @@ module MLC
 
               fields = cyclic_variant_fields(constructor_name)
               sanitized = uniquify_wildcard_bindings(bindings.map { |binding| binding.is_a?(Hash) ? "_" : binding })
-              sanitized.each_with_index.map { |name, index|
+              sanitized.each_with_index.filter_map { |name, index|
+                binding = bindings[index]
+                next if binding.is_a?(Hash) && binding[:kind] == :constructor
+
                 access = "#{source_name}.#{payload_member_name(fields, index)}"
                 value = boxed_indexes.include?(index) ? "(*#{access})" : access
                 "const auto& #{context.sanitize_identifier(name)} = #{value};"
