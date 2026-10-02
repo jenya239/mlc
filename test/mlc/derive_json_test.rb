@@ -1144,6 +1144,41 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_rest", checker, link_user_translation: true)
   end
 
+  def test_nullary_constructor_inside_a_cyclic_array_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Kids([Tree])
+      fn classify(tree: Tree) -> i32 = match tree
+        | Kids([Leaf]) => 1
+        | Kids([Leaf, Leaf]) => 2
+        | Kids([]) => 0
+        | Kids(_) => 3
+        | Leaf => 4
+      fn one() -> Tree = Kids([Leaf])
+      fn two() -> Tree = Kids([Leaf, Leaf])
+      fn nested() -> Tree = Kids([Kids([Leaf])])
+      fn empty_kids() -> Tree = Kids([])
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() == 1"
+    assert_includes ruby_source, ".size() == 2"
+    assert_includes ruby_source, ".size() == 0"
+    assert_includes ruby_source, "std::holds_alternative<Leaf>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "std::holds_alternative<Leaf>((*_v_kids.field0[1])._)"
+
+    checker = <<~CPP
+      int main() {
+        if (classify(one()) != 1) return 1;
+        if (classify(two()) != 2) return 2;
+        if (classify(empty_kids()) != 0) return 3;
+        if (classify(nested()) != 3) return 4;
+        if (classify(Tree(Leaf{})) != 4) return 5;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_leaf", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

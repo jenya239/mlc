@@ -336,6 +336,9 @@ fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
     match element_patterns[index] {
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if sub_patterns.length() != 0 then bindings_only = false end
+      end,
       _ => do bindings_only = false end
     }
     index = index + 1
@@ -523,6 +526,8 @@ fn cyclic_array_nested_if_statement(
 ) -> Shared<CppStatement> = do
   let mut arm_context = context
   let mut inner_statements: [Shared<CppStatement>] = []
+  const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
+  let mut condition_text = array_access + '.size()' + size_comparison + element_patterns.length().to_string()
   let mut element_index = 0
   while element_index < element_patterns.length() do
     match element_patterns[element_index] {
@@ -530,6 +535,11 @@ fn cyclic_array_nested_if_statement(
         arm_context = arm_context.add_value(binding_name)
         inner_statements.push(emit_helpers.make_fragment_cpp_statement(
           'const auto& ' + cpp_safe(binding_name) + ' = (*' + array_access + "[" + element_index.to_string() + "]); "))
+      end,
+      PatternCtor(constructor_name, sub_patterns, _) => do
+        if sub_patterns.length() == 0 then
+          condition_text = condition_text + ' && std::holds_alternative<' + context.resolve(constructor_name) + '>((*' + array_access + "[" + element_index.to_string() + "])._)"
+        end
       end,
       _ => do end
     }
@@ -540,10 +550,8 @@ fn cyclic_array_nested_if_statement(
     inner_statements.push(emit_helpers.make_fragment_cpp_statement(
       'const auto ' + cpp_safe(rest_name) + ' = mlc::Array<std::shared_ptr<' + sum_name + '>>(' + array_access + '.cbegin() + ' + element_patterns.length().to_string() + ', ' + array_access + '.cend()); '))
   end
-  const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
   emit_helpers.make_if_cpp_statement(
-    emit_helpers.make_identifier_cpp_expression(
-      array_access + '.size()' + size_comparison + element_patterns.length().to_string()),
+    emit_helpers.make_identifier_cpp_expression(condition_text),
     emit_helpers.make_block_cpp_statement(append_cpp_statements(
       inner_statements,
       guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))),
