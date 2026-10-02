@@ -49,18 +49,33 @@ fn cyclic_json_prototype_declarations(
   type_name: string,
   derive_traits: [string],
   context: CodegenContext
-) -> [Shared<CppDeclaration>] =
-  if list_contains(context.cyclic_sum_type_names, type_name) &&
-     derive_traits.any(trait_name => trait_name == "Json") then
-    [
-      Shared.new(CppDeclarationFragment(
-        'mlc::json::JsonValue ' + context.resolve(type_name) + '_to_json(const ' + context.resolve(type_name) + '& self) noexcept;\n')),
-      Shared.new(CppDeclarationFragment(
-        'mlc::result::Result<' + context.resolve(type_name) + ', mlc::json::JsonError> ' + context.resolve(type_name) +
-        '_from_json(const mlc::json::JsonValue& __json_value) noexcept;\n'))
-    ]
+) -> [Shared<CppDeclaration>] = do
+  const resolved_name = context.resolve(type_name)
+  if list_contains(context.cyclic_sum_type_names, type_name) then
+    let declarations: [Shared<CppDeclaration>] = []
+    if derive_traits.any(trait_name => trait_name == "Json") then
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'mlc::json::JsonValue ' + resolved_name + '_to_json(const ' + resolved_name + '& self) noexcept;\n')))
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'mlc::result::Result<' + resolved_name + ', mlc::json::JsonError> ' + resolved_name +
+        '_from_json(const mlc::json::JsonValue& __json_value) noexcept;\n')))
+    end
+    if derive_traits.any(trait_name => trait_name == "Display") then
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'mlc::String ' + resolved_name + '_to_string(const ' + resolved_name + '& self) noexcept;\n')))
+    end
+    if derive_traits.any(trait_name => trait_name == "Eq") then
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'bool operator==(const ' + resolved_name + '& a, const ' + resolved_name + '& b) noexcept;\n')))
+    end
+    if derive_traits.any(trait_name => trait_name == "Ord") then
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'bool operator<(const ' + resolved_name + '& a, const ' + resolved_name + '& b) noexcept;\n')))
+    end
+    declarations
   else []
   end
+end
 
 fn decl_segment_trait_cpp(
   name: string,

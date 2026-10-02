@@ -314,7 +314,10 @@ module MLC
               )
             ]
           end
-          type_defs = type_struct_defs + cyclic_json_prototypes + type_derive_defs
+          cyclic_comparison_prototypes = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |type_decl|
+            cyclic_comparison_prototype_statements(type_decl)
+          end
+          type_defs = type_struct_defs + cyclic_json_prototypes + cyclic_comparison_prototypes + type_derive_defs
 
           # Phase 3: forward declarations for all non-generic user functions.
           # Must come after all type definitions so parameter/return types are known.
@@ -710,6 +713,121 @@ module MLC
           end
         end
 
+        def cyclic_comparison_prototype_statements(type_decl)
+          return [] unless cyclic_sum_type?(type_decl.name)
+
+          traits = Array(type_decl.derive_traits)
+          statements = []
+          if traits.include?("Display")
+            statements << @context.factory.raw_statement(
+              code: "mlc::String #{type_decl.name}_to_string(const #{type_decl.name}& self) noexcept;"
+            )
+          end
+          if traits.include?("Eq")
+            statements << @context.factory.raw_statement(
+              code: "bool operator==(const #{type_decl.name}& a, const #{type_decl.name}& b) noexcept;"
+            )
+          end
+          if traits.include?("Ord")
+            statements << @context.factory.raw_statement(
+              code: "bool operator<(const #{type_decl.name}& a, const #{type_decl.name}& b) noexcept;"
+            )
+          end
+          statements
+        end
+
+        def cyclic_boxed_sum_field?(field_type)
+          return false unless field_type.is_a?(SemanticIR::Type)
+          return false if field_type.is_a?(SemanticIR::GenericType)
+          return false unless field_type.respond_to?(:name)
+
+          @cyclic_sum_types&.include?(field_type.name) == true
+        end
+
+        def derive_sum_field_member(field, index)
+          name = field[:name]
+          return "field#{index}" if name.nil? || name.to_s.empty?
+
+          name.to_s
+        end
+
+        def derive_sum_display_field(variant_name, field, index)
+          access = "std::get<#{variant_name}>(self._).#{derive_sum_field_member(field, index)}"
+          if cyclic_boxed_sum_field?(field[:type])
+            "#{field[:type].name}_to_string(*#{access})"
+          else
+            "mlc::to_string(#{access})"
+          end
+        end
+
+        def cyclic_payload_equal(left, right, boxed)
+          if boxed
+            "((#{left} == #{right}) || ((#{left}) && (#{right}) && (*#{left} == *#{right})))"
+          else
+            "(#{left} == #{right})"
+          end
+        end
+
+        def cyclic_payload_less(left, right, boxed)
+          if boxed
+            "((!(#{left}) && (#{right})) || ((#{left}) && (#{right}) && (*#{left} < *#{right})))"
+          else
+            "(#{left} < #{right})"
+          end
+        end
+
+        def cyclic_variant_comparisons(variant_name, fields)
+          fields.each_with_index.map do |field, index|
+            member = derive_sum_field_member(field, index)
+            left = "std::get<#{variant_name}>(a._).#{member}"
+            right = "std::get<#{variant_name}>(b._).#{member}"
+            boxed = cyclic_boxed_sum_field?(field[:type])
+            [cyclic_payload_less(left, right, boxed), cyclic_payload_equal(left, right, boxed)]
+          end
+        end
+
+        def cyclic_variant_ordering(variant_name, fields)
+          pairs = cyclic_variant_comparisons(variant_name, fields)
+          pairs.each_index.map do |index|
+            less = pairs[index][0]
+            next less if index.zero?
+
+            prefix = pairs[0...index].map { |pair| pair[1] }.join(" && ")
+            "((#{prefix}) && #{less})"
+          end.join(" || ")
+        end
+
+        def cyclic_sum_equality_body(type)
+          lines = ["if (a._.index() != b._.index()) return false;"]
+          type.variants.each do |variant|
+            variant_name = variant[:name]
+            fields = Array(variant[:fields])
+            if fields.empty?
+              lines << "if (std::holds_alternative<#{variant_name}>(a._)) return true;"
+            else
+              pairs = cyclic_variant_comparisons(variant_name, fields)
+              lines << "if (std::holds_alternative<#{variant_name}>(a._)) return #{pairs.map { |pair| pair[1] }.join(" && ")};"
+            end
+          end
+          lines << "return false;"
+          lines.join(" ")
+        end
+
+        def cyclic_sum_ordering_body(type)
+          lines = ["if (a._.index() != b._.index()) return a._.index() < b._.index();"]
+          type.variants.each do |variant|
+            variant_name = variant[:name]
+            fields = Array(variant[:fields])
+            if fields.empty?
+              lines << "if (std::holds_alternative<#{variant_name}>(a._)) return false;"
+            else
+              lines << "if (std::holds_alternative<#{variant_name}>(a._)) return #{cyclic_variant_ordering(variant_name, fields)};"
+            end
+          end
+          lines << "return false;"
+          lines.join(" ")
+        end
+
         def generate_derive_display(name, type)
           body = case type
                  when SemanticIR::RecordType
@@ -739,7 +857,9 @@ module MLC
                      elsif fields.length == 1 && !fields.first[:name]
                        "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + mlc::to_string(std::get<#{vname}>(self._)._0) + mlc::String(\")\");"
                      else
-                       field_strs = fields.map { |f| "mlc::to_string(std::get<#{vname}>(self._).#{f[:name]})" }.join(" + mlc::String(\", \") + ")
+                       field_strs = fields.each_with_index.map { |field, index|
+                         derive_sum_display_field(vname, field, index)
+                       }.join(" + mlc::String(\", \") + ")
                        "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + #{field_strs} + mlc::String(\")\");"
                      end
                    end
@@ -762,7 +882,11 @@ module MLC
                      "return #{conditions};"
                    end
                  when SemanticIR::SumType
-                   "return a._ == b._;"
+                   if cyclic_sum_type?(name)
+                     cyclic_sum_equality_body(type)
+                   else
+                     "return a._ == b._;"
+                   end
                  else
                    return nil
                  end
@@ -789,7 +913,11 @@ module MLC
                      "return #{field_parts.join(" || ")};"
                    end
                  when SemanticIR::SumType
-                   "return a._ < b._;"
+                   if cyclic_sum_type?(name)
+                     cyclic_sum_ordering_body(type)
+                   else
+                     "return a._ < b._;"
+                   end
                  else
                    return nil
                  end

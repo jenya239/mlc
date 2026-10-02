@@ -1105,15 +1105,319 @@ export fn gen_derive_json_cpp(
     [derive_json_sum_cpp(type_name, variants, cyclic_sum_type_names)]
   end
 
+fn join_cpp_parts(parts: [string], separator: string) -> string = do
+  if parts.length() == 0 then ""
+  else
+    let mut result = parts[0]
+    let mut index = 1
+    while index < parts.length() do
+      result = result + separator + parts[index]
+      index = index + 1
+    end
+    result
+  end
+end
+
+fn tuple_member_names(count: i32) -> [string] = do
+  let names: [string] = []
+  let mut index = 0
+  while index < count do
+    names.push("field" + index.to_string())
+    index = index + 1
+  end
+  names
+end
+
+fn type_is_boxed_cyclic_sum(field_type: Shared<TypeExpr>, cyclic_sum_type_names: [string]) -> bool =
+  match field_type {
+    TyNamed(name) => derive_json_name_is_cyclic(cyclic_sum_type_names, name),
+    _ => false
+  }
+
+fn cyclic_payload_equal_text(left: string, right: string, boxed: bool) -> string =
+  if boxed then
+    "((" + left + " == " + right + ") || ((" + left + ") && (" + right + ") && (*" + left + " == *" + right + ")))"
+  else
+    "(" + left + " == " + right + ")"
+  end
+
+fn cyclic_payload_less_text(left: string, right: string, boxed: bool) -> string =
+  if boxed then
+    "((!(" + left + ") && (" + right + ")) || ((" + left + ") && (" + right + ") && (*" + left + " < *" + right + ")))"
+  else
+    "(" + left + " < " + right + ")"
+  end
+
+fn cyclic_fields_equal_text(
+  variant_name: string,
+  members: [string],
+  field_types: [Shared<TypeExpr>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < members.length() do
+    const left = "std::get<" + variant_name + ">(a._)." + members[index]
+    const right = "std::get<" + variant_name + ">(b._)." + members[index]
+    parts.push(cyclic_payload_equal_text(
+      left,
+      right,
+      type_is_boxed_cyclic_sum(field_types[index], cyclic_sum_type_names)))
+    index = index + 1
+  end
+  join_cpp_parts(parts, " && ")
+end
+
+fn cyclic_fields_ordering_text(
+  variant_name: string,
+  members: [string],
+  field_types: [Shared<TypeExpr>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut result = ""
+  let mut index = 0
+  while index < members.length() do
+    const left = "std::get<" + variant_name + ">(a._)." + members[index]
+    const right = "std::get<" + variant_name + ">(b._)." + members[index]
+    const boxed = type_is_boxed_cyclic_sum(field_types[index], cyclic_sum_type_names)
+    const less = cyclic_payload_less_text(left, right, boxed)
+    if index == 0 then
+      result = less
+    else
+      let mut prefix = ""
+      let mut previous = 0
+      while previous < index do
+        const previous_left = "std::get<" + variant_name + ">(a._)." + members[previous]
+        const previous_right = "std::get<" + variant_name + ">(b._)." + members[previous]
+        const previous_boxed = type_is_boxed_cyclic_sum(field_types[previous], cyclic_sum_type_names)
+        const equal = cyclic_payload_equal_text(previous_left, previous_right, previous_boxed)
+        if previous > 0 then
+          prefix = prefix + " && "
+        end
+        prefix = prefix + equal
+        previous = previous + 1
+      end
+      result = result + " || ((" + prefix + ") && " + less + ")"
+    end
+    index = index + 1
+  end
+  result
+end
+
+fn cyclic_display_value_text(
+  access: string,
+  field_type: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> string =
+  match field_type {
+    TyNamed(name) =>
+      if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+        name + "_to_string(*" + access + ")"
+      else
+        "mlc::to_string(" + access + ")"
+      end,
+    _ => "mlc::to_string(" + access + ")"
+  }
+
+fn cyclic_display_fields_text(
+  variant_name: string,
+  members: [string],
+  field_types: [Shared<TypeExpr>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let parts: [string] = []
+  let mut index = 0
+  while index < members.length() do
+    const access = "std::get<" + variant_name + ">(self._)." + members[index]
+    parts.push(cyclic_display_value_text(access, field_types[index], cyclic_sum_type_names))
+    index = index + 1
+  end
+  join_cpp_parts(parts, " + mlc::String(\", \") + ")
+end
+
+fn cyclic_display_unit_line(variant_name: string) -> string =
+  "  if (std::holds_alternative<" + variant_name + ">(self._)) return mlc::String(\"" + variant_name + "\");\n"
+
+fn cyclic_display_payload_line(variant_name: string, fields_text: string) -> string =
+  "  if (std::holds_alternative<" + variant_name + ">(self._)) return mlc::String(\"" + variant_name + "(\") + " + fields_text + " + mlc::String(\")\");\n"
+
+fn record_member_names(field_definitions: [Shared<FieldDef>]) -> [string] = do
+  let names: [string] = []
+  let mut index = 0
+  while index < field_definitions.length() do
+    names.push(field_definitions[index].name)
+    index = index + 1
+  end
+  names
+end
+
+fn record_field_types(field_definitions: [Shared<FieldDef>]) -> [Shared<TypeExpr>] = do
+  let field_types: [Shared<TypeExpr>] = []
+  let mut index = 0
+  while index < field_definitions.length() do
+    field_types.push(field_definitions[index].type_value)
+    index = index + 1
+  end
+  field_types
+end
+
+fn cyclic_display_variant_text(variant: Shared<TypeVariant>, cyclic_sum_type_names: [string]) -> string =
+  match variant {
+    VarUnit(name, _) => cyclic_display_unit_line(name),
+    VarTuple(name, field_types, _) =>
+      if field_types.length() == 0 then cyclic_display_unit_line(name)
+      else cyclic_display_payload_line(
+        name,
+        cyclic_display_fields_text(name, tuple_member_names(field_types.length()), field_types, cyclic_sum_type_names))
+      end,
+    VarRecord(name, field_definitions, _) =>
+      if field_definitions.length() == 0 then cyclic_display_unit_line(name)
+      else cyclic_display_payload_line(
+        name,
+        cyclic_display_fields_text(
+          name,
+          record_member_names(field_definitions),
+          record_field_types(field_definitions),
+          cyclic_sum_type_names))
+      end
+  }
+
+fn cyclic_equality_variant_text(variant: Shared<TypeVariant>, cyclic_sum_type_names: [string]) -> string =
+  match variant {
+    VarUnit(name, _) =>
+      "if (std::holds_alternative<" + name + ">(a._)) return true; ",
+    VarTuple(name, field_types, _) =>
+      if field_types.length() == 0 then
+        "if (std::holds_alternative<" + name + ">(a._)) return true; "
+      else
+        "if (std::holds_alternative<" + name + ">(a._)) return " +
+          cyclic_fields_equal_text(name, tuple_member_names(field_types.length()), field_types, cyclic_sum_type_names) + "; "
+      end,
+    VarRecord(name, field_definitions, _) =>
+      if field_definitions.length() == 0 then
+        "if (std::holds_alternative<" + name + ">(a._)) return true; "
+      else
+        "if (std::holds_alternative<" + name + ">(a._)) return " +
+          cyclic_fields_equal_text(
+            name,
+            record_member_names(field_definitions),
+            record_field_types(field_definitions),
+            cyclic_sum_type_names) + "; "
+      end
+  }
+
+fn cyclic_ordering_variant_text(variant: Shared<TypeVariant>, cyclic_sum_type_names: [string]) -> string =
+  match variant {
+    VarUnit(name, _) =>
+      "if (std::holds_alternative<" + name + ">(a._)) return false; ",
+    VarTuple(name, field_types, _) =>
+      if field_types.length() == 0 then
+        "if (std::holds_alternative<" + name + ">(a._)) return false; "
+      else
+        "if (std::holds_alternative<" + name + ">(a._)) return " +
+          cyclic_fields_ordering_text(name, tuple_member_names(field_types.length()), field_types, cyclic_sum_type_names) + "; "
+      end,
+    VarRecord(name, field_definitions, _) =>
+      if field_definitions.length() == 0 then
+        "if (std::holds_alternative<" + name + ">(a._)) return false; "
+      else
+        "if (std::holds_alternative<" + name + ">(a._)) return " +
+          cyclic_fields_ordering_text(
+            name,
+            record_member_names(field_definitions),
+            record_field_types(field_definitions),
+            cyclic_sum_type_names) + "; "
+      end
+  }
+
+fn cyclic_display_function_text(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut body = ""
+  let mut index = 0
+  while index < variants.length() do
+    body = body + cyclic_display_variant_text(variants[index], cyclic_sum_type_names)
+    index = index + 1
+  end
+  "mlc::String " + type_name + "_to_string(const " + type_name + "& self) noexcept {\n" +
+    body + "  return mlc::String(\"\");\n}\n"
+end
+
+fn cyclic_equality_function_text(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut body = "if (a._.index() != b._.index()) return false; "
+  let mut index = 0
+  while index < variants.length() do
+    body = body + cyclic_equality_variant_text(variants[index], cyclic_sum_type_names)
+    index = index + 1
+  end
+  "bool operator==(const " + type_name + "& a, const " + type_name + "& b) noexcept { " + body + "return false; }\n"
+end
+
+fn cyclic_ordering_function_text(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut body = "if (a._.index() != b._.index()) return a._.index() < b._.index(); "
+  let mut index = 0
+  while index < variants.length() do
+    body = body + cyclic_ordering_variant_text(variants[index], cyclic_sum_type_names)
+    index = index + 1
+  end
+  "bool operator<(const " + type_name + "& a, const " + type_name + "& b) noexcept { " + body + "return false; }\n"
+end
+
+fn cyclic_sum_uses_deep_comparison(type_name: string, variants: [Shared<TypeVariant>], cyclic_sum_type_names: [string]) -> bool =
+  derive_json_name_is_cyclic(cyclic_sum_type_names, type_name) && !variants_is_single_record(variants)
+
+fn gen_derive_display_for_type(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
+  if cyclic_sum_uses_deep_comparison(type_name, variants, cyclic_sum_type_names) then
+    [emit_helpers.make_fragment_cpp_declaration(cyclic_display_function_text(type_name, variants, cyclic_sum_type_names))]
+  else
+    gen_derive_display_cpp(type_name, variants)
+  end
+
+fn gen_derive_eq_for_type(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
+  if cyclic_sum_uses_deep_comparison(type_name, variants, cyclic_sum_type_names) then
+    [emit_helpers.make_fragment_cpp_declaration(cyclic_equality_function_text(type_name, variants, cyclic_sum_type_names))]
+  else
+    gen_derive_eq_cpp(type_name, variants)
+  end
+
+fn gen_derive_ord_for_type(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
+  if cyclic_sum_uses_deep_comparison(type_name, variants, cyclic_sum_type_names) then
+    [emit_helpers.make_fragment_cpp_declaration(cyclic_ordering_function_text(type_name, variants, cyclic_sum_type_names))]
+  else
+    gen_derive_ord_cpp(type_name, variants)
+  end
+
 fn gen_derive_trait_cpp(
   type_name: string,
   variants: [Shared<TypeVariant>],
   trait_name: string,
   cyclic_sum_type_names: [string]
 ) -> [Shared<CppDeclaration>] =
-  if trait_name == "Display" then gen_derive_display_cpp(type_name, variants)
-  else if trait_name == "Eq" then gen_derive_eq_cpp(type_name, variants)
-  else if trait_name == "Ord" then gen_derive_ord_cpp(type_name, variants)
+  if trait_name == "Display" then gen_derive_display_for_type(type_name, variants, cyclic_sum_type_names)
+  else if trait_name == "Eq" then gen_derive_eq_for_type(type_name, variants, cyclic_sum_type_names)
+  else if trait_name == "Ord" then gen_derive_ord_for_type(type_name, variants, cyclic_sum_type_names)
   else if trait_name == "Hash" then gen_derive_hash_cpp(type_name, variants)
   else if trait_name == "Json" then gen_derive_json_cpp(type_name, variants, cyclic_sum_type_names)
   else []

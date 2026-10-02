@@ -718,6 +718,47 @@ class MLCDeriveJsonTest < Minitest::Test
     end
   end
 
+  def test_cyclic_sum_display_eq_ord_follow_the_sum_on_ruby_and_mlcc
+    plain = MLC.to_cpp("type Status = On | Off derive { Display, Eq, Ord }\nfn main() -> i32 = 0\n")
+    assert_includes plain, "return a._ == b._;"
+    assert_includes plain, "return a._ < b._;"
+    refute_includes plain, "._.index()"
+
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) derive { Display, Eq, Ord }
+      type Item = End | Box(i32, Item) derive { Display, Eq, Ord }
+      type Left = StopLeft | GoLeft(Right) derive { Display, Eq }
+      type Right = StopRight | GoRight(Left) derive { Display, Eq }
+      fn main() -> i32 = 0
+    MLC
+    checker = <<~'CPP'
+      int main() {
+        Tree left{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(Tree(Leaf{}))}};
+        Tree right{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(Tree(Leaf{}))}};
+        if (!(left == right)) return 1;
+        if (left < right || right < left) return 2;
+        Tree deeper{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(std::move(left))}};
+        if (deeper == right) return 3;
+        if (!(right < deeper)) return 4;
+        if (deeper < right) return 5;
+        if (Tree_to_string(right) != mlc::String("Node(Leaf, Leaf)")) return 6;
+        if (Tree_to_string(deeper) != mlc::String("Node(Leaf, Node(Leaf, Leaf))")) return 7;
+        Item first{Box{1, std::make_shared<Item>(Item(End{}))}};
+        Item second{Box{1, std::make_shared<Item>(Item(End{}))}};
+        if (!(first == second)) return 8;
+        Item third{Box{2, std::make_shared<Item>(Item(End{}))}};
+        if (!(first < third)) return 9;
+        if (Item_to_string(first) != mlc::String("Box(1, End)")) return 10;
+        Left step{GoLeft{std::make_shared<Right>(Right(StopRight{}))}};
+        Left again{GoLeft{std::make_shared<Right>(Right(StopRight{}))}};
+        if (!(step == again)) return 11;
+        if (Left_to_string(step) != mlc::String("GoLeft(StopRight)")) return 12;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_display", checker)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
