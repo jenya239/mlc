@@ -984,7 +984,9 @@ module MLC
 
               fields = element[:fields] || element[:bindings] || []
               fields.all? { |field|
-                cyclic_array_name_element?(field) || cyclic_array_constructor_pattern?(field)
+                cyclic_array_name_element?(field) ||
+                  cyclic_array_constructor_pattern?(field) ||
+                  (field.is_a?(Hash) && field[:kind] == :array && cyclic_array_pattern_simple?(field))
               }
             end
 
