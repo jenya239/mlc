@@ -1,6 +1,6 @@
 // Constructor type info: shared/array position tracking for variant constructors.
 
-import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner, TyNamed, TyGeneric } from '../../frontend/ast'
+import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner, TyNamed, TyGeneric, TyArray } from '../../frontend/ast'
 import { is_shared_type, is_shared_array_type } from './param_analysis'
 import { list_contains } from './decl_index'
 import { build_cyclic_sum_type_names } from './type_index'
@@ -10,7 +10,8 @@ export type CtorTypeInfo = CtorTypeInfo {
   shared_pos: [i32],
   shared_arr_pos: [i32],
   boxed_positions: [i32],
-  cyclic_option_field_names: [string]
+  cyclic_option_field_names: [string],
+  cyclic_array_field_names: [string]
 }
 
 type ConstructorArgumentScanState = ConstructorArgumentScanState {
@@ -18,7 +19,8 @@ type ConstructorArgumentScanState = ConstructorArgumentScanState {
   shared_positions: [i32],
   shared_array_positions: [i32],
   boxed_positions: [i32],
-  cyclic_option_field_names: [string]
+  cyclic_option_field_names: [string],
+  cyclic_array_field_names: [string]
 }
 
 fn field_def_type(field_definition: Shared<FieldDef>) -> Shared<TypeExpr> = field_definition.type_value
@@ -37,6 +39,20 @@ fn cyclic_option_field_sum_name(
         }
       else ''
       end,
+    _ => ''
+  }
+
+fn cyclic_array_field_sum_name(
+  type_expression: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> string =
+  match type_expression {
+    TyArray(element_type) =>
+      match element_type {
+        TyNamed(inner_name) =>
+          if list_contains(cyclic_sum_type_names, inner_name) then inner_name else '' end,
+        _ => ''
+      },
     _ => ''
   }
 
@@ -60,7 +76,8 @@ fn ctor_type_info_for(
       shared_positions: [],
       shared_array_positions: [],
       boxed_positions: [],
-      cyclic_option_field_names: []
+      cyclic_option_field_names: [],
+      cyclic_array_field_names: []
     },
     (accumulated_state, type_expression_under_scan) =>
       ConstructorArgumentScanState {
@@ -83,6 +100,10 @@ fn ctor_type_info_for(
         cyclic_option_field_names:
           accumulated_state.cyclic_option_field_names.concat([
             cyclic_option_field_sum_name(type_expression_under_scan, cyclic_sum_type_names)
+          ]),
+        cyclic_array_field_names:
+          accumulated_state.cyclic_array_field_names.concat([
+            cyclic_array_field_sum_name(type_expression_under_scan, cyclic_sum_type_names)
           ])
       }
   )
@@ -91,7 +112,8 @@ fn ctor_type_info_for(
     shared_pos: scan_parsed.shared_positions,
     shared_arr_pos: scan_parsed.shared_array_positions,
     boxed_positions: scan_parsed.boxed_positions,
-    cyclic_option_field_names: scan_parsed.cyclic_option_field_names
+    cyclic_option_field_names: scan_parsed.cyclic_option_field_names,
+    cyclic_array_field_names: scan_parsed.cyclic_array_field_names
   })
 end
 
@@ -135,7 +157,7 @@ end
 
 export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], constructor_lookup_name: string) -> Shared<CtorTypeInfo> =
   infos.fold(
-    Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [], boxed_positions: [], cyclic_option_field_names: [] }),
+    Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [], boxed_positions: [], cyclic_option_field_names: [], cyclic_array_field_names: [] }),
     (chosen, candidate_info) =>
       if candidate_info.name == constructor_lookup_name then candidate_info else chosen end)
 

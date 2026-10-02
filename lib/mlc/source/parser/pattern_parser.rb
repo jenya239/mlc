@@ -334,6 +334,8 @@ module MLC
           while current.type != end_token
             if current.type == :IDENTIFIER && current.value.match?(/\A[A-Z]/)
               fields << parse_pattern
+            elsif current.type == :LBRACKET
+              fields << parse_pattern
             elsif current.type == :IDENTIFIER
               # Simple variable binding
               fields << consume(:IDENTIFIER).value

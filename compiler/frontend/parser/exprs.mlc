@@ -344,6 +344,7 @@ fn parse_pattern(parser: Parser) -> PatternResult = do
   else if kind.is_str() then parse_pattern_string(parser, kind.str_val())
   else if kind.is_true() then parse_pattern_boolean(parser, true)
   else if kind.is_false() then parse_pattern_boolean(parser, false)
+  else if kind.is_lbracket() then parse_array_pattern(parser.advance(), parser.span_at_cursor())
   else if kind.is_else() then
     pattern_parse_result(Shared.new(PatternWild(parser.span_at_cursor())), parser.advance())
   else parse_pattern_fallback_wildcard(parser)

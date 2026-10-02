@@ -86,7 +86,7 @@ module MLC
               return false unless pattern[:kind] == :constructor
 
               Array(pattern[:fields]).any? do |field|
-                field.is_a?(Hash) && field[:kind] == :constructor
+                field.is_a?(Hash) && %i[constructor array].include?(field[:kind])
               end
             end
 
@@ -604,7 +604,8 @@ module MLC
                 end
               end
 
-              if context.cyclic_option_sum_name(scrutinee_type) || cyclic_option_nested_match?(match_expr)
+              if context.cyclic_option_sum_name(scrutinee_type) || cyclic_option_nested_match?(match_expr) ||
+                 cyclic_array_nested_match?(match_expr)
                 statements << context.factory.raw_statement(code: "std::abort();")
               end
 
@@ -687,10 +688,18 @@ module MLC
               temp_var = "_v_#{case_name.downcase}"
               binding_decls << "auto #{temp_var} = std::get<#{qcase}>(#{scrutinee_src});"
 
-              non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
+              non_wildcard_bindings = bindings.reject { |binding|
+                binding == "_" || (binding.is_a?(Hash) && %i[constructor array].include?(binding[:kind]))
+              }
               binding_decls << structured_binding_decl(case_name, bindings, temp_var) if non_wildcard_bindings.any?
 
               bindings.each_with_index do |binding, index|
+                if binding.is_a?(Hash) && binding[:kind] == :array && binding[:rest].nil? &&
+                   cyclic_array_field_sum_name(case_name, index)
+                  member_name = payload_member_name(cyclic_variant_fields(case_name), index)
+                  nested_checks << build_cyclic_array_pattern_check(binding, "#{temp_var}.#{member_name}")
+                  next
+                end
                 next unless binding.is_a?(Hash) && binding[:kind] == :constructor
 
                 nested_temp_var = "_nested_#{temp_var_counter}"
@@ -830,6 +839,19 @@ module MLC
               decls
             end
 
+            def cyclic_array_nested_match?(match_expr)
+              match_expr.arms.any? do |arm|
+                pattern = arm[:pattern]
+                next false unless pattern[:kind] == :constructor
+
+                bindings = pattern[:bindings] || pattern[:fields] || []
+                bindings.each_with_index.any? do |binding, index|
+                  binding.is_a?(Hash) && binding[:kind] == :array && binding[:rest].nil? &&
+                    cyclic_array_field_sum_name(pattern[:name], index)
+                end
+              end
+            end
+
             def cyclic_option_nested_match?(match_expr)
               match_expr.arms.any? do |arm|
                 pattern = arm[:pattern]
@@ -915,6 +937,32 @@ module MLC
               else
                 { condition: "!#{scrutinee_var}.has_value()", bindings: "" }
               end
+            end
+
+            def cyclic_array_field_sum_name(constructor_name, index)
+              fields = cyclic_variant_fields(constructor_name)
+              return nil unless fields && fields[index]
+
+              field_type = fields[index][:type]
+              return nil unless field_type.is_a?(MLC::SemanticIR::ArrayType)
+
+              element = field_type.element_type
+              return nil unless element.is_a?(MLC::SemanticIR::Type) &&
+                                !element.is_a?(MLC::SemanticIR::GenericType) &&
+                                !element.is_a?(MLC::SemanticIR::ArrayType) &&
+                                Array(context.cyclic_sum_types).include?(element.name)
+
+              element.name
+            end
+
+            def build_cyclic_array_pattern_check(pattern, scrutinee_var)
+              elements = pattern[:elements] || []
+              binding_text = elements.each_with_index.filter_map { |element, index|
+                next unless element.is_a?(Hash) && element[:kind] == :var
+
+                "const auto& #{element[:name]} = (*#{scrutinee_var}[#{index}]);"
+              }.join(" ")
+              { condition: "#{scrutinee_var}.size() == #{elements.length}", bindings: binding_text }
             end
 
             def cyclic_variant_fields(constructor_name)

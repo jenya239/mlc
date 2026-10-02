@@ -4,7 +4,7 @@
 // wrap eval_expr_cpp_fn through print_expr into a string-producing closure
 // and feed it into the same builder as the string-flavor callers).
 
-import { Pattern, PatternWild, PatternStr, PatternStringLit, PatternCtor, PatternIdent } from '../../frontend/ast'
+import { Pattern, PatternWild, PatternStr, PatternStringLit, PatternCtor, PatternIdent, PatternArray } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
 import { CodegenContext, lookup_ctor_type_info_for_context, lookup_fields_for_context } from '../context'
 import { cpp_safe, lower_first } from '../cpp_naming'
@@ -317,6 +317,69 @@ export fn arms_have_cyclic_option_nested_constructor(
 ) -> bool =
   arms.any(arm => pattern_is_cyclic_option_nested_constructor(arm.pattern, context))
 
+fn cyclic_array_field_sum_name_at(
+  constructor_name: string,
+  field_index: i32,
+  context: CodegenContext
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if field_index < constructor_info.cyclic_array_field_names.length() then
+    constructor_info.cyclic_array_field_names[field_index]
+  else ''
+  end
+end
+
+fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut bindings_only = true
+  while index < element_patterns.length() do
+    match element_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      _ => do bindings_only = false end
+    }
+    index = index + 1
+  end
+  bindings_only
+end
+
+fn array_pattern_is_element_binding(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternArray(element_patterns, rest_name, _) =>
+      rest_name == '' && array_elements_are_bindings(element_patterns),
+    _ => false
+  }
+
+fn constructor_subpatterns_use_cyclic_array(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < sub_patterns.length() do
+    if array_pattern_is_element_binding(sub_patterns[index]) &&
+        cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn pattern_is_cyclic_array_nested(pattern: Shared<Pattern>, context: CodegenContext) -> bool =
+  match pattern {
+    PatternCtor(constructor_name, sub_patterns, _) =>
+      constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context),
+    _ => false
+  }
+
+export fn arms_have_cyclic_array_nested_pattern(
+  arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext
+) -> bool =
+  arms.any(arm => pattern_is_cyclic_array_nested(arm.pattern, context))
+
 fn constructor_field_member_name(context: CodegenContext, constructor_name: string, field_index: i32) -> string = do
   const field_names = lookup_fields_for_context(context, constructor_name)
   if field_index < field_names.length() && field_names[field_index] != '' then
@@ -447,6 +510,83 @@ fn cyclic_option_constructor_arm_statements(
   ]
 end
 
+fn cyclic_array_nested_if_statement(
+  element_patterns: [Shared<Pattern>],
+  array_access: string,
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> Shared<CppStatement> = do
+  let mut arm_context = context
+  let mut inner_statements: [Shared<CppStatement>] = []
+  let mut element_index = 0
+  while element_index < element_patterns.length() do
+    match element_patterns[element_index] {
+      PatternIdent(binding_name, _) => do
+        arm_context = arm_context.add_value(binding_name)
+        inner_statements.push(emit_helpers.make_fragment_cpp_statement(
+          'const auto& ' + cpp_safe(binding_name) + ' = (*' + array_access + "[" + element_index.to_string() + "]); "))
+      end,
+      _ => do end
+    }
+    element_index = element_index + 1
+  end
+  emit_helpers.make_if_cpp_statement(
+    emit_helpers.make_identifier_cpp_expression(
+      array_access + '.size() == ' + element_patterns.length().to_string()),
+    emit_helpers.make_block_cpp_statement(append_cpp_statements(
+      inner_statements,
+      guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))),
+    emit_helpers.make_block_cpp_statement([]))
+end
+
+fn cyclic_array_constructor_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  variant_access_expression: string,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const qualified_name = context.resolve(constructor_name)
+  const lower_name = cpp_safe(lower_first(constructor_name))
+  const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_type_name = qualified_name + type_argument
+  let mut then_statements: [Shared<CppStatement>] = []
+  then_statements.push(
+    variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if array_pattern_is_element_binding(sub_patterns[index]) &&
+        cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      match sub_patterns[index] {
+        PatternArray(element_patterns, _, _) =>
+          then_statements.push(cyclic_array_nested_if_statement(
+            element_patterns,
+            lower_name + "." + constructor_field_member_name(context, constructor_name, index),
+            arm,
+            use_void,
+            context,
+            gen_stmts,
+            eval_expr_fn)),
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  [
+    emit_helpers.make_if_cpp_statement(
+      variant_holds_alternative_expression(variant_type_name, variant_access_expression),
+      emit_helpers.make_block_cpp_statement(then_statements),
+      emit_helpers.make_block_cpp_statement([]))
+  ]
+end
+
 fn gen_guarded_constructor_arm_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
@@ -460,6 +600,10 @@ fn gen_guarded_constructor_arm_statements(
 ) -> [Shared<CppStatement>] = do
   if constructor_subpatterns_use_cyclic_option(constructor_name, sub_patterns, context) then
     return cyclic_option_constructor_arm_statements(
+      arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
+  end
+  if constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context) then
+    return cyclic_array_constructor_arm_statements(
       arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
   end
   const qualified_name = context.resolve(constructor_name)

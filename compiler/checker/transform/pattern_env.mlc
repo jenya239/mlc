@@ -1,5 +1,5 @@
 import { Pattern } from '../../frontend/ast'
-import { Type, TypeRegistry, TNamed, TGeneric } from '../registry'
+import { Type, TypeRegistry, TNamed, TGeneric, TArray, TUnknown } from '../registry'
 import { substitute_type } from '../semantic_type_structure'
 import { substitution_from_generic } from '../substitution'
 
@@ -7,6 +7,23 @@ type Constructor_pattern_environment_fold_state = Constructor_pattern_environmen
   environment:                             Map<string, Shared<Type>>,
   next_constructor_subpattern_index: i32,
 }
+
+fn array_pattern_element_type(type_value: Shared<Type>) -> Shared<Type> =
+  match type_value {
+    TArray(element_type) => element_type,
+    _ => Shared.new(TUnknown)
+  }
+
+fn environment_after_array_pattern_elements(
+  type_environment: Map<string, Shared<Type>>,
+  element_patterns: [Shared<Pattern>],
+  element_type: Shared<Type>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> =
+  element_patterns.fold(
+    type_environment,
+    (environment, element_pattern) =>
+      env_for_pattern_with_type(environment, element_pattern, element_type, registry))
 
 fn semantic_type_nominal_name(type_value: Shared<Type>) -> string =
   match type_value {
@@ -43,6 +60,9 @@ export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>,
       environment_after_all_constructor_subpatterns(
         type_environment, sub_patterns, parameter_types, substitution, registry)
     end,
+    PatternArray(element_patterns, _, _) =>
+      environment_after_array_pattern_elements(
+        type_environment, element_patterns, array_pattern_element_type(type_value), registry),
     _ => env_for_pattern(type_environment, pattern, registry)
   }
 end
