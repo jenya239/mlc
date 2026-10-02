@@ -358,6 +358,26 @@ fn constructor_subpatterns_are_name_bindings(sub_patterns: [Shared<Pattern>]) ->
   names_only
 end
 
+fn array_pattern_elements_are_simple(element_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut simple = true
+  while index < element_patterns.length() do
+    match element_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if sub_patterns.length() != 0 then do
+          simple = false
+        end
+        end
+      end,
+      _ => do simple = false end
+    }
+    index = index + 1
+  end
+  simple
+end
+
 fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>]) -> bool = do
   let mut index = 0
   let mut supported = true
@@ -367,6 +387,13 @@ fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>])
       PatternWild(_) => do end,
       PatternCtor(_, inner_patterns, _) => do
         if constructor_subpatterns_are_supported_fields(inner_patterns) then do end
+        else do
+          supported = false
+        end
+        end
+      end,
+      PatternArray(element_patterns, _, _) => do
+        if array_pattern_elements_are_simple(element_patterns) then do end
         else do
           supported = false
         end
@@ -426,9 +453,30 @@ end
 fn pattern_is_cyclic_array_nested(pattern: Shared<Pattern>, context: CodegenContext) -> bool =
   match pattern {
     PatternCtor(constructor_name, sub_patterns, _) =>
-      constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context),
+      constructor_contains_cyclic_array(constructor_name, sub_patterns, context),
     _ => false
   }
+
+fn constructor_contains_cyclic_array(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  if constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context) then
+    true
+  else do
+    let mut index = 0
+    let mut found = false
+    while index < sub_patterns.length() do
+      if pattern_is_cyclic_array_nested(sub_patterns[index], context) then
+        found = true
+      end
+      index = index + 1
+    end
+    found
+  end
+  end
+end
 
 export fn arms_have_cyclic_array_nested_pattern(
   arms: [Shared<SemanticMatchArm>],
@@ -979,6 +1027,133 @@ fn statements_after_constructor(
   end
 end
 
+fn cyclic_array_pattern_field_indexes(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> [i32] = do
+  let mut indexes: [i32] = []
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      match sub_patterns[index] {
+        PatternArray(element_patterns, _, _) => do
+          if array_pattern_elements_are_simple(element_patterns) then do
+            indexes.push(index)
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  indexes
+end
+
+fn context_with_cyclic_array_pattern_bindings(
+  arm_context: CodegenContext,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> CodegenContext = do
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      match sub_patterns[index] {
+        PatternArray(element_patterns, rest_name, _) => do
+          if array_pattern_elements_are_simple(element_patterns) then do
+            let mut element_index = 0
+            while element_index < element_patterns.length() do
+              match element_patterns[element_index] {
+                PatternIdent(binding_name, _) => do
+                  bound_context = bound_context.add_value(binding_name)
+                end,
+                _ => do end
+              }
+              element_index = element_index + 1
+            end
+            if rest_name != '' then
+              bound_context = bound_context.add_value(rest_name)
+            end
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  bound_context
+end
+
+fn cyclic_array_pattern_if_statement(
+  element_patterns: [Shared<Pattern>],
+  rest_name: string,
+  sum_name: string,
+  array_access: string,
+  continuation: [Shared<CppStatement>],
+  context: CodegenContext
+) -> Shared<CppStatement> = do
+  const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
+  let mut condition_text = array_access + '.size()' + size_comparison + element_patterns.length().to_string()
+  let mut inner_statements: [Shared<CppStatement>] = []
+  let mut element_index = 0
+  while element_index < element_patterns.length() do
+    match element_patterns[element_index] {
+      PatternIdent(binding_name, _) => do
+        inner_statements.push(emit_helpers.make_fragment_cpp_statement(
+          'const auto& ' + cpp_safe(binding_name) + ' = (*' + array_access + "[" + element_index.to_string() + "]); "))
+      end,
+      PatternCtor(inner_name, _, _) => do
+        condition_text = condition_text + ' && std::holds_alternative<' + context.resolve(inner_name) + '>((*' + array_access + "[" + element_index.to_string() + "])._)"
+      end,
+      _ => do end
+    }
+    element_index = element_index + 1
+  end
+  if rest_name != '' then
+    inner_statements.push(emit_helpers.make_fragment_cpp_statement(
+      'const auto ' + cpp_safe(rest_name) + ' = mlc::Array<std::shared_ptr<' + sum_name + '>>(' + array_access + '.cbegin() + ' + element_patterns.length().to_string() + ', ' + array_access + '.cend()); '))
+  end
+  inner_statements = append_cpp_statements(inner_statements, continuation)
+  emit_helpers.make_if_cpp_statement(
+    emit_helpers.make_identifier_cpp_expression(condition_text),
+    emit_helpers.make_block_cpp_statement(inner_statements),
+    emit_helpers.make_block_cpp_statement([]))
+end
+
+fn statements_inside_cyclic_array_fields(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  continuation: [Shared<CppStatement>],
+  context: CodegenContext
+) -> [Shared<CppStatement>] = do
+  const field_indexes = cyclic_array_pattern_field_indexes(constructor_name, sub_patterns, context)
+  let mut wrapped = continuation
+  let mut cursor = field_indexes.length()
+  while cursor > 0 do
+    cursor = cursor - 1
+    const field_index = field_indexes[cursor]
+    match sub_patterns[field_index] {
+      PatternArray(element_patterns, rest_name, _) => do
+        const array_if = cyclic_array_pattern_if_statement(
+          element_patterns,
+          rest_name,
+          cyclic_array_field_sum_name_at(constructor_name, field_index, context),
+          lower_name + "." + constructor_field_member_name(context, constructor_name, field_index),
+          wrapped,
+          context)
+        wrapped = [array_if]
+      end,
+      _ => do end
+    }
+  end
+  wrapped
+end
+
 fn constructor_inner_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
@@ -1004,6 +1179,9 @@ fn constructor_inner_statements(
   const nested_indexes = boxed_nested_constructor_indexes(constructor_name, sub_patterns, context)
   const bound_fields = constructor_field_ident_statements(
     constructor_name, sub_patterns, lower_name, nested_indexes, arm_context, context)
+  const pattern_context = context_with_cyclic_array_pattern_bindings(
+    bound_fields.arm_context, constructor_name, sub_patterns, context)
+  let mut continuation: [Shared<CppStatement>] = []
   if nested_indexes.length() > 0 then do
     let mut saved_stack = resume_stack
     if outer_cursor < outer_indexes.length() then do
@@ -1016,88 +1194,84 @@ fn constructor_inner_statements(
       })
     end
     end
-    append_cpp_statements(
-      bound_fields.field_binding_statements,
-      nested_constructor_field_if(
-        arm,
-        constructor_name,
-        sub_patterns,
-        lower_name,
-        nested_indexes[0],
-        nested_indexes,
-        1,
-        saved_stack,
-        element_patterns,
-        payload_indexes,
-        payload_cursor,
-        array_access,
-        subject,
-        use_void,
-        bound_fields.arm_context,
-        context,
-        gen_stmts,
-        eval_expr_fn))
-  end else if outer_cursor < outer_indexes.length() then
-    append_cpp_statements(
-      bound_fields.field_binding_statements,
-      nested_constructor_field_if(
-        arm,
-        outer_name,
-        outer_patterns,
-        outer_lower_name,
-        outer_indexes[outer_cursor],
-        outer_indexes,
-        outer_cursor + 1,
-        resume_stack,
-        element_patterns,
-        payload_indexes,
-        payload_cursor,
-        array_access,
-        subject,
-        use_void,
-        bound_fields.arm_context,
-        context,
-        gen_stmts,
-        eval_expr_fn))
-  else if resume_stack.length() > 0 then do
+    continuation = nested_constructor_field_if(
+      arm,
+      constructor_name,
+      sub_patterns,
+      lower_name,
+      nested_indexes[0],
+      nested_indexes,
+      1,
+      saved_stack,
+      element_patterns,
+      payload_indexes,
+      payload_cursor,
+      array_access,
+      subject,
+      use_void,
+      pattern_context,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+  end else if outer_cursor < outer_indexes.length() then do
+    continuation = nested_constructor_field_if(
+      arm,
+      outer_name,
+      outer_patterns,
+      outer_lower_name,
+      outer_indexes[outer_cursor],
+      outer_indexes,
+      outer_cursor + 1,
+      resume_stack,
+      element_patterns,
+      payload_indexes,
+      payload_cursor,
+      array_access,
+      subject,
+      use_void,
+      pattern_context,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+  end else if resume_stack.length() > 0 then do
     const frame = resume_stack[resume_stack.length() - 1]
-    append_cpp_statements(
-      bound_fields.field_binding_statements,
-      nested_constructor_field_if(
-        arm,
-        frame.constructor_name,
-        frame.patterns,
-        frame.lower_name,
-        frame.indexes[frame.cursor],
-        frame.indexes,
-        frame.cursor + 1,
-        resume_stack_without_last(resume_stack),
-        element_patterns,
-        payload_indexes,
-        payload_cursor,
-        array_access,
-        subject,
-        use_void,
-        bound_fields.arm_context,
-        context,
-        gen_stmts,
-        eval_expr_fn))
-  end else
-    append_cpp_statements(
-      bound_fields.field_binding_statements,
-      statements_after_constructor(
-        arm,
-        use_void,
-        bound_fields.arm_context,
-        element_patterns,
-        payload_indexes,
-        payload_cursor,
-        array_access,
-        subject,
-        context,
-        gen_stmts,
-        eval_expr_fn))
+    continuation = nested_constructor_field_if(
+      arm,
+      frame.constructor_name,
+      frame.patterns,
+      frame.lower_name,
+      frame.indexes[frame.cursor],
+      frame.indexes,
+      frame.cursor + 1,
+      resume_stack_without_last(resume_stack),
+      element_patterns,
+      payload_indexes,
+      payload_cursor,
+      array_access,
+      subject,
+      use_void,
+      pattern_context,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+  end else do
+    continuation = statements_after_constructor(
+      arm,
+      use_void,
+      pattern_context,
+      element_patterns,
+      payload_indexes,
+      payload_cursor,
+      array_access,
+      subject,
+      context,
+      gen_stmts,
+      eval_expr_fn)
   end
+  end
+  const wrapped_continuation = statements_inside_cyclic_array_fields(
+    constructor_name, sub_patterns, lower_name, continuation, context)
+  append_cpp_statements(bound_fields.field_binding_statements, wrapped_continuation)
 end
 
 fn gen_boxed_nested_constructor_arm_statements(

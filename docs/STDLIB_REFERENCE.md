@@ -558,8 +558,11 @@ A nested constructor in that prefix, `Kids([Node(Node(left, _), _), ...rest])`,
 binds `left` the same way. `Kids([Node(Node(left, _), _), Node(Node(right, _), _)])`
 binds both `left` and `right` as the sum (`*field`).
 `Kids([Node(Node(left, _), Node(mid, _)), Node(right, _)])` binds `left`,
-`mid`, and `right` as the sum (`*field`). An array element of a cyclic sum
-is the sum.
+`mid`, and `right` as the sum (`*field`). `Node(Kids([child]), _)` binds
+`child` as the sum (`*element`). `Node(Kids([child, ...rest]), _)` binds
+`child` as the sum and `rest` as the remaining `[Tree]`.
+`Node(Kids([child]), Node(right, _))` binds both as the sum. An array
+element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
