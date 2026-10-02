@@ -4,9 +4,9 @@
 // wrap eval_expr_cpp_fn through print_expr into a string-producing closure
 // and feed it into the same builder as the string-flavor callers).
 
-import { Pattern, PatternWild, PatternStr, PatternStringLit } from '../../frontend/ast'
+import { Pattern, PatternWild, PatternStr, PatternStringLit, PatternCtor, PatternIdent } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
-import { CodegenContext, lookup_ctor_type_info_for_context } from '../context'
+import { CodegenContext, lookup_ctor_type_info_for_context, lookup_fields_for_context } from '../context'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { list_contains } from '../decl/decl_index'
 import { pattern_binding_name_list, first_arm_needs_deref, cyclic_sum_subject_member_suffix } from './match_analysis'
@@ -269,6 +269,159 @@ fn constructor_payload_binding_statement(
   end
 end
 
+fn cyclic_option_field_sum_name_at(
+  constructor_name: string,
+  field_index: i32,
+  context: CodegenContext
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if field_index < constructor_info.cyclic_option_field_names.length() then
+    constructor_info.cyclic_option_field_names[field_index]
+  else ''
+  end
+end
+
+fn subpattern_is_constructor(sub_pattern: Shared<Pattern>) -> bool =
+  match sub_pattern {
+    PatternCtor(_, _, _) => true,
+    _ => false
+  }
+
+fn constructor_subpatterns_use_cyclic_option(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < sub_patterns.length() do
+    if subpattern_is_constructor(sub_patterns[index]) &&
+        cyclic_option_field_sum_name_at(constructor_name, index, context) != '' then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn pattern_is_cyclic_option_nested_constructor(pattern: Shared<Pattern>, context: CodegenContext) -> bool =
+  match pattern {
+    PatternCtor(constructor_name, sub_patterns, _) =>
+      constructor_subpatterns_use_cyclic_option(constructor_name, sub_patterns, context),
+    _ => false
+  }
+
+export fn arms_have_cyclic_option_nested_constructor(
+  arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext
+) -> bool =
+  arms.any(arm => pattern_is_cyclic_option_nested_constructor(arm.pattern, context))
+
+fn constructor_field_member_name(context: CodegenContext, constructor_name: string, field_index: i32) -> string = do
+  const field_names = lookup_fields_for_context(context, constructor_name)
+  if field_index < field_names.length() && field_names[field_index] != '' then
+    cpp_safe(field_names[field_index])
+  else
+    'field' + field_index.to_string()
+  end
+end
+
+fn cyclic_option_nested_inner_statements(
+  sub_pattern: Shared<Pattern>,
+  option_access: string,
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  let mut arm_context = context
+  let mut statements: [Shared<CppStatement>] = []
+  match sub_pattern {
+    PatternCtor(constructor_name, inner_patterns, _) =>
+      if constructor_name == 'Some' && inner_patterns.length() == 1 then
+        match inner_patterns[0] {
+          PatternIdent(binding_name, _) => do
+            arm_context = arm_context.add_value(binding_name)
+            statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = *(*' + option_access + '); '))
+          end,
+          _ => do end
+        }
+      end,
+    _ => do end
+  }
+  append_cpp_statements(
+    statements,
+    guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
+end
+
+fn cyclic_option_nested_if_statement(
+  sub_pattern: Shared<Pattern>,
+  option_access: string,
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> Shared<CppStatement> = do
+  const is_some = match sub_pattern {
+    PatternCtor(constructor_name, _, _) => constructor_name == 'Some',
+    _ => false
+  }
+  const condition =
+    if is_some then "(" + option_access + '.has_value() && *' + option_access + ")"
+    else "!" + option_access + '.has_value()'
+    end
+  emit_helpers.make_if_cpp_statement(
+    emit_helpers.make_identifier_cpp_expression(condition),
+    emit_helpers.make_block_cpp_statement(cyclic_option_nested_inner_statements(
+      sub_pattern, option_access, arm, use_void, context, gen_stmts, eval_expr_fn)),
+    emit_helpers.make_block_cpp_statement([]))
+end
+
+fn cyclic_option_constructor_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  variant_access_expression: string,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const qualified_name = context.resolve(constructor_name)
+  const lower_name = cpp_safe(lower_first(constructor_name))
+  const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_type_name = qualified_name + type_argument
+  let mut then_statements: [Shared<CppStatement>] = []
+  then_statements.push(
+    variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if subpattern_is_constructor(sub_patterns[index]) &&
+        cyclic_option_field_sum_name_at(constructor_name, index, context) != '' then
+      const member_name = constructor_field_member_name(context, constructor_name, index)
+      then_statements.push(cyclic_option_nested_if_statement(
+        sub_patterns[index],
+        lower_name + "." + member_name,
+        arm,
+        use_void,
+        context,
+        gen_stmts,
+        eval_expr_fn))
+    end
+    index = index + 1
+  end
+  [
+    emit_helpers.make_if_cpp_statement(
+      variant_holds_alternative_expression(variant_type_name, variant_access_expression),
+      emit_helpers.make_block_cpp_statement(then_statements),
+      emit_helpers.make_block_cpp_statement([]))
+  ]
+end
+
 fn gen_guarded_constructor_arm_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
@@ -280,6 +433,10 @@ fn gen_guarded_constructor_arm_statements(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
 ) -> [Shared<CppStatement>] = do
+  if constructor_subpatterns_use_cyclic_option(constructor_name, sub_patterns, context) then
+    return cyclic_option_constructor_arm_statements(
+      arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
+  end
   const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)

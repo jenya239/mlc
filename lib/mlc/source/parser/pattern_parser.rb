@@ -332,9 +332,7 @@ module MLC
           fields = []
 
           while current.type != end_token
-            # Check for nested constructor pattern (uppercase identifier followed by parentheses)
-            if current.type == :IDENTIFIER && peek_type == :LPAREN && current.value[0] == current.value[0].upcase
-              # Nested constructor pattern - recursively parse
+            if current.type == :IDENTIFIER && current.value.match?(/\A[A-Z]/)
               fields << parse_pattern
             elsif current.type == :IDENTIFIER
               # Simple variable binding

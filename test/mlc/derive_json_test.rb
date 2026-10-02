@@ -959,6 +959,40 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_option_match", checker, link_user_translation: true)
   end
 
+  def test_nested_some_on_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Option<Tree>) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_) => 2
+        | Kids(_) => 3
+      fn nested(tree: Tree) -> i32 = match tree
+        | Node(Some(child)) => label(child)
+        | Node(None) => 0
+        | Leaf => 4
+        | Kids(_) => 5
+      fn present() -> Tree = Node(Some(Leaf))
+      fn missing() -> Tree = Node(None)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "has_value()"
+    assert_includes ruby_source, "*(*"
+    refute_includes ruby_source, "holds_alternative<Some>"
+    refute_includes ruby_source, "auto [None]"
+
+    checker = <<~CPP
+      int main() {
+        if (nested(present()) != 1) return 1;
+        if (nested(missing()) != 0) return 2;
+        if (nested(Tree(Leaf{})) != 4) return 3;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_nested_some", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

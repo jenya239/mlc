@@ -1,16 +1,48 @@
 import { Pattern } from '../../frontend/ast'
-import { Type, TypeRegistry } from '../registry'
+import { Type, TypeRegistry, TNamed, TGeneric } from '../registry'
 import { substitute_type } from '../semantic_type_structure'
+import { substitution_from_generic } from '../substitution'
 
 type Constructor_pattern_environment_fold_state = Constructor_pattern_environment_fold_state {
   environment:                             Map<string, Shared<Type>>,
   next_constructor_subpattern_index: i32,
 }
 
+fn semantic_type_nominal_name(type_value: Shared<Type>) -> string =
+  match type_value {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    _ => ''
+  }
+
+fn substitution_for_constructor_scrutinee(
+  constructor_name: string,
+  scrutinee_type: Shared<Type>,
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  const empty_substitution: Map<string, Shared<Type>> = Map.new()
+  if !registry.has_ctor(constructor_name) then empty_substitution
+  else do
+    const constructor_type_name = semantic_type_nominal_name(registry.ctor_type(constructor_name))
+    const scrutinee_type_name = semantic_type_nominal_name(scrutinee_type)
+    if constructor_type_name != '' && constructor_type_name == scrutinee_type_name then
+      substitution_from_generic(scrutinee_type, registry)
+    else empty_substitution
+    end
+  end
+  end
+end
+
 export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>, pattern: Shared<Pattern>, type_value: Shared<Type>, registry: TypeRegistry) -> Map<string, Shared<Type>> = do
   match pattern {
     PatternIdent(binding_name, _) => do let environment = type_environment; environment.set(binding_name, type_value); environment end,
     PatternOr(alts, _) => if alts.length() > 0 then env_for_pattern_with_type(type_environment, alts[0], type_value, registry) else type_environment end,
+    PatternCtor(constructor_name, sub_patterns, _) => do
+      const parameter_types = registry.ctor_params_for(constructor_name)
+      const substitution = substitution_for_constructor_scrutinee(constructor_name, type_value, registry)
+      environment_after_all_constructor_subpatterns(
+        type_environment, sub_patterns, parameter_types, substitution, registry)
+    end,
     _ => env_for_pattern(type_environment, pattern, registry)
   }
 end

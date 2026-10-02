@@ -44,7 +44,9 @@ import { generic_ctor_type_argument } from './match_generic_ctor_type'
 import {
   match_visit_uses_void_lambdas,
   gen_match_guarded_expression,
-  gen_match_string_literal_expression
+  gen_match_guarded_expression_cpp,
+  gen_match_string_literal_expression,
+  arms_have_cyclic_option_nested_constructor
 } from './match_guarded_gen'
 
 fn gen_arm_wild_like_body(
@@ -383,6 +385,10 @@ export fn gen_match_std_visit_cpp(
 ) -> Shared<CppExpression> = do
   if cyclic_option_sum_cpp_name(context, sexpr_type(subject)) != '' then
     return gen_cyclic_option_match_cpp(
+      subject, expanded_arms, match_result_type, context, gen_stmts, eval_expr_cpp_fn)
+  end
+  if arms_have_cyclic_option_nested_constructor(expanded_arms, context) then
+    return gen_match_guarded_expression_cpp(
       subject, expanded_arms, match_result_type, context, gen_stmts, eval_expr_cpp_fn)
   end
   const visit_void = match_visit_uses_void_lambdas(match_result_type)

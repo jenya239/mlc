@@ -604,7 +604,7 @@ module MLC
                 end
               end
 
-              if context.cyclic_option_sum_name(scrutinee_type)
+              if context.cyclic_option_sum_name(scrutinee_type) || cyclic_option_nested_match?(match_expr)
                 statements << context.factory.raw_statement(code: "std::abort();")
               end
 
@@ -695,10 +695,15 @@ module MLC
 
                 nested_temp_var = "_nested_#{temp_var_counter}"
                 temp_var_counter += 1
-                boxed_child = cyclic_boxed_indexes(case_name).include?(index)
-
-                binding_decls << nested_binding_extract(case_name, bindings, temp_var, nested_temp_var, index)
-                nested_checks << build_nested_pattern_check(binding, nested_temp_var, boxed_child)
+                if cyclic_option_field_sum_name(case_name, index)
+                  member_name = payload_member_name(cyclic_variant_fields(case_name), index)
+                  binding_decls << "auto #{nested_temp_var} = #{temp_var}.#{member_name};"
+                  nested_checks << build_cyclic_option_nested_check(binding, nested_temp_var)
+                else
+                  boxed_child = cyclic_boxed_indexes(case_name).include?(index)
+                  binding_decls << nested_binding_extract(case_name, bindings, temp_var, nested_temp_var, index)
+                  nested_checks << build_nested_pattern_check(binding, nested_temp_var, boxed_child)
+                end
               end
 
               [binding_decls, nested_checks]
@@ -823,6 +828,53 @@ module MLC
               end
 
               decls
+            end
+
+            def cyclic_option_nested_match?(match_expr)
+              match_expr.arms.any? do |arm|
+                pattern = arm[:pattern]
+                next false unless pattern[:kind] == :constructor
+
+                bindings = pattern[:bindings] || pattern[:fields] || []
+                bindings.each_with_index.any? do |binding, index|
+                  binding.is_a?(Hash) && binding[:kind] == :constructor &&
+                    cyclic_option_field_sum_name(pattern[:name], index)
+                end
+              end
+            end
+
+            def cyclic_option_field_sum_name(constructor_name, index)
+              fields = cyclic_variant_fields(constructor_name)
+              return nil unless fields && fields[index]
+
+              field_type = fields[index][:type]
+              return nil unless field_type.is_a?(MLC::SemanticIR::GenericType)
+
+              base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
+              return nil unless base == "Option" && field_type.type_args&.length == 1
+
+              argument = field_type.type_args.first
+              return nil unless argument.is_a?(MLC::SemanticIR::Type) &&
+                                !argument.is_a?(MLC::SemanticIR::GenericType) &&
+                                !argument.is_a?(MLC::SemanticIR::ArrayType) &&
+                                Array(context.cyclic_sum_types).include?(argument.name)
+
+              argument.name
+            end
+
+            def build_cyclic_option_nested_check(pattern, scrutinee_var)
+              case_name = pattern[:name]
+              bindings = pattern[:bindings] || pattern[:fields] || []
+              if case_name == "Some"
+                binding_text = bindings.filter_map { |binding|
+                  next if binding == "_" || binding.is_a?(Hash)
+
+                  "const auto& #{binding} = *(*#{scrutinee_var});"
+                }.join(" ")
+                { condition: "(#{scrutinee_var}.has_value() && *#{scrutinee_var})", bindings: binding_text }
+              else
+                { condition: "!#{scrutinee_var}.has_value()", bindings: "" }
+              end
             end
 
             def cyclic_variant_fields(constructor_name)
