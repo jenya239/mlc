@@ -997,21 +997,8 @@ module MLC
               cyclic_array_constructor_pattern?(element)
             end
 
-            def cyclic_array_name_constructor?(element)
-              return false unless element.is_a?(Hash) && element[:kind] == :constructor
-
-              fields = element[:fields] || element[:bindings] || []
-              return false if fields.empty?
-
-              fields.all? { |field| cyclic_array_name_element?(field) }
-            end
-
             def cyclic_array_pattern_simple?(pattern)
               elements = Array(pattern[:elements])
-              field_constructors = elements.select { |element| cyclic_array_field_constructor?(element) }
-              nested_field_constructors = field_constructors.reject { |element| cyclic_array_name_constructor?(element) }
-              return false if nested_field_constructors.any? && field_constructors.length > 1
-
               elements.all? { |element|
                 cyclic_array_name_element?(element) ||
                   cyclic_array_nullary_constructor?(element) ||
