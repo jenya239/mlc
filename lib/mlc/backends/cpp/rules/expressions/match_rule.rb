@@ -632,8 +632,17 @@ module MLC
               )
             end
 
+            def next_variant_binding_name(case_name)
+              @variant_binding_counts ||= Hash.new(0)
+              @variant_binding_counts[case_name] += 1
+              count = @variant_binding_counts[case_name]
+              base_name = "_v_#{case_name.downcase}"
+              count == 1 ? base_name : "#{base_name}_#{count}"
+            end
+
             # Build if statement for constructor pattern with optional guard
             def build_constructor_guard_arm(pattern, guard, arm_body_code, scrutinee_src, scrutinee_type = nil)
+              @variant_binding_counts = Hash.new(0)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
 
@@ -685,7 +694,7 @@ module MLC
               temp_var_counter = 0
               qcase = qualified_case_name(case_name, scrutinee_type)
 
-              temp_var = "_v_#{case_name.downcase}"
+              temp_var = next_variant_binding_name(case_name)
               binding_decls << "auto #{temp_var} = std::get<#{qcase}>(#{scrutinee_src});"
 
               non_wildcard_bindings = bindings.reject { |binding|
