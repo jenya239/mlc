@@ -588,7 +588,9 @@ and `child` as the sum and `rest` as the remaining `[Tree]`.
 `Kids([Node(Kids([Node(Leaf, child)]), _)])` binds `child` as the sum
 (`*field`). Indexing the tail of
 `Kids([Node(Kids([Node(Kids([left]), _), ...rest]), _)])` reads the sum
-(`*rest[0]`). An array element of a cyclic sum is the sum.
+(`*rest[0]`). A guard on
+`Kids([Node(Kids([child]), _)]) if label(child) > 1` sees `child` as the
+sum. An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
