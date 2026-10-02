@@ -1508,6 +1508,47 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_two_nested", checker, link_user_translation: true)
   end
 
+  def test_nested_sibling_pair_and_array_constructor_inside_a_cyclic_array_read_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn sides(tree: Tree) -> i32 = match tree
+        | Kids([Node(Node(left, _), Node(mid, _)), Node(right, _)]) => label(left) + label(mid) + label(right)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn trio() -> Tree = Kids([Node(Node(Leaf, Leaf), Node(Kids([Leaf]), Leaf)), Node(Leaf, Leaf)])
+      fn one() -> Tree = Kids([Node(Node(Leaf, Leaf), Node(Kids([Leaf]), Leaf))])
+      fn shallow() -> Tree = Kids([Node(Node(Leaf, Leaf), Leaf), Node(Leaf, Leaf)])
+      fn leaves() -> Tree = Kids([Leaf, Leaf])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() == 2"
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[1])._)"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_1._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+
+    checker = <<~CPP
+      int main() {
+        if (sides(trio()) != 8) return 1;
+        if (sides(one()) != 3) return 2;
+        if (sides(shallow()) != 3) return 3;
+        if (sides(leaves()) != 3) return 4;
+        if (sides(Tree(Leaf{})) != 4) return 5;
+        if (sides(bare()) != 5) return 6;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_sibling_pair", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
