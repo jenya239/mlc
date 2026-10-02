@@ -1294,6 +1294,52 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_deeper_node", checker, link_user_translation: true)
   end
 
+  def test_sibling_constructors_inside_a_cyclic_array_read_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn sides(tree: Tree) -> i32 = match tree
+        | Kids([Node(Node(left, _), Node(right, _))]) => label(left) + label(right)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn deep_sides(tree: Tree) -> i32 = match tree
+        | Kids([Node(Node(Node(left, _), _), Node(right, _))]) => label(left) + label(right)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn pair() -> Tree = Kids([Node(Node(Leaf, Leaf), Node(Kids([Leaf]), Leaf))])
+      fn side() -> Tree = Kids([Node(Node(Leaf, Leaf), Leaf)])
+      fn deep_pair() -> Tree = Kids([Node(Node(Node(Leaf, Leaf), Leaf), Node(Kids([Leaf]), Leaf))])
+      fn deep_side() -> Tree = Kids([Node(Node(Node(Leaf, Leaf), Leaf), Leaf)])
+      fn other() -> Tree = Kids([Leaf])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_1._)"
+
+    checker = <<~CPP
+      int main() {
+        if (sides(pair()) != 7) return 1;
+        if (sides(side()) != 3) return 2;
+        if (sides(other()) != 3) return 3;
+        if (sides(Tree(Leaf{})) != 4) return 4;
+        if (sides(bare()) != 5) return 5;
+        if (deep_sides(deep_pair()) != 7) return 6;
+        if (deep_sides(deep_side()) != 3) return 7;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_sibling_node", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

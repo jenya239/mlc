@@ -215,6 +215,14 @@ type RecordFieldBindCppResult = RecordFieldBindCppResult {
   arm_context: CodegenContext
 }
 
+type NestedMatchResume = NestedMatchResume {
+  constructor_name: string,
+  lower_name: string,
+  cursor: i32,
+  indexes: [i32],
+  patterns: [Shared<Pattern>]
+}
+
 fn record_field_binding_cpp_result(
   constructor_name: string,
   field_patterns: [Shared<Pattern>],
@@ -353,15 +361,13 @@ end
 fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>]) -> bool = do
   let mut index = 0
   let mut supported = true
-  let mut nested_constructor_count = 0
   while index < sub_patterns.length() do
     match sub_patterns[index] {
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
       PatternCtor(_, inner_patterns, _) => do
-        if constructor_subpatterns_are_supported_fields(inner_patterns) then do
-          nested_constructor_count = nested_constructor_count + 1
-        end else do
+        if constructor_subpatterns_are_supported_fields(inner_patterns) then do end
+        else do
           supported = false
         end
         end
@@ -370,7 +376,7 @@ fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>])
     }
     index = index + 1
   end
-  supported && nested_constructor_count <= 1
+  supported
 end
 
 fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
@@ -691,22 +697,20 @@ fn cyclic_array_constructor_arm_statements(
   ]
 end
 
-fn first_boxed_nested_constructor_index(
+fn boxed_nested_constructor_indexes(
   constructor_name: string,
   sub_patterns: [Shared<Pattern>],
   context: CodegenContext
-) -> i32 = do
+) -> [i32] = do
   const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut indexes: [i32] = []
   let mut index = 0
-  let mut found = -1
-  let mut count = 0
   while index < sub_patterns.length() do
     match sub_patterns[index] {
       PatternCtor(_, inner_patterns, _) => do
         if constructor_subpatterns_are_supported_fields(inner_patterns) &&
             constructor_info.boxed_positions.contains(index) then do
-          found = index
-          count = count + 1
+          indexes.push(index)
         end
         end
       end,
@@ -714,14 +718,217 @@ fn first_boxed_nested_constructor_index(
     }
     index = index + 1
   end
-  if count == 1 then found else -1 end
+  indexes
+end
+
+fn constructor_field_ident_statements(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  nested_indexes: [i32],
+  arm_context: CodegenContext,
+  context: CodegenContext
+) -> RecordFieldBindCppResult = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut field_binding_statements: [Shared<CppStatement>] = []
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if nested_indexes.contains(index) == false then
+      match sub_patterns[index] {
+        PatternIdent(binding_name, _) => do
+          bound_context = bound_context.add_value(binding_name)
+          const member_name = constructor_field_member_name(context, constructor_name, index)
+          if constructor_info.boxed_positions.contains(index) then do
+            field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = (*' + lower_name + "." + member_name + "); "))
+          end
+          end
+          if constructor_info.boxed_positions.contains(index) == false then do
+            field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = ' + lower_name + "." + member_name + "; "))
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  RecordFieldBindCppResult {
+    field_binding_statements: field_binding_statements,
+    arm_context: bound_context
+  }
+end
+
+fn resume_stack_without_last(resume_stack: [NestedMatchResume]) -> [NestedMatchResume] = do
+  let mut kept: [NestedMatchResume] = []
+  let mut index = 0
+  while index + 1 < resume_stack.length() do
+    kept.push(resume_stack[index])
+    index = index + 1
+  end
+  kept
+end
+
+fn nested_constructor_field_if(
+  arm: Shared<SemanticMatchArm>,
+  parent_name: string,
+  parent_patterns: [Shared<Pattern>],
+  parent_lower_name: string,
+  field_index: i32,
+  next_indexes: [i32],
+  next_cursor: i32,
+  resume_stack: [NestedMatchResume],
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  let mut statements: [Shared<CppStatement>] = []
+  match parent_patterns[field_index] {
+    PatternCtor(inner_name, inner_patterns, _) => do
+      const member_name = constructor_field_member_name(context, parent_name, field_index)
+      const inner_sum_name = '__cyclic_inner_sum_' + field_index.to_string()
+      const qualified_name = context.resolve(inner_name)
+      const lower_name = parent_lower_name + "_" + field_index.to_string()
+      const type_argument = generic_ctor_type_argument(context, inner_name, subject)
+      const variant_type_name = qualified_name + type_argument
+      const variant_access = inner_sum_name + "._"
+      statements.push(emit_helpers.make_fragment_cpp_statement(
+        'const auto& ' + inner_sum_name + ' = (*' + parent_lower_name + "." + member_name + "); "))
+      let mut then_statements: [Shared<CppStatement>] = []
+      then_statements.push(
+        variant_get_const_ref_statement(variant_type_name, lower_name, variant_access))
+      then_statements = append_cpp_statements(
+        then_statements,
+        constructor_inner_statements(
+          arm,
+          inner_name,
+          inner_patterns,
+          lower_name,
+          subject,
+          use_void,
+          arm_context,
+          parent_name,
+          parent_patterns,
+          parent_lower_name,
+          next_indexes,
+          next_cursor,
+          resume_stack,
+          context,
+          gen_stmts,
+          eval_expr_fn))
+      statements.push(emit_helpers.make_if_cpp_statement(
+        variant_holds_alternative_expression(variant_type_name, variant_access),
+        emit_helpers.make_block_cpp_statement(then_statements),
+        emit_helpers.make_block_cpp_statement([])))
+    end,
+    _ => do end
+  }
+  statements
+end
+
+fn constructor_inner_statements(
+  arm: Shared<SemanticMatchArm>,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  outer_name: string,
+  outer_patterns: [Shared<Pattern>],
+  outer_lower_name: string,
+  outer_indexes: [i32],
+  outer_cursor: i32,
+  resume_stack: [NestedMatchResume],
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const nested_indexes = boxed_nested_constructor_indexes(constructor_name, sub_patterns, context)
+  const bound_fields = constructor_field_ident_statements(
+    constructor_name, sub_patterns, lower_name, nested_indexes, arm_context, context)
+  if nested_indexes.length() > 0 then do
+    let mut saved_stack = resume_stack
+    if outer_cursor < outer_indexes.length() then do
+      saved_stack.push(NestedMatchResume {
+        constructor_name: outer_name,
+        lower_name: outer_lower_name,
+        cursor: outer_cursor,
+        indexes: outer_indexes,
+        patterns: outer_patterns
+      })
+    end
+    end
+    append_cpp_statements(
+      bound_fields.field_binding_statements,
+      nested_constructor_field_if(
+        arm,
+        constructor_name,
+        sub_patterns,
+        lower_name,
+        nested_indexes[0],
+        nested_indexes,
+        1,
+        saved_stack,
+        subject,
+        use_void,
+        bound_fields.arm_context,
+        context,
+        gen_stmts,
+        eval_expr_fn))
+  end else if outer_cursor < outer_indexes.length() then
+    append_cpp_statements(
+      bound_fields.field_binding_statements,
+      nested_constructor_field_if(
+        arm,
+        outer_name,
+        outer_patterns,
+        outer_lower_name,
+        outer_indexes[outer_cursor],
+        outer_indexes,
+        outer_cursor + 1,
+        resume_stack,
+        subject,
+        use_void,
+        bound_fields.arm_context,
+        context,
+        gen_stmts,
+        eval_expr_fn))
+  else if resume_stack.length() > 0 then do
+    const frame = resume_stack[resume_stack.length() - 1]
+    append_cpp_statements(
+      bound_fields.field_binding_statements,
+      nested_constructor_field_if(
+        arm,
+        frame.constructor_name,
+        frame.patterns,
+        frame.lower_name,
+        frame.indexes[frame.cursor],
+        frame.indexes,
+        frame.cursor + 1,
+        resume_stack_without_last(resume_stack),
+        subject,
+        use_void,
+        bound_fields.arm_context,
+        context,
+        gen_stmts,
+        eval_expr_fn))
+  end else
+    append_cpp_statements(
+      bound_fields.field_binding_statements,
+      guarded_arm_tail_statements(arm, use_void, bound_fields.arm_context, gen_stmts, eval_expr_fn))
+  end
 end
 
 fn gen_boxed_nested_constructor_arm_statements(
   arm: Shared<SemanticMatchArm>,
   constructor_name: string,
   sub_patterns: [Shared<Pattern>],
-  nested_index: i32,
   variant_access_expression: string,
   subject: Shared<SemanticExpression>,
   use_void: bool,
@@ -733,54 +940,31 @@ fn gen_boxed_nested_constructor_arm_statements(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
   const variant_type_name = qualified_name + type_argument
-  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
-  let mut arm_context = context
   let mut then_statements: [Shared<CppStatement>] = []
+  const empty_patterns: [Shared<Pattern>] = []
+  const empty_indexes: [i32] = []
+  const empty_resume: [NestedMatchResume] = []
   then_statements.push(
     variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
-  let mut index = 0
-  while index < sub_patterns.length() do
-    if index != nested_index then
-      match sub_patterns[index] {
-        PatternIdent(binding_name, _) => do
-          arm_context = arm_context.add_value(binding_name)
-          const member_name = constructor_field_member_name(context, constructor_name, index)
-          if constructor_info.boxed_positions.contains(index) then do
-            then_statements.push(emit_helpers.make_fragment_cpp_statement(
-              'const auto& ' + cpp_safe(binding_name) + ' = (*' + lower_name + "." + member_name + "); "))
-          end
-          end
-          if constructor_info.boxed_positions.contains(index) == false then do
-            then_statements.push(emit_helpers.make_fragment_cpp_statement(
-              'const auto& ' + cpp_safe(binding_name) + ' = ' + lower_name + "." + member_name + "; "))
-          end
-          end
-        end,
-        _ => do end
-      }
-    end
-    index = index + 1
-  end
-  match sub_patterns[nested_index] {
-    PatternCtor(inner_name, inner_patterns, _) => do
-      const member_name = constructor_field_member_name(context, constructor_name, nested_index)
-      then_statements.push(emit_helpers.make_fragment_cpp_statement(
-        'const auto& __cyclic_inner_sum = (*' + lower_name + "." + member_name + "); "))
-      then_statements = append_cpp_statements(
-        then_statements,
-        gen_guarded_constructor_arm_statements(
-          arm,
-          inner_name,
-          inner_patterns,
-          '__cyclic_inner_sum._',
-          subject,
-          use_void,
-          arm_context,
-          gen_stmts,
-          eval_expr_fn))
-    end,
-    _ => do end
-  }
+  then_statements = append_cpp_statements(
+    then_statements,
+    constructor_inner_statements(
+      arm,
+      constructor_name,
+      sub_patterns,
+      lower_name,
+      subject,
+      use_void,
+      context,
+      '',
+      empty_patterns,
+      '',
+      empty_indexes,
+      0,
+      empty_resume,
+      context,
+      gen_stmts,
+      eval_expr_fn))
   const constructor_arm_result = [
     emit_helpers.make_if_cpp_statement(
       variant_holds_alternative_expression(variant_type_name, variant_access_expression),
@@ -809,10 +993,10 @@ fn gen_guarded_constructor_arm_statements(
     return cyclic_array_constructor_arm_statements(
       arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
   end
-  const nested_constructor_index = first_boxed_nested_constructor_index(constructor_name, sub_patterns, context)
-  if nested_constructor_index >= 0 then
+  const nested_constructor_indexes = boxed_nested_constructor_indexes(constructor_name, sub_patterns, context)
+  if nested_constructor_indexes.length() > 0 then
     return gen_boxed_nested_constructor_arm_statements(
-      arm, constructor_name, sub_patterns, nested_constructor_index, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
+      arm, constructor_name, sub_patterns, variant_access_expression, subject, use_void, context, gen_stmts, eval_expr_fn)
   end
   const qualified_name = context.resolve(constructor_name)
   const lower_name = cpp_safe(lower_first(constructor_name))

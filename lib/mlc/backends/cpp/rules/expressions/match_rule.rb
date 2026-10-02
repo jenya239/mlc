@@ -983,9 +983,6 @@ module MLC
               return false unless element.is_a?(Hash) && element[:kind] == :constructor
 
               fields = element[:fields] || element[:bindings] || []
-              nested_constructors = fields.count { |field| cyclic_array_constructor_pattern?(field) }
-              return false if nested_constructors > 1
-
               fields.all? { |field|
                 cyclic_array_name_element?(field) || cyclic_array_constructor_pattern?(field)
               }
