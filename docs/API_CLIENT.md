@@ -200,9 +200,11 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    sum (`*rest[0]`). A guard on
    `Kids([Node(Kids([child]), _)]) if label(child) > 1` sees `child` as
    the sum.    `Node(left, _) | Kids([Node(left, _)])` binds `left` as the
-   sum in both alternatives. `Kids([left]) | Node(left, _)` binds `left`
-   as the sum in both alternatives (`*element` and `*field`). An array
-   element of a cyclic sum is the sum.
+   sum in both alternatives.    `Kids([left]) | Node(left, _)` binds `left`
+   as the sum in both alternatives (`*element` and `*field`). A guard on
+   that arm, `Kids([left]) | Node(left, _) if label(left) > 1`, sees
+   `left` as the sum in both alternatives. An array element of a cyclic
+   sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
