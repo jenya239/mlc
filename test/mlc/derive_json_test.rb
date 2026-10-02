@@ -1179,6 +1179,44 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_leaf", checker, link_user_translation: true)
   end
 
+  def test_constructor_inside_a_cyclic_array_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn left_of(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _)]) => label(left)
+        | Kids([Leaf]) => 0
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn pair() -> Tree = Kids([Node(Leaf, Leaf)])
+      fn nested() -> Tree = Kids([Node(Kids([Leaf]), Leaf)])
+      fn leaf_kid() -> Tree = Kids([Leaf])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() == 1"
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "std::holds_alternative<Leaf>((*_v_kids.field0[0])._)"
+
+    checker = <<~CPP
+      int main() {
+        if (left_of(pair()) != 1) return 1;
+        if (left_of(nested()) != 6) return 2;
+        if (left_of(leaf_kid()) != 0) return 3;
+        if (left_of(Tree(Leaf{})) != 4) return 4;
+        if (left_of(bare()) != 5) return 5;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_node", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

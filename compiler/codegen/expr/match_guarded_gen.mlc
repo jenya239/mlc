@@ -329,21 +329,50 @@ fn cyclic_array_field_sum_name_at(
   end
 end
 
+fn pattern_is_name_binding(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternIdent(_, _) => true,
+    PatternWild(_) => true,
+    _ => false
+  }
+
+fn constructor_subpatterns_are_name_bindings(sub_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut names_only = true
+  while index < sub_patterns.length() do
+    if pattern_is_name_binding(sub_patterns[index]) then do end
+    else do
+      names_only = false
+    end
+    end
+    index = index + 1
+  end
+  names_only
+end
+
 fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
   let mut index = 0
   let mut bindings_only = true
+  let mut field_constructor_count = 0
   while index < element_patterns.length() do
     match element_patterns[index] {
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
       PatternCtor(_, sub_patterns, _) => do
-        if sub_patterns.length() != 0 then bindings_only = false end
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_name_bindings(sub_patterns) then do
+          field_constructor_count = field_constructor_count + 1
+        end
+        end
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_name_bindings(sub_patterns) == false then do
+          bindings_only = false
+        end
+        end
       end,
       _ => do bindings_only = false end
     }
     index = index + 1
   end
-  bindings_only
+  bindings_only && field_constructor_count <= 1
 end
 
 fn array_pattern_is_element_binding(pattern: Shared<Pattern>) -> bool =
@@ -519,6 +548,7 @@ fn cyclic_array_nested_if_statement(
   sum_name: string,
   array_access: string,
   arm: Shared<SemanticMatchArm>,
+  subject: Shared<SemanticExpression>,
   use_void: bool,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
@@ -528,6 +558,9 @@ fn cyclic_array_nested_if_statement(
   let mut inner_statements: [Shared<CppStatement>] = []
   const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
   let mut condition_text = array_access + '.size()' + size_comparison + element_patterns.length().to_string()
+  let mut payload_constructor = ''
+  let mut payload_patterns: [Shared<Pattern>] = []
+  let mut payload_index = 0
   let mut element_index = 0
   while element_index < element_patterns.length() do
     match element_patterns[element_index] {
@@ -537,8 +570,15 @@ fn cyclic_array_nested_if_statement(
           'const auto& ' + cpp_safe(binding_name) + ' = (*' + array_access + "[" + element_index.to_string() + "]); "))
       end,
       PatternCtor(constructor_name, sub_patterns, _) => do
-        if sub_patterns.length() == 0 then
+        if sub_patterns.length() == 0 then do
           condition_text = condition_text + ' && std::holds_alternative<' + context.resolve(constructor_name) + '>((*' + array_access + "[" + element_index.to_string() + "])._)"
+        end
+        end
+        if sub_patterns.length() != 0 then do
+          payload_constructor = constructor_name
+          payload_patterns = sub_patterns
+          payload_index = element_index
+        end
         end
       end,
       _ => do end
@@ -550,11 +590,33 @@ fn cyclic_array_nested_if_statement(
     inner_statements.push(emit_helpers.make_fragment_cpp_statement(
       'const auto ' + cpp_safe(rest_name) + ' = mlc::Array<std::shared_ptr<' + sum_name + '>>(' + array_access + '.cbegin() + ' + element_patterns.length().to_string() + ', ' + array_access + '.cend()); '))
   end
+  let mut then_statements = inner_statements
+  if payload_constructor != '' then do
+    then_statements.push(emit_helpers.make_fragment_cpp_statement(
+      'const auto& __cyclic_payload_sum = (*' + array_access + "[" + payload_index.to_string() + "])._; "))
+    then_statements = append_cpp_statements(
+      then_statements,
+      gen_guarded_constructor_arm_statements(
+        arm,
+        payload_constructor,
+        payload_patterns,
+        '__cyclic_payload_sum',
+        subject,
+        use_void,
+        arm_context,
+        gen_stmts,
+        eval_expr_fn))
+  end
+  end
+  if payload_constructor == '' then do
+    then_statements = append_cpp_statements(
+      then_statements,
+      guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
+  end
+  end
   emit_helpers.make_if_cpp_statement(
     emit_helpers.make_identifier_cpp_expression(condition_text),
-    emit_helpers.make_block_cpp_statement(append_cpp_statements(
-      inner_statements,
-      guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))),
+    emit_helpers.make_block_cpp_statement(then_statements),
     emit_helpers.make_block_cpp_statement([]))
 end
 
@@ -588,6 +650,7 @@ fn cyclic_array_constructor_arm_statements(
             cyclic_array_field_sum_name_at(constructor_name, index, context),
             lower_name + "." + constructor_field_member_name(context, constructor_name, index),
             arm,
+            subject,
             use_void,
             context,
             gen_stmts,

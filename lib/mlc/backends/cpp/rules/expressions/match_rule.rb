@@ -957,17 +957,37 @@ module MLC
               element.name
             end
 
-            def cyclic_array_element_simple?(element)
-              return true if element == "_" || (element.is_a?(Hash) && element[:kind] == :wildcard)
-              return true if element.is_a?(Hash) && element[:kind] == :var
+            def cyclic_array_name_element?(element)
+              return true if element == "_" || element.is_a?(String)
+              return false unless element.is_a?(Hash)
+
+              %i[wildcard var].include?(element[:kind])
+            end
+
+            def cyclic_array_nullary_constructor?(element)
+              return false unless element.is_a?(Hash) && element[:kind] == :constructor
+
+              (element[:fields] || element[:bindings] || []).empty?
+            end
+
+            def cyclic_array_field_constructor?(element)
               return false unless element.is_a?(Hash) && element[:kind] == :constructor
 
               fields = element[:fields] || element[:bindings] || []
-              fields.empty?
+              return false if fields.empty?
+
+              fields.all? { |field| cyclic_array_name_element?(field) }
             end
 
             def cyclic_array_pattern_simple?(pattern)
-              Array(pattern[:elements]).all? { |element| cyclic_array_element_simple?(element) }
+              elements = Array(pattern[:elements])
+              return false if elements.count { |element| cyclic_array_field_constructor?(element) } > 1
+
+              elements.all? { |element|
+                cyclic_array_name_element?(element) ||
+                  cyclic_array_nullary_constructor?(element) ||
+                  cyclic_array_field_constructor?(element)
+              }
             end
 
             def build_cyclic_array_pattern_check(pattern, scrutinee_var, sum_name)
@@ -983,15 +1003,29 @@ module MLC
                 binding_text = "#{binding_text} const auto #{rest_name} = mlc::Array<std::shared_ptr<#{sum_name}>>(#{scrutinee_var}.cbegin() + #{elements.length}, #{scrutinee_var}.cend());"
               end
               conditions = ["#{scrutinee_var}.size() #{size_operator} #{elements.length}"]
+              field_constructor = nil
+              field_constructor_index = nil
               elements.each_with_index do |element, index|
-                next unless element.is_a?(Hash) && element[:kind] == :constructor
-
-                fields = element[:fields] || element[:bindings] || []
-                next unless fields.empty?
-
-                conditions << "std::holds_alternative<#{element[:name]}>((*#{scrutinee_var}[#{index}])._)"
+                if cyclic_array_nullary_constructor?(element)
+                  conditions << "std::holds_alternative<#{element[:name]}>((*#{scrutinee_var}[#{index}])._)"
+                elsif cyclic_array_field_constructor?(element)
+                  field_constructor = element
+                  field_constructor_index = index
+                end
               end
-              { condition: conditions.join(" && "), bindings: binding_text }
+              check = { condition: conditions.join(" && "), bindings: binding_text }
+              if field_constructor
+                captured_bindings = binding_text
+                check[:bindings] = ""
+                check[:wrap] = lambda { |body|
+                  wrap_cyclic_payload_constructor(
+                    field_constructor,
+                    "(*#{scrutinee_var}[#{field_constructor_index}])._",
+                    "#{captured_bindings} #{body}"
+                  )
+                }
+              end
+              check
             end
 
             def cyclic_variant_fields(constructor_name)
