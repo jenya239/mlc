@@ -1420,6 +1420,54 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_nested_sibling", checker, link_user_translation: true)
   end
 
+  def test_constructor_and_rest_inside_a_cyclic_array_read_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _), ...rest]) => if rest.length() == 0 then label(left) else label(left) + label(rest[0]) end
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn deep(tree: Tree) -> i32 = match tree
+        | Kids([Node(Node(left, _), _), ...rest]) => if rest.length() == 0 then label(left) else label(rest[0]) end
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn pair() -> Tree = Kids([Node(Leaf, Leaf), Kids([Leaf])])
+      fn only() -> Tree = Kids([Node(Kids([Leaf]), Leaf)])
+      fn deep_pair() -> Tree = Kids([Node(Node(Leaf, Leaf), Leaf), Kids([Leaf])])
+      fn deep_only() -> Tree = Kids([Node(Node(Leaf, Leaf), Leaf)])
+      fn leaves() -> Tree = Kids([Leaf, Leaf])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() >= 1"
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>(_v_kids.field0.cbegin() + 1, _v_kids.field0.cend())"
+    assert_includes ruby_source, "(*rest[0])"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
+
+    checker = <<~CPP
+      int main() {
+        if (head(pair()) != 7) return 1;
+        if (head(only()) != 6) return 2;
+        if (head(leaves()) != 3) return 3;
+        if (head(Tree(Leaf{})) != 4) return 4;
+        if (head(bare()) != 5) return 5;
+        if (deep(deep_pair()) != 6) return 6;
+        if (deep(deep_only()) != 1) return 7;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_constructor_rest", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
