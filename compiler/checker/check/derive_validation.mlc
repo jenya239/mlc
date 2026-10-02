@@ -2,7 +2,7 @@
 
 import {
   TypeVariant, VarUnit, VarTuple, VarRecord, TypeExpr,
-  TyI32, TyBool, TyString, TyNamed, Diagnostic, diagnostic_error_with_code, diagnostics_append, Span
+  TyI32, TyBool, TyString, TyNamed, TyGeneric, TyArray, Diagnostic, diagnostic_error_with_code, diagnostics_append, Span
 } from '../../frontend/ast'
 import {
   diagnostic_code_e069, diagnostic_code_e070, diagnostic_code_e071, diagnostic_code_e072
@@ -20,6 +20,12 @@ fn derive_trait_name_allowed(trait_name: string) -> bool =
 fn string_list_contains_derive_trait(haystack: [string], needle: string) -> bool =
   haystack.any(trait_name => trait_name == needle)
 
+fn type_expr_is_named_cyclic_sum(type_expression: Shared<TypeExpr>, cyclic_sum_type_names: [string]) -> bool =
+  match type_expression {
+    TyNamed(name) => string_list_contains_derive_trait(cyclic_sum_type_names, name),
+    _ => false
+  }
+
 fn type_expr_allowed_for_derive_hash_field(
   type_expression: Shared<TypeExpr>,
   enclosing_type_name: string,
@@ -30,6 +36,14 @@ fn type_expr_allowed_for_derive_hash_field(
     TyNamed(name) =>
       string_list_contains_derive_trait(cyclic_sum_type_names, enclosing_type_name) &&
       string_list_contains_derive_trait(cyclic_sum_type_names, name),
+    TyGeneric(name, type_arguments) =>
+      string_list_contains_derive_trait(cyclic_sum_type_names, enclosing_type_name) &&
+      name == 'Option' &&
+      type_arguments.length() == 1 &&
+      type_expr_is_named_cyclic_sum(type_arguments[0], cyclic_sum_type_names),
+    TyArray(inner) =>
+      string_list_contains_derive_trait(cyclic_sum_type_names, enclosing_type_name) &&
+      type_expr_is_named_cyclic_sum(inner, cyclic_sum_type_names),
     _ => false
   }
 

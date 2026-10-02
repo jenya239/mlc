@@ -879,6 +879,54 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_option_array", checker, link_user_translation: true)
   end
 
+  def test_derive_of_option_and_array_fields_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Option<Tree>) | Kids([Tree]) derive { Json, Display, Eq, Ord, Hash }
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "Tree_to_json(*(*"
+    assert_includes ruby_source, "Tree_to_string(*(*"
+    assert_includes ruby_source, "Tree_hash(*(*"
+    assert_includes ruby_source, "Tree_to_json(*item)"
+    assert_includes ruby_source, "std::optional<std::shared_ptr<Tree>>"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>"
+
+    checker = <<~'CPP'
+      int main() {
+        Tree leaf = Tree(Leaf{});
+        Tree node = Tree(Node{std::optional<std::shared_ptr<Tree>>(std::make_shared<Tree>(leaf))});
+        Tree node_none = Tree(Node{std::optional<std::shared_ptr<Tree>>{}});
+        Tree kids = Tree(Kids{mlc::Array<std::shared_ptr<Tree>>{std::make_shared<Tree>(leaf)}});
+        Tree kids_empty = Tree(Kids{mlc::Array<std::shared_ptr<Tree>>{}});
+        auto node_decoded = Tree_from_json(Tree_to_json(node));
+        if (!std::holds_alternative<mlc::result::Ok<Tree>>(node_decoded)) return 1;
+        Tree node_again = std::get<mlc::result::Ok<Tree>>(node_decoded)._0;
+        if (!(node == node_again)) return 2;
+        if (Tree_hash(node) != Tree_hash(node_again)) return 3;
+        if (Tree_to_string(node) != mlc::String("Node(Some(Leaf))")) return 4;
+        if (Tree_to_string(node_none) != mlc::String("Node(None)")) return 5;
+        if (node_none == node) return 6;
+        if (!(node_none < node)) return 7;
+        auto none_decoded = Tree_from_json(Tree_to_json(node_none));
+        if (!std::holds_alternative<mlc::result::Ok<Tree>>(none_decoded)) return 8;
+        if (!(node_none == std::get<mlc::result::Ok<Tree>>(none_decoded)._0)) return 9;
+        auto kids_decoded = Tree_from_json(Tree_to_json(kids));
+        if (!std::holds_alternative<mlc::result::Ok<Tree>>(kids_decoded)) return 10;
+        Tree kids_again = std::get<mlc::result::Ok<Tree>>(kids_decoded)._0;
+        if (!(kids == kids_again)) return 11;
+        if (Tree_hash(kids) != Tree_hash(kids_again)) return 12;
+        if (Tree_to_string(kids) != mlc::String("Kids([Leaf])")) return 13;
+        if (Tree_to_string(kids_empty) != mlc::String("Kids([])")) return 14;
+        if (!(kids_empty < kids)) return 15;
+        if (kids < node) return 16;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_derive_containers", checker)
+  end
+
   def test_cyclic_option_match_and_array_element_read_the_sum_on_ruby_and_mlcc
     source = <<~MLC
       import { Option } from "Option"

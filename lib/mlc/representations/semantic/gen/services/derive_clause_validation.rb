@@ -177,16 +177,28 @@ module MLC
               )
             end
 
+            def cyclic_named_sum_field?(semantic_type, cyclic_sum_names)
+              semantic_type.is_a?(MLC::SemanticIR::Type) &&
+                !semantic_type.is_a?(MLC::SemanticIR::GenericType) &&
+                !semantic_type.is_a?(MLC::SemanticIR::ArrayType) &&
+                semantic_type.respond_to?(:name) &&
+                cyclic_sum_names.include?(semantic_type.name)
+            end
+
             def validate_one_hash_field!(semantic_type, label, variant_or_record, decl, cyclic_sum_names = Set.new)
               ok = semantic_type.is_a?(MLC::SemanticIR::Type) &&
                    semantic_type.kind == :prim &&
                    HASH_ALLOWED_PRIM_NAMES.include?(semantic_type.name)
               return if ok
-              return if cyclic_sum_names.include?(decl.name) &&
-                        semantic_type.is_a?(MLC::SemanticIR::Type) &&
-                        !semantic_type.is_a?(MLC::SemanticIR::GenericType) &&
-                        semantic_type.respond_to?(:name) &&
-                        cyclic_sum_names.include?(semantic_type.name)
+              enclosing_is_cyclic = cyclic_sum_names.include?(decl.name)
+              return if enclosing_is_cyclic && cyclic_named_sum_field?(semantic_type, cyclic_sum_names)
+              if enclosing_is_cyclic && semantic_type.is_a?(MLC::SemanticIR::GenericType)
+                base = semantic_type.base_type.respond_to?(:name) ? semantic_type.base_type.name : nil
+                return if base == "Option" && semantic_type.type_args&.length == 1 &&
+                          cyclic_named_sum_field?(semantic_type.type_args.first, cyclic_sum_names)
+              end
+              return if enclosing_is_cyclic && semantic_type.is_a?(MLC::SemanticIR::ArrayType) &&
+                        cyclic_named_sum_field?(semantic_type.element_type, cyclic_sum_names)
 
               raise MLC::CompileError.new(
                 "derive Hash: unsupported field type for \"#{label}\" in #{variant_or_record} " \

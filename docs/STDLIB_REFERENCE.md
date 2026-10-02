@@ -528,8 +528,10 @@ still rejected by `derive { Json }` (E069). A generic sum and a single-variant
 sum stay unsupported. `Option` of a cyclic sum is
 `std::optional<std::shared_ptr<Sum>>`: `Some(value)` is `std::make_shared`,
 and `None` is an empty optional. An array of a cyclic sum is
-`mlc::Array<std::shared_ptr<Sum>>`. `derive` of those `Option` and array
-fields stays unsupported. `match` visits `subject._`. A
+`mlc::Array<std::shared_ptr<Sum>>`. `derive { Display, Eq, Ord, Hash, Json }`
+of those fields reads the child sum: an `Option` through `*(*field)`, an array
+element through `*element`. `derive { Hash }` allows those fields when the
+enclosing type is that cyclic sum. `match` visits `subject._`. A
 pattern binding of a boxed child is the sum: the binding reads `*field`.
 A `Some(child)` match on `Option` of a cyclic sum binds `child` as the sum
 (`*(*optional)`). An array element of a cyclic sum is the sum.

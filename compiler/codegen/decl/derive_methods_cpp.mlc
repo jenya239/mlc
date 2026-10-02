@@ -830,6 +830,75 @@ fn derive_json_decode_boxed_named(
   indent + '  __decoded_' + field_name + ' = std::make_shared<' + type_name + '>(std::get<mlc::result::Ok<' + type_name + '>>(__nested_' + field_name + ')._0);\n' +
   indent + '}\n'
 
+fn cyclic_container_sum_name(field_type: Shared<TypeExpr>, cyclic_sum_type_names: [string]) -> string =
+  match field_type {
+    TyGeneric(name, type_arguments) =>
+      if name == 'Option' && type_arguments.length() == 1 then
+        match type_arguments[0] {
+          TyNamed(inner_name) =>
+            if derive_json_name_is_cyclic(cyclic_sum_type_names, inner_name) then inner_name else '' end,
+          _ => ''
+        }
+      else '' end,
+    TyArray(inner) =>
+      match inner {
+        TyNamed(inner_name) =>
+          if derive_json_name_is_cyclic(cyclic_sum_type_names, inner_name) then inner_name else '' end,
+        _ => ''
+      },
+    _ => ''
+  }
+
+fn derive_json_extract_cyclic_container(
+  value_expr: string,
+  field_name: string,
+  field_type: Shared<TypeExpr>,
+  indent: string,
+  sum_name: string
+) -> string =
+  match field_type {
+    TyArray(_) =>
+      indent + 'if (!' + value_expr + '.is_array()) {\n' +
+      indent + '  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String("' + field_name + '"), mlc::String("array")));\n' +
+      indent + '}\n' +
+      indent + 'mlc::Array<std::shared_ptr<' + sum_name + '>> __decoded_' + field_name + ';\n' +
+      indent + '{\n' +
+      indent + '  auto __arr_' + field_name + ' = *' + value_expr + '.as_array();\n' +
+      indent + '  for (const auto& __item_' + field_name + ' : __arr_' + field_name + ') {\n' +
+      derive_json_decode_boxed_named('__item_' + field_name, field_name + '_item', sum_name, indent + '    ') +
+      indent + '    __decoded_' + field_name + '.push_back(__decoded_' + field_name + '_item);\n' +
+      indent + '  }\n' +
+      indent + '}\n',
+    _ =>
+      indent + 'std::optional<std::shared_ptr<' + sum_name + '>> __decoded_' + field_name + ' = std::nullopt;\n' +
+      indent + 'if (!' + value_expr + '.is_null()) {\n' +
+      derive_json_decode_boxed_named(value_expr, field_name + '_some', sum_name, indent + '  ') +
+      indent + '  __decoded_' + field_name + ' = __decoded_' + field_name + '_some;\n' +
+      indent + '}\n'
+  }
+
+fn derive_json_encode_sum_field(
+  access: string,
+  field_type: Shared<TypeExpr>,
+  cyclic: bool,
+  cyclic_sum_type_names: [string]
+) -> string = do
+  const container_sum = if cyclic then cyclic_container_sum_name(field_type, cyclic_sum_type_names) else '' end
+  if container_sum == '' then
+    derive_json_encode_field(derive_json_boxed_access(access, field_type, cyclic, cyclic_sum_type_names), field_type)
+  else
+    match field_type {
+      TyArray(_) =>
+        '[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(' + access +
+        '.size()); for (const auto& item : ' + access + ') { items.push_back(item ? ' +
+        container_sum + '_to_json(*item) : mlc::json::json_null()); } return mlc::json::json_array(items); }()',
+      _ =>
+        '((' + access + '.has_value() && *' + access + ') ? ' + container_sum + '_to_json(*(*' + access +
+        ')) : mlc::json::json_null())'
+    }
+  end
+end
+
 fn derive_json_extract_sum_field(
   value_expr: string,
   field_name: string,
@@ -837,14 +906,20 @@ fn derive_json_extract_sum_field(
   indent: string,
   cyclic: bool,
   cyclic_sum_type_names: [string]
-) -> string =
-  match field_type {
-    TyNamed(name) =>
-      if cyclic && derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
-        derive_json_decode_boxed_named(value_expr, field_name, name, indent)
-      else derive_json_extract_required(value_expr, field_name, field_type, indent) end,
-    _ => derive_json_extract_required(value_expr, field_name, field_type, indent)
-  }
+) -> string = do
+  const container_sum = if cyclic then cyclic_container_sum_name(field_type, cyclic_sum_type_names) else '' end
+  if container_sum != '' then
+    derive_json_extract_cyclic_container(value_expr, field_name, field_type, indent, container_sum)
+  else
+    match field_type {
+      TyNamed(name) =>
+        if cyclic && derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+          derive_json_decode_boxed_named(value_expr, field_name, name, indent)
+        else derive_json_extract_required(value_expr, field_name, field_type, indent) end,
+      _ => derive_json_extract_required(value_expr, field_name, field_type, indent)
+    }
+  end
+end
 
 fn derive_json_sum_to_json_variant(
   variant: Shared<TypeVariant>,
@@ -866,7 +941,7 @@ fn derive_json_sum_to_json_variant(
         '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
         '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
         '    object = mlc::json::json_set(object, mlc::String("value"), ' +
-        derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field0', field_types[0], cyclic, cyclic_sum_type_names), field_types[0]) + ');\n' +
+        derive_json_encode_sum_field('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field0', field_types[0], cyclic, cyclic_sum_type_names) + ');\n' +
         '    return object;\n' +
         '  }\n'
       else
@@ -878,7 +953,7 @@ fn derive_json_sum_to_json_variant(
         let mut index = 0
         while index < field_types.length() do
           lines = lines + '    fields.push_back(' +
-            derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field' + index.to_string(), field_types[index], cyclic, cyclic_sum_type_names), field_types[index]) +
+            derive_json_encode_sum_field('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field' + index.to_string(), field_types[index], cyclic, cyclic_sum_type_names) +
             ');\n'
           index = index + 1
         end
@@ -897,7 +972,7 @@ fn derive_json_sum_to_json_variant(
         '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
         '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
         '    object = mlc::json::json_set(object, mlc::String("value"), ' +
-        derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[0].name), field_definitions[0].type_value, cyclic, cyclic_sum_type_names), field_definitions[0].type_value) +
+        derive_json_encode_sum_field('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[0].name), field_definitions[0].type_value, cyclic, cyclic_sum_type_names) +
         ');\n' +
         '    return object;\n' +
         '  }\n'
@@ -910,13 +985,11 @@ fn derive_json_sum_to_json_variant(
         let mut index = 0
         while index < field_definitions.length() do
           lines = lines + '    fields.push_back(' +
-            derive_json_encode_field(
-              derive_json_boxed_access(
-                'std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[index].name),
-                field_definitions[index].type_value,
-                cyclic,
-                cyclic_sum_type_names),
-              field_definitions[index].type_value) +
+            derive_json_encode_sum_field(
+              'std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[index].name),
+              field_definitions[index].type_value,
+              cyclic,
+              cyclic_sum_type_names) +
             ');\n'
           index = index + 1
         end
@@ -1148,6 +1221,52 @@ fn cyclic_payload_less_text(left: string, right: string, boxed: bool) -> string 
     "(" + left + " < " + right + ")"
   end
 
+fn cyclic_field_equal_text(
+  left: string,
+  right: string,
+  field_type: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> string = do
+  const container_sum = cyclic_container_sum_name(field_type, cyclic_sum_type_names)
+  if container_sum == '' then
+    cyclic_payload_equal_text(left, right, type_is_boxed_cyclic_sum(field_type, cyclic_sum_type_names))
+  else
+    match field_type {
+      TyArray(_) =>
+        '[&]() { if (' + left + '.size() != ' + right + '.size()) return false; for (size_t __index = 0; __index < ' + left +
+        '.size(); ++__index) { if (!(' + cyclic_payload_equal_text(left + '[__index]', right + '[__index]', true) +
+        ')) return false; } return true; }()',
+      _ =>
+        '((!' + left + '.has_value() && !' + right + '.has_value()) || (' + left + '.has_value() && ' + right +
+        '.has_value() && ' + cyclic_payload_equal_text("*" + left, "*" + right, true) + '))'
+    }
+  end
+end
+
+fn cyclic_field_less_text(
+  left: string,
+  right: string,
+  field_type: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> string = do
+  const container_sum = cyclic_container_sum_name(field_type, cyclic_sum_type_names)
+  if container_sum == '' then
+    cyclic_payload_less_text(left, right, type_is_boxed_cyclic_sum(field_type, cyclic_sum_type_names))
+  else
+    match field_type {
+      TyArray(_) =>
+        '[&]() { size_t __count = ' + left + '.size() < ' + right + '.size() ? ' + left + '.size() : ' + right +
+        '.size(); for (size_t __index = 0; __index < __count; ++__index) { if (' +
+        cyclic_payload_less_text(left + '[__index]', right + '[__index]', true) + ') return true; if (!(' +
+        cyclic_payload_equal_text(left + '[__index]', right + '[__index]', true) +
+        ')) return false; } return ' + left + '.size() < ' + right + '.size(); }()',
+      _ =>
+        '((!' + left + '.has_value() && ' + right + '.has_value()) || (' + left + '.has_value() && ' + right +
+        '.has_value() && ' + cyclic_payload_less_text("*" + left, "*" + right, true) + '))'
+    }
+  end
+end
+
 fn cyclic_fields_equal_text(
   variant_name: string,
   members: [string],
@@ -1159,10 +1278,7 @@ fn cyclic_fields_equal_text(
   while index < members.length() do
     const left = "std::get<" + variant_name + ">(a._)." + members[index]
     const right = "std::get<" + variant_name + ">(b._)." + members[index]
-    parts.push(cyclic_payload_equal_text(
-      left,
-      right,
-      type_is_boxed_cyclic_sum(field_types[index], cyclic_sum_type_names)))
+    parts.push(cyclic_field_equal_text(left, right, field_types[index], cyclic_sum_type_names))
     index = index + 1
   end
   join_cpp_parts(parts, " && ")
@@ -1179,8 +1295,7 @@ fn cyclic_fields_ordering_text(
   while index < members.length() do
     const left = "std::get<" + variant_name + ">(a._)." + members[index]
     const right = "std::get<" + variant_name + ">(b._)." + members[index]
-    const boxed = type_is_boxed_cyclic_sum(field_types[index], cyclic_sum_type_names)
-    const less = cyclic_payload_less_text(left, right, boxed)
+    const less = cyclic_field_less_text(left, right, field_types[index], cyclic_sum_type_names)
     if index == 0 then
       result = less
     else
@@ -1189,8 +1304,7 @@ fn cyclic_fields_ordering_text(
       while previous < index do
         const previous_left = "std::get<" + variant_name + ">(a._)." + members[previous]
         const previous_right = "std::get<" + variant_name + ">(b._)." + members[previous]
-        const previous_boxed = type_is_boxed_cyclic_sum(field_types[previous], cyclic_sum_type_names)
-        const equal = cyclic_payload_equal_text(previous_left, previous_right, previous_boxed)
+        const equal = cyclic_field_equal_text(previous_left, previous_right, field_types[previous], cyclic_sum_type_names)
         if previous > 0 then
           prefix = prefix + " && "
         end
@@ -1204,20 +1318,39 @@ fn cyclic_fields_ordering_text(
   result
 end
 
+fn cyclic_display_option_text(access: string, sum_name: string) -> string =
+  '[&]() { if (' + access + '.has_value() && *' + access + ') return mlc::String("Some(") + ' +
+  sum_name + '_to_string(*(*' + access + ')) + mlc::String(")"); return mlc::String("None"); }()'
+
+fn cyclic_display_array_text(access: string, sum_name: string) -> string =
+  '[&]() { mlc::String __text = mlc::String("["); for (size_t __index = 0; __index < ' + access +
+  '.size(); ++__index) { if (__index > 0) __text = __text + mlc::String(", "); if (' + access +
+  '[__index]) __text = __text + ' + sum_name + '_to_string(*' + access +
+  '[__index]); } return __text + mlc::String("]"); }()'
+
 fn cyclic_display_value_text(
   access: string,
   field_type: Shared<TypeExpr>,
   cyclic_sum_type_names: [string]
-) -> string =
-  match field_type {
-    TyNamed(name) =>
-      if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
-        name + "_to_string(*" + access + ")"
-      else
-        "mlc::to_string(" + access + ")"
-      end,
-    _ => "mlc::to_string(" + access + ")"
-  }
+) -> string = do
+  const container_sum = cyclic_container_sum_name(field_type, cyclic_sum_type_names)
+  if container_sum != '' then
+    match field_type {
+      TyArray(_) => cyclic_display_array_text(access, container_sum),
+      _ => cyclic_display_option_text(access, container_sum)
+    }
+  else
+    match field_type {
+      TyNamed(name) =>
+        if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+          name + '_to_string(*' + access + ")"
+        else
+          'mlc::to_string(' + access + ")"
+        end,
+      _ => 'mlc::to_string(' + access + ")"
+    }
+  end
+end
 
 fn cyclic_display_fields_text(
   variant_name: string,
@@ -1379,23 +1512,43 @@ fn cyclic_sum_uses_deep_comparison(type_name: string, variants: [Shared<TypeVari
 fn cyclic_hash_combine_line(hash_expression: string) -> string =
   "h ^= " + hash_expression + " + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n"
 
+fn cyclic_hash_option_line(access: string, sum_name: string) -> string =
+  'if (' + access + '.has_value() && *' + access + ') { ' +
+  cyclic_hash_combine_line('std::hash<size_t>{}(1)') +
+  " " + cyclic_hash_combine_line(sum_name + '_hash(*(*' + access + '))') +
+  ' } else { ' + cyclic_hash_combine_line('std::hash<size_t>{}(0)') + ' }'
+
+fn cyclic_hash_array_line(access: string, sum_name: string) -> string =
+  cyclic_hash_combine_line('std::hash<size_t>{}(' + access + '.size())') +
+  ' for (size_t __index = 0; __index < ' + access + '.size(); ++__index) { if (' + access +
+  '[__index]) { ' + cyclic_hash_combine_line(sum_name + '_hash(*' + access + '[__index])') +
+  ' } else { ' + cyclic_hash_combine_line('std::hash<size_t>{}(0)') + ' } }'
+
 fn cyclic_hash_field_line(
   variant_name: string,
   member: string,
   field_type: Shared<TypeExpr>,
   cyclic_sum_type_names: [string]
 ) -> string = do
-  const access = "std::get<" + variant_name + ">(self._)." + member
-  match field_type {
-    TyNamed(name) =>
-      if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
-        "if (" + access + ") { " + cyclic_hash_combine_line(name + "_hash(*" + access + ")") +
-          " } else { " + cyclic_hash_combine_line("std::hash<size_t>{}(0)") + " }"
-      else
-        cyclic_hash_combine_line("std::hash<" + derive_hash_std_cpp_type(field_type) + ">{}(" + access + ")")
-      end,
-    _ => cyclic_hash_combine_line("std::hash<" + derive_hash_std_cpp_type(field_type) + ">{}(" + access + ")")
-  }
+  const access = 'std::get<' + variant_name + '>(self._).' + member
+  const container_sum = cyclic_container_sum_name(field_type, cyclic_sum_type_names)
+  if container_sum != '' then
+    match field_type {
+      TyArray(_) => cyclic_hash_array_line(access, container_sum),
+      _ => cyclic_hash_option_line(access, container_sum)
+    }
+  else
+    match field_type {
+      TyNamed(name) =>
+        if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+          'if (' + access + ') { ' + cyclic_hash_combine_line(name + '_hash(*' + access + ")") +
+            ' } else { ' + cyclic_hash_combine_line('std::hash<size_t>{}(0)') + ' }'
+        else
+          cyclic_hash_combine_line('std::hash<' + derive_hash_std_cpp_type(field_type) + '>{}(' + access + ")")
+        end,
+      _ => cyclic_hash_combine_line('std::hash<' + derive_hash_std_cpp_type(field_type) + '>{}(' + access + ")")
+    }
+  end
 end
 
 fn cyclic_hash_fields_text(

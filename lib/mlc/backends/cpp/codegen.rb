@@ -758,6 +758,50 @@ module MLC
           @cyclic_sum_types&.include?(field_type.name) == true
         end
 
+        def cyclic_option_sum_name(field_type)
+          return nil unless field_type.is_a?(SemanticIR::GenericType)
+          base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
+          return nil unless base == "Option" && field_type.type_args&.length == 1
+
+          cyclic_boxed_sum_field?(field_type.type_args.first) ? field_type.type_args.first.name : nil
+        end
+
+        def cyclic_array_sum_name(field_type)
+          return nil unless field_type.is_a?(SemanticIR::ArrayType)
+
+          cyclic_boxed_sum_field?(field_type.element_type) ? field_type.element_type.name : nil
+        end
+
+        def cyclic_option_equal(left, right)
+          "((!#{left}.has_value() && !#{right}.has_value()) || (#{left}.has_value() && #{right}.has_value() && #{cyclic_payload_equal("*#{left}", "*#{right}", true)}))"
+        end
+
+        def cyclic_option_less(left, right)
+          "((!#{left}.has_value() && #{right}.has_value()) || (#{left}.has_value() && #{right}.has_value() && #{cyclic_payload_less("*#{left}", "*#{right}", true)}))"
+        end
+
+        def cyclic_array_equal(left, right)
+          "[&]() { if (#{left}.size() != #{right}.size()) return false; for (size_t __index = 0; __index < #{left}.size(); ++__index) { if (!(#{cyclic_payload_equal("#{left}[__index]", "#{right}[__index]", true)})) return false; } return true; }()"
+        end
+
+        def cyclic_array_less(left, right)
+          "[&]() { size_t __count = #{left}.size() < #{right}.size() ? #{left}.size() : #{right}.size(); for (size_t __index = 0; __index < __count; ++__index) { if (#{cyclic_payload_less("#{left}[__index]", "#{right}[__index]", true)}) return true; if (!(#{cyclic_payload_equal("#{left}[__index]", "#{right}[__index]", true)})) return false; } return #{left}.size() < #{right}.size(); }()"
+        end
+
+        def cyclic_field_equal(left, right, field_type)
+          return cyclic_option_equal(left, right) if cyclic_option_sum_name(field_type)
+          return cyclic_array_equal(left, right) if cyclic_array_sum_name(field_type)
+
+          cyclic_payload_equal(left, right, cyclic_boxed_sum_field?(field_type))
+        end
+
+        def cyclic_field_less(left, right, field_type)
+          return cyclic_option_less(left, right) if cyclic_option_sum_name(field_type)
+          return cyclic_array_less(left, right) if cyclic_array_sum_name(field_type)
+
+          cyclic_payload_less(left, right, cyclic_boxed_sum_field?(field_type))
+        end
+
         def derive_sum_field_member(field, index)
           name = field[:name]
           return "field#{index}" if name.nil? || name.to_s.empty?
@@ -767,7 +811,11 @@ module MLC
 
         def derive_sum_display_field(variant_name, field, index)
           access = "std::get<#{variant_name}>(self._).#{derive_sum_field_member(field, index)}"
-          if cyclic_boxed_sum_field?(field[:type])
+          if (sum_name = cyclic_option_sum_name(field[:type]))
+            "[&]() { if (#{access}.has_value() && *#{access}) return mlc::String(\"Some(\") + #{sum_name}_to_string(*(*#{access})) + mlc::String(\")\"); return mlc::String(\"None\"); }()"
+          elsif (sum_name = cyclic_array_sum_name(field[:type]))
+            "[&]() { mlc::String __text = mlc::String(\"[\"); for (size_t __index = 0; __index < #{access}.size(); ++__index) { if (__index > 0) __text = __text + mlc::String(\", \"); if (#{access}[__index]) __text = __text + #{sum_name}_to_string(*#{access}[__index]); } return __text + mlc::String(\"]\"); }()"
+          elsif cyclic_boxed_sum_field?(field[:type])
             "#{field[:type].name}_to_string(*#{access})"
           else
             "mlc::to_string(#{access})"
@@ -795,8 +843,7 @@ module MLC
             member = derive_sum_field_member(field, index)
             left = "std::get<#{variant_name}>(a._).#{member}"
             right = "std::get<#{variant_name}>(b._).#{member}"
-            boxed = cyclic_boxed_sum_field?(field[:type])
-            [cyclic_payload_less(left, right, boxed), cyclic_payload_equal(left, right, boxed)]
+            [cyclic_field_less(left, right, field[:type]), cyclic_field_equal(left, right, field[:type])]
           end
         end
 
@@ -868,8 +915,8 @@ module MLC
                      fields = variant[:fields]
                      if fields.empty?
                        "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}\");"
-                     elsif fields.length == 1 && !fields.first[:name]
-                       "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + mlc::to_string(std::get<#{vname}>(self._)._0) + mlc::String(\")\");"
+                    elsif fields.length == 1 && !fields.first[:name] && !cyclic_sum_type?(name)
+                      "if (std::holds_alternative<#{vname}>(self._)) return mlc::String(\"#{vname}(\") + mlc::to_string(std::get<#{vname}>(self._)._0) + mlc::String(\")\");"
                      else
                        field_strs = fields.each_with_index.map { |field, index|
                          derive_sum_display_field(vname, field, index)
@@ -1107,14 +1154,22 @@ end
           case field_type
           when SemanticIR::ArrayType
             element = field_type.element_type
-            encoded_item = derive_json_encode_field("item", element)
-            "[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(#{access}.size()); for (const auto& item : #{access}) { items.push_back(#{encoded_item}); } return mlc::json::json_array(items); }()"
+            if (sum_name = cyclic_array_sum_name(field_type))
+              "[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(#{access}.size()); for (const auto& item : #{access}) { items.push_back(item ? #{sum_name}_to_json(*item) : mlc::json::json_null()); } return mlc::json::json_array(items); }()"
+            else
+              encoded_item = derive_json_encode_field("item", element)
+              "[&]() { std::vector<mlc::json::JsonValue> items; items.reserve(#{access}.size()); for (const auto& item : #{access}) { items.push_back(#{encoded_item}); } return mlc::json::json_array(items); }()"
+            end
           when SemanticIR::GenericType
             base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
             if base == "Option"
               inner = field_type.type_args.first
-              encoded_inner = derive_json_encode_field("(*#{access})", inner)
-              "(#{access}.has_value() ? #{encoded_inner} : mlc::json::json_null())"
+              if (sum_name = cyclic_option_sum_name(field_type))
+                "((#{access}.has_value() && *#{access}) ? #{sum_name}_to_json(*(*#{access})) : mlc::json::json_null())"
+              else
+                encoded_inner = derive_json_encode_field("(*#{access})", inner)
+                "(#{access}.has_value() ? #{encoded_inner} : mlc::json::json_null())"
+              end
             else
               "mlc::json::json_null()"
             end
@@ -1146,7 +1201,7 @@ end
             base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
             if base == "Option"
               inner = field_type.type_args.first
-              cpp_inner = derive_json_cpp_type(inner)
+              cpp_inner = derive_json_stored_cpp_type(inner)
               lines << "std::optional<#{cpp_inner}> #{member_name} = std::nullopt;"
               lines << "{"
               lines << "  auto __opt_#{field_name} = mlc::json::json_get(__json_value, mlc::String(\"#{field_name}\"));"
@@ -1179,7 +1234,7 @@ end
           case field_type
           when SemanticIR::ArrayType
             element = field_type.element_type
-            cpp_elem = derive_json_cpp_type(element)
+            cpp_elem = derive_json_stored_cpp_type(element)
             lines << "#{indent}if (!#{value_expr}.is_array()) {"
             lines << "#{indent}  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"array\")));"
             lines << "#{indent}}"
@@ -1195,7 +1250,7 @@ end
             base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : nil
             if base == "Option"
               inner = field_type.type_args.first
-              lines << "#{indent}std::optional<#{derive_json_cpp_type(inner)}> __decoded_#{field_name} = std::nullopt;"
+              lines << "#{indent}std::optional<#{derive_json_stored_cpp_type(inner)}> __decoded_#{field_name} = std::nullopt;"
               lines << "#{indent}if (!#{value_expr}.is_null()) {"
               lines.concat(derive_json_extract_required(value_expr, "#{field_name}_some", inner, "#{indent}  "))
               lines << "#{indent}  __decoded_#{field_name} = __decoded_#{field_name}_some;"
@@ -1277,14 +1332,20 @@ end
           }.fetch(name)
         end
 
+        def derive_json_stored_cpp_type(field_type)
+          return "std::shared_ptr<#{field_type.name}>" if cyclic_boxed_sum_field?(field_type)
+
+          derive_json_cpp_type(field_type)
+        end
+
                 def derive_json_cpp_type(field_type)
           case field_type
           when SemanticIR::ArrayType
-            "mlc::Array<#{derive_json_cpp_type(field_type.element_type)}>"
+            "mlc::Array<#{derive_json_stored_cpp_type(field_type.element_type)}>"
           when SemanticIR::GenericType
             base = field_type.base_type.respond_to?(:name) ? field_type.base_type.name : "auto"
             if base == "Option"
-              "std::optional<#{derive_json_cpp_type(field_type.type_args.first)}>"
+              "std::optional<#{derive_json_stored_cpp_type(field_type.type_args.first)}>"
             else
               "#{base}<#{field_type.type_args.map { |argument| derive_json_cpp_type(argument) }.join(', ')}>"
             end
@@ -1332,7 +1393,11 @@ end
             fields.each_with_index do |field, field_index|
               member = derive_sum_field_member(field, field_index)
               access = "std::get<#{variant_name}>(self._).#{member}"
-              if cyclic_boxed_sum_field?(field[:type])
+              if (sum_name = cyclic_option_sum_name(field[:type]))
+                branch << "if (#{access}.has_value() && *#{access}) { #{cyclic_hash_combine_line("std::hash<size_t>{}(1)")} #{cyclic_hash_combine_line("#{sum_name}_hash(*(*#{access}))")} } else { #{cyclic_hash_combine_line("std::hash<size_t>{}(0)")} }"
+              elsif (sum_name = cyclic_array_sum_name(field[:type]))
+                branch << "#{cyclic_hash_combine_line("std::hash<size_t>{}(#{access}.size())")} for (size_t __index = 0; __index < #{access}.size(); ++__index) { if (#{access}[__index]) { #{cyclic_hash_combine_line("#{sum_name}_hash(*#{access}[__index])")} } else { #{cyclic_hash_combine_line("std::hash<size_t>{}(0)")} } }"
+              elsif cyclic_boxed_sum_field?(field[:type])
                 branch << cyclic_hash_boxed_lines(access, field[:type].name)
               else
                 cpp_type = derive_hash_prim_std_type(field[:type])

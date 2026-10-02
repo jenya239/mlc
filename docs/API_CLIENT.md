@@ -137,8 +137,10 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    make the sum cyclic. Generic and single-variant
    recursion stay unsupported. `Option` of a cyclic sum is
    `std::optional<std::shared_ptr<Sum>>`; an array of a cyclic sum is
-   `mlc::Array<std::shared_ptr<Sum>>`. `derive` of those fields stays
-   unsupported. `Some(child)` on that `Option` binds the sum
+   `mlc::Array<std::shared_ptr<Sum>>`. `derive { Display, Eq, Ord, Hash, Json }`
+   of those fields reads the child sum (`*(*field)` for `Option`, `*element`
+   for an array). `derive { Hash }` allows those fields when the enclosing
+   type is that cyclic sum. `Some(child)` on that `Option` binds the sum
    (`*(*optional)`), and an array element of a cyclic sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
