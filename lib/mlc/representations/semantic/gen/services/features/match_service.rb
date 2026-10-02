@@ -190,6 +190,36 @@ module MLC
               end
             end
 
+            def field_bound_names(field)
+              if field.is_a?(Hash)
+                pattern_bound_names(field)
+              elsif field.is_a?(String) && !ignored_binding?(field)
+                [field]
+              else
+                []
+              end
+            end
+
+            def pattern_bound_names(pattern)
+              return [] unless pattern.is_a?(Hash)
+
+              case pattern[:kind]
+              when :constructor
+                Array(pattern[:fields] || pattern[:bindings]).flat_map { |field| field_bound_names(field) }
+              when :var
+                ignored_binding?(pattern[:name]) ? [] : [pattern[:name]]
+              when :array
+                names = Array(pattern[:elements]).flat_map { |element| pattern_bound_names(element) }
+                rest_name = pattern[:rest]
+                names << rest_name if rest_name && !rest_name.empty? && !ignored_binding?(rest_name)
+                names
+              when :tuple
+                Array(pattern[:elements]).flat_map { |element| pattern_bound_names(element) }
+              else
+                []
+              end
+            end
+
             def bind_pattern_variables(pattern, scrutinee_type)
               case pattern[:kind]
               when :constructor
@@ -203,16 +233,7 @@ module MLC
                 end
               when :or
                 alternatives = pattern[:alternatives] || []
-                binding_sets = alternatives.map do |alt|
-                  case alt[:kind]
-                  when :constructor
-                    (alt[:bindings] || alt[:fields] || []).reject { |b| b == "_" || b.is_a?(Hash) }.sort
-                  when :var
-                    [alt[:name]]
-                  else
-                    []
-                  end
-                end.uniq
+                binding_sets = alternatives.map { |alternative| pattern_bound_names(alternative).sort }.uniq
                 if binding_sets.length > 1
                   raise MLC::CompileError, "or-pattern alternatives must bind the same names (got #{binding_sets.map(&:inspect).join(" vs ")})"
                 end

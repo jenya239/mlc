@@ -858,18 +858,25 @@ module MLC
               decls
             end
 
-            def cyclic_array_nested_match?(match_expr)
-              match_expr.arms.any? do |arm|
-                pattern = arm[:pattern]
-                next false unless pattern[:kind] == :constructor
+            def constructor_has_cyclic_array_field?(pattern)
+              return false unless pattern.is_a?(Hash)
 
-                bindings = pattern[:bindings] || pattern[:fields] || []
-                bindings.each_with_index.any? do |binding, index|
-                  binding.is_a?(Hash) && binding[:kind] == :array &&
-                    cyclic_array_pattern_simple?(binding) &&
-                    cyclic_array_field_sum_name(pattern[:name], index)
-                end
+              if pattern[:kind] == :or
+                return Array(pattern[:alternatives]).any? { |alternative| constructor_has_cyclic_array_field?(alternative) }
               end
+
+              return false unless pattern[:kind] == :constructor
+
+              bindings = pattern[:bindings] || pattern[:fields] || []
+              bindings.each_with_index.any? do |binding, index|
+                binding.is_a?(Hash) && binding[:kind] == :array &&
+                  cyclic_array_pattern_simple?(binding) &&
+                  cyclic_array_field_sum_name(pattern[:name], index)
+              end
+            end
+
+            def cyclic_array_nested_match?(match_expr)
+              match_expr.arms.any? { |arm| constructor_has_cyclic_array_field?(arm[:pattern]) }
             end
 
             def cyclic_option_nested_match?(match_expr)
@@ -1132,14 +1139,20 @@ module MLC
                              end
 
               branches = alternatives.map.with_index do |alt, idx|
+                @variant_binding_counts = Hash.new(0)
                 case_name = alt[:name]
                 bindings = alt[:bindings] || alt[:fields] || []
                 qcase = qualified_case_name(case_name, scrutinee_type)
                 holds_check = "std::holds_alternative<#{qcase}>(#{scrutinee_src})"
-                binding_decls, _nested = build_binding_extractions(case_name, bindings, scrutinee_src, scrutinee_type)
-                binding_str = binding_decls.join(" ")
+                binding_decls, nested_checks = build_binding_extractions(case_name, bindings, scrutinee_src, scrutinee_type)
+                inner = inner_return
+                if nested_checks.any?
+                  inner = nested_checks.reverse.reduce(inner) do |accumulated, check|
+                    apply_nested_pattern_check(check, accumulated)
+                  end
+                end
                 prefix = idx == 0 ? "if" : "} else if"
-                "#{prefix} (#{holds_check}) { #{binding_str} #{inner_return}"
+                "#{prefix} (#{holds_check}) { #{binding_decls.join(' ')} #{inner}"
               end
 
               context.factory.raw_statement(code: branches.join(" ") + " }")
