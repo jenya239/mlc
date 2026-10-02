@@ -664,7 +664,7 @@ module MLC
 
               if nested_checks.any?
                 nested_body = nested_checks.reverse.reduce(inner_return) do |acc, check|
-                  "if (#{check[:condition]}) { #{check[:bindings]} #{acc} }"
+                  apply_nested_pattern_check(check, acc)
                 end
                 inner_body = "#{binding_str} #{nested_body}"
               else
@@ -862,33 +862,56 @@ module MLC
               argument.name
             end
 
-            def cyclic_option_nullary_payload_name(bindings)
+            def apply_nested_pattern_check(check, body)
+              inner = check[:wrap] ? check[:wrap].call(body) : "#{check[:bindings]} #{body}"
+              "if (#{check[:condition]}) { #{inner} }"
+            end
+
+            def cyclic_option_payload_constructor(bindings)
               return nil unless bindings.length == 1
 
               binding = bindings.first
               return nil unless binding.is_a?(Hash) && binding[:kind] == :constructor
 
-              nested = binding[:bindings] || binding[:fields] || []
-              return nil unless nested.empty?
+              binding
+            end
 
-              binding[:name]
+            def wrap_cyclic_payload_constructor(pattern, variant_access, body)
+              case_name = pattern[:name]
+              bindings = pattern[:bindings] || pattern[:fields] || []
+              holds = "std::holds_alternative<#{case_name}>(#{variant_access})"
+              binding_declarations, nested_checks = build_binding_extractions(case_name, bindings, variant_access)
+              inner = body
+              if nested_checks.any?
+                inner = nested_checks.reverse.reduce(inner) do |accumulated, check|
+                  apply_nested_pattern_check(check, accumulated)
+                end
+              end
+              "if (#{holds}) { #{binding_declarations.join(' ')} #{inner} }"
             end
 
             def build_cyclic_option_nested_check(pattern, scrutinee_var)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
               if case_name == "Some"
-                binding_text = bindings.filter_map { |binding|
-                  next if binding == "_" || binding.is_a?(Hash)
-
-                  "const auto& #{binding} = *(*#{scrutinee_var});"
-                }.join(" ")
                 condition = "(#{scrutinee_var}.has_value() && *#{scrutinee_var})"
-                payload_name = cyclic_option_nullary_payload_name(bindings)
-                if payload_name
-                  condition = "(#{condition} && std::holds_alternative<#{payload_name}>((*(*#{scrutinee_var}))._))"
+                payload = cyclic_option_payload_constructor(bindings)
+                if payload
+                  {
+                    condition: condition,
+                    bindings: "",
+                    wrap: lambda { |body|
+                      wrap_cyclic_payload_constructor(payload, "(*(*#{scrutinee_var}))._", body)
+                    }
+                  }
+                else
+                  binding_text = bindings.filter_map { |binding|
+                    next if binding == "_" || binding.is_a?(Hash)
+
+                    "const auto& #{binding} = *(*#{scrutinee_var});"
+                  }.join(" ")
+                  { condition: condition, bindings: binding_text }
                 end
-                { condition: condition, bindings: binding_text }
               else
                 { condition: "!#{scrutinee_var}.has_value()", bindings: "" }
               end

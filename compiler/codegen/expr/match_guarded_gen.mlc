@@ -330,6 +330,7 @@ fn cyclic_option_nested_inner_statements(
   sub_pattern: Shared<Pattern>,
   option_access: string,
   arm: Shared<SemanticMatchArm>,
+  subject: Shared<SemanticExpression>,
   use_void: bool,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
@@ -338,6 +339,7 @@ fn cyclic_option_nested_inner_statements(
   let mut arm_context = context
   let mut statements: [Shared<CppStatement>] = []
   let mut payload_constructor = ''
+  let mut payload_patterns_value: [Shared<Pattern>] = []
   match sub_pattern {
     PatternCtor(constructor_name, inner_patterns, _) =>
       if constructor_name == 'Some' && inner_patterns.length() == 1 then
@@ -347,27 +349,33 @@ fn cyclic_option_nested_inner_statements(
             statements.push(emit_helpers.make_fragment_cpp_statement(
               'const auto& ' + cpp_safe(binding_name) + ' = *(*' + option_access + '); '))
           end,
-          PatternCtor(payload_name, payload_patterns, _) =>
-            if payload_patterns.length() == 0 then do
-              payload_constructor = payload_name
-            end else do end end,
+          PatternCtor(payload_name, payload_patterns, _) => do
+            payload_constructor = payload_name
+            payload_patterns_value = payload_patterns
+          end,
           _ => do end
         }
       end,
     _ => do end
   }
-  const tail = guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn)
   if payload_constructor != '' then
-    [
-      emit_helpers.make_if_cpp_statement(
-        variant_holds_alternative_expression(
-          context.resolve(payload_constructor),
-          "(*(*" + option_access + "))._"),
-        emit_helpers.make_block_cpp_statement(tail),
-        emit_helpers.make_block_cpp_statement([]))
-    ]
+    append_cpp_statements(
+      [emit_helpers.make_fragment_cpp_statement(
+        'const auto& __cyclic_payload_sum = (*(*' + option_access + '))._; ')],
+      gen_guarded_constructor_arm_statements(
+        arm,
+        payload_constructor,
+        payload_patterns_value,
+        '__cyclic_payload_sum',
+        subject,
+        use_void,
+        context,
+        gen_stmts,
+        eval_expr_fn))
   else
-    append_cpp_statements(statements, tail)
+    append_cpp_statements(
+      statements,
+      guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
   end
 end
 
@@ -375,6 +383,7 @@ fn cyclic_option_nested_if_statement(
   sub_pattern: Shared<Pattern>,
   option_access: string,
   arm: Shared<SemanticMatchArm>,
+  subject: Shared<SemanticExpression>,
   use_void: bool,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
@@ -391,7 +400,7 @@ fn cyclic_option_nested_if_statement(
   emit_helpers.make_if_cpp_statement(
     emit_helpers.make_identifier_cpp_expression(condition),
     emit_helpers.make_block_cpp_statement(cyclic_option_nested_inner_statements(
-      sub_pattern, option_access, arm, use_void, context, gen_stmts, eval_expr_fn)),
+      sub_pattern, option_access, arm, subject, use_void, context, gen_stmts, eval_expr_fn)),
     emit_helpers.make_block_cpp_statement([]))
 end
 
@@ -422,6 +431,7 @@ fn cyclic_option_constructor_arm_statements(
         sub_patterns[index],
         lower_name + "." + member_name,
         arm,
+        subject,
         use_void,
         context,
         gen_stmts,

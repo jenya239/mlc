@@ -1025,6 +1025,50 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_nested_leaf", checker, link_user_translation: true)
   end
 
+  def test_constructor_inside_some_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Pair(Tree, Tree) | Node(Option<Tree>)
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Pair(_, _) => 2
+        | Node(_) => 3
+      fn kind(tree: Tree) -> i32 = match tree
+        | Node(Some(Pair(left, _))) => label(left)
+        | Node(Some(Node(Some(child)))) => label(child)
+        | Node(Some(Node(None))) => 6
+        | Node(Some(Leaf)) => 7
+        | Node(Some(_)) => 8
+        | Node(None) => 0
+        | Leaf => 4
+        | Pair(_, _) => 5
+      fn pair_leaf() -> Tree = Node(Some(Pair(Leaf, Leaf)))
+      fn deep() -> Tree = Node(Some(Node(Some(Leaf))))
+      fn inner_none() -> Tree = Node(Some(Node(None)))
+      fn shallow() -> Tree = Node(Some(Leaf))
+      fn missing() -> Tree = Node(None)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "holds_alternative<Pair>"
+    assert_includes ruby_source, "holds_alternative<Leaf>"
+    assert_includes ruby_source, "(*(*"
+    assert_includes ruby_source, "(*_v_pair.field0)"
+    refute_includes ruby_source, "holds_alternative<Some>"
+
+    checker = <<~CPP
+      int main() {
+        if (kind(pair_leaf()) != 1) return 1;
+        if (kind(deep()) != 1) return 2;
+        if (kind(inner_none()) != 6) return 3;
+        if (kind(shallow()) != 7) return 4;
+        if (kind(missing()) != 0) return 5;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_some_constructor", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
