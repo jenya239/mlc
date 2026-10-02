@@ -520,6 +520,7 @@ module MLC
           end
           cyclic_names
         end
+        public :cyclic_sum_type_names
 
         def collect_cyclic_sum_reference_names(type, sum_names, referenced_names)
           case type

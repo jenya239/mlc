@@ -390,7 +390,9 @@ module MLC
               return nil unless module_name && !module_name.empty?
 
               base = module_name.gsub("/", "::").split("::").map(&:downcase).join("::")
-              base == "main" ? "mlc_main" : base
+              return nil if base == "main"
+
+              base
             end
 
             # Lower IO function calls

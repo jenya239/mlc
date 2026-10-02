@@ -138,7 +138,9 @@ module MLC
             def module_name_to_namespace(name)
               return nil unless name && !name.empty?
               base = name.gsub("/", "::").split("::").map(&:downcase).join("::")
-              base == "main" ? "mlc_main" : base
+              return nil if base == "main"
+
+              base
             end
 
             def nullary_variant_constructor?(node)

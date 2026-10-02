@@ -659,6 +659,65 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_match", checker, link_user_translation: true)
   end
 
+  def test_cyclic_sum_constructor_in_mlc_runs_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree)
+      fn child_is_leaf(tree: Tree) -> i32 =
+        match tree {
+          Leaf => 0,
+          Node(left, right) =>
+            match left {
+              Leaf => 1,
+              Node(_, _) => 2
+            }
+        }
+      fn main() -> i32 = child_is_leaf(Node(Leaf, Leaf))
+    MLC
+    runtime_directory = File.expand_path("../../runtime", __dir__)
+    runtime_sources = [
+      File.join(runtime_directory, "src/io/io.cpp"),
+      File.join(runtime_directory, "src/core/string.cpp"),
+      File.join(runtime_directory, "src/core/profile.cpp")
+    ]
+    work_root = ENV.fetch("TMPDIR", "/tmp")
+    Dir.mktmpdir("mlc_cyclic_construct", work_root) do |work_directory|
+      ruby_source = MLC.to_cpp(source)
+      refute_includes ruby_source, "mlc_main::"
+      ruby_path = File.join(work_directory, "ruby.cpp")
+      ruby_binary = File.join(work_directory, "ruby_binary")
+      File.write(ruby_path, ruby_source)
+      assert system(
+        "clang++", "-std=c++20", "-I", File.join(runtime_directory, "include"),
+        "-o", ruby_binary, ruby_path, *runtime_sources
+      ), "clang++ failed for Ruby cyclic constructor"
+      system(ruby_binary)
+      assert_equal 1, $?.exitstatus
+
+      mlcc = File.expand_path("../../compiler/out/mlcc", __dir__)
+      generated_directory = File.join(work_directory, "mlcc")
+      Dir.mkdir(generated_directory)
+      entry_path = File.join(work_directory, "cyclic_construct.mlc")
+      File.write(entry_path, source)
+      assert system(mlcc, "-o", generated_directory, entry_path), "mlcc failed for cyclic constructor"
+      mlcc_binary = File.join(work_directory, "mlcc_binary")
+      assert system(
+        "clang++", "-std=c++20",
+        "-I", File.join(runtime_directory, "include"),
+        "-I", generated_directory,
+        "-o", mlcc_binary,
+        File.join(generated_directory, "cyclic_construct.cpp"),
+        *runtime_sources
+      ), "clang++ failed for mlcc cyclic constructor"
+      system(mlcc_binary)
+      assert_equal 1, $?.exitstatus
+
+      header_pair = MLC.to_hpp_cpp(source, filename: "cyclic_construct.mlc")
+      assert_includes header_pair[:header], "namespace mlc_main"
+      assert_includes header_pair[:implementation], "Tree(Leaf{})"
+      refute_includes header_pair[:implementation], "mlc_main::"
+    end
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
