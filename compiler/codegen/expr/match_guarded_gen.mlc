@@ -359,7 +359,7 @@ fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>])
       PatternIdent(_, _) => do end,
       PatternWild(_) => do end,
       PatternCtor(_, inner_patterns, _) => do
-        if constructor_subpatterns_are_name_bindings(inner_patterns) then do
+        if constructor_subpatterns_are_supported_fields(inner_patterns) then do
           nested_constructor_count = nested_constructor_count + 1
         end else do
           supported = false
@@ -703,7 +703,7 @@ fn first_boxed_nested_constructor_index(
   while index < sub_patterns.length() do
     match sub_patterns[index] {
       PatternCtor(_, inner_patterns, _) => do
-        if constructor_subpatterns_are_name_bindings(inner_patterns) &&
+        if constructor_subpatterns_are_supported_fields(inner_patterns) &&
             constructor_info.boxed_positions.contains(index) then do
           found = index
           count = count + 1

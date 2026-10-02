@@ -1240,7 +1240,7 @@ class MLCDeriveJsonTest < Minitest::Test
     assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
     assert_includes ruby_source, "*_v_node.field0"
     assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
-    assert_includes ruby_source, "(*_v_nested_node.field0)"
+    assert_includes ruby_source, "(*_v_node.field0)"
 
     checker = <<~CPP
       int main() {
@@ -1253,6 +1253,45 @@ class MLCDeriveJsonTest < Minitest::Test
       }
     CPP
     compile_both_compilers(source, "cyclic_sum_array_nested_node", checker, link_user_translation: true)
+  end
+
+  def test_deeper_constructor_inside_a_cyclic_array_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn deeper(tree: Tree) -> i32 = match tree
+        | Kids([Node(Node(Node(left, _), _), _)]) => label(left)
+        | Kids([Node(Node(Leaf, _), _)]) => 0
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn triple() -> Tree = Kids([Node(Node(Node(Leaf, Leaf), Leaf), Leaf)])
+      fn two_deep() -> Tree = Kids([Node(Node(Leaf, Leaf), Leaf)])
+      fn other() -> Tree = Kids([Leaf])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "*_v_node.field0"
+    assert_includes ruby_source, "std::holds_alternative<Node>(_nested_0._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "std::holds_alternative<Leaf>("
+
+    checker = <<~CPP
+      int main() {
+        if (deeper(triple()) != 1) return 1;
+        if (deeper(two_deep()) != 0) return 2;
+        if (deeper(other()) != 3) return 3;
+        if (deeper(Tree(Leaf{})) != 4) return 4;
+        if (deeper(bare()) != 5) return 5;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_deeper_node", checker, link_user_translation: true)
   end
 
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)

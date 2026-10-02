@@ -813,12 +813,21 @@ module MLC
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
               member_suffix = wrapper_scrutinee ? "._" : ""
-
-              condition = "std::holds_alternative<#{case_name}>(#{scrutinee_var}#{member_suffix})"
-
-              binding_decls = nested_binding_decls(case_name, bindings, scrutinee_var, member_suffix)
-
-              { condition: condition, bindings: binding_decls.join(" ") }
+              variant_access = "#{scrutinee_var}#{member_suffix}"
+              condition = "std::holds_alternative<#{case_name}>(#{variant_access})"
+              binding_declarations, nested_checks = build_binding_extractions(case_name, bindings, variant_access)
+              captured_bindings = binding_declarations.join(" ")
+              check = { condition: condition, bindings: captured_bindings }
+              if nested_checks.any?
+                check[:bindings] = ""
+                check[:wrap] = lambda { |body|
+                  inner = nested_checks.reverse.reduce(body) do |accumulated, nested|
+                    apply_nested_pattern_check(nested, accumulated)
+                  end
+                  "#{captured_bindings} #{inner}"
+                }
+              end
+              check
             end
 
             def nested_binding_decls(case_name, bindings, scrutinee_var, member_suffix = "")
@@ -970,11 +979,16 @@ module MLC
               (element[:fields] || element[:bindings] || []).empty?
             end
 
-            def cyclic_array_shallow_constructor?(element)
+            def cyclic_array_constructor_pattern?(element)
               return false unless element.is_a?(Hash) && element[:kind] == :constructor
 
               fields = element[:fields] || element[:bindings] || []
-              fields.all? { |field| cyclic_array_name_element?(field) }
+              nested_constructors = fields.count { |field| cyclic_array_constructor_pattern?(field) }
+              return false if nested_constructors > 1
+
+              fields.all? { |field|
+                cyclic_array_name_element?(field) || cyclic_array_constructor_pattern?(field)
+              }
             end
 
             def cyclic_array_field_constructor?(element)
@@ -983,14 +997,7 @@ module MLC
               fields = element[:fields] || element[:bindings] || []
               return false if fields.empty?
 
-              nested_constructors = fields.count { |field|
-                cyclic_array_shallow_constructor?(field) && !cyclic_array_name_element?(field)
-              }
-              return false if nested_constructors > 1
-
-              fields.all? { |field|
-                cyclic_array_name_element?(field) || cyclic_array_shallow_constructor?(field)
-              }
+              cyclic_array_constructor_pattern?(element)
             end
 
             def cyclic_array_pattern_simple?(pattern)

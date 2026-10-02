@@ -546,8 +546,9 @@ sum and `rest` as the remaining `[Tree]` (`mlc::Array<std::shared_ptr<Tree>>`
 from `cbegin() + 1`). Indexing that tail reads the sum. `Kids([Leaf])`
 requires that element to be `Leaf` (`holds_alternative<Leaf>` on
 `(*element)._`). `Kids([Node(left, _)])` binds `left` as the sum (`*field`).
-`Kids([Node(Node(left, _), _)])` binds that inner `left` as the sum. An array
-element of a cyclic sum is the sum.
+`Kids([Node(Node(left, _), _)])` binds that inner `left` as the sum. Another
+constructor around it, `Kids([Node(Node(Node(left, _), _), _)])`, binds `left`
+the same way. An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
