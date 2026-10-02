@@ -228,9 +228,10 @@ module MLC
                                end
 
                 Array(pattern[:elements]).each do |elem|
-                  # Recursively bind variables from each element pattern
                   bind_pattern_variables(elem, element_type)
                 end
+                rest_name = pattern[:rest]
+                bind_variable(rest_name, scrutinee_type) if rest_name && !rest_name.empty? && rest_name != "_"
               when :tuple
                 # Tuple pattern: bind variables from element patterns
                 # Get element types from scrutinee type (if it's a tuple type)

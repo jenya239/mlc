@@ -345,8 +345,8 @@ end
 
 fn array_pattern_is_element_binding(pattern: Shared<Pattern>) -> bool =
   match pattern {
-    PatternArray(element_patterns, rest_name, _) =>
-      rest_name == '' && array_elements_are_bindings(element_patterns),
+    PatternArray(element_patterns, _, _) =>
+      array_elements_are_bindings(element_patterns),
     _ => false
   }
 
@@ -512,6 +512,8 @@ end
 
 fn cyclic_array_nested_if_statement(
   element_patterns: [Shared<Pattern>],
+  rest_name: string,
+  sum_name: string,
   array_access: string,
   arm: Shared<SemanticMatchArm>,
   use_void: bool,
@@ -533,9 +535,15 @@ fn cyclic_array_nested_if_statement(
     }
     element_index = element_index + 1
   end
+  if rest_name != '' then
+    arm_context = arm_context.add_value(rest_name)
+    inner_statements.push(emit_helpers.make_fragment_cpp_statement(
+      'const auto ' + cpp_safe(rest_name) + ' = mlc::Array<std::shared_ptr<' + sum_name + '>>(' + array_access + '.cbegin() + ' + element_patterns.length().to_string() + ', ' + array_access + '.cend()); '))
+  end
+  const size_comparison = if rest_name == '' then ' == ' else ' >= ' end
   emit_helpers.make_if_cpp_statement(
     emit_helpers.make_identifier_cpp_expression(
-      array_access + '.size() == ' + element_patterns.length().to_string()),
+      array_access + '.size()' + size_comparison + element_patterns.length().to_string()),
     emit_helpers.make_block_cpp_statement(append_cpp_statements(
       inner_statements,
       guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))),
@@ -565,9 +573,11 @@ fn cyclic_array_constructor_arm_statements(
     if array_pattern_is_element_binding(sub_patterns[index]) &&
         cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
       match sub_patterns[index] {
-        PatternArray(element_patterns, _, _) =>
+        PatternArray(element_patterns, rest_name, _) =>
           then_statements.push(cyclic_array_nested_if_statement(
             element_patterns,
+            rest_name,
+            cyclic_array_field_sum_name_at(constructor_name, index, context),
             lower_name + "." + constructor_field_member_name(context, constructor_name, index),
             arm,
             use_void,

@@ -60,9 +60,16 @@ export fn env_for_pattern_with_type(type_environment: Map<string, Shared<Type>>,
       environment_after_all_constructor_subpatterns(
         type_environment, sub_patterns, parameter_types, substitution, registry)
     end,
-    PatternArray(element_patterns, _, _) =>
-      environment_after_array_pattern_elements(
-        type_environment, element_patterns, array_pattern_element_type(type_value), registry),
+    PatternArray(element_patterns, rest_name, _) => do
+      let element_environment = environment_after_array_pattern_elements(
+        type_environment, element_patterns, array_pattern_element_type(type_value), registry)
+      if rest_name != '' then do
+        let environment = element_environment
+        environment.set(rest_name, type_value)
+        environment
+      end else element_environment
+      end
+    end,
     _ => env_for_pattern(type_environment, pattern, registry)
   }
 end

@@ -1103,6 +1103,47 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_pattern", checker, link_user_translation: true)
   end
 
+  def test_array_rest_pattern_on_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Kids(_) => 2
+      fn head_tail(tree: Tree) -> i32 = match tree
+        | Kids([first, ...rest]) => if rest.length() == 0 then label(first) else 2 end
+        | Kids([]) => 0
+        | Leaf => 4
+      fn second(tree: Tree) -> i32 = match tree
+        | Kids([_, ...rest]) => label(rest[0])
+        | Kids([]) => 0
+        | Leaf => 4
+      fn one() -> Tree = Kids([Leaf])
+      fn two() -> Tree = Kids([Leaf, Leaf])
+      fn empty_kids() -> Tree = Kids([])
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() >= 1"
+    assert_includes ruby_source, ".size() == 0"
+    assert_includes ruby_source, "(*_v_kids.field0[0])"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>(_v_kids.field0.cbegin() + 1, _v_kids.field0.cend())"
+    assert_includes ruby_source, "(*rest[0])"
+
+    checker = <<~CPP
+      int main() {
+        if (head_tail(one()) != 1) return 1;
+        if (head_tail(two()) != 2) return 2;
+        if (head_tail(empty_kids()) != 0) return 3;
+        if (head_tail(Tree(Leaf{})) != 4) return 4;
+        if (second(two()) != 1) return 5;
+        if (second(empty_kids()) != 0) return 6;
+        if (second(Tree(Leaf{})) != 4) return 7;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_rest", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

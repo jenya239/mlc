@@ -694,10 +694,10 @@ module MLC
               binding_decls << structured_binding_decl(case_name, bindings, temp_var) if non_wildcard_bindings.any?
 
               bindings.each_with_index do |binding, index|
-                if binding.is_a?(Hash) && binding[:kind] == :array && binding[:rest].nil? &&
-                   cyclic_array_field_sum_name(case_name, index)
+                if binding.is_a?(Hash) && binding[:kind] == :array &&
+                   (sum_name = cyclic_array_field_sum_name(case_name, index))
                   member_name = payload_member_name(cyclic_variant_fields(case_name), index)
-                  nested_checks << build_cyclic_array_pattern_check(binding, "#{temp_var}.#{member_name}")
+                  nested_checks << build_cyclic_array_pattern_check(binding, "#{temp_var}.#{member_name}", sum_name)
                   next
                 end
                 next unless binding.is_a?(Hash) && binding[:kind] == :constructor
@@ -846,7 +846,7 @@ module MLC
 
                 bindings = pattern[:bindings] || pattern[:fields] || []
                 bindings.each_with_index.any? do |binding, index|
-                  binding.is_a?(Hash) && binding[:kind] == :array && binding[:rest].nil? &&
+                  binding.is_a?(Hash) && binding[:kind] == :array &&
                     cyclic_array_field_sum_name(pattern[:name], index)
                 end
               end
@@ -955,14 +955,21 @@ module MLC
               element.name
             end
 
-            def build_cyclic_array_pattern_check(pattern, scrutinee_var)
+            def build_cyclic_array_pattern_check(pattern, scrutinee_var, sum_name)
               elements = pattern[:elements] || []
               binding_text = elements.each_with_index.filter_map { |element, index|
                 next unless element.is_a?(Hash) && element[:kind] == :var
 
                 "const auto& #{element[:name]} = (*#{scrutinee_var}[#{index}]);"
               }.join(" ")
-              { condition: "#{scrutinee_var}.size() == #{elements.length}", bindings: binding_text }
+              rest_name = pattern[:rest]
+              if rest_name && !rest_name.empty?
+                binding_text = "#{binding_text} const auto #{rest_name} = mlc::Array<std::shared_ptr<#{sum_name}>>(#{scrutinee_var}.cbegin() + #{elements.length}, #{scrutinee_var}.cend());"
+                condition = "#{scrutinee_var}.size() >= #{elements.length}"
+              else
+                condition = "#{scrutinee_var}.size() == #{elements.length}"
+              end
+              { condition: condition, bindings: binding_text }
             end
 
             def cyclic_variant_fields(constructor_name)
