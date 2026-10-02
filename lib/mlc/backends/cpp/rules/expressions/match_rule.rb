@@ -862,6 +862,18 @@ module MLC
               argument.name
             end
 
+            def cyclic_option_nullary_payload_name(bindings)
+              return nil unless bindings.length == 1
+
+              binding = bindings.first
+              return nil unless binding.is_a?(Hash) && binding[:kind] == :constructor
+
+              nested = binding[:bindings] || binding[:fields] || []
+              return nil unless nested.empty?
+
+              binding[:name]
+            end
+
             def build_cyclic_option_nested_check(pattern, scrutinee_var)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
@@ -871,7 +883,12 @@ module MLC
 
                   "const auto& #{binding} = *(*#{scrutinee_var});"
                 }.join(" ")
-                { condition: "(#{scrutinee_var}.has_value() && *#{scrutinee_var})", bindings: binding_text }
+                condition = "(#{scrutinee_var}.has_value() && *#{scrutinee_var})"
+                payload_name = cyclic_option_nullary_payload_name(bindings)
+                if payload_name
+                  condition = "(#{condition} && std::holds_alternative<#{payload_name}>((*(*#{scrutinee_var}))._))"
+                end
+                { condition: condition, bindings: binding_text }
               else
                 { condition: "!#{scrutinee_var}.has_value()", bindings: "" }
               end

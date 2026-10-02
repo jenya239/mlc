@@ -535,8 +535,9 @@ enclosing type is that cyclic sum. `match` visits `subject._`. A
 pattern binding of a boxed child is the sum: the binding reads `*field`.
 A `Some(child)` match on `Option` of a cyclic sum binds `child` as the sum
 (`*(*optional)`). A nested `Node(Some(child))` binds `child` as the sum
-(`*(*field)`), and `Node(None)` is the empty optional. An array element of a
-cyclic sum is the sum.
+(`*(*field)`), and `Node(None)` is the empty optional. `Node(Some(Leaf))`
+requires that child to be `Leaf` (`holds_alternative<Leaf>` on
+`(*(*field))._`). An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes

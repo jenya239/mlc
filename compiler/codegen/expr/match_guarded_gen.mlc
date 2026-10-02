@@ -337,6 +337,7 @@ fn cyclic_option_nested_inner_statements(
 ) -> [Shared<CppStatement>] = do
   let mut arm_context = context
   let mut statements: [Shared<CppStatement>] = []
+  let mut payload_constructor = ''
   match sub_pattern {
     PatternCtor(constructor_name, inner_patterns, _) =>
       if constructor_name == 'Some' && inner_patterns.length() == 1 then
@@ -346,14 +347,28 @@ fn cyclic_option_nested_inner_statements(
             statements.push(emit_helpers.make_fragment_cpp_statement(
               'const auto& ' + cpp_safe(binding_name) + ' = *(*' + option_access + '); '))
           end,
+          PatternCtor(payload_name, payload_patterns, _) =>
+            if payload_patterns.length() == 0 then do
+              payload_constructor = payload_name
+            end else do end end,
           _ => do end
         }
       end,
     _ => do end
   }
-  append_cpp_statements(
-    statements,
-    guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn))
+  const tail = guarded_arm_tail_statements(arm, use_void, arm_context, gen_stmts, eval_expr_fn)
+  if payload_constructor != '' then
+    [
+      emit_helpers.make_if_cpp_statement(
+        variant_holds_alternative_expression(
+          context.resolve(payload_constructor),
+          "(*(*" + option_access + "))._"),
+        emit_helpers.make_block_cpp_statement(tail),
+        emit_helpers.make_block_cpp_statement([]))
+    ]
+  else
+    append_cpp_statements(statements, tail)
+  end
 end
 
 fn cyclic_option_nested_if_statement(
