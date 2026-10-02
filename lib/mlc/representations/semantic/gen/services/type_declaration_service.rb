@@ -9,7 +9,7 @@ module MLC
         module Services
           # TypeDeclarationService - lowers AST type declarations and registers them
           class TypeDeclarationService
-            attr_accessor :expression_visitor
+            attr_accessor :expression_visitor, :cyclic_sum_names
 
             def initialize(type_checker:, type_builder:, type_registration_service:, module_context_service:)
               @type_checker = type_checker
@@ -30,7 +30,7 @@ module MLC
 
               core_type = specialize_named_type(core_type, decl.name)
               core_type = apply_record_field_defaults(decl, core_type)
-              DeriveClauseValidation.validate!(decl, core_type)
+              DeriveClauseValidation.validate!(decl, core_type, cyclic_sum_names: @cyclic_sum_names)
               kind = @type_checker.infer_type_kind(decl, core_type)
 
               @type_registration_service.register(

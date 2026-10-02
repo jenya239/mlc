@@ -733,6 +733,11 @@ module MLC
               code: "bool operator<(const #{type_decl.name}& a, const #{type_decl.name}& b) noexcept;"
             )
           end
+          if traits.include?("Hash")
+            statements << @context.factory.raw_statement(
+              code: "size_t #{type_decl.name}_hash(const #{type_decl.name}& self) noexcept;"
+            )
+          end
           statements
         end
 
@@ -1299,7 +1304,55 @@ end
 
         HASH_COMBINE_SUFFIX = " + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);"
 
+        def cyclic_hash_combine_line(hash_expression)
+          "h ^= #{hash_expression}#{HASH_COMBINE_SUFFIX}"
+        end
+
+        def cyclic_hash_boxed_lines(access, type_name)
+          present = cyclic_hash_combine_line("#{type_name}_hash(*#{access})")
+          absent = cyclic_hash_combine_line("std::hash<size_t>{}(0)")
+          "if (#{access}) { #{present} } else { #{absent} }"
+        end
+
+        def cyclic_hash_sum_body(type)
+          lines = ["size_t h = 1469598103934665603ULL;"]
+          type.variants.each_with_index do |variant, index|
+            variant_name = variant[:name]
+            fields = Array(variant[:fields])
+            branch = [cyclic_hash_combine_line("std::hash<size_t>{}(#{index})")]
+            fields.each_with_index do |field, field_index|
+              member = derive_sum_field_member(field, field_index)
+              access = "std::get<#{variant_name}>(self._).#{member}"
+              if cyclic_boxed_sum_field?(field[:type])
+                branch << cyclic_hash_boxed_lines(access, field[:type].name)
+              else
+                cpp_type = derive_hash_prim_std_type(field[:type])
+                branch << derive_hash_combine_line(cpp_type, access)
+              end
+            end
+            lines << "if (std::holds_alternative<#{variant_name}>(self._)) {\n      #{branch.join("\n      ")}\n      return h;\n    }"
+          end
+          lines << "return h;"
+          lines.join("\n    ")
+        end
+
         def generate_derive_hash(name, type)
+          if type.is_a?(SemanticIR::SumType) && cyclic_sum_type?(name)
+            body = cyclic_hash_sum_body(type)
+            code = <<~CPP.strip
+              size_t #{name}_hash(const #{name}& self) noexcept {
+                #{body}
+              }
+              namespace std {
+              template<>
+              struct hash<#{name}> {
+                size_t operator()(const #{name}& self) const noexcept { return #{name}_hash(self); }
+              };
+              }
+            CPP
+            return @context.factory.raw_statement(code: code)
+          end
+
           body = case type
                  when SemanticIR::RecordType
                    derive_hash_record_body(type.fields)

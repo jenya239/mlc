@@ -60,7 +60,8 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
   не поддержаны. Привязка `match` к упакованному полю — сама сумма (`*field`).
   `derive { Display }` печатает её через `Type_to_string(*field)`.
   `derive { Eq }` и `derive { Ord }` сравнивают суммы, а не указатели.
-  `derive { Hash }` по-прежнему только для `i32`, `bool`, `string`.
+  `derive { Hash }` хеширует её через `Type_hash(*field)`. Другие поля
+  по-прежнему только `i32`, `bool`, `string`.
 
 ## 4. OpenAPI codegen
 
@@ -127,8 +128,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    A non-generic multi-variant recursive sum lowers to a wrapper struct;
    by-value cyclic fields are `std::shared_ptr`. Generic and single-variant
    recursion stay unsupported. `derive { Display, Eq, Ord }` reads a boxed
-   child as the sum (`*field`). `derive { Hash }` stays limited to `i32`,
-   `bool`, and `string`.
+   child as the sum (`*field`). `derive { Hash }` hashes that child with
+   `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
+   and `string`.
 4. **partial** — `scripts/openapi_codegen.rb` emits mini Petstore that `mlcc`
    and `clang++ -fsyntax-only` accept (`[T]`, `PetCase(Pet)`, `ApiResult<T>`).
    Client bodies return `Err` and do not call `fetch`. Live mock-server stays

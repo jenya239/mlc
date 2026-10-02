@@ -2,7 +2,7 @@
 
 import {
   TypeVariant, VarUnit, VarTuple, VarRecord, TypeExpr,
-  TyI32, TyBool, TyString, Diagnostic, diagnostic_error_with_code, diagnostics_append, Span
+  TyI32, TyBool, TyString, TyNamed, Diagnostic, diagnostic_error_with_code, diagnostics_append, Span
 } from '../../frontend/ast'
 import {
   diagnostic_code_e069, diagnostic_code_e070, diagnostic_code_e071, diagnostic_code_e072
@@ -20,19 +20,28 @@ fn derive_trait_name_allowed(trait_name: string) -> bool =
 fn string_list_contains_derive_trait(haystack: [string], needle: string) -> bool =
   haystack.any(trait_name => trait_name == needle)
 
-fn type_expr_allowed_for_derive_hash_field(type_expression: Shared<TypeExpr>) -> bool =
+fn type_expr_allowed_for_derive_hash_field(
+  type_expression: Shared<TypeExpr>,
+  enclosing_type_name: string,
+  cyclic_sum_type_names: [string]
+) -> bool =
   match type_expression {
     TyI32 | TyBool | TyString => true,
-    _                         => false
+    TyNamed(name) =>
+      string_list_contains_derive_trait(cyclic_sum_type_names, enclosing_type_name) &&
+      string_list_contains_derive_trait(cyclic_sum_type_names, name),
+    _ => false
   }
 
 fn derive_hash_field_error(
+  enclosing_type_name: string,
   variant_label: string,
   field_label: string,
   type_expression: Shared<TypeExpr>,
-  diagnostic_span: Span
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
 ) -> [Diagnostic] = do
-  if type_expr_allowed_for_derive_hash_field(type_expression) then []
+  if type_expr_allowed_for_derive_hash_field(type_expression, enclosing_type_name, cyclic_sum_type_names) then []
   else
     [ diagnostic_error_with_code(
       'derive Hash: unsupported field type for "' + field_label + '" in ' + variant_label
@@ -50,19 +59,26 @@ type Derive_hash_tuple_field_fold_state = Derive_hash_tuple_field_fold_state {
 fn derive_hash_tuple_field_fold_step(
   state: Derive_hash_tuple_field_fold_state,
   field_type: Shared<TypeExpr>,
+  enclosing_type_name: string,
   variant_name: string,
-  diagnostic_span: Span
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
 ) -> Derive_hash_tuple_field_fold_state = do
   const slot_label = "_" + state.field_index.to_string()
   const field_errors = derive_hash_field_error(
-    `variant '${variant_name}'`, slot_label, field_type, diagnostic_span)
+    enclosing_type_name, `variant '${variant_name}'`, slot_label, field_type, diagnostic_span, cyclic_sum_type_names)
   Derive_hash_tuple_field_fold_state {
     diagnostics: diagnostics_append(state.diagnostics, field_errors),
     field_index:   state.field_index + 1,
   }
 end
 
-fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic_span: Span) -> [Diagnostic] =
+fn derive_hash_field_errors_for_variant(
+  enclosing_type_name: string,
+  variant: Shared<TypeVariant>,
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
+) -> [Diagnostic] =
   match variant {
     VarUnit(_, _) => do
       const diagnostics_none: [Diagnostic] = []
@@ -76,16 +92,28 @@ fn derive_hash_field_errors_for_variant(variant: Shared<TypeVariant>, diagnostic
             field_index:   0,
           },
           (state, field_type) =>
-            derive_hash_tuple_field_fold_step(state, field_type, variant_name, diagnostic_span))
+            derive_hash_tuple_field_fold_step(
+              state, field_type, enclosing_type_name, variant_name, diagnostic_span, cyclic_sum_type_names))
         .diagnostics,
     VarRecord(variant_name, field_defs, _) =>
       field_defs.flat_map(field_definition =>
         derive_hash_field_error(
-          `variant '${variant_name}'`, field_definition.name, field_definition.type_value, diagnostic_span))
+          enclosing_type_name,
+          `variant '${variant_name}'`,
+          field_definition.name,
+          field_definition.type_value,
+          diagnostic_span,
+          cyclic_sum_type_names))
   }
 
-fn derive_hash_errors_for_variants(variants: [Shared<TypeVariant>], diagnostic_span: Span) -> [Diagnostic] =
-  variants.flat_map(variant => derive_hash_field_errors_for_variant(variant, diagnostic_span))
+fn derive_hash_errors_for_variants(
+  enclosing_type_name: string,
+  variants: [Shared<TypeVariant>],
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
+) -> [Diagnostic] =
+  variants.flat_map(variant =>
+    derive_hash_field_errors_for_variant(enclosing_type_name, variant, diagnostic_span, cyclic_sum_type_names))
 
 fn derive_json_type_problem(type_expression: Shared<TypeExpr>) -> string =
   match type_expression {
@@ -186,11 +214,13 @@ fn derive_clause_trait_scan_fold_step(
 end
 
 fn derive_clause_diagnostics_after_trait_scan(
+  enclosing_type_name: string,
   type_parameter_names: [string],
   variants: [Shared<TypeVariant>],
   derive_trait_names: [string],
   trait_scan_diagnostics: [Diagnostic],
-  diagnostic_span: Span
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
 ) -> [Diagnostic] =
   if string_list_contains_derive_trait(derive_trait_names, 'Hash') then
     if type_parameter_names.length() > 0 then
@@ -206,7 +236,7 @@ fn derive_clause_diagnostics_after_trait_scan(
     else
       const hash_diagnostics = diagnostics_append(
         trait_scan_diagnostics,
-        derive_hash_errors_for_variants(variants, diagnostic_span))
+        derive_hash_errors_for_variants(enclosing_type_name, variants, diagnostic_span, cyclic_sum_type_names))
       if string_list_contains_derive_trait(derive_trait_names, 'Json') then
         diagnostics_append(hash_diagnostics, derive_json_clause_diagnostics(type_parameter_names, variants, diagnostic_span))
       else
@@ -222,10 +252,12 @@ fn derive_clause_diagnostics_after_trait_scan(
   end
 
 export fn derive_clause_diagnostics(
+  enclosing_type_name: string,
   type_parameter_names: [string],
   variants: [Shared<TypeVariant>],
   derive_trait_names: [string],
-  diagnostic_span: Span
+  diagnostic_span: Span,
+  cyclic_sum_type_names: [string]
 ) -> [Diagnostic] =
   if derive_trait_names.length() == 0 then
     do let empty_diagnostics: [Diagnostic] = []; empty_diagnostics end
@@ -237,9 +269,11 @@ export fn derive_clause_diagnostics(
       },
       (state, trait_name) => derive_clause_trait_scan_fold_step(state, trait_name, diagnostic_span))
     derive_clause_diagnostics_after_trait_scan(
+      enclosing_type_name,
       type_parameter_names,
       variants,
       derive_trait_names,
       trait_scan_result.diagnostics,
-      diagnostic_span)
+      diagnostic_span,
+      cyclic_sum_type_names)
   end

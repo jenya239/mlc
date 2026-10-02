@@ -72,6 +72,10 @@ fn cyclic_json_prototype_declarations(
       declarations.push(Shared.new(CppDeclarationFragment(
         'bool operator<(const ' + resolved_name + '& a, const ' + resolved_name + '& b) noexcept;\n')))
     end
+    if derive_traits.any(trait_name => trait_name == "Hash") then
+      declarations.push(Shared.new(CppDeclarationFragment(
+        'size_t ' + resolved_name + '_hash(const ' + resolved_name + '& self) noexcept;\n')))
+    end
     declarations
   else []
   end

@@ -1376,6 +1376,94 @@ end
 fn cyclic_sum_uses_deep_comparison(type_name: string, variants: [Shared<TypeVariant>], cyclic_sum_type_names: [string]) -> bool =
   derive_json_name_is_cyclic(cyclic_sum_type_names, type_name) && !variants_is_single_record(variants)
 
+fn cyclic_hash_combine_line(hash_expression: string) -> string =
+  "h ^= " + hash_expression + " + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);\n"
+
+fn cyclic_hash_field_line(
+  variant_name: string,
+  member: string,
+  field_type: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> string = do
+  const access = "std::get<" + variant_name + ">(self._)." + member
+  match field_type {
+    TyNamed(name) =>
+      if derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+        "if (" + access + ") { " + cyclic_hash_combine_line(name + "_hash(*" + access + ")") +
+          " } else { " + cyclic_hash_combine_line("std::hash<size_t>{}(0)") + " }"
+      else
+        cyclic_hash_combine_line("std::hash<" + derive_hash_std_cpp_type(field_type) + ">{}(" + access + ")")
+      end,
+    _ => cyclic_hash_combine_line("std::hash<" + derive_hash_std_cpp_type(field_type) + ">{}(" + access + ")")
+  }
+end
+
+fn cyclic_hash_fields_text(
+  variant_name: string,
+  members: [string],
+  field_types: [Shared<TypeExpr>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < members.length() do
+    text = text + "      " + cyclic_hash_field_line(variant_name, members[index], field_types[index], cyclic_sum_type_names)
+    index = index + 1
+  end
+  text
+end
+
+fn cyclic_hash_variant_text(
+  variant: Shared<TypeVariant>,
+  discriminant_index: i32,
+  cyclic_sum_type_names: [string]
+) -> string =
+  match variant {
+    VarUnit(name, _) =>
+      "  if (std::holds_alternative<" + name + ">(self._)) {\n      " +
+        cyclic_hash_combine_line("std::hash<size_t>{}(" + discriminant_index.to_string() + ")") +
+        "      return h;\n  }\n",
+    VarTuple(name, field_types, _) =>
+      "  if (std::holds_alternative<" + name + ">(self._)) {\n      " +
+        cyclic_hash_combine_line("std::hash<size_t>{}(" + discriminant_index.to_string() + ")") +
+        cyclic_hash_fields_text(name, tuple_member_names(field_types.length()), field_types, cyclic_sum_type_names) +
+        "      return h;\n  }\n",
+    VarRecord(name, field_definitions, _) =>
+      "  if (std::holds_alternative<" + name + ">(self._)) {\n      " +
+        cyclic_hash_combine_line("std::hash<size_t>{}(" + discriminant_index.to_string() + ")") +
+        cyclic_hash_fields_text(
+          name,
+          record_member_names(field_definitions),
+          record_field_types(field_definitions),
+          cyclic_sum_type_names) +
+        "      return h;\n  }\n"
+  }
+
+fn cyclic_hash_function_text(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> string = do
+  let mut body = "  size_t h = 1469598103934665603ULL;\n"
+  let mut index = 0
+  while index < variants.length() do
+    body = body + cyclic_hash_variant_text(variants[index], index, cyclic_sum_type_names)
+    index = index + 1
+  end
+  "size_t " + type_name + "_hash(const " + type_name + "& self) noexcept {\n" + body + "  return h;\n}\n"
+end
+
+fn gen_derive_hash_for_type(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
+  if cyclic_sum_uses_deep_comparison(type_name, variants, cyclic_sum_type_names) then
+    [emit_helpers.make_fragment_cpp_declaration(cyclic_hash_function_text(type_name, variants, cyclic_sum_type_names))]
+  else
+    gen_derive_hash_cpp(type_name, variants)
+  end
+
 fn gen_derive_display_for_type(
   type_name: string,
   variants: [Shared<TypeVariant>],
@@ -1418,7 +1506,7 @@ fn gen_derive_trait_cpp(
   if trait_name == "Display" then gen_derive_display_for_type(type_name, variants, cyclic_sum_type_names)
   else if trait_name == "Eq" then gen_derive_eq_for_type(type_name, variants, cyclic_sum_type_names)
   else if trait_name == "Ord" then gen_derive_ord_for_type(type_name, variants, cyclic_sum_type_names)
-  else if trait_name == "Hash" then gen_derive_hash_cpp(type_name, variants)
+  else if trait_name == "Hash" then gen_derive_hash_for_type(type_name, variants, cyclic_sum_type_names)
   else if trait_name == "Json" then gen_derive_json_cpp(type_name, variants, cyclic_sum_type_names)
   else []
   end

@@ -759,6 +759,48 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_display", checker)
   end
 
+  def test_cyclic_sum_hash_follows_the_sum_on_ruby_and_mlcc
+    plain = MLC.to_cpp("type Shape = Circle(i32) | Empty derive { Hash }\nfn main() -> i32 = 0\n")
+    assert_includes plain, "std::get<Circle>(self._).field0"
+    refute_includes plain, "Shape_hash"
+
+    wrap = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree)
+      type Wrap = { tree: Tree } derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    error = assert_raises(MLC::CompileError) { MLC.to_cpp(wrap) }
+    assert_includes error.message, "derive Hash: unsupported field type for \"tree\""
+
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) derive { Hash, Eq }
+      type Item = End | Box(i32, Item) derive { Hash }
+      type Left = StopLeft | GoLeft(Right) derive { Hash }
+      type Right = StopRight | GoRight(Left) derive { Hash }
+      fn main() -> i32 = 0
+    MLC
+    checker = <<~'CPP'
+      int main() {
+        Tree left{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(Tree(Leaf{}))}};
+        Tree right{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(Tree(Leaf{}))}};
+        if (Tree_hash(left) != Tree_hash(right)) return 1;
+        if (!(left == right)) return 2;
+        Tree deeper{Node{std::make_shared<Tree>(Tree(Leaf{})), std::make_shared<Tree>(std::move(left))}};
+        if (Tree_hash(deeper) == Tree_hash(right)) return 3;
+        Item first{Box{1, std::make_shared<Item>(Item(End{}))}};
+        Item second{Box{1, std::make_shared<Item>(Item(End{}))}};
+        if (Item_hash(first) != Item_hash(second)) return 4;
+        Item third{Box{2, std::make_shared<Item>(Item(End{}))}};
+        if (Item_hash(first) == Item_hash(third)) return 5;
+        Left step{GoLeft{std::make_shared<Right>(Right(StopRight{}))}};
+        Left again{GoLeft{std::make_shared<Right>(Right(StopRight{}))}};
+        if (Left_hash(step) != Left_hash(again)) return 6;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_hash", checker)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

@@ -90,6 +90,8 @@ module MLC
 
             def pass_preregister_types(context)
               program = context[:program]
+              @services.type_declaration_service.cyclic_sum_names =
+                MLC::Representations::Semantic::Gen::Services::DeriveClauseValidation.cyclic_sum_names_from_program(program)
 
               program.declarations.each do |decl|
                 next unless decl.is_a?(MLC::Source::AST::TypeDecl)

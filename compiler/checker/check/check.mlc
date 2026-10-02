@@ -13,6 +13,7 @@ import { Type, TypeRegistry, TUnknown, build_registry, type_from_annotation_with
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from '../transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from '../transform/param_destructure_expand'
 import { derive_clause_diagnostics } from './derive_validation'
+import { build_cyclic_sum_type_names } from '../../codegen/decl/type_index'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, check_context_with_expected_return, CheckContext } from './check_context'
 import { types_structurally_equal, types_assignment_compatible, type_is_unknown, type_description } from '../semantic_type_structure'
@@ -485,6 +486,7 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
   all_diagnostics = diagnostics_append(all_diagnostics, extern_header_arity_diagnostics(destructured_full_program))
   all_diagnostics = diagnostics_append(all_diagnostics, extern_dedup_diagnostics(destructured_full_program))
   all_diagnostics = diagnostics_append(all_diagnostics, region_field_type_diagnostics(destructured_full_program))
+  const cyclic_sum_type_names = build_cyclic_sum_type_names(destructured_full_program.decls)
   let mut declaration_index = 0
   while declaration_index < expanded_entry_program.decls.length() do
     match decl_inner(expanded_entry_program.decls[declaration_index]) {
@@ -524,11 +526,16 @@ fn gather_program_check(entry: Program, full_program: Program) -> Program_check_
         end
         ()
       end,
-      DeclType(_, type_parameters, variants, derive_trait_names, _) => do
+      DeclType(type_name, type_parameters, variants, derive_trait_names, _) => do
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           derive_clause_diagnostics(
-            type_parameters, variants, derive_trait_names, decl_span(expanded_entry_program.decls[declaration_index])))
+            type_name,
+            type_parameters,
+            variants,
+            derive_trait_names,
+            decl_span(expanded_entry_program.decls[declaration_index]),
+            cyclic_sum_type_names))
         all_diagnostics = diagnostics_append(
           all_diagnostics,
           record_field_default_value_diagnostics(type_parameters, variants, registry))

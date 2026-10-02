@@ -529,8 +529,9 @@ those sums is stored as `std::shared_ptr`. The MLC type stays the sum.
 pattern binding of a boxed child is the sum: the binding reads `*field`.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
-allocated values of the same shape compare equal. `derive { Hash }` still
-allows only `i32`, `bool`, and `string`.
+allocated values of the same shape compare equal. `derive { Hash }` hashes
+that child through `Type_hash(*field)`. Any other field still allows only
+`i32`, `bool`, and `string`.
 
 ## Yaml
 
