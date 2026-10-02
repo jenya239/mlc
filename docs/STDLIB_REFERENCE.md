@@ -531,6 +531,8 @@ and `None` is an empty optional. An array of a cyclic sum is
 `mlc::Array<std::shared_ptr<Sum>>`. `derive` of those `Option` and array
 fields stays unsupported. `match` visits `subject._`. A
 pattern binding of a boxed child is the sum: the binding reads `*field`.
+A `Some(child)` match on `Option` of a cyclic sum binds `child` as the sum
+(`*(*optional)`). An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes

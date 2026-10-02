@@ -13,14 +13,19 @@ module MLC
             end
 
             def apply(node)
-              # Recursively lower array and index expressions through context
               array = lower_expression(node.object)
               index = lower_expression(node.index)
+              subscript = context.factory.array_subscript(array: array, index: index)
+              return subscript unless cyclic_sum_array_element?(node.object)
 
-              context.factory.array_subscript(
-                array: array,
-                index: index
-              )
+              context.factory.unary_expression(operator: "*", operand: subscript)
+            end
+
+            def cyclic_sum_array_element?(object)
+              element_type = object&.type
+              return false unless element_type.is_a?(MLC::SemanticIR::ArrayType)
+
+              context.named_cyclic_sum_type?(element_type.element_type)
             end
           end
         end

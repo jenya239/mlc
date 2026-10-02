@@ -26,7 +26,8 @@ import {
 
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
 import { is_result_generic, is_option_generic, result_ok_type } from '../../checker/check/method_types/result_option_method_types'
-import { sem_type_to_cpp, cpp_template_two_type_arguments } from '../decl/type_gen'
+import { sem_type_to_cpp, cpp_template_two_type_arguments, cyclic_option_sum_cpp_name } from '../decl/type_gen'
+import { gen_cyclic_option_match_cpp } from './match_cyclic_option'
 import {
   CppExpression,
   CppStatement,
@@ -380,6 +381,10 @@ export fn gen_match_std_visit_cpp(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
+  if cyclic_option_sum_cpp_name(context, sexpr_type(subject)) != '' then
+    return gen_cyclic_option_match_cpp(
+      subject, expanded_arms, match_result_type, context, gen_stmts, eval_expr_cpp_fn)
+  end
   const visit_void = match_visit_uses_void_lambdas(match_result_type)
   const effective_result_type = match_effective_result_type(match_result_type, context)
   const return_cpp =

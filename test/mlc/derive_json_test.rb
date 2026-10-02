@@ -879,6 +879,38 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_option_array", checker, link_user_translation: true)
   end
 
+  def test_cyclic_option_match_and_array_element_read_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Option<Tree>) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_) => 2
+        | Kids(_) => 3
+      fn from_some(child: Option<Tree>) -> i32 = match child
+        | Some(tree) => label(tree)
+        | None => 0
+      fn first_kid(items: [Tree]) -> i32 = label(items[0])
+      fn present() -> Option<Tree> = Some(Leaf)
+      fn missing() -> Option<Tree> = None
+      fn kids() -> [Tree] = [Leaf]
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "*(*"
+    assert_includes ruby_source, ".has_value()"
+
+    checker = <<~CPP
+      int main() {
+        if (from_some(present()) != 1) return 1;
+        if (from_some(missing()) != 0) return 2;
+        if (first_kid(kids()) != 1) return 3;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_option_match", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

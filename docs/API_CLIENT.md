@@ -63,6 +63,8 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
   Массив такой суммы — `mlc::Array<std::shared_ptr<Sum>>`.
   `derive` этих полей `Option` и массива не поддержан.
   Привязка `match` к упакованному полю — сама сумма (`*field`).
+  Привязка `Some(child)` для `Option` циклической суммы — сама сумма
+  (`*(*optional)`). Элемент массива такой суммы — сама сумма.
   `derive { Display }` печатает её через `Type_to_string(*field)`.
   `derive { Eq }` и `derive { Ord }` сравнивают суммы, а не указатели.
   `derive { Hash }` хеширует её через `Type_hash(*field)`. Другие поля
@@ -136,7 +138,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    recursion stay unsupported. `Option` of a cyclic sum is
    `std::optional<std::shared_ptr<Sum>>`; an array of a cyclic sum is
    `mlc::Array<std::shared_ptr<Sum>>`. `derive` of those fields stays
-   unsupported. `derive { Display, Eq, Ord }` reads a boxed
+   unsupported. `Some(child)` on that `Option` binds the sum
+   (`*(*optional)`), and an array element of a cyclic sum is the sum.
+   `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
    and `string`.

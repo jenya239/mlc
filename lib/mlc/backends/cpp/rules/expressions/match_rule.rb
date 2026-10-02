@@ -54,11 +54,12 @@ module MLC
 
               # Check if scrutinee is an Option type (requires special handling)
               is_option_type = option_type?(node.scrutinee&.type)
+              is_cyclic_option = !context.cyclic_option_sum_name(node.scrutinee&.type).nil?
 
               if has_regex
                 # Generate if-else chain for regex matching
                 lower_match_with_regex(node, scrutinee)
-              elsif has_guards || has_nested || has_wildcard || has_literal || has_array || has_tuple || is_option_type
+              elsif has_guards || has_nested || has_wildcard || has_literal || has_array || has_tuple || is_option_type || is_cyclic_option
                 # Generate if-else chain for guard clauses, nested patterns, wildcards, literals,
                 # array patterns, tuple patterns, or Option types (std::optional needs special handling)
                 lower_match_with_guards(node, scrutinee)
@@ -603,6 +604,10 @@ module MLC
                 end
               end
 
+              if context.cyclic_option_sum_name(scrutinee_type)
+                statements << context.factory.raw_statement(code: "std::abort();")
+              end
+
               build_match_iife(match_expr, statements)
             end
 
@@ -633,6 +638,10 @@ module MLC
 
               # Special handling for Option patterns (Some/None) only if scrutinee is Option<T> (generic)
               # User-defined "type Option = Some(x) | None" should use std::variant handling
+              if ["Some", "None"].include?(case_name) && context.cyclic_option_sum_name(scrutinee_type)
+                return build_cyclic_option_pattern_arm(case_name, bindings, guard, arm_body_code, scrutinee_src)
+              end
+
               if ["Some", "None"].include?(case_name) && option_type?(scrutinee_type)
                 return build_option_pattern_arm(case_name, bindings, guard, arm_body_code, scrutinee_src)
               end
@@ -728,6 +737,35 @@ module MLC
               context.factory.raw_statement(
                 code: "if (#{holds_check}) { #{inner_body} }"
               )
+            end
+
+            def build_cyclic_option_pattern_arm(case_name, bindings, guard, arm_body_code, scrutinee_src)
+              holds_check = cyclic_option_holds_check(case_name, scrutinee_src)
+              binding_str = cyclic_option_bindings(case_name, bindings, scrutinee_src)
+              inner_body = option_inner_body(binding_str, guard, arm_body_code)
+
+              context.factory.raw_statement(
+                code: "if (#{holds_check}) { #{inner_body} }"
+              )
+            end
+
+            def cyclic_option_holds_check(case_name, scrutinee_src)
+              if case_name == "Some"
+                "(#{scrutinee_src}.has_value() && *#{scrutinee_src})"
+              else
+                "!#{scrutinee_src}.has_value()"
+              end
+            end
+
+            def cyclic_option_bindings(case_name, bindings, scrutinee_src)
+              return "" unless case_name == "Some" && bindings.any?
+
+              bindings.filter_map { |binding|
+                next if binding == "_"
+                next if binding.is_a?(Hash)
+
+                "const auto& #{binding} = *(*#{scrutinee_src});"
+              }.join(" ")
             end
 
             def option_holds_check(case_name, scrutinee_src)

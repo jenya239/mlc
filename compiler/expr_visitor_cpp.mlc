@@ -980,15 +980,33 @@ export fn gen_field_via_cpp_visitor(
         field_access_operator(object, context) == '->'))
   }
 
+fn index_expression_reads_cyclic_sum(
+  object: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> bool =
+  match sexpr_type(object) {
+    TArray(inner) =>
+      match inner {
+        TNamed(name) => context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name),
+        _ => false
+      },
+    _ => false
+  }
+
 export fn gen_index_via_cpp_visitor(
   object: Shared<SemanticExpression>,
   index_expression: Shared<SemanticExpression>,
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
-) -> Shared<CppExpression> =
-  Shared.new(CppIndex(
+) -> Shared<CppExpression> = do
+  const indexed = Shared.new(CppIndex(
     eval_expr_cpp(object, context, gen_stmts),
     eval_expr_cpp(index_expression, context, gen_stmts)))
+  if index_expression_reads_cyclic_sum(object, context) then
+    Shared.new(CppUnary("*", indexed))
+  else indexed
+  end
+end
 
 export fn gen_while_via_cpp_visitor(
   condition: Shared<SemanticExpression>,

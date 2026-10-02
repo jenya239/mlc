@@ -1,0 +1,146 @@
+import { Pattern, PatternWild, PatternCtor, PatternIdent } from '../../frontend/ast'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
+import { CodegenContext } from '../context'
+import { cpp_safe } from '../cpp_naming'
+import { Type } from '../../checker/registry'
+import { match_return_cpp_type } from './match_result_type'
+import { match_visit_uses_void_lambdas } from './match_guarded_gen'
+import { CppExpression, CppStatement, CppInvokedBlockWithReturn } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+
+fn cyclic_option_condition(code: string) -> Shared<CppExpression> =
+  emit_helpers.make_identifier_cpp_expression(code)
+
+fn cyclic_option_body_statement(
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppStatement> =
+  if use_void then
+    emit_helpers.make_expression_cpp_statement(
+      eval_expr_cpp_fn(arm.body, arm_context, gen_stmts))
+  else
+    emit_helpers.make_return_cpp_statement(
+      eval_expr_cpp_fn(arm.body, arm_context, gen_stmts))
+  end
+
+fn cyclic_option_some_context(
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> CodegenContext =
+  if sub_patterns.length() == 1 then
+    match sub_patterns[0] {
+      PatternIdent(name, _) => context.add_value(name),
+      _ => context
+    }
+  else context
+  end
+
+fn cyclic_option_some_statements(
+  sub_patterns: [Shared<Pattern>],
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> [Shared<CppStatement>] = do
+  let mut statements: [Shared<CppStatement>] = []
+  if sub_patterns.length() == 1 then
+    match sub_patterns[0] {
+      PatternIdent(name, _) =>
+        statements.push(emit_helpers.make_fragment_cpp_statement(
+          'const auto& ' + cpp_safe(name) + ' = *(*__match_subject); ')),
+      _ => ()
+    }
+  end
+  statements.push(cyclic_option_body_statement(
+    arm,
+    use_void,
+    cyclic_option_some_context(sub_patterns, context),
+    gen_stmts,
+    eval_expr_cpp_fn))
+  statements
+end
+
+fn cyclic_option_arm_statement(
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppStatement> =
+  match arm.pattern {
+    PatternCtor(name, sub_patterns, _) =>
+      if name == 'Some' then
+        emit_helpers.make_if_cpp_statement(
+          cyclic_option_condition('(__match_subject.has_value() && *__match_subject)'),
+          emit_helpers.make_block_cpp_statement(cyclic_option_some_statements(
+            sub_patterns, arm, use_void, context, gen_stmts, eval_expr_cpp_fn)),
+          emit_helpers.make_block_cpp_statement([]))
+      else if name == 'None' then
+        emit_helpers.make_if_cpp_statement(
+          cyclic_option_condition('!__match_subject.has_value()'),
+          emit_helpers.make_block_cpp_statement([
+            cyclic_option_body_statement(arm, use_void, context, gen_stmts, eval_expr_cpp_fn)]),
+          emit_helpers.make_block_cpp_statement([]))
+      else
+        emit_helpers.make_if_cpp_statement(
+          cyclic_option_condition('false'),
+          emit_helpers.make_block_cpp_statement([]),
+          emit_helpers.make_block_cpp_statement([]))
+      end,
+    PatternWild(_) =>
+      emit_helpers.make_if_cpp_statement(
+        cyclic_option_condition('true'),
+        emit_helpers.make_block_cpp_statement([
+          cyclic_option_body_statement(arm, use_void, context, gen_stmts, eval_expr_cpp_fn)]),
+        emit_helpers.make_block_cpp_statement([])),
+    _ =>
+      emit_helpers.make_if_cpp_statement(
+        cyclic_option_condition('false'),
+        emit_helpers.make_block_cpp_statement([]),
+        emit_helpers.make_block_cpp_statement([]))
+  }
+
+fn cyclic_option_match_statements(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> [Shared<CppStatement>] = do
+  let mut statements: [Shared<CppStatement>] = []
+  statements.push(emit_helpers.make_auto_cpp_statement(
+    '__match_subject',
+    eval_expr_cpp_fn(subject, context, gen_stmts)))
+  let mut arm_index = 0
+  while arm_index < expanded_arms.length() do
+    statements.push(cyclic_option_arm_statement(
+      expanded_arms[arm_index], use_void, context, gen_stmts, eval_expr_cpp_fn))
+    arm_index = arm_index + 1
+  end
+  statements.push(emit_helpers.make_expression_cpp_statement(
+    emit_helpers.make_identifier_cpp_expression('std::abort()')))
+  statements
+end
+
+export fn gen_cyclic_option_match_cpp(
+  subject: Shared<SemanticExpression>,
+  expanded_arms: [Shared<SemanticMatchArm>],
+  match_result_type: Shared<Type>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_cpp_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
+  Shared.new(CppInvokedBlockWithReturn(
+    match_return_cpp_type(context, match_result_type, subject),
+    cyclic_option_match_statements(
+      subject,
+      expanded_arms,
+      match_visit_uses_void_lambdas(match_result_type),
+      context,
+      gen_stmts,
+      eval_expr_cpp_fn)))
