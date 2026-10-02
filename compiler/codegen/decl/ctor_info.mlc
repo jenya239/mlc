@@ -1,21 +1,47 @@
 // Constructor type info: shared/array position tracking for variant constructors.
 
-import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner } from '../../frontend/ast'
+import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner, TyNamed } from '../../frontend/ast'
 import { is_shared_type, is_shared_array_type } from './param_analysis'
+import { list_contains } from './decl_index'
+import { build_cyclic_sum_type_names } from './type_index'
 
-export type CtorTypeInfo = CtorTypeInfo { name: string, shared_pos: [i32], shared_arr_pos: [i32] }
+export type CtorTypeInfo = CtorTypeInfo {
+  name: string,
+  shared_pos: [i32],
+  shared_arr_pos: [i32],
+  boxed_positions: [i32]
+}
 
 type ConstructorArgumentScanState = ConstructorArgumentScanState {
   next_position_index: i32,
   shared_positions: [i32],
-  shared_array_positions: [i32]
+  shared_array_positions: [i32],
+  boxed_positions: [i32]
 }
 
 fn field_def_type(field_definition: Shared<FieldDef>) -> Shared<TypeExpr> = field_definition.type_value
 
-fn ctor_type_info_for(constructor_name: string, argument_type_expressions: [Shared<TypeExpr>]) -> Shared<CtorTypeInfo> = do
+fn type_expression_is_boxed_cyclic_sum(
+  type_expression: Shared<TypeExpr>,
+  cyclic_sum_type_names: [string]
+) -> bool =
+  match type_expression {
+    TyNamed(type_name) => list_contains(cyclic_sum_type_names, type_name),
+    _ => false
+  }
+
+fn ctor_type_info_for(
+  constructor_name: string,
+  argument_type_expressions: [Shared<TypeExpr>],
+  cyclic_sum_type_names: [string]
+) -> Shared<CtorTypeInfo> = do
   const scan_parsed = argument_type_expressions.fold(
-    ConstructorArgumentScanState { next_position_index: 0, shared_positions: [], shared_array_positions: [] },
+    ConstructorArgumentScanState {
+      next_position_index: 0,
+      shared_positions: [],
+      shared_array_positions: [],
+      boxed_positions: []
+    },
     (accumulated_state, type_expression_under_scan) =>
       ConstructorArgumentScanState {
         next_position_index: accumulated_state.next_position_index + 1,
@@ -28,43 +54,63 @@ fn ctor_type_info_for(constructor_name: string, argument_type_expressions: [Shar
           if is_shared_array_type(type_expression_under_scan) then
             accumulated_state.shared_array_positions.concat([accumulated_state.next_position_index])
           else accumulated_state.shared_array_positions
+          end,
+        boxed_positions:
+          if type_expression_is_boxed_cyclic_sum(type_expression_under_scan, cyclic_sum_type_names) then
+            accumulated_state.boxed_positions.concat([accumulated_state.next_position_index])
+          else accumulated_state.boxed_positions
           end
       }
   )
   Shared.new(CtorTypeInfo {
     name: constructor_name,
     shared_pos: scan_parsed.shared_positions,
-    shared_arr_pos: scan_parsed.shared_array_positions
+    shared_arr_pos: scan_parsed.shared_array_positions,
+    boxed_positions: scan_parsed.boxed_positions
   })
 end
 
-fn variant_to_ctor_info(variant: Shared<TypeVariant>) -> [Shared<CtorTypeInfo>] =
+fn variant_to_ctor_info(
+  variant: Shared<TypeVariant>,
+  cyclic_sum_type_names: [string]
+) -> [Shared<CtorTypeInfo>] =
   match variant {
-    VarTuple(variant_name, types, _) => [ctor_type_info_for(variant_name, types)],
+    VarTuple(variant_name, types, _) => [ctor_type_info_for(variant_name, types, cyclic_sum_type_names)],
     VarRecord(variant_name, field_definitions, _) =>
-      [ctor_type_info_for(variant_name, field_definitions.map(field_definition => field_def_type(field_definition)))],
+      [ctor_type_info_for(
+        variant_name,
+        field_definitions.map(field_definition => field_def_type(field_definition)),
+        cyclic_sum_type_names)],
     VarUnit(_, _) => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
-fn add_ctor_infos_from_variants(variants: [Shared<TypeVariant>]) -> [Shared<CtorTypeInfo>] =
-  variants.flat_map(variant => variant_to_ctor_info(variant))
+fn add_ctor_infos_from_variants(
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CtorTypeInfo>] =
+  variants.flat_map(variant => variant_to_ctor_info(variant, cyclic_sum_type_names))
 
-fn declaration_to_ctor_infos(declaration: Shared<Decl>) -> [Shared<CtorTypeInfo>] =
+fn declaration_to_ctor_infos(
+  declaration: Shared<Decl>,
+  cyclic_sum_type_names: [string]
+) -> [Shared<CtorTypeInfo>] =
   match declaration {
     DeclExported(inner) => match decl_inner(inner) {
-      DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants),
+      DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants, cyclic_sum_type_names),
       _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
     },
-    DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants),
+    DeclType(_, _, variants, _, _) => add_ctor_infos_from_variants(variants, cyclic_sum_type_names),
     _ => do let empty: [Shared<CtorTypeInfo>] = []; empty end
   }
 
-export fn build_ctor_type_infos_from_decls(declarations: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] =
-  declarations.flat_map(declaration => declaration_to_ctor_infos(declaration))
+export fn build_ctor_type_infos_from_decls(declarations: [Shared<Decl>]) -> [Shared<CtorTypeInfo>] = do
+  const cyclic_sum_type_names = build_cyclic_sum_type_names(declarations)
+  declarations.flat_map(declaration => declaration_to_ctor_infos(declaration, cyclic_sum_type_names))
+end
 
 export fn lookup_ctor_type_info(infos: [Shared<CtorTypeInfo>], constructor_lookup_name: string) -> Shared<CtorTypeInfo> =
   infos.fold(
-    Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [] }),
+    Shared.new(CtorTypeInfo { name: '', shared_pos: [], shared_arr_pos: [], boxed_positions: [] }),
     (chosen, candidate_info) =>
       if candidate_info.name == constructor_lookup_name then candidate_info else chosen end)
 

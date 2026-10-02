@@ -5,12 +5,13 @@
 import { Param, TypeVariant } from '../frontend/ast'
 import { SemanticDeclaration, SemanticExpression, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTypeAlias, SemanticDeclarationTrait, SemanticDeclarationExtend, SemanticDeclarationExported, SemanticDeclarationImport, SemanticDeclarationExternLib, SemanticDeclarationExternType, SemanticDeclarationAssocBind, sdecl_inner, FnEscapeInfo, empty_fn_escape_info } from '../ir/semantic_ir'
 import { Type, trait_base_name } from '../checker/registry'
-import { CppDeclaration } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
+import { list_contains } from './decl/decl_index'
 import {print_decl} from '../cpp_emit/print'
 import { CodegenContext, trait_has_associated_types } from './context'
 import { gen_trait_struct_cpp } from './decl/trait_struct_cpp'
 import { empty_cpp_declarations, append_cpp_declarations } from './decl_cpp_helpers'
-import { gen_type_decl_fwd_cpp, gen_type_decl_body_cpp } from './decl_cpp_type'
+import { gen_type_decl_fwd_cpp, gen_type_decl_structs_cpp, gen_type_decl_derive_cpp } from './decl_cpp_type'
 import { gen_trait_decl_cpp, trait_concept_dispatch_forward_protos_cpp } from './decl_cpp_trait'
 import { function_emits_template_cpp, gen_fn_decl_cpp_with_escape } from './decl_cpp_fn'
 import { semantic_expression_is_extern, semantic_expression_is_ffi_extern, semantic_expression_is_bare_extern, gen_extern_type_decl_cpp, gen_ffi_fn_decl_cpp } from './decl_cpp_ffi'
@@ -38,8 +39,27 @@ fn decl_segment_type_cpp(
   phase: i32
 ) -> [Shared<CppDeclaration>] =
   if phase == 0 then gen_type_decl_fwd_cpp(context, type_name, type_params, variants)
-  else if phase == 1 then gen_type_decl_body_cpp(context, type_name, type_params, variants, derive_traits)
+  else if phase == 1 then gen_type_decl_structs_cpp(context, type_name, type_params, variants)
+  else if phase == 5 then gen_type_decl_derive_cpp(context, type_name, variants, derive_traits)
+  else if phase == 6 then cyclic_json_prototype_declarations(type_name, derive_traits, context)
   else empty_cpp_declarations()
+  end
+
+fn cyclic_json_prototype_declarations(
+  type_name: string,
+  derive_traits: [string],
+  context: CodegenContext
+) -> [Shared<CppDeclaration>] =
+  if list_contains(context.cyclic_sum_type_names, type_name) &&
+     derive_traits.any(trait_name => trait_name == "Json") then
+    [
+      Shared.new(CppDeclarationFragment(
+        'mlc::json::JsonValue ' + context.resolve(type_name) + '_to_json(const ' + context.resolve(type_name) + '& self) noexcept;\n')),
+      Shared.new(CppDeclarationFragment(
+        'mlc::result::Result<' + context.resolve(type_name) + ', mlc::json::JsonError> ' + context.resolve(type_name) +
+        '_from_json(const mlc::json::JsonValue& __json_value) noexcept;\n'))
+    ]
+  else []
   end
 
 fn decl_segment_trait_cpp(
@@ -230,14 +250,18 @@ export fn collect_all_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>]
     collect_template_fn_bodies_cpp(declarations, context))
   DeclPartsBundleCpp {
     type_fwds: collect_decl_parts_cpp(declarations, context, 0),
-    type_defs: collect_decl_parts_cpp(declarations, context, 1),
+    type_defs: append_cpp_declarations(
+      append_cpp_declarations(
+        collect_decl_parts_cpp(declarations, context, 1),
+        collect_decl_parts_cpp(declarations, context, 6)),
+      collect_decl_parts_cpp(declarations, context, 5)),
     fn_protos: fn_protos,
     fn_defs: collect_fn_defs_cpp(declarations, context)
   }
 end
 
 export fn collect_decl_parts_cpp(declarations: [Shared<SemanticDeclaration>], context: CodegenContext, phase: i32) -> [Shared<CppDeclaration>] =
-  if phase == 0 || phase == 1 || phase == 2 || phase == 4 then
+  if phase == 0 || phase == 1 || phase == 2 || phase == 4 || phase == 5 || phase == 6 then
     collect_native_decl_segments_cpp(declarations, context, phase)
   else if phase == 3 then
     collect_fn_defs_cpp(declarations, context)

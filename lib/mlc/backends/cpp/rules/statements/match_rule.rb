@@ -55,7 +55,7 @@ module MLC
 
               # Add structured binding if there are bindings
               block_with_binding = if sanitized_bindings.any?
-                                     add_structured_binding(body_block, sanitized_bindings, var_name)
+                                     add_structured_binding(body_block, sanitized_bindings, var_name, case_name)
                                    else
                                      body_block
                                    end
@@ -145,11 +145,12 @@ module MLC
               end
             end
 
-            def add_structured_binding(body_block, bindings, var_name)
-              # Create structured binding declaration: auto [field1, field2, ...] = var_name;
-              binding_list = bindings.join(", ")
+            def add_structured_binding(body_block, bindings, var_name, case_name)
+              prefix = MLC::Backends::Cpp::Rules::Expressions::MatchRule.new(context)
+                .send(:payload_binding_prefix, case_name, bindings, var_name)
+              binding_code = prefix || "auto [#{bindings.join(", ")}] = #{var_name};"
               binding_stmt = CppAst::Nodes::RawStatement.new(
-                code: "auto [#{binding_list}] = #{var_name};"
+                code: binding_code
               )
 
               # Prepend binding to body statements

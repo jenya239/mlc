@@ -166,12 +166,15 @@ module MLC
                 expected_type = param.is_a?(Hash) ? param[:type] : param
                 maybe_wrap_trait_coercion(lowered, arg.type, expected_type)
               end
+              args = box_cyclic_sum_constructor_arguments(node, args)
 
               # Nullary variant constructors: CtorName{} or (ns::Ctor{}) for ternary safety.
               # Adding () would produce invalid CtorName{}(). Return callee directly.
               if args.empty? && callee.is_a?(CppAst::Nodes::RawExpression)
                 src = callee.to_source
-                return callee if src.end_with?("{}") || src.match?(/\([^)]*\{\}\)\z/)
+                if src.end_with?("{}") || src.match?(/\([^)]*\{\}\)\z/)
+                  return wrap_lowered_cyclic_sum_variant(node, callee)
+                end
               end
 
               call_expr =
@@ -313,6 +316,28 @@ module MLC
               "auto"
             rescue StandardError
               "auto"
+            end
+
+            def box_cyclic_sum_constructor_arguments(call_node, lowered_arguments)
+              return lowered_arguments unless context.checker.var_expr?(call_node.callee)
+
+              sum_type = wrapper_sum_type_for_variant_call_result(call_node.type)
+              return lowered_arguments unless sum_type
+              return lowered_arguments unless context.cyclic_sum_types.include?(sum_type.name)
+
+              variant = sum_type.variants.find { |candidate| candidate[:name] == call_node.callee.name }
+              return lowered_arguments unless variant
+
+              fields = Array(variant[:fields])
+              lowered_arguments.each_with_index.map do |lowered, index|
+                field_type = fields[index]&.[](:type)
+                next lowered unless field_type.is_a?(MLC::SemanticIR::Type)
+                next lowered unless context.cyclic_sum_types.include?(field_type.name)
+
+                context.factory.raw_expression(
+                  code: "std::make_shared<#{field_type.name}>(#{lowered.to_source})"
+                )
+              end
             end
 
             def cyclic_sum_variant_wrap_source(expression_ir, inner_cpp_source)
@@ -625,12 +650,13 @@ module MLC
               callee = context.factory.identifier(name: qualified_name)
               callee = maybe_add_function_template_args(callee, call)
               args = call.args.map { |arg| lower_expression(arg) }
-
-              context.factory.function_call(
+              args = box_cyclic_sum_constructor_arguments(call, args)
+              call_expr = context.factory.function_call(
                 callee: callee,
                 arguments: args,
                 argument_separators: args.size > 1 ? Array.new(args.size - 1, ", ") : []
               )
+              wrap_lowered_cyclic_sum_variant(call, call_expr)
             end
 
             def lower_result_option_combinator(call)

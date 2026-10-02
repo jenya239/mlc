@@ -423,13 +423,16 @@ module MLC
                 cpp_param_type = resolve_variant_cpp_type(case_name, scrutinee_type)
 
                 sanitized_bindings = uniquify_wildcard_bindings(bindings)
+                raw_name = case_name.downcase
+                source_name = CppAst::Nodes::MatchArm::CPP_KEYWORDS.include?(raw_name) ? "#{raw_name}_" : raw_name
 
                 CppAst::Nodes::MatchArm.new(
                   case_name: case_name,
                   bindings: sanitized_bindings,
                   body: body,
                   cpp_param_type: cpp_param_type,
-                  return_type: return_type
+                  return_type: return_type,
+                  binding_prefix: payload_binding_prefix(case_name, sanitized_bindings, source_name)
                 )
 
               when :wildcard, :var
@@ -676,34 +679,41 @@ module MLC
               binding_decls << "auto #{temp_var} = std::get<#{qcase}>(#{scrutinee_src});"
 
               non_wildcard_bindings = bindings.reject { |b| b == "_" || (b.is_a?(Hash) && b[:kind] == :constructor) }
-              binding_decls << structured_binding_decl(bindings, temp_var) if non_wildcard_bindings.any?
+              binding_decls << structured_binding_decl(case_name, bindings, temp_var) if non_wildcard_bindings.any?
 
-              bindings.each_with_index do |binding, idx|
+              bindings.each_with_index do |binding, index|
                 next unless binding.is_a?(Hash) && binding[:kind] == :constructor
 
                 nested_temp_var = "_nested_#{temp_var_counter}"
                 temp_var_counter += 1
+                boxed_child = cyclic_boxed_indexes(case_name).include?(index)
 
-                binding_decls << nested_binding_extract(bindings, temp_var, nested_temp_var, idx)
-                nested_checks << build_nested_pattern_check(binding, nested_temp_var)
+                binding_decls << nested_binding_extract(case_name, bindings, temp_var, nested_temp_var, index)
+                nested_checks << build_nested_pattern_check(binding, nested_temp_var, boxed_child)
               end
 
               [binding_decls, nested_checks]
             end
 
-            def structured_binding_decl(bindings, temp_var)
-              sanitized = uniquify_wildcard_bindings(bindings.map { |b| b.is_a?(Hash) ? "_" : b })
+            def structured_binding_decl(constructor_name, bindings, temp_var)
+              prefix = payload_binding_prefix(constructor_name, bindings, temp_var)
+              return prefix.strip if prefix
+
+              sanitized = uniquify_wildcard_bindings(bindings.map { |binding| binding.is_a?(Hash) ? "_" : binding })
               binding_list = sanitized.join(", ")
               "auto [#{binding_list}] = #{temp_var};"
             end
 
-            def nested_binding_extract(bindings, temp_var, nested_temp_var, idx)
+            def nested_binding_extract(constructor_name, bindings, temp_var, nested_temp_var, index)
+              if cyclic_boxed_indexes(constructor_name).include?(index)
+                member_name = payload_member_name(cyclic_variant_fields(constructor_name), index)
+                return "auto #{nested_temp_var} = *#{temp_var}.#{member_name};"
+              end
+
               if bindings.length == 1
-                # Single field - use .field0
                 "auto #{nested_temp_var} = #{temp_var}.field0;"
               else
-                # Multiple fields - use .fieldN
-                "auto #{nested_temp_var} = #{temp_var}.field#{idx};"
+                "auto #{nested_temp_var} = #{temp_var}.field#{index};"
               end
             end
 
@@ -746,29 +756,80 @@ module MLC
             end
 
             # Build nested pattern check for nested constructor patterns
-            def build_nested_pattern_check(pattern, scrutinee_var)
+            def build_nested_pattern_check(pattern, scrutinee_var, wrapper_scrutinee = false)
               case_name = pattern[:name]
               bindings = pattern[:bindings] || pattern[:fields] || []
+              member_suffix = wrapper_scrutinee ? "._" : ""
 
-              condition = "std::holds_alternative<#{case_name}>(#{scrutinee_var})"
+              condition = "std::holds_alternative<#{case_name}>(#{scrutinee_var}#{member_suffix})"
 
-              binding_decls = nested_binding_decls(case_name, bindings, scrutinee_var)
+              binding_decls = nested_binding_decls(case_name, bindings, scrutinee_var, member_suffix)
 
               { condition: condition, bindings: binding_decls.join(" ") }
             end
 
-            def nested_binding_decls(case_name, bindings, scrutinee_var)
+            def nested_binding_decls(case_name, bindings, scrutinee_var, member_suffix = "")
               decls = []
               temp_var = "_v_nested_#{case_name.downcase}"
-              decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_var});"
+              decls << "auto #{temp_var} = std::get<#{case_name}>(#{scrutinee_var}#{member_suffix});"
 
-              non_wildcard_bindings = bindings.reject { |b| b == "_" || b.is_a?(Hash) }
+              non_wildcard_bindings = bindings.reject { |binding| binding == "_" || binding.is_a?(Hash) }
               if non_wildcard_bindings.any?
-                binding_list = uniquify_wildcard_bindings(bindings.map { |b| b.is_a?(Hash) ? "_" : b }).join(", ")
-                decls << "auto [#{binding_list}] = #{temp_var};"
+                prefix = payload_binding_prefix(case_name, bindings, temp_var)
+                decls << if prefix
+                           prefix.strip
+                         else
+                           binding_list = uniquify_wildcard_bindings(bindings.map { |binding| binding.is_a?(Hash) ? "_" : binding }).join(", ")
+                           "auto [#{binding_list}] = #{temp_var};"
+                         end
               end
 
               decls
+            end
+
+            def cyclic_variant_fields(constructor_name)
+              Array(context.cyclic_sum_types).each do |sum_name|
+                sum_type = context.type_registry&.lookup(sum_name)&.core_ir_type
+                next unless sum_type.respond_to?(:variants)
+
+                variant = Array(sum_type.variants).find { |candidate| candidate[:name].to_s == constructor_name }
+                return Array(variant[:fields]) if variant
+              end
+              nil
+            end
+
+            def cyclic_boxed_indexes(constructor_name)
+              fields = cyclic_variant_fields(constructor_name)
+              return [] unless fields
+
+              names = Array(context.cyclic_sum_types)
+              fields.each_index.select do |index|
+                field_type = fields[index][:type]
+                field_type.is_a?(MLC::SemanticIR::Type) &&
+                  !field_type.is_a?(MLC::SemanticIR::GenericType) &&
+                  names.include?(field_type.name)
+              end
+            end
+
+            def payload_member_name(fields, index)
+              field = fields && fields[index]
+              name = field.is_a?(Hash) ? field[:name] : nil
+              return "field#{index}" if name.nil? || name.to_s.empty?
+
+              name.to_s
+            end
+
+            def payload_binding_prefix(constructor_name, bindings, source_name)
+              boxed_indexes = cyclic_boxed_indexes(constructor_name)
+              return nil if boxed_indexes.empty?
+
+              fields = cyclic_variant_fields(constructor_name)
+              sanitized = uniquify_wildcard_bindings(bindings.map { |binding| binding.is_a?(Hash) ? "_" : binding })
+              sanitized.each_with_index.map { |name, index|
+                access = "#{source_name}.#{payload_member_name(fields, index)}"
+                value = boxed_indexes.include?(index) ? "(*#{access})" : access
+                "const auto& #{context.sanitize_identifier(name)} = #{value};"
+              }.join(" ") + " "
             end
 
             def build_or_pattern_arm(pattern, guard, arm_body_code, scrutinee_src, scrutinee_type = nil)

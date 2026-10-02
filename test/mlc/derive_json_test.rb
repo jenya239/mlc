@@ -589,7 +589,77 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "json_integer_widths", checker)
   end
 
-  def compile_both_compilers(source, entry_name, checker)
+  def test_derive_json_cyclic_sums_round_trip_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) derive { Json }
+      type Left = EndLeft | GoLeft(Right) derive { Json }
+      type Right = StopRight | GoRight(Left) derive { Json }
+      fn main() -> i32 = 0
+    MLC
+    checker = <<~'CPP'
+      int main() {
+        Tree leaf{Leaf{}};
+        auto leaf_json = Tree_to_json(leaf);
+        if (!leaf_json.is_string() || *leaf_json.as_string() != mlc::String("Leaf")) return 1;
+        auto leaf_decoded = Tree_from_json(leaf_json);
+        if (!std::holds_alternative<mlc::result::Ok<Tree>>(leaf_decoded)) return 2;
+        if (!std::holds_alternative<Leaf>(std::get<mlc::result::Ok<Tree>>(leaf_decoded)._0._)) return 3;
+
+        Tree tree{Node{std::make_shared<Tree>(Leaf{}), std::make_shared<Tree>(Leaf{})}};
+        auto tree_json = Tree_to_json(tree);
+        if (!tree_json.is_object()) return 4;
+        auto decoded = Tree_from_json(tree_json);
+        if (!std::holds_alternative<mlc::result::Ok<Tree>>(decoded)) return 5;
+        Tree again = std::get<mlc::result::Ok<Tree>>(decoded)._0;
+        if (!std::holds_alternative<Node>(again._)) return 6;
+        Node node = std::get<Node>(again._);
+        if (!node.field0 || !node.field1) return 7;
+        if (!std::holds_alternative<Leaf>(node.field0->_)) return 8;
+        if (!std::holds_alternative<Leaf>(node.field1->_)) return 9;
+
+        Left left{GoLeft{std::make_shared<Right>(StopRight{})}};
+        auto left_decoded = Left_from_json(Left_to_json(left));
+        if (!std::holds_alternative<mlc::result::Ok<Left>>(left_decoded)) return 10;
+        Left left_again = std::get<mlc::result::Ok<Left>>(left_decoded)._0;
+        if (!std::holds_alternative<GoLeft>(left_again._)) return 11;
+        GoLeft step = std::get<GoLeft>(left_again._);
+        if (!step.field0 || !std::holds_alternative<StopRight>(step.field0->_)) return 12;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "json_cyclic_sums", checker)
+  end
+
+  def test_cyclic_sum_match_binding_is_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree)
+      fn child_is_leaf(tree: Tree) -> i32 =
+        match tree {
+          Leaf => 0,
+          Node(left, right) =>
+            match left {
+              Leaf => 1,
+              Node(_, _) => 2
+            }
+        }
+      fn main() -> i32 = 0
+    MLC
+    checker = <<~'CPP'
+      int main() {
+        Tree leaf{Leaf{}};
+        if (child_is_leaf(leaf) != 0) return 1;
+        Tree tree{Node{std::make_shared<Tree>(Leaf{}), std::make_shared<Tree>(Leaf{})}};
+        if (child_is_leaf(tree) != 1) return 2;
+        Tree inner{Node{std::make_shared<Tree>(Leaf{}), std::make_shared<Tree>(Leaf{})}};
+        Tree outer{Node{std::make_shared<Tree>(std::move(inner)), std::make_shared<Tree>(Leaf{})}};
+        if (child_is_leaf(outer) != 2) return 3;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_match", checker, link_user_translation: true)
+  end
+
+  def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
     Dir.mktmpdir("mlc_derive_json_#{entry_name}", work_root) do |work_directory|
@@ -619,12 +689,22 @@ class MLCDeriveJsonTest < Minitest::Test
         using namespace #{entry_name};
         #{checker}
       CPP
+      translation_units = [mlcc_path]
+      if link_user_translation
+        generated_cpp = File.read(File.join(generated_directory, "#{entry_name}.cpp"))
+        stripped_path = File.join(work_directory, "user_translation.cpp")
+        File.write(stripped_path, generated_cpp.sub(/\n#undef main\n.*\z/m, "\n"))
+        translation_units << stripped_path
+        translation_units << File.join(runtime_directory, "src/io/io.cpp")
+        translation_units << File.join(runtime_directory, "src/core/string.cpp")
+        translation_units << File.join(runtime_directory, "src/core/profile.cpp")
+      end
       mlcc_compile = [
         "clang++", "-std=c++20",
         "-I", File.join(runtime_directory, "include"),
         "-I", generated_directory,
         "-o", mlcc_binary,
-        mlcc_path
+        *translation_units
       ]
       assert system(*mlcc_compile), "clang++ failed for mlcc #{entry_name}"
       assert system(mlcc_binary), "mlcc #{entry_name} failed"

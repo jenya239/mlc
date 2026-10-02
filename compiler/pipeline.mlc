@@ -81,6 +81,7 @@ fn empty_precomputed_context() -> PrecomputedCtx =
     variant_types: Map.new(),
     sum_type_parameter_names: Map.new(),
     variant_used_type_parameter_names: Map.new(),
+    cyclic_sum_type_names: [],
     item_index: Map.new(),
     ctor_type_infos: [],
     generic_variants: [],

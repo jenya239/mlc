@@ -195,6 +195,69 @@ fn result_wrapper_ctor_type_argument(constructor_name: string, context: CodegenC
   end
 end
 
+fn constructor_sum_name_if_cyclic(
+  function_expression: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> string =
+  match function_expression {
+    SemanticExpressionIdent(name, _, _) =>
+      if context.variant_types.has(name) &&
+         context.cyclic_sum_type_names.any(cyclic_name =>
+           cyclic_name == context.variant_types.get(name)) then
+        context.variant_types.get(name)
+      else '' end,
+    _ => ''
+  }
+
+fn box_cyclic_sum_argument(
+  argument: Shared<SemanticExpression>,
+  lowered: Shared<CppExpression>,
+  context: CodegenContext
+) -> Shared<CppExpression> =
+  match sexpr_type(argument) {
+    TNamed(name) =>
+      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then
+        Shared.new(CppCall(
+          Shared.new(CppIdent('std::make_shared<' + context.resolve(name) + ">")),
+          [lowered]))
+      else lowered end,
+    _ => lowered
+  }
+
+fn box_cyclic_sum_constructor_arguments(
+  arguments: [Shared<SemanticExpression>],
+  lowered_arguments: [Shared<CppExpression>],
+  context: CodegenContext,
+  cyclic_sum_name: string
+) -> [Shared<CppExpression>] =
+  if cyclic_sum_name == '' then lowered_arguments
+  else do
+    let mut boxed_arguments: [Shared<CppExpression>] = []
+    let mut argument_index = 0
+    while argument_index < lowered_arguments.length() do
+      if argument_index < arguments.length() then
+        boxed_arguments.push(box_cyclic_sum_argument(
+          arguments[argument_index], lowered_arguments[argument_index], context))
+      else
+        boxed_arguments.push(lowered_arguments[argument_index])
+      end
+      argument_index = argument_index + 1
+    end
+    boxed_arguments
+  end
+
+fn wrap_cyclic_sum_constructor(
+  sum_name: string,
+  aggregate: Shared<CppExpression>,
+  context: CodegenContext
+) -> Shared<CppExpression> =
+  if sum_name == '' then aggregate
+  else
+    Shared.new(CppCall(
+      Shared.new(CppIdent(context.resolve(sum_name))),
+      [aggregate]))
+  end
+
 fn gen_constructor_call_cpp_expression(
   function_expression: Shared<SemanticExpression>,
   argument_expressions: [Shared<CppExpression>],
@@ -231,14 +294,22 @@ export fn gen_call_via_cpp_visitor(
       context,
       gen_stmts,
       eval_expr_cpp)
+  const cyclic_sum_name = constructor_sum_name_if_cyclic(function_expression, context)
   const invoke_expression =
     if is_constructor_call(function_expression) then
-      gen_constructor_call_cpp_expression(
-        function_expression,
-        materialization_outcome.materialized_argument_expressions,
-        call_semantic_type,
-        context,
-        gen_stmts)
+      wrap_cyclic_sum_constructor(
+        cyclic_sum_name,
+        gen_constructor_call_cpp_expression(
+          function_expression,
+          box_cyclic_sum_constructor_arguments(
+            arguments,
+            materialization_outcome.materialized_argument_expressions,
+            context,
+            cyclic_sum_name),
+          call_semantic_type,
+          context,
+          gen_stmts),
+        context)
     else
       Shared.new(CppCall(
         gen_call_function_cpp_expression(function_expression, context, gen_stmts),

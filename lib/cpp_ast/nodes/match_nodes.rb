@@ -49,14 +49,15 @@ module CppAst
 
     # Match arm - generates lambda for one case
     class MatchArm < Node
-      attr_accessor :case_name, :bindings, :body, :cpp_param_type, :return_type
+      attr_accessor :case_name, :bindings, :body, :cpp_param_type, :return_type, :binding_prefix
 
-      def initialize(case_name:, body:, bindings: [], cpp_param_type: nil, return_type: nil)
+      def initialize(case_name:, body:, bindings: [], cpp_param_type: nil, return_type: nil, binding_prefix: nil)
         @case_name = case_name
         @bindings = bindings
         @body = body
         @cpp_param_type = cpp_param_type
         @return_type = return_type
+        @binding_prefix = binding_prefix
       end
 
       CPP_KEYWORDS = %w[
@@ -79,7 +80,9 @@ module CppAst
 
         binding_items = Array(bindings).compact
 
-        if binding_items.any?
+        if binding_prefix
+          result << binding_prefix
+        elsif binding_items.any?
           binding_list = binding_items.map { |b| b.respond_to?(:to_source) ? b.to_source : b.to_s }.join(", ")
           result << "auto [#{binding_list}] = #{var_name}; "
         end

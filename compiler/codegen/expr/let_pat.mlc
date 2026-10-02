@@ -7,15 +7,58 @@ import {
   TI32, TString, TBool, TUnit, TI64, TF64, TU8, TUsize, TChar,
   TShared, TFn, TAssoc, TUnknown
 } from '../../checker/registry'
-import { CodegenContext, lookup_fields_for_context, take_temp_name } from '../context'
+import { CodegenContext, lookup_fields_for_context, lookup_ctor_type_info_for_context, take_temp_name } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { sem_type_to_cpp } from '../decl/type_gen'
 import { cpp_safe } from '../cpp_naming'
-import { pattern_bind_names } from './match_analysis'
+import { pattern_bind_names, pattern_binding_name_list, cyclic_sum_type_member_suffix } from './match_analysis'
 import * as statement_fragments from '../stmt/stmt_fragments'
 
 export fn tuple_destructure_binding(binding_names_csv: string, source_name: string) -> string =
   `auto [${binding_names_csv}] = ${source_name}; `
+
+fn boxed_payload_binding_text(
+  binding_names: [string],
+  source_name: string,
+  boxed_positions: [i32]
+) -> string = do
+  let mut binding_text = ''
+  let mut field_index = 0
+  while field_index < binding_names.length() do
+    let field_access = source_name + '.field' + field_index.to_string()
+    let field_value =
+      if boxed_positions.contains(field_index) then '(*' + field_access + ")"
+      else field_access
+      end
+    binding_text = binding_text + 'const auto& ' + binding_names[field_index] + ' = ' + field_value + '; '
+    field_index = field_index + 1
+  end
+  binding_text
+end
+
+fn constructor_payload_binding_for_names(
+  constructor_name: string,
+  binding_names: [string],
+  source_name: string,
+  context: CodegenContext
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if constructor_info.boxed_positions.length() == 0 then
+    tuple_destructure_binding(binding_names.join(', '), source_name)
+  else
+    boxed_payload_binding_text(binding_names, source_name, constructor_info.boxed_positions)
+  end
+end
+
+export fn constructor_payload_binding(
+  constructor_name: string,
+  binding_names: [string],
+  source_name: string,
+  context: CodegenContext
+) -> string =
+  if binding_names.length() == 0 then ''
+  else constructor_payload_binding_for_names(constructor_name, binding_names, source_name, context)
+  end
 
 export type GenLetPatternResult = GenLetPatternResult { output: string, codegen_context: CodegenContext }
 
@@ -223,6 +266,7 @@ fn ctor_pattern_gen_result(
   sub_patterns: [Shared<Pattern>],
   temp_name: string,
   value_code: string,
+  value_type: Shared<Type>,
   has_else: bool,
   else_body: Shared<SemanticExpression>,
   codegen_context: CodegenContext,
@@ -232,17 +276,22 @@ fn ctor_pattern_gen_result(
   const second_temp = take_temp_name(codegen_context)
   const variant_binding_name = second_temp.name
   let mut updated_codegen_context = second_temp.codegen_context
+  const variant_source = temp_name + cyclic_sum_type_member_suffix(value_type, codegen_context)
   const bind =
     if sub_patterns.length() == 0 then ''
-    else tuple_destructure_binding(pattern_bind_names(sub_patterns), variant_binding_name)
+    else constructor_payload_binding(
+      constructor_name,
+      pattern_binding_name_list(sub_patterns),
+      variant_binding_name,
+      updated_codegen_context)
     end
   const is_generic = list_contains(updated_codegen_context.generic_variants, constructor_name)
   const type_arguments = if is_generic then '<auto>' else '' end
   const else_code = if has_else then eval_fn(else_body, updated_codegen_context) else 'std::abort();' end
   GenLetPatternResult {
     output: 'auto ' + temp_name + ' = ' + value_code + ';\n' +
-      'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(' + temp_name + ')) { ' + else_code + ' }\n' +
-      'const ' + qualified_name + type_arguments + '& ' + variant_binding_name + ' = std::get<' + qualified_name + type_arguments + '>(' + temp_name + ');\n' +
+      'if (!std::holds_alternative<' + qualified_name + type_arguments + '>(' + variant_source + ')) { ' + else_code + ' }\n' +
+      'const ' + qualified_name + type_arguments + '& ' + variant_binding_name + ' = std::get<' + qualified_name + type_arguments + '>(' + variant_source + ');\n' +
       bind + `\n`,
     codegen_context: updated_codegen_context
   }
@@ -280,7 +329,7 @@ export fn gen_let_pattern_statement(
     },
     PatternCtor(constructor_name, sub_patterns, _) =>
       ctor_pattern_gen_result(
-        constructor_name, sub_patterns, temp_name, value_code, has_else, else_body, codegen_context, eval_fn),
+        constructor_name, sub_patterns, temp_name, value_code, value_type, has_else, else_body, codegen_context, eval_fn),
     PatternWild(_) => GenLetPatternResult {
       output: wild_pattern_output(value_code),
       codegen_context: codegen_context

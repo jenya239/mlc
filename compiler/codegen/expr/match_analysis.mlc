@@ -1,12 +1,25 @@
 import { Pattern, PatternStringLit, PatternStr, PatternWild, PatternOr } from '../../frontend/ast'
 import { SemanticExpression, SemanticMatchArm, sexpr_type } from '../../ir/semantic_ir'
-import { Type, TString, TBool } from '../../checker/registry'
+import { Type, TString, TBool, TNamed } from '../../checker/registry'
 import { CodegenContext } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe } from '../cpp_naming'
 
 // Determine if the match subject expression should be dereferenced (*subject).
 // A subject needs deref if it holds a shared pointer to a sum type.
+export fn cyclic_sum_type_member_suffix(type_value: Shared<Type>, context: CodegenContext) -> string =
+  match type_value {
+    TNamed(name) =>
+      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then "._" else "" end,
+    _ => ""
+  }
+
+export fn cyclic_sum_subject_member_suffix(
+  subject: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> string =
+  cyclic_sum_type_member_suffix(sexpr_type(subject), context)
+
 export fn subject_needs_deref(subject: Shared<SemanticExpression>, context: CodegenContext) -> bool =
   match sexpr_type(subject) { TShared(_) => true, _ => false }
 

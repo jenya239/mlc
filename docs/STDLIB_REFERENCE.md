@@ -516,9 +516,17 @@ number is `TypeMismatch` with expected type `integer`. `json.mlc` describes
 `JsonValue` as an MLC sum and objects as `Map<str, JsonValue>`; the C++ runtime
 is a separate `std::variant`, and objects are `nlohmann::json`. `parse_json` of
 text that is not JSON returns `JsonNull`, the same value as JSON `null`.
-A sum that contains itself, and two sums that contain each other, are not
-supported: both compilers emit `using Name = std::variant<...>`, and clang++
-rejects the incomplete variant member.
+A non-generic sum with two or more variants that contains itself, or two such
+sums that contain each other, is a C++ struct `{ std::variant<...> _; }` with
+a converting constructor per variant. A by-value field whose type is one of
+those sums is stored as `std::shared_ptr`. The MLC type stays the sum.
+`Leaf` lowers to `Tree(Leaf{})`, and `Node(left, right)` lowers to
+`Tree(Node{std::make_shared<Tree>(left), std::make_shared<Tree>(right)})`.
+`derive { Json }` round-trips that shape. A field the program already wrote as
+`Shared<T>` stays `std::shared_ptr` and is still rejected by `derive { Json }`
+(E069). A generic sum, a single-variant sum, an array of a cyclic sum, and
+`Option` of a cyclic sum stay unsupported. `match` visits `subject._`. A
+pattern binding of a boxed child is the sum: the binding reads `*field`.
 
 ## Yaml
 

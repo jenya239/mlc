@@ -792,35 +792,93 @@ fn derive_json_record_cpp(type_name: string, field_definitions: [Shared<FieldDef
       derive_json_record_from_json_body(type_name, field_definitions))
   ]))
 
-fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
+fn derive_json_sum_subject(cyclic: bool) -> string =
+  if cyclic then "self._" else "self" end
+
+fn derive_json_name_is_cyclic(cyclic_sum_type_names: [string], name: string) -> bool =
+  cyclic_sum_type_names.any(candidate => candidate == name)
+
+fn derive_json_boxed_access(
+  access: string,
+  field_type: Shared<TypeExpr>,
+  cyclic: bool,
+  cyclic_sum_type_names: [string]
+) -> string =
+  match field_type {
+    TyNamed(name) =>
+      if cyclic && derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+        "(*" + access + ")"
+      else access end,
+    _ => access
+  }
+
+fn derive_json_sum_constructed(cyclic: bool, type_name: string, variant_expression: string) -> string =
+  if cyclic then type_name + "(" + variant_expression + ")" else variant_expression end
+
+fn derive_json_decode_boxed_named(
+  value_expr: string,
+  field_name: string,
+  type_name: string,
+  indent: string
+) -> string =
+  indent + 'std::shared_ptr<' + type_name + '> __decoded_' + field_name + ';\n' +
+  indent + '{\n' +
+  indent + '  auto __nested_' + field_name + ' = ' + type_name + '_from_json(' + value_expr + ');\n' +
+  indent + '  if (!std::holds_alternative<mlc::result::Ok<' + type_name + '>>(__nested_' + field_name + ')) {\n' +
+  indent + '    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_' + field_name + ')._0);\n' +
+  indent + '  }\n' +
+  indent + '  __decoded_' + field_name + ' = std::make_shared<' + type_name + '>(std::get<mlc::result::Ok<' + type_name + '>>(__nested_' + field_name + ')._0);\n' +
+  indent + '}\n'
+
+fn derive_json_extract_sum_field(
+  value_expr: string,
+  field_name: string,
+  field_type: Shared<TypeExpr>,
+  indent: string,
+  cyclic: bool,
+  cyclic_sum_type_names: [string]
+) -> string =
+  match field_type {
+    TyNamed(name) =>
+      if cyclic && derive_json_name_is_cyclic(cyclic_sum_type_names, name) then
+        derive_json_decode_boxed_named(value_expr, field_name, name, indent)
+      else derive_json_extract_required(value_expr, field_name, field_type, indent) end,
+    _ => derive_json_extract_required(value_expr, field_name, field_type, indent)
+  }
+
+fn derive_json_sum_to_json_variant(
+  variant: Shared<TypeVariant>,
+  cyclic: bool,
+  cyclic_sum_type_names: [string]
+) -> string =
   match variant {
     VarUnit(name, _) =>
-      '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+      '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
       '    return mlc::json::json_string(mlc::String("' + name + '"));\n' +
       '  }\n',
     VarTuple(name, field_types, _) =>
       if field_types.length() == 0 then
-        '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+        '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
         '    return mlc::json::json_string(mlc::String("' + name + '"));\n' +
         '  }\n'
       else if field_types.length() == 1 then
-        '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+        '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
         '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
         '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
         '    object = mlc::json::json_set(object, mlc::String("value"), ' +
-        derive_json_encode_field('std::get<' + name + '>(self).field0', field_types[0]) + ');\n' +
+        derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field0', field_types[0], cyclic, cyclic_sum_type_names), field_types[0]) + ');\n' +
         '    return object;\n' +
         '  }\n'
       else
         let mut lines =
-          '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+          '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
           '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
           '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
           '    std::vector<mlc::json::JsonValue> fields;\n'
         let mut index = 0
         while index < field_types.length() do
           lines = lines + '    fields.push_back(' +
-            derive_json_encode_field('std::get<' + name + '>(self).field' + index.to_string(), field_types[index]) +
+            derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').field' + index.to_string(), field_types[index], cyclic, cyclic_sum_type_names), field_types[index]) +
             ');\n'
           index = index + 1
         end
@@ -831,21 +889,21 @@ fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
       end,
     VarRecord(name, field_definitions, _) =>
       if field_definitions.length() == 0 then
-        '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+        '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
         '    return mlc::json::json_string(mlc::String("' + name + '"));\n' +
         '  }\n'
       else if field_definitions.length() == 1 then
-        '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+        '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
         '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
         '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
         '    object = mlc::json::json_set(object, mlc::String("value"), ' +
-        derive_json_encode_field('std::get<' + name + '>(self).' + cpp_safe(field_definitions[0].name), field_definitions[0].type_value) +
+        derive_json_encode_field(derive_json_boxed_access('std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[0].name), field_definitions[0].type_value, cyclic, cyclic_sum_type_names), field_definitions[0].type_value) +
         ');\n' +
         '    return object;\n' +
         '  }\n'
       else
         let mut lines =
-          '  if (std::holds_alternative<' + name + '>(self)) {\n' +
+          '  if (std::holds_alternative<' + name + '>(' + derive_json_sum_subject(cyclic) + ')) {\n' +
           '    mlc::json::JsonValue object = mlc::json::json_object();\n' +
           '    object = mlc::json::json_set(object, mlc::String("tag"), mlc::json::json_string(mlc::String("' + name + '")));\n' +
           '    std::vector<mlc::json::JsonValue> fields;\n'
@@ -853,7 +911,11 @@ fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
         while index < field_definitions.length() do
           lines = lines + '    fields.push_back(' +
             derive_json_encode_field(
-              'std::get<' + name + '>(self).' + cpp_safe(field_definitions[index].name),
+              derive_json_boxed_access(
+                'std::get<' + name + '>(' + derive_json_sum_subject(cyclic) + ').' + cpp_safe(field_definitions[index].name),
+                field_definitions[index].type_value,
+                cyclic,
+                cyclic_sum_type_names),
               field_definitions[index].type_value) +
             ');\n'
           index = index + 1
@@ -865,16 +927,21 @@ fn derive_json_sum_to_json_variant(variant: Shared<TypeVariant>) -> string =
       end
   }
 
-fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVariant>) -> string =
+fn derive_json_sum_from_json_variant(
+  type_name: string,
+  variant: Shared<TypeVariant>,
+  cyclic: bool,
+  cyclic_sum_type_names: [string]
+) -> string =
   match variant {
     VarUnit(name, _) =>
       '  if (tag == mlc::String("' + name + '")) {\n' +
-      '    return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+      '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
       '  }\n',
     VarTuple(name, field_types, _) =>
       if field_types.length() == 0 then
         '  if (tag == mlc::String("' + name + '")) {\n' +
-        '    return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+        '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
         '  }\n'
       else if field_types.length() == 1 then
         '  if (tag == mlc::String("' + name + '")) {\n' +
@@ -882,8 +949,8 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
         '    if (!__opt_value.has_value()) {\n' +
         '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("value")));\n' +
         '    }\n' +
-        derive_json_extract_required('__opt_value.value()', name + '_payload', field_types[0], '    ') +
-        '    return mlc::result::Ok<' + type_name + '>(' + name + '{.field0 = __decoded_' + name + '_payload});\n' +
+        derive_json_extract_sum_field('__opt_value.value()', name + '_payload', field_types[0], '    ', cyclic, cyclic_sum_type_names) +
+        '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{.field0 = __decoded_' + name + '_payload}') + ');\n' +
         '  }\n'
       else
         let mut lines =
@@ -901,17 +968,17 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
         let mut inits = ''
         while index < field_types.length() do
           const slot = 'field' + index.to_string()
-          lines = lines + derive_json_extract_required('__arr_fields[' + index.to_string() + "]", name + "_" + slot, field_types[index], '    ')
+          lines = lines + derive_json_extract_sum_field('__arr_fields[' + index.to_string() + "]", name + "_" + slot, field_types[index], '    ', cyclic, cyclic_sum_type_names)
           if index > 0 then inits = inits + ', ' end
           inits = inits + "." + slot + ' = __decoded_' + name + "_" + slot
           index = index + 1
         end
-        lines + '    return mlc::result::Ok<' + type_name + '>(' + name + "{" + inits + '});\n' + '  }\n'
+        lines + '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + "{" + inits + "}") + ');\n' + '  }\n'
       end,
     VarRecord(name, field_definitions, _) =>
       if field_definitions.length() == 0 then
         '  if (tag == mlc::String("' + name + '")) {\n' +
-        '    return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+        '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
         '  }\n'
       else if field_definitions.length() == 1 then
         const field_name = field_definitions[0].name
@@ -920,8 +987,8 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
         '    if (!__opt_value.has_value()) {\n' +
         '      return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String("value")));\n' +
         '    }\n' +
-        derive_json_extract_required('__opt_value.value()', name + '_payload', field_definitions[0].type_value, '    ') +
-        '    return mlc::result::Ok<' + type_name + '>(' + name + '{.' + cpp_safe(field_name) + ' = __decoded_' + name + '_payload});\n' +
+        derive_json_extract_sum_field('__opt_value.value()', name + '_payload', field_definitions[0].type_value, '    ', cyclic, cyclic_sum_type_names) +
+        '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{.' + cpp_safe(field_name) + ' = __decoded_' + name + '_payload}') + ');\n' +
         '  }\n'
       else
         let mut lines =
@@ -939,29 +1006,35 @@ fn derive_json_sum_from_json_variant(type_name: string, variant: Shared<TypeVari
         let mut inits = ''
         while index < field_definitions.length() do
           const field_name = field_definitions[index].name
-          lines = lines + derive_json_extract_required(
+          lines = lines + derive_json_extract_sum_field(
             '__arr_fields[' + index.to_string() + "]",
             name + "_" + field_name,
             field_definitions[index].type_value,
-            '    ')
+            '    ',
+            cyclic,
+            cyclic_sum_type_names)
           if index > 0 then inits = inits + ', ' end
           inits = inits + "." + cpp_safe(field_name) + ' = __decoded_' + name + "_" + field_name
           index = index + 1
         end
-        lines + '    return mlc::result::Ok<' + type_name + '>(' + name + "{" + inits + '});\n' + '  }\n'
+        lines + '    return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + "{" + inits + "}") + ');\n' + '  }\n'
       end
   }
 
-fn derive_json_sum_unit_string_variant(type_name: string, variant: Shared<TypeVariant>) -> string =
+fn derive_json_sum_unit_string_variant(
+  type_name: string,
+  variant: Shared<TypeVariant>,
+  cyclic: bool
+) -> string =
   match variant {
     VarUnit(name, _) =>
       '    if (tag == mlc::String("' + name + '")) {\n' +
-      '      return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+      '      return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
       '    }\n',
     VarTuple(name, field_types, _) =>
       if field_types.length() == 0 then
         '    if (tag == mlc::String("' + name + '")) {\n' +
-        '      return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+        '      return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
         '    }\n'
       else
         ''
@@ -969,22 +1042,27 @@ fn derive_json_sum_unit_string_variant(type_name: string, variant: Shared<TypeVa
     VarRecord(name, field_definitions, _) =>
       if field_definitions.length() == 0 then
         '    if (tag == mlc::String("' + name + '")) {\n' +
-        '      return mlc::result::Ok<' + type_name + '>(' + name + '{});\n' +
+        '      return mlc::result::Ok<' + type_name + '>(' + derive_json_sum_constructed(cyclic, type_name, name + '{}') + ');\n' +
         '    }\n'
       else
         ''
       end
   }
 
-fn derive_json_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Shared<CppDeclaration> = do
+fn derive_json_sum_cpp(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> Shared<CppDeclaration> = do
+  const cyclic = derive_json_name_is_cyclic(cyclic_sum_type_names, type_name)
   let mut to_json_body = ''
   let mut from_json_object_body = ''
   let mut unit_string_body = ''
   let mut index = 0
   while index < variants.length() do
-    to_json_body = to_json_body + derive_json_sum_to_json_variant(variants[index])
-    from_json_object_body = from_json_object_body + derive_json_sum_from_json_variant(type_name, variants[index])
-    unit_string_body = unit_string_body + derive_json_sum_unit_string_variant(type_name, variants[index])
+    to_json_body = to_json_body + derive_json_sum_to_json_variant(variants[index], cyclic, cyclic_sum_type_names)
+    from_json_object_body = from_json_object_body + derive_json_sum_from_json_variant(type_name, variants[index], cyclic, cyclic_sum_type_names)
+    unit_string_body = unit_string_body + derive_json_sum_unit_string_variant(type_name, variants[index], cyclic)
     index = index + 1
   end
   Shared.new(CppDeclarationSequence([
@@ -1016,33 +1094,43 @@ fn derive_json_sum_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> Sh
   ]))
 end
 
-export fn gen_derive_json_cpp(type_name: string, variants: [Shared<TypeVariant>]) -> [Shared<CppDeclaration>] =
+export fn gen_derive_json_cpp(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
   if variants_is_single_record(variants) then
     [derive_json_record_cpp(type_name, derive_record_field_definitions(variants))]
   else
-    [derive_json_sum_cpp(type_name, variants)]
+    [derive_json_sum_cpp(type_name, variants, cyclic_sum_type_names)]
   end
 
-fn gen_derive_trait_cpp(type_name: string, variants: [Shared<TypeVariant>], trait_name: string) -> [Shared<CppDeclaration>] =
+fn gen_derive_trait_cpp(
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  trait_name: string,
+  cyclic_sum_type_names: [string]
+) -> [Shared<CppDeclaration>] =
   if trait_name == "Display" then gen_derive_display_cpp(type_name, variants)
   else if trait_name == "Eq" then gen_derive_eq_cpp(type_name, variants)
   else if trait_name == "Ord" then gen_derive_ord_cpp(type_name, variants)
   else if trait_name == "Hash" then gen_derive_hash_cpp(type_name, variants)
-  else if trait_name == "Json" then gen_derive_json_cpp(type_name, variants)
+  else if trait_name == "Json" then gen_derive_json_cpp(type_name, variants, cyclic_sum_type_names)
   else []
   end
 
 export fn gen_derive_methods_cpp(
   type_name: string,
   variants: [Shared<TypeVariant>],
-  derive_traits: [string]
+  derive_traits: [string],
+  cyclic_sum_type_names: [string]
 ) -> [Shared<CppDeclaration>] = do
   if derive_traits.length() == 0 then []
   else
     let declarations: [Shared<CppDeclaration>] = []
     let mut trait_index = 0
     while trait_index < derive_traits.length() do
-      const trait_declarations = gen_derive_trait_cpp(type_name, variants, derive_traits[trait_index])
+      const trait_declarations = gen_derive_trait_cpp(type_name, variants, derive_traits[trait_index], cyclic_sum_type_names)
       let mut declaration_index = 0
       while declaration_index < trait_declarations.length() do
         declarations.push(trait_declarations[declaration_index])

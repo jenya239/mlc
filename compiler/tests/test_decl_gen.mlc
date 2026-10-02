@@ -933,30 +933,30 @@ export fn decl_gen_tests() -> [TestResult] = do
     !cpp_decl_list_hash_body_contains_fragment(hue_hash_body)))
 
   results.push(assert_code_contains('gen_derive_methods_cpp: Display and Eq',
-    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'])),
+    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'], [])),
     'Point_to_string'))
 
   results.push(assert_code_contains('gen_derive_methods_cpp: Display and Eq operator',
-    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'])),
+    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Display', 'Eq'], [])),
     'operator=='))
 
   results.push(assert_code_contains('gen_derive_json_cpp record: Point_to_json',
-    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants)), 'Point_to_json'))
+    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants, [])), 'Point_to_json'))
 
   results.push(assert_code_contains('gen_derive_json_cpp record: Point_from_json',
-    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants)), 'Point_from_json'))
+    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants, [])), 'Point_from_json'))
 
   results.push(assert_code_contains('gen_derive_json_cpp record: json_set x',
-    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants)), 'mlc::String("x")'))
+    print_cpp_declarations(gen_derive_json_cpp('Point', point_variants, [])), 'mlc::String("x")'))
 
   results.push(assert_code_contains('gen_derive_json_cpp sum: Color_to_json',
-    print_cpp_declarations(gen_derive_json_cpp('Color', color_variants)), 'Color_to_json'))
+    print_cpp_declarations(gen_derive_json_cpp('Color', color_variants, [])), 'Color_to_json'))
 
   results.push(assert_code_contains('gen_derive_json_cpp sum: unit tag string',
-    print_cpp_declarations(gen_derive_json_cpp('Color', color_variants)), 'mlc::String("Red")'))
+    print_cpp_declarations(gen_derive_json_cpp('Color', color_variants, [])), 'mlc::String("Red")'))
 
   results.push(assert_code_contains('gen_derive_methods_cpp: Json wired',
-    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Json'])),
+    print_cpp_declarations(gen_derive_methods_cpp('Point', point_variants, ['Json'], [])),
     'Point_to_json'))
 
   results.push(assert_code_contains('gen_type_decl_body_cpp: native Hash wired',

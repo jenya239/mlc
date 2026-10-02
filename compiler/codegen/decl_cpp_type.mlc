@@ -4,9 +4,10 @@
 // decl_cpp_helpers.
 
 import { TypeVariant, FieldDef, TypeExpr, VarUnit, VarTuple, VarRecord } from '../frontend/ast'
-import { CppDeclaration, CppStruct, CppVariant, CppVariantArm, CppField, CppUsing } from '../cpp_ir/cpp_ast'
+import { CppDeclaration, CppStruct, CppVariant, CppVariantArm, CppField, CppUsing, CppDeclarationFragment } from '../cpp_ir/cpp_ast'
 import { CodegenContext, StructUsingEntry } from './context'
-import { template_prefix, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, type_to_cpp } from './decl/type_gen'
+import { template_prefix, variant_ctor_name, variant_used_type_parameters, type_phantom_params_for_variants, union_string_lists, variant_field_type_cpp, cyclic_sum_wrapper_definition } from './decl/type_gen'
+import { list_contains } from './decl/decl_index'
 import { gen_derive_methods_cpp } from './decl/derive_methods_cpp'
 import { cpp_safe } from './cpp_naming'
 import { append_cpp_declarations } from './decl_cpp_helpers'
@@ -43,21 +44,27 @@ fn append_type_forward_declarations(
 ) -> [Shared<CppDeclaration>] = do
   const phantom = type_phantom_params_for_variants(type_params, variants)
   let mut result = output
+  const cyclic = list_contains(context.cyclic_sum_type_names, type_name)
+  if cyclic then
+    result.push(Shared.new(CppStruct('', context.resolve(type_name), [], true)))
+  end
   let mut variant_index = 0
   while variant_index < variants.length() do
     result.push(variant_forward_struct_cpp(context, type_params, phantom, variants[variant_index]))
     variant_index = variant_index + 1
   end
-  let mut alias_arms: [Shared<CppVariantArm>] = []
-  variant_index = 0
-  while variant_index < variants.length() do
-    alias_arms.push(variant_alias_arm_cpp(context, type_params, phantom, variants[variant_index]))
-    variant_index = variant_index + 1
+  if !cyclic then
+    let mut alias_arms: [Shared<CppVariantArm>] = []
+    variant_index = 0
+    while variant_index < variants.length() do
+      alias_arms.push(variant_alias_arm_cpp(context, type_params, phantom, variants[variant_index]))
+      variant_index = variant_index + 1
+    end
+    result.push(Shared.new(CppVariant(
+      template_prefix(type_params),
+      context.resolve(type_name),
+      alias_arms)))
   end
-  result.push(Shared.new(CppVariant(
-    template_prefix(type_params),
-    context.resolve(type_name),
-    alias_arms)))
   result
 end
 
@@ -73,21 +80,21 @@ export fn gen_type_decl_fwd_cpp(
     append_type_forward_declarations([], context, type_name, type_params, variants)
   end
 
-fn record_field_cpp(context: CodegenContext, field_definition: Shared<FieldDef>) -> Shared<CppField> =
+fn record_field_cpp(context: CodegenContext, field_definition: Shared<FieldDef>, box_cyclic_fields: bool) -> Shared<CppField> =
   Shared.new(CppField {
-    type_value: type_to_cpp(context, field_definition.type_value),
+    type_value: variant_field_type_cpp(context, field_definition.type_value, box_cyclic_fields),
     name: cpp_safe(field_definition.name)
   })
 
-fn record_fields_cpp(context: CodegenContext, field_definitions: [Shared<FieldDef>]) -> [Shared<CppField>] =
-  field_definitions.map(field_definition => record_field_cpp(context, field_definition))
+fn record_fields_cpp(context: CodegenContext, field_definitions: [Shared<FieldDef>], box_cyclic_fields: bool) -> [Shared<CppField>] =
+  field_definitions.map(field_definition => record_field_cpp(context, field_definition, box_cyclic_fields))
 
-fn tuple_fields_cpp(context: CodegenContext, field_types: [Shared<TypeExpr>]) -> [Shared<CppField>] = do
+fn tuple_fields_cpp(context: CodegenContext, field_types: [Shared<TypeExpr>], box_cyclic_fields: bool) -> [Shared<CppField>] = do
   let mut fields: [Shared<CppField>] = []
   let mut field_index = 0
   while field_index < field_types.length() do
     fields.push(Shared.new(CppField {
-      type_value: type_to_cpp(context, field_types[field_index]),
+      type_value: variant_field_type_cpp(context, field_types[field_index], box_cyclic_fields),
       name: 'field' + field_index.to_string()
     }))
     field_index = field_index + 1
@@ -99,7 +106,8 @@ fn variant_body_struct_cpp(
   context: CodegenContext,
   type_params: [string],
   phantom: [string],
-  variant: Shared<TypeVariant>
+  variant: Shared<TypeVariant>,
+  box_cyclic_fields: bool
 ) -> Shared<CppDeclaration> = do
   const used = union_string_lists(variant_used_type_parameters(type_params, variant), phantom)
   const prefix = template_prefix(used)
@@ -107,9 +115,9 @@ fn variant_body_struct_cpp(
     VarUnit(name, _) =>
       Shared.new(CppStruct(prefix, context.resolve(name), [], false)),
     VarTuple(name, field_types, _) =>
-      Shared.new(CppStruct(prefix, context.resolve(name), tuple_fields_cpp(context, field_types), false)),
+      Shared.new(CppStruct(prefix, context.resolve(name), tuple_fields_cpp(context, field_types, box_cyclic_fields), false)),
     VarRecord(name, field_definitions, _) =>
-      Shared.new(CppStruct(prefix, context.resolve(name), record_fields_cpp(context, field_definitions), false))
+      Shared.new(CppStruct(prefix, context.resolve(name), record_fields_cpp(context, field_definitions, box_cyclic_fields), false))
   }
 end
 
@@ -139,9 +147,9 @@ fn single_variant_body_struct_cpp(
     VarUnit(_, _) =>
       Shared.new(CppStruct(prefix, resolved_name, [], false)),
     VarTuple(_, field_types, _) =>
-      Shared.new(CppStruct(prefix, resolved_name, tuple_fields_cpp(context, field_types), false)),
+      Shared.new(CppStruct(prefix, resolved_name, tuple_fields_cpp(context, field_types, false), false)),
     VarRecord(_, field_definitions, _) =>
-      Shared.new(CppStruct(prefix, resolved_name, record_fields_cpp(context, field_definitions), false))
+      Shared.new(CppStruct(prefix, resolved_name, record_fields_cpp(context, field_definitions, false), false))
   }
 end
 
@@ -163,14 +171,34 @@ fn append_type_body_struct_declarations(
     end
   else do
     const phantom = type_phantom_params_for_variants(type_params, variants)
+    const box_cyclic_fields = list_contains(context.cyclic_sum_type_names, type_name)
     let mut result = output
     let mut variant_index = 0
     while variant_index < variants.length() do
-      result.push(variant_body_struct_cpp(context, type_params, phantom, variants[variant_index]))
+      result.push(variant_body_struct_cpp(context, type_params, phantom, variants[variant_index], box_cyclic_fields))
       variant_index = variant_index + 1
+    end
+    if box_cyclic_fields then
+      result.push(Shared.new(CppDeclarationFragment(cyclic_sum_wrapper_definition(context, type_name, variants))))
     end
     result
   end
+
+export fn gen_type_decl_structs_cpp(
+  context: CodegenContext,
+  type_name: string,
+  type_params: [string],
+  variants: [Shared<TypeVariant>]
+) -> [Shared<CppDeclaration>] =
+  append_type_body_struct_declarations([], context, type_name, type_params, variants)
+
+export fn gen_type_decl_derive_cpp(
+  context: CodegenContext,
+  type_name: string,
+  variants: [Shared<TypeVariant>],
+  derive_traits: [string]
+) -> [Shared<CppDeclaration>] =
+  gen_derive_methods_cpp(type_name, variants, derive_traits, context.cyclic_sum_type_names)
 
 export fn gen_type_decl_body_cpp(
   context: CodegenContext,
@@ -179,8 +207,8 @@ export fn gen_type_decl_body_cpp(
   variants: [Shared<TypeVariant>],
   derive_traits: [string]
 ) -> [Shared<CppDeclaration>] = do
-  let mut result = append_type_body_struct_declarations([], context, type_name, type_params, variants)
-  const derive_declarations = gen_derive_methods_cpp(type_name, variants, derive_traits)
+  let mut result = gen_type_decl_structs_cpp(context, type_name, type_params, variants)
+  const derive_declarations = gen_type_decl_derive_cpp(context, type_name, variants, derive_traits)
   let mut derive_index = 0
   while derive_index < derive_declarations.length() do
     result.push(derive_declarations[derive_index])

@@ -397,6 +397,92 @@ fn register_variant_used_type_parameter_names_for_decl(
   end
 end
 
+fn append_unique_string(values: [string], name: string) -> [string] =
+  if values.any(existing => existing == name) then values else values.concat([name]) end
+
+fn collect_sum_reference_names(
+  type_expression: Shared<TypeExpr>,
+  sum_names: [string],
+  found: [string]
+) -> [string] =
+  match type_expression {
+    TyNamed(name) =>
+      if sum_names.any(sum_name => sum_name == name) then append_unique_string(found, name) else found end,
+    TyArray(inner) => collect_sum_reference_names(inner, sum_names, found),
+    TyGeneric(_, type_arguments) =>
+      type_arguments.fold(
+        found,
+        (accumulated, type_argument) => collect_sum_reference_names(type_argument, sum_names, accumulated)),
+    _ => found
+  }
+
+fn sum_references_for_variants(variants: [Shared<TypeVariant>], sum_names: [string]) -> [string] = do
+  let mut found: [string] = []
+  let mut variant_index = 0
+  while variant_index < variants.length() do
+    const field_types = variant_field_type_expressions(variants[variant_index])
+    let mut field_index = 0
+    while field_index < field_types.length() do
+      found = collect_sum_reference_names(field_types[field_index], sum_names, found)
+      field_index = field_index + 1
+    end
+    variant_index = variant_index + 1
+  end
+  found
+end
+
+fn variant_field_type_expressions(variant: Shared<TypeVariant>) -> [Shared<TypeExpr>] =
+  match variant {
+    VarTuple(_, field_types, _) => field_types,
+    VarRecord(_, field_definitions, _) =>
+      field_definitions.map(field_definition => field_definition.type_value),
+    VarUnit(_, _) => do let empty: [Shared<TypeExpr>] = []; empty end
+  }
+
+export fn build_cyclic_sum_type_names(declarations: [Shared<Decl>]) -> [string] = do
+  let mut sum_names: [string] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    const type_parameters = type_parameters_from_type_decl(declarations[declaration_index])
+    const variants = variants_from_type_decl(declarations[declaration_index])
+    const type_name = type_name_from_type_decl(declarations[declaration_index])
+    if type_name != '' && type_parameters.length() == 0 && variants.length() > 1 then
+      sum_names.push(type_name)
+    end
+    declaration_index = declaration_index + 1
+  end
+  let mut reference_map: Map<string, [string]> = Map.new()
+  declaration_index = 0
+  while declaration_index < declarations.length() do
+    const type_name = type_name_from_type_decl(declarations[declaration_index])
+    if sum_names.any(sum_name => sum_name == type_name) then
+      reference_map.set(
+        type_name,
+        sum_references_for_variants(variants_from_type_decl(declarations[declaration_index]), sum_names))
+    end
+    declaration_index = declaration_index + 1
+  end
+  let mut cyclic_names: [string] = []
+  let mut source_index = 0
+  while source_index < sum_names.length() do
+    const source_name = sum_names[source_index]
+    const referenced_names = reference_map.get(source_name)
+    let mut target_index = 0
+    while target_index < referenced_names.length() do
+      const target_name = referenced_names[target_index]
+      if target_name == source_name ||
+         (reference_map.has(target_name) &&
+          reference_map.get(target_name).any(candidate => candidate == source_name)) then
+        cyclic_names = append_unique_string(cyclic_names, source_name)
+        cyclic_names = append_unique_string(cyclic_names, target_name)
+      end
+      target_index = target_index + 1
+    end
+    source_index = source_index + 1
+  end
+  cyclic_names
+end
+
 export fn build_variant_used_type_parameter_names_from_decls(declarations: [Shared<Decl>]) -> Map<string, [string]> = do
   let mut used_map: Map<string, [string]> = Map.new()
   let mut declaration_index = 0

@@ -7,8 +7,8 @@ import { SemanticExpression, SemanticStatement, SemanticMatchArm, sexpr_type } f
 import { CodegenContext, CtorTypeInfo, lookup_ctor_type_info_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, lower_first } from '../cpp_naming'
-import { first_arm_needs_deref, pattern_bind_names, should_use_string_match_if_chain, should_use_fast_build_if_chain } from './match_analysis'
-import { tuple_destructure_binding } from './let_pat'
+import { first_arm_needs_deref, pattern_binding_name_list, should_use_string_match_if_chain, should_use_fast_build_if_chain, cyclic_sum_subject_member_suffix } from './match_analysis'
+import { constructor_payload_binding } from './let_pat'
 import {
   std_visit_match_expression,
   match_arm_wild_or_unit_return,
@@ -25,7 +25,7 @@ import {
 } from './match_arm_lambda'
 
 import { Type, TUnit, TNamed, TGeneric } from '../../checker/registry'
-import { is_result_generic, result_ok_type } from '../../checker/check/method_types/result_option_method_types'
+import { is_result_generic, is_option_generic, result_ok_type } from '../../checker/check/method_types/result_option_method_types'
 import { sem_type_to_cpp, cpp_template_two_type_arguments } from '../decl/type_gen'
 import {
   CppExpression,
@@ -113,7 +113,7 @@ fn gen_arm_ctor(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
+    else constructor_payload_binding(constructor_name, pattern_binding_name_list(sub_patterns), lower_name, context)
     end
   const is_generic = list_contains(context.generic_variants, constructor_name)
   const arm_context = codegen_context_with_ctor_field_bindings(constructor_name, sub_patterns, context)
@@ -137,7 +137,7 @@ fn gen_arm_record_pattern(
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
-  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
+  const accumulated = record_pattern_field_bindings_and_context(record_name, field_patterns, lower_name, context)
   const body_code = eval_expr_fn(arm_body, accumulated.arm_context, gen_stmts)
   if is_generic then
     gen_arm_ctor_generic_body(qualified_name, lower_name, accumulated.field_bindings, body_code, visit_void)
@@ -188,7 +188,7 @@ fn match_effective_result_type(match_result_type: Shared<Type>, context: Codegen
 
 fn is_plain_named_non_result_type(type_value: Shared<Type>) -> bool =
   match type_value {
-    TNamed(name) => name != 'Result',
+    TNamed(name) => name != 'Result' && name != 'Option',
     _ => false
   }
 
@@ -201,6 +201,9 @@ fn should_use_explicit_visit_return_type(
   const effective_result_type = match_effective_result_type(match_result_type, context)
   const return_cpp = match_return_cpp_type(context, effective_result_type, subject)
   if return_cpp.length() == 0 then return false end
+  if is_option_generic(effective_result_type) && return_cpp.contains(`<`) && !return_cpp.contains('auto') then
+    return true
+  end
   // Arms of a match producing a plain named (non-Result) type - almost always a sum
   // type - typically construct different concrete alternatives (e.g. MirRvalueUse{...}
   // vs MirRvalueBinary{...}). std::visit's per-lambda auto return type deduction
@@ -253,7 +256,7 @@ fn gen_arm_ctor_cpp(
   const lower_name = cpp_safe(lower_first(constructor_name))
   const binding =
     if sub_patterns.length() == 0 then ''
-    else tuple_destructure_binding(pattern_bind_names(sub_patterns), lower_name)
+    else constructor_payload_binding(constructor_name, pattern_binding_name_list(sub_patterns), lower_name, context)
     end
   const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
   const variant_used_type_parameter_names =
@@ -297,7 +300,7 @@ fn gen_arm_record_pattern_cpp(
   const qualified_name = context.resolve(record_name)
   const lower_name = cpp_safe(lower_first(record_name))
   const is_generic = list_contains(context.generic_variants, record_name)
-  const accumulated = record_pattern_field_bindings_and_context(field_patterns, lower_name, context)
+  const accumulated = record_pattern_field_bindings_and_context(record_name, field_patterns, lower_name, context)
   const body_expression = eval_expr_cpp_fn(arm_body, accumulated.arm_context, gen_stmts)
   if is_generic then
     Shared.new(CppVisitArmConstructedGeneric(
@@ -365,7 +368,8 @@ fn gen_match_std_visit_string(
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
   std_visit_match_expression(
     arm_lines.join(',\n'),
-    visit_subject_for_match(subject_code, needs_dereference))
+    visit_subject_for_match(subject_code, needs_dereference) +
+      cyclic_sum_subject_member_suffix(subject, context))
 end
 
 export fn gen_match_std_visit_cpp(
@@ -387,7 +391,9 @@ export fn gen_match_std_visit_cpp(
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
   const subject_code = print_expr(eval_expr_cpp_fn(subject, context, gen_stmts))
-  const visit_subject = visit_subject_for_match(subject_code, needs_dereference)
+  const visit_subject =
+    visit_subject_for_match(subject_code, needs_dereference) +
+      cyclic_sum_subject_member_suffix(subject, context)
   Shared.new(CppIdent(std_visit_match_expression(
     arm_expressions.map(arm => print_expr(arm)).join(',\n'),
     visit_subject)))

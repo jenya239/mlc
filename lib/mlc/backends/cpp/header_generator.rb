@@ -618,30 +618,7 @@ module MLC
         end
 
         def cyclic_sum_types(module_node)
-          type_registry = @lowering.type_registry
-          return Set.new unless type_registry
-
-          sum_decls = module_node.items.grep(SemanticIR::TypeDecl).select do |td|
-            td.type.is_a?(SemanticIR::SumType) && td.type_params.empty?
-          end
-          return Set.new if sum_decls.empty?
-
-          module_type_names = sum_decls.map(&:name).to_set
-          refs = {}
-          sum_decls.each do |td|
-            info = type_registry.lookup(td.name)
-            next unless info
-
-            refs[td.name] = (info.referenced_type_names || []).select { |n| module_type_names.include?(n) }.to_set
-          end
-
-          cyclic = Set.new
-          refs.each_key do |a|
-            refs[a].each do |b|
-              cyclic << a << b if refs[b]&.include?(a)
-            end
-          end
-          cyclic
+          @lowering.cyclic_sum_type_names(module_node)
         end
 
         # Union of cyclic sum types across all modules (for cross-module match on wrapper types)

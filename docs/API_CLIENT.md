@@ -51,9 +51,13 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
   `known unit variant`, `array length N`).
 - Поле `Map`, `Shared` или функция: диагностика чекера, в mlcc код E069.
   Generic `derive { Json }`: E072.
-- Сумма, которая содержит саму себя, и две суммы, которые содержат друг
-  друга, не поддерживаются. Оба компилятора оставляют
-  `using Name = std::variant<...>`, clang++ отвергает неполный тип члена.
+- Необобщённая сумма с двумя и более вариантами, которая содержит саму
+  себя или другую такую сумму, понижается в `struct { std::variant<...> _; }`
+  с конструктором на каждый вариант. Поле по значению, чей тип — такая сумма,
+  хранится как `std::shared_ptr`. Тип в MLC остаётся суммой. `derive { Json }`
+  проходит этот круг. Поле, написанное как `Shared<T>`, по-прежнему E069.
+  Обобщённая сумма, сумма из одного варианта, массив и `Option` такой суммы
+  не поддержаны. Привязка `match` к упакованному полю — сама сумма (`*field`).
 
 ## 4. OpenAPI codegen
 
@@ -117,7 +121,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
 3. **done for `JsonError` labels** — `MissingField` / `TypeMismatch` with the
    field name and an expected-type word. `Map`, `Shared`, a function field,
    and a generic derive are checker diagnostics (E069 / E072), not `JsonError`.
-   A recursive sum is rejected by clang++, not by the checker.
+   A non-generic multi-variant recursive sum lowers to a wrapper struct;
+   by-value cyclic fields are `std::shared_ptr`. Generic and single-variant
+   recursion stay unsupported.
 4. **partial** — `scripts/openapi_codegen.rb` emits mini Petstore that `mlcc`
    and `clang++ -fsyntax-only` accept (`[T]`, `PetCase(Pet)`, `ApiResult<T>`).
    Client bodies return `Err` and do not call `fetch`. Live mock-server stays

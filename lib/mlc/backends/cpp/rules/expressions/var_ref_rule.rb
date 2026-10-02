@@ -25,14 +25,14 @@ module MLC
 
                 if ctor_name != identifier # Is a qualified constructor (contains ::)
                   if nullary_variant_constructor?(node)
-                    context.factory.raw_expression(code: "(#{ctor_name}#{targs}{})")
+                    wrap_cyclic_nullary_variant(node, context.factory.raw_expression(code: "(#{ctor_name}#{targs}{})"))
                   elsif variant_constructor?(node)
                     context.factory.raw_expression(code: "(#{ctor_name}#{targs})")
                   else
                     context.factory.identifier(name: ctor_name)
                   end
                 elsif nullary_variant_constructor?(node)
-                  context.factory.raw_expression(code: "#{identifier}#{targs}{}")
+                  wrap_cyclic_nullary_variant(node, context.factory.raw_expression(code: "#{identifier}#{targs}{}"))
                 elsif variant_constructor?(node)
                   context.factory.identifier(name: identifier)
                 else
@@ -94,6 +94,45 @@ module MLC
                 return base.is_a?(MLC::SemanticIR::SumType) && base.variants.any? { |v| v[:name] == node.name }
               end
               false
+            end
+
+            def wrap_cyclic_nullary_variant(node, expression)
+              sum_name = cyclic_sum_name_for_variant_reference(node)
+              return expression unless sum_name
+
+              context.factory.raw_expression(code: "#{qualified_sum_cpp_name(sum_name)}(#{expression.to_source})")
+            end
+
+            def cyclic_sum_name_for_variant_reference(node)
+              return nil unless node.respond_to?(:type) && node.type
+
+              type = node.type
+              sum_name = if type.is_a?(MLC::SemanticIR::SumType)
+                           type.name
+                         elsif type.is_a?(MLC::SemanticIR::FunctionType)
+                           return_type = type.ret_type
+                           if return_type.is_a?(MLC::SemanticIR::SumType)
+                             return_type.name
+                           elsif return_type.is_a?(MLC::SemanticIR::GenericType) &&
+                                 return_type.base_type.is_a?(MLC::SemanticIR::SumType)
+                             return_type.base_type.name
+                           end
+                         end
+              return nil unless sum_name && Array(context.cyclic_sum_types).include?(sum_name)
+
+              sum_name
+            end
+
+            def qualified_sum_cpp_name(sum_name)
+              info = context.type_registry&.lookup(sum_name)
+              return sum_name unless info
+
+              namespace = info.namespace ||
+                          (info.cpp_name[/\A([^:]+)::/, 1] if info.cpp_name&.include?("::")) ||
+                          (module_name_to_namespace(info.module_name) if info.module_name)
+              return sum_name unless namespace
+
+              "#{namespace}::#{sum_name}"
             end
 
             def module_name_to_namespace(name)

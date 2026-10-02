@@ -353,9 +353,19 @@ export fn type_phantom_params_for_variants(type_parameters: [string], variants: 
   type_parameters.filter(type_parameter => !type_param_in_typeexpr_list(type_parameter, all_fields))
 end
 
-fn field_def_member_declaration(context: CodegenContext, field_definition: Shared<FieldDef>) -> string = do
+export fn variant_field_type_cpp(context: CodegenContext, field_type: Shared<TypeExpr>, box_cyclic_fields: bool) -> string =
+  match field_type {
+    TyNamed(name) =>
+      if box_cyclic_fields && list_contains(context.cyclic_sum_type_names, name) then
+        `std::shared_ptr<${context.resolve(name)}>`
+      else type_to_cpp(context, field_type)
+      end,
+    _ => type_to_cpp(context, field_type)
+  }
+
+fn field_def_member_declaration(context: CodegenContext, field_definition: Shared<FieldDef>, box_cyclic_fields: bool) -> string = do
   const base = struct_named_field_declaration(
-    type_to_cpp(context, field_definition.type_value), cpp_safe(field_definition.name))
+    variant_field_type_cpp(context, field_definition.type_value, box_cyclic_fields), cpp_safe(field_definition.name))
   if field_definition.has_default_expression &&
      record_field_default_expression_is_static_initializer(field_definition.default_expression) then
     base + ' = ' + record_field_default_expression_cpp_initializer(field_definition.default_expression, context)
@@ -363,8 +373,8 @@ fn field_def_member_declaration(context: CodegenContext, field_definition: Share
   end
 end
 
-fn variant_record_struct_inline_member_declarations(context: CodegenContext, field_definitions: [Shared<FieldDef>]) -> string =
-  field_definitions.map(field_definition => field_def_member_declaration(context, field_definition)).join('')
+fn variant_record_struct_inline_member_declarations(context: CodegenContext, field_definitions: [Shared<FieldDef>], box_cyclic_fields: bool) -> string =
+  field_definitions.map(field_definition => field_def_member_declaration(context, field_definition, box_cyclic_fields)).join('')
 
 // --- Variant struct generation -----------------------------------------------
 
@@ -373,7 +383,7 @@ export fn variant_ctor_name(variant: Shared<TypeVariant>) -> string =
 
 type TupleStructCodegenFoldState = TupleStructCodegenFoldState { field_slot_index: i32, declaration_text_so_far: string }
 
-fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [Shared<TypeExpr>]) -> string =
+fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [Shared<TypeExpr>], box_cyclic_fields: bool) -> string =
   field_types.fold(
     TupleStructCodegenFoldState { field_slot_index: 0, declaration_text_so_far: '' },
     (accumulated_tuple_state, field_type_expression_under_tuple) =>
@@ -381,23 +391,25 @@ fn tuple_variant_struct_members_fragment(context: CodegenContext, field_types: [
         field_slot_index: accumulated_tuple_state.field_slot_index + 1,
         declaration_text_so_far: accumulated_tuple_state.declaration_text_so_far +
           struct_tuple_field_declaration(
-            type_to_cpp(context, field_type_expression_under_tuple),
+            variant_field_type_cpp(context, field_type_expression_under_tuple, box_cyclic_fields),
             accumulated_tuple_state.field_slot_index.to_string())
       }
   ).declaration_text_so_far
 
-fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string =
+fn gen_variant_struct(context: CodegenContext, type_name: string, variant: Shared<TypeVariant>) -> string = do
+  const box_cyclic_fields = list_contains(context.cyclic_sum_type_names, type_name)
   match variant {
     VarUnit(name, _) => struct_empty_definition(context.resolve(name)),
     VarTuple(name, field_types, _) =>
       struct_with_inline_members_definition(
         context.resolve(name),
-        tuple_variant_struct_members_fragment(context, field_types)),
+        tuple_variant_struct_members_fragment(context, field_types, box_cyclic_fields)),
     VarRecord(name, field_defs, _) =>
       struct_with_inline_members_definition(
         context.resolve(name),
-        variant_record_struct_inline_member_declarations(context, field_defs))
+        variant_record_struct_inline_member_declarations(context, field_defs, box_cyclic_fields))
   }
+end
 
 fn struct_extra_using(context: CodegenContext, type_name: string) -> string =
   if context.struct_using_lines.has(type_name) then
@@ -409,11 +421,11 @@ fn gen_single_variant(context: CodegenContext, type_name: string, variant: Share
     VarRecord(_, field_defs, _) =>
       struct_with_inline_members_definition(
         context.resolve(type_name),
-        variant_record_struct_inline_member_declarations(context, field_defs) + struct_extra_using(context, type_name)),
+        variant_record_struct_inline_member_declarations(context, field_defs, false) + struct_extra_using(context, type_name)),
     VarTuple(_, field_types, _) =>
       struct_with_inline_members_definition(
         context.resolve(type_name),
-        tuple_variant_struct_members_fragment(context, field_types) + struct_extra_using(context, type_name)),
+        tuple_variant_struct_members_fragment(context, field_types, false) + struct_extra_using(context, type_name)),
     VarUnit(_, _) => struct_empty_definition(context.resolve(type_name))
   }
 
@@ -435,15 +447,28 @@ end
 fn variant_alias_part(context: CodegenContext, type_parameters: [string], phantom: [string], variant: Shared<TypeVariant>) -> string =
   context.resolve(variant_ctor_name(variant)) + variant_type_argument_suffix(type_parameters, phantom, variant)
 
+export fn cyclic_sum_wrapper_definition(context: CodegenContext, type_name: string, variants: [Shared<TypeVariant>]) -> string = do
+  const resolved_name = context.resolve(type_name)
+  const variant_names = variants.map(variant => context.resolve(variant_ctor_name(variant))).join(', ')
+  const constructors = variants.map(variant =>
+    resolved_name + "(" + context.resolve(variant_ctor_name(variant)) + " value) : _(std::move(value)) {}"
+  ).join(" ")
+  `struct ${resolved_name} { std::variant<${variant_names}> _; ${constructors} };\n`
+end
+
 export fn gen_adt_fwd(context: CodegenContext, type_name: string, type_parameters: [string], variants: [Shared<TypeVariant>]) -> string = do
   const full_prefix = template_prefix(type_parameters)
   const phantom     = type_phantom_params_for_variants(type_parameters, variants)
   const forward_decls =
     variants.map(variant => variant_forward_decl_line(context, type_parameters, phantom, variant)).join('')
-  const alias_parts =
-    variants.map(variant => variant_alias_part(context, type_parameters, phantom, variant)).join(', ')
-  forward_decls +
-    variant_using_alias_definition_line(full_prefix, context.resolve(type_name), alias_parts)
+  if list_contains(context.cyclic_sum_type_names, type_name) then
+    struct_forward_declaration_line('', context.resolve(type_name)) + forward_decls
+  else
+    const alias_parts =
+      variants.map(variant => variant_alias_part(context, type_parameters, phantom, variant)).join(', ')
+    forward_decls +
+      variant_using_alias_definition_line(full_prefix, context.resolve(type_name), alias_parts)
+  end
 end
 
 fn variant_def_with_prefix(
@@ -459,7 +484,12 @@ end
 
 export fn gen_adt_defs(context: CodegenContext, type_name: string, type_parameters: [string], variants: [Shared<TypeVariant>]) -> string = do
   const phantom = type_phantom_params_for_variants(type_parameters, variants)
-  variants.map(variant => variant_def_with_prefix(context, type_name, type_parameters, phantom, variant)).join('')
+  const variant_definitions =
+    variants.map(variant => variant_def_with_prefix(context, type_name, type_parameters, phantom, variant)).join('')
+  if list_contains(context.cyclic_sum_type_names, type_name) then
+    variant_definitions + cyclic_sum_wrapper_definition(context, type_name, variants)
+  else variant_definitions
+  end
 end
 
 fn gen_type_decl_fwd(context: CodegenContext, type_name: string, type_parameters: [string], variants: [Shared<TypeVariant>]) -> string =

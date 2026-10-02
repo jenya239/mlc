@@ -238,6 +238,8 @@ module MLC
 
         # Lower module using new architecture for expression/statement lowering
         def lower_module(module_node)
+          self.cyclic_sum_types = cyclic_sum_type_names(module_node)
+
           # Track user-defined functions for qualified name resolution
           @container.user_functions = module_node.items
                                                  .grep(SemanticIR::Func)
@@ -286,16 +288,33 @@ module MLC
 
           # Phase 2: full type definitions (sum type variant structs + record types).
           # Functions are excluded here; they come after forward declarations in Phase 4.
-          type_defs = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |td|
+          type_struct_defs = []
+          type_derive_defs = []
+          module_node.items.grep(SemanticIR::TypeDecl).each do |td|
             if td.type.is_a?(SemanticIR::SumType) && td.type_params.empty?
-              stmts = sum_type_body_stmts(td.name, td.type)
+              type_struct_defs.concat(sum_type_body_stmts(td.name, td.type))
+              type_struct_defs << cyclic_sum_wrapper_statement(td.name, td.type) if cyclic_sum_type?(td.name)
               derive_traits = Array(td.derive_traits)
-              stmts + (derive_traits.empty? ? [] : generate_derive_methods(td.name, td.type, derive_traits))
+              type_derive_defs.concat(generate_derive_methods(td.name, td.type, derive_traits)) unless derive_traits.empty?
             else
               result = lower(td)
-              result.is_a?(CppAst::Nodes::Program) ? result.statements : [result]
+              type_struct_defs.concat(result.is_a?(CppAst::Nodes::Program) ? result.statements : [result])
             end
           end
+          cyclic_json_prototypes = module_node.items.grep(SemanticIR::TypeDecl).flat_map do |td|
+            next [] unless cyclic_sum_type?(td.name)
+            next [] unless Array(td.derive_traits).include?("Json")
+
+            [
+              @context.factory.raw_statement(
+                code: "mlc::json::JsonValue #{td.name}_to_json(const #{td.name}& self) noexcept;"
+              ),
+              @context.factory.raw_statement(
+                code: "mlc::result::Result<#{td.name}, mlc::json::JsonError> #{td.name}_from_json(const mlc::json::JsonValue& __json_value) noexcept;"
+              )
+            ]
+          end
+          type_defs = type_struct_defs + cyclic_json_prototypes + type_derive_defs
 
           # Phase 3: forward declarations for all non-generic user functions.
           # Must come after all type definitions so parameter/return types are known.
@@ -468,12 +487,70 @@ module MLC
           function_rule.apply(proto, semantic_func: func, event_bus: @container.event_bus)
         end
 
-        # Forward declarations + using alias for a sum type (no full struct bodies).
-        def sum_type_preamble_stmts(name, sum_type)
-          fwd_decls = sum_type.variants.map do |v|
-            @context.factory.raw_statement(code: "struct #{v[:name]};")
+        # Names of non-generic sums that reference each other or themselves.
+        # A self-reference is a cycle. referenced_type_names drops the type's own
+        # name, so this scan reads the variant fields directly.
+        def cyclic_sum_type_names(module_node)
+          sum_declarations = module_node.items.grep(SemanticIR::TypeDecl).select do |type_declaration|
+            type_declaration.type.is_a?(SemanticIR::SumType) && type_declaration.type_params.empty? &&
+              type_declaration.type.variants.length > 1
           end
-          variant_names = sum_type.variants.map { |v| v[:name] }.join(", ")
+          return Set.new if sum_declarations.empty?
+
+          sum_names = sum_declarations.map(&:name).to_set
+          references = {}
+          sum_declarations.each do |type_declaration|
+            referenced_names = Set.new
+            type_declaration.type.variants.each do |variant|
+              Array(variant[:fields]).each do |field|
+                collect_cyclic_sum_reference_names(field[:type], sum_names, referenced_names)
+              end
+            end
+            references[type_declaration.name] = referenced_names
+          end
+
+          cyclic_names = Set.new
+          references.each_key do |source_name|
+            references[source_name].each do |target_name|
+              next unless target_name == source_name || references[target_name]&.include?(source_name)
+
+              cyclic_names << source_name
+              cyclic_names << target_name
+            end
+          end
+          cyclic_names
+        end
+
+        def collect_cyclic_sum_reference_names(type, sum_names, referenced_names)
+          case type
+          when SemanticIR::GenericType
+            collect_cyclic_sum_reference_names(type.base_type, sum_names, referenced_names)
+            Array(type.type_args).each do |type_argument|
+              collect_cyclic_sum_reference_names(type_argument, sum_names, referenced_names)
+            end
+          when SemanticIR::ArrayType
+            collect_cyclic_sum_reference_names(type.element_type, sum_names, referenced_names)
+          when SemanticIR::Type
+            referenced_names << type.name if sum_names.include?(type.name)
+          end
+        end
+
+        def cyclic_sum_type?(name)
+          @cyclic_sum_types&.include?(name)
+        end
+
+        # Forward declarations + using alias for a sum type (no full struct bodies).
+        # A cyclic sum is a struct, so the preamble forward-declares that struct
+        # instead of aliasing std::variant (a typedef cannot be forward-declared).
+        def sum_type_preamble_stmts(name, sum_type)
+          fwd_decls = sum_type.variants.map do |variant|
+            @context.factory.raw_statement(code: "struct #{variant[:name]};")
+          end
+          if cyclic_sum_type?(name)
+            return [@context.factory.raw_statement(code: "struct #{name};")] + fwd_decls
+          end
+
+          variant_names = sum_type.variants.map { |variant| variant[:name] }.join(", ")
           using_decl = CppAst::Nodes::UsingDeclaration.new(
             kind: :alias,
             name: name,
@@ -497,7 +574,7 @@ module MLC
             else
               members = variant[:fields].map do |field|
                 CppAst::Nodes::VariableDeclaration.new(
-                  type: @context.map_type(field[:type]),
+                  type: cyclic_variant_field_cpp_type(name, field[:type]),
                   declarators: [field[:name]],
                   declarator_separators: [],
                   type_suffix: " ",
@@ -752,6 +829,14 @@ def derive_json_sum_access(name)
   end
 end
 
+def derive_json_sum_constructed(name, variant_expression)
+  if @cyclic_sum_types&.include?(name)
+    "#{name}(#{variant_expression})"
+  else
+    variant_expression
+  end
+end
+
 def derive_json_sum_to_json_body(name, type)
   access = derive_json_sum_access(name)
   lines = []
@@ -796,7 +881,7 @@ def derive_json_sum_from_json_body(name, type)
 
     vname = variant[:name]
     lines << "  if (tag == mlc::String(\"#{vname}\")) {"
-    lines << "    return mlc::result::Ok<#{name}>(#{vname}{});"
+    lines << "    return mlc::result::Ok<#{name}>(#{derive_json_sum_constructed(name, "#{vname}{}")});"
     lines << "  }"
   end
   lines << "  return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"tag\"), mlc::String(\"known unit variant\")));"
@@ -814,7 +899,7 @@ def derive_json_sum_from_json_body(name, type)
     fields = Array(variant[:fields])
     lines << "if (tag == mlc::String(\"#{vname}\")) {"
     if fields.empty?
-      lines << "  return mlc::result::Ok<#{name}>(#{vname}{});"
+      lines << "  return mlc::result::Ok<#{name}>(#{derive_json_sum_constructed(name, "#{vname}{}")});"
     elsif fields.length == 1
       field = fields.first
       field_name = field[:name] || "field0"
@@ -823,7 +908,7 @@ def derive_json_sum_from_json_body(name, type)
       lines << "    return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_missing_field(mlc::String(\"value\")));"
       lines << "  }"
       lines.concat(derive_json_extract_required("__opt_value.value()", "#{vname}_payload", field[:type], "  "))
-      lines << "  return mlc::result::Ok<#{name}>(#{vname}{.#{sanitize_identifier(field_name)} = __decoded_#{vname}_payload});"
+      lines << "  return mlc::result::Ok<#{name}>(#{derive_json_sum_constructed(name, "#{vname}{.#{sanitize_identifier(field_name)} = __decoded_#{vname}_payload}")});"
     else
       lines << "  auto __opt_fields = mlc::json::json_get(__json_value, mlc::String(\"fields\"));"
       lines << "  if (!__opt_fields.has_value() || !__opt_fields->is_array()) {"
@@ -841,7 +926,7 @@ def derive_json_sum_from_json_body(name, type)
         field_name = field[:name] || "field#{index}"
         ".#{sanitize_identifier(field_name)} = __decoded_#{vname}_#{field_name}"
       end.join(", ")
-      lines << "  return mlc::result::Ok<#{name}>(#{vname}{#{inits}});"
+      lines << "  return mlc::result::Ok<#{name}>(#{derive_json_sum_constructed(name, "#{vname}{#{inits}}")});"
     end
     lines << "}"
   end
@@ -899,7 +984,11 @@ end
             when "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "usize", "f32", "f64"
               "mlc::json::json_number(static_cast<double>(#{access}))"
             else
-              "#{field_type.name}_to_json(#{access})"
+              if @cyclic_sum_types&.include?(field_type.name)
+                "#{field_type.name}_to_json(*#{access})"
+              else
+                "#{field_type.name}_to_json(#{access})"
+              end
             end
           else
             "mlc::json::json_null()"
@@ -1003,14 +1092,25 @@ end
               lines << "#{indent}#{cpp_type} __decoded_#{field_name} = static_cast<#{cpp_type}>(*#{value_expr}.as_number());"
             else
               type_name = field_type.name
-              lines << "#{indent}#{type_name} __decoded_#{field_name};"
-              lines << "#{indent}{"
-              lines << "#{indent}  auto __nested_#{field_name} = #{type_name}_from_json(#{value_expr});"
-              lines << "#{indent}  if (!std::holds_alternative<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})) {"
-              lines << "#{indent}    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_#{field_name})._0);"
-              lines << "#{indent}  }"
-              lines << "#{indent}  __decoded_#{field_name} = std::get<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})._0;"
-              lines << "#{indent}}"
+              if @cyclic_sum_types&.include?(type_name)
+                lines << "#{indent}std::shared_ptr<#{type_name}> __decoded_#{field_name};"
+                lines << "#{indent}{"
+                lines << "#{indent}  auto __nested_#{field_name} = #{type_name}_from_json(#{value_expr});"
+                lines << "#{indent}  if (!std::holds_alternative<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})) {"
+                lines << "#{indent}    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_#{field_name})._0);"
+                lines << "#{indent}  }"
+                lines << "#{indent}  __decoded_#{field_name} = std::make_shared<#{type_name}>(std::get<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})._0);"
+                lines << "#{indent}}"
+              else
+                lines << "#{indent}#{type_name} __decoded_#{field_name};"
+                lines << "#{indent}{"
+                lines << "#{indent}  auto __nested_#{field_name} = #{type_name}_from_json(#{value_expr});"
+                lines << "#{indent}  if (!std::holds_alternative<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})) {"
+                lines << "#{indent}    return mlc::result::Err<mlc::json::JsonError>(std::get<mlc::result::Err<mlc::json::JsonError>>(__nested_#{field_name})._0);"
+                lines << "#{indent}  }"
+                lines << "#{indent}  __decoded_#{field_name} = std::get<mlc::result::Ok<#{type_name}>>(__nested_#{field_name})._0;"
+                lines << "#{indent}}"
+              end
             end
           else
             lines << "#{indent}return mlc::result::Err<mlc::json::JsonError>(mlc::json::json_type_mismatch(mlc::String(\"#{field_name}\"), mlc::String(\"unsupported\")));"
@@ -1236,9 +1336,28 @@ end
           end
         end
 
+        def cyclic_variant_field_cpp_type(enclosing_sum_name, field_type)
+          mapped = @context.map_type(field_type)
+          return mapped unless cyclic_sum_type?(enclosing_sum_name)
+          return mapped unless field_type.is_a?(SemanticIR::Type)
+          return mapped unless cyclic_sum_type?(field_type.name)
+
+          "std::shared_ptr<#{field_type.name}>"
+        end
+
+        def cyclic_sum_wrapper_statement(name, sum_type)
+          variant_names = sum_type.variants.map { |variant| variant[:name] }.join(", ")
+          constructors = sum_type.variants.map do |variant|
+            "#{name}(#{variant[:name]} value) : _(std::move(value)) {}"
+          end.join(" ")
+          @context.factory.raw_statement(
+            code: "struct #{name} { std::variant<#{variant_names}> _; #{constructors} };"
+          )
+        end
+
         def cyclic_sum_type_stmts(name, sum_type)
           variant_structs = sum_type_body_stmts(name, sum_type)
-          wrapper = lower_sum_type_as_wrapper_struct(name, sum_type)
+          wrapper = cyclic_sum_wrapper_statement(name, sum_type)
           stmts = variant_structs + [wrapper]
           CppAst::Nodes::Program.new(
             statements: stmts,
@@ -1248,25 +1367,7 @@ end
 
         # Output sum type as wrapper struct (for forward decl in modular headers with cycles)
         def lower_sum_type_as_wrapper_struct(name, sum_type)
-          variant_names = sum_type.variants.map { |v| v[:name] }.join(", ")
-          variant_type = "std::variant<#{variant_names}>"
-          member = CppAst::Nodes::VariableDeclaration.new(
-            type: variant_type,
-            declarators: ["_"],
-            declarator_separators: [],
-            type_suffix: " ",
-            prefix_modifiers: ""
-          )
-          CppAst::Nodes::StructDeclaration.new(
-            name: name,
-            members: [member],
-            member_trailings: [""],
-            struct_suffix: " ",
-            name_suffix: " ",
-            lbrace_suffix: "",
-            rbrace_suffix: "",
-            base_classes_text: ""
-          )
+          cyclic_sum_wrapper_statement(name, sum_type)
         end
 
         def lower_sum_type_internal(name, sum_type, type_params = [])

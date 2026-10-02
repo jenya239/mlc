@@ -6,10 +6,11 @@
 
 import { Pattern, PatternWild, PatternStr, PatternStringLit } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
-import { CodegenContext } from '../context'
+import { CodegenContext, lookup_ctor_type_info_for_context } from '../context'
 import { cpp_safe, lower_first } from '../cpp_naming'
 import { list_contains } from '../decl/decl_index'
-import { pattern_binding_name_list, first_arm_needs_deref } from './match_analysis'
+import { pattern_binding_name_list, first_arm_needs_deref, cyclic_sum_subject_member_suffix } from './match_analysis'
+import { constructor_payload_binding } from './let_pat'
 import { codegen_context_with_ctor_field_bindings } from './match_field_binding'
 import { generic_ctor_type_argument } from './match_generic_ctor_type'
 import { visit_subject_for_match } from './match_arm_lambda'
@@ -215,10 +216,12 @@ type RecordFieldBindCppResult = RecordFieldBindCppResult {
 }
 
 fn record_field_binding_cpp_result(
+  constructor_name: string,
   field_patterns: [Shared<Pattern>],
   lower_name: string,
   start_context: CodegenContext
 ) -> RecordFieldBindCppResult = do
+  const constructor_info = lookup_ctor_type_info_for_context(start_context, constructor_name)
   let mut field_binding_statements: [Shared<CppStatement>] = []
   let mut arm_context = start_context
   let mut field_index = 0
@@ -226,8 +229,13 @@ fn record_field_binding_cpp_result(
     match field_patterns[field_index] {
       PatternIdent(field_name, _) => do
         const field_cpp_safe = cpp_safe(field_name)
-        field_binding_statements.push(
-          record_field_const_auto_ref_statement(field_cpp_safe, lower_name))
+        if constructor_info.boxed_positions.contains(field_index) then
+          field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+            'const auto& ' + field_cpp_safe + ' = (*' + lower_name + "." + field_cpp_safe + '); '))
+        else
+          field_binding_statements.push(
+            record_field_const_auto_ref_statement(field_cpp_safe, lower_name))
+        end
         arm_context = arm_context.add_value(field_name)
       end,
       _ => do end
@@ -238,6 +246,27 @@ fn record_field_binding_cpp_result(
     field_binding_statements: field_binding_statements,
     arm_context: arm_context
   }
+end
+
+fn constructor_payload_binding_statement(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  context: CodegenContext
+) -> Shared<CppStatement> = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if constructor_info.boxed_positions.length() == 0 then
+    emit_helpers.make_structured_binding_cpp_statement(
+      pattern_binding_name_list(sub_patterns),
+      emit_helpers.make_identifier_cpp_expression(lower_name))
+  else
+    emit_helpers.make_fragment_cpp_statement(
+      constructor_payload_binding(
+        constructor_name,
+        pattern_binding_name_list(sub_patterns),
+        lower_name,
+        context))
+  end
 end
 
 fn gen_guarded_constructor_arm_statements(
@@ -260,9 +289,8 @@ fn gen_guarded_constructor_arm_statements(
   then_statements.push(
     variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
   if sub_patterns.length() > 0 then
-    then_statements.push(emit_helpers.make_structured_binding_cpp_statement(
-      pattern_binding_name_list(sub_patterns),
-      emit_helpers.make_identifier_cpp_expression(lower_name)))
+    then_statements.push(constructor_payload_binding_statement(
+      constructor_name, sub_patterns, lower_name, context))
   end
   then_statements = append_cpp_statements(
     then_statements,
@@ -290,7 +318,7 @@ fn gen_guarded_record_arm_statements(
   const lower_name = cpp_safe(lower_first(record_name))
   const type_argument = if list_contains(context.generic_variants, record_name) then '<auto>' else '' end
   const variant_type_name = qualified_name + type_argument
-  const field_bindings = record_field_binding_cpp_result(field_patterns, lower_name, context)
+  const field_bindings = record_field_binding_cpp_result(record_name, field_patterns, lower_name, context)
   let mut then_statements: [Shared<CppStatement>] = []
   then_statements.push(
     variant_get_const_ref_statement(variant_type_name, lower_name, variant_access_expression))
@@ -519,7 +547,9 @@ fn gen_match_guarded_body_from_subject_expression(
 ) -> [Shared<CppStatement>] = do
   const needs_dereference =
     if expanded_arms.length() > 0 then first_arm_needs_deref(expanded_arms[0], subject, context) else true end
-  const variant_access = visit_subject_for_match('__match_subject', needs_dereference)
+  const variant_access =
+    visit_subject_for_match('__match_subject', needs_dereference) +
+      cyclic_sum_subject_member_suffix(subject, context)
   const use_void = match_visit_uses_void_lambdas(match_result_type)
   let statements: [Shared<CppStatement>] = []
   statements.push(emit_helpers.make_auto_cpp_statement('__match_subject', subject_expression))

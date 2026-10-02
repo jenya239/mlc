@@ -4,7 +4,29 @@ import { CodegenContext, lookup_fields_for_context } from '../context'
 import { list_contains } from '../decl/decl_index'
 import { cpp_safe, map_builtin_identifier_reference } from '../cpp_naming'
 
-fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> string = do
+fn constructor_aggregate_suffix(name: string, type_argument_suffix: string) -> string =
+  if name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z" then
+    type_argument_suffix + '{}'
+  else
+    ''
+  end
+
+fn wrap_cyclic_unit_variant(name: string, context: CodegenContext, spelled: string) -> string =
+  if context.variant_types.has(name) &&
+     context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == context.variant_types.get(name)) &&
+     spelled.length() >= 2 &&
+     spelled.char_at(spelled.length() - 2) == "{" &&
+     spelled.char_at(spelled.length() - 1) == "}" then
+    context.resolve(context.variant_types.get(name)) + "(" + spelled + ")"
+  else
+    spelled
+  end
+
+fn resolve_identifier_in_self_context(
+  name: string,
+  context: CodegenContext,
+  type_argument_suffix: string
+) -> string = do
   const self_fields = lookup_fields_for_context(context, context.self_type)
   const is_known_field = name == 'errors' || name == 'kind' || name == 'tokens' || name == 'line' || name == 'col' || name == 'inferred_type' || name == 'type_env'
   if list_contains(self_fields, name) || is_known_field then
@@ -12,20 +34,33 @@ fn resolve_identifier_in_self_context(name: string, context: CodegenContext) -> 
   else
     const mapped = map_builtin_identifier_reference(name)
     const resolved = context.resolve(mapped)
-    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + '{}' else resolved end
+    wrap_cyclic_unit_variant(name, context, resolved + constructor_aggregate_suffix(name, type_argument_suffix))
   end
 end
 
-export fn gen_identifier(name: string, context: CodegenContext) -> string =
+export fn gen_identifier_with_type_argument_suffix(
+  name: string,
+  context: CodegenContext,
+  type_argument_suffix: string
+) -> string =
   if context.self_type.length() > 0 then
-    resolve_identifier_in_self_context(name, context)
+    resolve_identifier_in_self_context(name, context, type_argument_suffix)
   else
     const mapped = map_builtin_identifier_reference(name)
     const resolved = context.resolve(mapped)
-    const needs_constructor_brace = name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z"
-    if needs_constructor_brace then resolved + '{}' else resolved end
+    wrap_cyclic_unit_variant(name, context, resolved + constructor_aggregate_suffix(name, type_argument_suffix))
   end
+
+export fn gen_identifier(name: string, context: CodegenContext) -> string =
+  gen_identifier_with_type_argument_suffix(name, context, '')
 
 export fn gen_identifier_cpp(name: string, context: CodegenContext) -> Shared<CppExpression> =
   emit_helpers.make_identifier_cpp_expression(gen_identifier(name, context))
+
+export fn gen_identifier_cpp_with_type_argument_suffix(
+  name: string,
+  context: CodegenContext,
+  type_argument_suffix: string
+) -> Shared<CppExpression> =
+  emit_helpers.make_identifier_cpp_expression(
+    gen_identifier_with_type_argument_suffix(name, context, type_argument_suffix))

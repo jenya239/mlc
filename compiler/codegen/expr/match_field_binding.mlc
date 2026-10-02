@@ -9,32 +9,53 @@ import { record_pattern_field_binding } from './match_arm_lambda'
 
 type RecordFieldBindAccum = RecordFieldBindAccum {
   field_bindings: string,
-  arm_context: CodegenContext
+  arm_context: CodegenContext,
+  next_field_index: i32
 }
+
+fn record_field_binding_text(field_cpp_safe: string, lower_name: string, boxed: bool) -> string =
+  if boxed then
+    'const auto& ' + field_cpp_safe + ' = (*' + lower_name + "." + field_cpp_safe + '); '
+  else
+    record_pattern_field_binding(field_cpp_safe, lower_name)
+  end
 
 fn record_field_bind_step(
   accumulated: RecordFieldBindAccum,
   field_pattern: Shared<Pattern>,
-  lower_name: string
+  lower_name: string,
+  constructor_info: Shared<CtorTypeInfo>
 ) -> RecordFieldBindAccum =
   match field_pattern {
     PatternIdent(field_name, _) =>
       RecordFieldBindAccum {
         field_bindings: accumulated.field_bindings +
-          record_pattern_field_binding(cpp_safe(field_name), lower_name),
-        arm_context: accumulated.arm_context.add_value(field_name)
+          record_field_binding_text(
+            cpp_safe(field_name),
+            lower_name,
+            constructor_info.boxed_positions.contains(accumulated.next_field_index)),
+        arm_context: accumulated.arm_context.add_value(field_name),
+        next_field_index: accumulated.next_field_index + 1
       },
-    _ => accumulated
+    _ => RecordFieldBindAccum {
+      field_bindings: accumulated.field_bindings,
+      arm_context: accumulated.arm_context,
+      next_field_index: accumulated.next_field_index + 1
+    }
   }
 
 export fn record_pattern_field_bindings_and_context(
+  constructor_name: string,
   field_patterns: [Shared<Pattern>],
   lower_name: string,
   start_context: CodegenContext
-) -> RecordFieldBindAccum =
+) -> RecordFieldBindAccum = do
+  const constructor_info = lookup_ctor_type_info_for_context(start_context, constructor_name)
   field_patterns.fold(
-    RecordFieldBindAccum { field_bindings: '', arm_context: start_context },
-    (accumulated, field_pattern) => record_field_bind_step(accumulated, field_pattern, lower_name))
+    RecordFieldBindAccum { field_bindings: '', arm_context: start_context, next_field_index: 0 },
+    (accumulated, field_pattern) =>
+      record_field_bind_step(accumulated, field_pattern, lower_name, constructor_info))
+end
 
 export fn codegen_context_with_ctor_field_bindings(
   constructor_name: string,
