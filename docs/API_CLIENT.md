@@ -179,6 +179,8 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `Kids([Node(Kids([Node(Node(left, _), Node(right, _))]), _)])` binds both
    `left` and `right` as the sum (`*field`).
    `Kids([Node(Kids([Node(Node(left, _), _), Node(Node(right, _), _)]), _)])`
+   binds both `left` and `right` as the sum (`*field`).
+   `Kids([Node(Kids([Node(Node(Node(left, _), _), Node(right, _))]), _)])`
    binds both `left` and `right` as the sum (`*field`). An array element of
    a cyclic sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
