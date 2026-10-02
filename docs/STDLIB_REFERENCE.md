@@ -566,7 +566,10 @@ binds both `left` and `right` as the sum (`*field`).
 `Kids([Node(Kids([child, ...rest]), _)])` binds `child` as the sum and
 `rest` as the remaining `[Tree]`. `Kids([Node(Kids([Node(left, _)]), _)])`
 binds `left` as the sum (`*field`). `Kids([Node(Kids([Node(Node(left, _), _)]), _)])`
-binds that inner `left` as the sum. An array element of a cyclic sum is the sum.
+binds that inner `left` as the sum.
+`Kids([Node(Kids([Node(Node(left, _), Node(right, _))]), _)])` binds both
+`left` and `right` as the sum (`*field`). An array element of a cyclic sum
+is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
