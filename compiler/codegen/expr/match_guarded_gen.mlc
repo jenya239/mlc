@@ -1128,6 +1128,26 @@ fn no_finish_statements() -> [Shared<CppStatement>] = do
   statements
 end
 
+fn cyclic_array_access_suffix(array_access: string) -> string = do
+  let mut suffix = ''
+  let mut index = 0
+  while index < array_access.length() do
+    const character = array_access.substring(index, 1)
+    if character == "." then do
+      suffix = suffix + "_"
+    end else do
+      suffix = suffix + character
+    end
+    end
+    index = index + 1
+  end
+  suffix
+end
+
+fn cyclic_array_element_lower_name(array_access: string, constructor_name: string, element_index: i32) -> string = do
+  "__cyclic_element_" + cyclic_array_access_suffix(array_access) + "_" + cpp_safe(lower_first(constructor_name)) + "_" + element_index.to_string()
+end
+
 fn name_constructor_element_statements(
   element_patterns: [Shared<Pattern>],
   payload_indexes: [i32],
@@ -1150,7 +1170,7 @@ fn name_constructor_element_statements(
     match element_patterns[element_index] {
       PatternCtor(constructor_name, sub_patterns, _) => do
         const payload_sum_name = '__cyclic_payload_sum_' + element_index.to_string()
-        const lower_name = cpp_safe(lower_first(constructor_name)) + "_" + element_index.to_string()
+        const lower_name = cyclic_array_element_lower_name(array_access, constructor_name, element_index)
         const qualified_name = context.resolve(constructor_name)
         const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
         const variant_type_name = qualified_name + type_argument
