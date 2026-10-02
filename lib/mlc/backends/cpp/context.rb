@@ -59,11 +59,53 @@ module MLC
 
         # Type mapping methods - delegating to TypeMapper
         def map_type(type)
+          container_cpp_type = cyclic_container_cpp_type(type)
+          return container_cpp_type if container_cpp_type
+
           Services::Utils::TypeMapper.map_type(
             type,
             type_map: @container.type_map,
             type_registry: @container.type_registry
           )
+        end
+
+        def named_cyclic_sum_type?(type)
+          return false if type.nil?
+          return false if type.is_a?(MLC::SemanticIR::GenericType)
+          return false if type.is_a?(MLC::SemanticIR::ArrayType)
+          return false unless type.respond_to?(:name)
+
+          cyclic_sum_types.include?(type.name)
+        end
+
+        def cyclic_container_cpp_type(type)
+          case type
+          when MLC::SemanticIR::ArrayType
+            return nil unless named_cyclic_sum_type?(type.element_type)
+
+            "mlc::Array<std::shared_ptr<#{type.element_type.name}>>"
+          when MLC::SemanticIR::GenericType
+            return nil unless type.base_type.respond_to?(:name) && type.base_type.name == "Option"
+            return nil unless type.type_args&.length == 1
+
+            argument = type.type_args.first
+            return nil unless named_cyclic_sum_type?(argument)
+
+            "std::optional<std::shared_ptr<#{argument.name}>>"
+          end
+        end
+
+        def cyclic_option_sum_name(type)
+          current = type
+          current = current.ret_type if current.is_a?(MLC::SemanticIR::FunctionType)
+          return nil unless current.is_a?(MLC::SemanticIR::GenericType)
+          return nil unless current.base_type.respond_to?(:name) && current.base_type.name == "Option"
+          return nil unless current.type_args&.length == 1
+
+          argument = current.type_args.first
+          return nil unless named_cyclic_sum_type?(argument)
+
+          argument.name
         end
 
         def type_requires_auto?(type, type_str: nil)

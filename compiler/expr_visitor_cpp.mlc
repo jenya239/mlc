@@ -18,9 +18,9 @@ import * as mut_actual_argument from './codegen/expr/mut_actual_argument'
 import * as method_gen from './codegen/expr/method_gen'
 import * as record_gen from './codegen/expr/record_gen'
 import { cpp_safe, map_builtin } from './codegen/cpp_naming'
-import { sem_type_to_cpp } from './codegen/decl/type_gen'
+import { sem_type_to_cpp, cyclic_option_sum_cpp_name } from './codegen/decl/type_gen'
 import { ExprVisitor } from './expr_visitor'
-import { CodegenContext, lookup_fields_for_context, qualify_function_callee } from './codegen/context'
+import { CodegenContext, lookup_fields_for_context, lookup_ctor_type_info_for_context, qualify_function_callee } from './codegen/context'
 import { stmts_final_ctx } from './codegen/stmt/statement_context'
 import { is_restart_policy_variant_name } from './checker/infer/infer_supervisor_method'
 import { gen_restart_policy_variant_cpp } from './codegen/expr/supervisor_method_gen'
@@ -224,27 +224,67 @@ fn box_cyclic_sum_argument(
     _ => lowered
   }
 
+fn argument_is_none_constructor(argument: Shared<SemanticExpression>) -> bool =
+  match argument {
+    SemanticExpressionIdent(name, _, _) => name == 'None',
+    _ => false
+  }
+
+fn cyclic_option_none_expression(sum_cpp_name: string) -> Shared<CppExpression> =
+  Shared.new(CppAggregateInit(
+    'std::optional<std::shared_ptr<' + sum_cpp_name + '>>',
+    []))
+
+fn cyclic_option_field_sum_cpp_name(
+  context: CodegenContext,
+  constructor_name: string,
+  argument_index: i32
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if argument_index < 0 || argument_index >= constructor_info.cyclic_option_field_names.length() then ''
+  else do
+    const field_sum_name = constructor_info.cyclic_option_field_names[argument_index]
+    if field_sum_name == '' then '' else context.resolve(field_sum_name) end
+  end
+  end
+end
+
+fn constructor_name_from_function(function_expression: Shared<SemanticExpression>) -> string =
+  match function_expression {
+    SemanticExpressionIdent(name, _, _) => name,
+    _ => ''
+  }
+
 fn box_cyclic_sum_constructor_arguments(
   arguments: [Shared<SemanticExpression>],
   lowered_arguments: [Shared<CppExpression>],
   context: CodegenContext,
-  cyclic_sum_name: string
-) -> [Shared<CppExpression>] =
-  if cyclic_sum_name == '' then lowered_arguments
-  else do
-    let mut boxed_arguments: [Shared<CppExpression>] = []
-    let mut argument_index = 0
-    while argument_index < lowered_arguments.length() do
-      if argument_index < arguments.length() then
-        boxed_arguments.push(box_cyclic_sum_argument(
-          arguments[argument_index], lowered_arguments[argument_index], context))
+  cyclic_sum_name: string,
+  constructor_name: string
+) -> [Shared<CppExpression>] = do
+  let mut boxed_arguments: [Shared<CppExpression>] = []
+  let mut argument_index = 0
+  while argument_index < lowered_arguments.length() do
+    if argument_index < arguments.length() then do
+      const directly_boxed =
+        if cyclic_sum_name == '' then lowered_arguments[argument_index]
+        else box_cyclic_sum_argument(
+          arguments[argument_index], lowered_arguments[argument_index], context)
+        end
+      const option_sum_cpp =
+        cyclic_option_field_sum_cpp_name(context, constructor_name, argument_index)
+      if (option_sum_cpp != '') && argument_is_none_constructor(arguments[argument_index]) then
+        boxed_arguments.push(cyclic_option_none_expression(option_sum_cpp))
       else
-        boxed_arguments.push(lowered_arguments[argument_index])
+        boxed_arguments.push(directly_boxed)
       end
-      argument_index = argument_index + 1
+    end else
+      boxed_arguments.push(lowered_arguments[argument_index])
     end
-    boxed_arguments
+    argument_index = argument_index + 1
   end
+  boxed_arguments
+end
 
 fn wrap_cyclic_sum_constructor(
   sum_name: string,
@@ -257,6 +297,53 @@ fn wrap_cyclic_sum_constructor(
       Shared.new(CppIdent(context.resolve(sum_name))),
       [aggregate]))
   end
+
+fn cyclic_option_constructor_sum_cpp_name(
+  function_expression: Shared<SemanticExpression>,
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string =
+  match function_expression {
+    SemanticExpressionIdent(name, _, _) =>
+      if name == 'Some' then cyclic_option_sum_cpp_name(context, call_semantic_type) else '' end,
+    _ => ''
+  }
+
+fn cyclic_sum_cpp_name_from_semantic_type(semantic_type: Shared<Type>, context: CodegenContext) -> string =
+  match semantic_type {
+    TNamed(name) =>
+      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then
+        context.resolve(name)
+      else if context.variant_types.has(name) &&
+              context.cyclic_sum_type_names.any(cyclic_name =>
+                cyclic_name == context.variant_types.get(name)) then
+        context.resolve(context.variant_types.get(name))
+      else ''
+      end,
+    _ => ''
+  }
+
+fn cyclic_option_some_sum_cpp_name(
+  function_expression: Shared<SemanticExpression>,
+  arguments: [Shared<SemanticExpression>],
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const from_call_type =
+    cyclic_option_constructor_sum_cpp_name(function_expression, call_semantic_type, context)
+  if from_call_type != '' then from_call_type
+  else if (constructor_name_from_function(function_expression) == 'Some') && (arguments.length() == 1) then
+    cyclic_sum_cpp_name_from_semantic_type(sexpr_type(arguments[0]), context)
+  else ''
+  end
+end
+
+fn cyclic_option_some_expression(sum_cpp_name: string, value: Shared<CppExpression>) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent('std::optional<std::shared_ptr<' + sum_cpp_name + '>>')),
+    [Shared.new(CppCall(
+      Shared.new(CppIdent('std::make_shared<' + sum_cpp_name + ">")),
+      [value]))]))
 
 fn gen_constructor_call_cpp_expression(
   function_expression: Shared<SemanticExpression>,
@@ -294,30 +381,44 @@ export fn gen_call_via_cpp_visitor(
       context,
       gen_stmts,
       eval_expr_cpp)
-  const cyclic_sum_name = constructor_sum_name_if_cyclic(function_expression, context)
-  const invoke_expression =
-    if is_constructor_call(function_expression) then
-      wrap_cyclic_sum_constructor(
-        cyclic_sum_name,
-        gen_constructor_call_cpp_expression(
-          function_expression,
-          box_cyclic_sum_constructor_arguments(
-            arguments,
-            materialization_outcome.materialized_argument_expressions,
+  const cyclic_option_sum_cpp =
+    cyclic_option_some_sum_cpp_name(
+      function_expression, arguments, call_semantic_type, context)
+  if (cyclic_option_sum_cpp != '') &&
+     (materialization_outcome.materialized_argument_expressions.length() == 1) then
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      cyclic_option_some_expression(
+        cyclic_option_sum_cpp,
+        materialization_outcome.materialized_argument_expressions[0]))
+  else do
+    const cyclic_sum_name = constructor_sum_name_if_cyclic(function_expression, context)
+    const invoke_expression =
+      if is_constructor_call(function_expression) then
+        wrap_cyclic_sum_constructor(
+          cyclic_sum_name,
+          gen_constructor_call_cpp_expression(
+            function_expression,
+            box_cyclic_sum_constructor_arguments(
+              arguments,
+              materialization_outcome.materialized_argument_expressions,
+              context,
+              cyclic_sum_name,
+              constructor_name_from_function(function_expression)),
+            call_semantic_type,
             context,
-            cyclic_sum_name),
-          call_semantic_type,
-          context,
-          gen_stmts),
-        context)
-    else
-      Shared.new(CppCall(
-        gen_call_function_cpp_expression(function_expression, context, gen_stmts),
-        materialization_outcome.materialized_argument_expressions))
-    end
-  mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
-    materialization_outcome.prelude_statements,
-    invoke_expression)
+            gen_stmts),
+          context)
+      else
+        Shared.new(CppCall(
+          gen_call_function_cpp_expression(function_expression, context, gen_stmts),
+          materialization_outcome.materialized_argument_expressions))
+      end
+    mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
+      materialization_outcome.prelude_statements,
+      invoke_expression)
+  end
+  end
 end
 
 export fn gen_method_via_cpp_visitor(
@@ -710,15 +811,65 @@ fn non_empty_array_cpp(element_cpp: string, element_expressions: [Shared<CppExpr
   else Shared.new(CppAggregateInit(`mlc::Array<${element_cpp}>`, element_expressions))
   end
 
+fn box_cyclic_sum_array_element(
+  element: Shared<SemanticExpression>,
+  lowered: Shared<CppExpression>,
+  context: CodegenContext
+) -> Shared<CppExpression> =
+  match sexpr_type(element) {
+    TNamed(name) =>
+      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then
+        Shared.new(CppCall(
+          Shared.new(CppIdent('std::make_shared<' + context.resolve(name) + ">")),
+          [lowered]))
+      else lowered end,
+    _ => lowered
+  }
+
+fn box_cyclic_sum_array_elements(
+  elements: [Shared<SemanticExpression>],
+  element_expressions: [Shared<CppExpression>],
+  context: CodegenContext
+) -> [Shared<CppExpression>] = do
+  let mut boxed_elements: [Shared<CppExpression>] = []
+  let mut element_index = 0
+  while element_index < element_expressions.length() do
+    if element_index < elements.length() then
+      boxed_elements.push(box_cyclic_sum_array_element(
+        elements[element_index], element_expressions[element_index], context))
+    else
+      boxed_elements.push(element_expressions[element_index])
+    end
+    element_index = element_index + 1
+  end
+  boxed_elements
+end
+
+fn array_element_cpp_for_cyclic_sum(inner_type: Shared<Type>, context: CodegenContext) -> string =
+  match inner_type {
+    TNamed(name) =>
+      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then
+        'std::shared_ptr<' + context.resolve(name) + ">"
+      else '' end,
+    _ => ''
+  }
+
 fn array_from_tarray_inner_type(
   inner_type: Shared<Type>,
   elements: [Shared<SemanticExpression>],
   element_expressions: [Shared<CppExpression>],
   context: CodegenContext
 ) -> Shared<CppExpression> = do
-  const element_cpp = sem_type_to_cpp(context, inner_type)
-  if elements.length() == 0 then return empty_array_cpp(element_cpp) end
-  non_empty_array_cpp(element_cpp, element_expressions)
+  const cyclic_element_cpp = array_element_cpp_for_cyclic_sum(inner_type, context)
+  const element_cpp =
+    if cyclic_element_cpp != '' then cyclic_element_cpp
+    else sem_type_to_cpp(context, inner_type)
+    end
+  if elements.length() == 0 then empty_array_cpp(element_cpp)
+  else if cyclic_element_cpp != '' then
+    non_empty_array_cpp(element_cpp, box_cyclic_sum_array_elements(elements, element_expressions, context))
+  else non_empty_array_cpp(element_cpp, element_expressions)
+  end
 end
 
 fn array_from_unknown_element_type(
@@ -974,8 +1125,15 @@ extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
     literals.gen_char_literal_cpp(value)
   fn visit_extern(self: CodegenPass, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     literals.gen_extern_placeholder_cpp()
-  fn visit_ident(self: CodegenPass, name: string, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
-    identifiers.gen_identifier_cpp(name, self.context)
+  fn visit_ident(self: CodegenPass, name: string, semantic_type: Shared<Type>) -> Shared<CppExpression> = do
+    const cyclic_option_sum =
+      if name == 'None' then cyclic_option_sum_cpp_name(self.context, semantic_type) else '' end
+    if cyclic_option_sum != '' then
+      cyclic_option_none_expression(cyclic_option_sum)
+    else
+      identifiers.gen_identifier_cpp(name, self.context)
+    end
+  end
   fn visit_bin(self: CodegenPass, operation: string, left_expression: Shared<SemanticExpression>, right_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
     gen_binary_via_cpp_visitor(operation, left_expression, right_expression, self.context, self.gen_stmts, self.evaluate_expression)
   fn visit_un(self: CodegenPass, operation: string, inner_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =

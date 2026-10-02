@@ -94,6 +94,11 @@ module MLC
                 return override if override
               end
 
+              if context.checker.var_expr?(node.callee)
+                cyclic_option_source = cyclic_option_constructor_source(node)
+                return context.factory.raw_expression(code: cyclic_option_source) if cyclic_option_source
+              end
+
               # Check for qualified function names (stdlib functions)
               if context.checker.var_expr?(node.callee)
                 qualified = context.resolve_qualified_name(node.callee.name)
@@ -316,6 +321,17 @@ module MLC
               "auto"
             rescue StandardError
               "auto"
+            end
+
+            def cyclic_option_constructor_source(node)
+              return nil unless node.callee.name == "Some"
+
+              sum_name = context.cyclic_option_sum_name(node.type)
+              return nil unless sum_name
+              return nil unless node.args.length == 1
+
+              lowered = lower_argument_with_move(node.args.first)
+              "std::optional<std::shared_ptr<#{sum_name}>>(std::make_shared<#{sum_name}>(#{lowered.to_source}))"
             end
 
             def box_cyclic_sum_constructor_arguments(call_node, lowered_arguments)

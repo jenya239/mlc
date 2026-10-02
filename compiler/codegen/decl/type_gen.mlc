@@ -123,6 +123,44 @@ fn maps_option_to_std_optional(context: CodegenContext) -> bool =
     && context.variant_types.get('Some') != 'Option'
     && context.variant_types.get('None') != 'Option'
 
+fn semantic_cyclic_sum_pointer_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
+  match semantic_type {
+    TNamed(type_name) =>
+      if list_contains(context.cyclic_sum_type_names, type_name) then
+        cpp_shared_pointer_type(context.resolve(type_name))
+      else ''
+      end,
+    _ => ''
+  }
+
+fn type_expression_cyclic_sum_pointer_cpp(context: CodegenContext, type_expression: Shared<TypeExpr>) -> string =
+  match type_expression {
+    TyNamed(type_name) =>
+      if list_contains(context.cyclic_sum_type_names, type_name) then
+        cpp_shared_pointer_type(context.resolve(type_name))
+      else ''
+      end,
+    _ => ''
+  }
+
+export fn cyclic_option_sum_cpp_name(context: CodegenContext, semantic_type: Shared<Type>) -> string =
+  match semantic_type {
+    TGeneric(type_name, type_arguments) =>
+      if type_name == 'Option' && type_arguments.length() == 1 then
+        match type_arguments[0] {
+          TNamed(inner_name) =>
+            if list_contains(context.cyclic_sum_type_names, inner_name) then
+              context.resolve(inner_name)
+            else ''
+            end,
+          _ => ''
+        }
+      else ''
+      end,
+    TFn(_, return_type) => cyclic_option_sum_cpp_name(context, return_type),
+    _ => ''
+  }
+
 // Converts a semantic Type (from checker/registry) to a C++ type string.
 export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
   match semantic_type {
@@ -136,7 +174,12 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
     TUsize   => 'size_t',
     TChar    => 'char32_t',
     TUnknown => 'auto',
-    TArray(inner)  => cpp_array_type_element(sem_type_to_cpp(context, inner)),
+    TArray(inner)  => do
+      const pointer_type = semantic_cyclic_sum_pointer_cpp(context, inner)
+      if pointer_type != '' then cpp_array_type_element(pointer_type)
+      else cpp_array_type_element(sem_type_to_cpp(context, inner))
+      end
+    end,
     TShared(inner) => cpp_shared_pointer_type(sem_type_to_cpp(context, inner)),
     TNamed(type_name)  =>
       if type_name == 'TaskScope' then 'mlc::concurrency::TaskScope'
@@ -159,6 +202,11 @@ export fn sem_type_to_cpp(context: CodegenContext, semantic_type: Shared<Type>) 
       `std::pair<${sem_type_to_cpp(context, left)}, ${sem_type_to_cpp(context, right)}>`,
     TGeneric(type_name, type_arguments) =>
       if type_name == 'Option' && type_arguments.length() == 1 &&
+         semantic_cyclic_sum_pointer_cpp(context, type_arguments[0]) != '' then
+        cpp_template_single_type_argument(
+          'std::optional',
+          semantic_cyclic_sum_pointer_cpp(context, type_arguments[0]))
+      else if type_name == 'Option' && type_arguments.length() == 1 &&
          maps_option_to_std_optional(context) then
         `std::optional<${sem_type_to_cpp(context, type_arguments[0])}>`
       else if type_name == 'RegionHandle' then
@@ -272,10 +320,20 @@ export fn type_to_cpp(context: CodegenContext, type_expr: Shared<TypeExpr>) -> s
     TyBool    => 'bool',
     TyUnit    => 'void',
     TyNamed(name)   => type_name_to_cpp(context, name),
-    TyArray(inner)  => cpp_array_type_element(type_to_cpp(context, inner)),
+    TyArray(inner)  => do
+      const pointer_type = type_expression_cyclic_sum_pointer_cpp(context, inner)
+      if pointer_type != '' then cpp_array_type_element(pointer_type)
+      else cpp_array_type_element(type_to_cpp(context, inner))
+      end
+    end,
     TyShared(inner) => cpp_shared_pointer_type(type_to_cpp(context, inner)),
     TyGeneric(name, type_arguments) => do
-      if name == 'ref' && type_arguments.length() == 1 then
+      if name == 'Option' && type_arguments.length() == 1 &&
+         type_expression_cyclic_sum_pointer_cpp(context, type_arguments[0]) != '' then
+        cpp_template_single_type_argument(
+          'std::optional',
+          type_expression_cyclic_sum_pointer_cpp(context, type_arguments[0]))
+      else if name == 'ref' && type_arguments.length() == 1 then
         cpp_lvalue_reference_suffix(type_to_cpp(context, type_arguments[0]))
       else if name == 'RawPointer' && type_arguments.length() == 1 then
         cpp_raw_pointer_type(type_to_cpp(context, type_arguments[0]))

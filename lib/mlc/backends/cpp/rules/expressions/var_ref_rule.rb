@@ -19,6 +19,9 @@ module MLC
               when "false"
                 context.factory.boolean_literal(value: false)
               else
+                cyclic_option_none = cyclic_option_none_source(node)
+                return context.factory.raw_expression(code: cyclic_option_none) if cyclic_option_none
+
                 identifier = context.sanitize_identifier(node.name)
                 ctor_name = qualified_constructor_name(node)
                 targs = generic_variant_template_args(node)
@@ -42,6 +45,15 @@ module MLC
             end
 
             private
+
+            def cyclic_option_none_source(node)
+              return nil unless node.name == "None"
+
+              sum_name = context.cyclic_option_sum_name(node.type)
+              return nil unless sum_name
+
+              "std::optional<std::shared_ptr<#{sum_name}>>{}"
+            end
 
             def qualified_constructor_name(node)
               name = context.sanitize_identifier(node.name)

@@ -830,6 +830,55 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "shared_sum", "int main() { return 0; }\n")
   end
 
+  def test_option_and_array_of_a_cyclic_sum_box_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Option<Tree>) | Kids([Tree])
+      fn with_child() -> Tree = Node(Some(Leaf))
+      fn without_child() -> Tree = Node(None)
+      fn with_kids() -> Tree = Kids([Leaf])
+      fn count(tree: Tree) -> i32 = match tree
+        | Kids(items) => items.length()
+        | Node(_) => 2
+        | Leaf => 0
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::optional<std::shared_ptr<Tree>>"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>"
+    refute_includes ruby_source, "std::optional<Tree>"
+    refute_includes ruby_source, "mlc::Array<Tree>"
+    assert_includes ruby_source, "std::make_shared<Tree>(Tree(Leaf{}))"
+
+    plain_option = MLC.to_cpp("type Box = Empty | Hold(Option<i32>)\nfn main() -> i32 = 0\n")
+    assert_includes plain_option, "std::optional<int>"
+    refute_includes plain_option, "shared_ptr"
+
+    checker = <<~CPP
+      int main() {
+        Tree kids_value = with_kids();
+        if (!std::holds_alternative<Kids>(kids_value._)) return 1;
+        if (std::get<Kids>(kids_value._).field0.size() != 1) return 2;
+        if (!std::get<Kids>(kids_value._).field0[0]) return 3;
+        if (!std::holds_alternative<Leaf>(std::get<Kids>(kids_value._).field0[0]->_)) return 4;
+        if (count(kids_value) != 1) return 5;
+
+        Tree with_child_value = with_child();
+        if (!std::holds_alternative<Node>(with_child_value._)) return 6;
+        const Node& with_child_node = std::get<Node>(with_child_value._);
+        if (!with_child_node.field0.has_value() || !(*with_child_node.field0)) return 7;
+        if (!std::holds_alternative<Leaf>((*with_child_node.field0)->_)) return 8;
+
+        Tree without_child_value = without_child();
+        if (!std::holds_alternative<Node>(without_child_value._)) return 9;
+        if (std::get<Node>(without_child_value._).field0.has_value()) return 10;
+        if (count(without_child_value) != 2) return 11;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_option_array", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

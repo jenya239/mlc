@@ -57,8 +57,12 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
   хранится как `std::shared_ptr`. Тип в MLC остаётся суммой. `derive { Json }`
   проходит этот круг. Поле, написанное как `Shared<T>`, не делает сумму
   циклической и по-прежнему E069.
-  Обобщённая сумма, сумма из одного варианта, массив и `Option` такой суммы
-  не поддержаны. Привязка `match` к упакованному полю — сама сумма (`*field`).
+  Обобщённая сумма и сумма из одного варианта не поддержаны.
+  `Option` такой суммы — `std::optional<std::shared_ptr<Sum>>`:
+  `Some(value)` это `std::make_shared`, `None` — пустой optional.
+  Массив такой суммы — `mlc::Array<std::shared_ptr<Sum>>`.
+  `derive` этих полей `Option` и массива не поддержан.
+  Привязка `match` к упакованному полю — сама сумма (`*field`).
   `derive { Display }` печатает её через `Type_to_string(*field)`.
   `derive { Eq }` и `derive { Ord }` сравнивают суммы, а не указатели.
   `derive { Hash }` хеширует её через `Type_hash(*field)`. Другие поля
@@ -129,7 +133,10 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    A non-generic multi-variant recursive sum lowers to a wrapper struct;
    by-value cyclic fields are `std::shared_ptr`. A `Shared<T>` field does not
    make the sum cyclic. Generic and single-variant
-   recursion stay unsupported. `derive { Display, Eq, Ord }` reads a boxed
+   recursion stay unsupported. `Option` of a cyclic sum is
+   `std::optional<std::shared_ptr<Sum>>`; an array of a cyclic sum is
+   `mlc::Array<std::shared_ptr<Sum>>`. `derive` of those fields stays
+   unsupported. `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
    and `string`.
