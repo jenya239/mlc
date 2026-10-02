@@ -525,9 +525,18 @@ module MLC
         end
         public :cyclic_sum_type_names
 
+        def generic_type_is_shared?(type)
+          return false unless type.is_a?(SemanticIR::GenericType)
+
+          base = type.base_type
+          base.respond_to?(:name) && base.name == "Shared"
+        end
+
         def collect_cyclic_sum_reference_names(type, sum_names, referenced_names)
           case type
           when SemanticIR::GenericType
+            return if generic_type_is_shared?(type)
+
             collect_cyclic_sum_reference_names(type.base_type, sum_names, referenced_names)
             Array(type.type_args).each do |type_argument|
               collect_cyclic_sum_reference_names(type_argument, sum_names, referenced_names)

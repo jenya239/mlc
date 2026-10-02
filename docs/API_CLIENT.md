@@ -55,7 +55,8 @@ fn from_json(value: JsonValue) -> Result<User, JsonError>
   себя или другую такую сумму, понижается в `struct { std::variant<...> _; }`
   с конструктором на каждый вариант. Поле по значению, чей тип — такая сумма,
   хранится как `std::shared_ptr`. Тип в MLC остаётся суммой. `derive { Json }`
-  проходит этот круг. Поле, написанное как `Shared<T>`, по-прежнему E069.
+  проходит этот круг. Поле, написанное как `Shared<T>`, не делает сумму
+  циклической и по-прежнему E069.
   Обобщённая сумма, сумма из одного варианта, массив и `Option` такой суммы
   не поддержаны. Привязка `match` к упакованному полю — сама сумма (`*field`).
   `derive { Display }` печатает её через `Type_to_string(*field)`.
@@ -126,7 +127,8 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    field name and an expected-type word. `Map`, `Shared`, a function field,
    and a generic derive are checker diagnostics (E069 / E072), not `JsonError`.
    A non-generic multi-variant recursive sum lowers to a wrapper struct;
-   by-value cyclic fields are `std::shared_ptr`. Generic and single-variant
+   by-value cyclic fields are `std::shared_ptr`. A `Shared<T>` field does not
+   make the sum cyclic. Generic and single-variant
    recursion stay unsupported. `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,

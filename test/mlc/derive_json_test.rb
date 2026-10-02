@@ -801,6 +801,35 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_hash", checker)
   end
 
+  def test_shared_field_does_not_make_a_sum_cyclic_on_ruby_and_mlcc
+    source = <<~MLC
+      type Expr = Lit(i32) | Add(Shared<Expr>, Shared<Expr>)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "using Expr = std::variant<Lit, Add>"
+    refute_includes ruby_source, "struct Expr {"
+
+    tree_source = MLC.to_cpp("type Tree = Leaf | Node(Tree, Tree)\nfn main() -> i32 = 0\n")
+    assert_includes tree_source, "struct Tree {"
+    assert_includes tree_source, "std::shared_ptr<Tree>"
+
+    work_root = ENV.fetch("TMPDIR", "/tmp")
+    Dir.mktmpdir("mlc_shared_sum", work_root) do |work_directory|
+      mlcc = File.expand_path("../../compiler/out/mlcc", __dir__)
+      generated_directory = File.join(work_directory, "mlcc")
+      Dir.mkdir(generated_directory)
+      entry_path = File.join(work_directory, "shared_sum.mlc")
+      File.write(entry_path, source)
+      assert system(mlcc, "-o", generated_directory, entry_path), "mlcc failed for shared sum"
+      header = File.read(File.join(generated_directory, "shared_sum.hpp"))
+      assert_includes header, "using Expr = std::variant<Lit, Add>"
+      refute_includes header, "struct Expr {"
+    end
+
+    compile_both_compilers(source, "shared_sum", "int main() { return 0; }\n")
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

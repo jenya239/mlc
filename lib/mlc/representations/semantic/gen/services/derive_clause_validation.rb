@@ -109,6 +109,9 @@ module MLC
             def collect_ast_cyclic_sum_names(type, sum_names, referenced_names)
               case type
               when MLC::Source::AST::GenericType
+                base = type.base_type
+                return if base.respond_to?(:name) && base.name == "Shared"
+
                 collect_ast_cyclic_sum_names(type.base_type, sum_names, referenced_names)
                 Array(type.type_params).each do |type_argument|
                   collect_ast_cyclic_sum_names(type_argument, sum_names, referenced_names)

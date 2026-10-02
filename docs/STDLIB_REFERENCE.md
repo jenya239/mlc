@@ -523,9 +523,9 @@ those sums is stored as `std::shared_ptr`. The MLC type stays the sum.
 `Leaf` lowers to `Tree(Leaf{})`, and `Node(left, right)` lowers to
 `Tree(Node{std::make_shared<Tree>(left), std::make_shared<Tree>(right)})`.
 `derive { Json }` round-trips that shape. A field the program already wrote as
-`Shared<T>` stays `std::shared_ptr` and is still rejected by `derive { Json }`
-(E069). A generic sum, a single-variant sum, an array of a cyclic sum, and
-`Option` of a cyclic sum stay unsupported. `match` visits `subject._`. A
+`Shared<T>` does not make the sum cyclic. It stays `std::shared_ptr` and is
+still rejected by `derive { Json }` (E069). A generic sum, a single-variant
+sum, an array of a cyclic sum, and `Option` of a cyclic sum stay unsupported. `match` visits `subject._`. A
 pattern binding of a boxed child is the sum: the binding reads `*field`.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
