@@ -1340,6 +1340,46 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_sibling_node", checker, link_user_translation: true)
   end
 
+  def test_two_constructors_inside_a_cyclic_array_read_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn both(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _), Node(right, _)]) => label(left) + label(right)
+        | Kids([Leaf, Node(child, _)]) => label(child)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn pair() -> Tree = Kids([Node(Leaf, Leaf), Node(Kids([Leaf]), Leaf)])
+      fn single() -> Tree = Kids([Node(Leaf, Leaf)])
+      fn leaves() -> Tree = Kids([Leaf, Leaf])
+      fn mixed() -> Tree = Kids([Leaf(), Node(Leaf(), Leaf())])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[0])._)"
+    assert_includes ruby_source, "std::holds_alternative<Node>((*_v_kids.field0[1])._)"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "std::holds_alternative<Leaf>((*_v_kids.field0[0])._)"
+
+    checker = <<~CPP
+      int main() {
+        if (both(pair()) != 7) return 1;
+        if (both(single()) != 3) return 2;
+        if (both(leaves()) != 3) return 3;
+        if (both(mixed()) != 1) return 4;
+        if (both(Tree(Leaf{})) != 4) return 5;
+        if (both(bare()) != 5) return 6;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_two_nodes", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
