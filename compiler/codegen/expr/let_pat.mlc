@@ -176,19 +176,47 @@ fn record_or_fallback_tuple_pattern_output(
   end
 end
 
-fn array_element_cpp_for_value_type(value_type: Shared<Type>, codegen_context: CodegenContext) -> string = do
-  match value_type { TArray(inner) => sem_type_to_cpp(codegen_context, inner), _ => 'auto' }
+fn named_cyclic_sum_pointer_cpp(semantic_type: Shared<Type>, codegen_context: CodegenContext) -> string =
+  match semantic_type {
+    TNamed(type_name) =>
+      if list_contains(codegen_context.cyclic_sum_type_names, type_name) then
+        "std::shared_ptr<" + codegen_context.resolve(type_name) + ">"
+      else ''
+      end,
+    _ => ''
+  }
+
+export fn array_element_cpp_for_value_type(value_type: Shared<Type>, codegen_context: CodegenContext) -> string = do
+  match value_type {
+    TArray(inner) => do
+      const pointer_cpp = named_cyclic_sum_pointer_cpp(inner, codegen_context)
+      if pointer_cpp != '' then pointer_cpp else sem_type_to_cpp(codegen_context, inner) end
+    end,
+    _ => 'auto'
+  }
 end
+
+export fn array_element_is_boxed_cyclic_sum(value_type: Shared<Type>, codegen_context: CodegenContext) -> bool =
+  match value_type {
+    TArray(inner) => named_cyclic_sum_pointer_cpp(inner, codegen_context) != '',
+    _ => false
+  }
+
+fn array_element_access(temp_name: string, index: i32, dereference_element: bool) -> string =
+  if dereference_element then "(*" + temp_name + "[" + index.to_string() + "])"
+  else temp_name + "[" + index.to_string() + "]"
+  end
 
 fn append_array_ident_binding(
   fragment: string,
   sub_pattern: Shared<Pattern>,
   temp_name: string,
-  index: i32
+  index: i32,
+  dereference_element: bool
 ) -> string =
   match sub_pattern {
     PatternIdent(name, _) =>
-      fragment + `auto ${cpp_safe(name)} = ${temp_name}[${index.to_string()}];\n`,
+      fragment + 'auto ' + cpp_safe(name) + ' = ' + array_element_access(temp_name, index, dereference_element) + ';\n',
     PatternWild(_) => fragment,
     PatternInt(_, _) => fragment,
     PatternStr(_, _) => fragment,
@@ -246,10 +274,12 @@ fn array_pattern_output(
   codegen_context: CodegenContext
 ) -> string = do
   const element_cpp = array_element_cpp_for_value_type(value_type, codegen_context)
+  const dereference_element = array_element_is_boxed_cyclic_sum(value_type, codegen_context)
   let mut binding_fragment = 'auto ' + temp_name + ' = ' + value_code + ';\n'
   let mut index = 0
   while index < sub_patterns.length() do
-    binding_fragment = append_array_ident_binding(binding_fragment, sub_patterns[index], temp_name, index)
+    binding_fragment = append_array_ident_binding(
+      binding_fragment, sub_patterns[index], temp_name, index, dereference_element)
     index = index + 1
   end
   if rest != '' then

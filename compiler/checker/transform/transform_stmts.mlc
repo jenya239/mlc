@@ -41,8 +41,8 @@ fn transform_stmts_fold_step(
       const inferred_type  = sexpr_type(typed_value)
       const value_type     = match annotated_type { TUnit => inferred_type, _ => annotated_type }
       const coerced_value = coerce_expr_to_type(typed_value, value_type)
-      let type_environment = accumulator.type_environment
-      infer_let_pattern_env(pattern, value_type, type_environment, current_context.registry)
+      let type_environment = infer_let_pattern_env(
+        pattern, value_type, accumulator.type_environment, current_context.registry)
       const typed_else_body = transform_expr(else_body, current_context, transform_stmts)
       Transform_stmts_fold_state {
         typed_statements: accumulator.typed_statements.concat([Shared.new(

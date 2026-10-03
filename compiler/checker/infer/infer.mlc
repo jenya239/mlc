@@ -664,7 +664,7 @@ fn infer_single_statement_augment_fold_state(
         infer_expr(
           value_expression,
           check_context_child(inference_context, accumulator.type_environment_under_construction))
-      infer_let_pattern_env(
+      const pattern_environment = infer_let_pattern_env(
         pattern,
         value_inference.inferred_type,
         accumulator.type_environment_under_construction,
@@ -687,7 +687,7 @@ fn infer_single_statement_augment_fold_state(
       end
       Statement_sequence_inference_fold_state {
         diagnostics_collected_so_far:        next_diagnostics,
-        type_environment_under_construction: accumulator.type_environment_under_construction,
+        type_environment_under_construction: pattern_environment,
       }
     end,
     StmtLetConst(binding_name, _, value_expression, _) => do

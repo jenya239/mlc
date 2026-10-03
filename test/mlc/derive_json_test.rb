@@ -7285,6 +7285,89 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_match_rest_second_inner_second_deeper_further_or_element_guard", checker, link_user_translation: true)
   end
 
+  def test_let_array_element_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn head_label(items: [Tree]) -> i32 = do
+        let [head, _] = items
+        label(head)
+      end
+      fn second_label(items: [Tree]) -> i32 = do
+        let [_, second] = items
+        label(second)
+      end
+      fn rest_first(items: [Tree]) -> i32 = do
+        let [_, ...rest] = items
+        label(rest[0])
+      end
+      fn head_and_rest(items: [Tree]) -> i32 = do
+        let [head, ...rest] = items
+        label(head) + label(rest[0])
+      end
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "auto head = *(__tmp_0[0])"
+    assert_includes ruby_source, "auto second = *(__tmp_1[1])"
+    assert_includes ruby_source, "auto rest = mlc::Array<std::shared_ptr<Tree>>"
+    assert_includes ruby_source, "label(*rest[0])"
+    refute_includes ruby_source, "auto head = __tmp_0[0]"
+    refute_includes ruby_source, "mlc::Array<Tree>"
+
+    checker = <<~CPP
+      int main() {
+        Tree leaf = Tree(Leaf{});
+        Tree node = Tree(Node{std::make_shared<Tree>(leaf), std::make_shared<Tree>(leaf)});
+        auto items = mlc::Array<std::shared_ptr<Tree>>{
+          std::make_shared<Tree>(node),
+          std::make_shared<Tree>(leaf)
+        };
+        if (head_label(items) != 2) return 1;
+        if (second_label(items) != 1) return 2;
+        if (rest_first(items) != 1) return 3;
+        if (head_and_rest(items) != 3) return 4;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_let_array_element", checker, link_user_translation: true)
+  end
+
+  def test_let_constructor_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn from_node(tree: Tree) -> i32 = do
+        let Node(left, right) = tree else 0 end
+        label(left) + label(right)
+      end
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::holds_alternative<Node>(__s._)"
+    assert_includes ruby_source, "const auto& left = (*_v_node.field0)"
+    assert_includes ruby_source, "const auto& right = (*_v_node.field1)"
+    refute_includes ruby_source, "std::get<0>"
+
+    checker = <<~CPP
+      int main() {
+        Tree leaf = Tree(Leaf{});
+        Tree node = Tree(Node{std::make_shared<Tree>(leaf), std::make_shared<Tree>(leaf)});
+        Tree inner = Tree(Node{std::make_shared<Tree>(node), std::make_shared<Tree>(leaf)});
+        if (from_node(node) != 2) return 1;
+        if (from_node(inner) != 3) return 2;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_let_constructor", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

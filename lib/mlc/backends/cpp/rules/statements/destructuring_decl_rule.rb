@@ -41,13 +41,13 @@ module MLC
               if m.send(:option_type?, st) && vname == "Some" && pbind.any? { |b| b != "_" }
                 s = context.sanitize_identifier(pbind.find { |b| b != "_" })
                 return context.factory.raw_statement(
-                  code: "{\nauto __s = #{value_src};\nif (!__s.has_value()) { #{else_src}; }\n" \
-                        "auto #{s} = *__s;\n}\n"
+                  code: "auto __s = #{value_src};\nif (!__s.has_value()) { #{else_src}; }\n" \
+                        "auto #{s} = *__s;\n"
                 )
               end
               if m.send(:option_type?, st) && vname == "None"
                 return context.factory.raw_statement(
-                  code: "{\nauto __s = #{value_src};\nif (__s.has_value()) { #{else_src}; }\n}\n"
+                  code: "auto __s = #{value_src};\nif (__s.has_value()) { #{else_src}; }\n"
                 )
               end
 
@@ -56,9 +56,9 @@ module MLC
               vs = m.send(:variant_src_for, scr, st)
               bdecls, = m.send(:build_binding_extractions, vname, pbind, vs, st)
               inner = bdecls.join(" ")
-              code = "{\nauto #{scr} = #{value_src};\n" \
+              code = "auto #{scr} = #{value_src};\n" \
                      "if (!std::holds_alternative<#{qcase}>(#{vs})) { #{else_src}; }\n" \
-                     "#{inner}\n}\n"
+                     "#{inner}\n"
               context.factory.raw_statement(code: code)
             end
 
@@ -119,15 +119,15 @@ module MLC
               when MLC::SemanticIR::IndexExpr
                 if acc.object.equal?(value_ir)
                   idx = context.lower_expression(acc.index).to_source
-                  "#{temp}[#{idx}]"
+                  element = "#{temp}[#{idx}]"
+                  cyclic_sum_array_element?(acc.object) ? "*(#{element})" : element
                 else
                   context.lower_expression(acc).to_source
                 end
               when MLC::SemanticIR::SliceExpr
-                el_t = context.map_type(acc.type.element_type)
                 if acc.object.equal?(value_ir) && acc.end_index.nil? && acc.start_index
                   s = context.lower_expression(acc.start_index).to_source
-                  "mlc::Array<#{el_t}>(#{temp}.begin() + #{s}, #{temp}.end())"
+                  "#{context.map_type(acc.type)}(#{temp}.begin() + #{s}, #{temp}.end())"
                 elsif acc.object.equal?(value_ir)
                   context.lower_expression(acc).to_source
                 else
@@ -138,6 +138,13 @@ module MLC
               else
                 context.lower_expression(acc).to_source
               end
+            end
+
+            def cyclic_sum_array_element?(object)
+              element_type = object&.type
+              return false unless element_type.is_a?(MLC::SemanticIR::ArrayType)
+
+              context.named_cyclic_sum_type?(element_type.element_type)
             end
 
             def record_init_from_temp(rec, value_ir, temp, _origin_node)

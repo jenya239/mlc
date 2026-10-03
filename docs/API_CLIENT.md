@@ -377,8 +377,11 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    sum.    `Node(Kids([Node(tail, _) | Kids([tail])]), _)` on that `further[0]`
    binds `tail` as the sum in both alternatives. A guard on that arm,
    `Node(Kids([Node(tail, _) | Kids([tail])]), _) if label(tail) > 1`, sees
-   `tail` as the sum in both alternatives. An array element of a cyclic sum
-   is the sum.
+   `tail` as the sum in both alternatives.    `let [head, ...rest] = items` on
+   `[Tree]` binds `head` as the sum (`*(items[0])`) and keeps `rest` as
+   `[Tree]` (`mlc::Array<std::shared_ptr<Tree>>`). `let Node(left, right) = tree`
+   binds `left` and `right` as the sum (`*field`). An array element of a cyclic
+   sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
