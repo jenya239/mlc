@@ -382,7 +382,7 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `[Tree]` (`mlc::Array<std::shared_ptr<Tree>>`).    `let Node(left, right) = tree`
    binds `left` and `right` as the sum (`*field`). `let Some(tree) = child` on
    `Option<Tree>` binds `tree` as the sum (`*(*optional)`), and `let None() = child`
-   is the empty optional. `for item in items` on `[Tree]` binds `item` as the sum (`*element`). `items.push(tree)`, `items.set(index, tree)`, and `items[index] = tree` on `[Tree]` store `std::make_shared<Tree>(tree)`. `[Option<Tree>]` is `mlc::Array<std::optional<std::shared_ptr<Tree>>>`. An array element of a cyclic sum is the sum.
+   is the empty optional. `for item in items` on `[Tree]` binds `item` as the sum (`*element`). `items.push(tree)`, `items.set(index, tree)`, and `items[index] = tree` on `[Tree]` store `std::make_shared<Tree>(tree)`. `[Option<Tree>]` is `mlc::Array<std::optional<std::shared_ptr<Tree>>>`. `Option<[Tree]>` stores that array, and `Option<Option<Tree>>` stores the inner option as `std::optional<std::shared_ptr<Tree>>`. An array element of a cyclic sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,

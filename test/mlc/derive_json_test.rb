@@ -7568,7 +7568,65 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_option_array", checker, link_user_translation: true)
   end
 
-  def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
+  def test_option_of_a_cyclic_container_stores_the_boxed_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn from_items(items: Option<[Tree]>) -> i32 = match items
+        | Some(trees) => label(trees[0])
+        | None => 0
+      fn from_child(child: Option<Option<Tree>>) -> i32 = match child
+        | Some(inner) =>
+          match inner
+            | Some(tree) => label(tree)
+            | None => 8
+          end
+        | None => 9
+      fn present_items() -> Option<[Tree]> = do
+        let items: [Tree] = [Leaf]
+        Some(items)
+      end
+      fn present_child() -> Option<Option<Tree>> = Some(Some(Node(Leaf, Leaf)))
+      fn read_items() -> i32 = from_items(present_items())
+      fn read_child() -> i32 = from_child(present_child())
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "mlc::option::Option<mlc::Array<std::shared_ptr<Tree>>>"
+    assert_includes ruby_source, "mlc::option::Option<std::optional<std::shared_ptr<Tree>>>"
+    refute_includes ruby_source, "mlc::Array<Tree>"
+    refute_includes ruby_source, "mlc::option::Option<mlc::option::Option"
+
+    checker = <<~CPP
+      int main() {
+        if (read_items() != 1) return 1;
+        if (read_child() != 2) return 2;
+        return 0;
+      }
+    CPP
+    ruby_prefix = <<~CPP
+      #include <variant>
+      namespace mlc { namespace option {
+      template<typename T>
+      struct Some { T field0; };
+      struct None {};
+      template<typename T>
+      using Option = std::variant<Some<T>, None>;
+      }}
+    CPP
+    compile_both_compilers(
+      source,
+      "cyclic_sum_option_container",
+      checker,
+      link_user_translation: true,
+      ruby_prefix: ruby_prefix)
+  end
+
+  def compile_both_compilers(source, entry_name, checker, link_user_translation: false, ruby_prefix: "")
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
     Dir.mktmpdir("mlc_derive_json_#{entry_name}", work_root) do |work_directory|
@@ -7577,7 +7635,7 @@ class MLCDeriveJsonTest < Minitest::Test
         .gsub(/int main\(int argc, char\*\* argv\) noexcept;\n?/, "")
       ruby_path = File.join(work_directory, "ruby.cpp")
       ruby_binary = File.join(work_directory, "ruby_binary")
-      File.write(ruby_path, ruby_source + "\n" + checker)
+      File.write(ruby_path, ruby_prefix + ruby_source + "\n" + checker)
       ruby_compile = ["clang++", "-std=c++20", "-I", File.join(runtime_directory, "include"), "-o", ruby_binary, ruby_path]
       assert system(*ruby_compile), "clang++ failed for Ruby #{entry_name}"
       assert system(ruby_binary), "Ruby #{entry_name} failed"

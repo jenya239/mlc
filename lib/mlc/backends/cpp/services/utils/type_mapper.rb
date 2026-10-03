@@ -41,19 +41,27 @@ module MLC
 
             # Map SemanticIR type to C++ type string
             # Pure function - all dependencies passed as parameters
-            def map_type(type, type_map:, type_registry: nil)
+            def map_type(type, type_map:, type_registry: nil, map_nested: nil)
+              map_child = lambda do |child|
+                if map_nested
+                  map_nested.call(child)
+                else
+                  map_type(child, type_map: type_map, type_registry: type_registry)
+                end
+              end
+
               case type
               when SemanticIR::AssocType
                 "typename #{type.param_name}::#{type.assoc_name}"
 
               when SemanticIR::RefType
                 # Reference type: &T -> const T&
-                inner = map_type(type.inner_type, type_map: type_map, type_registry: type_registry)
+                inner = map_child.call(type.inner_type)
                 "const #{inner}&"
 
               when SemanticIR::MutRefType
                 # Mutable reference type: &mut T -> T&
-                inner = map_type(type.inner_type, type_map: type_map, type_registry: type_registry)
+                inner = map_child.call(type.inner_type)
                 "#{inner}&"
 
               when SemanticIR::TypeVariable
@@ -65,7 +73,7 @@ module MLC
                 base_name = extract_base_type_name(type.base_type, type_map: type_map, type_registry: type_registry)
                 if REFERENCE_TYPES.key?(base_name)
                   # Ref<T> -> const T&, RefMut<T> -> T&
-                  inner = map_type(type.type_args.first, type_map: type_map, type_registry: type_registry)
+                  inner = map_child.call(type.type_args.first)
                   return REFERENCE_TYPES[base_name] == :immutable ? "const #{inner}&" : "#{inner}&"
                 end
 
@@ -73,14 +81,14 @@ module MLC
                 if SMART_POINTER_TYPES.key?(base_name)
                   cpp_ptr = SMART_POINTER_TYPES[base_name]
                   type_args = type.type_args.map do |arg|
-                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                    map_child.call(arg)
                   end.join(", ")
                   return "#{cpp_ptr}<#{type_args}>"
                 end
 
                 # RawPointer<T> -> T*
                 if base_name == RAW_POINTER_TYPE
-                  inner = map_type(type.type_args.first, type_map: type_map, type_registry: type_registry)
+                  inner = map_child.call(type.type_args.first)
                   return "#{inner}*"
                 end
 
@@ -89,7 +97,7 @@ module MLC
                 if WRAPPER_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
                   cpp_wrapper = WRAPPER_TYPES[base_name]
                   type_args = type.type_args.map do |arg|
-                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                    map_child.call(arg)
                   end.join(", ")
                   return "#{cpp_wrapper}<#{type_args}>"
                 end
@@ -99,7 +107,7 @@ module MLC
                 if COLLECTION_TYPES.key?(base_name) && !type_registry&.has_type?(base_name)
                   cpp_collection = COLLECTION_TYPES[base_name]
                   type_args = type.type_args.map do |arg|
-                    map_type(arg, type_map: type_map, type_registry: type_registry)
+                    map_child.call(arg)
                   end.join(", ")
                   return "#{cpp_collection}<#{type_args}>"
                 end
@@ -107,25 +115,25 @@ module MLC
                 # Generic types: Base<Arg1, Arg2, ...>
                 mapped_base = map_type(type.base_type, type_map: type_map, type_registry: type_registry)
                 type_args = type.type_args.map do |arg|
-                  map_type(arg, type_map: type_map, type_registry: type_registry)
+                  map_child.call(arg)
                 end.join(", ")
                 "#{mapped_base}<#{type_args}>"
 
               when SemanticIR::ArrayType
-                element_type = map_type(type.element_type, type_map: type_map, type_registry: type_registry)
+                element_type = map_child.call(type.element_type)
                 "mlc::Array<#{element_type}>"
 
               when SemanticIR::TupleType
                 # Tuple types: std::tuple<T1, T2, ...>
                 element_types = type.element_types.map do |t|
-                  map_type(t, type_map: type_map, type_registry: type_registry)
+                  map_child.call(t)
                 end.join(", ")
                 "std::tuple<#{element_types}>"
 
               when SemanticIR::MapType
                 # Map types: Map<K, V> -> mlc::HashMap<K, V>
-                key_type = map_type(type.key_type, type_map: type_map, type_registry: type_registry)
-                value_type = map_type(type.value_type, type_map: type_map, type_registry: type_registry)
+                key_type = map_child.call(type.key_type)
+                value_type = map_child.call(type.value_type)
                 "mlc::HashMap<#{key_type}, #{value_type}>"
 
               when SemanticIR::SymbolType
@@ -135,9 +143,9 @@ module MLC
               when SemanticIR::FunctionType
                 # Function types: std::function<ReturnType(Arg1, Arg2, ...)>
                 param_types = type.params.map do |p|
-                  map_type(p[:type], type_map: type_map, type_registry: type_registry)
+                  map_child.call(p[:type])
                 end.join(", ")
-                ret_type = map_type(type.ret_type, type_map: type_map, type_registry: type_registry)
+                ret_type = map_child.call(type.ret_type)
                 "std::function<#{ret_type}(#{param_types})>"
 
               when SemanticIR::OpaqueType

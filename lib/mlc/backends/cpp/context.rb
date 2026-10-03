@@ -69,7 +69,8 @@ module MLC
           Services::Utils::TypeMapper.map_type(
             type,
             type_map: @container.type_map,
-            type_registry: @container.type_registry
+            type_registry: @container.type_registry,
+            map_nested: method(:map_type)
           )
         end
 
