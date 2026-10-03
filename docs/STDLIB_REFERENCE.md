@@ -638,8 +638,10 @@ sees `left` and `right` as the sum.
 `Kids([Node(Kids([Node(left, _) | Kids([left])]), Kids([right]))])` binds
 `left` and `right` as the sum.
 `Kids([Node(Kids([left]), Kids([Node(right, _) | Kids([right])]))])` binds
-`left` and `right` as the sum. An array element of a cyclic sum is the
-sum.
+`left` and `right` as the sum.
+`Kids([Node(Kids([Node(left, _) | Kids([left])]), Kids([Node(right, _) | Kids([right])]))])`
+binds `left` and `right` as the sum. An array element of a cyclic sum is
+the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
