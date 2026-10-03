@@ -725,8 +725,9 @@ arm, `Node(Kids([Node(nested, _) | Kids([nested])]), _) if label(nested) > 1`,
 sees `nested` as the sum in both alternatives. `label(inner[1])` on the
 constructor matched on `rest[1]` reads the sum (`*inner[1]`). A match on
 that `inner[1]` reads the element as the sum (`(*inner[1])._`).
-`Node(nested, _)` and `Kids([nested])` bind `nested` as the sum. An array
-element of a cyclic sum is the sum.
+`Node(nested, _)` and `Kids([nested])` bind `nested` as the sum.
+`Node(nested, _) | Kids([nested])` on that `inner[1]` binds `nested` as the
+sum in both alternatives. An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
