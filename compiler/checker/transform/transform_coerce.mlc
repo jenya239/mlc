@@ -240,6 +240,23 @@ fn ident_constructor_type_matches_generic_target(
   expression_name != '' && expression_name == target_name
 end
 
+fn coerce_some_payload_argument(
+  function: Shared<SemanticExpression>,
+  arguments: [Shared<SemanticExpression>],
+  target_type: Shared<Type>
+) -> [Shared<SemanticExpression>] =
+  match function {
+    SemanticExpressionIdent(name, _, _) =>
+      match target_type {
+        TGeneric(type_name, type_arguments) =>
+          if name == "Some" && type_name == "Option" && arguments.length() == 1 && type_arguments.length() == 1 then
+            [coerce_expr_to_type(arguments[0], type_arguments[0])]
+          else arguments end,
+        _ => arguments
+      },
+    _ => arguments
+  }
+
 fn coerce_ident_semantic_expression_to_type(
   name: string,
   expression_type: Shared<Type>,
@@ -288,7 +305,12 @@ export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_typ
     SemanticExpressionCall(function, arguments, flags, _, span) =>
       match target_type {
         TGeneric(_, _) =>
-          Shared.new(SemanticExpressionCall(function, arguments, flags, target_type, span)),
+          Shared.new(SemanticExpressionCall(
+            function,
+            coerce_some_payload_argument(function, arguments, target_type),
+            flags,
+            target_type,
+            span)),
         _ => expression
       },
     SemanticExpressionMethod(_, _, _, _, _, _) => expression,

@@ -301,6 +301,14 @@ module MLC
                 expr.fields.each do |field_name, field_expr|
                   assign_expression_type(field_expr, field_map[field_name], update_registry: false)
                 end
+              when MLC::SemanticIR::CallExpr
+                return unless type.is_a?(MLC::SemanticIR::GenericType)
+                return unless type.base_type.respond_to?(:name) && type.base_type.name == "Option"
+                return unless type.type_args&.length == 1
+                return unless expr.callee.respond_to?(:name) && expr.callee.name == "Some"
+                return unless expr.args&.length == 1
+
+                assign_expression_type(expr.args.first, type.type_args.first, update_registry: false)
               end
             end
 
