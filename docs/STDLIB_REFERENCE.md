@@ -740,8 +740,10 @@ sees `nested` as the sum in both alternatives.
 `inner[1]` binds `nested` as the sum and `deeper` as the remaining `[Tree]`.
 `label(deeper[0])` reads the sum (`*deeper[0]`). A guard on that arm,
 `Node(Kids([Node(nested, _) | Kids([nested]), ...deeper]), _) if label(nested) > 1`,
-sees `nested` as the sum and reads `deeper[0]` as the sum. An array element
-of a cyclic sum is the sum.
+sees `nested` as the sum and reads `deeper[0]` as the sum. A match on
+`deeper[0]` reads the element as the sum (`(*deeper[0])._`). `Node(bound, _)`
+and `Kids([bound])` bind `bound` as the sum. An array element of a cyclic sum
+is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes

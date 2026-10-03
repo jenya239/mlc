@@ -349,8 +349,10 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `inner[1]` binds `nested` as the sum and `deeper` as the remaining `[Tree]`.
    `label(deeper[0])` reads the sum (`*deeper[0]`). A guard on that arm,
    `Node(Kids([Node(nested, _) | Kids([nested]), ...deeper]), _) if label(nested) > 1`,
-   sees `nested` as the sum and reads `deeper[0]` as the sum. An array element
-   of a cyclic sum is the sum.
+   sees `nested` as the sum and reads `deeper[0]` as the sum. A match on
+   `deeper[0]` reads the element as the sum (`(*deeper[0])._`). `Node(bound, _)`
+   and `Kids([bound])` bind `bound` as the sum. An array element of a cyclic sum
+   is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
