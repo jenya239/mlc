@@ -38,6 +38,23 @@ module MLC
               pbind = meta[:bindings]
               else_src = context.lower_expression(meta[:else_body]).to_source
               m = match_helper
+              if context.cyclic_option_sum_name(st) && vname == "Some"
+                binding_name = pbind.find { |binding| binding != "_" && !binding.is_a?(Hash) }
+                binding_line = if binding_name
+                  "const auto& #{context.sanitize_identifier(binding_name)} = *(*__s);\n"
+                else
+                  ""
+                end
+                return context.factory.raw_statement(
+                  code: "auto __s = #{value_src};\nif (!(__s.has_value() && *__s)) { #{else_src}; }\n" \
+                        "#{binding_line}"
+                )
+              end
+              if context.cyclic_option_sum_name(st) && vname == "None"
+                return context.factory.raw_statement(
+                  code: "auto __s = #{value_src};\nif (__s.has_value()) { #{else_src}; }\n"
+                )
+              end
               if m.send(:option_type?, st) && vname == "Some" && pbind.any? { |b| b != "_" }
                 s = context.sanitize_identifier(pbind.find { |b| b != "_" })
                 return context.factory.raw_statement(

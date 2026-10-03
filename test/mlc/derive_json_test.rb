@@ -7368,6 +7368,46 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_let_constructor", checker, link_user_translation: true)
   end
 
+  def test_let_some_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn from_some(child: Option<Tree>) -> i32 = do
+        let Some(tree) = child else 0 end
+        label(tree)
+      end
+      fn from_none(child: Option<Tree>) -> i32 = do
+        let None() = child else 9 end
+        8
+      end
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "const auto& tree = *(*__s)"
+    assert_includes ruby_source, "(__s.has_value() && *__s)"
+    assert_includes ruby_source, "if (__s.has_value())"
+    refute_includes ruby_source, "std::holds_alternative"
+
+    checker = <<~CPP
+      int main() {
+        Tree leaf = Tree(Leaf{});
+        Tree node = Tree(Node{std::make_shared<Tree>(leaf), std::make_shared<Tree>(leaf)});
+        auto present = std::optional<std::shared_ptr<Tree>>{std::make_shared<Tree>(leaf)};
+        auto node_present = std::optional<std::shared_ptr<Tree>>{std::make_shared<Tree>(node)};
+        auto missing = std::optional<std::shared_ptr<Tree>>{};
+        if (from_some(present) != 1) return 1;
+        if (from_some(node_present) != 2) return 2;
+        if (from_none(missing) != 8) return 3;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_let_some", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

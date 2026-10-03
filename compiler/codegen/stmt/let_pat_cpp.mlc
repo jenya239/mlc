@@ -17,6 +17,7 @@ import { list_contains } from '../decl/decl_index'
 import { cpp_safe } from '../cpp_naming'
 import { pattern_binding_name_list } from '../expr/match_analysis'
 import { array_element_cpp_for_value_type, array_element_is_boxed_cyclic_sum } from '../expr/let_pat'
+import { cyclic_option_sum_cpp_name } from '../decl/type_gen'
 
 export type GenLetPatternCppResult = GenLetPatternCppResult { statement: Shared<CppStatement>, codegen_context: CodegenContext }
 
@@ -450,6 +451,55 @@ fn array_element_binding_statement(
     PatternOr(_, _) => emit_helpers.make_expression_cpp_statement(emit_helpers.make_integer_cpp_expression(0))
   }
 
+fn cyclic_option_let_failure_condition(constructor_name: string, temp_name: string) -> Shared<CppExpression> =
+  if constructor_name == 'None' then
+    emit_helpers.make_identifier_cpp_expression(temp_name + ".has_value()")
+  else
+    emit_helpers.make_identifier_cpp_expression(
+      "(!(" + temp_name + ".has_value() && *" + temp_name + "))")
+  end
+
+fn cyclic_option_some_binding_statements(
+  subpatterns: [Shared<Pattern>],
+  temp_name: string
+) -> [Shared<CppStatement>] =
+  if subpatterns.length() == 1 then
+    match subpatterns[0] {
+      PatternIdent(name, _) =>
+        [emit_helpers.make_fragment_cpp_statement(
+          'const auto& ' + cpp_safe(name) + ' = *(*' + temp_name + ');')],
+      _ => do let empty: [Shared<CppStatement>] = []; empty end
+    }
+  else do let empty: [Shared<CppStatement>] = []; empty end
+  end
+
+fn cyclic_option_let_pattern_result(
+  constructor_name: string,
+  subpatterns: [Shared<Pattern>],
+  temp_name: string,
+  value_expression: Shared<CppExpression>,
+  has_else: bool,
+  else_body: Shared<SemanticExpression>,
+  codegen_context: CodegenContext,
+  expression_codegen: (Shared<SemanticExpression>, CodegenContext) -> Shared<CppExpression>
+) -> GenLetPatternCppResult = do
+  let mut statements: [Shared<CppStatement>] = []
+  statements.push(emit_helpers.make_auto_cpp_statement(temp_name, value_expression))
+  statements.push(emit_helpers.make_if_cpp_statement(
+    cyclic_option_let_failure_condition(constructor_name, temp_name),
+    emit_helpers.make_block_cpp_statement(
+      constructor_mismatch_else_statements(has_else, else_body, codegen_context, expression_codegen)),
+    emit_helpers.make_block_cpp_statement([])))
+  if constructor_name == 'Some' then
+    statements = append_statements(
+      statements, cyclic_option_some_binding_statements(subpatterns, temp_name))
+  end
+  GenLetPatternCppResult {
+    statement: emit_helpers.make_sequence_cpp_statement(statements),
+    codegen_context: codegen_context
+  }
+end
+
 fn ctor_pattern_cpp_result(
   constructor_name: string,
   subpatterns: [Shared<Pattern>],
@@ -461,6 +511,11 @@ fn ctor_pattern_cpp_result(
   codegen_context: CodegenContext,
   expression_codegen: (Shared<SemanticExpression>, CodegenContext) -> Shared<CppExpression>
 ) -> GenLetPatternCppResult = do
+  const cyclic_option_sum = cyclic_option_sum_cpp_name(codegen_context, value_type)
+  if cyclic_option_sum != '' && (constructor_name == 'Some' || constructor_name == 'None') then
+    return cyclic_option_let_pattern_result(
+      constructor_name, subpatterns, temp_name, value_expression, has_else, else_body, codegen_context, expression_codegen)
+  end
   const qualified_name = codegen_context.resolve(constructor_name)
   const is_generic = list_contains(codegen_context.generic_variants, constructor_name)
   const type_arguments = if is_generic then '<auto>' else '' end
