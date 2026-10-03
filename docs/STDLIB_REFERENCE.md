@@ -713,7 +713,9 @@ binds `child` as the sum and `inner` as the remaining `[Tree]`.
 sees `child` as the sum and reads `inner[0]` as the sum. A match on
 `inner[0]` of that constructor on `rest[1]` reads the element as the sum
 (`(*inner[0])._`). `Node(nested, _)` and `Kids([nested])` bind `nested` as
-the sum. An array element of a cyclic sum is the sum.
+the sum. `Node(nested, _) | Kids([nested])` on that `inner[0]` binds
+`nested` as the sum in both alternatives. An array element of a cyclic sum
+is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
