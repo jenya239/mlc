@@ -222,8 +222,10 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `Node(Kids([Node(left, _) | Kids([left])]), _) if label(left) > 1`,
    sees `left` as the sum in both alternatives.
    `Kids([Node(left, _) | Kids([left]), Node(right, _) | Kids([right])])`
-   binds `left` and `right` as the sum. An array element of a cyclic sum
-   is the sum.
+   binds `left` and `right` as the sum.
+   `Kids([Node(Kids([Node(left, _) | Kids([left])]), _)])` binds `left` as
+   the sum in both alternatives. An array element of a cyclic sum is the
+   sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
