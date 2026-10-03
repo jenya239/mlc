@@ -681,7 +681,10 @@ sees `child` as the sum in both alternatives. The same constructor on
 `rest[1]` binds `child` as the sum in both alternatives. A guard on that
 arm,
 `Node(Kids([Node(child, _) | Kids([child])]), _) if label(child) > 1`,
-sees `child` as the sum in both alternatives. An array element of a cyclic
+sees `child` as the sum in both alternatives.
+`Node(Kids([Node(child, _) | Kids([child]), ...inner]), _)` on `rest[0]`
+binds `child` as the sum and `inner` as the remaining `[Tree]`.
+`label(inner[0])` reads the sum (`*inner[0]`). An array element of a cyclic
 sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
