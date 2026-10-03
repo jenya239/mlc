@@ -746,8 +746,9 @@ and `Kids([bound])` bind `bound` as the sum. `Node(bound, _) | Kids([bound])`
 on that `deeper[0]` binds `bound` as the sum in both alternatives. A guard
 on that arm, `Node(bound, _) | Kids([bound]) if label(bound) > 1`, sees
 `bound` as the sum in both alternatives. `Node(Kids([bound]), _)` and
-`Kids([Node(bound, _)])` on that `deeper[0]` bind `bound` as the sum. An
-array element of a cyclic sum is the sum.
+`Kids([Node(bound, _)])` on that `deeper[0]` bind `bound` as the sum. A guard
+`Node(Kids([bound]), _) if label(bound) > 1` on that match sees `bound` as
+the sum. An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
