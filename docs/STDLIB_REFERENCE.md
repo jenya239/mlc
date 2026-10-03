@@ -674,8 +674,11 @@ as the sum (`(*rest[1])._`). `Node(child, _)` and `Kids([child])` bind
 on `rest[0]` bind `child` as the sum. A guard
 `Node(Kids([child]), _) if label(child) > 1` on that tail match sees
 `child` as the sum. `Node(Kids([Node(child, _) | Kids([child])]), _)` on
-`rest[0]` binds `child` as the sum in both alternatives. An array element
-of a cyclic sum is the sum.
+`rest[0]` binds `child` as the sum in both alternatives. A guard on that
+arm,
+`Node(Kids([Node(child, _) | Kids([child])]), _) if label(child) > 1`,
+sees `child` as the sum in both alternatives. An array element of a cyclic
+sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
