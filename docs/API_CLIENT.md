@@ -367,8 +367,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `Node(Kids([Node(bound, _) | Kids([bound]), ...further]), _) if label(bound) > 1`,
    sees `bound` as the sum and reads `further[0]` as the sum. A match on
    `further[0]` reads the element as the sum (`(*further[0])._`).
-   `Node(tail, _)` and `Kids([tail])` bind `tail` as the sum. An array element
-   of a cyclic sum is the sum.
+   `Node(tail, _)` and `Kids([tail])` bind `tail` as the sum.
+   `Node(tail, _) | Kids([tail])` on that `further[0]` binds `tail` as the sum
+   in both alternatives. An array element of a cyclic sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
    `Type_hash(*field)` and still limits every other field to `i32`, `bool`,
