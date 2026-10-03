@@ -128,6 +128,15 @@ export fn types_structurally_equal(left: Shared<Type>, right: Shared<Type>) -> b
   }
   end
 
+export fn type_is_uninstantiated_generic_sum(type_value: Shared<Type>) -> bool =
+  match type_value {
+    TNamed(_) => true,
+    TGeneric(_, type_arguments) =>
+      type_arguments.length() == 0 ||
+      type_arguments.all(type_argument => type_is_unknown(type_argument)),
+    _ => false
+  }
+
 fn zipped_shared_types_structurally_equal(left_list: [Shared<Type>], right_list: [Shared<Type>]) -> bool =
   zipped_suffix_types_structurally_equal(left_list, right_list, 0)
 

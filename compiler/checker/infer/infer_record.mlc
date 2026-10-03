@@ -16,9 +16,10 @@ import {
   Type,
   TypeRegistry,
   TNamed,
+  TUnknown,
   field_type_from_object
 } from '../registry'
-import { CheckContext } from '../check/check_context'
+import { CheckContext, check_context_with_expected_type } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { infer_expr_field_diagnostics } from '../check/diagnostics/type_diagnostics'
 import { types_structurally_equal, type_is_unknown, type_description } from '../semantic_type_structure'
@@ -55,13 +56,23 @@ fn infer_record_field_binding_value_inference_step(
     else
       accumulator
     end
-  const value_inference = infer_expr_fn(field_value.value, inference_context)
-  if registry_has_ordered_fields_for_type then
-    const expected_field_type =
+  const expected_field_type =
+    if registry_has_ordered_fields_for_type then
       field_type_from_object(
         Shared.new(TNamed(record_type_name_for_fields)),
         field_value.name,
         inference_context.registry)
+    else
+      Shared.new(TUnknown)
+    end
+  const value_context =
+    if !type_is_unknown(expected_field_type) then
+      check_context_with_expected_type(inference_context, expected_field_type)
+    else
+      inference_context
+    end
+  const value_inference = infer_expr_fn(field_value.value, value_context)
+  if registry_has_ordered_fields_for_type then
     const inferred_value_type = value_inference.inferred_type
     const field_types_conflict =
       !type_is_unknown(expected_field_type)

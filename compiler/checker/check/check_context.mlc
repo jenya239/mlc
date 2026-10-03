@@ -40,3 +40,14 @@ export fn check_context_child(
     current_extend_type: parent.current_extend_type,
     expected_return_type: parent.expected_return_type
   }
+
+export fn check_context_with_expected_type(
+  parent: CheckContext,
+  expected_type: Shared<Type>
+) -> CheckContext =
+  CheckContext {
+    type_env: parent.type_env,
+    registry: parent.registry,
+    current_extend_type: parent.current_extend_type,
+    expected_return_type: expected_type
+  }

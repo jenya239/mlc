@@ -26,7 +26,7 @@ import {
   TGeneric,
   method_return_type_from_object
 } from '../registry'
-import { CheckContext, check_context_child } from '../check/check_context'
+import { CheckContext, check_context_child, check_context_with_expected_type } from '../check/check_context'
 import { InferResult, StmtInferResult, infer_ok } from './infer_result'
 import * as infer_literal_helpers from './infer_literals'
 import { infer_for_iterator_with_range_rules, element_type_for_for_iterator } from './infer_for_support'
@@ -375,12 +375,19 @@ fn infer_expr_tuple_literal(elements: [Shared<Expr>], inference_context: CheckCo
   end
 end
 
+fn array_element_inference_context(inference_context: CheckContext) -> CheckContext =
+  match inference_context.expected_return_type {
+    TArray(element_type) => check_context_with_expected_type(inference_context, element_type),
+    _ => inference_context
+  }
+
 fn infer_expr_array_literal(elements: [Shared<Expr>], inference_context: CheckContext) -> InferResult = do
+  const element_context = array_element_inference_context(inference_context)
   const first_element_type = if elements.length() > 0
-    then infer_expr(elements[0], inference_context).inferred_type
+    then infer_expr(elements[0], element_context).inferred_type
     else Shared.new(TUnknown)
     end
-  infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, inference_context)
+  infer_arguments_errors(infer_ok(Shared.new(TArray(first_element_type))), elements, element_context)
 end
 
 fn infer_expr_question(inner_expression: Shared<Expr>, question_span: Span, inference_context: CheckContext) -> InferResult =

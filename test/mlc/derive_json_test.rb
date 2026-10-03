@@ -7716,6 +7716,52 @@ class MLCDeriveJsonTest < Minitest::Test
       ruby_prefix: ruby_prefix)
   end
 
+  def test_none_element_and_record_field_of_a_cyclic_sum_are_empty_optionals_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      type Holder = { child: Option<Tree> }
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn from_list(items: [Option<Tree>]) -> i32 = match items[0]
+        | Some(tree) => label(tree)
+        | None => 8
+      fn from_holder(holder: Holder) -> i32 = match holder.child
+        | Some(tree) => label(tree)
+        | None => 7
+      fn missing_list() -> [Option<Tree>] = [None]
+      fn present_list() -> [Option<Tree>] = [Some(Leaf)]
+      fn holder_none() -> Holder = Holder { child: None }
+      fn holder_some() -> Holder = Holder { child: Some(Leaf) }
+      fn read_missing_list() -> i32 = from_list(missing_list())
+      fn read_present_list() -> i32 = from_list(present_list())
+      fn read_holder_none() -> i32 = from_holder(holder_none())
+      fn read_holder_some() -> i32 = from_holder(holder_some())
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::optional<std::shared_ptr<Tree>>{}"
+    refute_includes ruby_source, "option::None"
+    refute_includes ruby_source, "Option<auto>"
+
+    checker = <<~CPP
+      int main() {
+        if (read_missing_list() != 8) return 1;
+        if (read_present_list() != 1) return 2;
+        if (read_holder_none() != 7) return 3;
+        if (read_holder_some() != 1) return 4;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(
+      source,
+      "cyclic_sum_none_element",
+      checker,
+      link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false, ruby_prefix: "")
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

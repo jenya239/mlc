@@ -14,7 +14,8 @@ import {
   operator_method_for,
   shared_pointer_inner_type,
   substitute_type,
-  named_type_name_from_type
+  named_type_name_from_type,
+  type_is_unknown
 } from '../semantic_type_structure'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver, hof_call_result_type } from '../hof_method_spec'
 import {
@@ -29,6 +30,7 @@ import {
   region_pointer_type,
   is_region_handle_alloc_method
 } from '../infer/infer_region_method'
+import { instantiated_constructor_value_type } from '../infer/infer_expr_ident'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
 import { check_context_new } from '../check/check_context'
@@ -81,6 +83,33 @@ fn transform_field_values(field_values: [Shared<FieldVal>], transform_context: T
       field_value_under_transform,
       transform_context,
       stmts_fn))
+
+fn coerce_record_field_value_to_declared_type(
+  type_name: string,
+  field_value: Shared<SemanticFieldVal>,
+  registry: TypeRegistry
+) -> Shared<SemanticFieldVal> = do
+  const expected_field_type =
+    field_type_from_object(Shared.new(TNamed(type_name)), field_value.name, registry)
+  if type_is_unknown(expected_field_type) then field_value
+  else
+    Shared.new(SemanticFieldVal {
+      name: field_value.name,
+      value: coerce_expr_to_type(field_value.value, expected_field_type)
+    })
+  end
+end
+
+fn coerce_record_field_values_to_declared_types(
+  type_name: string,
+  field_values: [Shared<SemanticFieldVal>],
+  registry: TypeRegistry
+) -> [Shared<SemanticFieldVal>] =
+  if type_name.length() == 0 || !registry.has_fields(type_name) then field_values
+  else
+    field_values.map(field_value =>
+      coerce_record_field_value_to_declared_type(type_name, field_value, registry))
+  end
 
 fn transform_single_match_arm(
   match_arm: Shared<MatchArm>,
@@ -315,7 +344,9 @@ extend TransformPass {
     const resolved_type =
       if self.transform_context.type_env.has(name) then self.transform_context.type_env.get(name)
       else if self.transform_context.registry.has_fn(name) then self.transform_context.registry.fn_type(name)
-      else if self.transform_context.registry.has_ctor(name) then self.transform_context.registry.ctor_type(name)
+      else if self.transform_context.registry.has_ctor(name) then
+        instantiated_constructor_value_type(
+          self.transform_context.registry, name, Shared.new(TUnknown))
       else if self.transform_context.registry.adt_index.algebraic_decl_type_parameter_names.has(name) then
         Shared.new(TNamed(name))
       else Shared.new(TUnknown)
@@ -532,7 +563,10 @@ extend TransformPass {
         type_name,
         merged_field_values_for_transform,
         self.transform_context.registry)
-    const typed_fields = transform_field_values(merged_field_values_for_transform, self.transform_context, stmts_fn)
+    const typed_fields = coerce_record_field_values_to_declared_types(
+      type_name,
+      transform_field_values(merged_field_values_for_transform, self.transform_context, stmts_fn),
+      self.transform_context.registry)
     const phantom = self.transform_context.registry.phantom_type_params_for(type_name)
     const all_params = self.transform_context.registry.algebraic_decl_type_parameter_names_for(type_name)
     const expr_type = if all_params.length() > 0 && phantom.length() == all_params.length()
@@ -552,11 +586,14 @@ extend TransformPass {
     source_span: Span
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
     const typed_base   = dispatch_transform_pass(self, base, stmts_fn)
-    const typed_fields = transform_field_values(field_values, self.transform_context, stmts_fn)
     const resolved_type_name =
       if type_name.length() > 0 then type_name
       else named_type_name_from_type(sexpr_type(typed_base))
       end
+    const typed_fields = coerce_record_field_values_to_declared_types(
+      resolved_type_name,
+      transform_field_values(field_values, self.transform_context, stmts_fn),
+      self.transform_context.registry)
     Shared.new(SemanticExpressionRecordUpdate(
       resolved_type_name,
       typed_base,

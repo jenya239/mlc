@@ -3,7 +3,7 @@
 
 import { Span } from '../../frontend/ast'
 import { Type, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared } from '../registry'
-import { type_is_unknown } from '../semantic_type_structure'
+import { type_is_unknown, named_type_name_from_type, type_is_uninstantiated_generic_sum } from '../semantic_type_structure'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
 
 export fn semantic_type_is_tarray(type_value: Shared<Type>) -> bool =
@@ -154,8 +154,17 @@ fn coerce_array_semantic_expression_to_type(
   target_type: Shared<Type>,
   expression: Shared<SemanticExpression>
 ) -> Shared<SemanticExpression> =
-  if elements.length() == 0 then Shared.new(SemanticExpressionArray(elements, target_type, source_span))
-  else expression end
+  match target_type {
+    TArray(element_type) =>
+      Shared.new(SemanticExpressionArray(
+        elements.map(element => coerce_expr_to_type(element, element_type)),
+        target_type,
+        source_span)),
+    _ =>
+      if elements.length() == 0 then
+        Shared.new(SemanticExpressionArray(elements, target_type, source_span))
+      else expression end
+  }
 
 fn coerce_record_semantic_expression_to_type(
   type_name: string,
@@ -222,6 +231,32 @@ fn coerce_match_arms_to_type(
 ) -> [Shared<SemanticMatchArm>] =
   arms.map(arm => coerce_match_arm_to_type(arm, target_type))
 
+fn ident_constructor_type_matches_generic_target(
+  expression_type: Shared<Type>,
+  target_type: Shared<Type>
+) -> bool = do
+  const expression_name = named_type_name_from_type(expression_type)
+  const target_name = named_type_name_from_type(target_type)
+  expression_name != '' && expression_name == target_name
+end
+
+fn coerce_ident_semantic_expression_to_type(
+  name: string,
+  expression_type: Shared<Type>,
+  source_span: Span,
+  target_type: Shared<Type>,
+  expression: Shared<SemanticExpression>
+) -> Shared<SemanticExpression> =
+  match target_type {
+    TGeneric(_, _) =>
+      if ident_constructor_type_matches_generic_target(expression_type, target_type) &&
+         type_is_uninstantiated_generic_sum(expression_type) then
+        Shared.new(SemanticExpressionIdent(name, target_type, source_span))
+      else expression
+      end,
+    _ => expression
+  }
+
 // Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_type: Shared<Type>) -> Shared<SemanticExpression> =
@@ -245,7 +280,9 @@ export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_typ
     SemanticExpressionBool(_, _, _) => expression,
     SemanticExpressionUnit(_, _) => expression,
     SemanticExpressionExtern(_, _, _, _, _) => expression,
-    SemanticExpressionIdent(_, _, _) => expression,
+    SemanticExpressionIdent(name, expression_type, source_span) =>
+      coerce_ident_semantic_expression_to_type(
+        name, expression_type, source_span, target_type, expression),
     SemanticExpressionBin(_, _, _, _, _) => expression,
     SemanticExpressionUn(_, _, _, _) => expression,
     SemanticExpressionCall(function, arguments, flags, _, span) =>
