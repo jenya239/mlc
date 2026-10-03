@@ -2,7 +2,7 @@
 // eval_expr_fn injected to break the import cycle with eval.mlc.
 
 import { SemanticExpression, SemanticStatement, SemanticExpressionIdent, SemanticExpressionLambda, SemanticExpressionField, sexpr_type } from '../../ir/semantic_ir'
-import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric } from '../../checker/registry'
+import { Type, TI32, TString, TBool, TNamed, TShared, TGeneric, TArray } from '../../checker/registry'
 import { CppExpression, CppCall, CppMember, CppInitList, CppMutableLambda, CppCapture, CppParam, CppTypeName } from '../../cpp_ir/cpp_ast'
 import * as emit_helpers from '../../cpp_emit/emit_helpers'
 import { CodegenContext } from '../context'
@@ -511,6 +511,39 @@ end
 fn make_callee_call_cpp(callee_name: string, arguments: [Shared<CppExpression>]) -> Shared<CppExpression> =
   Shared.new(CppCall(emit_helpers.make_identifier_cpp_expression(callee_name), arguments))
 
+fn cyclic_array_element_sum_cpp(object_type: Shared<Type>, context: CodegenContext) -> string =
+  match object_type {
+    TArray(element_type) =>
+      match element_type {
+        TNamed(type_name) =>
+          if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == type_name) then
+            context.resolve(type_name)
+          else ''
+          end,
+        _ => ''
+      },
+    _ => ''
+  }
+
+fn make_shared_cyclic_sum_expression(sum_cpp_name: string, value: Shared<CppExpression>) -> Shared<CppExpression> =
+  make_callee_call_cpp('std::make_shared<' + sum_cpp_name + ">", [value])
+
+fn box_cyclic_array_write_arguments(
+  object_type: Shared<Type>,
+  method_name: string,
+  trailing_arguments: [Shared<CppExpression>],
+  context: CodegenContext
+) -> [Shared<CppExpression>] = do
+  const sum_cpp_name = cyclic_array_element_sum_cpp(object_type, context)
+  if sum_cpp_name == '' then trailing_arguments
+  else if method_name == 'push' && trailing_arguments.length() == 1 then
+    [make_shared_cyclic_sum_expression(sum_cpp_name, trailing_arguments[0])]
+  else if method_name == 'set' && trailing_arguments.length() == 2 then
+    [trailing_arguments[0], make_shared_cyclic_sum_expression(sum_cpp_name, trailing_arguments[1])]
+  else trailing_arguments
+  end
+end
+
 fn prepend_expression_to_argument_list(
   leading_expression: Shared<CppExpression>,
   trailing_expressions: [Shared<CppExpression>]
@@ -837,12 +870,14 @@ export fn gen_method_expr_cpp(
       gen_stmts,
       evaluate_expression)
   const receiver_expression = materialization_outcome.materialized_argument_expressions[0]
-  let trailing_argument_expressions: [Shared<CppExpression>] = []
+  let collected_trailing_arguments: [Shared<CppExpression>] = []
   let mut tail_index = 1
   while tail_index < materialization_outcome.materialized_argument_expressions.length() do
-    trailing_argument_expressions.push(materialization_outcome.materialized_argument_expressions[tail_index])
+    collected_trailing_arguments.push(materialization_outcome.materialized_argument_expressions[tail_index])
     tail_index = tail_index + 1
   end
+  const trailing_argument_expressions = box_cyclic_array_write_arguments(
+    object_type, method_name, collected_trailing_arguments, context)
   if method_name == 'lock' && type_is_mutex(object_type) && arguments.length() == 1 then
     mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
       materialization_outcome.prelude_statements,

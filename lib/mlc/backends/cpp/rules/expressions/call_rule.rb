@@ -693,6 +693,18 @@ module MLC
               )
             end
 
+            def box_cyclic_array_value(receiver_ir, argument_ir)
+              lowered = lower_expression(argument_ir)
+              element_type = receiver_ir&.type
+              return lowered unless element_type.is_a?(MLC::SemanticIR::ArrayType)
+              return lowered unless context.named_cyclic_sum_type?(element_type.element_type)
+
+              sum_name = element_type.element_type.name
+              context.factory.raw_expression(
+                code: "std::make_shared<#{sum_name}>(#{lowered.to_source})"
+              )
+            end
+
             def direct_method_call(receiver, method_name, args)
               member = context.factory.member_access(
                 object: receiver,
@@ -774,7 +786,7 @@ module MLC
                   operator: ".",
                   member: context.factory.identifier(name: "push_back")
                 )
-                args = call.args.map { |arg| wrap_lowered_cyclic_sum_variant(arg, lower_expression(arg)) }
+                args = call.args.map { |arg| box_cyclic_array_value(call.callee.object, arg) }
                 context.factory.function_call(
                   callee: member,
                   arguments: args,
@@ -801,7 +813,14 @@ module MLC
                   operator: ".",
                   member: context.factory.identifier(name: "set")
                 )
-                args = call.args.map { |arg| lower_expression(arg) }
+                args = if call.args.length == 2
+                  [
+                    lower_expression(call.args[0]),
+                    box_cyclic_array_value(call.callee.object, call.args[1])
+                  ]
+                else
+                  call.args.map { |arg| lower_expression(arg) }
+                end
                 context.factory.function_call(
                   callee: member,
                   arguments: args,
