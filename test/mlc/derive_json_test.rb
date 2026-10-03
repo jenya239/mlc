@@ -2722,6 +2722,48 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_element_array_or", checker, link_user_translation: true)
   end
 
+  def test_rest_after_an_or_pattern_nested_in_a_constructor_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Node(Kids([Node(left, _) | Kids([left]), ...rest]), _) => if rest.length() == 0 then label(left) else label(rest[0]) end
+        | Node(_, _) => 3
+        | Kids(_) => 4
+        | Leaf => 5
+      fn node_only() -> Tree = Node(Kids([Node(Kids([Leaf]), Leaf)]), Leaf)
+      fn node_pair() -> Tree = Node(Kids([Node(Kids([Leaf]), Leaf), Leaf()]), Leaf)
+      fn kids_only() -> Tree = Node(Kids([Kids([Leaf])]), Leaf)
+      fn kids_pair() -> Tree = Node(Kids([Kids([Leaf]), Node(Leaf, Leaf)]), Leaf)
+      fn empty_inner() -> Tree = Node(Kids([]), Leaf)
+      fn bare_kids() -> Tree = Kids([Leaf])
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() >= 1"
+    assert_includes ruby_source, "*rest[0]"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>"
+    assert_includes ruby_source, "(*_v_node_2.field0)"
+    assert_includes ruby_source, "(*_v_kids_2.field0[0])"
+
+    checker = <<~CPP
+      int main() {
+        if (head(node_only()) != 6) return 1;
+        if (head(node_pair()) != 1) return 2;
+        if (head(kids_only()) != 1) return 3;
+        if (head(kids_pair()) != 2) return 4;
+        if (head(empty_inner()) != 3) return 5;
+        if (head(bare_kids()) != 4) return 6;
+        if (head(Tree(Leaf{})) != 5) return 7;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_nested_or_rest", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
