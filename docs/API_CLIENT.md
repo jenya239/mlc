@@ -272,7 +272,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `Kids([Node(Kids([Node(left, _) | Kids([left])]), _), ...rest])` binds
    `left` and `child` as the sum. A guard
    `Node(child, _) if label(child) > 1` on that tail match sees `child` as
-   the sum. `Node(child, _) | Kids([child])` on that tail binds `child` as
+   the sum.    `Node(child, _) | Kids([child])` on that tail binds `child` as
+   the sum in both alternatives. A guard on that arm,
+   `Node(child, _) | Kids([child]) if label(child) > 1`, sees `child` as
    the sum in both alternatives. An array element of a cyclic sum is the sum.
    `derive { Display, Eq, Ord }` reads a boxed
    child as the sum (`*field`). `derive { Hash }` hashes that child with
