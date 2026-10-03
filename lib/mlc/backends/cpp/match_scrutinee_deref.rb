@@ -40,6 +40,12 @@ module MLC
             type.base_type.name == "Shared"
         end
 
+        def cyclic_wrapper_variant_source(expression_source)
+          return "#{expression_source}._" if expression_source.match?(/\A[A-Za-z_][A-Za-z0-9_]*\z/)
+
+          "(#{expression_source})._"
+        end
+
         def sum_base_name(type)
           case type
           when MLC::SemanticIR::SumType

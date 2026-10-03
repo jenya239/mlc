@@ -94,7 +94,7 @@ module MLC
               is_wrapper = inner_type_name && context.cyclic_sum_types.include?(inner_type_name)
 
               base = needs_star ? "(*#{scrutinee_src})" : scrutinee_src
-              base = "#{base}._" if is_wrapper
+              base = ::MLC::Backends::Cpp::MatchScrutineeDeref.cyclic_wrapper_variant_source(base) if is_wrapper
               context.factory.raw_expression(code: base)
             end
 
