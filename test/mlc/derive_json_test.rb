@@ -5319,6 +5319,70 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_match_rest_second_inner_nested_guard", checker, link_user_translation: true)
   end
 
+  def test_or_pattern_inside_a_constructor_of_the_inner_tail_of_the_second_rest_element_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _) | Kids([left]), ...rest]) => if rest.length() < 2 then label(left) else match rest[1]
+            | Node(Kids([Node(child, _) | Kids([child]), ...inner]), _) => if inner.length() == 0 then label(child) else match inner[0]
+                | Node(Kids([Node(nested, _) | Kids([nested])]), _) => label(nested)
+                | Leaf => 4
+                | _ => 10
+              end end
+            | Leaf => 8
+            | _ => 9
+          end end
+        | Kids(_) => 3
+        | Leaf => 5
+        | Node(_, _) => 7
+      fn from_node() -> Tree = Kids([Node(Kids([Leaf]), Leaf)])
+      fn from_kids() -> Tree = Kids([Kids([Leaf])])
+      fn short_tail() -> Tree = Kids([Node(Leaf, Leaf), Leaf()])
+      fn second_node() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Kids([Node(Kids([Leaf]), Leaf)]), Leaf)])
+      fn inner_node() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Kids([Kids([Leaf]), Node(Kids([Node(Kids([Leaf]), Leaf)]), Leaf)]), Leaf)])
+      fn inner_kids() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Kids([Node(Kids([Leaf]), Leaf), Node(Kids([Kids([Node(Leaf, Leaf)])]), Leaf)]), Leaf)])
+      fn inner_leaf() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Kids([Node(Kids([Leaf]), Leaf), Leaf()]), Leaf)])
+      fn inner_shallow() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Kids([Kids([Leaf]), Node(Leaf, Leaf)]), Leaf)])
+      fn second_leaf() -> Tree = Kids([Node(Kids([Leaf]), Leaf), Node(Leaf, Leaf), Leaf()])
+      fn second_bare() -> Tree = Kids([Node(Leaf, Leaf), Leaf(), Node(Leaf, Leaf)])
+      fn shallow() -> Tree = Kids([Leaf()])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "(*rest[1])._"
+    assert_includes ruby_source, "(*inner[0])._"
+    assert_includes ruby_source, "const auto& nested = (*_v_node_2.field0)"
+    assert_includes ruby_source, "const auto& nested = (*_v_kids_2.field0[0])"
+    assert_includes ruby_source, "const auto& child = (*_v_node_2.field0)"
+    assert_includes ruby_source, "const auto& child = (*_v_kids_2.field0[0])"
+    refute_includes ruby_source, "*inner[0]._"
+
+    checker = <<~CPP
+      int main() {
+        if (head(from_node()) != 6) return 1;
+        if (head(from_kids()) != 1) return 2;
+        if (head(short_tail()) != 1) return 3;
+        if (head(second_node()) != 6) return 4;
+        if (head(inner_node()) != 6) return 5;
+        if (head(inner_kids()) != 2) return 6;
+        if (head(inner_leaf()) != 4) return 7;
+        if (head(inner_shallow()) != 10) return 8;
+        if (head(second_leaf()) != 8) return 9;
+        if (head(second_bare()) != 9) return 10;
+        if (head(shallow()) != 3) return 11;
+        if (head(Tree(Leaf{})) != 5) return 12;
+        if (head(bare()) != 7) return 13;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_match_rest_second_inner_or_element", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
