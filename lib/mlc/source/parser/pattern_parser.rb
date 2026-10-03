@@ -257,7 +257,7 @@ module MLC
           elements = []
           rest = nil
           loop do
-            elements << parse_pattern
+            elements << parse_or_pattern
             if current.type == :COMMA
               consume(:COMMA)
               if current.type == :SPREAD

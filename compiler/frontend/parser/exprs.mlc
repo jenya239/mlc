@@ -109,7 +109,7 @@ fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatternResult = do
   if parser.kind().is_rbracket() then
     pattern_parse_result(Shared.new(PatternArray([], '', bracket_span)), parser.advance())
   else
-    const first = parse_pattern(parser)
+    const first = parse_or_pattern(parser)
     const patterns: [Shared<Pattern>] = []
     patterns.push(first.value)
     let mut parser_state = first.parser
@@ -124,7 +124,7 @@ fn parse_array_pattern(parser: Parser, bracket_span: Span) -> PatternResult = do
         end
         break
       else
-        const next = parse_pattern(parser_state)
+        const next = parse_or_pattern(parser_state)
         patterns.push(next.value)
         parser_state = next.parser
       end

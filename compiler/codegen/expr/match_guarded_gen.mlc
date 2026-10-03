@@ -4,7 +4,7 @@
 // wrap eval_expr_cpp_fn through print_expr into a string-producing closure
 // and feed it into the same builder as the string-flavor callers).
 
-import { Pattern, PatternWild, PatternStr, PatternStringLit, PatternCtor, PatternIdent, PatternArray } from '../../frontend/ast'
+import { Pattern, PatternWild, PatternStr, PatternStringLit, PatternCtor, PatternIdent, PatternArray, PatternOr } from '../../frontend/ast'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
 import { CodegenContext, lookup_ctor_type_info_for_context, lookup_fields_for_context } from '../context'
 import { cpp_safe, lower_first } from '../cpp_naming'
@@ -358,6 +358,27 @@ fn constructor_subpatterns_are_name_bindings(sub_patterns: [Shared<Pattern>]) ->
   names_only
 end
 
+fn or_alternatives_are_simple_array_elements(alternatives: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut simple = true
+  while index < alternatives.length() do
+    match alternatives[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if constructor_subpatterns_are_supported_fields(sub_patterns) then do end
+        else do
+          simple = false
+        end
+        end
+      end,
+      _ => do simple = false end
+    }
+    index = index + 1
+  end
+  simple
+end
+
 fn array_pattern_elements_are_simple(element_patterns: [Shared<Pattern>]) -> bool = do
   let mut index = 0
   let mut simple = true
@@ -367,6 +388,13 @@ fn array_pattern_elements_are_simple(element_patterns: [Shared<Pattern>]) -> boo
       PatternWild(_) => do end,
       PatternCtor(_, sub_patterns, _) => do
         if constructor_subpatterns_are_supported_fields(sub_patterns) then do end
+        else do
+          simple = false
+        end
+        end
+      end,
+      PatternOr(alternatives, _) => do
+        if or_alternatives_are_simple_array_elements(alternatives) then do end
         else do
           simple = false
         end
@@ -416,6 +444,13 @@ fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
       PatternWild(_) => do end,
       PatternCtor(_, sub_patterns, _) => do
         if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) == false then do
+          bindings_only = false
+        end
+        end
+      end,
+      PatternOr(alternatives, _) => do
+        if or_alternatives_are_simple_array_elements(alternatives) then do end
+        else do
           bindings_only = false
         end
         end
@@ -729,6 +764,33 @@ fn one_array_name_constructor_statements(
         emit_helpers.make_block_cpp_statement(then_statements),
         emit_helpers.make_block_cpp_statement([])))
     end,
+    PatternOr(alternatives, _) => do
+      const later_elements = array_name_constructor_statements(
+        element_patterns,
+        payload_indexes,
+        payload_cursor + 1,
+        array_access,
+        arm,
+        subject,
+        use_void,
+        arm_context,
+        context,
+        gen_stmts,
+        eval_expr_fn)
+      statements = cyclic_array_or_alternative_statements(
+        alternatives,
+        0,
+        element_index,
+        array_access,
+        later_elements,
+        arm,
+        subject,
+        use_void,
+        arm_context,
+        context,
+        gen_stmts,
+        eval_expr_fn)
+    end,
     _ => do end
   }
   statements
@@ -768,6 +830,12 @@ fn cyclic_array_nested_if_statement(
           payload_indexes.push(element_index)
         end
         end
+      end,
+      PatternOr(alternatives, _) => do
+        if alternatives.length() > 0 then
+          arm_context = context_with_pattern_bindings(arm_context, alternatives[0])
+        end
+        payload_indexes.push(element_index)
       end,
       _ => do end
     }
@@ -1082,6 +1150,11 @@ fn context_with_cyclic_array_pattern_bindings(
                     bound_context = context_with_constructor_field_bindings(bound_context, constructor_fields)
                   end
                 end,
+                PatternOr(alternatives, _) => do
+                  if alternatives.length() > 0 then
+                    bound_context = context_with_pattern_bindings(bound_context, alternatives[0])
+                  end
+                end,
                 _ => do end
               }
               element_index = element_index + 1
@@ -1098,6 +1171,38 @@ fn context_with_cyclic_array_pattern_bindings(
     index = index + 1
   end
   bound_context
+end
+
+fn context_with_pattern_list_bindings(
+  arm_context: CodegenContext,
+  patterns: [Shared<Pattern>]
+) -> CodegenContext = do
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < patterns.length() do
+    bound_context = context_with_pattern_bindings(bound_context, patterns[index])
+    index = index + 1
+  end
+  bound_context
+end
+
+fn context_with_pattern_bindings(arm_context: CodegenContext, pattern: Shared<Pattern>) -> CodegenContext = do
+  match pattern {
+    PatternIdent(binding_name, _) => arm_context.add_value(binding_name),
+    PatternCtor(_, constructor_fields, _) =>
+      context_with_pattern_list_bindings(arm_context, constructor_fields),
+    PatternArray(element_patterns, rest_name, _) => do
+      let mut bound_context = context_with_pattern_list_bindings(arm_context, element_patterns)
+      if rest_name != '' then
+        bound_context = bound_context.add_value(rest_name)
+      end
+      bound_context
+    end,
+    PatternOr(alternatives, _) =>
+      if alternatives.length() > 0 then context_with_pattern_bindings(arm_context, alternatives[0])
+      else arm_context end,
+    _ => arm_context
+  }
 end
 
 fn context_with_constructor_field_bindings(
@@ -1146,6 +1251,136 @@ end
 
 fn cyclic_array_element_lower_name(array_access: string, constructor_name: string, element_index: i32) -> string = do
   "__cyclic_element_" + cyclic_array_access_suffix(array_access) + "_" + cpp_safe(lower_first(constructor_name)) + "_" + element_index.to_string()
+end
+
+fn cyclic_array_constructor_alternative_statements(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  element_index: i32,
+  array_access: string,
+  continuation: [Shared<CppStatement>],
+  else_statements: [Shared<CppStatement>],
+  arm: Shared<SemanticMatchArm>,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const qualified_name = context.resolve(constructor_name)
+  const type_argument = generic_ctor_type_argument(context, constructor_name, subject)
+  const variant_type_name = qualified_name + type_argument
+  const holds_text = 'std::holds_alternative<' + variant_type_name + '>((*' + array_access + "[" + element_index.to_string() + "])._)"
+  let mut then_statements: [Shared<CppStatement>] = []
+  if sub_patterns.length() == 0 then do
+    then_statements = continuation
+  end else do
+    const payload_sum_name = '__cyclic_payload_sum_' + element_index.to_string()
+    const lower_name = cyclic_array_element_lower_name(array_access, constructor_name, element_index)
+    then_statements.push(emit_helpers.make_fragment_cpp_statement(
+      'const auto& ' + payload_sum_name + ' = (*' + array_access + "[" + element_index.to_string() + "])._; "))
+    then_statements.push(
+      variant_get_const_ref_statement(variant_type_name, lower_name, payload_sum_name))
+    if constructor_subpatterns_are_name_bindings(sub_patterns) then do
+      const no_nested_indexes: [i32] = []
+      const bound_fields = constructor_field_ident_statements(
+        constructor_name, sub_patterns, lower_name, no_nested_indexes, arm_context, context)
+      then_statements = append_cpp_statements(then_statements, bound_fields.field_binding_statements)
+      then_statements = append_cpp_statements(then_statements, continuation)
+    end
+    end
+    if constructor_subpatterns_are_name_bindings(sub_patterns) == false then do
+      const empty_patterns: [Shared<Pattern>] = []
+      const empty_indexes: [i32] = []
+      const empty_resume: [NestedMatchResume] = []
+      then_statements = append_cpp_statements(
+        then_statements,
+        constructor_inner_statements(
+          arm,
+          constructor_name,
+          sub_patterns,
+          lower_name,
+          subject,
+          use_void,
+          arm_context,
+          '',
+          empty_patterns,
+          '',
+          empty_indexes,
+          0,
+          empty_resume,
+          empty_patterns,
+          empty_indexes,
+          0,
+          '',
+          continuation,
+          context,
+          gen_stmts,
+          eval_expr_fn))
+    end
+    end
+  end
+  end
+  let mut alternative_statements: [Shared<CppStatement>] = []
+  alternative_statements.push(emit_helpers.make_if_cpp_statement(
+    emit_helpers.make_identifier_cpp_expression(holds_text),
+    emit_helpers.make_block_cpp_statement(then_statements),
+    emit_helpers.make_block_cpp_statement(else_statements)))
+  alternative_statements
+end
+
+fn cyclic_array_or_alternative_statements(
+  alternatives: [Shared<Pattern>],
+  alternative_cursor: i32,
+  element_index: i32,
+  array_access: string,
+  continuation: [Shared<CppStatement>],
+  arm: Shared<SemanticMatchArm>,
+  subject: Shared<SemanticExpression>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  if alternative_cursor >= alternatives.length() then do
+    let mut empty_statements: [Shared<CppStatement>] = []
+    empty_statements
+  end else do
+    const else_statements = cyclic_array_or_alternative_statements(
+      alternatives,
+      alternative_cursor + 1,
+      element_index,
+      array_access,
+      continuation,
+      arm,
+      subject,
+      use_void,
+      arm_context,
+      context,
+      gen_stmts,
+      eval_expr_fn)
+    match alternatives[alternative_cursor] {
+      PatternCtor(constructor_name, sub_patterns, _) =>
+        cyclic_array_constructor_alternative_statements(
+          constructor_name,
+          sub_patterns,
+          element_index,
+          array_access,
+          continuation,
+          else_statements,
+          arm,
+          subject,
+          use_void,
+          arm_context,
+          context,
+          gen_stmts,
+          eval_expr_fn),
+      _ => else_statements
+    }
+  end
+  end
 end
 
 fn name_constructor_element_statements(
@@ -1235,6 +1470,34 @@ fn name_constructor_element_statements(
           emit_helpers.make_block_cpp_statement(then_statements),
           emit_helpers.make_block_cpp_statement([])))
       end,
+      PatternOr(alternatives, _) => do
+        const later_elements = name_constructor_element_statements(
+          element_patterns,
+          payload_indexes,
+          payload_cursor + 1,
+          array_access,
+          continuation,
+          arm,
+          subject,
+          use_void,
+          arm_context,
+          context,
+          gen_stmts,
+          eval_expr_fn)
+        statements = cyclic_array_or_alternative_statements(
+          alternatives,
+          0,
+          element_index,
+          array_access,
+          later_elements,
+          arm,
+          subject,
+          use_void,
+          arm_context,
+          context,
+          gen_stmts,
+          eval_expr_fn)
+      end,
       _ => do end
     }
     statements
@@ -1274,6 +1537,9 @@ fn cyclic_array_pattern_if_statement(
         if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) then
           payload_indexes.push(element_index)
         end
+      end,
+      PatternOr(_, _) => do
+        payload_indexes.push(element_index)
       end,
       _ => do end
     }

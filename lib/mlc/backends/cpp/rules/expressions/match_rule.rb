@@ -1015,12 +1015,41 @@ module MLC
               cyclic_array_constructor_pattern?(element)
             end
 
+            def cyclic_array_or_element?(element)
+              return false unless element.is_a?(Hash) && element[:kind] == :or
+
+              Array(element[:alternatives]).all? { |alternative|
+                cyclic_array_name_element?(alternative) ||
+                  cyclic_array_nullary_constructor?(alternative) ||
+                  cyclic_array_field_constructor?(alternative)
+              }
+            end
+
+            def wrap_cyclic_array_or_element(element, variant_access, sum_access, body)
+              clauses = []
+              Array(element[:alternatives]).each_with_index do |alternative, index|
+                clause = if cyclic_array_nullary_constructor?(alternative)
+                           "if (std::holds_alternative<#{alternative[:name]}>(#{variant_access})) { #{body} }"
+                         elsif alternative.is_a?(Hash) && alternative[:kind] == :var && alternative[:name] != "_"
+                           "if (true) { const auto& #{alternative[:name]} = #{sum_access}; #{body} }"
+                         elsif cyclic_array_name_element?(alternative)
+                           "if (true) { #{body} }"
+                         else
+                           wrap_cyclic_payload_constructor(alternative, variant_access, body)
+                         end
+                clauses << (index.zero? ? clause : clause.sub(/\Aif/, "else if"))
+                break if cyclic_array_name_element?(alternative)
+              end
+              clauses.join(" ")
+            end
+
             def cyclic_array_pattern_simple?(pattern)
               elements = Array(pattern[:elements])
               elements.all? { |element|
                 cyclic_array_name_element?(element) ||
                   cyclic_array_nullary_constructor?(element) ||
-                  cyclic_array_field_constructor?(element)
+                  cyclic_array_field_constructor?(element) ||
+                  cyclic_array_or_element?(element)
               }
             end
 
@@ -1037,25 +1066,33 @@ module MLC
                 binding_text = "#{binding_text} const auto #{rest_name} = mlc::Array<std::shared_ptr<#{sum_name}>>(#{scrutinee_var}.cbegin() + #{elements.length}, #{scrutinee_var}.cend());"
               end
               conditions = ["#{scrutinee_var}.size() #{size_operator} #{elements.length}"]
-              field_constructors = []
+              structured_elements = []
               elements.each_with_index do |element, index|
                 if cyclic_array_nullary_constructor?(element)
                   conditions << "std::holds_alternative<#{element[:name]}>((*#{scrutinee_var}[#{index}])._)"
                 elsif cyclic_array_field_constructor?(element)
-                  field_constructors << [element, index]
+                  structured_elements << [:constructor, element, index]
+                elsif cyclic_array_or_element?(element)
+                  structured_elements << [:or, element, index]
                 end
               end
               check = { condition: conditions.join(" && "), bindings: binding_text }
-              if field_constructors.any?
+              if structured_elements.any?
                 captured_bindings = binding_text
                 check[:bindings] = ""
                 check[:wrap] = lambda { |body|
-                  field_constructors.reverse.reduce("#{captured_bindings} #{body}") do |accumulated, (element, index)|
-                    wrap_cyclic_payload_constructor(
-                      element,
-                      "(*#{scrutinee_var}[#{index}])._",
-                      accumulated
-                    )
+                  structured_elements.reverse.reduce("#{captured_bindings} #{body}") do |accumulated, (kind, element, index)|
+                    variant_access = "(*#{scrutinee_var}[#{index}])._"
+                    if kind == :or
+                      wrap_cyclic_array_or_element(
+                        element,
+                        variant_access,
+                        "(*#{scrutinee_var}[#{index}])",
+                        accumulated
+                      )
+                    else
+                      wrap_cyclic_payload_constructor(element, variant_access, accumulated)
+                    end
                   end
                 }
               end
