@@ -9,6 +9,13 @@
 # - connection_count increments on TCP accept, before the handshake
 # - request_count increments only after a full HTTP header block is read
 # - /silent accepts TLS and then does not read or write
+# - /retry and /retry-single each return 503 with Retry-After: 0 once, then 200
+# - /once returns 404 once, then 200
+# - /redirect/same, /redirect/cross, /redirect/http, /redirect/loop, /redirect/keep
+#   answer with Location. /landed reports the method and whether Authorization
+#   or Cookie arrived. It does not copy those header values.
+# - /session_echo answers 200 with Connection: keep-alive and the request body,
+#   then reads another request on the same TLS connection, up to 8 times.
 
 require 'openssl'
 require 'socket'
@@ -95,6 +102,7 @@ File.write(request_count_path, '0')
 counter_mutex = Mutex.new
 connection_count = 0
 request_count = 0
+retry_budget = { '/retry' => 1, '/retry-single' => 1, '/once' => 1 }
 
 increment_connections = lambda do
   counter_mutex.synchronize do
@@ -129,8 +137,12 @@ read_http_request = lambda do |secure_socket|
   end
   body = remainder.byteslice(0, content_length)
   request_line = header_text.lines.first.to_s
-  path = request_line.split(' ')[1].to_s
-  [path, body]
+  request_parts = request_line.split(' ')
+  method = request_parts[0].to_s
+  path = request_parts[1].to_s
+  authorization = header_text.lines.any? { |line| line.downcase.start_with?('authorization:') }
+  cookie = header_text.lines.any? { |line| line.downcase.start_with?('cookie:') }
+  [method, path, body, authorization, cookie]
 end
 
 write_bytes = lambda do |secure_socket, bytes|
@@ -140,6 +152,12 @@ write_bytes = lambda do |secure_socket, bytes|
     break if count.nil? || count <= 0
     written += count
   end
+end
+
+respond_redirect = lambda do |secure_socket, status_line, location, body|
+  header = "#{status_line}\r\nLocation: #{location}\r\nContent-Type: text/plain\r\nContent-Length: #{body.bytesize}\r\nConnection: close\r\n\r\n"
+  write_bytes.call(secure_socket, header)
+  write_bytes.call(secure_socket, body)
 end
 
 respond_fixed = lambda do |secure_socket, status_line, body, content_type|
@@ -166,6 +184,7 @@ end
 
 binary_body = "a\0b\0c".b
 big_body = ('B' * (2 * 1024 * 1024)).b
+cross_port = 0
 
 serve_socket = lambda do |tcp_socket, context, silent|
   increment_connections.call
@@ -178,8 +197,22 @@ serve_socket = lambda do |tcp_socket, context, silent|
       sleep 10
       return
     end
-    path, body = read_http_request.call(secure_socket)
+    keep_reading = true
+    session_reads = 0
+    while keep_reading
+    method, path, body, authorization, cookie = read_http_request.call(secure_socket)
     increment_requests.call
+    if path == '/session_echo'
+      session_reads += 1
+      write_bytes.call(
+        secure_socket,
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: #{body.bytesize}\r\nConnection: keep-alive\r\n\r\n"
+      )
+      write_bytes.call(secure_socket, body)
+      keep_reading = session_reads < 8
+      next
+    end
+    keep_reading = false
     case path
     when '/echo'
       respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', body, 'text/plain')
@@ -191,8 +224,64 @@ serve_socket = lambda do |tcp_socket, context, silent|
       respond_chunked.call(secure_socket, big_body)
     when '/binary'
       respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', binary_body, 'application/octet-stream')
+    when '/retry', '/retry-single'
+      waiting = counter_mutex.synchronize do
+        if retry_budget[path].to_i > 0
+          retry_budget[path] -= 1
+          true
+        else
+          false
+        end
+      end
+      if waiting
+        write_bytes.call(
+          secure_socket,
+          "HTTP/1.1 503 Service Unavailable\r\nContent-Type: text/plain\r\nContent-Length: 4\r\nRetry-After: 0\r\nConnection: close\r\n\r\nwait"
+        )
+      else
+        respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', 'ready', 'text/plain')
+      end
+    when '/landed'
+      auth_flag = authorization ? 'yes' : 'no'
+      cookie_flag = cookie ? 'yes' : 'no'
+      respond_fixed.call(
+        secure_socket,
+        'HTTP/1.1 200 OK',
+        "method=#{method} auth=#{auth_flag} cookie=#{cookie_flag}",
+        'text/plain'
+      )
+    when '/redirect/same'
+      respond_redirect.call(secure_socket, 'HTTP/1.1 302 Found', '/landed', '')
+    when '/redirect/cross'
+      respond_redirect.call(
+        secure_socket,
+        'HTTP/1.1 302 Found',
+        "https://127.0.0.1:#{cross_port}/landed",
+        ''
+      )
+    when '/redirect/http'
+      respond_redirect.call(secure_socket, 'HTTP/1.1 302 Found', 'http://127.0.0.1/landed', 'stop')
+    when '/redirect/loop'
+      respond_redirect.call(secure_socket, 'HTTP/1.1 302 Found', '/redirect/loop', '')
+    when '/redirect/keep'
+      respond_redirect.call(secure_socket, 'HTTP/1.1 307 Temporary Redirect', '/echo', '')
+    when '/once'
+      first = counter_mutex.synchronize do
+        if retry_budget[path].to_i > 0
+          retry_budget[path] -= 1
+          true
+        else
+          false
+        end
+      end
+      if first
+        respond_fixed.call(secure_socket, 'HTTP/1.1 404 Not Found', 'missing', 'text/plain')
+      else
+        respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', 'retried-once', 'text/plain')
+      end
     else
       respond_fixed.call(secure_socket, 'HTTP/1.1 404 Not Found', 'unknown', 'text/plain')
+    end
     end
   rescue StandardError
     nil
@@ -217,8 +306,11 @@ end
 
 good_server = TCPServer.new('127.0.0.1', 0)
 wrong_server = TCPServer.new('127.0.0.1', 0)
+cross_server = TCPServer.new('127.0.0.1', 0)
+cross_port = cross_server.addr[1]
 good_server.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1) rescue nil
 wrong_server.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1) rescue nil
+cross_server.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1) rescue nil
 
 File.write(File.join(directory, 'good_port'), good_server.addr[1].to_s)
 File.write(File.join(directory, 'wrong_port'), wrong_server.addr[1].to_s)
@@ -232,6 +324,7 @@ wrong_context = HttpsTestServer.context_for(wrong_certificate, wrong_key)
 
 Thread.new { accept_loop.call(good_server, good_context, false) }
 Thread.new { accept_loop.call(wrong_server, wrong_context, false) }
+Thread.new { accept_loop.call(cross_server, good_context, false) }
 
 # /silent is a third listener so a stalled handshake cannot block /echo.
 silent_server = TCPServer.new('127.0.0.1', 0)

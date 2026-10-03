@@ -2,7 +2,7 @@ import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
 import {
   https_send,
   https_live_handle_count
-} from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+} from "HttpsClient"
 import {
   https_find_header,
   https_status_class,
@@ -90,6 +90,18 @@ fn main() -> i32 = do
     const missing = https_send(request_for("GET", "/status/404", [], ""))
     if is_ok(missing) == false || ok_status(missing) != 404 || status_is_client_error(404) == false then
       code = 4
+    end
+  end
+  if code == 0 then
+    const replaced = https_send(request_for("PUT", "/echo", [], "put-body"))
+    if is_ok(replaced) == false || ok_status(replaced) != 200 || ok_body(replaced) != "put-body" then
+      code = 6
+    end
+  end
+  if code == 0 then
+    const headed = https_send(request_for("HEAD", "/echo", [], ""))
+    if is_ok(headed) == false || ok_status(headed) != 200 || ok_body(headed) != "" then
+      code = 7
     end
   end
   if code == 0 && https_live_handle_count() != 0 then

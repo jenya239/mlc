@@ -1,0 +1,110 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  https_send_with_retry,
+  https_retry_after_milliseconds,
+  https_retry_delay_milliseconds,
+  https_result_is_retryable,
+  HttpsRetry
+} from '../../lib/mlc/common/stdlib/net/https_retry.mlc'
+import {
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResponse,
+  HttpsFailure,
+  HttpsFailureKind,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  CertificateRejected,
+  ResponseTooLarge,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn retry_twice() -> HttpsRetry =
+  HttpsRetry {
+    attempts: 2,
+    backoff_milliseconds: 50,
+    maximum_delay_milliseconds: 1000
+  }
+
+fn policy(attempts: i32, backoff: i32, maximum: i32) -> HttpsRetry =
+  HttpsRetry {
+    attempts: attempts,
+    backoff_milliseconds: backoff,
+    maximum_delay_milliseconds: maximum
+  }
+
+fn headers_with(value: string) -> [HttpsHeader] =
+  [HttpsHeader { name: "Retry-After", value: value }]
+
+fn ok_status(status: i32) -> HttpsResult =
+  HttpsOk(HttpsResponse { status: status, headers: [], body: "" })
+
+fn failure(kind: HttpsFailureKind) -> HttpsResult =
+  HttpsErr(HttpsFailure { kind: kind, message: "" })
+
+fn check_delay() -> i32 = do
+  if https_retry_after_milliseconds("2") != 2000 then return 2 end
+  if https_retry_after_milliseconds(" 0 ") != 0 then return 3 end
+  if https_retry_after_milliseconds("Wed, 21 Oct 2015 07:28:00 GMT") != -1 then return 4 end
+  if https_retry_after_milliseconds("") != -1 then return 5 end
+  if https_retry_delay_milliseconds(headers_with("2"), 0, policy(2, 50, 1000)) != 1000 then return 6 end
+  if https_retry_delay_milliseconds(headers_with("0"), 4, policy(2, 50, 1000)) != 0 then return 7 end
+  if https_retry_delay_milliseconds([], 0, policy(4, 100, 1000)) != 100 then return 8 end
+  if https_retry_delay_milliseconds([], 3, policy(8, 100, 1000)) != 800 then return 9 end
+  if https_retry_delay_milliseconds([], 20, policy(8, 100, 1000)) != 1000 then return 10 end
+  if https_retry_delay_milliseconds([], 1, policy(4, 100, 120000)) != 200 then return 11 end
+  if https_retry_delay_milliseconds(headers_with("90"), 0, policy(2, 50, 120000)) != 60000 then return 12 end
+  if https_result_is_retryable(ok_status(503)) == false then return 13 end
+  if https_result_is_retryable(ok_status(429)) == false then return 14 end
+  if https_result_is_retryable(ok_status(404)) then return 15 end
+  if https_result_is_retryable(ok_status(200)) then return 16 end
+  if https_result_is_retryable(failure(TimedOut)) == false then return 17 end
+  if https_result_is_retryable(failure(ConnectFailed)) == false then return 18 end
+  if https_result_is_retryable(failure(ResolveFailed)) == false then return 19 end
+  if https_result_is_retryable(failure(CertificateRejected)) then return 20 end
+  if https_result_is_retryable(failure(InvalidRequest)) then return 21 end
+  if https_result_is_retryable(failure(ResponseTooLarge)) then return 22 end
+  if https_result_is_retryable(failure(TransportFailed)) then return 23 end
+  0
+end
+
+fn request_for(path: string) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + path,
+    headers: [],
+    body: "",
+    timeout_milliseconds: 5000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", "")
+  }
+
+fn status_of(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => -1
+  }
+
+fn body_of(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body,
+    HttpsErr(_) => ""
+  }
+
+fn main() -> i32 = do
+  const delay_code = check_delay()
+  if delay_code != 0 then return delay_code end
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" then return 1 end
+  const recovered = https_send_with_retry(request_for("/retry"), retry_twice())
+  if status_of(recovered) != 200 || body_of(recovered) != "ready" then return 30 end
+  const single = https_send_with_retry(request_for("/retry-single"), policy(1, 50, 1000))
+  if status_of(single) != 503 || body_of(single) != "wait" then return 31 end
+  const once = https_send_with_retry(request_for("/once"), policy(3, 50, 1000))
+  if status_of(once) != 404 || body_of(once) != "missing" then return 32 end
+  0
+end

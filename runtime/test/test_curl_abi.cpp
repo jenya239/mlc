@@ -113,6 +113,24 @@ int check_success() {
   return 0;
 }
 
+int check_put_body() {
+  ResultHandle handle = perform_text("PUT", good_url("/echo"), "", "put-body", 5000, 4194304, authority_path());
+  if (handle.get() < 0) return 15;
+  if (mlc::curl_abi::result_failure_code(handle.get()) != 0) return 15;
+  if (mlc::curl_abi::result_status(handle.get()) != 200) return 15;
+  if (mlc::curl_abi::result_body(handle.get()).view() != "put-body") return 15;
+  return 0;
+}
+
+int check_head() {
+  ResultHandle handle = perform_text("HEAD", good_url("/echo"), "", "", 5000, 4194304, authority_path());
+  if (handle.get() < 0) return 16;
+  if (mlc::curl_abi::result_failure_code(handle.get()) != 0) return 16;
+  if (mlc::curl_abi::result_status(handle.get()) != 200) return 16;
+  if (mlc::curl_abi::result_body(handle.get()).raw_size() != 0) return 16;
+  return 0;
+}
+
 int check_post_body() {
   const char payload[] = {'a', '\0', 'b', 'c'};
   ResultHandle handle = perform(
@@ -308,6 +326,62 @@ int check_lifecycle() {
   return 0;
 }
 
+class SessionGuard {
+ public:
+  explicit SessionGuard(std::int32_t session) : session_(session) {}
+  ~SessionGuard() { mlc::curl_abi::session_close(session_); }
+  std::int32_t get() const { return session_; }
+
+ private:
+  std::int32_t session_;
+};
+
+int check_session_reuses_connection() {
+  const std::int32_t opened = mlc::curl_abi::session_open();
+  if (opened < 0) return 18;
+  SessionGuard session(opened);
+  const int connections_before = read_counter("connection_count");
+  ResultHandle first(mlc::curl_abi::session_perform(
+      session.get(),
+      mlc::String("POST"),
+      mlc::String(good_url("/session_echo").c_str()),
+      mlc::String(""),
+      mlc::String("one"),
+      5000,
+      4194304,
+      mlc::String(authority_path().c_str())));
+  if (first.get() < 0) return 18;
+  if (mlc::curl_abi::result_failure_code(first.get()) != 0) return 18;
+  if (mlc::curl_abi::result_status(first.get()) != 200) return 18;
+  if (mlc::curl_abi::result_body(first.get()).view() != "one") return 18;
+  if (mlc::curl_abi::result_new_connection_count(first.get()) != 1) return 18;
+  ResultHandle second(mlc::curl_abi::session_perform(
+      session.get(),
+      mlc::String("POST"),
+      mlc::String(good_url("/session_echo").c_str()),
+      mlc::String(""),
+      mlc::String("two"),
+      5000,
+      4194304,
+      mlc::String(authority_path().c_str())));
+  if (second.get() < 0) return 18;
+  if (mlc::curl_abi::result_failure_code(second.get()) != 0) return 18;
+  if (mlc::curl_abi::result_status(second.get()) != 200) return 18;
+  if (mlc::curl_abi::result_body(second.get()).view() != "two") return 18;
+  if (mlc::curl_abi::result_new_connection_count(second.get()) != 0) {
+    std::cerr << "session second new_connection_count "
+              << mlc::curl_abi::result_new_connection_count(second.get())
+              << " connection_count " << read_counter("connection_count") << "\n";
+    return 18;
+  }
+  if (read_counter("connection_count") != connections_before + 1) {
+    std::cerr << "session connection_count " << read_counter("connection_count")
+              << " before " << connections_before << "\n";
+    return 18;
+  }
+  return 0;
+}
+
 int check_threads() {
   constexpr int kThreadCount = 8;
   constexpr int kRequestsPerThread = 20;
@@ -343,6 +417,8 @@ int main() {
   const int checks[] = {
       check_success(),
       check_post_body(),
+      check_put_body(),
+      check_head(),
       check_binary_body(),
       check_status_not_found(),
       check_missing_authority(),
@@ -354,6 +430,7 @@ int main() {
       check_proxy_ignored(),
       check_secret_not_in_message(),
       check_lifecycle(),
+      check_session_reuses_connection(),
       check_threads(),
   };
   for (int code : checks) {

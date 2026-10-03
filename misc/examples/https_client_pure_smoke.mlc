@@ -136,7 +136,7 @@ fn check_request() -> i32 = do
   if code == 0 && accepted(with_body("POST", "payload")) == false then
     code = 3
   end
-  if code == 0 && rejected(with_method("PUT")) == false then
+  if code == 0 && rejected(with_method("OPTIONS")) == false then
     code = 4
   end
   if code == 0 && rejected(with_method("get")) == false then
@@ -216,6 +216,27 @@ fn check_request() -> i32 = do
   end
   if code == 0 && accepted(with_bundle("certs/bundle.pem")) == false then
     code = 30
+  end
+  if code == 0 && accepted(with_method("PUT")) == false then
+    code = 40
+  end
+  if code == 0 && accepted(with_body("PUT", "payload")) == false then
+    code = 41
+  end
+  if code == 0 && accepted(with_method("PATCH")) == false then
+    code = 42
+  end
+  if code == 0 && accepted(with_method("DELETE")) == false then
+    code = 43
+  end
+  if code == 0 && accepted(with_body("DELETE", "payload")) == false then
+    code = 44
+  end
+  if code == 0 && accepted(with_method("HEAD")) == false then
+    code = 45
+  end
+  if code == 0 && rejected(with_body("HEAD", "x")) == false then
+    code = 46
   end
   code
 end

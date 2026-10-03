@@ -25,6 +25,11 @@ export fn driver_tests() -> [TestResult] = do
     'lib/mlc/common/stdlib/net/http_server.mlc'
   ))
   results.push(assert_eq_str(
+    'resolve_import_path bare HttpsClient to stdlib net/https_client.mlc',
+    resolve_import_path('tmp/probe.mlc', 'HttpsClient'),
+    'lib/mlc/common/stdlib/net/https_client.mlc'
+  ))
+  results.push(assert_eq_str(
     'resolve_import_path bare Env to stdlib env/env.mlc',
     resolve_import_path('tmp/probe.mlc', 'Env'),
     'lib/mlc/common/stdlib/env/env.mlc'

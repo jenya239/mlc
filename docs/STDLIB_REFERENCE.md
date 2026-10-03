@@ -15,6 +15,9 @@ module surface — out of scope here.
 - [Tcp](#tcp)
 - [HttpServer](#httpserver)
 - [HttpsClient](#httpsclient)
+- [HttpsRetry](#httpsretry)
+- [HttpsRedirect](#httpsredirect)
+- [JsonText](#jsontext)
 - [WebSocket](#websocket)
 - [Postgres](#postgres)
 - [Crypto](#crypto)
@@ -155,8 +158,9 @@ shutdown subsection). TLS / HTTP/2 out of scope.
 Modules: [`lib/mlc/common/stdlib/net/https_client.mlc`](../lib/mlc/common/stdlib/net/https_client.mlc)
 (`HttpsClient`) and [`lib/mlc/common/stdlib/net/https_request.mlc`](../lib/mlc/common/stdlib/net/https_request.mlc)
 (`HttpsRequests`). TLS and HTTP/1.1 go through libcurl in
-`runtime/include/mlc/net/curl_abi.hpp` (`mlc::curl_abi`). Import the `.mlc`
-paths directly.
+`runtime/include/mlc/net/curl_abi.hpp` (`mlc::curl_abi`). mlcc resolves
+`import … from "HttpsClient"` to `net/https_client.mlc`. `HttpsRequests` stays
+a path import.
 
 Demo: [`misc/examples/https_get_demo.mlc`](../misc/examples/https_get_demo.mlc).
 Gate: `HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh` (steps 1–5).
@@ -165,7 +169,7 @@ Live default-CA check is separate: `HTTPS_LIVE=1 bash scripts/run_https_client_l
 | Name | Signature | Description |
 |------|-----------|-------------|
 | `HttpsHeader` | `{ name: string, value: string }` | One header |
-| `HttpsRequest` | `{ method, url, headers: [HttpsHeader], body, timeout_milliseconds: i32, max_response_bytes: i32, ca_bundle_path }` | Request. Defaults at `https_get` / `https_post`: 30000 ms, 4194304 bytes, empty CA path |
+| `HttpsRequest` | `{ method, url, headers: [HttpsHeader], body, timeout_milliseconds: i32, max_response_bytes: i32, ca_bundle_path }` | Request. Methods: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`. Defaults at the helpers: 30000 ms, 4194304 bytes, empty CA path |
 | `HttpsResponse` | `{ status: i32, headers: [HttpsHeader], body: string }` | Response |
 | `HttpsFailureKind` | `InvalidRequest \| ResolveFailed \| ConnectFailed \| TimedOut \| CertificateRejected \| ResponseTooLarge \| TransportFailed` | Failure class |
 | `HttpsFailure` | `{ kind: HttpsFailureKind, message: string }` | Failure |
@@ -180,8 +184,16 @@ Live default-CA check is separate: `HTTPS_LIVE=1 bash scripts/run_https_client_l
 | `https_failure_kind_from_code` | `(code: i32) -> HttpsFailureKind` | 1..6 map to the specific kinds; any other code is `TransportFailed` |
 | `https_send` | `(request: HttpsRequest) -> HttpsResult` | Blocking call |
 | `https_get` | `(url: string, headers: [HttpsHeader]) -> HttpsResult` | GET with defaults |
+| `https_head` | `(url: string, headers: [HttpsHeader]) -> HttpsResult` | HEAD with defaults. Body must be empty |
 | `https_post` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | POST with defaults |
+| `https_put` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | PUT with defaults |
+| `https_patch` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | PATCH with defaults |
+| `https_delete` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | DELETE with defaults. Body is allowed |
 | `https_live_handle_count` | `() -> i32` | Live result slots; tests use this for leaks |
+| `https_session_open` | `() -> i32` | One easy handle. Negative means open failed |
+| `https_session_close` | `(session: i32) -> i32` | Drops that easy handle |
+| `https_session_send` | `(session: i32, request: HttpsRequest) -> HttpsResult` | Same validation as `https_send`. A closed session is `TransportFailed` with message `session is closed` |
+| `https_live_session_count` | `() -> i32` | Live sessions |
 
 ### Example (excerpt from demo)
 
@@ -196,10 +208,117 @@ info("https get ok")
 
 ### Limitations (from STDLIB_BACKEND §1)
 
-MLC-reachable, blocking, libcurl, no streaming. GET and POST only. Redirects
-are off. Proxy environment variables are ignored. Empty `ca_bundle_path` uses
+MLC-reachable, blocking, libcurl, no streaming. Methods are `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, and `DELETE`. `GET` and `HEAD` reject a body. `https_send` does not follow redirects. [HttpsRedirect](#httpsredirect) follows `https` only. Proxy environment variables are ignored. Empty `ca_bundle_path` uses
 libcurl's default CA store. The failure message is curl's error text and does
 not include request headers. `lib/mlc/common/stdlib/net/http.mlc` stays a stub.
+A response body stays a string. [JsonText](#jsontext) reads that string.
+Request bodies are assembled as strings. Retries are [HttpsRetry](#httpsretry).
+`https_send` opens an easy handle for that call and destroys it when the call
+returns. `https_session_send` keeps one easy handle, so a later call to the same
+host can reuse the TLS connection. A different `ca_bundle_path` on that session
+forces a new connection for that call. [HttpsRetry](#httpsretry) and
+[HttpsRedirect](#httpsredirect) open one session for the whole chain.
+
+## HttpsRetry
+
+Module: [`lib/mlc/common/stdlib/net/https_retry.mlc`](../lib/mlc/common/stdlib/net/https_retry.mlc)
+(`HttpsRetry`). Sleep goes through `runtime/include/mlc/concurrency/sleep_abi.hpp`
+(`mlc::sleep_abi`). Import the `.mlc` path directly.
+
+Demo: [`misc/examples/https_retry_smoke.mlc`](../misc/examples/https_retry_smoke.mlc).
+Check: `bash scripts/run_https_retry_smoke.sh`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `HttpsRetry` | `{ attempts: i32, backoff_milliseconds: i32, maximum_delay_milliseconds: i32 }` | `attempts` below 1 sends once |
+| `https_retry_after_milliseconds` | `(header_value: string) -> i32` | Delta-seconds as milliseconds. `-1` when the value is empty or not an integer |
+| `https_retry_delay_milliseconds` | `(headers: [HttpsHeader], attempt_index: i32, retry: HttpsRetry) -> i32` | `Retry-After` when it is delta-seconds, otherwise `backoff * 2^attempt`. Capped by the policy and by 60000 |
+| `https_result_is_retryable` | `(result: HttpsResult) -> bool` | Status via `https_status_is_retryable`, or `ResolveFailed`, `ConnectFailed`, `TimedOut` |
+| `https_send_with_retry` | `(request: HttpsRequest, retry: HttpsRetry) -> HttpsResult` | One session for the attempts. Sleep between attempts |
+
+### Example (excerpt from smoke)
+
+Source: [`misc/examples/https_retry_smoke.mlc`](../misc/examples/https_retry_smoke.mlc).
+
+```mlc
+fn retry_twice() -> HttpsRetry =
+  HttpsRetry {
+    attempts: 2,
+    backoff_milliseconds: 50,
+    maximum_delay_milliseconds: 1000
+  }
+```
+
+### Limitations
+
+`Retry-After` as an HTTP-date uses the exponential backoff. Sleep never exceeds 60000 milliseconds. `InvalidRequest`, `CertificateRejected`, `ResponseTooLarge`, and `TransportFailed` are not retried. A status outside 429, 500, 502, 503, and 504 is not retried.
+
+## HttpsRedirect
+
+Module: [`lib/mlc/common/stdlib/net/https_redirect.mlc`](../lib/mlc/common/stdlib/net/https_redirect.mlc)
+(`HttpsRedirect`). Each hop is `https_session_send` on one session opened for
+the call. Curl is not asked to follow
+`Location`. Import the `.mlc` path directly.
+
+Demo: [`misc/examples/https_redirect_smoke.mlc`](../misc/examples/https_redirect_smoke.mlc).
+Check: `bash scripts/run_https_redirect_smoke.sh`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `https_redirect_hop_budget` | `(requested: i32) -> i32` | Negative becomes 0. Above 10 becomes 10 |
+| `https_redirect_target` | `(current_url: string, location_value: string) -> string` | Next `https` URL, or empty when the target is not `https` |
+| `https_redirect_headers` | `(headers: [HttpsHeader], current_url: string, target_url: string) -> [HttpsHeader]` | Drops `Authorization` and `Cookie` when the authority changes. Port 443 matches an omitted port |
+| `https_redirect_method` | `(status: i32, method: string) -> string` | 307 and 308 keep the method. HEAD stays HEAD. Other followed statuses become GET |
+| `https_redirect_body` | `(status: i32, method: string, body: string) -> string` | Empty when the next method is GET or HEAD |
+| `https_send_following_redirects` | `(request: HttpsRequest, maximum_hops: i32) -> HttpsResult` | Follows 301, 302, 303, 307, and 308. A followable redirect past the budget is `TransportFailed` with message `redirect hop limit` |
+
+### Example (excerpt from smoke)
+
+Source: [`misc/examples/https_redirect_smoke.mlc`](../misc/examples/https_redirect_smoke.mlc).
+
+```mlc
+fn credential_headers() -> [HttpsHeader] =
+  [
+    HttpsHeader { name: "Authorization", value: "Bearer secret" },
+    HttpsHeader { name: "Cookie", value: "session=secret" },
+    HttpsHeader { name: "Accept", value: "text/plain" }
+  ]
+```
+
+### Limitations
+
+A target whose scheme is not `https` is left as the redirect response. `http`, a missing `Location`, and statuses other than 301, 302, 303, 307, and 308 are not followed. The fragment is removed. The hop budget counts followed responses and stops at 10.
+
+## JsonText
+
+Module: [`lib/mlc/common/stdlib/data/json_text.mlc`](../lib/mlc/common/stdlib/data/json_text.mlc)
+(`JsonText`). Parsing goes through `runtime/include/mlc/json/json_abi.hpp`
+(`mlc::json_abi`). Import the `.mlc` path directly. This is not `json.mlc`.
+
+Demo: [`misc/examples/json_text_smoke.mlc`](../misc/examples/json_text_smoke.mlc).
+Check: `bash scripts/run_json_text_smoke.sh`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `JsonRead` | `JsonReadNull \| JsonReadBool(bool) \| JsonReadNumber(string) \| JsonReadString(string) \| JsonReadArray(string) \| JsonReadObject(string) \| JsonReadMissing \| JsonReadErr(string)` | One JSON value, or a missing field, or a parse error. Numbers stay decimal text |
+| `json_read` | `(text: string) -> JsonRead` | Parse one JSON value |
+| `json_read_field` | `(text: string, key: string) -> JsonRead` | Field of one JSON object. A missing key is `JsonReadMissing` |
+| `json_read_index` | `(text: string, index: i32) -> JsonRead` | Element of one JSON array. An index outside the array is `JsonReadMissing` |
+| `json_text_live_handle_count` | `() -> i32` | Live result slots; tests use this for leaks |
+
+### Example (excerpt from smoke)
+
+Source: [`misc/examples/json_text_smoke.mlc`](../misc/examples/json_text_smoke.mlc).
+The request body is concatenation. The reader checks the field after that.
+
+```mlc
+fn request_body(name: string) -> string =
+  "{\"name\":\"" + name + "\"}"
+```
+
+### Limitations
+
+`mlcc` does not compile `json.mlc`: the parameter type `str` is not `string`, the externs have no `from`, and `json_get` returns `Option` while `mlc/json/json.hpp` returns `std::optional`. Text longer than 4194304 bytes, or text that contains a null byte, is `JsonReadErr` and is not parsed. An object or array payload is compact JSON text. A number is its decimal text, not `f64`. This module does not build JSON and does not escape a string assembled by the caller.
 
 ## WebSocket
 

@@ -12,8 +12,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #if __has_include(<curl/curl.h>)
@@ -48,6 +50,7 @@ struct ResultSlot {
   bool occupied = false;
   std::int32_t status = 0;
   std::int32_t failure_code = 0;
+  std::int32_t new_connection_count = 0;
   String message;
   String header_block;
   String body;
@@ -128,7 +131,8 @@ bool header_lines_rejected(const String& header_lines) {
 
 bool method_rejected(const String& method) {
   const std::string_view text = method.view();
-  return text != "GET" && text != "POST";
+  return text != "GET" && text != "HEAD" && text != "POST" && text != "PUT" &&
+         text != "PATCH" && text != "DELETE";
 }
 
 std::int32_t store_slot(ResultSlot slot) {
@@ -146,6 +150,131 @@ std::int32_t store_invalid_request() {
   slot.status = 0;
   slot.failure_code = kInvalidRequest;
   slot.message = String("invalid request");
+  return store_slot(std::move(slot));
+}
+
+std::int32_t store_transport_message(const char* message) {
+  ResultSlot slot;
+  slot.occupied = true;
+  slot.failure_code = kTransportFailed;
+  slot.message = String(message);
+  return store_slot(std::move(slot));
+}
+
+struct SessionSlot {
+  std::mutex mutex;
+  bool occupied = false;
+  CURL* curl_handle = nullptr;
+  String certificate_bundle_path;
+};
+
+struct SessionTable {
+  std::mutex mutex;
+  std::vector<std::unique_ptr<SessionSlot>> slots;
+  std::int32_t live_count = 0;
+};
+
+SessionTable& session_table() {
+  static SessionTable table;
+  return table;
+}
+
+std::size_t write_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata);
+std::size_t header_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata);
+bool append_header_list(curl_slist** header_list, const String& header_lines);
+std::int32_t failure_code_from_curl(CURLcode code, bool body_too_large);
+String message_from_curl(CURLcode code, const char* error_buffer);
+String text_from_bytes(const std::string& bytes);
+
+std::int32_t perform_on_curl_handle(
+    CURL* curl_handle,
+    bool force_new_connection,
+    const String& method,
+    const String& url,
+    const String& header_lines,
+    const String& body,
+    std::int32_t timeout_milliseconds,
+    std::int32_t max_response_bytes,
+    const String& ca_bundle_path) {
+  curl_easy_reset(curl_handle);
+  TransferState transfer;
+  transfer.maximum_body_bytes =
+      max_response_bytes > 0 ? static_cast<std::size_t>(max_response_bytes) : 0;
+  char error_buffer[CURL_ERROR_SIZE];
+  error_buffer[0] = '\0';
+
+  curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url.raw_data());
+  curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, static_cast<long>(timeout_milliseconds));
+  curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(timeout_milliseconds));
+#if LIBCURL_VERSION_NUM >= 0x075500
+  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS_STR, "https");
+#else
+  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+#endif
+  curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 0L);
+  curl_easy_setopt(curl_handle, CURLOPT_PROXY, "");
+  curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, error_buffer);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 2L);
+  curl_easy_setopt(curl_handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+  if (force_new_connection) {
+    curl_easy_setopt(curl_handle, CURLOPT_FRESH_CONNECT, 1L);
+  }
+  if (ca_bundle_path.raw_size() > 0) {
+    curl_easy_setopt(curl_handle, CURLOPT_CAINFO, ca_bundle_path.raw_data());
+  }
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &transfer);
+  curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_callback);
+  curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, &transfer);
+
+  const std::string_view method_text = method.view();
+  if (method_text == "POST" || method_text == "PUT" || method_text == "PATCH" ||
+      method_text == "DELETE") {
+    if (method_text == "POST") {
+      curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    } else {
+      curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, method.raw_data());
+    }
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body.raw_data());
+    curl_easy_setopt(
+        curl_handle,
+        CURLOPT_POSTFIELDSIZE_LARGE,
+        static_cast<curl_off_t>(body.raw_size()));
+  } else if (method_text == "HEAD") {
+    curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1L);
+  } else {
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
+  }
+
+  curl_slist* header_list = nullptr;
+  if (!append_header_list(&header_list, header_lines)) {
+    if (header_list != nullptr) curl_slist_free_all(header_list);
+    return store_transport_message("curl header list failed");
+  }
+  if (header_list != nullptr) {
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, header_list);
+  }
+
+  const CURLcode code = curl_easy_perform(curl_handle);
+  long response_code = 0;
+  curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
+  long new_connection_count = 0;
+  curl_easy_getinfo(curl_handle, CURLINFO_NUM_CONNECTS, &new_connection_count);
+  if (header_list != nullptr) curl_slist_free_all(header_list);
+
+  ResultSlot slot;
+  slot.occupied = true;
+  slot.status = static_cast<std::int32_t>(response_code);
+  slot.failure_code = failure_code_from_curl(code, transfer.body_too_large);
+  if (slot.failure_code == 0 && transfer.header_block_too_large) {
+    slot.failure_code = kTransportFailed;
+  }
+  slot.new_connection_count = static_cast<std::int32_t>(new_connection_count);
+  slot.message = message_from_curl(code, error_buffer);
+  slot.header_block = text_from_bytes(transfer.header_block);
+  slot.body = text_from_bytes(transfer.body);
   return store_slot(std::move(slot));
 }
 
@@ -256,79 +385,97 @@ inline std::int32_t perform_request(
   EasyGuard guard;
   guard.easy = curl_easy_init();
   if (guard.easy == nullptr) {
-    ResultSlot slot;
-    slot.occupied = true;
-    slot.failure_code = kTransportFailed;
-    slot.message = String("curl easy init failed");
-    return store_slot(std::move(slot));
+    return store_transport_message("curl easy init failed");
   }
+  return perform_on_curl_handle(
+      guard.easy,
+      false,
+      method,
+      url,
+      header_lines,
+      body,
+      timeout_milliseconds,
+      max_response_bytes,
+      ca_bundle_path);
+}
 
-  TransferState transfer;
-  transfer.maximum_body_bytes =
-      max_response_bytes > 0 ? static_cast<std::size_t>(max_response_bytes) : 0;
-  char error_buffer[CURL_ERROR_SIZE];
-  error_buffer[0] = '\0';
-
-  curl_easy_setopt(guard.easy, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt(guard.easy, CURLOPT_URL, url.raw_data());
-  curl_easy_setopt(guard.easy, CURLOPT_TIMEOUT_MS, static_cast<long>(timeout_milliseconds));
-  curl_easy_setopt(guard.easy, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(timeout_milliseconds));
-#if LIBCURL_VERSION_NUM >= 0x075500
-  curl_easy_setopt(guard.easy, CURLOPT_PROTOCOLS_STR, "https");
-#else
-  curl_easy_setopt(guard.easy, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
-#endif
-  curl_easy_setopt(guard.easy, CURLOPT_FOLLOWLOCATION, 0L);
-  curl_easy_setopt(guard.easy, CURLOPT_PROXY, "");
-  curl_easy_setopt(guard.easy, CURLOPT_ERRORBUFFER, error_buffer);
-  curl_easy_setopt(guard.easy, CURLOPT_SSL_VERIFYPEER, 1L);
-  curl_easy_setopt(guard.easy, CURLOPT_SSL_VERIFYHOST, 2L);
-  curl_easy_setopt(guard.easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-  if (ca_bundle_path.raw_size() > 0) {
-    curl_easy_setopt(guard.easy, CURLOPT_CAINFO, ca_bundle_path.raw_data());
+inline std::int32_t session_open() {
+  ensure_curl_ready();
+  CURL* curl_handle = curl_easy_init();
+  if (curl_handle == nullptr) return -1;
+  auto slot = std::make_unique<SessionSlot>();
+  slot->occupied = true;
+  slot->curl_handle = curl_handle;
+  SessionTable& table = session_table();
+  std::lock_guard<std::mutex> lock(table.mutex);
+  if (table.slots.size() >= 1000000) {
+    curl_easy_cleanup(curl_handle);
+    return -1;
   }
-  curl_easy_setopt(guard.easy, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt(guard.easy, CURLOPT_WRITEDATA, &transfer);
-  curl_easy_setopt(guard.easy, CURLOPT_HEADERFUNCTION, header_callback);
-  curl_easy_setopt(guard.easy, CURLOPT_HEADERDATA, &transfer);
+  table.slots.push_back(std::move(slot));
+  table.live_count += 1;
+  return static_cast<std::int32_t>(table.slots.size() - 1);
+}
 
-  if (method.view() == "POST") {
-    curl_easy_setopt(guard.easy, CURLOPT_POST, 1L);
-    curl_easy_setopt(guard.easy, CURLOPT_POSTFIELDS, body.raw_data());
-    curl_easy_setopt(
-        guard.easy,
-        CURLOPT_POSTFIELDSIZE_LARGE,
-        static_cast<curl_off_t>(body.raw_size()));
-  } else {
-    curl_easy_setopt(guard.easy, CURLOPT_HTTPGET, 1L);
-  }
+inline std::int32_t session_close(std::int32_t session) {
+  SessionTable& table = session_table();
+  std::lock_guard<std::mutex> table_lock(table.mutex);
+  if (session < 0 || static_cast<std::size_t>(session) >= table.slots.size()) return 0;
+  SessionSlot* slot = table.slots[static_cast<std::size_t>(session)].get();
+  std::lock_guard<std::mutex> session_lock(slot->mutex);
+  if (!slot->occupied) return 0;
+  if (slot->curl_handle != nullptr) curl_easy_cleanup(slot->curl_handle);
+  slot->curl_handle = nullptr;
+  slot->occupied = false;
+  slot->certificate_bundle_path = String();
+  table.live_count -= 1;
+  return 0;
+}
 
-  if (!append_header_list(&guard.header_list, header_lines)) {
-    ResultSlot slot;
-    slot.occupied = true;
-    slot.failure_code = kTransportFailed;
-    slot.message = String("curl header list failed");
-    return store_slot(std::move(slot));
-  }
-  if (guard.header_list != nullptr) {
-    curl_easy_setopt(guard.easy, CURLOPT_HTTPHEADER, guard.header_list);
-  }
+inline std::int32_t live_session_count() {
+  SessionTable& table = session_table();
+  std::lock_guard<std::mutex> lock(table.mutex);
+  return table.live_count;
+}
 
-  const CURLcode code = curl_easy_perform(guard.easy);
-  long response_code = 0;
-  curl_easy_getinfo(guard.easy, CURLINFO_RESPONSE_CODE, &response_code);
-
-  ResultSlot slot;
-  slot.occupied = true;
-  slot.status = static_cast<std::int32_t>(response_code);
-  slot.failure_code = failure_code_from_curl(code, transfer.body_too_large);
-  if (slot.failure_code == 0 && transfer.header_block_too_large) {
-    slot.failure_code = kTransportFailed;
+inline std::int32_t session_perform(
+    std::int32_t session,
+    String method,
+    String url,
+    String header_lines,
+    String body,
+    std::int32_t timeout_milliseconds,
+    std::int32_t max_response_bytes,
+    String ca_bundle_path) {
+  if (method_rejected(method) || url_rejected(url) || header_lines_rejected(header_lines) ||
+      bytes_contain(ca_bundle_path, '\0')) {
+    return store_invalid_request();
   }
-  slot.message = message_from_curl(code, error_buffer);
-  slot.header_block = text_from_bytes(transfer.header_block);
-  slot.body = text_from_bytes(transfer.body);
-  return store_slot(std::move(slot));
+  SessionSlot* slot = nullptr;
+  {
+    SessionTable& table = session_table();
+    std::lock_guard<std::mutex> table_lock(table.mutex);
+    if (session >= 0 && static_cast<std::size_t>(session) < table.slots.size()) {
+      slot = table.slots[static_cast<std::size_t>(session)].get();
+    }
+  }
+  if (slot == nullptr) return store_transport_message("session is closed");
+  std::lock_guard<std::mutex> session_lock(slot->mutex);
+  if (!slot->occupied || slot->curl_handle == nullptr) {
+    return store_transport_message("session is closed");
+  }
+  const bool certificate_changed = slot->certificate_bundle_path.view() != ca_bundle_path.view();
+  slot->certificate_bundle_path = ca_bundle_path;
+  return perform_on_curl_handle(
+      slot->curl_handle,
+      certificate_changed,
+      method,
+      url,
+      header_lines,
+      body,
+      timeout_milliseconds,
+      max_response_bytes,
+      ca_bundle_path);
 }
 
 inline std::int32_t result_status(std::int32_t handle) {
@@ -383,6 +530,7 @@ inline std::int32_t release_result(std::int32_t handle) {
   slot.body = String();
   slot.status = 0;
   slot.failure_code = 0;
+  slot.new_connection_count = 0;
   table.live_count -= 1;
   return 0;
 }
@@ -391,6 +539,14 @@ inline std::int32_t live_result_count() {
   ResultTable& table = result_table();
   std::lock_guard<std::mutex> lock(table.mutex);
   return table.live_count;
+}
+
+inline std::int32_t result_new_connection_count(std::int32_t handle) {
+  ResultTable& table = result_table();
+  std::lock_guard<std::mutex> lock(table.mutex);
+  const ResultSlot* slot = live_slot(handle);
+  if (slot == nullptr) return -1;
+  return slot->new_connection_count;
 }
 
 }  // namespace curl_abi

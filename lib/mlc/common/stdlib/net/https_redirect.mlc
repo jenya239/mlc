@@ -1,0 +1,307 @@
+//! @module std/net/https_redirect
+//! @category net
+//!
+//! Follow Location on one session. Only an https target is followed.
+//! Authorization and Cookie are removed when the authority changes.
+//! 301, 302, and 303 become GET, except HEAD which stays HEAD, and the body
+//! is dropped. 307 and 308 keep the method and the body.
+//! The hop budget is at most 10. https_send itself does not follow.
+
+module HttpsRedirect
+
+import {
+  https_session_open,
+  https_session_close,
+  https_session_send
+} from './https_client.mlc'
+import {
+  https_find_header,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsFailure,
+  HttpsOk,
+  HttpsErr,
+  TransportFailed
+} from './https_request.mlc'
+
+fn text_starts_with(text: string, prefix: string) -> bool = do
+  let mut matched = false
+  if text.length() >= prefix.length() then
+    matched = text.substring(0, prefix.length()) == prefix
+  end
+  matched
+end
+
+fn text_ends_with(text: string, suffix: string) -> bool = do
+  let mut matched = false
+  if text.length() >= suffix.length() then
+    matched = text.substring(text.length() - suffix.length(), suffix.length()) == suffix
+  end
+  matched
+end
+
+fn first_mark(text: string, start: i32, mark: string) -> i32 = do
+  let mut index = start
+  let mut found = -1
+  while index < text.length() && found < 0 do
+    if text.char_at(index) == mark then found = index end
+    index = index + 1
+  end
+  found
+end
+
+fn trim_spaces(text: string) -> string = do
+  let mut start = 0
+  let mut end_index = text.length()
+  while start < end_index && (text.char_at(start) == " " || text.char_at(start) == "\t") do
+    start = start + 1
+  end
+  while end_index > start && (text.char_at(end_index - 1) == " " || text.char_at(end_index - 1) == "\t") do
+    end_index = end_index - 1
+  end
+  text.substring(start, end_index - start)
+end
+
+fn without_fragment(text: string) -> string = do
+  const hash = first_mark(text, 0, "#")
+  if hash < 0 then text else text.substring(0, hash) end
+end
+
+export fn https_redirect_hop_budget(requested: i32) -> i32 =
+  if requested < 0 then 0
+  else if requested > 10 then 10
+  else requested
+  end
+
+fn https_authority(url: string) -> string = do
+  if text_starts_with(url, "https://") == false || url.length() <= 8 then
+    ""
+  else
+    let mut index = 8
+    while index < url.length() && text_char_stops_authority(url.char_at(index)) == false do
+      index = index + 1
+    end
+    url.substring(8, index - 8)
+  end
+end
+
+fn text_char_stops_authority(character: string) -> bool =
+  character == "/" || character == "?" || character == "#"
+
+fn canonical_authority(authority: string) -> string = do
+  const lower = authority.lower()
+  if text_ends_with(lower, ":443") then
+    lower.substring(0, lower.length() - 4)
+  else
+    lower
+  end
+end
+
+fn https_path(url: string) -> string = do
+  const authority = https_authority(url)
+  const prefix_length = 8 + authority.length()
+  let mut rest = ""
+  if url.length() > prefix_length then
+    rest = url.substring(prefix_length, url.length() - prefix_length)
+  end
+  rest = without_fragment(rest)
+  const query = first_mark(rest, 0, "?")
+  if query >= 0 then rest = rest.substring(0, query) end
+  if rest == "" then "/" else rest end
+end
+
+fn directory_path(path: string) -> string = do
+  let mut index = path.length() - 1
+  let mut slash = -1
+  while index >= 0 && slash < 0 do
+    if path.char_at(index) == "/" then slash = index end
+    index = index - 1
+  end
+  if slash < 0 then "/" else path.substring(0, slash + 1) end
+end
+
+fn drop_last_segment(segments: [string]) -> [string] = do
+  let mut kept: [string] = []
+  let mut index = 0
+  while index + 1 < segments.length() do
+    kept.push(segments[index])
+    index = index + 1
+  end
+  kept
+end
+
+fn normalize_path(path: string) -> string = do
+  let mut segments: [string] = []
+  let mut start = 0
+  let mut index = 0
+  while index <= path.length() do
+    let mut boundary = index == path.length()
+    if boundary == false && path.char_at(index) == "/" then boundary = true end
+    if boundary then
+      const length = index - start
+      if length > 0 then
+        const segment = path.substring(start, length)
+        if segment == ".." then
+          segments = drop_last_segment(segments)
+        else if segment != "." then
+          segments.push(segment)
+        end
+      end
+      start = index + 1
+    end
+    index = index + 1
+  end
+  let mut built = ""
+  let mut cursor = 0
+  while cursor < segments.length() do
+    built = built + "/" + segments[cursor]
+    cursor = cursor + 1
+  end
+  if built == "" then "/" else built end
+end
+
+fn query_suffix(text: string) -> string = do
+  const query = first_mark(text, 0, "?")
+  if query < 0 then "" else text.substring(query, text.length() - query) end
+end
+
+fn path_before_query(text: string) -> string = do
+  const query = first_mark(text, 0, "?")
+  if query < 0 then text else text.substring(0, query) end
+end
+
+fn location_has_scheme(location: string) -> bool = do
+  const colon = first_mark(location, 0, ":")
+  const slash = first_mark(location, 0, "/")
+  colon >= 0 && (slash < 0 || colon < slash)
+end
+
+fn https_url(authority: string, path: string, query: string) -> string = do
+  if authority == "" then
+    ""
+  else
+    "https://" + authority + normalize_path(path) + query
+  end
+end
+
+fn rest_after_authority(url: string) -> string = do
+  const prefix_length = 8 + https_authority(url).length()
+  if url.length() > prefix_length then
+    url.substring(prefix_length, url.length() - prefix_length)
+  else
+    ""
+  end
+end
+
+export fn https_redirect_target(current_url: string, location_value: string) -> string = do
+  const location = without_fragment(trim_spaces(location_value))
+  if location == "" then
+    ""
+  else if text_starts_with(location, "https://") then
+    https_url(https_authority(location), https_path(location), query_suffix(rest_after_authority(location)))
+  else if text_starts_with(location, "//") then
+    https_redirect_target(current_url, "https:" + location)
+  else if location_has_scheme(location) then
+    ""
+  else if text_starts_with(location, "/") then
+    https_url(https_authority(current_url), path_before_query(location), query_suffix(location))
+  else if text_starts_with(location, "?") then
+    https_url(https_authority(current_url), https_path(current_url), location)
+  else
+    https_url(
+      https_authority(current_url),
+      directory_path(https_path(current_url)) + path_before_query(location),
+      query_suffix(location))
+  end
+end
+
+fn header_is_credential(name: string) -> bool = do
+  const lower = name.lower()
+  lower == "authorization" || lower == "cookie"
+end
+
+export fn https_redirect_headers(
+  headers: [HttpsHeader],
+  current_url: string,
+  target_url: string
+) -> [HttpsHeader] = do
+  let mut kept: [HttpsHeader] = []
+  let mut index = 0
+  let mut same_authority = false
+  if canonical_authority(https_authority(current_url)) != "" then
+    same_authority = canonical_authority(https_authority(current_url)) == canonical_authority(https_authority(target_url))
+  end
+  while index < headers.length() do
+    if same_authority || header_is_credential(headers[index].name) == false then
+      kept.push(headers[index])
+    end
+    index = index + 1
+  end
+  kept
+end
+
+export fn https_redirect_method(status: i32, method: string) -> string =
+  if status == 307 || status == 308 then method
+  else if method == "HEAD" then "HEAD"
+  else "GET"
+  end
+
+export fn https_redirect_body(status: i32, method: string, body: string) -> string =
+  if https_redirect_method(status, method) == "GET" || https_redirect_method(status, method) == "HEAD" then ""
+  else body
+  end
+
+fn status_of(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => 0
+  }
+
+fn location_of(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => https_find_header(response.headers, "Location"),
+    HttpsErr(_) => ""
+  }
+
+fn status_can_redirect(status: i32) -> bool =
+  status == 301 || status == 302 || status == 303 || status == 307 || status == 308
+
+fn redirect_can_follow(result: HttpsResult, current_url: string) -> bool =
+  status_can_redirect(status_of(result)) && https_redirect_target(current_url, location_of(result)) != ""
+
+fn request_for_redirect(current: HttpsRequest, status: i32, target: string) -> HttpsRequest =
+  HttpsRequest {
+    method: https_redirect_method(status, current.method),
+    url: target,
+    headers: https_redirect_headers(current.headers, current.url, target),
+    body: https_redirect_body(status, current.method, current.body),
+    timeout_milliseconds: current.timeout_milliseconds,
+    max_response_bytes: current.max_response_bytes,
+    ca_bundle_path: current.ca_bundle_path
+  }
+
+export fn https_send_following_redirects(request: HttpsRequest, maximum_hops: i32) -> HttpsResult = do
+  const session = https_session_open()
+  if session < 0 then
+    HttpsErr(HttpsFailure { kind: TransportFailed, message: "session open failed" })
+  else
+    let mut current = request
+    let mut result = https_session_send(session, current)
+    let mut followed = 0
+    const budget = https_redirect_hop_budget(maximum_hops)
+    while followed < budget && redirect_can_follow(result, current.url) do
+      const status = status_of(result)
+      const target = https_redirect_target(current.url, location_of(result))
+      current = request_for_redirect(current, status, target)
+      result = https_session_send(session, current)
+      followed = followed + 1
+    end
+    https_session_close(session)
+    if followed == budget && budget > 0 && redirect_can_follow(result, current.url) then
+      HttpsErr(HttpsFailure { kind: TransportFailed, message: "redirect hop limit" })
+    else
+      result
+    end
+  end
+end

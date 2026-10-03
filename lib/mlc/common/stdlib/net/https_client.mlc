@@ -2,9 +2,10 @@
 //! @category net
 //! @type mixed
 //!
-//! Blocking HTTPS GET and POST. Validation and header parsing stay in
-//! https_request.mlc. Curl is reached only through curl_abi.hpp.
-//! https_live_handle_count exists for leak checks in tests.
+//! Blocking HTTPS. Validation and header parsing stay in https_request.mlc.
+//! Curl is reached only through curl_abi.hpp.
+//! https_send opens one easy handle per call. A session keeps one easy handle
+//! across https_session_send calls. https_live_handle_count exists for leak checks.
 
 module HttpsClient
 
@@ -58,6 +59,27 @@ extern fn release_result(handle: i32) -> i32 =
 extern fn live_result_count() -> i32 =
   "mlc::curl_abi::live_result_count" from "mlc/net/curl_abi.hpp" thread_safe
 
+extern fn session_open() -> i32 =
+  "mlc::curl_abi::session_open" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn session_close(session: i32) -> i32 =
+  "mlc::curl_abi::session_close" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn live_session_count() -> i32 =
+  "mlc::curl_abi::live_session_count" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn session_perform(
+  session: i32,
+  method: string,
+  url: string,
+  header_lines: string,
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string
+) -> i32 =
+  "mlc::curl_abi::session_perform" from "mlc/net/curl_abi.hpp" blocking
+
 fn result_from_handle(handle: i32) -> HttpsResult = do
   const status = result_status(handle)
   const failure_code = result_failure_code(handle)
@@ -105,27 +127,75 @@ export fn https_send(request: HttpsRequest) -> HttpsResult = do
   end
 end
 
-export fn https_get(url: string, headers: [HttpsHeader]) -> HttpsResult =
-  https_send(HttpsRequest {
-    method: "GET",
-    url: url,
-    headers: headers,
-    body: "",
-    timeout_milliseconds: 30000,
-    max_response_bytes: 4194304,
-    ca_bundle_path: ""
-  })
-
-export fn https_post(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
-  https_send(HttpsRequest {
-    method: "POST",
+fn request_with_defaults(
+  method: string,
+  url: string,
+  headers: [HttpsHeader],
+  body: string
+) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
     url: url,
     headers: headers,
     body: body,
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
     ca_bundle_path: ""
-  })
+  }
+
+export fn https_get(url: string, headers: [HttpsHeader]) -> HttpsResult =
+  https_send(request_with_defaults("GET", url, headers, ""))
+
+export fn https_head(url: string, headers: [HttpsHeader]) -> HttpsResult =
+  https_send(request_with_defaults("HEAD", url, headers, ""))
+
+export fn https_post(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
+  https_send(request_with_defaults("POST", url, headers, body))
+
+export fn https_put(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
+  https_send(request_with_defaults("PUT", url, headers, body))
+
+export fn https_patch(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
+  https_send(request_with_defaults("PATCH", url, headers, body))
+
+export fn https_delete(url: string, headers: [HttpsHeader], body: string) -> HttpsResult =
+  https_send(request_with_defaults("DELETE", url, headers, body))
 
 export fn https_live_handle_count() -> i32 =
   live_result_count()
+
+fn session_send_after_validation(session: i32, request: HttpsRequest) -> HttpsResult = do
+  const handle = session_perform(
+    session,
+    request.method,
+    request.url,
+    https_header_lines(request.headers),
+    request.body,
+    request.timeout_milliseconds,
+    request.max_response_bytes,
+    request.ca_bundle_path
+  )
+  if handle < 0 then
+    HttpsErr(HttpsFailure { kind: TransportFailed, message: "result table full" })
+  else
+    result_from_handle(handle)
+  end
+end
+
+export fn https_session_open() -> i32 =
+  session_open()
+
+export fn https_session_close(session: i32) -> i32 =
+  session_close(session)
+
+export fn https_live_session_count() -> i32 =
+  live_session_count()
+
+export fn https_session_send(session: i32, request: HttpsRequest) -> HttpsResult = do
+  const problem = https_request_problem(request)
+  if problem != "" then
+    HttpsErr(HttpsFailure { kind: InvalidRequest, message: problem })
+  else
+    session_send_after_validation(session, request)
+  end
+end

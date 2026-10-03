@@ -1,0 +1,180 @@
+//! @module std/net/https_retry
+//! @category net
+//!
+//! Retry on one session, so a later attempt can reuse the TLS connection.
+//! A retryable HTTP status uses https_status_is_retryable.
+//! ResolveFailed, ConnectFailed, and TimedOut are retried. Retry-After is
+//! delta-seconds. An HTTP-date falls through to exponential backoff.
+//! Delay is capped at 60000 milliseconds, matching sleep_abi.hpp.
+
+module HttpsRetry
+
+import {
+  https_session_open,
+  https_session_close,
+  https_session_send
+} from './https_client.mlc'
+import {
+  https_find_header,
+  https_status_is_retryable,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsFailure,
+  HttpsFailureKind,
+  HttpsOk,
+  HttpsErr,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  TransportFailed
+} from './https_request.mlc'
+
+extern fn sleep_milliseconds(milliseconds: i32) -> i32 =
+  "mlc::sleep_abi::sleep_milliseconds" from "mlc/concurrency/sleep_abi.hpp" blocking
+
+export type HttpsRetry = {
+  attempts: i32,
+  backoff_milliseconds: i32,
+  maximum_delay_milliseconds: i32
+}
+
+fn trim_spaces(text: string) -> string = do
+  let mut start = 0
+  let mut end_index = text.length()
+  while start < end_index && (text.char_at(start) == " " || text.char_at(start) == "\t") do
+    start = start + 1
+  end
+  while end_index > start && (text.char_at(end_index - 1) == " " || text.char_at(end_index - 1) == "\t") do
+    end_index = end_index - 1
+  end
+  text.substring(start, end_index - start)
+end
+
+fn is_ascii_digit(character: string) -> bool =
+  character == "0" || character == "1" || character == "2" || character == "3" ||
+  character == "4" || character == "5" || character == "6" || character == "7" ||
+  character == "8" || character == "9"
+
+fn digit_value(character: string) -> i32 =
+  if character == "0" then 0
+  else if character == "1" then 1
+  else if character == "2" then 2
+  else if character == "3" then 3
+  else if character == "4" then 4
+  else if character == "5" then 5
+  else if character == "6" then 6
+  else if character == "7" then 7
+  else if character == "8" then 8
+  else if character == "9" then 9
+  else -1
+  end
+
+fn sleep_limit_milliseconds() -> i32 = 60000
+
+fn cap_delay(delay: i32, maximum: i32) -> i32 = do
+  let mut limit = if maximum < 0 then 0 else maximum end
+  if limit > sleep_limit_milliseconds() then limit = sleep_limit_milliseconds() end
+  if delay < 0 then 0
+  else if delay > limit then limit
+  else delay
+  end
+end
+
+fn doubled_backoff(backoff: i32, attempt_index: i32) -> i32 = do
+  if backoff <= 0 || attempt_index < 0 then
+    0
+  else
+    let mut delay = backoff
+    let mut step = 0
+    while step < attempt_index && delay <= 1073741823 do
+      delay = delay * 2
+      step = step + 1
+    end
+    if step < attempt_index then 2147483647 else delay end
+  end
+end
+
+export fn https_retry_after_milliseconds(header_value: string) -> i32 = do
+  const text = trim_spaces(header_value)
+  if text == "" then
+    -1
+  else
+    let mut index = 0
+    let mut digits = true
+    while index < text.length() && digits do
+      if is_ascii_digit(text.char_at(index)) == false then digits = false end
+      index = index + 1
+    end
+    if digits == false then
+      -1
+    else
+      let mut seconds = 0
+      let mut cursor = 0
+      let mut saturated = false
+      while cursor < text.length() && saturated == false do
+        if seconds > 214748 then
+          saturated = true
+        else
+          seconds = seconds * 10 + digit_value(text.char_at(cursor))
+          cursor = cursor + 1
+        end
+      end
+      if saturated || seconds > 2147483 then 2147483647 else seconds * 1000 end
+    end
+  end
+end
+
+export fn https_retry_delay_milliseconds(
+  headers: [HttpsHeader],
+  attempt_index: i32,
+  retry: HttpsRetry
+) -> i32 = do
+  const from_header = https_retry_after_milliseconds(https_find_header(headers, "Retry-After"))
+  if from_header >= 0 then
+    cap_delay(from_header, retry.maximum_delay_milliseconds)
+  else
+    cap_delay(doubled_backoff(retry.backoff_milliseconds, attempt_index), retry.maximum_delay_milliseconds)
+  end
+end
+
+fn failure_kind_is_retryable(kind: HttpsFailureKind) -> bool =
+  match kind {
+    ResolveFailed => true,
+    ConnectFailed => true,
+    TimedOut => true,
+    _ => false
+  }
+
+export fn https_result_is_retryable(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(response) => https_status_is_retryable(response.status),
+    HttpsErr(failure) => failure_kind_is_retryable(failure.kind)
+  }
+
+fn response_headers(result: HttpsResult) -> [HttpsHeader] =
+  match result {
+    HttpsOk(response) => response.headers,
+    HttpsErr(_) => []
+  }
+
+fn attempt_limit(retry: HttpsRetry) -> i32 =
+  if retry.attempts < 1 then 1 else retry.attempts end
+
+export fn https_send_with_retry(request: HttpsRequest, retry: HttpsRetry) -> HttpsResult = do
+  const session = https_session_open()
+  if session < 0 then
+    HttpsErr(HttpsFailure { kind: TransportFailed, message: "session open failed" })
+  else
+    let mut attempt_index = 0
+    let mut result = https_session_send(session, request)
+    while attempt_index + 1 < attempt_limit(retry) && https_result_is_retryable(result) do
+      const delay = https_retry_delay_milliseconds(response_headers(result), attempt_index, retry)
+      if delay > 0 then sleep_milliseconds(delay) end
+      result = https_session_send(session, request)
+      attempt_index = attempt_index + 1
+    end
+    https_session_close(session)
+    result
+  end
+end

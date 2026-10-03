@@ -130,10 +130,16 @@ fn headers_problem(headers: [HttpsHeader]) -> string = do
   problem
 end
 
+fn method_carries_body(method: string) -> bool =
+  method == "POST" || method == "PUT" || method == "PATCH" || method == "DELETE"
+
+fn method_accepted(method: string) -> bool =
+  method == "GET" || method == "HEAD" || method_carries_body(method)
+
 export fn https_request_problem(request: HttpsRequest) -> string = do
   let mut problem = ""
-  if request.method != "GET" && request.method != "POST" then
-    problem = "method must be GET or POST"
+  if method_accepted(request.method) == false then
+    problem = "method must be GET, HEAD, POST, PUT, PATCH, or DELETE"
   end
   if problem == "" && (text_has_forbidden_url_character(request.url) || text_starts_with(request.url, "https://") == false || url_has_host(request.url) == false) then
     problem = "url must be https with a host"
@@ -141,8 +147,8 @@ export fn https_request_problem(request: HttpsRequest) -> string = do
   if problem == "" then
     problem = headers_problem(request.headers)
   end
-  if problem == "" && request.method == "GET" && request.body.length() > 0 then
-    problem = "GET body must be empty"
+  if problem == "" && (request.method == "GET" || request.method == "HEAD") && request.body.length() > 0 then
+    problem = "GET and HEAD body must be empty"
   end
   if problem == "" && (request.timeout_milliseconds < 1 || request.timeout_milliseconds > 600000) then
     problem = "timeout out of range"

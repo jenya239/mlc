@@ -1,0 +1,83 @@
+//! @module std/data/json_text
+//! @category data
+//!
+//! One JSON value as a sum. The HTTPS body stays a string. Parsing goes
+//! through json_abi.hpp. This module does not build or escape JSON text.
+
+module JsonText
+
+extern fn read_text(text: string) -> i32 =
+  "mlc::json_abi::read_text" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn read_field(text: string, key: string) -> i32 =
+  "mlc::json_abi::read_field" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn read_index(text: string, index: i32) -> i32 =
+  "mlc::json_abi::read_index" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn result_kind(handle: i32) -> i32 =
+  "mlc::json_abi::result_kind" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn result_bool(handle: i32) -> i32 =
+  "mlc::json_abi::result_bool" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn result_text(handle: i32) -> string =
+  "mlc::json_abi::result_text" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn release_result(handle: i32) -> i32 =
+  "mlc::json_abi::release_result" from "mlc/json/json_abi.hpp" thread_safe
+
+extern fn live_result_count() -> i32 =
+  "mlc::json_abi::live_result_count" from "mlc/json/json_abi.hpp" thread_safe
+
+export type JsonRead =
+  | JsonReadNull
+  | JsonReadBool(bool)
+  | JsonReadNumber(string)
+  | JsonReadString(string)
+  | JsonReadArray(string)
+  | JsonReadObject(string)
+  | JsonReadMissing
+  | JsonReadErr(string)
+
+fn read_from_handle(handle: i32) -> JsonRead = do
+  if handle < 0 then
+    JsonReadErr("result table full")
+  else
+    const kind = result_kind(handle)
+    const flag = result_bool(handle)
+    const text = result_text(handle)
+    release_result(handle)
+    if kind == 0 then
+      JsonReadNull
+    else if kind == 1 then
+      JsonReadBool(flag != 0)
+    else if kind == 2 then
+      JsonReadNumber(text)
+    else if kind == 3 then
+      JsonReadString(text)
+    else if kind == 4 then
+      JsonReadArray(text)
+    else if kind == 5 then
+      JsonReadObject(text)
+    else if kind == 6 then
+      JsonReadMissing
+    else if kind == 7 then
+      JsonReadErr(text)
+    else
+      JsonReadErr("unknown json kind")
+    end
+  end
+end
+
+export fn json_read(text: string) -> JsonRead =
+  read_from_handle(read_text(text))
+
+export fn json_read_field(text: string, key: string) -> JsonRead =
+  read_from_handle(read_field(text, key))
+
+export fn json_read_index(text: string, index: i32) -> JsonRead =
+  read_from_handle(read_index(text, index))
+
+export fn json_text_live_handle_count() -> i32 =
+  live_result_count()
