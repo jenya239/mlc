@@ -13,6 +13,7 @@ module MLC
             end
 
             def build(node:, elements_ir:)
+              elements_ir = elements_ir.map { |element| retype_nullary_constructor(element) }
               element_type = infer_element_type(elements_ir, node)
               validate_elements(elements_ir, element_type, node)
 
@@ -26,6 +27,16 @@ module MLC
             end
 
             private
+
+            def retype_nullary_constructor(element)
+              return element unless element.type.is_a?(SemanticIR::FunctionType)
+              return element unless Array(element.type.params).empty?
+              return element unless element.is_a?(SemanticIR::VarExpr)
+              return element unless element.name.match?(/\A[A-Z]/)
+
+              @type_checker.assign_expression_type(element, element.type.ret_type, update_registry: false)
+              element
+            end
 
             def infer_element_type(elements_ir, node)
               if elements_ir.empty?
