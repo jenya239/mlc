@@ -218,7 +218,9 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `Kids([Node(left, _), Node(right, _) | Kids([right])])` binds `left` and
    `right` as the sum.
    `Node(Kids([Node(left, _) | Kids([left])]), _)` binds `left` as the sum
-   in both alternatives.
+   in both alternatives. A guard on that arm,
+   `Node(Kids([Node(left, _) | Kids([left])]), _) if label(left) > 1`,
+   sees `left` as the sum in both alternatives.
    `Kids([Node(left, _) | Kids([left]), Node(right, _) | Kids([right])])`
    binds `left` and `right` as the sum. An array element of a cyclic sum
    is the sum.
