@@ -62,6 +62,10 @@ module MLC
           container_cpp_type = cyclic_container_cpp_type(type)
           return container_cpp_type if container_cpp_type
 
+          if type.is_a?(MLC::SemanticIR::ArrayType)
+            return "mlc::Array<#{map_type(type.element_type)}>"
+          end
+
           Services::Utils::TypeMapper.map_type(
             type,
             type_map: @container.type_map,

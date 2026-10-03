@@ -7531,6 +7531,43 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_index_assign", checker, link_user_translation: true)
   end
 
+  def test_array_of_option_of_a_cyclic_sum_stores_optional_shared_pointer_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn replace_keeps_the_original() -> i32 = do
+        let mut opts: [Option<Tree>] = [Some(Leaf)]
+        let alias = opts
+        opts[0] = Some(Node(Leaf, Leaf))
+        match opts[0]
+          | Some(tree) =>
+            match alias[0]
+              | Some(original) => label(tree) + label(original)
+              | None => 0
+            end
+          | None => 0
+        end
+      end
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "mlc::Array<std::optional<std::shared_ptr<Tree>>>"
+    refute_includes ruby_source, "mlc::option::Option"
+    assert_includes ruby_source, "opts.set(0, std::optional<std::shared_ptr<Tree>>"
+
+    checker = <<~CPP
+      int main() {
+        if (replace_keeps_the_original() != 3) return 1;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_option_array", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
