@@ -298,6 +298,28 @@ fn wrap_cyclic_sum_constructor(
       [aggregate]))
   end
 
+fn some_of_cyclic_option_none_sum_cpp(
+  function_expression: Shared<SemanticExpression>,
+  arguments: [Shared<SemanticExpression>],
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string =
+  match function_expression {
+    SemanticExpressionIdent(name, _, _) =>
+      if name == 'Some' && arguments.length() == 1 && argument_is_none_constructor(arguments[0]) then
+        match call_semantic_type {
+          TGeneric(type_name, type_arguments) =>
+            if type_name == 'Option' && type_arguments.length() == 1 then
+              cyclic_option_sum_cpp_name(context, type_arguments[0])
+            else ''
+            end,
+          _ => ''
+        }
+      else ''
+      end,
+    _ => ''
+  }
+
 fn cyclic_option_constructor_sum_cpp_name(
   function_expression: Shared<SemanticExpression>,
   call_semantic_type: Shared<Type>,
@@ -374,6 +396,14 @@ export fn gen_call_via_cpp_visitor(
   context: CodegenContext,
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
 ) -> Shared<CppExpression> = do
+  const nested_none_sum = some_of_cyclic_option_none_sum_cpp(
+    function_expression, arguments, call_semantic_type, context)
+  if nested_none_sum != '' then
+    const payload_cpp = "std::optional<std::shared_ptr<" + nested_none_sum + ">>"
+    return Shared.new(CppAggregateInit(
+      qualify_function_callee(map_builtin("Some"), context) + "<" + payload_cpp + ">",
+      [cyclic_option_none_expression(nested_none_sum)]))
+  end
   const materialization_outcome =
     mut_actual_argument.materialize_positional_actual_arguments_cpp(
       arguments,

@@ -7626,6 +7626,53 @@ class MLCDeriveJsonTest < Minitest::Test
       ruby_prefix: ruby_prefix)
   end
 
+  def test_some_of_none_of_a_cyclic_sum_stores_the_empty_optional_on_ruby_and_mlcc
+    source = <<~MLC
+      import { Option } from "Option"
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn from_child(child: Option<Option<Tree>>) -> i32 = match child
+        | Some(inner) =>
+          match inner
+            | Some(tree) => label(tree)
+            | None => 8
+          end
+        | None => 9
+      fn missing_inner() -> Option<Option<Tree>> = Some(None)
+      fn read_missing() -> i32 = from_child(missing_inner())
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "std::optional<std::shared_ptr<Tree>>{}"
+    refute_includes ruby_source, "None<std::optional"
+
+    checker = <<~CPP
+      int main() {
+        if (read_missing() != 8) return 1;
+        return 0;
+      }
+    CPP
+    ruby_prefix = <<~CPP
+      #include <variant>
+      namespace mlc { namespace option {
+      template<typename T>
+      struct Some { T field0; };
+      struct None {};
+      template<typename T>
+      using Option = std::variant<Some<T>, None>;
+      }}
+    CPP
+    compile_both_compilers(
+      source,
+      "cyclic_sum_some_none",
+      checker,
+      link_user_translation: true,
+      ruby_prefix: ruby_prefix)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false, ruby_prefix: "")
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

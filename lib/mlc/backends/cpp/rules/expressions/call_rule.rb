@@ -95,6 +95,9 @@ module MLC
               end
 
               if context.checker.var_expr?(node.callee)
+                some_of_none = cyclic_option_some_of_none_source(node)
+                return context.factory.raw_expression(code: some_of_none) if some_of_none
+
                 cyclic_option_source = cyclic_option_constructor_source(node)
                 return context.factory.raw_expression(code: cyclic_option_source) if cyclic_option_source
               end
@@ -321,6 +324,28 @@ module MLC
               "auto"
             rescue StandardError
               "auto"
+            end
+
+            def cyclic_option_some_of_none_source(node)
+              return nil unless node.callee.name == "Some"
+              return nil unless node.args.length == 1
+
+              argument = node.args.first
+              return nil unless context.checker.var_expr?(argument) && argument.name == "None"
+              return nil unless node.type.is_a?(MLC::SemanticIR::GenericType)
+              return nil unless node.type.type_args&.length == 1
+
+              sum_name = context.cyclic_option_sum_name(node.type.type_args.first)
+              return nil unless sum_name
+
+              payload_cpp = "std::optional<std::shared_ptr<#{sum_name}>>"
+              callee = lower_expression(node.callee).to_source
+              callee = callee[1..-2] if callee.start_with?("(") && callee.end_with?(")")
+              if callee.include?("<")
+                "#{callee}(#{payload_cpp}{})"
+              else
+                "#{callee}<#{payload_cpp}>(#{payload_cpp}{})"
+              end
             end
 
             def cyclic_option_constructor_source(node)
