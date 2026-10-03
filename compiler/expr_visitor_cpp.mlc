@@ -1074,6 +1074,38 @@ export fn gen_with_via_cpp_visitor(
 fn named_type_name_from_semantic_type(semantic_type: Shared<Type>) -> string =
   match semantic_type { TNamed(name) => name, _ => '' }
 
+fn left_expression_is_array_index(left_expression: Shared<SemanticExpression>) -> i32 =
+  match left_expression {
+    SemanticExpressionIndex(indexed_object, _, _, _) =>
+      match sexpr_type(indexed_object) {
+        TArray(_) => 1,
+        _ => 0
+      },
+    _ => 0
+  }
+
+fn array_index_set_expression(
+  left_expression: Shared<SemanticExpression>,
+  right_expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
+) -> Shared<CppExpression> =
+  match left_expression {
+    SemanticExpressionIndex(indexed_object, index_expression, _, _) => do
+      let no_mutability_flags: [i32] = []
+      method_gen.gen_method_expr_cpp(
+        indexed_object,
+        "set",
+        [index_expression, right_expression],
+        no_mutability_flags,
+        context,
+        gen_stmts,
+        evaluate_expression)
+    end,
+    _ => Shared.new(CppIdent(""))
+  }
+
 export fn gen_binary_via_cpp_visitor(
   operation: string,
   left_expression: Shared<SemanticExpression>,
@@ -1082,6 +1114,14 @@ export fn gen_binary_via_cpp_visitor(
   gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
   evaluate_expression: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> Shared<CppExpression>
 ) -> Shared<CppExpression> = do
+  if operation == "=" && left_expression_is_array_index(left_expression) != 0 then
+    return array_index_set_expression(
+      left_expression,
+      right_expression,
+      context,
+      gen_stmts,
+      evaluate_expression)
+  end
   const method = operator_method_for(operation)
   const type_name = named_type_name_from_semantic_type(sexpr_type(left_expression))
   if method != '' && type_name != '' then
