@@ -11,7 +11,7 @@ import {
   SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate,
   SemanticExpressionArray, SemanticExpressionTuple, SemanticExpressionQuestion,
   SemanticExpressionLambda, SemanticExpressionWith,
-  sstmt_span, sexpr_span
+  sstmt_span, sexpr_span, sexpr_type
 } from '../ir/semantic_ir'
 import { Span } from '../frontend/ast'
 import {
@@ -26,7 +26,8 @@ import {
 } from '../cpp_ir/cpp_ast'
 import {print_statement} from '../cpp_emit/print'
 import * as emit_helpers from '../cpp_emit/emit_helpers'
-import { CodegenContext, mutate_context_from_statement } from './context'
+import { CodegenContext, mutate_context_from_statement, take_temp_name } from './context'
+import { array_element_is_boxed_cyclic_sum } from './expr/let_pat'
 import { cpp_safe } from './cpp_naming'
 import { sem_type_to_cpp } from './decl/type_gen'
 import * as semantic_type_structure from '../checker/semantic_type_structure'
@@ -187,6 +188,23 @@ fn gen_map_new_let_value_cpp(
   end
 end
 
+fn prepend_cpp_statement(
+  statement: Shared<CppStatement>,
+  statements: [Shared<CppStatement>]
+) -> [Shared<CppStatement>] = do
+  let output: [Shared<CppStatement>] = [statement]
+  let mut index = 0
+  while index < statements.length() do
+    output.push(statements[index])
+    index = index + 1
+  end
+  output
+end
+
+fn cyclic_for_element_binding_statement(variable_name: string, element_name: string) -> Shared<CppStatement> =
+  emit_helpers.make_fragment_cpp_statement(
+    'const auto& ' + cpp_safe(variable_name) + ' = *' + element_name + ";")
+
 fn gen_for_statement_cpp(
   variable_name: string,
   iterator: Shared<SemanticExpression>,
@@ -195,15 +213,31 @@ fn gen_for_statement_cpp(
   try_counter: i32
 ) -> GenStmtCppResult = do
   const iterator_cpp = gen_expr_cpp_for_stmt_codegen(iterator, context)
-  const body_accumulated = eval_stmts_cpp_with_try(body_statements, context, try_counter)
-  GenStmtCppResult {
-    statement: emit_helpers.make_for_cpp_statement(
-      cpp_safe(variable_name),
-      iterator_cpp,
-      body_accumulated.statements),
-    next_try: body_accumulated.next_try,
-    codegen_context: body_accumulated.codegen_context
-  }
+  if array_element_is_boxed_cyclic_sum(sexpr_type(iterator), context) then
+    const element_temporary = take_temp_name(context)
+    const body_accumulated = eval_stmts_cpp_with_try(
+      body_statements, element_temporary.codegen_context, try_counter)
+    GenStmtCppResult {
+      statement: emit_helpers.make_for_cpp_statement(
+        element_temporary.name,
+        iterator_cpp,
+        prepend_cpp_statement(
+          cyclic_for_element_binding_statement(variable_name, element_temporary.name),
+          body_accumulated.statements)),
+      next_try: body_accumulated.next_try,
+      codegen_context: body_accumulated.codegen_context
+    }
+  else
+    const body_accumulated = eval_stmts_cpp_with_try(body_statements, context, try_counter)
+    GenStmtCppResult {
+      statement: emit_helpers.make_for_cpp_statement(
+        cpp_safe(variable_name),
+        iterator_cpp,
+        body_accumulated.statements),
+      next_try: body_accumulated.next_try,
+      codegen_context: body_accumulated.codegen_context
+    }
+  end
 end
 
 fn gen_while_statement_cpp(

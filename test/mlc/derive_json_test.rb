@@ -7408,6 +7408,51 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_let_some", checker, link_user_translation: true)
   end
 
+  def test_for_element_of_a_cyclic_sum_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 3
+      fn total(items: [Tree]) -> i32 = do
+        let mut sum = 0
+        for item in items do
+          sum = sum + label(item)
+        end
+        sum
+      end
+      fn sum_counts(values: [i32]) -> i32 = do
+        let mut total = 0
+        for count in values do
+          total = total + count
+        end
+        total
+      end
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "const auto& item = *"
+    refute_includes ruby_source, "for (Tree item :"
+    assert_includes ruby_source, "for (int count :"
+
+    checker = <<~CPP
+      int main() {
+        Tree leaf = Tree(Leaf{});
+        Tree node = Tree(Node{std::make_shared<Tree>(leaf), std::make_shared<Tree>(leaf)});
+        auto items = mlc::Array<std::shared_ptr<Tree>>{
+          std::make_shared<Tree>(leaf),
+          std::make_shared<Tree>(node)
+        };
+        if (total(items) != 3) return 1;
+        auto counts = mlc::Array<int>{1, 2};
+        if (sum_counts(counts) != 3) return 2;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_for_element", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

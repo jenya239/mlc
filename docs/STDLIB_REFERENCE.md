@@ -773,7 +773,7 @@ binds `tail` as the sum in both alternatives. A guard on that arm,
 `[Tree]` (`mlc::Array<std::shared_ptr<Tree>>`). `let Node(left, right) = tree`
 binds `left` and `right` as the sum (`*field`). `let Some(tree) = child` on
 `Option<Tree>` binds `tree` as the sum (`*(*optional)`), and `let None() = child`
-is the empty optional. An array element of a cyclic sum is the sum.
+is the empty optional. `for item in items` on `[Tree]` binds `item` as the sum (`*element`). An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
