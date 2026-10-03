@@ -692,7 +692,9 @@ sees `child` as the sum and reads `inner[0]` as the sum. A match on
 `Node(nested, _) | Kids([nested])` on `inner[0]` binds `nested` as the sum
 in both alternatives. A guard on that arm,
 `Node(nested, _) | Kids([nested]) if label(nested) > 1`, sees `nested` as
-the sum in both alternatives. An array element of a cyclic sum is the sum.
+the sum in both alternatives. `label(inner[1])` reads the later element of
+that inner tail as the sum (`*inner[1]`). An array element of a cyclic sum
+is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
