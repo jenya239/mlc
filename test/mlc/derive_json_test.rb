@@ -2478,6 +2478,47 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_or_index", checker, link_user_translation: true)
   end
 
+  def test_constructor_after_an_or_pattern_inside_a_cyclic_array_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _) | Kids([left]), Node(right, _)]) => label(left) + label(right)
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn node_node() -> Tree = Kids([Node(Kids([Leaf]), Leaf), Node(Leaf, Leaf)])
+      fn kids_node() -> Tree = Kids([Kids([Leaf]), Node(Kids([Leaf]), Leaf)])
+      fn second_leaf() -> Tree = Kids([Node(Kids([Leaf]), Leaf), Leaf()])
+      fn only() -> Tree = Kids([Node(Kids([Leaf]), Leaf)])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, ".size() == 2"
+    assert_includes ruby_source, "std::holds_alternative<Node>"
+    assert_includes ruby_source, "std::holds_alternative<Kids>"
+    assert_includes ruby_source, "(*_v_node.field0)"
+    assert_includes ruby_source, "const auto& left = (*"
+    assert_includes ruby_source, "const auto& right = (*"
+
+    checker = <<~CPP
+      int main() {
+        if (head(node_node()) != 7) return 1;
+        if (head(kids_node()) != 7) return 2;
+        if (head(second_leaf()) != 3) return 3;
+        if (head(only()) != 3) return 4;
+        if (head(Tree(Leaf{})) != 4) return 5;
+        if (head(bare()) != 5) return 6;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_or_sibling", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")

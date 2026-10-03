@@ -603,8 +603,9 @@ alternatives. A guard on that arm,
 as the sum in both alternatives.
 `Kids([Node(left, _) | Kids([left]), ...rest])` binds `left` as the sum
 and `rest` as the remaining `[Tree]` in both alternatives. Indexing that
-tail, `label(rest[0])`, reads the sum (`*rest[0]`). An array element of a
-cyclic sum is the sum.
+tail, `label(rest[0])`, reads the sum (`*rest[0]`).
+`Kids([Node(left, _) | Kids([left]), Node(right, _)])` binds `left` and
+`right` as the sum. An array element of a cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
