@@ -2436,6 +2436,48 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_array_or_rest", checker, link_user_translation: true)
   end
 
+  def test_index_of_a_rest_after_an_or_pattern_inside_a_cyclic_array_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Kids([Node(left, _) | Kids([left]), ...rest]) => if rest.length() == 0 then label(left) else label(rest[0]) end
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn node_only() -> Tree = Kids([Node(Kids([Leaf]), Leaf)])
+      fn node_pair() -> Tree = Kids([Node(Kids([Leaf]), Leaf), Leaf()])
+      fn kids_only() -> Tree = Kids([Kids([Leaf])])
+      fn kids_pair() -> Tree = Kids([Kids([Leaf]), Node(Leaf, Leaf)])
+      fn empty_kids() -> Tree = Kids([])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "(*rest[0])"
+    assert_includes ruby_source, ".size() >= 1"
+    assert_includes ruby_source, "std::holds_alternative<Node>"
+    assert_includes ruby_source, "std::holds_alternative<Kids>"
+    assert_includes ruby_source, "(*_v_node.field0)"
+
+    checker = <<~CPP
+      int main() {
+        if (head(node_only()) != 6) return 1;
+        if (head(node_pair()) != 1) return 2;
+        if (head(kids_only()) != 1) return 3;
+        if (head(kids_pair()) != 2) return 4;
+        if (head(empty_kids()) != 3) return 5;
+        if (head(Tree(Leaf{})) != 4) return 6;
+        if (head(bare()) != 5) return 7;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_array_or_index", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
