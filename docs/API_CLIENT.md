@@ -232,6 +232,8 @@ fn get_user(client: ApiClient, id: i64) -> Task<Result<User, ApiError>>
    `left` as the sum and `rest` as the remaining `[Tree]` in both
    alternatives.
    `Node(Kids([Node(left, _) | Kids([left])]), Kids([right]))` binds
+   `left` and `right` as the sum.
+   `Node(Kids([left]), Kids([Node(right, _) | Kids([right])]))` binds
    `left` and `right` as the sum. An array element of a cyclic sum is the
    sum.
    `derive { Display, Eq, Ord }` reads a boxed
