@@ -3310,6 +3310,55 @@ class MLCDeriveJsonTest < Minitest::Test
     compile_both_compilers(source, "cyclic_sum_outer_rest_or_guard", checker, link_user_translation: true)
   end
 
+  def test_guard_on_an_outer_rest_beside_an_or_pattern_and_a_second_array_field_reads_the_sum_on_ruby_and_mlcc
+    source = <<~MLC
+      type Tree = Leaf | Node(Tree, Tree) | Kids([Tree])
+      fn label(tree: Tree) -> i32 = match tree
+        | Leaf => 1
+        | Node(_, _) => 2
+        | Kids(_) => 6
+      fn head(tree: Tree) -> i32 = match tree
+        | Kids([Node(Kids([Node(left, _) | Kids([left])]), Kids([right])), ...rest]) if label(left) > 1 => if rest.length() == 0 then label(left) + label(right) else label(rest[0]) end
+        | Kids(_) => 3
+        | Leaf => 4
+        | Node(_, _) => 5
+      fn node_only() -> Tree = Kids([Node(Kids([Node(Kids([Leaf]), Leaf)]), Kids([Leaf]))])
+      fn node_pair() -> Tree = Kids([Node(Kids([Node(Kids([Leaf]), Leaf)]), Kids([Leaf])), Leaf()])
+      fn node_node() -> Tree = Kids([Node(Kids([Node(Kids([Leaf]), Leaf)]), Kids([Leaf])), Node(Leaf, Leaf)])
+      fn node_kids() -> Tree = Kids([Node(Kids([Node(Kids([Leaf]), Leaf)]), Kids([Kids([Leaf])]))])
+      fn kids_only() -> Tree = Kids([Node(Kids([Kids([Leaf])]), Kids([Kids([Leaf])]))])
+      fn kids_pair() -> Tree = Kids([Node(Kids([Kids([Leaf])]), Kids([Kids([Leaf])])), Node(Leaf, Leaf)])
+      fn empty_right() -> Tree = Kids([Node(Kids([Node(Kids([Leaf]), Leaf)]), Kids([]))])
+      fn shallow() -> Tree = Kids([Node(Leaf, Leaf)])
+      fn bare() -> Tree = Node(Leaf, Leaf)
+      fn main() -> i32 = 0
+    MLC
+    ruby_source = MLC.to_cpp(source)
+    assert_includes ruby_source, "label(left) > 1"
+    assert_includes ruby_source, "*rest[0]"
+    assert_includes ruby_source, "mlc::Array<std::shared_ptr<Tree>>"
+    assert_includes ruby_source, "(*_v_node_2.field0)"
+    assert_includes ruby_source, "(*_v_kids_4.field0[0])"
+    assert_includes ruby_source, "(*_v_kids_3.field0[0])"
+
+    checker = <<~CPP
+      int main() {
+        if (head(node_only()) != 7) return 1;
+        if (head(node_pair()) != 1) return 2;
+        if (head(node_node()) != 2) return 3;
+        if (head(node_kids()) != 12) return 4;
+        if (head(kids_only()) != 3) return 5;
+        if (head(kids_pair()) != 3) return 6;
+        if (head(empty_right()) != 3) return 7;
+        if (head(shallow()) != 3) return 8;
+        if (head(Tree(Leaf{})) != 4) return 9;
+        if (head(bare()) != 5) return 10;
+        return 0;
+      }
+    CPP
+    compile_both_compilers(source, "cyclic_sum_outer_rest_both_guard", checker, link_user_translation: true)
+  end
+
   def compile_both_compilers(source, entry_name, checker, link_user_translation: false)
     runtime_directory = File.expand_path("../../runtime", __dir__)
     work_root = ENV.fetch("TMPDIR", "/tmp")
