@@ -751,8 +751,11 @@ on that arm, `Node(bound, _) | Kids([bound]) if label(bound) > 1`, sees
 the sum. `Node(Kids([Node(bound, _) | Kids([bound])]), _)` on that
 `deeper[0]` binds `bound` as the sum in both alternatives. A guard on that
 arm, `Node(Kids([Node(bound, _) | Kids([bound])]), _) if label(bound) > 1`,
-sees `bound` as the sum in both alternatives. An array element of a cyclic
-sum is the sum.
+sees `bound` as the sum in both alternatives.
+`Node(Kids([Node(bound, _) | Kids([bound]), ...further]), _)` on `deeper[0]`
+binds `bound` as the sum and `further` as the remaining `[Tree]`.
+`label(further[0])` reads the sum (`*further[0]`). An array element of a
+cyclic sum is the sum.
 `derive { Display }` prints that child with `Type_to_string(*field)`.
 `derive { Eq }` and `derive { Ord }` compare the child sums, so two separately
 allocated values of the same shape compare equal. `derive { Hash }` hashes
