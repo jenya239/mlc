@@ -54,7 +54,8 @@ fn request_for(
     body: "",
     timeout_milliseconds: timeout_milliseconds,
     max_response_bytes: max_response_bytes,
-    ca_bundle_path: ca_bundle_path
+    ca_bundle_path: ca_bundle_path,
+    proxy_url: ""
   }
 
 fn main() -> i32 = do

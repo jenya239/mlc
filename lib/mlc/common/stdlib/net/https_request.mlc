@@ -18,7 +18,8 @@ export type HttpsRequest = {
   body: string,
   timeout_milliseconds: i32,
   max_response_bytes: i32,
-  ca_bundle_path: string
+  ca_bundle_path: string,
+  proxy_url: string
 }
 
 export type HttpsResponse = {
@@ -130,6 +131,20 @@ fn headers_problem(headers: [HttpsHeader]) -> string = do
   problem
 end
 
+fn proxy_has_scheme_and_host(proxy_url: string) -> bool = do
+  const prefixes = ["http://", "https://", "socks4://", "socks4a://", "socks5://", "socks5h://"]
+  let mut index = 0
+  let mut matched = false
+  while index < prefixes.length() && matched == false do
+    const prefix = prefixes[index]
+    if text_starts_with(proxy_url, prefix) && proxy_url.length() > prefix.length() then
+      matched = proxy_url.char_at(prefix.length()) != "/"
+    end
+    index = index + 1
+  end
+  matched
+end
+
 fn method_carries_body(method: string) -> bool =
   method == "POST" || method == "PUT" || method == "PATCH" || method == "DELETE"
 
@@ -158,6 +173,12 @@ export fn https_request_problem(request: HttpsRequest) -> string = do
   end
   if problem == "" && text_has_control_character(request.ca_bundle_path) then
     problem = "certificate bundle path rejected"
+  end
+  if problem == "" && text_has_forbidden_url_character(request.proxy_url) then
+    problem = "proxy url rejected"
+  end
+  if problem == "" && request.proxy_url.length() > 0 && proxy_has_scheme_and_host(request.proxy_url) == false then
+    problem = "proxy url rejected"
   end
   problem
 end

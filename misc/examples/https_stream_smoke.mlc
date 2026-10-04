@@ -1,0 +1,236 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { https_send_with_stop } from '../../lib/mlc/common/stdlib/net/https_client.mlc'
+import {
+  https_stream_open,
+  https_stream_open_with_stop,
+  https_stream_next,
+  https_stream_close,
+  https_live_stream_count,
+  https_live_handle_count,
+  https_server_sent_parser,
+  https_server_sent_feed,
+  https_server_sent_finish,
+  HttpsServerSentEvent,
+  HttpsServerSentParser,
+  HttpsStreamItem,
+  HttpsStreamHeaders,
+  HttpsStreamChunk,
+  HttpsStreamEnd,
+  HttpsStreamErr
+} from '../../lib/mlc/common/stdlib/net/https_stream.mlc'
+import {
+  https_find_header,
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  ResponseTooLarge,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn feed_split_event() -> [HttpsServerSentEvent] = do
+  const first = https_server_sent_feed(https_server_sent_parser(), "event: token\ndata: on")
+  const second = https_server_sent_feed(first.parser, "e\n\n")
+  second.events
+end
+
+fn event_count(parser: HttpsServerSentParser, text: string) -> i32 = do
+  const fed = https_server_sent_feed(parser, text)
+  fed.events.length()
+end
+
+fn first_data(text: string) -> string = do
+  const fed = https_server_sent_feed(https_server_sent_parser(), text)
+  if fed.events.length() == 0 then "" else fed.events[0].data end
+end
+
+fn first_name(text: string) -> string = do
+  const fed = https_server_sent_feed(https_server_sent_parser(), text)
+  if fed.events.length() == 0 then "" else fed.events[0].event_name end
+end
+
+fn check_parser() -> i32 = do
+  const split = feed_split_event()
+  if split.length() != 1 || split[0].data != "one" || split[0].event_name != "token" then return 2 end
+  const pair = https_server_sent_feed(
+    https_server_sent_parser(),
+    "event: token\ndata: one\n\nevent: token\ndata: two\n\n"
+  )
+  if pair.events.length() != 2 || pair.events[0].data != "one" || pair.events[1].data != "two" then return 3 end
+  if event_count(https_server_sent_parser(), ": keep\ndata: one\n\n") != 1 then return 4 end
+  if first_data("data: a\ndata: b\n\n") != "a\nb" then return 5 end
+  if first_name("data: one\n\n") != "message" then return 6 end
+  const identified = https_server_sent_feed(
+    https_server_sent_parser(),
+    "id: keep\ndata: one\n\ndata: two\n\n"
+  )
+  if identified.events.length() != 2 then return 7 end
+  if identified.events[0].event_id != "keep" || identified.events[1].event_id != "keep" then return 8 end
+  if event_count(https_server_sent_parser(), "event: ping\n\n") != 0 then return 9 end
+  const trailing = https_server_sent_finish(
+    https_server_sent_feed(https_server_sent_parser(), "data: trail").parser
+  )
+  if trailing.events.length() != 1 || trailing.events[0].data != "trail" then return 10 end
+  0
+end
+
+fn request_for(path: string, maximum_body_bytes: i32) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + path,
+    headers: [],
+    body: "",
+    timeout_milliseconds: 5000,
+    max_response_bytes: maximum_body_bytes,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", ""),
+    proxy_url: ""
+  }
+
+fn header_status(item: HttpsStreamItem) -> i32 =
+  match item {
+    HttpsStreamHeaders(block) => block.status,
+    _ => -1
+  }
+
+fn header_contains_event_stream(item: HttpsStreamItem) -> bool =
+  match item {
+    HttpsStreamHeaders(block) => https_find_header(block.headers, "Content-Type").contains("text/event-stream"),
+    _ => false
+  }
+
+fn chunk_text(item: HttpsStreamItem) -> string =
+  match item {
+    HttpsStreamChunk(text) => text,
+    _ => ""
+  }
+
+fn item_is_chunk(item: HttpsStreamItem) -> bool =
+  match item {
+    HttpsStreamChunk(_) => true,
+    _ => false
+  }
+
+fn item_is_end(item: HttpsStreamItem) -> bool =
+  match item {
+    HttpsStreamEnd => true,
+    _ => false
+  }
+
+fn failure_is_too_large(item: HttpsStreamItem) -> bool =
+  match item {
+    HttpsStreamErr(failure) => match failure.kind {
+      ResponseTooLarge => true,
+      _ => false
+    },
+    _ => false
+  }
+
+fn append_events(left: [HttpsServerSentEvent], right: [HttpsServerSentEvent]) -> [HttpsServerSentEvent] = do
+  let mut combined = left
+  let mut index = 0
+  while index < right.length() do
+    combined.push(right[index])
+    index = index + 1
+  end
+  combined
+end
+
+fn read_event_names(stream: i32) -> i32 = do
+  const headers = https_stream_next(stream)
+  if header_status(headers) != 200 then return 30 end
+  if header_contains_event_stream(headers) == false then return 31 end
+  let mut parser = https_server_sent_parser()
+  let mut events: [HttpsServerSentEvent] = []
+  let mut finished = false
+  while !finished do
+    const item = https_stream_next(stream)
+    if item_is_chunk(item) then
+      const fed = https_server_sent_feed(parser, chunk_text(item))
+      parser = fed.parser
+      events = append_events(events, fed.events)
+    else if item_is_end(item) then
+      const fed = https_server_sent_finish(parser)
+      events = append_events(events, fed.events)
+      finished = true
+    else
+      return 32
+    end
+  end
+  if events.length() != 2 || events[0].data != "one" || events[1].data != "two" then return 33 end
+  if events[0].event_name != "token" || events[1].event_name != "token" then return 34 end
+  0
+end
+
+fn read_until_too_large(stream: i32) -> i32 = do
+  let mut seen = false
+  let mut steps = 0
+  while !seen && steps < 64 do
+    const item = https_stream_next(stream)
+    if failure_is_too_large(item) then seen = true
+    else if item_is_end(item) then return 40 end
+    steps = steps + 1
+  end
+  if seen then 0 else 41 end
+end
+
+fn result_is_stop(result: HttpsResult) -> bool =
+  match result {
+    HttpsErr(failure) => match failure.kind {
+      TransportFailed => failure.message == "stop requested",
+      _ => false
+    },
+    HttpsOk(_) => false
+  }
+
+fn item_is_stop(item: HttpsStreamItem) -> bool =
+  match item {
+    HttpsStreamErr(failure) => match failure.kind {
+      TransportFailed => failure.message == "stop requested",
+      _ => false
+    },
+    _ => false
+  }
+
+fn response_status(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => -1
+  }
+
+fn check_stop() -> i32 = do
+  let mut stopped = StopSource.new()
+  stopped.request()
+  if result_is_stop(https_send_with_stop(request_for("/echo", 4194304), stopped.token())) == false then
+    return 50
+  end
+  const stalled = https_stream_open_with_stop(request_for("/echo", 4194304), stopped.token())
+  if stalled < 0 then return 51 end
+  const stopped_item = https_stream_next(stalled)
+  https_stream_close(stalled)
+  if item_is_stop(stopped_item) == false then return 52 end
+  let mut live = StopSource.new()
+  if response_status(https_send_with_stop(request_for("/echo", 4194304), live.token())) != 200 then
+    return 53
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const parser_code = check_parser()
+  if parser_code != 0 then return parser_code end
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" then return 1 end
+  const stream = https_stream_open(request_for("/event_stream", 4194304))
+  if stream < 0 then return 35 end
+  const event_code = read_event_names(stream)
+  https_stream_close(stream)
+  if event_code != 0 then return event_code end
+  const limited = https_stream_open(request_for("/chunked_big", 1024))
+  if limited < 0 then return 42 end
+  const limit_code = read_until_too_large(limited)
+  https_stream_close(limited)
+  if limit_code != 0 then return limit_code end
+  const stop_code = check_stop()
+  if stop_code != 0 then return stop_code end
+  if https_live_stream_count() != 0 || https_live_handle_count() != 0 then return 43 end
+  0
+end

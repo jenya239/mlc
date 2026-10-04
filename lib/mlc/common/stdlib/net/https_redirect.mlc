@@ -278,7 +278,8 @@ fn request_for_redirect(current: HttpsRequest, status: i32, target: string) -> H
     body: https_redirect_body(status, current.method, current.body),
     timeout_milliseconds: current.timeout_milliseconds,
     max_response_bytes: current.max_response_bytes,
-    ca_bundle_path: current.ca_bundle_path
+    ca_bundle_path: current.ca_bundle_path,
+    proxy_url: current.proxy_url
   }
 
 export fn https_send_following_redirects(request: HttpsRequest, maximum_hops: i32) -> HttpsResult = do

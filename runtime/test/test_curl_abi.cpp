@@ -49,6 +49,10 @@ std::string silent_url() {
   return "https://127.0.0.1:" + read_text(directory_path() + "/silent_port") + "/silent";
 }
 
+std::string http2_url() {
+  return "https://127.0.0.1:" + read_text(directory_path() + "/http2_port") + "/http2";
+}
+
 std::string authority_path() {
   return read_text(directory_path() + "/certificate_authority_path");
 }
@@ -70,7 +74,8 @@ ResultHandle perform(
     const mlc::String& body,
     std::int32_t timeout_milliseconds,
     std::int32_t max_response_bytes,
-    const std::string& certificate_bundle_path) {
+    const std::string& certificate_bundle_path,
+    const std::string& proxy_url = "") {
   return ResultHandle(mlc::curl_abi::perform_request(
       mlc::String(method.c_str()),
       url,
@@ -78,7 +83,8 @@ ResultHandle perform(
       body,
       timeout_milliseconds,
       max_response_bytes,
-      mlc::String(certificate_bundle_path.c_str())));
+      mlc::String(certificate_bundle_path.c_str()),
+      mlc::String(proxy_url.c_str())));
 }
 
 ResultHandle perform_text(
@@ -88,7 +94,8 @@ ResultHandle perform_text(
     const std::string& body,
     std::int32_t timeout_milliseconds,
     std::int32_t max_response_bytes,
-    const std::string& certificate_bundle_path) {
+    const std::string& certificate_bundle_path,
+    const std::string& proxy_url = "") {
   return perform(
       method,
       mlc::String(url.c_str()),
@@ -96,7 +103,8 @@ ResultHandle perform_text(
       mlc::String(body.c_str()),
       timeout_milliseconds,
       max_response_bytes,
-      certificate_bundle_path);
+      certificate_bundle_path,
+      proxy_url);
 }
 
 bool contains_text(const mlc::String& text, const char* needle) {
@@ -287,11 +295,93 @@ int check_body_limit() {
   return 0;
 }
 
+int check_decoded_body_limit() {
+  ResultHandle decoded = perform_text("GET", good_url("/compressed"), "", "", 5000, 16, authority_path());
+  if (decoded.get() < 0) return 28;
+  if (mlc::curl_abi::result_failure_code(decoded.get()) != 0) return 28;
+  if (mlc::curl_abi::result_status(decoded.get()) != 200) return 28;
+  if (mlc::curl_abi::result_body(decoded.get()).view() != "hello-compressed") return 28;
+
+  ResultHandle too_small = perform_text("GET", good_url("/compressed"), "", "", 5000, 15, authority_path());
+  if (too_small.get() < 0) return 28;
+  if (mlc::curl_abi::result_failure_code(too_small.get()) != kResponseTooLarge) return 28;
+  if (mlc::curl_abi::result_body(too_small.get()).raw_size() > 15) return 28;
+
+  ResultHandle expanded = perform_text(
+      "GET", good_url("/compressed_large"), "", "", 5000, 1000, authority_path());
+  if (expanded.get() < 0) return 28;
+  if (mlc::curl_abi::result_failure_code(expanded.get()) != kResponseTooLarge) return 28;
+  if (mlc::curl_abi::result_body(expanded.get()).raw_size() > 1000) return 28;
+
+  ResultHandle full = perform_text(
+      "GET", good_url("/compressed_large"), "", "", 5000, 200000, authority_path());
+  if (full.get() < 0) return 28;
+  if (mlc::curl_abi::result_failure_code(full.get()) != 0) return 28;
+  const mlc::String body = mlc::curl_abi::result_body(full.get());
+  if (body.raw_size() != 200000) return 28;
+  if (body.raw_data()[0] != 'Z' || body.raw_data()[199999] != 'Z') return 28;
+  return 0;
+}
+
+int check_http2() {
+  ResultHandle handle = perform_text("GET", http2_url(), "", "", 5000, 4194304, authority_path());
+  if (handle.get() < 0) return 29;
+  if (mlc::curl_abi::result_failure_code(handle.get()) != 0) {
+    std::cerr << "http2 failure " << mlc::curl_abi::result_failure_code(handle.get()) << " "
+              << mlc::curl_abi::result_message(handle.get()).view() << "\n";
+    return 29;
+  }
+  if (mlc::curl_abi::result_status(handle.get()) != 200) return 29;
+  if (mlc::curl_abi::result_body(handle.get()).view() != "http2-ok") return 29;
+  if (mlc::curl_abi::result_http_version(handle.get()) != CURL_HTTP_VERSION_2_0) return 29;
+  return 0;
+}
+
 int check_proxy_ignored() {
   ResultHandle handle = perform_text("GET", good_url("/echo"), "", "", 5000, 4194304, authority_path());
   if (handle.get() < 0) return 11;
   if (mlc::curl_abi::result_failure_code(handle.get()) != 0) return 11;
   if (mlc::curl_abi::result_status(handle.get()) != 200) return 11;
+  return 0;
+}
+
+std::string explicit_proxy_url() {
+  return "http://127.0.0.1:" + read_text(directory_path() + "/proxy_port");
+}
+
+int check_explicit_proxy() {
+  {
+    const int connections_before = read_counter("connection_count");
+    ResultHandle handle = perform_text(
+        "GET", good_url("/echo"), "", "", 5000, 4194304, authority_path(), "not-a-proxy");
+    if (expect_invalid_without_connection(handle, connections_before) != 0) return 19;
+  }
+  {
+    const int connections_before = read_counter("connection_count");
+    const int proxy_before = read_counter("proxy_connect_count");
+    ResultHandle handle = perform_text(
+        "GET",
+        good_url("/echo"),
+        "",
+        "",
+        5000,
+        4194304,
+        authority_path(),
+        "http://127.0.0.1:9");
+    if (handle.get() < 0) return 19;
+    if (mlc::curl_abi::result_failure_code(handle.get()) != 3) return 19;
+    if (read_counter("connection_count") != connections_before) return 19;
+    if (read_counter("proxy_connect_count") != proxy_before) return 19;
+  }
+  {
+    const int proxy_before = read_counter("proxy_connect_count");
+    ResultHandle handle = perform_text(
+        "GET", good_url("/echo"), "", "", 5000, 4194304, authority_path(), explicit_proxy_url());
+    if (handle.get() < 0) return 19;
+    if (mlc::curl_abi::result_failure_code(handle.get()) != 0) return 19;
+    if (mlc::curl_abi::result_status(handle.get()) != 200) return 19;
+    if (read_counter("proxy_connect_count") != proxy_before + 1) return 19;
+  }
   return 0;
 }
 
@@ -349,7 +439,8 @@ int check_session_reuses_connection() {
       mlc::String("one"),
       5000,
       4194304,
-      mlc::String(authority_path().c_str())));
+      mlc::String(authority_path().c_str()),
+      mlc::String()));
   if (first.get() < 0) return 18;
   if (mlc::curl_abi::result_failure_code(first.get()) != 0) return 18;
   if (mlc::curl_abi::result_status(first.get()) != 200) return 18;
@@ -363,7 +454,8 @@ int check_session_reuses_connection() {
       mlc::String("two"),
       5000,
       4194304,
-      mlc::String(authority_path().c_str())));
+      mlc::String(authority_path().c_str()),
+      mlc::String()));
   if (second.get() < 0) return 18;
   if (mlc::curl_abi::result_failure_code(second.get()) != 0) return 18;
   if (mlc::curl_abi::result_status(second.get()) != 200) return 18;
@@ -427,7 +519,10 @@ int main() {
       check_injection(),
       check_timeout(),
       check_body_limit(),
+      check_decoded_body_limit(),
+      check_http2(),
       check_proxy_ignored(),
+      check_explicit_proxy(),
       check_secret_not_in_message(),
       check_lifecycle(),
       check_session_reuses_connection(),

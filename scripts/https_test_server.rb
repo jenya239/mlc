@@ -16,10 +16,17 @@
 #   or Cookie arrived. It does not copy those header values.
 # - /session_echo answers 200 with Connection: keep-alive and the request body,
 #   then reads another request on the same TLS connection, up to 8 times.
+# - /event_stream answers 200 text/event-stream as two chunked events.
+# - proxy_port accepts HTTP CONNECT to 127.0.0.1 only and tunnels the bytes.
+#   proxy_connect_count increments after the upstream TCP connection opens.
+# - /compressed and /compressed_large answer gzip. Content-Length is the
+#   encoded size. The decoded bodies are "hello-compressed" and 200000 "Z".
 
 require 'openssl'
 require 'socket'
+require 'stringio'
 require 'thread'
+require 'zlib'
 
 directory = ARGV[0]
 abort 'usage: https_test_server.rb DIRECTORY' if directory.nil? || directory.empty?
@@ -93,15 +100,20 @@ wrong_key, wrong_certificate = HttpsTestServer.generate_leaf(
 certificate_authority_path = File.join(directory, 'certificate_authority.pem')
 File.write(certificate_authority_path, authority_certificate.to_pem)
 File.write(File.join(directory, 'certificate_authority_path'), certificate_authority_path)
+File.write(File.join(directory, 'good_certificate.pem'), good_certificate.to_pem)
+File.write(File.join(directory, 'good_private_key.pem'), good_key.to_pem)
 
 connection_count_path = File.join(directory, 'connection_count')
 request_count_path = File.join(directory, 'request_count')
+proxy_connect_count_path = File.join(directory, 'proxy_connect_count')
 File.write(connection_count_path, '0')
 File.write(request_count_path, '0')
+File.write(proxy_connect_count_path, '0')
 
 counter_mutex = Mutex.new
 connection_count = 0
 request_count = 0
+proxy_connect_count = 0
 retry_budget = { '/retry' => 1, '/retry-single' => 1, '/once' => 1 }
 
 increment_connections = lambda do
@@ -115,6 +127,13 @@ increment_requests = lambda do
   counter_mutex.synchronize do
     request_count += 1
     File.write(request_count_path, request_count.to_s)
+  end
+end
+
+increment_proxy_connects = lambda do
+  counter_mutex.synchronize do
+    proxy_connect_count += 1
+    File.write(proxy_connect_count_path, proxy_connect_count.to_s)
   end
 end
 
@@ -184,6 +203,23 @@ end
 
 binary_body = "a\0b\0c".b
 big_body = ('B' * (2 * 1024 * 1024)).b
+
+gzip_bytes = lambda do |plain|
+  sink = StringIO.new.binmode
+  writer = Zlib::GzipWriter.new(sink)
+  writer.write(plain)
+  writer.close
+  sink.string
+end
+
+compressed_body = gzip_bytes.call('hello-compressed')
+compressed_large_body = gzip_bytes.call('Z' * 200_000)
+
+respond_gzip = lambda do |secure_socket, encoded|
+  header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: #{encoded.bytesize}\r\nConnection: close\r\n\r\n"
+  write_bytes.call(secure_socket, header)
+  write_bytes.call(secure_socket, encoded)
+end
 cross_port = 0
 
 serve_socket = lambda do |tcp_socket, context, silent|
@@ -216,12 +252,27 @@ serve_socket = lambda do |tcp_socket, context, silent|
     case path
     when '/echo'
       respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', body, 'text/plain')
+    when '/event_stream'
+      write_bytes.call(
+        secure_socket,
+        "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n"
+      )
+      ["event: token\ndata: one\n\n", "event: token\ndata: two\n\n"].each do |piece|
+        write_bytes.call(secure_socket, format("%x\r\n", piece.bytesize))
+        write_bytes.call(secure_socket, piece)
+        write_bytes.call(secure_socket, "\r\n")
+      end
+      write_bytes.call(secure_socket, "0\r\n\r\n")
     when '/status/404'
       respond_fixed.call(secure_socket, 'HTTP/1.1 404 Not Found', 'missing', 'text/plain')
     when '/big'
       respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', big_body, 'application/octet-stream')
     when '/chunked_big'
       respond_chunked.call(secure_socket, big_body)
+    when '/compressed'
+      respond_gzip.call(secure_socket, compressed_body)
+    when '/compressed_large'
+      respond_gzip.call(secure_socket, compressed_large_body)
     when '/binary'
       respond_fixed.call(secure_socket, 'HTTP/1.1 200 OK', binary_body, 'application/octet-stream')
     when '/retry', '/retry-single'
@@ -301,6 +352,57 @@ accept_loop = lambda do |tcp_server, context, silent|
     Thread.new(client_socket) do |socket|
       serve_socket.call(socket, context, silent)
     end
+  end
+end
+
+serve_proxy = lambda do |client_socket|
+  upstream = nil
+  begin
+    client_socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1) rescue nil
+    request = +''
+    while !request.include?("\r\n\r\n") && request.bytesize < 8192
+      request << client_socket.readpartial(1024)
+    end
+    target = request.lines.first.to_s.split(' ', 3)[1].to_s
+    host, port_text = target.split(':', 2)
+    port = Integer(port_text)
+    raise ArgumentError unless host == '127.0.0.1' && port.positive? && port <= 65535
+    upstream = TCPSocket.new(host, port)
+    increment_proxy_connects.call
+    client_socket.write("HTTP/1.1 200 Connection Established\r\n\r\n")
+    client_to_upstream = Thread.new do
+      IO.copy_stream(client_socket, upstream)
+    rescue StandardError
+      nil
+    ensure
+      upstream.close rescue nil
+    end
+    begin
+      IO.copy_stream(upstream, client_socket)
+    rescue StandardError
+      nil
+    end
+    client_socket.close rescue nil
+    client_to_upstream.join
+  rescue StandardError
+    client_socket.write("HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n") rescue nil
+  ensure
+    upstream.close rescue nil
+    client_socket.close rescue nil
+  end
+end
+
+proxy_server = TCPServer.new('127.0.0.1', 0)
+proxy_server.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1) rescue nil
+File.write(File.join(directory, 'proxy_port'), proxy_server.addr[1].to_s)
+Thread.new do
+  loop do
+    begin
+      client_socket = proxy_server.accept
+    rescue StandardError
+      break
+    end
+    Thread.new(client_socket) { |socket| serve_proxy.call(socket) }
   end
 end
 

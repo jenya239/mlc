@@ -18,7 +18,12 @@ if ! echo '#include <curl/curl.h>' | "$CXX" -E -x c++ - >/dev/null 2>&1 || ! pkg
 fi
 
 SERVER_PID=""
+LISTENER_PID=""
 cleanup() {
+  if [[ -n "$LISTENER_PID" ]]; then
+    kill "$LISTENER_PID" >/dev/null 2>&1 || true
+    wait "$LISTENER_PID" >/dev/null 2>&1 || true
+  fi
   if [[ -n "$SERVER_PID" ]]; then
     kill "$SERVER_PID" >/dev/null 2>&1 || true
     wait "$SERVER_PID" >/dev/null 2>&1 || true
@@ -47,6 +52,39 @@ done
 if [[ "$ready" -ne 1 ]]; then
   echo "[curl abi] FAIL: test server did not become ready" >&2
   cat "$DIRECTORY/server_stderr.txt" >&2 || true
+  exit 1
+fi
+
+if ! pkg-config --exists libnghttp2 openssl; then
+  echo "[curl abi] FAIL: libnghttp2 or openssl pkg-config missing" >&2
+  exit 1
+fi
+
+echo "[curl abi] stage=http2_listener" >&2
+if ! "$CXX" -std=c++20 -Wall -Wextra -o "$DIRECTORY/https_http2_listener" \
+  "$ROOT_DIR/runtime/test/https_http2_listener.cpp" \
+  $(pkg-config --cflags --libs libnghttp2 openssl); then
+  echo "[curl abi] FAIL stage=http2_listener_compile" >&2
+  exit 1
+fi
+"$DIRECTORY/https_http2_listener" "$DIRECTORY" \
+  >"$DIRECTORY/http2_stdout.txt" 2>"$DIRECTORY/http2_stderr.txt" &
+LISTENER_PID=$!
+
+listener_ready=0
+for _ in $(seq 1 100); do
+  if [[ -f "$DIRECTORY/http2_port" ]]; then
+    listener_ready=1
+    break
+  fi
+  if ! kill -0 "$LISTENER_PID" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.05
+done
+if [[ "$listener_ready" -ne 1 ]]; then
+  echo "[curl abi] FAIL: http2 listener did not become ready" >&2
+  cat "$DIRECTORY/http2_stderr.txt" >&2 || true
   exit 1
 fi
 

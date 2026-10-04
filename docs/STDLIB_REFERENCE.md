@@ -17,6 +17,7 @@ module surface — out of scope here.
 - [HttpsClient](#httpsclient)
 - [HttpsRetry](#httpsretry)
 - [HttpsRedirect](#httpsredirect)
+- [HttpsStream](#httpsstream)
 - [JsonText](#jsontext)
 - [WebSocket](#websocket)
 - [Postgres](#postgres)
@@ -157,7 +158,7 @@ shutdown subsection). TLS / HTTP/2 out of scope.
 
 Modules: [`lib/mlc/common/stdlib/net/https_client.mlc`](../lib/mlc/common/stdlib/net/https_client.mlc)
 (`HttpsClient`) and [`lib/mlc/common/stdlib/net/https_request.mlc`](../lib/mlc/common/stdlib/net/https_request.mlc)
-(`HttpsRequests`). TLS and HTTP/1.1 go through libcurl in
+(`HttpsRequests`). TLS goes through libcurl in
 `runtime/include/mlc/net/curl_abi.hpp` (`mlc::curl_abi`). mlcc resolves
 `import … from "HttpsClient"` to `net/https_client.mlc`. `HttpsRequests` stays
 a path import.
@@ -169,7 +170,7 @@ Live default-CA check is separate: `HTTPS_LIVE=1 bash scripts/run_https_client_l
 | Name | Signature | Description |
 |------|-----------|-------------|
 | `HttpsHeader` | `{ name: string, value: string }` | One header |
-| `HttpsRequest` | `{ method, url, headers: [HttpsHeader], body, timeout_milliseconds: i32, max_response_bytes: i32, ca_bundle_path }` | Request. Methods: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`. Defaults at the helpers: 30000 ms, 4194304 bytes, empty CA path |
+| `HttpsRequest` | `{ method, url, headers: [HttpsHeader], body, timeout_milliseconds: i32, max_response_bytes: i32, ca_bundle_path, proxy_url }` | Request. Methods: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`. Defaults at the helpers: 30000 ms, 4194304 bytes, empty CA path, empty proxy |
 | `HttpsResponse` | `{ status: i32, headers: [HttpsHeader], body: string }` | Response |
 | `HttpsFailureKind` | `InvalidRequest \| ResolveFailed \| ConnectFailed \| TimedOut \| CertificateRejected \| ResponseTooLarge \| TransportFailed` | Failure class |
 | `HttpsFailure` | `{ kind: HttpsFailureKind, message: string }` | Failure |
@@ -183,6 +184,7 @@ Live default-CA check is separate: `HTTPS_LIVE=1 bash scripts/run_https_client_l
 | `https_status_is_retryable` | `(status: i32) -> bool` | 429, 500, 502, 503, 504 |
 | `https_failure_kind_from_code` | `(code: i32) -> HttpsFailureKind` | 1..6 map to the specific kinds; any other code is `TransportFailed` |
 | `https_send` | `(request: HttpsRequest) -> HttpsResult` | Blocking call |
+| `https_send_with_stop` | `(request: HttpsRequest, stop_token: StopToken) -> HttpsResult` | Same call. A requested token is `TransportFailed` with message `stop requested` |
 | `https_get` | `(url: string, headers: [HttpsHeader]) -> HttpsResult` | GET with defaults |
 | `https_head` | `(url: string, headers: [HttpsHeader]) -> HttpsResult` | HEAD with defaults. Body must be empty |
 | `https_post` | `(url: string, headers: [HttpsHeader], body: string) -> HttpsResult` | POST with defaults |
@@ -208,7 +210,7 @@ info("https get ok")
 
 ### Limitations (from STDLIB_BACKEND §1)
 
-MLC-reachable, blocking, libcurl, no streaming. Methods are `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, and `DELETE`. `GET` and `HEAD` reject a body. `https_send` does not follow redirects. [HttpsRedirect](#httpsredirect) follows `https` only. Proxy environment variables are ignored. Empty `ca_bundle_path` uses
+MLC-reachable, blocking, libcurl. `https_send` buffers the body. [HttpsStream](#httpsstream) reads it in chunks. Methods are `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, and `DELETE`. `GET` and `HEAD` reject a body. `https_send` does not follow redirects. [HttpsRedirect](#httpsredirect) follows `https` only. An empty `proxy_url` ignores proxy environment variables. A `proxy_url` of `http`, `https`, `socks4`, `socks4a`, `socks5`, or `socks5h` is used for that call, and `NO_PROXY` is ignored. Redirects keep that `proxy_url`. The client offers HTTP/2 and falls back to HTTP/1.1. libcurl decodes the response body, and `max_response_bytes` counts those decoded bytes. Empty `ca_bundle_path` uses
 libcurl's default CA store. The failure message is curl's error text and does
 not include request headers. `lib/mlc/common/stdlib/net/http.mlc` stays a stub.
 A response body stays a string. [JsonText](#jsontext) reads that string.
@@ -288,6 +290,47 @@ fn credential_headers() -> [HttpsHeader] =
 ### Limitations
 
 A target whose scheme is not `https` is left as the redirect response. `http`, a missing `Location`, and statuses other than 301, 302, 303, 307, and 308 are not followed. The fragment is removed. The hop budget counts followed responses and stops at 10.
+
+## HttpsStream
+
+Module: [`lib/mlc/common/stdlib/net/https_stream.mlc`](../lib/mlc/common/stdlib/net/https_stream.mlc)
+(`HttpsStream`). The transfer runs on one background thread. Curl is not asked
+to follow `Location`. Import the `.mlc` path directly.
+
+Demo: [`misc/examples/https_stream_smoke.mlc`](../misc/examples/https_stream_smoke.mlc).
+Check: `bash scripts/run_https_stream_smoke.sh`.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `HttpsStreamItem` | `HttpsStreamHeaders(HttpsStreamHeaderBlock) \| HttpsStreamChunk(string) \| HttpsStreamEnd \| HttpsStreamErr(HttpsFailure)` | One step. Headers come before chunks |
+| `HttpsStreamHeaderBlock` | `{ status: i32, headers: [HttpsHeader] }` | Status and headers of the response |
+| `HttpsServerSentEvent` | `{ event_name: string, data: string, event_id: string }` | One server-sent event. An omitted name is `message` |
+| `HttpsServerSentParser` | `{ pending, event_name, data, event_id }` | Bytes that are not yet a complete line, plus the current event |
+| `HttpsServerSentFeed` | `{ parser: HttpsServerSentParser, events: [HttpsServerSentEvent] }` | Parser after a feed, and the events completed by that feed |
+| `https_stream_open` | `(request: HttpsRequest) -> i32` | Starts the transfer. Negative means the request was rejected or the stream table is full |
+| `https_stream_open_with_stop` | `(request: HttpsRequest, stop_token: StopToken) -> i32` | Same open. A requested token makes `https_stream_next` return `HttpsStreamErr` with message `stop requested` |
+| `https_stream_next` | `(stream: i32) -> HttpsStreamItem` | Blocks until the next headers, chunk, end, or failure |
+| `https_stream_close` | `(stream: i32) -> i32` | Stops the transfer and joins the thread |
+| `https_live_stream_count` | `() -> i32` | Live streams |
+| `https_server_sent_parser` | `() -> HttpsServerSentParser` | Empty parser |
+| `https_server_sent_feed` | `(parser: HttpsServerSentParser, chunk: string) -> HttpsServerSentFeed` | Takes complete lines from the chunk. A partial line stays in `pending` |
+| `https_server_sent_finish` | `(parser: HttpsServerSentParser) -> HttpsServerSentFeed` | Dispatches a trailing event when the stream ends without a blank line |
+
+### Example (excerpt from smoke)
+
+Source: [`misc/examples/https_stream_smoke.mlc`](../misc/examples/https_stream_smoke.mlc).
+
+```mlc
+fn feed_split_event() -> [HttpsServerSentEvent] = do
+  const first = https_server_sent_feed(https_server_sent_parser(), "event: token\ndata: on")
+  const second = https_server_sent_feed(first.parser, "e\n\n")
+  second.events
+end
+```
+
+### Limitations
+
+`https_send` still buffers the whole body. A stream does not follow redirects. The body limit counts decoded bytes. An event with an empty data buffer is not dispatched. `retry` lines are ignored. `https_stream_close` from the thread blocked in `https_stream_next` deadlocks. Request the `StopToken` from another thread instead. The progress callback and a 50 millisecond poll both observe it.
 
 ## JsonText
 

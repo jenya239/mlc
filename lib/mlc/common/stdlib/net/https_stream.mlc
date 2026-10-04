@@ -1,0 +1,338 @@
+//! @module std/net/https_stream
+//! @category net
+//!
+//! Read an HTTPS body as chunks. One background transfer feeds the chunks.
+//! https_stream_close stops that transfer and joins it.
+//! Chunk boundaries are not server-sent event boundaries.
+
+module HttpsStream
+
+import {
+  https_request_problem,
+  https_header_lines,
+  parse_response_header_block,
+  https_failure_kind_from_code,
+  HttpsHeader,
+  HttpsRequest,
+  HttpsFailure,
+  TransportFailed
+} from './https_request.mlc'
+
+extern lib "curl"
+
+extern fn stream_open(
+  method: string,
+  url: string,
+  header_lines: string,
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string,
+  proxy_url: string
+) -> i32 =
+  "mlc::curl_abi::stream_open" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn stream_open_with_stop(
+  method: string,
+  url: string,
+  header_lines: string,
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string,
+  proxy_url: string,
+  stop_token: StopToken
+) -> i32 =
+  "mlc::curl_abi::stream_open_with_stop" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn stream_next(stream: i32) -> i32 =
+  "mlc::curl_abi::stream_next" from "mlc/net/curl_abi.hpp" blocking
+
+extern fn stream_close(stream: i32) -> i32 =
+  "mlc::curl_abi::stream_close" from "mlc/net/curl_abi.hpp" blocking
+
+extern fn live_stream_count() -> i32 =
+  "mlc::curl_abi::live_stream_count" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_stream_kind(handle: i32) -> i32 =
+  "mlc::curl_abi::result_stream_kind" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_status(handle: i32) -> i32 =
+  "mlc::curl_abi::result_status" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_failure_code(handle: i32) -> i32 =
+  "mlc::curl_abi::result_failure_code" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_message(handle: i32) -> string =
+  "mlc::curl_abi::result_message" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_header_block(handle: i32) -> string =
+  "mlc::curl_abi::result_header_block" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn result_body(handle: i32) -> string =
+  "mlc::curl_abi::result_body" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn release_result(handle: i32) -> i32 =
+  "mlc::curl_abi::release_result" from "mlc/net/curl_abi.hpp" thread_safe
+
+extern fn live_result_count() -> i32 =
+  "mlc::curl_abi::live_result_count" from "mlc/net/curl_abi.hpp" thread_safe
+
+export type HttpsStreamHeaderBlock = { status: i32, headers: [HttpsHeader] }
+
+export type HttpsStreamItem =
+  HttpsStreamHeaders(HttpsStreamHeaderBlock)
+  | HttpsStreamChunk(string)
+  | HttpsStreamEnd
+  | HttpsStreamErr(HttpsFailure)
+
+export type HttpsServerSentEvent = { event_name: string, data: string, event_id: string }
+
+export type HttpsServerSentParser = {
+  pending: string,
+  event_name: string,
+  data: string,
+  event_id: string
+}
+
+export type HttpsServerSentFeed = {
+  parser: HttpsServerSentParser,
+  events: [HttpsServerSentEvent]
+}
+
+type HttpsServerSentStep = {
+  parser: HttpsServerSentParser,
+  emitted: bool,
+  event: HttpsServerSentEvent
+}
+
+fn empty_event() -> HttpsServerSentEvent =
+  HttpsServerSentEvent { event_name: "", data: "", event_id: "" }
+
+fn newline_index(text: string) -> i32 = do
+  let mut index = 0
+  let mut found = -1
+  while index < text.length() && found < 0 do
+    if text.char_at(index) == "\n" then found = index end
+    index = index + 1
+  end
+  found
+end
+
+fn colon_index(text: string) -> i32 = do
+  let mut index = 0
+  let mut found = -1
+  while index < text.length() && found < 0 do
+    if text.char_at(index) == ":" then found = index end
+    index = index + 1
+  end
+  found
+end
+
+fn strip_carriage_return(line: string) -> string =
+  if line.length() > 0 && line.char_at(line.length() - 1) == "\r" then
+    line.substring(0, line.length() - 1)
+  else
+    line
+  end
+
+fn field_value(line: string, colon: i32) -> string = do
+  let mut start = colon + 1
+  if start < line.length() && line.char_at(start) == " " then
+    start = start + 1
+  end
+  line.substring(start, line.length() - start)
+end
+
+fn without_trailing_newline(text: string) -> string =
+  if text.length() > 0 && text.char_at(text.length() - 1) == "\n" then
+    text.substring(0, text.length() - 1)
+  else
+    text
+  end
+
+fn parser_with(
+  parser: HttpsServerSentParser,
+  event_name: string,
+  data: string,
+  event_id: string
+) -> HttpsServerSentParser =
+  HttpsServerSentParser {
+    pending: parser.pending,
+    event_name: event_name,
+    data: data,
+    event_id: event_id
+  }
+
+fn dispatch_server_sent(parser: HttpsServerSentParser) -> HttpsServerSentStep = do
+  if parser.data == "" then
+    HttpsServerSentStep {
+      parser: parser_with(parser, "", "", parser.event_id),
+      emitted: false,
+      event: empty_event()
+    }
+  else
+    const event_name = if parser.event_name == "" then "message" else parser.event_name end
+    HttpsServerSentStep {
+      parser: parser_with(parser, "", "", parser.event_id),
+      emitted: true,
+      event: HttpsServerSentEvent {
+        event_name: event_name,
+        data: without_trailing_newline(parser.data),
+        event_id: parser.event_id
+      }
+    }
+  end
+end
+
+fn with_field(parser: HttpsServerSentParser, name: string, value: string) -> HttpsServerSentParser =
+  if name == "data" then parser_with(parser, parser.event_name, parser.data + value + "\n", parser.event_id)
+  else if name == "event" then parser_with(parser, value, parser.data, parser.event_id)
+  else if name == "id" then parser_with(parser, parser.event_name, parser.data, value)
+  else parser
+  end
+
+fn apply_server_sent_line(parser: HttpsServerSentParser, line: string) -> HttpsServerSentStep = do
+  if line == "" then
+    dispatch_server_sent(parser)
+  else if line.char_at(0) == ":" then
+    HttpsServerSentStep { parser: parser, emitted: false, event: empty_event() }
+  else
+    const colon = colon_index(line)
+    const name = if colon < 0 then line else line.substring(0, colon) end
+    const value = if colon < 0 then "" else field_value(line, colon) end
+    HttpsServerSentStep {
+      parser: with_field(parser, name, value),
+      emitted: false,
+      event: empty_event()
+    }
+  end
+end
+
+export fn https_server_sent_parser() -> HttpsServerSentParser =
+  HttpsServerSentParser { pending: "", event_name: "", data: "", event_id: "" }
+
+export fn https_server_sent_feed(parser: HttpsServerSentParser, chunk: string) -> HttpsServerSentFeed = do
+  let mut pending = parser.pending + chunk
+  let mut current = parser
+  let mut events: [HttpsServerSentEvent] = []
+  let mut newline = newline_index(pending)
+  while newline >= 0 do
+    const raw_line = pending.substring(0, newline)
+    pending = pending.substring(newline + 1, pending.length() - newline - 1)
+    const step = apply_server_sent_line(current, strip_carriage_return(raw_line))
+    current = step.parser
+    if step.emitted then events.push(step.event) end
+    newline = newline_index(pending)
+  end
+  HttpsServerSentFeed {
+    parser: HttpsServerSentParser {
+      pending: pending,
+      event_name: current.event_name,
+      data: current.data,
+      event_id: current.event_id
+    },
+    events: events
+  }
+end
+
+export fn https_server_sent_finish(parser: HttpsServerSentParser) -> HttpsServerSentFeed = do
+  let mut current = parser
+  let mut events: [HttpsServerSentEvent] = []
+  if current.pending != "" then
+    const step = apply_server_sent_line(current, strip_carriage_return(current.pending))
+    current = HttpsServerSentParser {
+      pending: "",
+      event_name: step.parser.event_name,
+      data: step.parser.data,
+      event_id: step.parser.event_id
+    }
+    if step.emitted then events.push(step.event) end
+  end
+  if current.data != "" then
+    const step = dispatch_server_sent(current)
+    current = step.parser
+    if step.emitted then events.push(step.event) end
+  end
+  HttpsServerSentFeed { parser: current, events: events }
+end
+
+fn item_from_handle(handle: i32) -> HttpsStreamItem = do
+  const kind = result_stream_kind(handle)
+  const status = result_status(handle)
+  const failure_code = result_failure_code(handle)
+  const message = result_message(handle)
+  const header_block = result_header_block(handle)
+  const body = result_body(handle)
+  release_result(handle)
+  if kind == 1 then
+    HttpsStreamHeaders(HttpsStreamHeaderBlock {
+      status: status,
+      headers: parse_response_header_block(header_block)
+    })
+  else if kind == 2 then
+    HttpsStreamChunk(body)
+  else if kind == 3 then
+    HttpsStreamEnd
+  else
+    HttpsStreamErr(HttpsFailure {
+      kind: https_failure_kind_from_code(failure_code),
+      message: message
+    })
+  end
+end
+
+export fn https_stream_open(request: HttpsRequest) -> i32 = do
+  const problem = https_request_problem(request)
+  if problem != "" then
+    -1
+  else
+    stream_open(
+      request.method,
+      request.url,
+      https_header_lines(request.headers),
+      request.body,
+      request.timeout_milliseconds,
+      request.max_response_bytes,
+      request.ca_bundle_path,
+      request.proxy_url
+    )
+  end
+end
+
+export fn https_stream_open_with_stop(request: HttpsRequest, stop_token: StopToken) -> i32 = do
+  const problem = https_request_problem(request)
+  if problem != "" then
+    -1
+  else
+    stream_open_with_stop(
+      request.method,
+      request.url,
+      https_header_lines(request.headers),
+      request.body,
+      request.timeout_milliseconds,
+      request.max_response_bytes,
+      request.ca_bundle_path,
+      request.proxy_url,
+      stop_token
+    )
+  end
+end
+
+export fn https_stream_next(stream: i32) -> HttpsStreamItem = do
+  const handle = stream_next(stream)
+  if handle < 0 then
+    HttpsStreamErr(HttpsFailure { kind: TransportFailed, message: "result table full" })
+  else
+    item_from_handle(handle)
+  end
+end
+
+export fn https_stream_close(stream: i32) -> i32 =
+  stream_close(stream)
+
+export fn https_live_stream_count() -> i32 =
+  live_stream_count()
+
+export fn https_live_handle_count() -> i32 =
+  live_result_count()

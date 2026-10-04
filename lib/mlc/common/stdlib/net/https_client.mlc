@@ -34,9 +34,23 @@ extern fn perform_request(
   body: string,
   timeout_milliseconds: i32,
   max_response_bytes: i32,
-  ca_bundle_path: string
+  ca_bundle_path: string,
+  proxy_url: string
 ) -> i32 =
   "mlc::curl_abi::perform_request" from "mlc/net/curl_abi.hpp" blocking
+
+extern fn perform_request_with_stop(
+  method: string,
+  url: string,
+  header_lines: string,
+  body: string,
+  timeout_milliseconds: i32,
+  max_response_bytes: i32,
+  ca_bundle_path: string,
+  proxy_url: string,
+  stop_token: StopToken
+) -> i32 =
+  "mlc::curl_abi::perform_request_with_stop" from "mlc/net/curl_abi.hpp" blocking
 
 extern fn result_status(handle: i32) -> i32 =
   "mlc::curl_abi::result_status" from "mlc/net/curl_abi.hpp" thread_safe
@@ -76,7 +90,8 @@ extern fn session_perform(
   body: string,
   timeout_milliseconds: i32,
   max_response_bytes: i32,
-  ca_bundle_path: string
+  ca_bundle_path: string,
+  proxy_url: string
 ) -> i32 =
   "mlc::curl_abi::session_perform" from "mlc/net/curl_abi.hpp" blocking
 
@@ -109,7 +124,8 @@ fn send_after_validation(request: HttpsRequest) -> HttpsResult = do
     request.body,
     request.timeout_milliseconds,
     request.max_response_bytes,
-    request.ca_bundle_path
+    request.ca_bundle_path,
+    request.proxy_url
   )
   if handle < 0 then
     HttpsErr(HttpsFailure { kind: TransportFailed, message: "result table full" })
@@ -127,6 +143,34 @@ export fn https_send(request: HttpsRequest) -> HttpsResult = do
   end
 end
 
+fn send_with_stop_after_validation(request: HttpsRequest, stop_token: StopToken) -> HttpsResult = do
+  const handle = perform_request_with_stop(
+    request.method,
+    request.url,
+    https_header_lines(request.headers),
+    request.body,
+    request.timeout_milliseconds,
+    request.max_response_bytes,
+    request.ca_bundle_path,
+    request.proxy_url,
+    stop_token
+  )
+  if handle < 0 then
+    HttpsErr(HttpsFailure { kind: TransportFailed, message: "result table full" })
+  else
+    result_from_handle(handle)
+  end
+end
+
+export fn https_send_with_stop(request: HttpsRequest, stop_token: StopToken) -> HttpsResult = do
+  const problem = https_request_problem(request)
+  if problem != "" then
+    HttpsErr(HttpsFailure { kind: InvalidRequest, message: problem })
+  else
+    send_with_stop_after_validation(request, stop_token)
+  end
+end
+
 fn request_with_defaults(
   method: string,
   url: string,
@@ -140,7 +184,8 @@ fn request_with_defaults(
     body: body,
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 export fn https_get(url: string, headers: [HttpsHeader]) -> HttpsResult =
@@ -173,7 +218,8 @@ fn session_send_after_validation(session: i32, request: HttpsRequest) -> HttpsRe
     request.body,
     request.timeout_milliseconds,
     request.max_response_bytes,
-    request.ca_bundle_path
+    request.ca_bundle_path,
+    request.proxy_url
   )
   if handle < 0 then
     HttpsErr(HttpsFailure { kind: TransportFailed, message: "result table full" })

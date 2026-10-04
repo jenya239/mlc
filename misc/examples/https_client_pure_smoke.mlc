@@ -36,7 +36,8 @@ fn baseline() -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_method(method: string) -> HttpsRequest =
@@ -47,7 +48,8 @@ fn with_method(method: string) -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_url(url: string) -> HttpsRequest =
@@ -58,7 +60,8 @@ fn with_url(url: string) -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_header(name: string, value: string) -> HttpsRequest =
@@ -69,7 +72,8 @@ fn with_header(name: string, value: string) -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_body(method: string, body: string) -> HttpsRequest =
@@ -80,7 +84,8 @@ fn with_body(method: string, body: string) -> HttpsRequest =
     body: body,
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_timeout(timeout_milliseconds: i32) -> HttpsRequest =
@@ -91,7 +96,8 @@ fn with_timeout(timeout_milliseconds: i32) -> HttpsRequest =
     body: "",
     timeout_milliseconds: timeout_milliseconds,
     max_response_bytes: 4194304,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_limit(max_response_bytes: i32) -> HttpsRequest =
@@ -102,7 +108,8 @@ fn with_limit(max_response_bytes: i32) -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: max_response_bytes,
-    ca_bundle_path: ""
+    ca_bundle_path: "",
+    proxy_url: ""
   }
 
 fn with_bundle(ca_bundle_path: string) -> HttpsRequest =
@@ -113,7 +120,20 @@ fn with_bundle(ca_bundle_path: string) -> HttpsRequest =
     body: "",
     timeout_milliseconds: 30000,
     max_response_bytes: 4194304,
-    ca_bundle_path: ca_bundle_path
+    ca_bundle_path: ca_bundle_path,
+    proxy_url: ""
+  }
+
+fn with_proxy(proxy_url: string) -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://example.com/path",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 30000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: "",
+    proxy_url: proxy_url
   }
 
 fn rejected(request: HttpsRequest) -> bool =
@@ -216,6 +236,27 @@ fn check_request() -> i32 = do
   end
   if code == 0 && accepted(with_bundle("certs/bundle.pem")) == false then
     code = 30
+  end
+  if code == 0 && accepted(with_proxy("")) == false then
+    code = 47
+  end
+  if code == 0 && accepted(with_proxy("http://127.0.0.1:9")) == false then
+    code = 48
+  end
+  if code == 0 && accepted(with_proxy("socks5h://127.0.0.1:1080")) == false then
+    code = 49
+  end
+  if code == 0 && rejected(with_proxy("not-a-proxy")) == false then
+    code = 50
+  end
+  if code == 0 && rejected(with_proxy("http://")) == false then
+    code = 51
+  end
+  if code == 0 && rejected(with_proxy("http://127.0.0.1:9\n")) == false then
+    code = 52
+  end
+  if code == 0 && rejected(with_proxy("ftp://127.0.0.1:9")) == false then
+    code = 53
   end
   if code == 0 && accepted(with_method("PUT")) == false then
     code = 40
