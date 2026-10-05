@@ -345,7 +345,16 @@ T block_on(Task<T>& task) {
     return task.block_on();
 }
 
+template<typename T>
+T block_on(Task<T>&& task) {
+    return task.block_on();
+}
+
 inline void block_on(Task<void>& task) {
+    task.block_on();
+}
+
+inline void block_on(Task<void>&& task) {
     task.block_on();
 }
 

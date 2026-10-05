@@ -1,0 +1,101 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  https_send_async,
+  task_then,
+  task_ready
+} from '../../lib/mlc/common/stdlib/net/https_async.mlc'
+import {
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  InvalidRequest,
+  ResolveFailed,
+  ConnectFailed,
+  TimedOut,
+  CertificateRejected,
+  ResponseTooLarge,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn request_for(method: string, path: string, body: string) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
+    url: "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + path,
+    headers: [],
+    body: body,
+    timeout_milliseconds: 5000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", ""),
+    proxy_url: ""
+  }
+
+fn closed_request() -> HttpsRequest =
+  HttpsRequest {
+    method: "GET",
+    url: "https://127.0.0.1:1/closed",
+    headers: [],
+    body: "",
+    timeout_milliseconds: 5000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", ""),
+    proxy_url: ""
+  }
+
+fn ok_body(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body,
+    HttpsErr(_) => ""
+  }
+
+fn failure_is_connect(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => false,
+    HttpsErr(failure) => match failure.kind {
+      ConnectFailed => true,
+      InvalidRequest => false,
+      ResolveFailed => false,
+      TimedOut => false,
+      CertificateRejected => false,
+      ResponseTooLarge => false,
+      TransportFailed => false
+    }
+  }
+
+fn user_request(identifier: string) -> HttpsRequest =
+  request_for("POST", "/echo", identifier)
+
+fn order_request(body: string) -> HttpsRequest =
+  request_for("POST", "/echo", body)
+
+fn load_order(identifier: string) -> Task<HttpsResult> =
+  task_then(https_send_async(user_request(identifier)), user =>
+    match user {
+      HttpsOk(response) => https_send_async(order_request(response.body)),
+      HttpsErr(failure) => task_ready(HttpsErr(failure))
+    }
+  )
+
+fn load_closed() -> Task<HttpsResult> =
+  task_then(https_send_async(closed_request()), result =>
+    match result {
+      HttpsOk(_) => https_send_async(order_request("unused")),
+      HttpsErr(failure) => task_ready(HttpsErr(failure))
+    }
+  )
+
+fn main() -> i32 = do
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" then
+    return 1
+  end
+  let order = block_on(load_order("order-9"))
+  if ok_body(order) != "order-9" then
+    return 2
+  end
+  let closed = block_on(load_closed())
+  if failure_is_connect(closed) == false then
+    return 3
+  end
+  println("https_task_then body=order-9 connect_failure=yes")
+  0
+end

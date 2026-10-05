@@ -5,12 +5,12 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 5
+next_step: 6
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
 step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
 step_3: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, block_on_sleep elapsed_milliseconds=30, spawn_without_event_loop
 step_4: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0, connection_count_delta=2, thread_count_unchanged count=1
-step_5: pending
+step_5: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_https_client_gate.sh exit 0
 step_6: pending
 step_7: pending
 ```
@@ -136,9 +136,9 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 5. Поверхность MLC
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh` завершился с кодом 0 (`https_send_async_basic status=200`, `https_send_async_sequential body=user-1`, `https_task_all models=models-body billing=billing-body`, `https_task_then body=order-9 connect_failure=yes`). `HTTPS_CLIENT_REQUIRE=1 TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_https_client_gate.sh` завершился с кодом 0. Лямбда в `extern fn` принята mlcc. Комбинаторы — функции MLC: `task_all` принимает `ref Task`, `task_then` вызывает продолжение и ждёт возвращённый `Task`.
 
-Файлы: `runtime/include/mlc/reactor/task_combinators.hpp`, `lib/mlc/common/stdlib/net/https_async.mlc`, `misc/examples/https_send_async_basic.mlc`, `https_send_async_sequential.mlc`, `https_task_all_smoke.mlc`, `https_task_then_smoke.mlc`, `scripts/run_reactor_mlc_smoke.sh`.
+Файлы: `lib/mlc/common/stdlib/net/https_async.mlc`, `runtime/include/mlc/reactor/https_async_bridge.hpp`, `runtime/include/mlc/core/task.hpp`, `misc/examples/https_send_async_basic.mlc`, `https_send_async_sequential.mlc`, `https_task_all_smoke.mlc`, `https_task_then_smoke.mlc`, `scripts/run_reactor_mlc_smoke.sh`.
 
 Сделать:
 

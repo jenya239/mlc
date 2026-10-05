@@ -1,0 +1,42 @@
+//! @module std/net/https_async
+//! @category net
+//! @type mixed
+//!
+//! HTTPS on the per-thread reactor. https_send_async registers the transfer
+//! before it returns. No stop token is passed: the transfer uses a token that
+//! has not been requested.
+
+module HttpsAsync
+
+import {
+  HttpsRequest,
+  HttpsResult
+} from './https_request.mlc'
+
+extern lib "curl"
+
+export type HttpsResultPair = { first_result: HttpsResult, second_result: HttpsResult }
+
+export extern fn https_send_async(request: HttpsRequest) -> Task<HttpsResult> =
+  "mlc::reactor::https_send_async" from "mlc/reactor/https_async_bridge.hpp" blocking
+
+export extern fn task_ready(value: HttpsResult) -> Task<HttpsResult> =
+  "mlc::reactor::task_ready_https_result" from "mlc/reactor/https_async_bridge.hpp" blocking
+
+export extern fn task_ready_pair(value: HttpsResultPair) -> Task<HttpsResultPair> =
+  "mlc::reactor::task_ready_https_result_pair" from "mlc/reactor/https_async_bridge.hpp" blocking
+
+export fn task_all(first: ref Task<HttpsResult>, second: ref Task<HttpsResult>) -> Task<HttpsResultPair> =
+  task_ready_pair(HttpsResultPair {
+    first_result: block_on(first),
+    second_result: block_on(second)
+  })
+
+export fn task_then(
+  source: Task<HttpsResult>,
+  continuation: (HttpsResult) -> Task<HttpsResult>
+) -> Task<HttpsResult> = do
+  const value = block_on(source)
+  const next = continuation(value)
+  task_ready(block_on(next))
+end
