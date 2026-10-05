@@ -5,14 +5,14 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 7
+next_step: none
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
 step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
 step_3: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, block_on_sleep elapsed_milliseconds=30, spawn_without_event_loop
 step_4: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0, connection_count_delta=2, thread_count_unchanged count=1
 step_5: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_https_client_gate.sh exit 0
 step_6: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_https_cpp_smoke.sh exit 0
-step_7: pending
+step_7: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_matrix.sh exit 0
 ```
 
 Поле шага меняется только на `pending`, `done` или `blocked`. Рядом с `done` пишется короткая строка: коммит и команда, которая завершилась с кодом 0. Рядом с `blocked` пишется факт, который остановил шаг. `next_step` — наименьший номер со статусом не `done`.
@@ -167,9 +167,9 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 7. Матрица
 
-Статус: `pending`.
+Статус: `done`. До правок регрессия завершилась с кодом 0: шлюз, `run_curl_abi_cpp_smoke.sh` внутри него, `run_https_proxy_smoke.sh`, `run_https_stream_smoke.sh`, `run_https_session_smoke.sh`, `run_https_redirect_smoke.sh`, `run_https_retry_smoke.sh`, и `run_https_client_live_smoke.sh` (`SKIP`). `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_matrix.sh` завершился с кодом 0 (`post_echo status=200 body=echo-body`, `is_ready_does_not_pump milliseconds=200`, `descriptor_count_unchanged count=27`, `sequential_requests=100 thread_count_unchanged count=1`, `wakeup_after_loop_destroyed write_skipped=yes`). Те же регрессионные команды внутри матрицы снова завершились с кодом 0. Следующего не-done шага нет.
 
-Файлы: `scripts/run_reactor_matrix.sh`, недостающие кейсы в уже созданных тестах (`runtime/test/test_reactor_lifecycle.cpp`, если жизни дескриптора ещё нет отдельным файлом).
+Файлы: `scripts/run_reactor_matrix.sh`, `runtime/test/test_reactor_lifecycle.cpp`, `runtime/test/test_reactor_https.cpp`, `runtime/test/test_reactor_block_on.cpp`, `scripts/run_reactor_https_cpp_smoke.sh`.
 
 `scripts/run_reactor_matrix.sh` запускает смоуки реактора и регрессию. Ненулевой код любого пункта останавливает скрипт.
 

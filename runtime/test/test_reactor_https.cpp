@@ -110,6 +110,68 @@ std::string describe(const ObservedTransfer& observed) {
            " body_bytes=" + std::to_string(observed.body.size());
 }
 
+ObservedTransfer observe_blocking_exchange(
+    const std::string& method, const std::string& url, const std::string& body) {
+    const std::int32_t handle = mlc::curl_abi::perform_request(
+        mlc::String(method.c_str()),
+        mlc::String(url.c_str()),
+        mlc::String(""),
+        mlc::String(body.c_str()),
+        5000,
+        4194304,
+        mlc::String(authority_path().c_str()),
+        mlc::String(""));
+    ObservedTransfer observed;
+    observed.status = mlc::curl_abi::result_status(handle);
+    observed.failure_code = mlc::curl_abi::result_failure_code(handle);
+    observed.message = text_of(mlc::curl_abi::result_message(handle));
+    observed.body = text_of(mlc::curl_abi::result_body(handle));
+    mlc::curl_abi::release_result(handle);
+    return observed;
+}
+
+ObservedTransfer observe_reactor_exchange(
+    const std::string& method,
+    const std::string& url,
+    const std::string& body,
+    mlc::concurrency::StopToken stop_token) {
+    mlc::Task<mlc::reactor::HttpsReactorResult> task = mlc::reactor::start_https_transfer(
+        mlc::String(method.c_str()),
+        mlc::String(url.c_str()),
+        mlc::String(""),
+        mlc::String(body.c_str()),
+        5000,
+        4194304,
+        mlc::String(authority_path().c_str()),
+        mlc::String(""),
+        std::move(stop_token));
+    if (!task.is_ready()) {
+        mlc::reactor::EventLoop::current().run_until([&] { return task.is_ready(); });
+    }
+    const mlc::reactor::HttpsReactorResult result = task.block_on();
+    ObservedTransfer observed;
+    observed.status = result.status;
+    observed.failure_code = result.failure_code;
+    observed.message = result.message;
+    observed.body = result.body;
+    return observed;
+}
+
+int compare_post_echo() {
+    const std::string url = good_url("/echo");
+    const std::string body = "echo-body";
+    mlc::concurrency::StopSource stop_source;
+    const ObservedTransfer blocking = observe_blocking_exchange("POST", url, body);
+    const ObservedTransfer reactor = observe_reactor_exchange("POST", url, body, stop_source.token());
+    if (!same_transfer(blocking, reactor) || reactor.status != 200 || reactor.body != body) {
+        return fail(
+            2,
+            "post_echo blocking " + describe(blocking) + " reactor " + describe(reactor));
+    }
+    std::cout << "post_echo status=200 body=echo-body\n";
+    return 0;
+}
+
 int compare_case(const std::string& url, int code, const std::string& name) {
     mlc::concurrency::StopSource stop_source;
     const ObservedTransfer blocking = observe_blocking(url);
@@ -130,6 +192,8 @@ int main() {
 
     const int body_code = compare_case(good_url("/binary"), 2, "get_body");
     if (body_code != 0) return body_code;
+    const int post_code = compare_post_echo();
+    if (post_code != 0) return post_code;
     const int certificate_code = compare_case(wrong_url("/echo"), 3, "wrong_certificate");
     if (certificate_code != 0) return certificate_code;
     const int connect_code = compare_case("https://127.0.0.1:1/closed", 4, "closed_port");

@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE="$ROOT_DIR/runtime/test/test_reactor_https.cpp"
 PARALLEL_SOURCE="$ROOT_DIR/runtime/test/test_reactor_parallel.cpp"
 CANCEL_SOURCE="$ROOT_DIR/runtime/test/test_reactor_cancel.cpp"
+LIFECYCLE_SOURCE="$ROOT_DIR/runtime/test/test_reactor_lifecycle.cpp"
 DIRECTORY="${REACTOR_HTTPS_DIR:-${TMPDIR:-$ROOT_DIR/tmp}/reactor_https}"
 CXX="${CXX:-c++}"
 
@@ -91,6 +92,20 @@ echo "[reactor https] stage=run_cancel" >&2
 if ! REACTOR_HTTPS_DIR="$DIRECTORY" https_proxy="http://127.0.0.1:9" \
   "$DIRECTORY/test_reactor_cancel"; then
   echo "[reactor https] FAIL stage=run_cancel" >&2
+  exit 1
+fi
+
+echo "[reactor https] stage=compile_lifecycle" >&2
+if ! "$CXX" -std=c++20 -pthread -Wall -Wextra -I"$ROOT_DIR/runtime/include" \
+  -o "$DIRECTORY/test_reactor_lifecycle" "$LIFECYCLE_SOURCE" "${LINK_FLAGS[@]}"; then
+  echo "[reactor https] FAIL stage=compile_lifecycle" >&2
+  exit 1
+fi
+
+echo "[reactor https] stage=run_lifecycle" >&2
+if ! REACTOR_HTTPS_DIR="$DIRECTORY" https_proxy="http://127.0.0.1:9" \
+  "$DIRECTORY/test_reactor_lifecycle"; then
+  echo "[reactor https] FAIL stage=run_lifecycle" >&2
   exit 1
 fi
 

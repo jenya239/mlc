@@ -29,11 +29,11 @@ int main() {
 
     mlc::Task<void> waiting = mlc::reactor::sleep_for_milliseconds(30);
     waiting.resume();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     if (waiting.is_ready()) {
         return fail(2, "is_ready pumped the event loop");
     }
-    std::cout << "is_ready_does_not_pump\n";
+    std::cout << "is_ready_does_not_pump milliseconds=200\n";
     waiting.block_on();
     if (!waiting.is_ready()) {
         return fail(2, "block_on left the armed sleep unfinished");
