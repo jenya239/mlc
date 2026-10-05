@@ -5,9 +5,9 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 2
+next_step: 3
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
-step_2: pending
+step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
 step_3: pending
 step_4: pending
 step_5: pending
@@ -91,7 +91,7 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 2. Одна HTTPS-передача
 
-Статус: `pending`.
+Статус: `done`. `bash scripts/run_reactor_https_cpp_smoke.sh` и `HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh` завершились с кодом 0. `scripts/run_reactor_cpp_smoke.sh` линкует libcurl, потому что `EventLoop` владеет `CURLM*`.
 
 Файлы: `runtime/include/mlc/reactor/https_transfer.hpp`, `runtime/test/test_reactor_https.cpp`, `scripts/run_reactor_https_cpp_smoke.sh`. Меняются `event_loop.hpp` и `runtime/include/mlc/net/curl_abi.hpp` только выносом общей настройки easy-handle.
 

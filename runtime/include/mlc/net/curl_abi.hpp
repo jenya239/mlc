@@ -155,6 +155,167 @@ inline StreamTable& stream_table() {
   return table;
 }
 
+inline void prepare_curl() {
+  static std::once_flag once;
+  std::call_once(once, [] { curl_global_init(CURL_GLOBAL_DEFAULT); });
+}
+
+inline bool append_https_header_lines(curl_slist** header_list, const String& header_lines) {
+  const char* data = header_lines.raw_data();
+  const std::size_t size = header_lines.raw_size();
+  std::size_t line_start = 0;
+  for (std::size_t index = 0; index <= size; ++index) {
+    const bool at_end = index == size;
+    if (!at_end && data[index] != '\n') continue;
+    if (index > line_start) {
+      const std::string line(data + line_start, index - line_start);
+      curl_slist* updated = curl_slist_append(*header_list, line.c_str());
+      if (updated == nullptr) return false;
+      *header_list = updated;
+    }
+    line_start = index + 1;
+  }
+  return true;
+}
+
+inline std::size_t https_body_write(
+    char* pointer, std::size_t size, std::size_t member_count, void* userdata) {
+  if (size != 0 && member_count > (static_cast<std::size_t>(-1) / size)) return 0;
+  const std::size_t byte_count = size * member_count;
+  auto* state = static_cast<TransferState*>(userdata);
+  if (state->body.size() + byte_count > state->maximum_body_bytes) {
+    state->body_too_large = true;
+    return 0;
+  }
+  try {
+    state->body.append(pointer, byte_count);
+  } catch (...) {
+    state->body_too_large = true;
+    return 0;
+  }
+  return byte_count;
+}
+
+inline std::size_t https_header_write(
+    char* pointer, std::size_t size, std::size_t member_count, void* userdata) {
+  if (size != 0 && member_count > (static_cast<std::size_t>(-1) / size)) return 0;
+  const std::size_t byte_count = size * member_count;
+  auto* state = static_cast<TransferState*>(userdata);
+  constexpr std::size_t header_block_limit = 64 * 1024;
+  if (byte_count >= 5 && std::memcmp(pointer, "HTTP/", 5) == 0) {
+    state->header_block.clear();
+  }
+  if (state->header_block.size() + byte_count > header_block_limit) {
+    state->header_block_too_large = true;
+    return 0;
+  }
+  try {
+    state->header_block.append(pointer, byte_count);
+  } catch (...) {
+    state->header_block_too_large = true;
+    return 0;
+  }
+  return byte_count;
+}
+
+inline std::int32_t classify_curl_transfer(CURLcode code, bool body_too_large) {
+  if (code == CURLE_OK) return 0;
+  if (code == CURLE_WRITE_ERROR && body_too_large) return 6;
+  if (code == CURLE_COULDNT_RESOLVE_HOST) return 2;
+  if (code == CURLE_COULDNT_CONNECT) return 3;
+  if (code == CURLE_OPERATION_TIMEDOUT) return 4;
+  if (code == CURLE_PEER_FAILED_VERIFICATION) return 5;
+  return 7;
+}
+
+inline String curl_transfer_message(CURLcode code, const char* error_buffer) {
+  if (code == CURLE_OK) return String();
+  std::string message = curl_easy_strerror(code);
+  if (error_buffer != nullptr && error_buffer[0] != '\0') {
+    message.append(": ");
+    message.append(error_buffer);
+  }
+  return String(message);
+}
+
+inline bool configure_https_easy_handle(
+    CURL* curl_handle,
+    TransferState* transfer,
+    char* error_buffer,
+    const String& method,
+    const String& url,
+    const String& header_lines,
+    const String& body,
+    std::int32_t timeout_milliseconds,
+    const String& ca_bundle_path,
+    const String& proxy_url,
+    bool force_new_connection,
+    std::size_t (*body_callback)(char*, std::size_t, std::size_t, void*),
+    void* body_data,
+    curl_slist** header_list) {
+  *header_list = nullptr;
+  curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url.raw_data());
+  curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, static_cast<long>(timeout_milliseconds));
+  curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(timeout_milliseconds));
+#if LIBCURL_VERSION_NUM >= 0x075500
+  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS_STR, "https");
+#else
+  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+#endif
+  curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 0L);
+  if (proxy_url.raw_size() == 0) {
+    curl_easy_setopt(curl_handle, CURLOPT_PROXY, "");
+  } else {
+    curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy_url.raw_data());
+    curl_easy_setopt(curl_handle, CURLOPT_NOPROXY, "");
+  }
+  curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, error_buffer);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 2L);
+  curl_easy_setopt(curl_handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+  curl_easy_setopt(curl_handle, CURLOPT_ACCEPT_ENCODING, "");
+  if (force_new_connection) {
+    curl_easy_setopt(curl_handle, CURLOPT_FRESH_CONNECT, 1L);
+  }
+  if (ca_bundle_path.raw_size() > 0) {
+    curl_easy_setopt(curl_handle, CURLOPT_CAINFO, ca_bundle_path.raw_data());
+  }
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, body_callback);
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, body_data);
+  curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, https_header_write);
+  curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, transfer);
+
+  const std::string_view method_text = method.view();
+  if (method_text == "POST" || method_text == "PUT" || method_text == "PATCH" ||
+      method_text == "DELETE") {
+    if (method_text == "POST") {
+      curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
+    } else {
+      curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, method.raw_data());
+    }
+    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body.raw_data());
+    curl_easy_setopt(
+        curl_handle,
+        CURLOPT_POSTFIELDSIZE_LARGE,
+        static_cast<curl_off_t>(body.raw_size()));
+  } else if (method_text == "HEAD") {
+    curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1L);
+  } else {
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
+  }
+
+  if (!append_https_header_lines(header_list, header_lines)) {
+    if (*header_list != nullptr) curl_slist_free_all(*header_list);
+    *header_list = nullptr;
+    return false;
+  }
+  if (*header_list != nullptr) {
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, *header_list);
+  }
+  return true;
+}
+
 namespace {
 
 constexpr std::int32_t kInvalidRequest = 1;
@@ -164,7 +325,6 @@ constexpr std::int32_t kTimedOut = 4;
 constexpr std::int32_t kCertificateRejected = 5;
 constexpr std::int32_t kResponseTooLarge = 6;
 constexpr std::int32_t kTransportFailed = 7;
-constexpr std::size_t kHeaderBlockLimit = 64 * 1024;
 
 struct EasyGuard {
   CURL* easy = nullptr;
@@ -179,10 +339,7 @@ struct EasyGuard {
   }
 };
 
-void ensure_curl_ready() {
-  static std::once_flag once;
-  std::call_once(once, [] { curl_global_init(CURL_GLOBAL_DEFAULT); });
-}
+void ensure_curl_ready() { prepare_curl(); }
 
 bool bytes_contain(const String& text, char byte) {
   const char* data = text.raw_data();
@@ -273,8 +430,6 @@ std::int32_t store_transport_message(const char* message) {
 }
 
 std::size_t write_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata);
-std::size_t header_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata);
-bool append_header_list(curl_slist** header_list, const String& header_lines);
 std::int32_t failure_code_from_curl(CURLcode code, bool body_too_large);
 String message_from_curl(CURLcode code, const char* error_buffer);
 String text_from_bytes(const std::string& bytes);
@@ -294,67 +449,21 @@ bool bind_https_request(
     std::size_t (*body_callback)(char*, std::size_t, std::size_t, void*),
     void* body_data,
     curl_slist** header_list) {
-  *header_list = nullptr;
-  curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt(curl_handle, CURLOPT_URL, url.raw_data());
-  curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, static_cast<long>(timeout_milliseconds));
-  curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT_MS, static_cast<long>(timeout_milliseconds));
-#if LIBCURL_VERSION_NUM >= 0x075500
-  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS_STR, "https");
-#else
-  curl_easy_setopt(curl_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
-#endif
-  curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 0L);
-  if (proxy_url.raw_size() == 0) {
-    curl_easy_setopt(curl_handle, CURLOPT_PROXY, "");
-  } else {
-    curl_easy_setopt(curl_handle, CURLOPT_PROXY, proxy_url.raw_data());
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROXY, "");
-  }
-  curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, error_buffer);
-  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1L);
-  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 2L);
-  curl_easy_setopt(curl_handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
-  curl_easy_setopt(curl_handle, CURLOPT_ACCEPT_ENCODING, "");
-  if (force_new_connection) {
-    curl_easy_setopt(curl_handle, CURLOPT_FRESH_CONNECT, 1L);
-  }
-  if (ca_bundle_path.raw_size() > 0) {
-    curl_easy_setopt(curl_handle, CURLOPT_CAINFO, ca_bundle_path.raw_data());
-  }
-  curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, body_callback);
-  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, body_data);
-  curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_callback);
-  curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, transfer);
-
-  const std::string_view method_text = method.view();
-  if (method_text == "POST" || method_text == "PUT" || method_text == "PATCH" ||
-      method_text == "DELETE") {
-    if (method_text == "POST") {
-      curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-    } else {
-      curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, method.raw_data());
-    }
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, body.raw_data());
-    curl_easy_setopt(
-        curl_handle,
-        CURLOPT_POSTFIELDSIZE_LARGE,
-        static_cast<curl_off_t>(body.raw_size()));
-  } else if (method_text == "HEAD") {
-    curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1L);
-  } else {
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
-  }
-
-  if (!append_header_list(header_list, header_lines)) {
-    if (*header_list != nullptr) curl_slist_free_all(*header_list);
-    *header_list = nullptr;
-    return false;
-  }
-  if (*header_list != nullptr) {
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, *header_list);
-  }
-  return true;
+  return configure_https_easy_handle(
+      curl_handle,
+      transfer,
+      error_buffer,
+      method,
+      url,
+      header_lines,
+      body,
+      timeout_milliseconds,
+      ca_bundle_path,
+      proxy_url,
+      force_new_connection,
+      body_callback,
+      body_data,
+      header_list);
 }
 
 std::int32_t perform_on_curl_handle(
@@ -426,78 +535,15 @@ const ResultSlot* live_slot(std::int32_t handle) {
 }
 
 std::size_t write_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata) {
-  if (size != 0 && member_count > (static_cast<std::size_t>(-1) / size)) return 0;
-  const std::size_t byte_count = size * member_count;
-  auto* state = static_cast<TransferState*>(userdata);
-  if (state->body.size() + byte_count > state->maximum_body_bytes) {
-    state->body_too_large = true;
-    return 0;
-  }
-  try {
-    state->body.append(pointer, byte_count);
-  } catch (...) {
-    state->body_too_large = true;
-    return 0;
-  }
-  return byte_count;
-}
-
-std::size_t header_callback(char* pointer, std::size_t size, std::size_t member_count, void* userdata) {
-  if (size != 0 && member_count > (static_cast<std::size_t>(-1) / size)) return 0;
-  const std::size_t byte_count = size * member_count;
-  auto* state = static_cast<TransferState*>(userdata);
-  if (byte_count >= 5 && std::memcmp(pointer, "HTTP/", 5) == 0) {
-    state->header_block.clear();
-  }
-  if (state->header_block.size() + byte_count > kHeaderBlockLimit) {
-    state->header_block_too_large = true;
-    return 0;
-  }
-  try {
-    state->header_block.append(pointer, byte_count);
-  } catch (...) {
-    state->header_block_too_large = true;
-    return 0;
-  }
-  return byte_count;
-}
-
-bool append_header_list(curl_slist** header_list, const String& header_lines) {
-  const char* data = header_lines.raw_data();
-  const std::size_t size = header_lines.raw_size();
-  std::size_t line_start = 0;
-  for (std::size_t index = 0; index <= size; ++index) {
-    const bool at_end = index == size;
-    if (!at_end && data[index] != '\n') continue;
-    if (index > line_start) {
-      const std::string line(data + line_start, index - line_start);
-      curl_slist* updated = curl_slist_append(*header_list, line.c_str());
-      if (updated == nullptr) return false;
-      *header_list = updated;
-    }
-    line_start = index + 1;
-  }
-  return true;
+  return https_body_write(pointer, size, member_count, userdata);
 }
 
 std::int32_t failure_code_from_curl(CURLcode code, bool body_too_large) {
-  if (code == CURLE_OK) return 0;
-  if (code == CURLE_WRITE_ERROR && body_too_large) return kResponseTooLarge;
-  if (code == CURLE_COULDNT_RESOLVE_HOST) return kResolveFailed;
-  if (code == CURLE_COULDNT_CONNECT) return kConnectFailed;
-  if (code == CURLE_OPERATION_TIMEDOUT) return kTimedOut;
-  if (code == CURLE_PEER_FAILED_VERIFICATION) return kCertificateRejected;
-  return kTransportFailed;
+  return classify_curl_transfer(code, body_too_large);
 }
 
 String message_from_curl(CURLcode code, const char* error_buffer) {
-  if (code == CURLE_OK) return String();
-  std::string message = curl_easy_strerror(code);
-  if (error_buffer != nullptr && error_buffer[0] != '\0') {
-    message.append(": ");
-    message.append(error_buffer);
-  }
-  return String(message);
+  return curl_transfer_message(code, error_buffer);
 }
 
 String text_from_bytes(const std::string& bytes) {
