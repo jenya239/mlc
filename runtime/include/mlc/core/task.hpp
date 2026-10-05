@@ -8,6 +8,15 @@
 
 namespace mlc {
 
+enum class TaskKind { Plain, Reactor };
+
+using ReactorPumpFunction = void (*)(bool (*is_done)(void*), void* context);
+
+inline ReactorPumpFunction& reactor_pump_function() {
+    static ReactorPumpFunction function = nullptr;
+    return function;
+}
+
 // Forward declaration
 template<typename T>
 class Task;
@@ -19,10 +28,22 @@ template<typename T>
 struct TaskPromise {
     std::variant<std::monostate, T, std::exception_ptr> result;
     std::coroutine_handle<> continuation;
+    TaskKind kind = TaskKind::Plain;
+    bool left_initial_suspend = false;
+
+    struct InitialAwaiter {
+        TaskPromise* promise;
+
+        bool await_ready() const noexcept { return false; }
+
+        void await_suspend(std::coroutine_handle<>) const noexcept {}
+
+        void await_resume() const noexcept { promise->left_initial_suspend = true; }
+    };
 
     Task<T> get_return_object();
 
-    std::suspend_always initial_suspend() noexcept { return {}; }
+    InitialAwaiter initial_suspend() noexcept { return InitialAwaiter{this}; }
 
     struct FinalAwaiter {
         bool await_ready() noexcept { return false; }
@@ -61,10 +82,22 @@ template<>
 struct TaskPromise<void> {
     std::optional<std::exception_ptr> exception;
     std::coroutine_handle<> continuation;
+    TaskKind kind = TaskKind::Plain;
+    bool left_initial_suspend = false;
+
+    struct InitialAwaiter {
+        TaskPromise* promise;
+
+        bool await_ready() const noexcept { return false; }
+
+        void await_suspend(std::coroutine_handle<>) const noexcept {}
+
+        void await_resume() const noexcept { promise->left_initial_suspend = true; }
+    };
 
     Task<void> get_return_object();
 
-    std::suspend_always initial_suspend() noexcept { return {}; }
+    InitialAwaiter initial_suspend() noexcept { return InitialAwaiter{this}; }
 
     struct FinalAwaiter {
         bool await_ready() noexcept { return false; }
@@ -94,6 +127,20 @@ struct TaskPromise<void> {
         }
     }
 };
+
+template<typename Handle>
+void drive_reactor_task(Handle& handle) {
+    if (handle && !handle.done() && !handle.promise().left_initial_suspend) {
+        handle.resume();
+    }
+    if (handle && !handle.done()) {
+        ReactorPumpFunction pump = reactor_pump_function();
+        if (pump == nullptr) {
+            throw std::logic_error("reactor task has no event loop pump");
+        }
+        pump([](void* context) { return static_cast<Handle*>(context)->done(); }, &handle);
+    }
+}
 
 } // namespace detail
 
@@ -155,9 +202,14 @@ public:
         return Awaiter{handle_};
     }
 
-    // Check if task is ready (completed)
     bool is_ready() const noexcept {
         return handle_ && handle_.done();
+    }
+
+    void mark_as_reactor() noexcept {
+        if (handle_) {
+            handle_.promise().kind = TaskKind::Reactor;
+        }
     }
 
     // Resume the coroutine (run until next suspension point)
@@ -167,11 +219,13 @@ public:
         }
     }
 
-    // Block and wait for completion, returning the result
-    // Note: This runs the task synchronously
     T block_on() {
-        while (handle_ && !handle_.done()) {
-            handle_.resume();
+        if (handle_ && handle_.promise().kind == TaskKind::Reactor) {
+            detail::drive_reactor_task(handle_);
+        } else {
+            while (handle_ && !handle_.done()) {
+                handle_.resume();
+            }
         }
         return handle_.promise().get_result();
     }
@@ -240,6 +294,12 @@ public:
         return handle_ && handle_.done();
     }
 
+    void mark_as_reactor() noexcept {
+        if (handle_) {
+            handle_.promise().kind = TaskKind::Reactor;
+        }
+    }
+
     void resume() {
         if (handle_ && !handle_.done()) {
             handle_.resume();
@@ -247,8 +307,12 @@ public:
     }
 
     void block_on() {
-        while (handle_ && !handle_.done()) {
-            handle_.resume();
+        if (handle_ && handle_.promise().kind == TaskKind::Reactor) {
+            detail::drive_reactor_task(handle_);
+        } else {
+            while (handle_ && !handle_.done()) {
+                handle_.resume();
+            }
         }
         handle_.promise().get_result();
     }

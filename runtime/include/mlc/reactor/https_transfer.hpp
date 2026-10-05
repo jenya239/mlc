@@ -62,16 +62,31 @@ struct HttpsTransferAwaiter {
     [[nodiscard]] HttpsReactorResult await_resume() const { return transfer->result; }
 };
 
-inline mlc::Task<HttpsReactorResult> wait_for_https_transfer(std::shared_ptr<HttpsTransfer> transfer) {
+inline mlc::Task<HttpsReactorResult> wait_for_https_transfer_body(std::shared_ptr<HttpsTransfer> transfer) {
     HttpsReactorResult result = co_await HttpsTransferAwaiter{std::move(transfer)};
     co_return result;
 }
 
-inline mlc::Task<HttpsReactorResult> https_transfer_failure(std::int32_t failure_code, std::string message) {
+inline mlc::Task<HttpsReactorResult> wait_for_https_transfer(std::shared_ptr<HttpsTransfer> transfer) {
+    mlc::Task<HttpsReactorResult> task = wait_for_https_transfer_body(std::move(transfer));
+    task.mark_as_reactor();
+    return task;
+}
+
+inline mlc::Task<HttpsReactorResult> https_transfer_failure_body(
+    std::int32_t failure_code, std::string message) {
     HttpsReactorResult result;
     result.failure_code = failure_code;
     result.message = std::move(message);
     co_return result;
+}
+
+inline mlc::Task<HttpsReactorResult> https_transfer_failure(
+    std::int32_t failure_code, std::string message) {
+    mlc::Task<HttpsReactorResult> task =
+        https_transfer_failure_body(failure_code, std::move(message));
+    task.mark_as_reactor();
+    return task;
 }
 
 inline void complete_https_transfer(const std::shared_ptr<HttpsTransfer>& transfer, CURLcode code) {

@@ -23,8 +23,14 @@ struct SleepAwaiter {
     void await_resume() const noexcept {}
 };
 
-inline mlc::Task<void> sleep_for_milliseconds(std::int64_t milliseconds) {
+inline mlc::Task<void> sleep_for_milliseconds_body(std::int64_t milliseconds) {
     co_await SleepAwaiter{milliseconds};
+}
+
+inline mlc::Task<void> sleep_for_milliseconds(std::int64_t milliseconds) {
+    mlc::Task<void> task = sleep_for_milliseconds_body(milliseconds);
+    task.mark_as_reactor();
+    return task;
 }
 
 }  // namespace mlc::reactor

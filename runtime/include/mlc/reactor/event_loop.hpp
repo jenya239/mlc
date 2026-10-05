@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mlc/core/task.hpp"
 #include "mlc/reactor/timer_heap.hpp"
 #include "mlc/reactor/wakeup_descriptor.hpp"
 
@@ -182,8 +183,16 @@ public:
         curl_multi_handle_ = nullptr;
     }
 
+    static EventLoop*& current_slot() noexcept {
+        thread_local EventLoop* loop = nullptr;
+        return loop;
+    }
+
+    static bool has_current() noexcept { return current_slot() != nullptr; }
+
     static EventLoop& current() {
         thread_local EventLoop loop;
+        current_slot() = &loop;
         return loop;
     }
 
@@ -255,5 +264,15 @@ public:
         }
     }
 };
+
+inline void pump_event_loop_until(bool (*is_done)(void*), void* context) {
+    EventLoop::current().run_until([is_done, context] { return is_done(context); });
+}
+
+struct ReactorPumpRegistration {
+    ReactorPumpRegistration() { mlc::reactor_pump_function() = &pump_event_loop_until; }
+};
+
+inline ReactorPumpRegistration reactor_pump_registration{};
 
 }  // namespace mlc::reactor

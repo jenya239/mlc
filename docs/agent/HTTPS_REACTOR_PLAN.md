@@ -5,10 +5,10 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 3
+next_step: 4
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
 step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
-step_3: pending
+step_3: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, block_on_sleep elapsed_milliseconds=30, spawn_without_event_loop
 step_4: pending
 step_5: pending
 step_6: pending
@@ -107,7 +107,7 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 3. `block_on` качает цикл
 
-Статус: `pending`.
+Статус: `done`. `bash scripts/run_reactor_cpp_smoke.sh` завершился с кодом 0 (`block_on_sleep elapsed_milliseconds=30`, `spawn_without_event_loop`).
 
 Файлы: `runtime/include/mlc/core/task.hpp`, при необходимости `event_loop.hpp`, `runtime/test/test_reactor_block_on.cpp`. Подключить тест к `scripts/run_reactor_cpp_smoke.sh`.
 
