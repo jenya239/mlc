@@ -5,11 +5,11 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 4
+next_step: 5
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
 step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
 step_3: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, block_on_sleep elapsed_milliseconds=30, spawn_without_event_loop
-step_4: pending
+step_4: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0, connection_count_delta=2, thread_count_unchanged count=1
 step_5: pending
 step_6: pending
 step_7: pending
@@ -123,7 +123,7 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 4. Две передачи на одном потоке
 
-Статус: `pending`.
+Статус: `done`. `bash scripts/run_reactor_https_cpp_smoke.sh` завершился с кодом 0 (`connection_count_delta=2`, `thread_count_unchanged count=1`, `silent_overlap failure=4 status=200`). Два accept получены через `good_port` и `cross_port` (порт из `Location` ответа `/redirect/cross`; файл порта сервер не пишет).
 
 Файлы: `runtime/test/test_reactor_parallel.cpp`, подключение в `scripts/run_reactor_https_cpp_smoke.sh`. `scripts/https_test_server.rb` не менять: `silent_port` и `connection_count` уже есть.
 

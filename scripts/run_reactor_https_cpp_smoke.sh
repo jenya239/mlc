@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Reactor step 2: one HTTPS transfer on the event loop, compared with curl_easy_perform.
+# Reactor HTTPS: one transfer, then two transfers on one thread.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE="$ROOT_DIR/runtime/test/test_reactor_https.cpp"
+PARALLEL_SOURCE="$ROOT_DIR/runtime/test/test_reactor_parallel.cpp"
 DIRECTORY="${REACTOR_HTTPS_DIR:-${TMPDIR:-$ROOT_DIR/tmp}/reactor_https}"
 CXX="${CXX:-c++}"
 
@@ -30,7 +31,7 @@ SERVER_PID=$!
 
 ready=0
 for _ in $(seq 1 100); do
-  if [[ -f "$DIRECTORY/ready" && -f "$DIRECTORY/wrong_port" ]]; then
+  if [[ -f "$DIRECTORY/ready" && -f "$DIRECTORY/wrong_port" && -f "$DIRECTORY/silent_port" ]]; then
     ready=1
     break
   fi
@@ -57,6 +58,20 @@ echo "[reactor https] stage=run" >&2
 if ! REACTOR_HTTPS_DIR="$DIRECTORY" https_proxy="http://127.0.0.1:9" \
   "$DIRECTORY/test_reactor_https"; then
   echo "[reactor https] FAIL stage=run" >&2
+  exit 1
+fi
+
+echo "[reactor https] stage=compile_parallel" >&2
+if ! "$CXX" -std=c++20 -pthread -Wall -Wextra -I"$ROOT_DIR/runtime/include" \
+  -o "$DIRECTORY/test_reactor_parallel" "$PARALLEL_SOURCE" "${LINK_FLAGS[@]}"; then
+  echo "[reactor https] FAIL stage=compile_parallel" >&2
+  exit 1
+fi
+
+echo "[reactor https] stage=run_parallel" >&2
+if ! REACTOR_HTTPS_DIR="$DIRECTORY" https_proxy="http://127.0.0.1:9" \
+  "$DIRECTORY/test_reactor_parallel"; then
+  echo "[reactor https] FAIL stage=run_parallel" >&2
   exit 1
 fi
 
