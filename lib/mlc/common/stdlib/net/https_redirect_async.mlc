@@ -1,0 +1,81 @@
+//! @module std/net/https_redirect_async
+//! @category net
+//!
+//! Follow Location with https_send_async. The hop rules match
+//! https_send_following_redirects: 301, 302, 303, 307, 308, https only,
+//! at most 10 hops, and Authorization and Cookie drop when the authority changes.
+
+module HttpsRedirectAsync
+
+import {
+  https_send_async,
+  task_ready,
+  task_then
+} from './https_async.mlc'
+import {
+  https_redirect_body,
+  https_redirect_headers,
+  https_redirect_hop_budget,
+  https_redirect_method,
+  https_redirect_target
+} from './https_redirect.mlc'
+import {
+  HttpsFailure,
+  HttpsRequest,
+  HttpsResult,
+  HttpsErr,
+  HttpsOk,
+  TransportFailed,
+  https_find_header
+} from './https_request.mlc'
+
+fn status_of(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => 0
+  }
+
+fn location_of(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => https_find_header(response.headers, "Location"),
+    HttpsErr(_) => ""
+  }
+
+fn status_can_redirect(status: i32) -> bool =
+  status == 301 || status == 302 || status == 303 || status == 307 || status == 308
+
+fn redirected_request(current: HttpsRequest, status: i32, target: string) -> HttpsRequest =
+  HttpsRequest {
+    method: https_redirect_method(status, current.method),
+    url: target,
+    headers: https_redirect_headers(current.headers, current.url, target),
+    body: https_redirect_body(status, current.method, current.body),
+    timeout_milliseconds: current.timeout_milliseconds,
+    max_response_bytes: current.max_response_bytes,
+    ca_bundle_path: current.ca_bundle_path,
+    proxy_url: current.proxy_url
+  }
+
+fn hop_limit_result() -> HttpsResult =
+  HttpsErr(HttpsFailure { kind: TransportFailed, message: "redirect hop limit" })
+
+fn follow_redirects(request: HttpsRequest, followed: i32, budget: i32) -> Task<HttpsResult> =
+  task_then(https_send_async(request), result => do
+    const target = https_redirect_target(request.url, location_of(result))
+    let mut can_follow = false
+    if status_can_redirect(status_of(result)) then
+      if target != "" then can_follow = true end
+    end
+    if can_follow == false then
+      task_ready(result)
+    else if followed < budget then
+      follow_redirects(redirected_request(request, status_of(result), target), followed + 1, budget)
+    else if budget > 0 then
+      task_ready(hop_limit_result())
+    else
+      task_ready(result)
+    end
+  end)
+
+export fn https_send_following_redirects_async(request: HttpsRequest, maximum_hops: i32) -> Task<HttpsResult> =
+  follow_redirects(request, 0, https_redirect_hop_budget(maximum_hops))

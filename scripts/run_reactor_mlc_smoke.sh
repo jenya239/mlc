@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reactor step 5: mlcc examples for https_send_async, task_all, and task_then.
+# Reactor MLC: https_send_async, task_all, task_then, redirects, proxy, and body limit.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -55,8 +55,10 @@ fi
 
 export HTTPS_TEST_PORT
 export HTTPS_TEST_CA
+export HTTPS_TEST_PROXY
 HTTPS_TEST_PORT="$(cat "$DIRECTORY/good_port")"
 HTTPS_TEST_CA="$(cat "$DIRECTORY/certificate_authority_path")"
+HTTPS_TEST_PROXY="http://127.0.0.1:$(cat "$DIRECTORY/proxy_port")"
 
 compile_and_run() {
   local entry="$1"
@@ -100,5 +102,14 @@ compile_and_run "$ROOT_DIR/misc/examples/https_send_async_basic.mlc" https_send_
 compile_and_run "$ROOT_DIR/misc/examples/https_send_async_sequential.mlc" https_send_async_sequential
 compile_and_run "$ROOT_DIR/misc/examples/https_task_all_smoke.mlc" https_task_all_smoke
 compile_and_run "$ROOT_DIR/misc/examples/https_task_then_smoke.mlc" https_task_then_smoke
+compile_and_run "$ROOT_DIR/misc/examples/https_redirect_async_smoke.mlc" https_redirect_async_smoke
+compile_and_run "$ROOT_DIR/misc/examples/https_limit_async_smoke.mlc" https_limit_async_smoke
+compile_and_run "$ROOT_DIR/misc/examples/https_proxy_async_smoke.mlc" https_proxy_async_smoke
+
+proxy_connect_count="$(cat "$DIRECTORY/proxy_connect_count")"
+if [[ "$proxy_connect_count" != "1" ]]; then
+  echo "[reactor mlc] FAIL stage=proxy_connect_count got=$proxy_connect_count" >&2
+  exit 1
+fi
 
 echo "[reactor mlc] ok"

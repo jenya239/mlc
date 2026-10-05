@@ -16,6 +16,7 @@ struct HttpsReactorResult {
     std::int32_t failure_code = 0;
     std::string message;
     std::string body;
+    std::string header_block;
 };
 
 struct HttpsTransfer {
@@ -32,6 +33,8 @@ struct HttpsTransfer {
     std::coroutine_handle<> continuation;
     bool complete = false;
     HttpsReactorResult result;
+    mlc::concurrency::StopToken stop_token;
+    mlc::concurrency::StopSubscription stop_subscription;
 
     HttpsTransfer() { error_buffer[0] = '\0'; }
 
@@ -105,6 +108,16 @@ inline void complete_https_transfer(const std::shared_ptr<HttpsTransfer>& transf
         transfer->result.message.assign(message.raw_data(), message.raw_size());
     }
     transfer->result.body = transfer->transfer.body;
+    transfer->result.header_block = transfer->transfer.header_block;
+    transfer->complete = true;
+}
+
+inline void complete_stopped_https_transfer(const std::shared_ptr<HttpsTransfer>& transfer) {
+    transfer->result.status = 0;
+    transfer->result.failure_code = 7;
+    transfer->result.message = "stop requested";
+    transfer->result.body.clear();
+    transfer->result.header_block.clear();
     transfer->complete = true;
 }
 
@@ -171,8 +184,17 @@ inline mlc::Task<HttpsReactorResult> start_https_transfer(
     }
 
     std::shared_ptr<HttpsTransfer> registered = transfer;
+    transfer->stop_token = stop_token;
+    loop.register_curl_stop_watch(transfer->easy, [token = transfer->stop_token] {
+        return token.requested();
+    });
+    transfer->stop_subscription = loop.subscribe_stop(transfer->stop_token);
     loop.register_curl_completion(transfer->easy, [registered](CURLcode code) {
-        complete_https_transfer(registered, code);
+        if (code == CURLE_ABORTED_BY_CALLBACK && registered->stop_token.requested()) {
+            complete_stopped_https_transfer(registered);
+        } else {
+            complete_https_transfer(registered, code);
+        }
         return registered->continuation;
     });
     loop.request_curl_service();

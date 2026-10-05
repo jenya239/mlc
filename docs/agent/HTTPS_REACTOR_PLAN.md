@@ -5,13 +5,13 @@
 Источник схемы: разговор 2026-10-05 и ответ Sonnet `mlc-support/responses/async_plan_20261005_213551.md`. Этот файл важнее того ответа там, где пути расходятся.
 
 ```
-next_step: 6
+next_step: 7
 step_1: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, elapsed_milliseconds=100, thread_count=1
 step_2: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 bash scripts/run_https_client_gate.sh exit 0
 step_3: done — bash scripts/run_reactor_cpp_smoke.sh exit 0, block_on_sleep elapsed_milliseconds=30, spawn_without_event_loop
 step_4: done — bash scripts/run_reactor_https_cpp_smoke.sh exit 0, connection_count_delta=2, thread_count_unchanged count=1
 step_5: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh exit 0; HTTPS_CLIENT_REQUIRE=1 TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_https_client_gate.sh exit 0
-step_6: pending
+step_6: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_https_cpp_smoke.sh exit 0
 step_7: pending
 ```
 
@@ -151,9 +151,9 @@ fn load_order(identifier: string) -> Task<HttpsResult> =
 
 ## Шаг 6. Редиректы, прокси, лимит, отмена
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_mlc_smoke.sh` завершился с кодом 0 (`https_redirect_async held=302 same=200 cross=200 http=302 hop_limit=yes keep=kept method=GET`, `https_limit_async decoded=hello-compressed failure=6`, `https_proxy_async empty_proxy=ignored explicit_proxy=connected`, `proxy_connect_count=1`). `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_reactor_https_cpp_smoke.sh` завершился с кодом 0 (`pre_cancel connection_count_delta=0 failure=7`, `wakeup_after_loop_destroyed write_skipped=yes`, `silent_cancel elapsed_milliseconds=10 failure=7`). `scripts/run_https_redirect_smoke.sh` и `scripts/run_https_proxy_smoke.sh` завершились с кодом 0. `https_redirect.mlc` не менялся.
 
-Файлы: `lib/mlc/common/stdlib/net/https_redirect_async.mlc`, примеры в `misc/examples/`, `runtime/test/test_reactor_cancel.cpp`. Меняются `event_loop.hpp`, `https_transfer.hpp` и, если разбор `Location` спрятан внутри одной функции, `lib/mlc/common/stdlib/net/https_redirect.mlc` только выносом чистых функций. Поведение `https_send_following_redirects` не меняется.
+Файлы: `lib/mlc/common/stdlib/net/https_redirect_async.mlc`, `misc/examples/https_redirect_async_smoke.mlc`, `https_proxy_async_smoke.mlc`, `https_limit_async_smoke.mlc`, `runtime/test/test_reactor_cancel.cpp`, `runtime/include/mlc/reactor/event_loop.hpp`, `https_transfer.hpp`, `https_async_bridge.hpp`, `runtime/include/mlc/concurrency/stop.hpp`, `scripts/run_reactor_mlc_smoke.sh`, `scripts/run_reactor_https_cpp_smoke.sh`.
 
 Сделать:
 

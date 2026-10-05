@@ -17,7 +17,7 @@ inline https_request::HttpsResult https_result_from_reactor(const HttpsReactorRe
     }
     return https_request::HttpsOk{https_request::HttpsResponse{
         reactor_result.status,
-        https_request::parse_response_header_block(mlc::String()),
+        https_request::parse_response_header_block(mlc::String(reactor_result.header_block)),
         mlc::String(reactor_result.body)}};
 }
 

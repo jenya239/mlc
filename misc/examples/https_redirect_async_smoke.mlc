@@ -1,0 +1,76 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { https_send_following_redirects_async } from '../../lib/mlc/common/stdlib/net/https_redirect_async.mlc'
+import {
+  HttpsHeader,
+  HttpsRequest,
+  HttpsResult,
+  HttpsOk,
+  HttpsErr,
+  TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn credential_headers() -> [HttpsHeader] =
+  [
+    HttpsHeader { name: "Authorization", value: "Bearer secret" },
+    HttpsHeader { name: "Cookie", value: "session=secret" },
+    HttpsHeader { name: "Accept", value: "text/plain" }
+  ]
+
+fn request_for(method: string, path: string, headers: [HttpsHeader], body: string) -> HttpsRequest =
+  HttpsRequest {
+    method: method,
+    url: "https://127.0.0.1:" + get_or("HTTPS_TEST_PORT", "") + path,
+    headers: headers,
+    body: body,
+    timeout_milliseconds: 5000,
+    max_response_bytes: 4194304,
+    ca_bundle_path: get_or("HTTPS_TEST_CA", ""),
+    proxy_url: ""
+  }
+
+fn status_of(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status,
+    HttpsErr(_) => -1
+  }
+
+fn body_of(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body,
+    HttpsErr(_) => ""
+  }
+
+fn failure_message(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(_) => "",
+    HttpsErr(failure) => failure.message
+  }
+
+fn failure_is_transport(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => false,
+    HttpsErr(failure) => match failure.kind {
+      TransportFailed => true,
+      _ => false
+    }
+  }
+
+fn main() -> i32 = do
+  if get_or("HTTPS_TEST_PORT", "") == "" || get_or("HTTPS_TEST_CA", "") == "" then return 1 end
+  const held = block_on(https_send_following_redirects_async(request_for("GET", "/redirect/same", credential_headers(), ""), 0))
+  if status_of(held) != 302 then return 30 end
+  const same = block_on(https_send_following_redirects_async(request_for("GET", "/redirect/same", credential_headers(), ""), 3))
+  if status_of(same) != 200 || body_of(same) != "method=GET auth=yes cookie=yes" then return 31 end
+  const cross = block_on(https_send_following_redirects_async(request_for("GET", "/redirect/cross", credential_headers(), ""), 3))
+  if status_of(cross) != 200 || body_of(cross) != "method=GET auth=no cookie=no" then return 32 end
+  const plain = block_on(https_send_following_redirects_async(request_for("GET", "/redirect/http", [], ""), 3))
+  if status_of(plain) != 302 || body_of(plain) != "stop" then return 33 end
+  const limited = block_on(https_send_following_redirects_async(request_for("GET", "/redirect/loop", [], ""), 2))
+  if failure_is_transport(limited) == false || failure_message(limited) != "redirect hop limit" then return 34 end
+  const kept = block_on(https_send_following_redirects_async(request_for("POST", "/redirect/keep", [], "kept"), 2))
+  if status_of(kept) != 200 || body_of(kept) != "kept" then return 35 end
+  const changed = block_on(https_send_following_redirects_async(request_for("POST", "/redirect/same", [], "dropped"), 2))
+  if status_of(changed) != 200 || body_of(changed) != "method=GET auth=no cookie=no" then return 36 end
+  println("https_redirect_async held=302 same=200 cross=200 http=302 hop_limit=yes keep=kept method=GET")
+  0
+end

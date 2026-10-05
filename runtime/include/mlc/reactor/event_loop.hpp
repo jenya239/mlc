@@ -4,11 +4,14 @@
 #include "mlc/reactor/timer_heap.hpp"
 #include "mlc/reactor/wakeup_descriptor.hpp"
 
+#include "mlc/concurrency/stop.hpp"
+
 #include <chrono>
 #include <coroutine>
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <system_error>
 #include <unordered_map>
@@ -21,12 +24,18 @@
 
 namespace mlc::reactor {
 
+struct CurlStopWatch {
+    CURL* easy = nullptr;
+    std::function<bool()> stop_requested;
+};
+
 class EventLoop {
-    WakeupDescriptor wakeup_;
+    std::shared_ptr<WakeupDescriptor> wakeup_ = std::make_shared<WakeupDescriptor>();
     TimerHeap timers_;
     CURLM* curl_multi_handle_ = nullptr;
     std::unordered_map<curl_socket_t, short> socket_interest_;
     std::unordered_map<CURL*, std::function<std::coroutine_handle<>(CURLcode)>> curl_completions_;
+    std::vector<CurlStopWatch> curl_stop_watches_;
     std::optional<std::chrono::steady_clock::time_point> curl_timer_deadline_;
     bool curl_timer_immediate_ = false;
 
@@ -156,6 +165,7 @@ class EventLoop {
             CURL* easy = message->easy_handle;
             const CURLcode code = message->data.result;
             curl_multi_remove_handle(curl_multi_handle_, easy);
+            forget_curl_stop_watch(easy);
             const auto found = curl_completions_.find(easy);
             if (found == curl_completions_.end()) continue;
             auto completion = std::move(found->second);
@@ -163,6 +173,37 @@ class EventLoop {
             std::coroutine_handle<> continuation = completion(code);
             if (continuation) ready.push_back(continuation);
         }
+        return ready;
+    }
+
+    void forget_curl_stop_watch(CURL* easy) {
+        std::vector<CurlStopWatch> remaining;
+        remaining.reserve(curl_stop_watches_.size());
+        for (CurlStopWatch& watch : curl_stop_watches_) {
+            if (watch.easy != easy) remaining.push_back(std::move(watch));
+        }
+        curl_stop_watches_ = std::move(remaining);
+    }
+
+    std::vector<std::coroutine_handle<>> take_stopped_transfers() {
+        std::vector<std::coroutine_handle<>> ready;
+        if (curl_multi_handle_ == nullptr) return ready;
+        std::vector<CurlStopWatch> remaining;
+        remaining.reserve(curl_stop_watches_.size());
+        for (CurlStopWatch& watch : curl_stop_watches_) {
+            const bool requested = static_cast<bool>(watch.stop_requested) && watch.stop_requested();
+            const auto found = curl_completions_.find(watch.easy);
+            if (!requested || found == curl_completions_.end()) {
+                if (found != curl_completions_.end()) remaining.push_back(std::move(watch));
+                continue;
+            }
+            curl_multi_remove_handle(curl_multi_handle_, watch.easy);
+            auto completion = std::move(found->second);
+            curl_completions_.erase(found);
+            std::coroutine_handle<> continuation = completion(CURLE_ABORTED_BY_CALLBACK);
+            if (continuation) ready.push_back(continuation);
+        }
+        curl_stop_watches_ = std::move(remaining);
         return ready;
     }
 
@@ -174,6 +215,7 @@ public:
     EventLoop& operator=(EventLoop&&) = delete;
 
     ~EventLoop() {
+        curl_stop_watches_.clear();
         if (curl_multi_handle_ == nullptr) return;
         for (const auto& entry : curl_completions_) {
             curl_multi_remove_handle(curl_multi_handle_, entry.first);
@@ -196,7 +238,17 @@ public:
         return loop;
     }
 
-    void wake() { wakeup_.signal(); }
+    void wake() { wakeup_->signal(); }
+
+    // The callback locks the descriptor. After this loop drops it, request() does not write.
+    [[nodiscard]] mlc::concurrency::StopSubscription subscribe_stop(
+        const mlc::concurrency::StopToken& token) {
+        std::weak_ptr<WakeupDescriptor> wakeup = wakeup_;
+        return token.subscribe([wakeup] {
+            const std::shared_ptr<WakeupDescriptor> descriptor = wakeup.lock();
+            if (descriptor) descriptor->signal();
+        });
+    }
 
     std::uint64_t schedule_timer(
         std::chrono::steady_clock::time_point deadline,
@@ -224,6 +276,10 @@ public:
         curl_completions_.insert_or_assign(easy, std::move(completion));
     }
 
+    void register_curl_stop_watch(CURL* easy, std::function<bool()> stop_requested) {
+        curl_stop_watches_.push_back(CurlStopWatch{easy, std::move(stop_requested)});
+    }
+
     void request_curl_service() { curl_timer_immediate_ = true; }
 
     void run_until(const std::function<bool()>& predicate) {
@@ -231,7 +287,7 @@ public:
             const int timeout_milliseconds = poll_timeout_milliseconds();
             std::vector<pollfd> poll_entries;
             pollfd wakeup_entry{};
-            wakeup_entry.fd = wakeup_.descriptor();
+            wakeup_entry.fd = wakeup_->descriptor();
             wakeup_entry.events = POLLIN;
             poll_entries.push_back(wakeup_entry);
             const std::size_t socket_offset = poll_entries.size();
@@ -250,7 +306,7 @@ public:
                 throw std::system_error(errno, std::generic_category(), "poll");
             }
             if ((poll_entries[0].revents & POLLIN) != 0) {
-                wakeup_.drain();
+                wakeup_->drain();
             }
             if (curl_multi_handle_ != nullptr) {
                 drive_curl_sockets(poll_entries, socket_offset);
@@ -259,7 +315,9 @@ public:
             std::vector<std::coroutine_handle<>> ready =
                 timers_.pop_expired(std::chrono::steady_clock::now());
             std::vector<std::coroutine_handle<>> finished = take_finished_transfers();
+            std::vector<std::coroutine_handle<>> stopped = take_stopped_transfers();
             ready.insert(ready.end(), finished.begin(), finished.end());
+            ready.insert(ready.end(), stopped.begin(), stopped.end());
             resume_ready(ready);
         }
     }
