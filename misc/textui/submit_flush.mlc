@@ -1,0 +1,55 @@
+import { ColorRgba } from './theme'
+import {
+  TextRenderer,
+  text_renderer_upload_atlas,
+  text_renderer_set_batch,
+  text_renderer_draw_over_colored,
+  text_bind_array_buffer,
+  text_upload_dynamic_scratch
+} from '../gui/text_renderer'
+
+export type SubmitFlush = {
+  atlas_dirty: i32,
+  error_code: i32
+}
+
+fn draw_text_batch(
+  text_renderer: TextRenderer,
+  window_width: i32,
+  window_height: i32,
+  color: ColorRgba,
+  vertex_count: i32
+) -> i32 = do
+  if vertex_count <= 0 then
+    return 0
+  end
+  text_bind_array_buffer(text_renderer.vertex_buffer)
+  text_upload_dynamic_scratch()
+  const batched = text_renderer_set_batch(text_renderer, vertex_count)
+  text_renderer_draw_over_colored(
+    batched, window_width, window_height,
+    color.red, color.green, color.blue, color.alpha
+  )
+end
+
+export fn submit_flush_text(
+  text_renderer: TextRenderer,
+  window_width: i32,
+  window_height: i32,
+  color: ColorRgba,
+  vertex_count: i32,
+  atlas_dirty: i32
+) -> SubmitFlush = do
+  let mut dirty = atlas_dirty
+  if dirty == 1 then
+    const upload_status = text_renderer_upload_atlas(text_renderer)
+    if upload_status != 0 then
+      return SubmitFlush { atlas_dirty: dirty, error_code: upload_status }
+    end
+    dirty = 0
+  end
+  const draw_status = draw_text_batch(
+    text_renderer, window_width, window_height, color, vertex_count
+  )
+  SubmitFlush { atlas_dirty: dirty, error_code: draw_status }
+end

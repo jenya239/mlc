@@ -1,0 +1,134 @@
+import { color_rgba_new, theme_default } from '../theme'
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from '../draw_op'
+import { Rect } from '../geometry'
+import { color_equal, text_op_color } from '../submit_color'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { submit_create, submit_destroy, submit_frame } from '../submit'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end
+} from '../../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn sample_rect() -> Rect =
+  Rect { x: 0, y: 0, width: 8, height: 8 }
+
+fn reject_mismatch(matches: bool, code: i32) -> i32 = do
+  if matches then
+    return 0
+  end
+  code
+end
+
+fn check_colors() -> i32 = do
+  const fallback = color_rgba_new(0.1, 0.2, 0.3, 1.0)
+  const accent = color_rgba_new(0.2, 0.4, 0.9, 0.78)
+  const same = reject_mismatch(
+    color_equal(accent, color_rgba_new(0.2, 0.4, 0.9, 0.78)),
+    -1
+  )
+  if same != 0 then
+    return same
+  end
+  const alpha_differs = reject_mismatch(
+    color_equal(accent, color_rgba_new(0.2, 0.4, 0.9, 1.0)) == false,
+    -2
+  )
+  if alpha_differs != 0 then
+    return alpha_differs
+  end
+  const red_differs = reject_mismatch(
+    color_equal(accent, color_rgba_new(0.0, 0.4, 0.9, 0.78)) == false,
+    -3
+  )
+  if red_differs != 0 then
+    return red_differs
+  end
+  const text = TextOp { origin_x: 1, origin_y: 2, color: accent, text: "a" }
+  const text_color = reject_mismatch(
+    color_equal(text_op_color(OpText(text), fallback), accent),
+    -4
+  )
+  if text_color != 0 then
+    return text_color
+  end
+  const fill = FillRectOp { rect: sample_rect(), color: accent }
+  const fill_color = reject_mismatch(
+    color_equal(text_op_color(OpFillRect(fill), fallback), fallback),
+    -5
+  )
+  if fill_color != 0 then
+    return fill_color
+  end
+  const stroke = StrokeRectOp { rect: sample_rect(), color: accent, line_width: 1 }
+  const stroke_color = reject_mismatch(
+    color_equal(text_op_color(OpStrokeRect(stroke), fallback), fallback),
+    -6
+  )
+  if stroke_color != 0 then
+    return stroke_color
+  end
+  const clip_color = reject_mismatch(
+    color_equal(text_op_color(OpPushClip(sample_rect()), fallback), fallback),
+    -7
+  )
+  if clip_color != 0 then
+    return clip_color
+  end
+  reject_mismatch(
+    color_equal(text_op_color(OpPopClip, fallback), fallback),
+    -8
+  )
+end
+
+fn check_frame() -> i32 = do
+  const begun = glfw_gl_context_begin(64, 64)
+  if begun != 0 then
+    return begun
+  end
+  let mut resources = submit_create()
+  if resources.error_code != 0 then
+    glfw_gl_context_end()
+    return resources.error_code
+  end
+  const theme = theme_default()
+  const accent = color_rgba_new(0.2, 0.4, 0.9, 0.78)
+  let mut operations: [DrawOp] = []
+  operations.push(OpText(TextOp {
+    origin_x: 4,
+    origin_y: 16,
+    color: theme.foreground,
+    text: "alpha"
+  }))
+  operations.push(OpText(TextOp {
+    origin_x: 4,
+    origin_y: 32,
+    color: accent,
+    text: "beta"
+  }))
+  operations.push(OpPushClip(Rect { x: 0, y: 0, width: 64, height: 64 }))
+  operations.push(OpText(TextOp {
+    origin_x: 4,
+    origin_y: 48,
+    color: accent,
+    text: "gamma"
+  }))
+  const drawn = submit_frame(
+    resources, text_shaping_new(), theme, operations, 64, 64, true
+  )
+  const status = drawn.error_code
+  submit_destroy(drawn.resources)
+  glfw_gl_context_end()
+  status
+end
+
+fn main() -> i32 = do
+  const colors = check_colors()
+  if colors != 0 then
+    return colors
+  end
+  const drawn = check_frame()
+  if drawn != 0 then
+    return drawn
+  end
+  0
+end

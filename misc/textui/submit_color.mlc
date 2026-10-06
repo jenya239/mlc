@@ -1,0 +1,18 @@
+import { ColorRgba } from './theme'
+import { DrawOp } from './draw_op'
+
+export fn color_equal(left: ColorRgba, right: ColorRgba) -> bool =
+  left.red == right.red &&
+    left.green == right.green &&
+    left.blue == right.blue &&
+    left.alpha == right.alpha
+
+export fn text_op_color(operation: DrawOp, fallback: ColorRgba) -> ColorRgba = do
+  const color = match operation
+    | OpText(data) => data.color
+    | OpFillRect(_) => fallback
+    | OpStrokeRect(_) => fallback
+    | OpPushClip(_) => fallback
+    | OpPopClip => fallback
+  color
+end

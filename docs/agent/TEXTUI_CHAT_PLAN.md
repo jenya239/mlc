@@ -5,7 +5,7 @@
 Источник шагов: `mlc-support/responses/textui_chat_gap_20261006_093251.md` (инвентарь и шаг 1) и `mlc-support/responses/textui_chat_gap_20261006_094033.md` (шаги 2–19). Этот файл важнее тех ответов там, где пути расходятся.
 
 ```
-next_step: 10
+next_step: 11
 step_1: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_2: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_3: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
@@ -15,7 +15,7 @@ step_6: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_
 step_7: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice12_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_8: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_9: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
-step_10: pending
+step_10: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0; ruby scripts/run_text_gl_perf_corpus.rb exit 0
 step_11: pending
 step_12: pending
 step_13: pending
@@ -137,7 +137,7 @@ step_19: pending
 
 ## Шаг 10. Цвет текста доходит до экрана
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh`, `ruby scripts/run_textui_file_size.rb` и `ruby scripts/run_text_gl_perf_corpus.rb` завершились с кодом 0.
 
 Файлы: `misc/textui/submit_color.mlc`, `misc/textui/submit_flush.mlc`, `misc/textui/submit.mlc`, `misc/textui/test/chat10_text_color.mlc`.
 
