@@ -1,4 +1,4 @@
-import { Theme, theme_content_inset, ColorRgba } from './theme'
+import { Theme, theme_content_inset } from './theme'
 import { rect_inset, rect_new } from './geometry'
 import {
   WidgetStore,
@@ -11,10 +11,12 @@ import {
   kind_is_text_field
 } from './store'
 import { LayoutResult } from './layout_result'
-import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp, StrokeRectOp } from './draw_op'
 import { Selection, selection_is_empty, selection_none } from './selection'
 import { text_layout_selection_rects } from './text_layout_hit'
-import { UiState, ui_state_new, ui_state_with, pointer_click_owns } from './ui_state'
+import { UiState, ui_state_new, ui_state_with } from './ui_state'
+import { text_layout_text_ops } from './text_layout_paint'
+import { paint_button_frame, paint_path_crumb_frame } from './paint_button'
 import {
   scroll_content_height,
   scroll_content_overflows,
@@ -70,28 +72,6 @@ fn paint_selection(
   updated
 end
 
-fn button_fill_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
-  const owner = WidgetId { index: node_index }
-  if pointer_click_owns(state.pointer, owner) then
-    return theme.button_pressed
-  end
-  if widget_id_equals(state.hover, owner) then
-    return theme.button_hover
-  end
-  theme.button_background
-end
-
-fn path_band_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
-  const owner = WidgetId { index: node_index }
-  if pointer_click_owns(state.pointer, owner) then
-    return theme.button_pressed
-  end
-  if widget_id_equals(state.hover, owner) then
-    return theme.button_hover
-  end
-  theme.background
-end
-
 export fn paint_path_crumb(
   theme: Theme,
   layout: LayoutResult,
@@ -100,27 +80,7 @@ export fn paint_path_crumb(
   caption: string,
   operations: [DrawOp]
 ) -> [DrawOp] = do
-  const rect = layout.rects[node_index]
-  let mut band_height = layout.text_layouts[node_index].pixel_height
-  if band_height < 1 then
-    band_height = theme.font_size_pixels
-  end
-  let mut band_y = rect.y + (rect.height - band_height) / 2
-  if band_y < rect.y then
-    band_y = rect.y
-  end
-  let mut updated = operations
-  updated.push(OpFillRect(FillRectOp {
-    rect: rect_new(rect.x, band_y, rect.width, band_height),
-    color: path_band_color(theme, state, node_index)
-  }))
-  updated.push(OpText(TextOp {
-    origin_x: rect.x + 2,
-    origin_y: band_y,
-    color: theme.foreground,
-    text: caption
-  }))
-  updated
+  return paint_path_crumb_frame(theme, layout, state, node_index, caption, operations)
 end
 
 export fn paint_button(
@@ -131,26 +91,7 @@ export fn paint_button(
   caption: string,
   operations: [DrawOp]
 ) -> [DrawOp] = do
-  const rect = layout.rects[node_index]
-  const inset = theme_content_inset(theme)
-  const border = 1
-  let mut updated = operations
-  updated.push(OpFillRect(FillRectOp {
-    rect: rect_inset(rect, border),
-    color: button_fill_color(theme, state, node_index)
-  }))
-  updated.push(OpStrokeRect(StrokeRectOp {
-    rect: rect,
-    color: theme.button_stroke,
-    line_width: border
-  }))
-  updated.push(OpText(TextOp {
-    origin_x: rect.x + inset,
-    origin_y: rect.y + inset,
-    color: theme.foreground,
-    text: caption
-  }))
-  updated
+  return paint_button_frame(theme, layout, state, node_index, caption, operations)
 end
 
 fn paint_kind_button(
@@ -183,14 +124,19 @@ fn paint_node(
   const rect = layout.rects[node_index]
   const inset = theme_content_inset(theme)
   let mut current_operations = match node.kind
-    | KindLabel(data) => do
+    | KindLabel(_) => do
       let mut updated = paint_selection(theme, layout, state.selection, node_index, operations)
-      updated.push(OpText(TextOp {
-        origin_x: rect.x + inset,
-        origin_y: rect.y + inset,
-        color: theme.foreground,
-        text: data.text
-      }))
+      const text_ops = text_layout_text_ops(
+        layout.text_layouts[node_index],
+        rect.x + inset,
+        rect.y + inset,
+        theme.foreground
+      )
+      let mut text_index = 0
+      while text_index < text_ops.length() do
+        updated.push(OpText(text_ops[text_index]))
+        text_index = text_index + 1
+      end
       updated
     end
     | KindIcon(data) => paint_icon_widget(

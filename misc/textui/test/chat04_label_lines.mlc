@@ -1,0 +1,134 @@
+import { theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { layout_column } from '../layout_pass'
+import { paint_frame } from '../paint_pass'
+import { frame_dump } from '../dump'
+import { DrawOp, TextOp } from '../draw_op'
+
+fn root_box(gap: i32) -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: gap }
+
+fn build_store(text: string) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    root_box(0),
+    OverflowVisible,
+    0,
+    true
+  )
+  widget_store_add_label(store, store.root, LabelData { text: text }, OverflowVisible, 0, true)
+end
+
+fn text_operation(operation: DrawOp) -> TextOp =
+  match operation
+    | OpText(data) => data
+    | OpFillRect(_) => TextOp { origin_x: 0 - 1, origin_y: 0, color: theme_default().foreground, text: "" }
+    | OpStrokeRect(_) => TextOp { origin_x: 0 - 1, origin_y: 0, color: theme_default().foreground, text: "" }
+    | OpPushClip(_) => TextOp { origin_x: 0 - 1, origin_y: 0, color: theme_default().foreground, text: "" }
+    | OpPopClip => TextOp { origin_x: 0 - 1, origin_y: 0, color: theme_default().foreground, text: "" }
+
+fn count_marker(text: string, marker: string) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  const marker_size = marker.byte_size()
+  while index + marker_size <= text.byte_size() do
+    if text.byte_substring(index, marker_size) == marker then
+      count = count + 1
+      index = index + marker_size
+    else
+      index = index + 1
+    end
+  end
+  count
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const store = build_store("a\nb\nc")
+  const laid = layout_column(store, theme, shaping, cache)
+  shaping = laid.shaping
+  cache = laid.cache
+  const layout = laid.layout
+  const label = store.nodes[1].id
+  const text_layout = layout.text_layouts[label.index]
+  const rect = layout.rects[label.index]
+  if text_layout.lines.length() != 3 || text_layout.pixel_height <= 0 then
+    return -1
+  end
+  if rect.height < text_layout.pixel_height then
+    return -2
+  end
+  const operations = paint_frame(theme, store, layout)
+  let mut texts: [TextOp] = []
+  let mut operation_index = 0
+  while operation_index < operations.length() do
+    const text_op = text_operation(operations[operation_index])
+    if text_op.origin_x >= 0 then
+      texts.push(text_op)
+    end
+    operation_index = operation_index + 1
+  end
+  if texts.length() != 3 then
+    return -3
+  end
+  const line_step = text_layout.pixel_height / 3
+  if texts[1].origin_y - texts[0].origin_y != line_step then
+    return -4
+  end
+  if texts[2].origin_y - texts[1].origin_y != line_step then
+    return -5
+  end
+  if texts[0].origin_x != texts[1].origin_x || texts[1].origin_x != texts[2].origin_x then
+    return -6
+  end
+  if texts[0].text != "a" || texts[1].text != "b" || texts[2].text != "c" then
+    return -7
+  end
+  if texts[0].text.contains("\n") || texts[1].text.contains("\n") || texts[2].text.contains("\n") then
+    return -8
+  end
+  const dump_one = frame_dump(theme, store, layout, operations, false)
+  const dump_two = frame_dump(theme, store, layout, operations, false)
+  if dump_one != dump_two then
+    return -9
+  end
+  if count_marker(dump_one, "text ") != 3 then
+    return -10
+  end
+
+  const plain_store = build_store("one")
+  const plain = layout_column(plain_store, theme, shaping, cache)
+  const plain_operations = paint_frame(theme, plain_store, plain.layout)
+  let mut plain_count = 0
+  operation_index = 0
+  while operation_index < plain_operations.length() do
+    const text_op = text_operation(plain_operations[operation_index])
+    if text_op.origin_x >= 0 then
+      plain_count = plain_count + 1
+      if text_op.text != "one" then
+        return -11
+      end
+    end
+    operation_index = operation_index + 1
+  end
+  if plain_count != 1 then
+    return -12
+  end
+  0
+end

@@ -5,11 +5,11 @@
 Источник шагов: `mlc-support/responses/textui_chat_gap_20261006_093251.md` (инвентарь и шаг 1) и `mlc-support/responses/textui_chat_gap_20261006_094033.md` (шаги 2–19). Этот файл важнее тех ответов там, где пути расходятся.
 
 ```
-next_step: 4
+next_step: 5
 step_1: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_2: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_3: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
-step_4: pending
+step_4: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_5: pending
 step_6: pending
 step_7: pending
@@ -77,7 +77,7 @@ step_19: pending
 
 ## Шаг 4. Построчная отрисовка метки
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh` и `ruby scripts/run_textui_file_size.rb` завершились с кодом 0. Кнопки вынесены в `paint_button.mlc`, потому что `paint_pass.mlc` был длиннее 360 строк.
 
 Файлы: `misc/textui/text_layout_paint.mlc`, `misc/textui/paint_pass.mlc`, `misc/textui/test/chat04_label_lines.mlc`.
 

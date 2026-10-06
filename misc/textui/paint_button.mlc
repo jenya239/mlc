@@ -1,0 +1,89 @@
+import { Theme, theme_content_inset, ColorRgba } from './theme'
+import { rect_inset, rect_new } from './geometry'
+import { WidgetId, widget_id_equals } from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
+import { UiState, pointer_click_owns } from './ui_state'
+
+fn button_fill_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  theme.button_background
+end
+
+fn path_band_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  theme.background
+end
+
+export fn paint_path_crumb_frame(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  let mut band_height = layout.text_layouts[node_index].pixel_height
+  if band_height < 1 then
+    band_height = theme.font_size_pixels
+  end
+  let mut band_y = rect.y + (rect.height - band_height) / 2
+  if band_y < rect.y then
+    band_y = rect.y
+  end
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp {
+    rect: rect_new(rect.x, band_y, rect.width, band_height),
+    color: path_band_color(theme, state, node_index)
+  }))
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + 2,
+    origin_y: band_y,
+    color: theme.foreground,
+    text: caption
+  }))
+  updated
+end
+
+export fn paint_button_frame(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const inset = theme_content_inset(theme)
+  const border = 1
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp {
+    rect: rect_inset(rect, border),
+    color: button_fill_color(theme, state, node_index)
+  }))
+  updated.push(OpStrokeRect(StrokeRectOp {
+    rect: rect,
+    color: theme.button_stroke,
+    line_width: border
+  }))
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + inset,
+    origin_y: rect.y + inset,
+    color: theme.foreground,
+    text: caption
+  }))
+  updated
+end
