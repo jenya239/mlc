@@ -309,7 +309,7 @@ module MLC
                   visit(node.end_expr, bound_vars, free_vars) if node.respond_to?(:end_expr) && node.end_expr
 
                 when MLC::Source::AST::Return
-                  visit(node.value, bound_vars, free_vars) if node.value
+                  visit(node.expr, bound_vars, free_vars) if node.respond_to?(:expr) && node.expr
 
                 when MLC::Source::AST::ExprStmt
                   visit(node.expr, bound_vars, free_vars) if node.respond_to?(:expr)
