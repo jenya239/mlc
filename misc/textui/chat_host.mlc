@@ -1,0 +1,119 @@
+import { has } from 'Env'
+import {
+  glfw_gl_context_begin,
+  glfw_gl_swap_interval,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_context_end,
+  glfw_gl_window_width,
+  glfw_gl_window_height,
+  glfw_gl_key_escape_down,
+  glfw_gl_clipboard_set
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { theme_default } from './theme'
+import { text_shaping_new } from '../gui/text_shaping'
+import { submit_create, submit_destroy } from './submit'
+import { submit_painted_layers } from './submit_layers'
+import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
+import { chat_config_load } from './chat_http'
+import { chat_wait_seconds } from './chat_session'
+import { ChatWorld, chat_world_new } from './chat_world'
+import { chat_frame_run } from './chat_frame'
+import { frame_signature } from './frame_request'
+
+fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWorld =
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: frame_signature(world.state, width + 1, height),
+    painted_under: world.painted_under,
+    painted_over: world.painted_over
+  }
+
+export fn chat_main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(1280, 800)
+  if begin_status != 0 then
+    return begin_status
+  end
+  glfw_gl_swap_interval(0)
+  let mut resources = submit_create()
+  if resources.error_code != 0 then
+    const error_code = resources.error_code
+    glfw_gl_context_end()
+    return error_code
+  end
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  const open_width = glfw_gl_window_width()
+  const open_height = glfw_gl_window_height()
+  let mut world = world_before_first_paint(
+    chat_world_new(chat_config_load(), open_width, open_height),
+    open_width,
+    open_height
+  )
+  let mut max_frames = 0
+  if has("MLC_TEXTUI_BENCH") then
+    max_frames = 8
+  end
+  let mut buttons = host_buttons_new()
+  let mut frame_index = 0
+  let mut sample_after_present = true
+  let mut escape_was_down = false
+  while glfw_gl_context_should_close() == 0 do
+    if sample_after_present == false && max_frames == 0 then
+      host_wait_for_input(chat_wait_seconds(world.model))
+    end
+    sample_after_present = false
+    const escape_down = glfw_gl_key_escape_down() != 0
+    const escape_pressed = escape_down && escape_was_down == false
+    if escape_pressed then
+      break
+    end
+    escape_was_down = escape_down
+    const polled = host_poll_input(buttons, host_now_ms())
+    buttons = polled.buttons
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const frame = chat_frame_run(world, polled.input, width, height)
+    world = frame.world
+    if frame.clipboard != "" then
+      glfw_gl_clipboard_set(frame.clipboard)
+    end
+    if frame.paints then
+      const submitted = submit_painted_layers(
+        resources,
+        shaping,
+        theme,
+        frame.ops_under,
+        frame.ops_over,
+        width,
+        height
+      )
+      if submitted.error_code != 0 then
+        submit_destroy(submitted.resources)
+        glfw_gl_context_end()
+        return submitted.error_code
+      end
+      resources = submitted.resources
+      shaping = submitted.shaping
+      glfw_gl_context_swap_poll()
+      sample_after_present = true
+    end
+    frame_index = frame_index + 1
+    if max_frames > 0 && frame_index >= max_frames then
+      break
+    end
+  end
+  submit_destroy(resources)
+  glfw_gl_context_end()
+  println("[textui] chat closed frames=" + frame_index.to_string())
+  0
+end

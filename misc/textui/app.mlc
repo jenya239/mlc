@@ -42,7 +42,7 @@ import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } f
 import { apply_toolbar, frame_wait_seconds } from './visual_effect'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
-import { UiInput } from './ui_input'
+import { button_caption, input_clear_buttons } from './app_input'
 import { WindowPlacement, window_placement_save } from './window_placement'
 import { gallery_start, session_with_directory, window_session_load, window_session_store } from './window_session'
 import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
@@ -55,6 +55,7 @@ import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { music_host, music_playing, music_release } from './music_host'
+import { chat_main } from './chat_host'
 fn application_reload_status() -> i32 = 75
 
 fn remember_window() -> bool = do
@@ -70,38 +71,10 @@ fn remember_window() -> bool = do
   })
 end
 
-fn input_clear_buttons(input: UiInput) -> UiInput =
-  UiInput {
-    mouse_x: input.mouse_x,
-    mouse_y: input.mouse_y,
-    left_pressed: false,
-    left_down: input.left_down,
-    left_released: input.left_released,
-    control_down: input.control_down,
-    copy_pressed: input.copy_pressed,
-    wheel_y: input.wheel_y,
-    now_ms: input.now_ms,
-    text: input.text,
-    binding_key: input.binding_key,
-    shift_down: input.shift_down,
-    backspace_pressed: input.backspace_pressed,
-    enter_pressed: input.enter_pressed,
-    paste_text: input.paste_text
-  }
-
-fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
-  match store.nodes[owner.index].kind
-    | KindButton(data) => data.text
-    | KindCheckbox(data) => data.text
-    | KindLabel(_) => ""
-    | KindIcon(_) => ""
-    | KindBox(_) => ""
-    | KindScrollView => ""
-    | KindListView(_) => ""
-    | KindSplitter(_) => ""
-    | KindTextField(_) => ""
-
 fn main() -> i32 = do
+  if has("MLC_TEXTUI_CHAT") then
+    return chat_main()
+  end
   let mut open_width = 1280
   let mut open_height = 800
   const session = window_session_load()

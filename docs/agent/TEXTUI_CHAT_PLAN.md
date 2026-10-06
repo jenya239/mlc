@@ -5,7 +5,7 @@
 Источник шагов: `mlc-support/responses/textui_chat_gap_20261006_093251.md` (инвентарь и шаг 1) и `mlc-support/responses/textui_chat_gap_20261006_094033.md` (шаги 2–19). Этот файл важнее тех ответов там, где пути расходятся.
 
 ```
-next_step: 19
+next_step: none
 step_1: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_2: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_3: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
@@ -24,7 +24,7 @@ step_15: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run
 step_16: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_17: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_18: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
-step_19: pending
+step_19: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0; every scripts/run_textui_slice*.sh exit 0
 ```
 
 Поле шага меняется только на `pending`, `done` или `blocked`. Рядом с `done` пишется короткая строка: коммит и команда, которая завершилась с кодом 0. Рядом с `blocked` пишется факт, который остановил шаг. `next_step` — наименьший номер со статусом не `done`.
@@ -227,7 +227,7 @@ step_19: pending
 
 ## Шаг 19. Окно
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh`, `ruby scripts/run_textui_file_size.rb` и каждый `scripts/run_textui_slice*.sh` завершились с кодом 0. У невыбранного списка заливка строки — `list_inactive`, в меню четыре пункта, поэтому `slice10_list_split.mlc` и `slice17_menu.mlc` ждут это.
 
 Файлы: `misc/textui/chat_host.mlc`, `misc/textui/app.mlc`, `docs/agent/TRACK_TEXTUI_CHAT.md`. Если `app.mlc` переходит 400 строк — вынести `input_clear_buttons` и `button_caption` в `misc/textui/app_input.mlc` в этом же шаге.
 

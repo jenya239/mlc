@@ -39,3 +39,11 @@ JSON в stdlib:
 - Отмены нет. «Stop» по-прежнему только поколение; транспорт передачу не прерывает.
 - `chat_transport.mlc` импортирует `https_async`, чтобы в программе были `https_async.hpp` и библиотека `curl`.
 
+## Шаг 19. Окно
+
+`chat_main` в `misc/textui/chat_host.mlc` повторяет цикл `app.mlc`: опрос ввода, `chat_frame_run`, `submit_painted_layers`, обмен буферов. `block_on` на потоке окна нет. Ожидание кадра — `chat_wait_seconds`. Esc выходит. `MLC_TEXTUI_BENCH` ограничивает цикл 8 кадрами. Сессия и история на диск не пишутся.
+
+Запуск: `MLC_TEXTUI_CHAT=1`. Адрес, модель, ключ и system — `MLC_CHAT_BASE_URL`, `MLC_CHAT_MODEL`, `MLC_CHAT_API_KEY`, `MLC_CHAT_SYSTEM`. Ключ не печатается. Без ключа отправка даёт сообщение с `failed` и запрос не начинает. Прогон без окна: `MLC_TEXTUI_CHAT=1 MLC_TEXTUI_BENCH=1 MLC_GLFW_VISIBLE=0`.
+
+Не сделано: стриминг, markdown, IME, вложения, запись истории, отмена передачи. «Stop» по-прежнему только увеличивает поколение.
+

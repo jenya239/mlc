@@ -104,7 +104,7 @@ end
 
 fn chrome_mark(theme: Theme, operation: DrawOp) -> i32 =
   match operation
-    | OpFillRect(data) => selected_mark(data.color.red == theme.list_selected.red)
+    | OpFillRect(data) => selected_mark(data.color.red == theme.list_inactive.red)
     | OpStrokeRect(data) => stroke_mark(data.color.red == theme.overlay_stroke.red)
     | OpPushClip(_) => 0
     | OpPopClip => 0
@@ -176,7 +176,7 @@ fn main() -> i32 = do
   if menu_rect.x != 10 || menu_rect.y != 10 then
     return -1
   end
-  if menu_rect.height != list_row_height(theme) * 3 then
+  if menu_rect.height != list_row_height(theme) * 4 then
     return -2
   end
   const painted = paint_ui_frame(theme, opened.store, laid.layout, state)
@@ -191,7 +191,7 @@ fn main() -> i32 = do
     return -13
   end
   const ended = ui_update(opened.store, laid.layout, theme, moved.state, keyed("end", false))
-  if list_selected_at(ended.state.list_selected, list_id.index) != 2 then
+  if list_selected_at(ended.state.list_selected, list_id.index) != 3 then
     return -14
   end
   state = ui_update(opened.store, laid.layout, theme, ended.state, keyed("home", false)).state

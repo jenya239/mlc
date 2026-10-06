@@ -1,0 +1,33 @@
+import { UiInput } from './ui_input'
+import { WidgetId, WidgetKind, WidgetStore } from './store'
+
+export fn input_clear_buttons(input: UiInput) -> UiInput =
+  UiInput {
+    mouse_x: input.mouse_x,
+    mouse_y: input.mouse_y,
+    left_pressed: false,
+    left_down: input.left_down,
+    left_released: input.left_released,
+    control_down: input.control_down,
+    copy_pressed: input.copy_pressed,
+    wheel_y: input.wheel_y,
+    now_ms: input.now_ms,
+    text: input.text,
+    binding_key: input.binding_key,
+    shift_down: input.shift_down,
+    backspace_pressed: input.backspace_pressed,
+    enter_pressed: input.enter_pressed,
+    paste_text: input.paste_text
+  }
+
+export fn button_caption(store: WidgetStore, owner: WidgetId) -> string =
+  match store.nodes[owner.index].kind
+    | KindButton(data) => data.text
+    | KindCheckbox(data) => data.text
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindBox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""

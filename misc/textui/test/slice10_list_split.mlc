@@ -120,7 +120,7 @@ fn has_selected_fill(operations: [DrawOp], theme: Theme) -> bool = do
   let mut index = 0
   while index < operations.length() do
     const found = match operations[index]
-      | OpFillRect(data) => data.color.red == theme.list_selected.red
+      | OpFillRect(data) => data.color.red == theme.list_inactive.red
       | OpText(_) => false
       | OpStrokeRect(_) => false
       | OpPushClip(_) => false
