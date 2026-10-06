@@ -1,0 +1,168 @@
+export type ChatRole = RoleUser | RoleAssistant
+
+export type ChatMessage = {
+  role: ChatRole,
+  text: string,
+  failed: bool
+}
+
+export type ReplyOutcome = ReplyText(string) | ReplyFailed(string)
+
+export type ChatModel = {
+  messages: [ChatMessage],
+  pending: bool,
+  generation: i32,
+  revision: i32
+}
+
+export type ChatSubmit = {
+  model: ChatModel,
+  accepted: bool
+}
+
+export fn chat_model_new() -> ChatModel = do
+  let mut messages: [ChatMessage] = []
+  ChatModel {
+    messages: messages,
+    pending: false,
+    generation: 0,
+    revision: 0
+  }
+end
+
+export fn chat_submit(model: ChatModel, text: string) -> ChatSubmit = do
+  const trimmed = text.trim()
+  if trimmed.byte_size() == 0 || model.pending then
+    return ChatSubmit { model: model, accepted: false }
+  end
+  let mut messages = model.messages
+  messages.push(ChatMessage { role: RoleUser, text: trimmed, failed: false })
+  ChatSubmit {
+    model: ChatModel {
+      messages: messages,
+      pending: true,
+      generation: model.generation + 1,
+      revision: model.revision + 1
+    },
+    accepted: true
+  }
+end
+
+export fn chat_apply_reply(
+  model: ChatModel,
+  generation: i32,
+  outcome: ReplyOutcome
+) -> ChatModel = do
+  if generation != model.generation then
+    return model
+  end
+  const reply = match outcome
+    | ReplyText(text) => ChatMessage { role: RoleAssistant, text: text, failed: false }
+    | ReplyFailed(text) => ChatMessage { role: RoleAssistant, text: text, failed: true }
+  let mut messages = model.messages
+  messages.push(reply)
+  ChatModel {
+    messages: messages,
+    pending: false,
+    generation: model.generation,
+    revision: model.revision + 1
+  }
+end
+
+export fn chat_cancel(model: ChatModel) -> ChatModel = do
+  if model.pending then
+    let mut messages = model.messages
+    messages.push(ChatMessage {
+      role: RoleAssistant,
+      text: "Остановлено",
+      failed: true
+    })
+    return ChatModel {
+      messages: messages,
+      pending: false,
+      generation: model.generation + 1,
+      revision: model.revision + 1
+    }
+  end
+  model
+end
+
+export fn chat_clear(model: ChatModel) -> ChatModel = do
+  let mut messages: [ChatMessage] = []
+  ChatModel {
+    messages: messages,
+    pending: false,
+    generation: model.generation + 1,
+    revision: model.revision + 1
+  }
+end
+
+fn messages_without_failed(messages: [ChatMessage]) -> [ChatMessage] = do
+  let mut kept: [ChatMessage] = []
+  let mut index = 0
+  while index < messages.length() do
+    if messages[index].failed then
+    else
+      kept.push(messages[index])
+    end
+    index = index + 1
+  end
+  kept
+end
+
+fn last_user_index(messages: [ChatMessage]) -> i32 = do
+  let mut found = 0 - 1
+  let mut index = 0
+  while index < messages.length() do
+    const user = match messages[index].role
+      | RoleUser => true
+      | RoleAssistant => false
+    if user then
+      found = index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn messages_text_length(messages: [ChatMessage]) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < messages.length() do
+    total = total + messages[index].text.byte_size()
+    index = index + 1
+  end
+  total
+end
+
+fn drop_oldest_except(messages: [ChatMessage], protected_index: i32) -> [ChatMessage] = do
+  let mut result: [ChatMessage] = []
+  let mut index = 0
+  let mut removed = false
+  while index < messages.length() do
+    const keep = removed || index == protected_index
+    if keep then
+      result.push(messages[index])
+    else
+      removed = true
+    end
+    index = index + 1
+  end
+  result
+end
+
+export fn chat_history_for_request(
+  model: ChatModel,
+  maximum_characters: i32
+) -> [ChatMessage] = do
+  let mut kept = messages_without_failed(model.messages)
+  while messages_text_length(kept) > maximum_characters do
+    const protected_index = last_user_index(kept)
+    const next = drop_oldest_except(kept, protected_index)
+    if next.length() == kept.length() then
+      break
+    end
+    kept = next
+  end
+  kept
+end

@@ -1,0 +1,172 @@
+import {
+  ChatMessage,
+  ChatRole,
+  chat_apply_reply,
+  chat_cancel,
+  chat_clear,
+  chat_history_for_request,
+  chat_model_new,
+  chat_submit
+} from '../chat_model'
+
+fn role_is_user(role: ChatRole) -> bool = do
+  const user = match role
+    | RoleUser => true
+    | RoleAssistant => false
+  user
+end
+
+fn same_message(left: ChatMessage, right: ChatMessage) -> bool = do
+  if left.text != right.text || left.failed != right.failed then
+    return false
+  end
+  role_is_user(left.role) == role_is_user(right.role)
+end
+
+fn same_history(left: [ChatMessage], right: [ChatMessage]) -> bool = do
+  if left.length() != right.length() then
+    return false
+  end
+  let mut index = 0
+  while index < left.length() do
+    if same_message(left[index], right[index]) then
+    else
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false }
+
+fn assistant_message(text: string, failed: bool) -> ChatMessage =
+  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+
+fn main() -> i32 = do
+  const fresh = chat_model_new()
+  const blank = chat_submit(fresh, "")
+  if blank.accepted || blank.model.revision != 0 || blank.model.messages.length() != 0 then
+    return -1
+  end
+  const spaces = chat_submit(fresh, " \n\t ")
+  if spaces.accepted || spaces.model.revision != fresh.revision then
+    return -1
+  end
+
+  const sent = chat_submit(fresh, "  hi  ")
+  if sent.accepted == false || sent.model.pending == false then
+    return -2
+  end
+  if sent.model.messages.length() != 1 || sent.model.messages[0].text != "hi" then
+    return -2
+  end
+  if sent.model.generation != 1 || sent.model.revision != 1 then
+    return -2
+  end
+  const again = chat_submit(sent.model, "more")
+  if again.accepted || again.model.revision != sent.model.revision then
+    return -2
+  end
+  if again.model.messages.length() != 1 then
+    return -2
+  end
+
+  const answered = chat_apply_reply(sent.model, 0, ReplyText("late"))
+  if answered.revision != sent.model.revision || answered.messages.length() != 1 then
+    return -3
+  end
+  const replied = chat_apply_reply(sent.model, sent.model.generation, ReplyText("ok"))
+  if replied.pending || replied.revision != 2 || replied.messages.length() != 2 then
+    return -3
+  end
+  if replied.messages[1].text != "ok" || replied.messages[1].failed then
+    return -3
+  end
+  const idle_cancel = chat_cancel(replied)
+  if idle_cancel.revision != replied.revision || idle_cancel.messages.length() != 2 then
+    return -4
+  end
+
+  const asking = chat_submit(replied, "q2")
+  if asking.accepted == false || asking.model.generation != 2 || asking.model.revision != 3 then
+    return -5
+  end
+  const stopped = chat_cancel(asking.model)
+  if stopped.pending || stopped.generation != 3 || stopped.revision != 4 then
+    return -5
+  end
+  if stopped.messages.length() != 4 || stopped.messages[3].text != "Остановлено" then
+    return -5
+  end
+  if stopped.messages[3].failed == false then
+    return -5
+  end
+  const late = chat_apply_reply(stopped, asking.model.generation, ReplyText("after-stop"))
+  if late.revision != stopped.revision || late.messages.length() != stopped.messages.length() then
+    return -3
+  end
+
+  const cleared = chat_clear(stopped)
+  if cleared.messages.length() != 0 || cleared.pending || cleared.generation != 4 then
+    return -6
+  end
+  if cleared.revision != 5 then
+    return -6
+  end
+  const after_clear = chat_apply_reply(cleared, stopped.generation, ReplyText("after-clear"))
+  if after_clear.messages.length() != 0 || after_clear.revision != cleared.revision then
+    return -3
+  end
+  const clear_cancel = chat_cancel(cleared)
+  if clear_cancel.revision != cleared.revision || clear_cancel.generation != cleared.generation then
+    return -4
+  end
+
+  let mut history_model = chat_model_new()
+  history_model = chat_submit(history_model, "aa").model
+  history_model = chat_apply_reply(history_model, history_model.generation, ReplyText("bb"))
+  history_model = chat_submit(history_model, "c").model
+  history_model = chat_apply_reply(history_model, history_model.generation, ReplyText("d"))
+  history_model = chat_apply_reply(
+    history_model, history_model.generation, ReplyFailed("nope")
+  )
+  let mut expected: [ChatMessage] = []
+  expected.push(user_message("c"))
+  expected.push(assistant_message("d", false))
+  const budget = chat_history_for_request(history_model, 3)
+  if same_history(budget, expected) then
+  else
+    return -7
+  end
+  let mut only_question: [ChatMessage] = []
+  only_question.push(user_message("c"))
+  const forced = chat_history_for_request(history_model, 0)
+  if same_history(forced, only_question) then
+  else
+    return -7
+  end
+
+  let mut failed_model = chat_model_new()
+  failed_model = chat_submit(failed_model, "ask").model
+  failed_model = chat_apply_reply(
+    failed_model, failed_model.generation, ReplyFailed("boom")
+  )
+  let mut asked: [ChatMessage] = []
+  asked.push(user_message("ask"))
+  if same_history(chat_history_for_request(failed_model, 100), asked) then
+  else
+    return -8
+  end
+  failed_model = chat_submit(failed_model, "ask2").model
+  failed_model = chat_cancel(failed_model)
+  let mut asked_again: [ChatMessage] = []
+  asked_again.push(user_message("ask"))
+  asked_again.push(user_message("ask2"))
+  if same_history(chat_history_for_request(failed_model, 100), asked_again) then
+  else
+    return -8
+  end
+  0
+end
