@@ -1,0 +1,347 @@
+import { Theme, theme_default } from '../theme'
+import { ChatMessage, ChatModel, ChatRole, chat_model_new } from '../chat_model'
+import { TextShapingState, text_shaping_new } from '../../gui/text_shaping'
+import { TextLayoutCache, text_layout_build, text_layout_cache_new, wrap_width_none } from '../text_layout'
+import { Rect, rect_new } from '../geometry'
+import { block_scroll_bottom } from '../block_index'
+import {
+  TranscriptView,
+  transcript_measure,
+  transcript_role_label,
+  transcript_view_new
+} from '../chat_transcript_layout'
+import {
+  TranscriptSelection,
+  transcript_consume_press,
+  transcript_copy_text,
+  transcript_input,
+  transcript_pointer_routed,
+  transcript_selection_new
+} from '../chat_transcript_input'
+import { UiInput } from '../ui_input'
+import {
+  BoxData,
+  DirectionColumn,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_empty
+} from '../store'
+import { widget_store_add_text_area } from '../widget_field'
+import { layout_ui } from '../layout_pass'
+import { UiState, ui_state_new } from '../ui_state'
+import { ui_update } from '../ui_update'
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false }
+
+fn model_of(messages: [ChatMessage]) -> ChatModel =
+  ChatModel { messages: messages, pending: false, generation: 1, revision: 1 }
+
+fn repeated_model(count: i32, text: string) -> ChatModel = do
+  let mut messages: [ChatMessage] = []
+  let mut index = 0
+  while index < count do
+    messages.push(user_message(text))
+    index = index + 1
+  end
+  model_of(messages)
+end
+
+fn viewport(x: i32, y: i32, width: i32, height: i32) -> Rect =
+  rect_new(x, y, width, height)
+
+fn unstick(view: TranscriptView, scroll_y: i32) -> TranscriptView =
+  TranscriptView {
+    width: view.width,
+    measured_count: view.measured_count,
+    scroll_y: scroll_y,
+    stick_to_bottom: 0,
+    index: view.index
+  }
+
+fn pointer_input(
+  mouse_x: i32,
+  mouse_y: i32,
+  left_pressed: bool,
+  left_down: bool,
+  wheel_y: i32,
+  binding_key: string,
+  control_down: bool
+) -> UiInput =
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: false,
+    control_down: control_down,
+    copy_pressed: false,
+    wheel_y: wheel_y,
+    now_ms: 0,
+    text: "",
+    binding_key: binding_key,
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const tall = repeated_model(12, "m")
+  const area = viewport(10, 20, 200, 100)
+  let mut measured = transcript_measure(tall, transcript_view_new(), shaping, cache, theme, area.width)
+  shaping = measured.shaping
+  cache = measured.cache
+  const bottom = block_scroll_bottom(measured.view.index.total, area.height)
+  if bottom <= theme.font_size_pixels * 3 then
+    return -1
+  end
+  const inside_x = area.x + theme.padding
+  const inside_y = area.y + theme.padding
+  const outside = transcript_input(
+    theme,
+    measured.view,
+    transcript_selection_new(),
+    tall,
+    shaping,
+    cache,
+    area,
+    pointer_input(0, 0, false, false, 0 - 1, "", false),
+    0
+  )
+  if outside.view.stick_to_bottom == 0 || outside.view.scroll_y != bottom then
+    return -2
+  end
+  const lifted = transcript_input(
+    theme,
+    outside.view,
+    outside.selection,
+    tall,
+    outside.shaping,
+    outside.cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 0 - 1, "", false),
+    outside.bar_drag
+  )
+  if lifted.view.stick_to_bottom != 0 || lifted.view.scroll_y >= bottom || lifted.view.scroll_y < 0 then
+    return -3
+  end
+  const dropped = transcript_input(
+    theme,
+    lifted.view,
+    lifted.selection,
+    tall,
+    lifted.shaping,
+    lifted.cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 100000, "", false),
+    lifted.bar_drag
+  )
+  if dropped.view.scroll_y != bottom || dropped.view.stick_to_bottom == 0 then
+    return -4
+  end
+  const raised = transcript_input(
+    theme,
+    dropped.view,
+    dropped.selection,
+    tall,
+    dropped.shaping,
+    dropped.cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 0 - 100000, "", false),
+    dropped.bar_drag
+  )
+  if raised.view.scroll_y != 0 || raised.view.stick_to_bottom != 0 then
+    return -5
+  end
+  const restored = transcript_input(
+    theme,
+    raised.view,
+    raised.selection,
+    tall,
+    raised.shaping,
+    raised.cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 100000, "", false),
+    raised.bar_drag
+  )
+  if restored.view.scroll_y != bottom || restored.view.stick_to_bottom == 0 then
+    return -6
+  end
+
+  const paged = transcript_input(
+    theme,
+    unstick(measured.view, 0),
+    transcript_selection_new(),
+    tall,
+    shaping,
+    cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 0, "page_down", false),
+    0
+  )
+  if paged.view.scroll_y != area.height then
+    return -7
+  end
+  const ended = transcript_input(
+    theme,
+    paged.view,
+    paged.selection,
+    tall,
+    paged.shaping,
+    paged.cache,
+    area,
+    pointer_input(inside_x, inside_y, false, false, 0, "end", true),
+    paged.bar_drag
+  )
+  if ended.view.scroll_y != bottom || ended.view.stick_to_bottom == 0 then
+    return -8
+  end
+
+  let mut lines: [ChatMessage] = []
+  lines.push(user_message("abcdef"))
+  lines.push(user_message("zzzzzz"))
+  const pair = model_of(lines)
+  const wide = viewport(10, 20, 200, 400)
+  measured = transcript_measure(pair, transcript_view_new(), shaping, cache, theme, wide.width)
+  shaping = measured.shaping
+  cache = measured.cache
+  const role = text_layout_build(
+    shaping, cache, theme, transcript_role_label(RoleUser), wrap_width_none()
+  )
+  shaping = role.shaping
+  cache = role.cache
+  const body_y = wide.y + theme.padding + role.layout.pixel_height + 1
+  const pressed = transcript_input(
+    theme,
+    measured.view,
+    transcript_selection_new(),
+    pair,
+    shaping,
+    cache,
+    wide,
+    pointer_input(wide.x + theme.padding, body_y, true, true, 0, "", false),
+    0
+  )
+  if pressed.selection.message != 0 || pressed.selection.dragging == 0 then
+    return -9
+  end
+  const dragged = transcript_input(
+    theme,
+    pressed.view,
+    pressed.selection,
+    pair,
+    pressed.shaping,
+    pressed.cache,
+    wide,
+    pointer_input(wide.x + wide.width - theme.padding - 1, body_y, false, true, 0, "", false),
+    pressed.bar_drag
+  )
+  if dragged.selection.message != 0 || dragged.selection.anchor == dragged.selection.focus then
+    return -10
+  end
+  const other_y = wide.y + measured.view.index.tops[1] + theme.padding + role.layout.pixel_height + 1
+  const stayed = transcript_input(
+    theme,
+    dragged.view,
+    dragged.selection,
+    pair,
+    dragged.shaping,
+    dragged.cache,
+    wide,
+    pointer_input(wide.x + theme.padding, other_y, false, true, 0, "", false),
+    dragged.bar_drag
+  )
+  if stayed.selection.message != 0 then
+    return -11
+  end
+
+  const hello = model_of([user_message("hello")])
+  const copied = transcript_copy_text(
+    hello,
+    TranscriptSelection { message: 0, anchor: 0, focus: 5, dragging: 0 },
+    shaping,
+    cache,
+    theme,
+    wide.width
+  )
+  if copied != "hello" then
+    return -12
+  end
+  if transcript_copy_text(hello, transcript_selection_new(), shaping, cache, theme, wide.width) != "" then
+    return -13
+  end
+
+  const missed = pointer_input(0, 0, true, true, 0, "", false)
+  if transcript_pointer_routed(missed, wide) then
+    return -14
+  end
+  const ignored = transcript_input(
+    theme, measured.view, transcript_selection_new(), pair, shaping, cache, wide, missed, 0
+  )
+  if ignored.selection.message != 0 - 1 then
+    return -15
+  end
+
+  const bar_x = area.x + area.width - 2
+  const bar_y = area.y + area.height - 1
+  const barred = transcript_input(
+    theme,
+    unstick(transcript_measure(tall, transcript_view_new(), shaping, cache, theme, area.width).view, 0),
+    transcript_selection_new(),
+    tall,
+    shaping,
+    cache,
+    area,
+    pointer_input(bar_x, bar_y, true, true, 0, "", false),
+    0
+  )
+  const bar_bottom = block_scroll_bottom(barred.view.index.total, area.height)
+  if barred.bar_drag == 0 || barred.view.scroll_y <= 0 || barred.view.scroll_y > bar_bottom then
+    return -16
+  end
+
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(store, widget_id_none(), column_data(), OverflowVisible, 0, true)
+  store = widget_store_add_text_area(store, store.root, "", 4, 0, true)
+  let mut state = ui_state_new()
+  const laid = layout_ui(store, theme, shaping, cache, 240, 200, state.scroll_offsets, [])
+  const field = store.nodes[1].id
+  const field_rect = laid.layout.rects[field.index]
+  const focused = ui_update(
+    store, laid.layout, theme, state, pointer_input(field_rect.x + 2, field_rect.y + 4, true, true, 0, "", false)
+  )
+  state = focused.state
+  if widget_id_equals(state.focus, field) == false then
+    return -17
+  end
+  const transcript_rect = viewport(0, 120, 200, 60)
+  if field_rect.y + field_rect.height >= transcript_rect.y then
+    return -18
+  end
+  const raw = pointer_input(transcript_rect.x + 4, transcript_rect.y + 4, true, true, 0, "", false)
+  if transcript_pointer_routed(raw, transcript_rect) == false then
+    return -19
+  end
+  const cleared = ui_update(store, laid.layout, theme, state, raw)
+  if widget_id_equals(cleared.state.focus, field) then
+    return -20
+  end
+  const kept = ui_update(store, laid.layout, theme, state, transcript_consume_press(raw, transcript_rect))
+  if widget_id_equals(kept.state.focus, field) == false then
+    return -21
+  end
+  if chat_model_new().messages.length() != 0 then
+    return -22
+  end
+  0
+end

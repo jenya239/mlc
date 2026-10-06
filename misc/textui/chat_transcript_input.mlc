@@ -1,0 +1,243 @@
+import { Theme } from './theme'
+import { ChatModel } from './chat_model'
+import {
+  block_scroll_bottom,
+  block_scroll_clamp,
+  block_scroll_is_at_bottom
+} from './block_index'
+import { TextShapingState } from '../gui/text_shaping'
+import {
+  TextLayoutCache,
+  text_layout_build,
+  wrap_width_none,
+  wrap_width_pixels
+} from './text_layout'
+import { text_layout_slice } from './text_layout_hit'
+import {
+  transcript_block_at_y,
+  transcript_body_press_index,
+  transcript_index_in_message
+} from './chat_transcript_hit'
+import { Rect, rect_contains } from './geometry'
+import { scroll_bar_rect, scroll_offset_from_track, scroll_step } from './widget_scroll'
+import { UiInput } from './ui_input'
+import {
+  TranscriptView,
+  transcript_content_limit,
+  transcript_role_label
+} from './chat_transcript_layout'
+
+export type TranscriptSelection = {
+  message: i32,
+  anchor: i32,
+  focus: i32,
+  dragging: i32
+}
+
+export type TranscriptInputResult = {
+  view: TranscriptView,
+  selection: TranscriptSelection,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  bar_drag: i32
+}
+
+export fn transcript_selection_new() -> TranscriptSelection =
+  TranscriptSelection { message: 0 - 1, anchor: 0, focus: 0, dragging: 0 }
+
+export fn transcript_pointer_routed(input: UiInput, rect: Rect) -> bool =
+  input.left_pressed && rect_contains(rect, input.mouse_x, input.mouse_y)
+
+export fn transcript_consume_press(input: UiInput, rect: Rect) -> UiInput = do
+  if transcript_pointer_routed(input, rect) then
+    return UiInput {
+      mouse_x: input.mouse_x,
+      mouse_y: input.mouse_y,
+      left_pressed: false,
+      left_down: input.left_down,
+      left_released: input.left_released,
+      control_down: input.control_down,
+      copy_pressed: input.copy_pressed,
+      wheel_y: input.wheel_y,
+      now_ms: input.now_ms,
+      text: input.text,
+      binding_key: input.binding_key,
+      shift_down: input.shift_down,
+      backspace_pressed: input.backspace_pressed,
+      enter_pressed: input.enter_pressed,
+      paste_text: input.paste_text
+    }
+  end
+  input
+end
+
+fn shown_scroll(view: TranscriptView, view_height: i32) -> i32 = do
+  if view.stick_to_bottom != 0 then
+    return block_scroll_bottom(view.index.total, view_height)
+  end
+  block_scroll_clamp(view.index.total, view_height, view.scroll_y)
+end
+
+fn stick_flag(total: i32, view_height: i32, y: i32) -> i32 = do
+  if block_scroll_is_at_bottom(total, view_height, y) then
+    return 1
+  end
+  0
+end
+
+fn with_scroll(view: TranscriptView, scroll_y: i32, view_height: i32) -> TranscriptView =
+  TranscriptView {
+    width: view.width,
+    measured_count: view.measured_count,
+    scroll_y: scroll_y,
+    stick_to_bottom: stick_flag(view.index.total, view_height, scroll_y),
+    index: view.index
+  }
+
+fn pointer_on_bar(theme: Theme, view: TranscriptView, rect: Rect, x: i32, y: i32) -> bool = do
+  if view.index.total <= rect.height then
+    return false
+  end
+  rect_contains(scroll_bar_rect(theme, rect), x, y)
+end
+
+export fn transcript_copy_text(
+  model: ChatModel,
+  selection: TranscriptSelection,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32
+) -> string = do
+  if selection.message < 0 || selection.message >= model.messages.length() then
+    return ""
+  end
+  const entry = model.messages[selection.message]
+  const role = text_layout_build(
+    shaping, cache, theme, transcript_role_label(entry.role), wrap_width_none()
+  )
+  const body = text_layout_build(
+    role.shaping,
+    role.cache,
+    theme,
+    entry.text,
+    wrap_width_pixels(transcript_content_limit(theme, width))
+  )
+  text_layout_slice(body.layout, selection.anchor, selection.focus)
+end
+
+fn apply_scroll_keys(
+  view: TranscriptView,
+  input: UiInput,
+  rect: Rect,
+  scroll: i32
+) -> i32 = do
+  if input.binding_key == "page_down" then
+    return scroll + rect.height
+  end
+  if input.binding_key == "page_up" then
+    return scroll - rect.height
+  end
+  if input.binding_key == "end" && input.control_down then
+    return block_scroll_bottom(view.index.total, rect.height)
+  end
+  scroll
+end
+
+export fn transcript_input(
+  theme: Theme,
+  view: TranscriptView,
+  selection: TranscriptSelection,
+  model: ChatModel,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rect: Rect,
+  input: UiInput,
+  bar_drag: i32
+) -> TranscriptInputResult = do
+  let mut scroll = shown_scroll(view, rect.height)
+  const keyed = apply_scroll_keys(view, input, rect, scroll)
+  if keyed != scroll then
+    scroll = block_scroll_clamp(view.index.total, rect.height, keyed)
+  end
+  if input.wheel_y != 0 && rect_contains(rect, input.mouse_x, input.mouse_y) then
+    scroll = block_scroll_clamp(
+      view.index.total,
+      rect.height,
+      scroll + input.wheel_y * scroll_step(theme)
+    )
+  end
+  let mut next_bar = bar_drag
+  const on_bar = pointer_on_bar(theme, view, rect, input.mouse_x, input.mouse_y)
+  if input.left_pressed && on_bar then
+    next_bar = 1
+    scroll = block_scroll_clamp(
+      view.index.total,
+      rect.height,
+      scroll_offset_from_track(rect, input.mouse_y, view.index.total)
+    )
+  end
+  if input.left_pressed == false && next_bar != 0 && input.left_down then
+    scroll = block_scroll_clamp(
+      view.index.total,
+      rect.height,
+      scroll_offset_from_track(rect, input.mouse_y, view.index.total)
+    )
+  end
+  if input.left_down == false then
+    next_bar = 0
+  end
+  let mut next_selection = selection
+  let mut selection_handled = false
+  if next_bar != 0 then
+    next_selection = TranscriptSelection {
+      message: selection.message,
+      anchor: selection.anchor,
+      focus: selection.focus,
+      dragging: 0
+    }
+    selection_handled = true
+  end
+  if selection_handled == false && input.left_pressed && rect_contains(rect, input.mouse_x, input.mouse_y) then
+    const pressed = transcript_body_press_index(
+      model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y
+    )
+    if pressed.top >= 0 then
+      next_selection = TranscriptSelection {
+        message: transcript_block_at_y(view, input.mouse_y - rect.y + scroll),
+        anchor: pressed.top,
+        focus: pressed.top,
+        dragging: 1
+      }
+    end
+    selection_handled = true
+  end
+  if selection_handled == false && selection.dragging != 0 && input.left_down && selection.message >= 0 then
+    const dragged = transcript_index_in_message(
+      model, view, shaping, cache, theme, rect, scroll,
+      selection.message, input.mouse_x, input.mouse_y
+    )
+    next_selection = TranscriptSelection {
+      message: selection.message,
+      anchor: selection.anchor,
+      focus: dragged.top,
+      dragging: 1
+    }
+    selection_handled = true
+  end
+  if selection_handled == false && input.left_down == false then
+    next_selection = TranscriptSelection {
+      message: selection.message,
+      anchor: selection.anchor,
+      focus: selection.focus,
+      dragging: 0
+    }
+  end
+  TranscriptInputResult {
+    view: with_scroll(view, scroll, rect.height),
+    selection: next_selection,
+    shaping: shaping,
+    cache: cache,
+    bar_drag: next_bar
+  }
+end
