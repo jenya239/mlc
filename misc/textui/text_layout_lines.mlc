@@ -1,0 +1,62 @@
+import { TextLayout } from './text_layout'
+
+export fn text_layout_line_of_byte(layout: TextLayout, index: i32) -> i32 = do
+  if layout.lines.length() == 0 then
+    return 0
+  end
+  let mut chosen = 0
+  let mut line_index = 0
+  while line_index < layout.lines.length() do
+    if layout.lines[line_index].byte_start <= index then
+      chosen = line_index
+    end
+    line_index = line_index + 1
+  end
+  chosen
+end
+
+export fn text_layout_line_at_y(layout: TextLayout, y: i32) -> i32 = do
+  if layout.lines.length() == 0 || y < 0 then
+    return 0
+  end
+  const last = layout.lines.length() - 1
+  const last_line = layout.lines[last]
+  if y >= last_line.top + last_line.height then
+    return last
+  end
+  let mut line_index = 0
+  while line_index < layout.lines.length() do
+    const line = layout.lines[line_index]
+    if y < line.top + line.height then
+      return line_index
+    end
+    line_index = line_index + 1
+  end
+  last
+end
+
+export fn text_layout_line_end_target(layout: TextLayout, line_index: i32) -> i32 = do
+  if layout.lines.length() == 0 then
+    return layout.text.byte_size()
+  end
+  let mut chosen = line_index
+  if chosen < 0 then
+    chosen = 0
+  end
+  if chosen >= layout.lines.length() then
+    chosen = layout.lines.length() - 1
+  end
+  if chosen == layout.lines.length() - 1 then
+    return layout.text.byte_size()
+  end
+  const line = layout.lines[chosen]
+  if line.byte_end <= line.byte_start then
+    return line.byte_end
+  end
+  const last_byte = line.byte_end - 1
+  const mark = layout.text.byte_at(last_byte)
+  if mark == "\n" || mark == " " then
+    return last_byte
+  end
+  line.byte_end
+end

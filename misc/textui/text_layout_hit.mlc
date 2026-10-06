@@ -1,4 +1,9 @@
 import { TextLayout } from './text_layout'
+import {
+  text_layout_line_at_y,
+  text_layout_line_end_target,
+  text_layout_line_of_byte
+} from './text_layout_lines'
 
 export type SelectionBox = {
   x: i32,
@@ -32,37 +37,59 @@ end
 
 export fn text_layout_caret_x(layout: TextLayout, byte_index: i32) -> i32 = do
   const index = clamp_byte(layout, byte_index)
-  if index >= layout.text.byte_size() then
+  if layout.lines.length() == 0 then
     return layout.pixel_width
   end
+  const line_index = text_layout_line_of_byte(layout, index)
+  const line = layout.lines[line_index]
   let mut cluster_index = 0
   while cluster_index < layout.clusters.length() do
     const cluster = layout.clusters[cluster_index]
-    if cluster.byte_offset >= index then
+    if cluster.line_index == line_index && cluster.byte_offset >= index then
       return cluster.x
     end
     cluster_index = cluster_index + 1
   end
-  layout.pixel_width
+  line.width
+end
+
+export type CaretPoint = {
+  x: i32,
+  y: i32,
+  height: i32
+}
+
+export fn text_layout_caret_point(layout: TextLayout, byte_index: i32) -> CaretPoint = do
+  const index = clamp_byte(layout, byte_index)
+  const caret_x = text_layout_caret_x(layout, index)
+  if layout.lines.length() == 0 then
+    return CaretPoint { x: caret_x, y: 0, height: layout.pixel_height }
+  end
+  const line = layout.lines[text_layout_line_of_byte(layout, index)]
+  CaretPoint { x: caret_x, y: line.top, height: line.height }
 end
 
 export fn text_layout_index_at(layout: TextLayout, x: i32, y: i32) -> i32 = do
-  if layout.clusters.length() == 0 then
+  if layout.lines.length() == 0 then
     return 0
   end
+  const line_index = text_layout_line_at_y(layout, y)
+  const line = layout.lines[line_index]
   if x <= 0 then
-    return 0
+    return line.byte_start
   end
   let mut cluster_index = 0
   while cluster_index < layout.clusters.length() do
     const cluster = layout.clusters[cluster_index]
-    const midpoint = cluster.x + cluster.width / 2
-    if x < midpoint then
-      return cluster.byte_offset
+    if cluster.line_index == line_index then
+      const midpoint = cluster.x + cluster.width / 2
+      if x < midpoint then
+        return cluster.byte_offset
+      end
     end
     cluster_index = cluster_index + 1
   end
-  layout.text.byte_size()
+  text_layout_line_end_target(layout, line_index)
 end
 
 export fn text_layout_slice(layout: TextLayout, start_index: i32, end_index: i32) -> string = do
@@ -83,22 +110,35 @@ export fn text_layout_selection_rects(
   if range.finish <= range.start then
     return rects
   end
-  const left = text_layout_caret_x(layout, range.start)
-  const right = text_layout_caret_x(layout, range.finish)
-  const width = right - left
-  if width <= 0 then
+  if layout.lines.length() == 0 then
     return rects
   end
-  let mut height = layout.pixel_height
-  if layout.lines.length() > 0 then
-    height = layout.lines[0].height
+  const start_line = text_layout_line_of_byte(layout, range.start)
+  const finish_line = text_layout_line_of_byte(layout, range.finish)
+  let mut line_index = start_line
+  while line_index <= finish_line do
+    const line = layout.lines[line_index]
+    let mut box_x = 0
+    if line_index == start_line then
+      box_x = text_layout_caret_x(layout, range.start)
+    end
+    let mut box_width = line.width - box_x
+    if line_index == finish_line then
+      box_width = text_layout_caret_x(layout, range.finish) - box_x
+    end
+    if box_width <= 0 && line_index != start_line && line_index != finish_line then
+      box_width = layout.pixel_size / 4
+    end
+    if box_width > 0 then
+      rects.push(SelectionBox {
+        x: box_x,
+        y: line.top,
+        width: box_width,
+        height: line.height
+      })
+    end
+    line_index = line_index + 1
   end
-  rects.push(SelectionBox {
-    x: left,
-    y: 0,
-    width: width,
-    height: height
-  })
   rects
 end
 
