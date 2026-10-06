@@ -1,4 +1,5 @@
 import { Theme } from './theme'
+import { wrap_line_starts } from './text_layout_wrap'
 import {
   TextShapingState,
   text_shaping_shape,
@@ -54,6 +55,9 @@ export type TextLayoutBuildResult = {
 export fn wrap_width_none() -> WrapWidth =
   WrapWidthNone
 
+export fn wrap_width_pixels(limit: i32) -> WrapWidth =
+  WrapWidthPixels(limit)
+
 export fn text_layout_empty() -> TextLayout = do
   let mut lines: [TextLine] = []
   let mut clusters: [TextCluster] = []
@@ -93,6 +97,13 @@ type HardLineLayout = {
   layout: TextLayout
 }
 
+type PlacedText = {
+  lines: [TextLine],
+  clusters: [TextCluster],
+  pixel_width: i32,
+  next_line_index: i32
+}
+
 fn append_paragraph_glyphs(
   clusters: [TextCluster],
   glyph_count: i32,
@@ -122,20 +133,19 @@ fn shape_paragraph(
   pixel_size: i32,
   text: string,
   paragraph_start: i32,
-  paragraph_end: i32,
-  line_index: i32,
-  clusters: [TextCluster]
+  paragraph_end: i32
 ) -> ParagraphShape = do
+  let mut empty_clusters: [TextCluster] = []
   if paragraph_end <= paragraph_start then
-    return ParagraphShape { shaping: shaping, clusters: clusters, width: 0 }
+    return ParagraphShape { shaping: shaping, clusters: empty_clusters, width: 0 }
   end
   const paragraph = text.byte_substring(paragraph_start, paragraph_end - paragraph_start)
   const shape_result = text_shaping_shape(shaping, font_path, pixel_size, paragraph)
   const glyphs = append_paragraph_glyphs(
-    clusters,
+    empty_clusters,
     shape_result.glyph_count,
     paragraph_start,
-    line_index
+    0
   )
   ParagraphShape {
     shaping: shape_result.state,
@@ -143,6 +153,117 @@ fn shape_paragraph(
     width: glyphs.width
   }
 end
+
+fn visual_line_starts(
+  text: string,
+  paragraph_clusters: [TextCluster],
+  wrap_width: WrapWidth
+) -> [i32] =
+  match wrap_width
+    | WrapWidthNone => do
+        let mut starts: [i32] = []
+        starts.push(0)
+        starts
+      end
+    | WrapWidthPixels(limit) => do
+        let mut offsets: [i32] = []
+        let mut widths: [i32] = []
+        let mut source_index = 0
+        while source_index < paragraph_clusters.length() do
+          offsets.push(paragraph_clusters[source_index].byte_offset)
+          widths.push(paragraph_clusters[source_index].width)
+          source_index = source_index + 1
+        end
+        wrap_line_starts(text, offsets, widths, limit)
+      end
+
+fn place_visual_lines(
+  paragraph_start: i32,
+  paragraph_end: i32,
+  paragraph_clusters: [TextCluster],
+  starts: [i32],
+  line_height: i32,
+  lines: [TextLine],
+  clusters: [TextCluster],
+  pixel_width: i32,
+  line_index: i32
+) -> PlacedText = do
+  let mut next_lines = lines
+  let mut next_clusters = clusters
+  let mut next_pixel_width = pixel_width
+  let mut next_line_index = line_index
+  let mut visual_index = 0
+  while visual_index < starts.length() do
+    const cluster_begin = starts[visual_index]
+    let mut cluster_end = paragraph_clusters.length()
+    if visual_index + 1 < starts.length() then
+      cluster_end = starts[visual_index + 1]
+    end
+    let mut byte_start = paragraph_start
+    if visual_index > 0 && cluster_begin < paragraph_clusters.length() then
+      byte_start = paragraph_clusters[cluster_begin].byte_offset
+    end
+    let mut byte_end = paragraph_end
+    if visual_index + 1 < starts.length() && cluster_end < paragraph_clusters.length() then
+      byte_end = paragraph_clusters[cluster_end].byte_offset
+    end
+    let mut cluster_x = 0
+    let mut cluster_index = cluster_begin
+    while cluster_index < cluster_end do
+      const source = paragraph_clusters[cluster_index]
+      next_clusters.push(TextCluster {
+        byte_offset: source.byte_offset,
+        x: cluster_x,
+        width: source.width,
+        line_index: next_line_index
+      })
+      cluster_x = cluster_x + source.width
+      cluster_index = cluster_index + 1
+    end
+    if cluster_x > next_pixel_width then
+      next_pixel_width = cluster_x
+    end
+    next_lines.push(TextLine {
+      byte_start: byte_start,
+      byte_end: byte_end,
+      top: next_line_index * line_height,
+      height: line_height,
+      width: cluster_x
+    })
+    next_line_index = next_line_index + 1
+    visual_index = visual_index + 1
+  end
+  PlacedText {
+    lines: next_lines,
+    clusters: next_clusters,
+    pixel_width: next_pixel_width,
+    next_line_index: next_line_index
+  }
+end
+
+fn place_hard_line(
+  text: string,
+  paragraph_start: i32,
+  paragraph_end: i32,
+  paragraph_clusters: [TextCluster],
+  wrap_width: WrapWidth,
+  line_height: i32,
+  lines: [TextLine],
+  clusters: [TextCluster],
+  pixel_width: i32,
+  line_index: i32
+) -> PlacedText =
+  place_visual_lines(
+    paragraph_start,
+    paragraph_end,
+    paragraph_clusters,
+    visual_line_starts(text, paragraph_clusters, wrap_width),
+    line_height,
+    lines,
+    clusters,
+    pixel_width,
+    line_index
+  )
 
 fn build_hard_line_layout(
   shaping: TextShapingState,
@@ -173,25 +294,27 @@ fn build_hard_line_layout(
         pixel_size,
         text,
         paragraph_start,
-        byte_index,
-        line_index,
-        clusters
+        byte_index
       )
       current = shaped.shaping
-      clusters = shaped.clusters
-      if shaped.width > pixel_width then
-        pixel_width = shaped.width
-      end
-      lines.push(TextLine {
-        byte_start: paragraph_start,
-        byte_end: byte_index,
-        top: line_index * line_height,
-        height: line_height,
-        width: shaped.width
-      })
+      const placed = place_hard_line(
+        text,
+        paragraph_start,
+        byte_index,
+        shaped.clusters,
+        wrap_width,
+        line_height,
+        lines,
+        clusters,
+        pixel_width,
+        line_index
+      )
+      lines = placed.lines
+      clusters = placed.clusters
+      pixel_width = placed.pixel_width
+      line_index = placed.next_line_index
       if at_newline then
         paragraph_start = byte_index + 1
-        line_index = line_index + 1
       else
         finished = true
       end

@@ -1,0 +1,219 @@
+import { theme_default } from '../theme'
+import { text_shaping_new } from '../../gui/text_shaping'
+import {
+  TextLayout,
+  text_layout_build,
+  text_layout_cache_new,
+  wrap_width_none,
+  wrap_width_pixels
+} from '../text_layout'
+
+fn clusters_on_line(layout: TextLayout, line_index: i32) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < layout.clusters.length() do
+    if layout.clusters[index].line_index == line_index then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn line_start_is_cluster(layout: TextLayout, byte_start: i32) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < layout.clusters.length() do
+    if layout.clusters[index].byte_offset == byte_start then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+
+  const prefix = text_layout_build(shaping, cache, theme, "aaa bbb", wrap_width_none())
+  shaping = prefix.shaping
+  cache = prefix.cache
+  const spaced = text_layout_build(
+    shaping, cache, theme, "aaa bbb ccc", wrap_width_pixels(prefix.layout.pixel_width + 1)
+  )
+  shaping = spaced.shaping
+  cache = spaced.cache
+  if spaced.layout.lines.length() != 2 then
+    return -1
+  end
+  if spaced.layout.lines[0].byte_start != 0 || spaced.layout.lines[0].byte_end != 8 then
+    return -2
+  end
+  if spaced.layout.lines[1].byte_start != 8 || spaced.layout.lines[1].byte_end != 11 then
+    return -3
+  end
+  if spaced.layout.text.byte_at(7) != " " then
+    return -4
+  end
+  if spaced.layout.lines[1].top != spaced.layout.lines[0].height then
+    return -5
+  end
+  if spaced.layout.pixel_height != spaced.layout.lines[0].height * 2 then
+    return -6
+  end
+  if clusters_on_line(spaced.layout, 1) == 0 then
+    return -7
+  end
+  if spaced.layout.clusters[0].x != 0 || spaced.layout.clusters[0].line_index != 0 then
+    return -8
+  end
+
+  const word = text_layout_build(shaping, cache, theme, "wwww", wrap_width_none())
+  shaping = word.shaping
+  cache = word.cache
+  const wide = text_layout_build(
+    shaping, cache, theme, "wwwwwwwwwwww", wrap_width_pixels(word.layout.pixel_width + 1)
+  )
+  shaping = wide.shaping
+  cache = wide.cache
+  if wide.layout.lines.length() < 2 then
+    return -9
+  end
+  if wide.layout.lines[0].byte_start != 0 then
+    return -10
+  end
+  if wide.layout.lines[wide.layout.lines.length() - 1].byte_end != 12 then
+    return -11
+  end
+  let mut line_index = 0
+  while line_index < wide.layout.lines.length() do
+    const line = wide.layout.lines[line_index]
+    if line.width > word.layout.pixel_width + 1 || line.width <= 0 then
+      return -12
+    end
+    if clusters_on_line(wide.layout, line_index) < 2 then
+      return -13
+    end
+    if line_index > 0 && wide.layout.lines[line_index - 1].byte_end != line.byte_start then
+      return -14
+    end
+    line_index = line_index + 1
+  end
+
+  const tight = text_layout_build(shaping, cache, theme, "wwww", wrap_width_pixels(1))
+  shaping = tight.shaping
+  cache = tight.cache
+  if tight.layout.lines.length() != word.layout.clusters.length() then
+    return -15
+  end
+  line_index = 0
+  while line_index < tight.layout.lines.length() do
+    if clusters_on_line(tight.layout, line_index) != 1 then
+      return -16
+    end
+    line_index = line_index + 1
+  end
+
+  const greeting = text_layout_build(shaping, cache, theme, "привет мир", wrap_width_pixels(1))
+  shaping = greeting.shaping
+  cache = greeting.cache
+  if greeting.layout.lines.length() < 2 then
+    return -17
+  end
+  line_index = 0
+  while line_index < greeting.layout.lines.length() do
+    if line_start_is_cluster(greeting.layout, greeting.layout.lines[line_index].byte_start) == false then
+      return -18
+    end
+    line_index = line_index + 1
+  end
+
+  const short_word = text_layout_build(shaping, cache, theme, "aa", wrap_width_none())
+  shaping = short_word.shaping
+  cache = short_word.cache
+  const mixed = text_layout_build(
+    shaping, cache, theme, "aa bb\ncc", wrap_width_pixels(short_word.layout.pixel_width + 1)
+  )
+  shaping = mixed.shaping
+  cache = mixed.cache
+  if mixed.layout.lines.length() < 3 then
+    return -19
+  end
+  line_index = 1
+  while line_index < mixed.layout.lines.length() do
+    if mixed.layout.lines[line_index - 1].byte_end > mixed.layout.lines[line_index].byte_start then
+      return -20
+    end
+    line_index = line_index + 1
+  end
+  const last_line = mixed.layout.lines[mixed.layout.lines.length() - 1]
+  if mixed.layout.text.byte_at(last_line.byte_start) != "c" then
+    return -21
+  end
+
+  const blank = text_layout_build(shaping, cache, theme, "", wrap_width_pixels(1))
+  shaping = blank.shaping
+  cache = blank.cache
+  if blank.layout.lines.length() != 1 then
+    return -22
+  end
+
+  const plain = text_layout_build(shaping, cache, theme, "hello", wrap_width_none())
+  shaping = plain.shaping
+  cache = plain.cache
+  if plain.layout.lines.length() != 1 || plain.layout.lines[0].byte_end != 5 then
+    return -23
+  end
+  if plain.layout.pixel_width != plain.layout.lines[0].width then
+    return -24
+  end
+  let mut cluster_index = 0
+  let mut cursor = 0
+  while cluster_index < plain.layout.clusters.length() do
+    const cluster = plain.layout.clusters[cluster_index]
+    if cluster.line_index != 0 || cluster.x != cursor then
+      return -25
+    end
+    cursor = cursor + cluster.width
+    cluster_index = cluster_index + 1
+  end
+  if cursor != plain.layout.pixel_width then
+    return -26
+  end
+  const broken = text_layout_build(shaping, cache, theme, "a\nb\nc", wrap_width_none())
+  shaping = broken.shaping
+  cache = broken.cache
+  if broken.layout.lines.length() != 3 || broken.layout.clusters.length() != 3 then
+    return -27
+  end
+  if broken.layout.pixel_width != broken.layout.lines[0].width then
+    return -28
+  end
+
+  let mut fresh = text_layout_cache_new()
+  const first = text_layout_build(
+    shaping, fresh, theme, "aaa bbb ccc", wrap_width_pixels(prefix.layout.pixel_width + 1)
+  )
+  fresh = first.cache
+  shaping = first.shaping
+  if fresh.rebuilds != 1 then
+    return -29
+  end
+  const second = text_layout_build(
+    shaping, fresh, theme, "aaa bbb ccc", wrap_width_pixels(prefix.layout.pixel_width + 1)
+  )
+  fresh = second.cache
+  shaping = second.shaping
+  if fresh.rebuilds != 1 then
+    return -30
+  end
+  const third = text_layout_build(
+    shaping, fresh, theme, "aaa bbb ccc", wrap_width_pixels(prefix.layout.pixel_width + 2)
+  )
+  if third.cache.rebuilds != 2 then
+    return -31
+  end
+  0
+end

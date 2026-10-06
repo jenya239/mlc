@@ -1,0 +1,90 @@
+fn atom_is_space(text: string, offset: i32) -> bool =
+  offset >= 0 && offset < text.byte_size() && text.byte_at(offset) == " "
+
+fn measured_line_width(
+  text: string,
+  atom_offset: [i32],
+  atom_width: [i32],
+  begin_atom: i32,
+  end_atom: i32
+) -> i32 = do
+  let mut width = 0
+  let mut atom_index = begin_atom
+  while atom_index <= end_atom do
+    width = width + atom_width[atom_index]
+    atom_index = atom_index + 1
+  end
+  let mut tail_atom = end_atom
+  let mut stripping = true
+  while stripping do
+    if tail_atom < begin_atom then
+      stripping = false
+    else if atom_is_space(text, atom_offset[tail_atom]) then
+      width = width - atom_width[tail_atom]
+      tail_atom = tail_atom - 1
+    else
+      stripping = false
+    end
+  end
+  if width < 0 then
+    return 0
+  end
+  width
+end
+
+export fn wrap_line_starts(
+  text: string,
+  offsets: [i32],
+  widths: [i32],
+  limit: i32
+) -> [i32] = do
+  let mut starts: [i32] = []
+  starts.push(0)
+  if offsets.length() == 0 then
+    return starts
+  end
+  let mut limit_pixels = limit
+  if limit_pixels <= 0 then
+    limit_pixels = 1
+  end
+  let mut atom_start: [i32] = []
+  let mut atom_width: [i32] = []
+  let mut atom_offset: [i32] = []
+  let mut offset_index = 0
+  while offset_index < offsets.length() do
+    const offset = offsets[offset_index]
+    let mut end_index = offset_index + 1
+    let mut width = widths[offset_index]
+    while end_index < offsets.length() && offsets[end_index] == offset do
+      width = width + widths[end_index]
+      end_index = end_index + 1
+    end
+    atom_start.push(offset_index)
+    atom_width.push(width)
+    atom_offset.push(offset)
+    offset_index = end_index
+  end
+  let mut line_begin = 0
+  let mut last_break_atom = 0 - 1
+  let mut atom_index = 0
+  while atom_index < atom_start.length() do
+    const width = measured_line_width(text, atom_offset, atom_width, line_begin, atom_index)
+    if width > limit_pixels && atom_index > line_begin then
+      if last_break_atom > line_begin then
+        starts.push(atom_start[last_break_atom])
+        line_begin = last_break_atom
+        last_break_atom = 0 - 1
+      else
+        starts.push(atom_start[atom_index])
+        line_begin = atom_index
+        last_break_atom = 0 - 1
+      end
+    else if atom_is_space(text, atom_offset[atom_index]) && atom_index + 1 < atom_start.length() then
+      last_break_atom = atom_index + 1
+      atom_index = atom_index + 1
+    else
+      atom_index = atom_index + 1
+    end
+  end
+  starts
+end
