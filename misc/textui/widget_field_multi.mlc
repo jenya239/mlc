@@ -1,0 +1,137 @@
+import { Rect, rect_new } from './geometry'
+import { Theme, theme_content_inset } from './theme'
+import { WidgetId, widget_id_equals } from './store'
+import { TextLayout } from './text_layout'
+import {
+  text_layout_caret_point,
+  text_layout_index_at,
+  text_layout_selection_rects
+} from './text_layout_hit'
+import { text_layout_text_ops } from './text_layout_paint'
+import { DrawOp, FillRectOp } from './draw_op'
+import { Selection, selection_is_empty } from './selection'
+import { UiState } from './ui_state'
+
+export fn field_multiline_index_at(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  scroll_y: i32,
+  x: i32,
+  y: i32
+) -> i32 =
+  text_layout_index_at(
+    layout,
+    x - rect.x - theme_content_inset(theme),
+    y - rect.y - theme_content_inset(theme) + scroll_y
+  )
+
+export fn field_multiline_scroll(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  caret: i32,
+  previous: i32
+) -> i32 = do
+  const inset = theme_content_inset(theme)
+  let mut visible = rect.height - inset * 2
+  if visible < 1 then
+    visible = 1
+  end
+  const point = text_layout_caret_point(layout, caret)
+  let mut scroll = previous
+  if point.y - scroll < 0 then
+    scroll = point.y
+  end
+  if point.y + point.height - scroll > visible then
+    scroll = point.y + point.height - visible
+  end
+  if scroll < 0 then
+    scroll = 0
+  end
+  let mut limit = layout.pixel_height - visible
+  if limit < 0 then
+    limit = 0
+  end
+  if scroll > limit then
+    scroll = limit
+  end
+  scroll
+end
+
+fn paint_multiline_selection(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  selection: Selection,
+  scroll_y: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  if selection_is_empty(selection) then
+    return operations
+  end
+  const inset = theme_content_inset(theme)
+  const boxes = text_layout_selection_rects(layout, selection.anchor, selection.focus)
+  let mut updated = operations
+  let mut box_index = 0
+  while box_index < boxes.length() do
+    const box = boxes[box_index]
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(
+        rect.x + inset + box.x,
+        rect.y + inset + box.y - scroll_y,
+        box.width,
+        box.height
+      ),
+      color: theme.selection_background
+    }))
+    box_index = box_index + 1
+  end
+  updated
+end
+
+export fn paint_field_multiline(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  state: UiState,
+  owner: WidgetId,
+  scroll_y: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const inset = theme_content_inset(theme)
+  let mut updated = operations
+  if widget_id_equals(state.selection.owner, owner) then
+    updated = paint_multiline_selection(
+      theme, rect, layout, state.selection, scroll_y, updated
+    )
+  end
+  const text_ops = text_layout_text_ops(
+    layout,
+    rect.x + inset,
+    rect.y + inset - scroll_y,
+    theme.foreground
+  )
+  let mut text_index = 0
+  while text_index < text_ops.length() do
+    updated.push(OpText(text_ops[text_index]))
+    text_index = text_index + 1
+  end
+  if widget_id_equals(state.focus, owner) then
+    const point = text_layout_caret_point(layout, state.field_caret)
+    let mut caret_height = point.height
+    if caret_height < 1 then
+      caret_height = 1
+    end
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(
+        rect.x + inset + point.x,
+        rect.y + inset + point.y - scroll_y,
+        1,
+        caret_height
+      ),
+      color: theme.foreground
+    }))
+  end
+  updated
+end

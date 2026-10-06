@@ -1,0 +1,245 @@
+import { ColorRgba, Theme, theme_content_inset, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  field_data_new,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { widget_store_add_text_area, field_index_at, field_scroll_to_caret } from '../widget_field'
+import { TextShapingState, text_shaping_new } from '../../gui/text_shaping'
+import { TextLayoutCache, text_layout_cache_new } from '../text_layout'
+import { text_layout_line_of_byte } from '../text_layout_lines'
+import { LayoutColumnResult, layout_ui } from '../layout_pass'
+import { paint_ui_frame } from '../paint_pass'
+import { ui_state_new, ui_state_with, ui_state_with_field } from '../ui_state'
+import { Selection } from '../selection'
+import { DrawOp, TextOp } from '../draw_op'
+import { Rect } from '../geometry'
+
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn seven_lines() -> string =
+  "0\n1\n2\n3\n4\n5\n6"
+
+fn area_store(text: string, max_lines: i32) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_area(store, store.root, text, max_lines, 0, true)
+end
+
+fn line_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_field(store, store.root, field_data_new("abcdef"), 0, true)
+end
+
+fn place(
+  store: WidgetStore,
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache
+) -> LayoutColumnResult = do
+  let mut offsets: [i32] = []
+  let mut ratios: [i32] = []
+  layout_ui(store, theme, shaping, cache, 120, 200, offsets, ratios)
+end
+
+fn same_color(left: ColorRgba, right: ColorRgba) -> bool =
+  left.red == right.red && left.green == right.green && left.blue == right.blue && left.alpha == right.alpha
+
+fn count_text(operations: [DrawOp]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(_) => true
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn count_selection(operations: [DrawOp], color: ColorRgba) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => same_color(data.color, color)
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn caret_top(operations: [DrawOp]) -> i32 = do
+  let mut top = 0 - 1
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.rect.width == 1
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      const placed = match operations[index]
+        | OpFillRect(data) => data.rect.y
+        | OpText(_) => 0
+        | OpStrokeRect(_) => 0
+        | OpPushClip(_) => 0
+        | OpPopClip => 0
+      top = placed
+    end
+    index = index + 1
+  end
+  top
+end
+
+fn text_at(operations: [DrawOp], text: string) -> TextOp = do
+  let mut found = TextOp {
+    origin_x: 0 - 1,
+    origin_y: 0,
+    color: theme_default().foreground,
+    text: ""
+  }
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpText(data) => data.text == text
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      const chosen = match operations[index]
+        | OpText(data) => data
+        | OpFillRect(_) => found
+        | OpStrokeRect(_) => found
+        | OpPushClip(_) => found
+        | OpPopClip => found
+      found = chosen
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn clip_matches(operations: [DrawOp], rect: Rect) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpPushClip(clip) => clip.x == rect.x && clip.y == rect.y && clip.width == rect.width && clip.height == rect.height
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPopClip => false
+      | OpText(_) => false
+    if matched then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const store = area_store(seven_lines(), 3)
+  const laid = place(store, theme, shaping, cache)
+  shaping = laid.shaping
+  cache = laid.cache
+  const field = store.nodes[1].id
+  const rect = laid.layout.rects[field.index]
+  const layout = laid.layout.text_layouts[field.index]
+  if rect.width != 120 || layout.lines.length() != 7 then
+    return -1
+  end
+  const end_scroll = field_scroll_to_caret(theme, rect, layout, layout.text.byte_size(), 0)
+  if end_scroll <= 0 then
+    return -2
+  end
+  const start_scroll = field_scroll_to_caret(theme, rect, layout, 0, end_scroll)
+  if start_scroll != 0 then
+    return -3
+  end
+
+  const focused = ui_state_with_field(ui_state_new(), field, layout.text.byte_size(), end_scroll)
+  const painted = paint_ui_frame(theme, store, laid.layout, focused)
+  const caret_y = caret_top(painted)
+  if caret_y < rect.y || caret_y >= rect.y + rect.height then
+    return -4
+  end
+  if count_text(painted) != 7 then
+    return -5
+  end
+  if clip_matches(painted, rect) == false then
+    return -6
+  end
+
+  const inset = theme_content_inset(theme)
+  const second = layout.lines[1]
+  const hit_x = rect.x + inset + 1
+  const hit_y = rect.y + inset + second.top + 1
+  const at_rest = field_index_at(theme, rect, layout, 0, hit_x, hit_y)
+  if text_layout_line_of_byte(layout, at_rest) != 1 then
+    return -7
+  end
+  const shifted = field_index_at(theme, rect, layout, layout.lines[0].height, hit_x, hit_y)
+  if text_layout_line_of_byte(layout, shifted) != 2 then
+    return -8
+  end
+
+  const selected = ui_state_with(
+    ui_state_new(),
+    Selection { owner: field, anchor: 0, focus: 3 },
+    ui_state_new().grab,
+    ui_state_new().pointer,
+    ui_state_new().last_press,
+    ui_state_new().clipboard,
+    ui_state_new().hover
+  )
+  const marked = paint_ui_frame(theme, store, laid.layout, selected)
+  if count_selection(marked, theme.selection_background) != 2 then
+    return -9
+  end
+
+  const single_store = line_store()
+  const single_laid = place(single_store, theme, shaping, cache)
+  const single_field = single_store.nodes[1].id
+  const single_rect = single_laid.layout.rects[single_field.index]
+  const single_painted = paint_ui_frame(theme, single_store, single_laid.layout, ui_state_new())
+  if count_text(single_painted) != 1 then
+    return -10
+  end
+  const caption = text_at(single_painted, "abcdef")
+  if caption.text != "abcdef" then
+    return -11
+  end
+  if caption.origin_x != single_rect.x + inset || caption.origin_y != single_rect.y + inset then
+    return -12
+  end
+  0
+end

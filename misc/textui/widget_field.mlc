@@ -15,6 +15,11 @@ import {
 } from './store'
 import { TextLayout } from './text_layout'
 import { text_layout_caret_x, text_layout_index_at, text_layout_selection_rects } from './text_layout_hit'
+import {
+  field_multiline_index_at,
+  field_multiline_scroll,
+  paint_field_multiline
+} from './widget_field_multi'
 import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { Selection, selection_is_empty } from './selection'
@@ -48,13 +53,15 @@ export fn field_index_at(
   x: i32,
   y: i32
 ) -> i32 =
-  text_layout_index_at(
-    layout,
-    x - rect.x - theme_content_inset(theme) + scroll_x,
-    y - rect.y - theme_content_inset(theme)
-  )
+  match layout.wrap_width
+    | WrapWidthPixels(_) => field_multiline_index_at(theme, rect, layout, scroll_x, x, y)
+    | WrapWidthNone => text_layout_index_at(
+      layout,
+      x - rect.x - theme_content_inset(theme) + scroll_x,
+      y - rect.y - theme_content_inset(theme)
+    )
 
-export fn field_scroll_to_caret(
+fn field_scroll_line(
   theme: Theme,
   rect: Rect,
   layout: TextLayout,
@@ -75,6 +82,17 @@ export fn field_scroll_to_caret(
   end
   return scroll
 end
+
+export fn field_scroll_to_caret(
+  theme: Theme,
+  rect: Rect,
+  layout: TextLayout,
+  caret: i32,
+  previous_scroll: i32
+) -> i32 =
+  match layout.wrap_width
+    | WrapWidthPixels(_) => field_multiline_scroll(theme, rect, layout, caret, previous_scroll)
+    | WrapWidthNone => field_scroll_line(theme, rect, layout, caret, previous_scroll)
 
 fn paint_field_selection(
   theme: Theme,
@@ -107,22 +125,17 @@ fn paint_field_selection(
   return updated
 end
 
-export fn paint_text_field(
+fn paint_text_field_line(
   theme: Theme,
-  layout: LayoutResult,
+  rect: Rect,
+  text_layout: TextLayout,
   state: UiState,
-  node_index: i32,
+  owner: WidgetId,
   text: string,
+  scroll_x: i32,
   operations: [DrawOp]
 ) -> [DrawOp] = do
-  const rect = layout.rects[node_index]
-  const text_layout = layout.text_layouts[node_index]
   const inset = theme_content_inset(theme)
-  const owner = WidgetId { index: node_index }
-  let mut scroll_x = 0
-  if widget_id_equals(state.focus, owner) then
-    scroll_x = state.field_scroll_x
-  end
   let mut updated = operations
   if widget_id_equals(state.selection.owner, owner) then
     updated = paint_field_selection(theme, rect, text_layout, state.selection, scroll_x, updated)
@@ -149,6 +162,31 @@ export fn paint_text_field(
     }))
   end
   return updated
+end
+
+export fn paint_text_field(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  text: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const text_layout = layout.text_layouts[node_index]
+  const owner = WidgetId { index: node_index }
+  let mut scroll = 0
+  if widget_id_equals(state.focus, owner) then
+    scroll = state.field_scroll_x
+  end
+  const painted = match text_layout.wrap_width
+    | WrapWidthPixels(_) => paint_field_multiline(
+      theme, rect, text_layout, state, owner, scroll, operations
+    )
+    | WrapWidthNone => paint_text_field_line(
+      theme, rect, text_layout, state, owner, text, scroll, operations
+    )
+  painted
 end
 
 export fn field_align_scroll(
