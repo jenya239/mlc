@@ -1,0 +1,62 @@
+import { HttpsRequest } from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+import { https_send_async } from '../../lib/mlc/common/stdlib/net/https_async.mlc'
+import { ReplyFailed, ReplyOutcome } from './chat_model'
+import { chat_reply_from } from './chat_http'
+
+extern fn chat_transport_launch(generation: i32, request: HttpsRequest) -> i32 =
+  "mlc::chat::transport_launch" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_in_flight() -> i32 =
+  "mlc::chat::mailbox_in_flight" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_take_ready() -> i32 =
+  "mlc::chat::mailbox_take_ready" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_staged_generation() -> i32 =
+  "mlc::chat::mailbox_staged_generation" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_staged_transport_failure() -> i32 =
+  "mlc::chat::mailbox_staged_transport_failure" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_staged_status() -> i32 =
+  "mlc::chat::mailbox_staged_status" from "mlc/chat/mailbox.hpp" blocking
+
+extern fn chat_mailbox_staged_text() -> string =
+  "mlc::chat::mailbox_staged_text" from "mlc/chat/mailbox.hpp" blocking
+
+export type TransportDelivery = {
+  generation: i32,
+  outcome: ReplyOutcome
+}
+
+export type TransportPoll =
+  TransportIdle
+  | TransportDone(TransportDelivery)
+
+fn staged_outcome() -> ReplyOutcome = do
+  if chat_mailbox_staged_transport_failure() != 0 then
+    return ReplyFailed(chat_mailbox_staged_text())
+  end
+  chat_reply_from(chat_mailbox_staged_status(), chat_mailbox_staged_text())
+end
+
+export fn transport_start(generation: i32, request: HttpsRequest) -> unit = do
+  const launched = chat_transport_launch(generation, request)
+  if launched < 0 then
+    let mut kept = launched
+    kept = 0
+  end
+end
+
+export fn transport_poll() -> TransportPoll = do
+  if chat_mailbox_take_ready() == 0 then
+    return TransportIdle
+  end
+  TransportDone(TransportDelivery {
+    generation: chat_mailbox_staged_generation(),
+    outcome: staged_outcome()
+  })
+end
+
+export fn transport_in_flight() -> i32 =
+  chat_mailbox_in_flight()

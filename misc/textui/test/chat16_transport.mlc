@@ -1,0 +1,97 @@
+import { HttpsHeader, HttpsRequest } from '../../../lib/mlc/common/stdlib/net/https_request.mlc'
+import { ReplyFailed, ReplyOutcome, ReplyText } from '../chat_model'
+import {
+  TransportDone,
+  TransportIdle,
+  TransportPoll,
+  transport_in_flight,
+  transport_poll,
+  transport_start
+} from '../chat_transport'
+
+extern fn sleep_milliseconds(milliseconds: i32) -> i32 =
+  "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp" blocking
+
+extern fn monotonic_microseconds() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+fn closed_port_request() -> HttpsRequest = do
+  let mut headers: [HttpsHeader] = []
+  HttpsRequest {
+    method: "POST",
+    url: "https://127.0.0.1:9/",
+    headers: headers,
+    body: "{}",
+    timeout_milliseconds: 60000,
+    max_response_bytes: 1048576,
+    ca_bundle_path: "",
+    proxy_url: ""
+  }
+end
+
+fn outcome_is_failure(outcome: ReplyOutcome) -> bool =
+  match outcome
+    | ReplyFailed(_) => true
+    | ReplyText(_) => false
+
+fn poll_is_done(polled: TransportPoll) -> bool =
+  match polled
+    | TransportDone(_) => true
+    | TransportIdle => false
+
+fn poll_generation(polled: TransportPoll) -> i32 =
+  match polled
+    | TransportDone(delivery) => delivery.generation
+    | TransportIdle => 0 - 1
+
+fn poll_is_failure(polled: TransportPoll) -> bool =
+  match polled
+    | TransportDone(delivery) => outcome_is_failure(delivery.outcome)
+    | TransportIdle => false
+
+fn poll_until_done() -> TransportPoll = do
+  let mut ticks = 0
+  while ticks < 1500 do
+    const polled = transport_poll()
+    if poll_is_done(polled) then
+      return polled
+    end
+    const slept = sleep_milliseconds(10)
+    if slept < 0 then
+      return TransportIdle
+    end
+    ticks = ticks + 1
+  end
+  TransportIdle
+end
+
+fn main() -> i32 = do
+  const request = closed_port_request()
+  const started = monotonic_microseconds()
+  transport_start(4, request)
+  const elapsed = monotonic_microseconds() - started
+  if elapsed >= 50000 then
+    return -1
+  end
+  transport_start(5, request)
+  if transport_in_flight() != 1 then
+    return -2
+  end
+  const polled = poll_until_done()
+  if poll_generation(polled) != 4 then
+    return -3
+  end
+  if poll_is_failure(polled) == false then
+    return -4
+  end
+  if transport_in_flight() != 0 then
+    return -5
+  end
+  if poll_is_done(transport_poll()) then
+    return -6
+  end
+  if poll_is_done(transport_poll()) then
+    return -7
+  end
+  0
+end
