@@ -1,0 +1,135 @@
+import { Theme, theme_content_inset, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  field_data_new,
+  LabelData,
+  OverflowVisible,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_label,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { widget_store_add_text_area } from '../widget_field'
+import { TextShapingState, text_shaping_new } from '../../gui/text_shaping'
+import { TextLayout, TextLayoutCache, text_layout_cache_new } from '../text_layout'
+import { LayoutColumnResult, layout_ui } from '../layout_pass'
+
+// A multiline field is measured only as a direct child of a column.
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 0 }
+
+fn numbered_lines(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    if index > 0 then
+      text = text + "\n"
+    end
+    text = text + index.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn column_with_area(text: string, max_lines: i32) -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_area(store, store.root, text, max_lines, 0, true)
+  widget_store_add_label(
+    store, store.root, LabelData { text: "below" }, OverflowVisible, 0, true
+  )
+end
+
+fn column_with_line() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_field(
+    store, store.root, field_data_new("hello"), 0, true
+  )
+end
+
+fn place(
+  store: WidgetStore,
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache
+) -> LayoutColumnResult = do
+  let mut offsets: [i32] = []
+  let mut ratios: [i32] = []
+  layout_ui(store, theme, shaping, cache, 200, 300, offsets, ratios)
+end
+
+fn pixel_limit(layout: TextLayout) -> i32 =
+  match layout.wrap_width
+    | WrapWidthPixels(limit) => limit
+    | WrapWidthNone => 0 - 1
+
+fn wrap_is_none(layout: TextLayout) -> bool =
+  match layout.wrap_width
+    | WrapWidthNone => true
+    | WrapWidthPixels(_) => false
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const long_store = column_with_area(numbered_lines(10), 4)
+  const long_laid = place(long_store, theme, shaping, cache)
+  shaping = long_laid.shaping
+  cache = long_laid.cache
+  const field_rect = long_laid.layout.rects[1]
+  const field_layout = long_laid.layout.text_layouts[1]
+  if field_rect.width != 200 - 8 * 2 then
+    return -1
+  end
+  const inset = theme_content_inset(theme)
+  if pixel_limit(field_layout) != field_rect.width - inset * 2 then
+    return -2
+  end
+  if field_layout.lines.length() != 10 then
+    return -3
+  end
+  const line_height = field_layout.lines[0].height
+  if field_rect.height != 4 * line_height + inset * 2 then
+    return -4
+  end
+
+  const short_store = column_with_area(numbered_lines(2), 4)
+  const short_laid = place(short_store, theme, shaping, cache)
+  const short_rect = short_laid.layout.rects[1]
+  const short_layout = short_laid.layout.text_layouts[1]
+  if short_layout.lines.length() != 2 then
+    return -5
+  end
+  if short_rect.height != 2 * short_layout.lines[0].height + inset * 2 then
+    return -6
+  end
+  const label_long = long_laid.layout.rects[2]
+  const label_short = short_laid.layout.rects[2]
+  if label_short.y - label_long.y != short_rect.height - field_rect.height then
+    return -7
+  end
+
+  const single_store = column_with_line()
+  const single_laid = place(single_store, theme, shaping, cache)
+  const single_layout = single_laid.layout.text_layouts[1]
+  if wrap_is_none(single_layout) == false then
+    return -8
+  end
+  if single_layout.lines.length() != 1 then
+    return -9
+  end
+
+  const again = place(long_store, theme, long_laid.shaping, long_laid.cache)
+  if again.cache.rebuilds != long_laid.cache.rebuilds then
+    return -10
+  end
+  0
+end

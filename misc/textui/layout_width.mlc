@@ -1,0 +1,40 @@
+import { Theme, theme_content_inset } from './theme'
+import { TextShapingState } from '../gui/text_shaping'
+import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_pixels } from './text_layout'
+
+export type FieldMeasure = {
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  layout: TextLayout,
+  height: i32
+}
+
+export fn field_layout_at_width(
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  text: string,
+  width: i32,
+  max_lines: i32
+) -> FieldMeasure = do
+  let mut content_width = width - theme_content_inset(theme) * 2
+  if content_width < 1 then
+    content_width = 1
+  end
+  const built = text_layout_build(shaping, cache, theme, text, wrap_width_pixels(content_width))
+  let mut line_height = theme.font_size_pixels
+  if built.layout.lines.length() > 0 then
+    line_height = built.layout.lines[0].height
+  end
+  let mut visible_lines = built.layout.lines.length()
+  if visible_lines > max_lines then
+    visible_lines = max_lines
+  end
+  const inset = theme_content_inset(theme)
+  FieldMeasure {
+    shaping: built.shaping,
+    cache: built.cache,
+    layout: built.layout,
+    height: visible_lines * line_height + inset * 2
+  }
+end

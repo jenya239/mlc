@@ -4,7 +4,8 @@ import { WidgetStore, widget_id_is_none } from './store'
 import { TextShapingState } from '../gui/text_shaping'
 import { TextLayout, TextLayoutCache, text_layout_empty } from './text_layout'
 import { LayoutResult, layout_result_from_parts } from './layout_result'
-import { LayoutWork, measure_node, layout_node } from './layout_box'
+import { LayoutWork } from './layout_work'
+import { measure_node, layout_node } from './layout_box'
 import { layout_overlay_layer } from './overlay'
 
 export type LayoutColumnResult = {

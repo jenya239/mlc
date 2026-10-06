@@ -61,13 +61,20 @@ export type FieldMark = {
 export type FieldData = {
   text: string,
   undo: [FieldMark],
-  redo: [FieldMark]
+  redo: [FieldMark],
+  max_lines: i32
 }
 
 export fn field_data_new(text: string) -> FieldData = do
   let mut undo: [FieldMark] = []
   let mut redo: [FieldMark] = []
-  return FieldData { text: text, undo: undo, redo: redo }
+  return FieldData { text: text, undo: undo, redo: redo, max_lines: 1 }
+end
+
+export fn field_data_multiline(text: string, max_lines: i32) -> FieldData = do
+  let mut undo: [FieldMark] = []
+  let mut redo: [FieldMark] = []
+  FieldData { text: text, undo: undo, redo: redo, max_lines: max_lines }
 end
 
 export type WidgetKind =

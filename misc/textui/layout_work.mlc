@@ -1,0 +1,43 @@
+import { Rect, Size } from './geometry'
+import { TextShapingState } from '../gui/text_shaping'
+import { TextLayout, TextLayoutCache } from './text_layout'
+
+export type LayoutWork = {
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rects: [Rect],
+  text_layouts: [TextLayout],
+  scroll_offsets: [i32],
+  splitter_ratios: [i32]
+}
+
+export type MeasureResult = {
+  work: LayoutWork,
+  size: Size
+}
+
+export fn layout_work_with_text(work: LayoutWork, index: i32, layout: TextLayout) -> LayoutWork = do
+  let mut text_layouts = work.text_layouts
+  text_layouts.set(index, layout)
+  LayoutWork {
+    shaping: work.shaping,
+    cache: work.cache,
+    rects: work.rects,
+    text_layouts: text_layouts,
+    scroll_offsets: work.scroll_offsets,
+    splitter_ratios: work.splitter_ratios
+  }
+end
+
+export fn layout_work_with_rect(work: LayoutWork, index: i32, rect: Rect) -> LayoutWork = do
+  let mut rects = work.rects
+  rects.set(index, rect)
+  LayoutWork {
+    shaping: work.shaping,
+    cache: work.cache,
+    rects: rects,
+    text_layouts: work.text_layouts,
+    scroll_offsets: work.scroll_offsets,
+    splitter_ratios: work.splitter_ratios
+  }
+end

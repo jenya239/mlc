@@ -5,13 +5,13 @@
 Источник шагов: `mlc-support/responses/textui_chat_gap_20261006_093251.md` (инвентарь и шаг 1) и `mlc-support/responses/textui_chat_gap_20261006_094033.md` (шаги 2–19). Этот файл важнее тех ответов там, где пути расходятся.
 
 ```
-next_step: 6
+next_step: 7
 step_1: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_2: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_3: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_4: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_5: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
-step_6: pending
+step_6: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice12_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice15_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice18_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice19_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_7: pending
 step_8: pending
 step_9: pending
@@ -97,9 +97,9 @@ step_19: pending
 
 ## Шаг 6. Поле меряется шириной колонки
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice12_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice15_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice18_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice19_smoke.sh` и `ruby scripts/run_textui_file_size.rb` завершились с кодом 0. Измерение вынесено в `layout_measure.mlc`, типы — в `layout_work.mlc`, потому что `layout_box.mlc` был длиннее 360 строк.
 
-Файлы: `misc/textui/store.mlc`, `misc/textui/widget_field.mlc`, `misc/textui/field_history.mlc`, `misc/textui/layout_width.mlc`, `misc/textui/layout_box.mlc`, `misc/textui/test/chat06_field_layout.mlc`.
+Файлы: `misc/textui/store.mlc`, `misc/textui/widget_field.mlc`, `misc/textui/field_history.mlc`, `misc/textui/layout_width.mlc`, `misc/textui/layout_box.mlc`, `misc/textui/layout_measure.mlc`, `misc/textui/layout_work.mlc`, `misc/textui/layout_pass.mlc`, `misc/textui/overlay.mlc`, `misc/textui/test/chat06_field_layout.mlc`.
 
 Сделать: `FieldData.max_lines`, `field_data_new` ставит 1, `field_data_multiline` для чата. `measure_node_wide` для поля с `max_lines > 1` строит `WrapWidthPixels`. Колонка меряет детей этой функцией. Строка остаётся на старом измерении. Если `layout_box.mlc` переходит 400 строк, вынести измерение в `layout_measure.mlc` в этом же шаге.
 

@@ -5,7 +5,9 @@ import {
   WidgetKind,
   WidgetId,
   FieldData,
+  field_data_multiline,
   widget_id_equals,
+  widget_store_add_text_field,
   widget_id_is_none,
   widget_node_with_kind,
   widget_store_keep,
@@ -184,7 +186,8 @@ export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: st
     | KindTextField(data) => KindTextField(FieldData {
       text: text,
       undo: data.undo,
-      redo: data.redo
+      redo: data.redo,
+      max_lines: data.max_lines
     })
     | KindBox(data) => KindBox(data)
     | KindLabel(data) => KindLabel(data)
@@ -198,6 +201,16 @@ export fn widget_store_set_field_text(store: WidgetStore, id: WidgetId, text: st
   nodes.set(id.index, widget_node_with_kind(node, next_kind))
   return widget_store_keep(nodes, store)
 end
+
+export fn widget_store_add_text_area(
+  store: WidgetStore,
+  parent: WidgetId,
+  text: string,
+  max_lines: i32,
+  grow: i32,
+  visible: bool
+) -> WidgetStore =
+  widget_store_add_text_field(store, parent, field_data_multiline(text, max_lines), grow, visible)
 
 export fn widget_store_set_field_data(store: WidgetStore, id: WidgetId, data: FieldData) -> WidgetStore = do
   if id.index < 0 || id.index >= store.nodes.length() then

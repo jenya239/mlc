@@ -109,7 +109,8 @@ export fn field_push_undo(store: WidgetStore, field: WidgetId, state: UiState) -
   return widget_store_set_field_data(store, field, FieldData {
     text: data.text,
     undo: push_mark(data.undo, mark),
-    redo: cleared
+    redo: cleared,
+    max_lines: data.max_lines
   })
 end
 
@@ -136,7 +137,8 @@ export fn field_undo(
   const written = widget_store_set_field_data(store, field, FieldData {
     text: mark.text,
     undo: drop_last(data.undo),
-    redo: push_mark(data.redo, current)
+    redo: push_mark(data.redo, current),
+    max_lines: data.max_lines
   })
   return FieldKeyResult {
     store: written,
@@ -165,7 +167,8 @@ export fn field_redo(
   const written = widget_store_set_field_data(store, field, FieldData {
     text: mark.text,
     undo: push_mark(data.undo, current),
-    redo: drop_last(data.redo)
+    redo: drop_last(data.redo),
+    max_lines: data.max_lines
   })
   return FieldKeyResult {
     store: written,

@@ -26,7 +26,8 @@ import {
 } from './store'
 import { UiEvent } from './ui_event'
 import { UiState, ui_state_with_field } from './ui_state'
-import { LayoutWork, layout_node, measure_node, work_with_rect } from './layout_box'
+import { LayoutWork } from './layout_work'
+import { layout_node, measure_node, work_with_rect } from './layout_box'
 import { visible_children } from './layout_metrics'
 
 export type OverlayView = {
