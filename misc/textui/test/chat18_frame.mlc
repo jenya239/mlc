@@ -1,0 +1,235 @@
+import { Theme, theme_default } from '../theme'
+import { ChatModel, RoleUser } from '../chat_model'
+import { chat_config_from } from '../chat_http'
+import { ChatWorld, chat_transcript_rect, chat_world_new } from '../chat_world'
+import { chat_frame_run } from '../chat_frame'
+import { field_caption } from '../widget_field'
+import { widget_id_equals } from '../store'
+import { DrawOp } from '../draw_op'
+import { frame_dump } from '../dump'
+import { UiInput, ui_input_idle } from '../ui_input'
+import { text_layout_build, wrap_width_none } from '../text_layout'
+import { transcript_copy_text } from '../chat_transcript_input'
+import { transcript_role_label } from '../chat_transcript_layout'
+
+fn typed_input(text: string, enter_pressed: bool) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: enter_pressed,
+    paste_text: ""
+  }
+
+fn pointer_input(
+  mouse_x: i32,
+  mouse_y: i32,
+  left_pressed: bool,
+  left_down: bool,
+  wheel_y: i32,
+  copy_pressed: bool
+) -> UiInput =
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: false,
+    control_down: copy_pressed,
+    copy_pressed: copy_pressed,
+    wheel_y: wheel_y,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn with_pending(world: ChatWorld) -> ChatWorld =
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: ChatModel {
+      messages: world.model.messages,
+      pending: true,
+      generation: world.model.generation,
+      revision: world.model.revision
+    },
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: world.presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over
+  }
+
+fn operations_contain(operations: [DrawOp], needle: string) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < operations.length() do
+    const piece = match operations[index]
+      | OpText(data) => data.text
+      | OpFillRect(_) => ""
+      | OpStrokeRect(_) => ""
+      | OpPushClip(_) => ""
+      | OpPopClip => ""
+    if piece.index_of(needle) >= 0 then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn dump_under(theme: Theme, world: ChatWorld, operations: [DrawOp]) -> string =
+  frame_dump(theme, world.store, world.layout, operations, false)
+
+fn repeated(word: string, count: i32) -> string = do
+  let mut text = "hello-token"
+  let mut index = 0
+  while index < count do
+    text = text + " " + word
+    index = index + 1
+  end
+  text
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const config = chat_config_from("https://127.0.0.1:9/", "gpt-test", "", "")
+  let mut world = chat_world_new(config, 900, 700)
+  const first = chat_frame_run(world, ui_input_idle(0), 900, 700)
+  world = first.world
+  const rebuilds_after_first = world.cache.rebuilds
+  const second = chat_frame_run(world, ui_input_idle(1), 900, 700)
+  if second.paints then
+    return -1
+  end
+  if second.world.cache.rebuilds != rebuilds_after_first then
+    return -2
+  end
+  if dump_under(theme, second.world, second.ops_under) != dump_under(theme, first.world, first.ops_under) then
+    return -3
+  end
+
+  const caught_up = chat_frame_run(with_pending(second.world), ui_input_idle(2), 900, 700)
+  if caught_up.world.model.pending == false then
+    return -4
+  end
+  const pending_rebuilds = caught_up.world.cache.rebuilds
+  const pending_first = chat_frame_run(caught_up.world, ui_input_idle(3), 900, 700)
+  const pending_second = chat_frame_run(pending_first.world, ui_input_idle(4), 900, 700)
+  if pending_first.paints || pending_second.paints then
+    return -5
+  end
+  if pending_second.world.cache.rebuilds != pending_rebuilds then
+    return -5
+  end
+  if dump_under(theme, pending_second.world, pending_second.ops_under) != dump_under(theme, pending_first.world, pending_first.ops_under) then
+    return -5
+  end
+
+  const message = repeated("narrow-word", 24)
+  world = second.world
+  const typed = chat_frame_run(world, typed_input(message, false), 900, 700)
+  const entered = chat_frame_run(typed.world, typed_input("", true), 900, 700)
+  if operations_contain(entered.ops_under, "hello-token") == false then
+    return -6
+  end
+  if field_caption(entered.world.store.nodes[entered.world.scene.composer.index].kind) != "" then
+    return -7
+  end
+  if entered.world.model.pending then
+    return -8
+  end
+  if entered.world.model.messages.length() < 2 then
+    return -9
+  end
+  const last = entered.world.model.messages[entered.world.model.messages.length() - 1]
+  if last.failed == false then
+    return -10
+  end
+
+  const before_total = entered.world.view.index.total
+  const resized = chat_frame_run(entered.world, ui_input_idle(4), 280, 700)
+  if resized.world.view.width == entered.world.view.width then
+    return -11
+  end
+  if resized.world.view.index.total <= before_total then
+    return -12
+  end
+
+  const transcript = chat_transcript_rect(resized.world.layout, resized.world.scene)
+  const focus_before = resized.world.state.focus
+  const wheeled = chat_frame_run(
+    resized.world,
+    pointer_input(transcript.x + 4, transcript.y + 4, false, false, 0 - 3, false),
+    280,
+    700
+  )
+  if widget_id_equals(wheeled.world.state.focus, focus_before) == false then
+    return -13
+  end
+  if widget_id_equals(wheeled.world.state.focus, wheeled.world.scene.composer) == false then
+    return -14
+  end
+
+  const role = text_layout_build(
+    wheeled.world.shaping,
+    wheeled.world.cache,
+    theme,
+    transcript_role_label(RoleUser),
+    wrap_width_none()
+  )
+  const body_y = transcript.y + theme.padding + role.layout.pixel_height + 1
+  const body_x = transcript.x + theme.padding
+  const pressed = chat_frame_run(
+    wheeled.world,
+    pointer_input(body_x, body_y, true, true, 0, false),
+    280,
+    700
+  )
+  const dragged = chat_frame_run(
+    pressed.world,
+    pointer_input(transcript.x + transcript.width - theme.padding - 1, body_y, false, true, 0, false),
+    280,
+    700
+  )
+  if dragged.world.selection.anchor == dragged.world.selection.focus then
+    return -15
+  end
+  const copied = chat_frame_run(
+    dragged.world,
+    pointer_input(body_x, body_y, false, false, 0, true),
+    280,
+    700
+  )
+  const expected = transcript_copy_text(
+    dragged.world.model,
+    dragged.world.selection,
+    dragged.world.shaping,
+    dragged.world.cache,
+    theme,
+    transcript.width
+  )
+  if copied.clipboard != expected || expected == "" then
+    return -16
+  end
+  0
+end

@@ -1,0 +1,107 @@
+import { ChatConfig } from './chat_http'
+import { ChatModel, chat_model_new } from './chat_model'
+import { WidgetStore } from './store'
+import { ChatScene, build_chat_scene } from './chat_scene'
+import { chat_initial_state } from './chat_update'
+import { FrameSignature, frame_signature } from './frame_request'
+import { LayoutResult } from './layout_result'
+import { layout_ui } from './layout_pass'
+import { Rect, rect_new } from './geometry'
+import { theme_default } from './theme'
+import { TextShapingState, text_shaping_new } from '../gui/text_shaping'
+import { TextLayoutCache, text_layout_cache_new } from './text_layout'
+import { DrawOp } from './draw_op'
+import { UiState } from './ui_state'
+import { field_align_scroll } from './widget_field'
+import { block_scroll_bottom } from './block_index'
+import {
+  TranscriptSelection,
+  transcript_selection_new
+} from './chat_transcript_input'
+import {
+  TranscriptView,
+  transcript_measure,
+  transcript_view_new
+} from './chat_transcript_layout'
+
+export type ChatWorld = {
+  store: WidgetStore,
+  state: UiState,
+  model: ChatModel,
+  view: TranscriptView,
+  selection: TranscriptSelection,
+  scene: ChatScene,
+  config: ChatConfig,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  layout: LayoutResult,
+  presented: FrameSignature,
+  painted_under: [DrawOp],
+  painted_over: [DrawOp]
+}
+
+export fn chat_transcript_rect(layout: LayoutResult, scene: ChatScene) -> Rect = do
+  const index = scene.transcript.index
+  if index < 0 || index >= layout.rects.length() then
+    return rect_new(0, 0, 0, 0)
+  end
+  layout.rects[index]
+end
+
+export fn chat_view_at_bottom(view: TranscriptView, view_height: i32) -> TranscriptView = do
+  if view.stick_to_bottom == 0 then
+    return view
+  end
+  TranscriptView {
+    width: view.width,
+    measured_count: view.measured_count,
+    scroll_y: block_scroll_bottom(view.index.total, view_height),
+    stick_to_bottom: view.stick_to_bottom,
+    index: view.index
+  }
+end
+
+export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWorld = do
+  const theme = theme_default()
+  const scene = build_chat_scene()
+  const state = chat_initial_state(scene)
+  let mut offsets: [i32] = []
+  let mut ratios: [i32] = []
+  const laid = layout_ui(
+    scene.store,
+    theme,
+    text_shaping_new(),
+    text_layout_cache_new(),
+    width,
+    height,
+    offsets,
+    ratios
+  )
+  const aligned = field_align_scroll(scene.store, laid.layout, theme, state)
+  const bounds = chat_transcript_rect(laid.layout, scene)
+  const measured = transcript_measure(
+    chat_model_new(),
+    transcript_view_new(),
+    laid.shaping,
+    laid.cache,
+    theme,
+    bounds.width
+  )
+  let mut painted_under: [DrawOp] = []
+  let mut painted_over: [DrawOp] = []
+  ChatWorld {
+    store: scene.store,
+    state: aligned,
+    model: chat_model_new(),
+    view: chat_view_at_bottom(measured.view, bounds.height),
+    selection: transcript_selection_new(),
+    scene: scene,
+    config: config,
+    shaping: measured.shaping,
+    cache: measured.cache,
+    layout: laid.layout,
+    presented: frame_signature(aligned, width, height),
+    painted_under: painted_under,
+    painted_over: painted_over
+  }
+end
