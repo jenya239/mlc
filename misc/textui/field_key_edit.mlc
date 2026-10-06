@@ -1,0 +1,240 @@
+import { Theme } from './theme'
+import { WidgetStore, WidgetId } from './store'
+import { LayoutResult } from './layout_result'
+import { Selection, selection_start, selection_finish } from './selection'
+import { selection_publish_primary } from './selection_text'
+import { clipboard_set_clipboard } from './clipboard'
+import { field_scroll_to_caret, widget_store_set_field_text } from './widget_field'
+import { text_layout_boundary_before, text_layout_boundary_after } from './text_layout_hit'
+import { UiState, ui_state_with, ui_state_with_field, ui_state_with_field_revision } from './ui_state'
+import { FieldKeyResult, field_push_undo } from './field_history'
+
+export fn field_key_keep(store: WidgetStore, state: UiState) -> FieldKeyResult =
+  FieldKeyResult { store: store, state: state, submitted: false }
+
+export fn clamp_index(index: i32, limit: i32) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  if index > limit then
+    return limit
+  end
+  return index
+end
+
+fn with_caret(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  caret: i32,
+  selection: Selection
+) -> UiState = do
+  const rect = layout.rects[field.index]
+  const text_layout = layout.text_layouts[field.index]
+  const scroll = field_scroll_to_caret(
+    theme, rect, text_layout, caret, state.field_scroll_x
+  )
+  const placed = ui_state_with(
+    state,
+    selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    state.clipboard,
+    state.hover
+  )
+  return ui_state_with_field(placed, field, caret, scroll)
+end
+
+export fn apply_insertion(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string,
+  insertion: string,
+  start: i32,
+  finish: i32
+) -> FieldKeyResult = do
+  if insertion.byte_size() == 0 && start == finish then
+    return field_key_keep(store, state)
+  end
+  const noted = field_push_undo(store, field, state)
+  const next_text = current.byte_substring(0, start) + insertion + current.byte_substring(finish, current.byte_size() - finish)
+  const caret = start + insertion.byte_size()
+  let mut selection = state.selection
+  if state.selection.owner.index == field.index || start != finish then
+    selection = Selection { owner: field, anchor: caret, focus: caret }
+  end
+  const written = widget_store_set_field_text(noted, field, next_text)
+  const placed = with_caret(layout, theme, state, field, caret, selection)
+  return FieldKeyResult {
+    store: written,
+    state: ui_state_with_field_revision(placed, state.field_revision + 1),
+    submitted: false
+  }
+end
+
+fn field_owns_range(state: UiState, field: WidgetId) -> bool =
+  state.selection.owner.index == field.index && state.selection.anchor != state.selection.focus
+
+export fn field_replace_bounds(state: UiState, field: WidgetId, limit: i32) -> Selection = do
+  const caret = clamp_index(state.field_caret, limit)
+  if field_owns_range(state, field) then
+    return Selection {
+      owner: field,
+      anchor: clamp_index(selection_start(state.selection), limit),
+      focus: clamp_index(selection_finish(state.selection), limit)
+    }
+  end
+  Selection { owner: field, anchor: caret, focus: caret }
+end
+
+export fn delete_span(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string,
+  start: i32,
+  finish: i32
+) -> FieldKeyResult =
+  apply_insertion(store, layout, theme, state, field, current, "", start, finish)
+
+export fn backspace_span(state: UiState, field: WidgetId, layout: LayoutResult, limit: i32) -> Selection = do
+  if field_owns_range(state, field) then
+    return Selection {
+      owner: field,
+      anchor: clamp_index(selection_start(state.selection), limit),
+      focus: clamp_index(selection_finish(state.selection), limit)
+    }
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  const text_layout = layout.text_layouts[field.index]
+  if caret > 0 && text_layout.text.byte_at(caret - 1) == "\n" then
+    return Selection { owner: field, anchor: caret - 1, focus: caret }
+  end
+  Selection {
+    owner: field,
+    anchor: text_layout_boundary_before(text_layout, caret),
+    focus: caret
+  }
+end
+
+export fn delete_forward_span(state: UiState, field: WidgetId, layout: LayoutResult, limit: i32) -> Selection = do
+  if field_owns_range(state, field) then
+    return Selection {
+      owner: field,
+      anchor: clamp_index(selection_start(state.selection), limit),
+      focus: clamp_index(selection_finish(state.selection), limit)
+    }
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  Selection {
+    owner: field,
+    anchor: caret,
+    focus: text_layout_boundary_after(layout.text_layouts[field.index], caret)
+  }
+end
+
+export fn move_caret(
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  caret: i32,
+  extend_selection: bool
+) -> UiState = do
+  if extend_selection then
+    let mut anchor = state.field_caret
+    if state.selection.owner.index == field.index then
+      anchor = state.selection.anchor
+    end
+    const selection = Selection { owner: field, anchor: anchor, focus: caret }
+    const placed = with_caret(layout, theme, state, field, caret, selection)
+    if anchor == caret then
+      return placed
+    end
+    return selection_publish_primary(layout, placed, selection)
+  end
+  if state.selection.owner.index == field.index then
+    return with_caret(
+      layout, theme, state, field, caret, Selection { owner: field, anchor: caret, focus: caret }
+    )
+  end
+  return with_caret(layout, theme, state, field, caret, state.selection)
+end
+
+export fn horizontal_destination(
+  state: UiState,
+  field: WidgetId,
+  layout: LayoutResult,
+  toward_end: bool,
+  extend_selection: bool
+) -> i32 = do
+  const text_layout = layout.text_layouts[field.index]
+  const limit = text_layout.text.byte_size()
+  if extend_selection == false && field_owns_range(state, field) then
+    if toward_end then
+      return clamp_index(selection_finish(state.selection), limit)
+    end
+    return clamp_index(selection_start(state.selection), limit)
+  end
+  const caret = clamp_index(state.field_caret, limit)
+  if toward_end then
+    return text_layout_boundary_after(text_layout, caret)
+  end
+  return text_layout_boundary_before(text_layout, caret)
+end
+
+export fn cut_range(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string
+) -> FieldKeyResult = do
+  if field_owns_range(state, field) == false then
+    return field_key_keep(store, state)
+  end
+  const limit = current.byte_size()
+  const start = clamp_index(selection_start(state.selection), limit)
+  const finish = clamp_index(selection_finish(state.selection), limit)
+  const removed = current.byte_substring(start, finish - start)
+  const deleted = delete_span(store, layout, theme, state, field, current, start, finish)
+  const clipped = ui_state_with(
+    deleted.state,
+    deleted.state.selection,
+    deleted.state.grab,
+    deleted.state.pointer,
+    deleted.state.last_press,
+    clipboard_set_clipboard(deleted.state.clipboard, removed),
+    deleted.state.hover
+  )
+  return FieldKeyResult { store: deleted.store, state: clipped, submitted: false }
+end
+
+export fn select_all(
+  store: WidgetStore,
+  layout: LayoutResult,
+  theme: Theme,
+  state: UiState,
+  field: WidgetId,
+  current: string
+) -> FieldKeyResult = do
+  const limit = current.byte_size()
+  const selection = Selection { owner: field, anchor: 0, focus: limit }
+  const placed = with_caret(layout, theme, state, field, limit, selection)
+  if limit == 0 then
+    return FieldKeyResult { store: store, state: placed, submitted: false }
+  end
+  return FieldKeyResult {
+    store: store,
+    state: selection_publish_primary(layout, placed, selection),
+    submitted: false
+  }
+end

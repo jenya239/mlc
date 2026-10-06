@@ -5,7 +5,7 @@
 Источник шагов: `mlc-support/responses/textui_chat_gap_20261006_093251.md` (инвентарь и шаг 1) и `mlc-support/responses/textui_chat_gap_20261006_094033.md` (шаги 2–19). Этот файл важнее тех ответов там, где пути расходятся.
 
 ```
-next_step: 8
+next_step: 9
 step_1: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_2: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_3: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
@@ -13,7 +13,7 @@ step_4: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_
 step_5: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_6: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice0_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice01_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice12_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice15_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice18_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice19_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_7: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice12_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
-step_8: pending
+step_8: done — TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh exit 0; TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh exit 0; ruby scripts/run_textui_file_size.rb exit 0
 step_9: pending
 step_10: pending
 step_11: pending
@@ -117,9 +117,9 @@ step_19: pending
 
 ## Шаг 8. Клавиши многострочного поля
 
-Статус: `pending`.
+Статус: `done`. `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_chat_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice13_smoke.sh`, `TMPDIR=/home/jenya/workspaces/current/mlc/tmp bash scripts/run_textui_slice14_smoke.sh` и `ruby scripts/run_textui_file_size.rb` завершились с кодом 0. Правка поля вынесена в `field_key_edit.mlc`, потому что `update_field_keys.mlc` был длиннее 360 строк.
 
-Файлы: `misc/textui/field_multiline_keys.mlc`, `misc/textui/update_field_keys.mlc`, `misc/textui/test/chat08_field_keys.mlc`.
+Файлы: `misc/textui/field_multiline_keys.mlc`, `misc/textui/field_key_edit.mlc`, `misc/textui/update_field_keys.mlc`, `misc/textui/test/chat08_field_keys.mlc`.
 
 Сделать: Shift+Enter вставляет `"\n"`. Enter без Shift по-прежнему отправка. Вставка многострочного текста сохраняет `\n` (`\r\n` и `\r` становятся `\n`). Однострочное поле по-прежнему режется `first_line`.
 

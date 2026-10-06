@@ -1,0 +1,298 @@
+import { Theme, theme_default } from '../theme'
+import {
+  BoxData,
+  DirectionColumn,
+  field_data_new,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_equals,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { widget_store_add_text_area } from '../widget_field'
+import { TextShapingState, text_shaping_new } from '../../gui/text_shaping'
+import { TextLayoutCache, text_layout_cache_new } from '../text_layout'
+import { LayoutColumnResult, layout_ui } from '../layout_pass'
+import { UiState, ui_state_new } from '../ui_state'
+import { UiInput } from '../ui_input'
+import { UiUpdateResult, ui_update } from '../ui_update'
+import { UiEvent, ui_event_is_activate_on } from '../ui_event'
+fn column_data() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 0 }
+
+fn pointer_at(x: i32, y: i32) -> UiInput =
+  UiInput {
+    mouse_x: x,
+    mouse_y: y,
+    left_pressed: true,
+    left_down: true,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn key_input(
+  text: string,
+  binding_key: string,
+  control_down: bool,
+  shift_down: bool,
+  backspace_pressed: bool,
+  enter_pressed: bool,
+  paste_text: string
+) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: control_down,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: binding_key,
+    shift_down: shift_down,
+    backspace_pressed: backspace_pressed,
+    enter_pressed: enter_pressed,
+    paste_text: paste_text
+  }
+
+fn field_text(kind: WidgetKind) -> string =
+  match kind
+    | KindTextField(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+
+fn activated(events: [UiEvent], owner: WidgetId) -> bool = do
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_activate_on(events[index], owner) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn area_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_area(store, store.root, "", 4, 0, true)
+end
+
+fn line_store() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), column_data(), OverflowVisible, 0, true
+  )
+  widget_store_add_text_field(store, store.root, field_data_new(""), 0, true)
+end
+
+fn place(
+  store: WidgetStore,
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  state: UiState
+) -> LayoutColumnResult = do
+  let mut ratios: [i32] = []
+  layout_ui(store, theme, shaping, cache, 240, 200, state.scroll_offsets, ratios)
+end
+
+fn focus_field(
+  store: WidgetStore,
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache
+) -> UiUpdateResult = do
+  let mut state = ui_state_new()
+  const laid = place(store, theme, shaping, cache, state)
+  const field = store.nodes[1].id
+  const rect = laid.layout.rects[field.index]
+  ui_update(store, laid.layout, theme, state, pointer_at(rect.x + 2, rect.y + 4))
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut store = area_store()
+  const focused = focus_field(store, theme, shaping, cache)
+  store = focused.store
+  let mut state = focused.state
+  const field = store.nodes[1].id
+  if widget_id_equals(state.focus, field) == false then
+    return -1
+  end
+
+  let mut laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const typed = ui_update(
+    store, laid.layout, theme, state, key_input("q", "", false, false, false, false, "")
+  )
+  store = typed.store
+  state = typed.state
+  if field_text(store.nodes[field.index].kind) != "q" || state.field_caret != 1 then
+    return -2
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const caret_before = state.field_caret
+  const broken = ui_update(
+    store, laid.layout, theme, state, key_input("", "", false, true, false, true, "")
+  )
+  store = broken.store
+  state = broken.state
+  if field_text(store.nodes[field.index].kind) != "q\n" then
+    return -3
+  end
+  if state.field_caret != caret_before + 1 then
+    return -4
+  end
+  if activated(broken.events, field) then
+    return -5
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const sent = ui_update(
+    store, laid.layout, theme, state, key_input("", "", false, false, false, true, "")
+  )
+  state = sent.state
+  if field_text(sent.store.nodes[field.index].kind) != "q\n" then
+    return -6
+  end
+  if activated(sent.events, field) == false then
+    return -7
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const lifted = ui_update(
+    store, laid.layout, theme, state, key_input("", "up", false, false, false, false, "")
+  )
+  state = lifted.state
+  if state.field_caret >= 2 then
+    return -8
+  end
+  laid = place(store, theme, shaping, cache, state)
+  const dropped = ui_update(
+    store, laid.layout, theme, state, key_input("", "down", false, false, false, false, "")
+  )
+  if dropped.state.field_caret == state.field_caret then
+    return -9
+  end
+  const extended = ui_update(
+    store, laid.layout, theme, lifted.state, key_input("", "down", false, true, false, false, "")
+  )
+  if extended.state.selection.anchor == extended.state.selection.focus then
+    return -10
+  end
+  if widget_id_equals(extended.state.selection.owner, field) == false then
+    return -10
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const undone = ui_update(
+    store, laid.layout, theme, state, key_input("", "z", true, false, false, false, "")
+  )
+  store = undone.store
+  state = undone.state
+  if field_text(store.nodes[field.index].kind) != "q" then
+    return -11
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const selected = ui_update(
+    store, laid.layout, theme, state, key_input("", "a", true, false, false, false, "")
+  )
+  store = selected.store
+  state = selected.state
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const pasted = ui_update(
+    store, laid.layout, theme, state, key_input("", "v", true, false, false, false, "a\r\nb")
+  )
+  store = pasted.store
+  state = pasted.state
+  if field_text(store.nodes[field.index].kind) != "a\nb" then
+    return -12
+  end
+
+  laid = place(store, theme, shaping, cache, state)
+  shaping = laid.shaping
+  cache = laid.cache
+  const homed = ui_update(
+    store, laid.layout, theme, state, key_input("", "home", false, false, false, false, "")
+  )
+  state = homed.state
+  laid = place(store, theme, shaping, cache, state)
+  const erased = ui_update(
+    store, laid.layout, theme, state, key_input("", "", false, false, true, false, "")
+  )
+  store = erased.store
+  if field_text(store.nodes[field.index].kind) != "ab" then
+    return -13
+  end
+
+  let mut single = line_store()
+  const single_focused = focus_field(single, theme, shaping, cache)
+  single = single_focused.store
+  state = single_focused.state
+  const single_field = single.nodes[1].id
+  laid = place(single, theme, shaping, cache, state)
+  const single_pasted = ui_update(
+    single, laid.layout, theme, state, key_input("", "v", true, false, false, false, "a\nb")
+  )
+  single = single_pasted.store
+  state = single_pasted.state
+  if field_text(single.nodes[single_field.index].kind) != "a" then
+    return -14
+  end
+  const still = state.field_caret
+  laid = place(single, theme, shaping, cache, state)
+  const single_down = ui_update(
+    single, laid.layout, theme, state, key_input("", "down", false, false, false, false, "")
+  )
+  if single_down.state.field_caret != still then
+    return -15
+  end
+  const single_shift = ui_update(
+    single, laid.layout, theme, state, key_input("", "", false, true, false, true, "")
+  )
+  if field_text(single_shift.store.nodes[single_field.index].kind) != "a" then
+    return -16
+  end
+  0
+end

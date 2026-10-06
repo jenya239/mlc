@@ -1,0 +1,68 @@
+import { TextLayout } from './text_layout'
+import {
+  text_layout_line_end,
+  text_layout_line_start,
+  text_layout_move_vertical
+} from './text_layout_nav'
+
+fn single_line_text(text: string) -> string = do
+  let mut index = 0
+  const size = text.byte_size()
+  while index < size do
+    const byte = text.byte_at(index)
+    if byte == "\n" || byte == "\r" then
+      return text.byte_substring(0, index)
+    end
+    index = index + 1
+  end
+  return text
+end
+
+export fn paste_text_for_field(multiline: bool, text: string) -> string = do
+  if multiline == false then
+    return single_line_text(text)
+  end
+  let mut result = ""
+  let mut index = 0
+  const size = text.byte_size()
+  while index < size do
+    const byte = text.byte_at(index)
+    if byte == "\r" then
+      result = result + "\n"
+      if index + 1 < size && text.byte_at(index + 1) == "\n" then
+        index = index + 1
+      end
+    else
+      result = result + byte
+    end
+    index = index + 1
+  end
+  result
+end
+
+export fn multiline_move_target(
+  layout: TextLayout,
+  caret: i32,
+  binding_key: string,
+  control_down: bool
+) -> i32 = do
+  if binding_key == "up" then
+    return text_layout_move_vertical(layout, caret, 0 - 1)
+  end
+  if binding_key == "down" then
+    return text_layout_move_vertical(layout, caret, 1)
+  end
+  if binding_key == "home" then
+    if control_down then
+      return 0
+    end
+    return text_layout_line_start(layout, caret)
+  end
+  if binding_key == "end" then
+    if control_down then
+      return layout.text.byte_size()
+    end
+    return text_layout_line_end(layout, caret)
+  end
+  0 - 1
+end
