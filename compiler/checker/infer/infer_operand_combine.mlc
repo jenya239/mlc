@@ -3,7 +3,7 @@
 import { Expr, ExprArray, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
 import { InferResult } from './infer_result'
 import { Type, TypeRegistry, field_type_from_object, method_return_type_from_object } from '../registry'
-import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal } from '../semantic_type_structure'
+import { binary_operation_result_type, builtin_method_return_type, type_is_unknown, types_structurally_equal, join_match_arm_result_types } from '../semantic_type_structure'
 import { infer_binary_operand_diagnostics } from '../check/diagnostics/binary_diagnostics'
 import {
   infer_builtin_method_receiver_diagnostics,
@@ -108,7 +108,7 @@ export fn infer_conditional_from_branch_results(
   const branch_errors = if_branch_mismatch_diagnostic(
     branches_mismatch, then_result.inferred_type, else_coerced.inferred_type, else_expression)
   InferResult {
-    inferred_type: if branches_mismatch then then_result.inferred_type else merged.inferred_type end,
+    inferred_type: join_match_arm_result_types(then_result.inferred_type, else_coerced.inferred_type),
     errors: diagnostics_append(merged.errors, branch_errors)
   }
 end

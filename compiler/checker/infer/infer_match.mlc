@@ -26,7 +26,7 @@ import { InferResult } from './infer_result'
 import { match_arm_type_mismatch_diagnostic } from '../check/diagnostics/type_diagnostics'
 import { env_for_pattern_substituted } from '../transform/pattern_env'
 import { substitution_from_generic } from '../substitution'
-import { type_is_bool, type_is_unknown, type_is_string } from '../semantic_type_structure'
+import { type_is_bool, type_is_unknown, type_is_string, join_match_arm_result_types } from '../semantic_type_structure'
 import {
   diagnostic_code_e032,
   diagnostic_code_e077,
@@ -343,7 +343,7 @@ export fn infer_expr_match(
     collected_errors = diagnostics_append(collected_errors, arm_parsed.errors)
     arm_type =
       if arm_index == 0 then arm_parsed.inferred_type
-      else arm_type
+      else join_match_arm_result_types(arm_type, arm_parsed.inferred_type)
       end
     const arm_mismatch = match_arm_type_mismatch_diagnostic(
       arm_index,

@@ -1242,26 +1242,44 @@ fn mir_lower_method_call_on_operand(
   method_name: string,
   arguments: [Shared<SemanticExpression>]
 ) -> Result<MirLowerLocalStep, [string]> =
-  match mir_lower_method_native_name(method_name) {
-    Err(errors) => Err(errors),
-    Ok(native_name) =>
-      match mir_lower_operand_from_expression(state, object) {
-        Err(errors) => Err(errors),
-        Ok(object_step) =>
-          match mir_lower_method_operands_with_receiver(
-            object_step.state, object_step.operand, arguments) {
-            Err(errors) => Err(errors),
-            Ok(operands_step) => do
-              const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
-              Ok(MirLowerLocalStep {
-                state: mir_lower_emit_call_assign(
-                  local_step.state, local_step.local_id, native_name, operands_step.operands),
-                local_id: local_step.local_id
-              })
-            end
-          }
-      }
-  }
+  if method_name.length() >= 6 && method_name.substring(0, 6) == 'visit_' then
+    match mir_lower_operand_from_expression(state, object) {
+      Err(errors) => Err(errors),
+      Ok(object_step) =>
+        match mir_lower_operands_from_arguments(object_step.state, arguments) {
+          Err(errors) => Err(errors),
+          Ok(operands_step) => do
+            const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+            Ok(MirLowerLocalStep {
+              state: mir_lower_emit_assign(
+                local_step.state, local_step.local_id, MirRvalueUse(MirOperandUnit)),
+              local_id: local_step.local_id
+            })
+          end
+        }
+    }
+  else
+    match mir_lower_method_native_name(method_name) {
+      Err(errors) => Err(errors),
+      Ok(native_name) =>
+        match mir_lower_operand_from_expression(state, object) {
+          Err(errors) => Err(errors),
+          Ok(object_step) =>
+            match mir_lower_method_operands_with_receiver(
+              object_step.state, object_step.operand, arguments) {
+              Err(errors) => Err(errors),
+              Ok(operands_step) => do
+                const local_step = mir_lower_allocate_local(operands_step.state, '', mir_lower_unknown_type())
+                Ok(MirLowerLocalStep {
+                  state: mir_lower_emit_call_assign(
+                    local_step.state, local_step.local_id, native_name, operands_step.operands),
+                  local_id: local_step.local_id
+                })
+              end
+            }
+        }
+    }
+  end
 
 type MirLowerMethodOperandsStep = MirLowerMethodOperandsStep {
   state: MirLowerState,
@@ -1784,6 +1802,15 @@ fn mir_lower_operand_from_expression(
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
     SemanticExpressionUsize(value, _, _) =>
       Ok(MirLowerOperandStep { state: state, operand: MirOperandConstStr(value) }),
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      match mir_lower_lambda_value_to_local(state, parameter_names, body) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerOperandStep {
+            state: local_step.state,
+            operand: MirOperandLocal(local_step.local_id)
+          })
+      },
     _ => Err(['mir lower: unsupported expression in operand context'])
   }
 end
@@ -2003,6 +2030,15 @@ fn mir_lower_rvalue_from_expression(
       Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
     SemanticExpressionUsize(value, _, _) =>
       Ok(MirLowerRvalueStep { state: state, rvalue: MirRvalueUse(MirOperandConstStr(value)) }),
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      match mir_lower_lambda_value_to_local(state, parameter_names, body) {
+        Err(errors) => Err(errors),
+        Ok(local_step) =>
+          Ok(MirLowerRvalueStep {
+            state: local_step.state,
+            rvalue: MirRvalueUse(MirOperandLocal(local_step.local_id))
+          })
+      },
     _ => Err(['mir lower: unsupported expression in rvalue context'])
   }
 end
@@ -2729,6 +2765,8 @@ fn mir_lower_expression_to_local(
             mir_lower_funref_ident_to_local(state, name)
           end
       },
+    SemanticExpressionLambda(parameter_names, body, _, _) =>
+      mir_lower_lambda_value_to_local(state, parameter_names, body),
     _ =>
       match mir_lower_rvalue_from_expression(state, expression) {
         Err(errors) => Err(errors),
@@ -2935,6 +2973,24 @@ fn mir_lower_funref_ident_to_local(
   name: string
 ) -> Result<MirLowerLocalStep, [string]> = do
   const local_step = mir_lower_allocate_local(state, '', mir_lower_unknown_type())
+  Ok(MirLowerLocalStep {
+    state: mir_lower_emit_assign(
+      local_step.state,
+      local_step.local_id,
+      MirRvalueUse(MirOperandConstStr(name))),
+    local_id: local_step.local_id
+  })
+end
+
+// Lambda-as-value (HOF argument): bind for later inline Call, stub as ConstStr(name).
+fn mir_lower_lambda_value_to_local(
+  state: MirLowerState,
+  parameter_names: [string],
+  body: Shared<SemanticExpression>
+) -> Result<MirLowerLocalStep, [string]> = do
+  const name = `__mir_lambda_${state.lambda_bindings.length().to_string()}`
+  const bound_state = mir_lower_bind_lambda(state, name, parameter_names, body)
+  const local_step = mir_lower_allocate_local(bound_state, '', mir_lower_unknown_type())
   Ok(MirLowerLocalStep {
     state: mir_lower_emit_assign(
       local_step.state,

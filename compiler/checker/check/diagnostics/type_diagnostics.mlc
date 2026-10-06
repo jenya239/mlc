@@ -144,7 +144,7 @@ end
 
 export fn match_arm_type_mismatch_diagnostic(arm_index: i32, first_arm_type: Shared<Type>, arm_result_type: Shared<Type>, arm_body: Shared<Expr>) -> [Diagnostic] = do
   if arm_index > 0 && !semantic_type_structure.type_is_unknown(first_arm_type) && !semantic_type_structure.type_is_unknown(arm_result_type) &&
-     !semantic_type_structure.types_structurally_equal(first_arm_type, arm_result_type) then
+     !semantic_type_structure.types_match_arm_compatible(first_arm_type, arm_result_type) then
     [diagnostic_error_with_code(
       'match arm result type ' + semantic_type_structure.type_description(arm_result_type) + ' does not match first arm type ' + semantic_type_structure.type_description(first_arm_type),
       expr_span(arm_body),

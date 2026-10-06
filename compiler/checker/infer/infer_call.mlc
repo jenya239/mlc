@@ -1,14 +1,14 @@
 // Function and constructor call type inference.
 // infer_expr_fn injected to break the import cycle with infer.mlc.
 
-import { Expr, Span, Diagnostic, diagnostics_append } from '../../frontend/ast'
-import { Type, TNamed, TGeneric, TUnknown, TypeRegistry } from '../registry'
+import { Expr, Span, Diagnostic, diagnostics_append, span_unknown } from '../../frontend/ast'
+import { Type, TNamed, TGeneric, TUnknown, TArray, TFn, TypeRegistry } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { InferResult } from './infer_result'
 import { infer_expr_call_for_constructor_name, infer_expr_call_non_constructor, function_parameter_list } from './infer_call_support'
 import { build_call_type_substitution, call_argument_unification_diagnostics } from '../check/call_argument_unify'
 import { trait_bound_diagnostics } from './infer_trait_bounds'
-import { type_is_function } from '../semantic_type_structure'
+import { type_is_function, type_is_unknown, named_type_name_from_type, substitute_type } from '../semantic_type_structure'
 import * as named_args from '../named_args'
 
 type Call_arguments_inference_accumulator = Call_arguments_inference_accumulator {
@@ -37,9 +37,67 @@ fn take_first_param_types(param_types: [Shared<Type>], positional_argument_count
   param_types.take(positional_argument_count)
 
 fn algebraic_type_name_from_ctor(registry: TypeRegistry, callee_name: string) -> string =
-  match registry.ctor_type(callee_name) {
-    TNamed(parent_name) => parent_name,
-    _ => ''
+  named_type_name_from_type(registry.ctor_type(callee_name))
+
+fn type_parameter_name_is_listed(type_parameter_names: [string], type_name: string) -> bool =
+  type_parameter_names.any(type_parameter_name => type_parameter_name == type_name)
+
+fn bind_type_parameters_from_expected(
+  declared_type: Shared<Type>,
+  expected_type: Shared<Type>,
+  type_parameter_names: [string],
+  substitution: ref mut Map<string, Shared<Type>>
+) -> unit =
+  if type_is_unknown(expected_type) then ()
+  else match declared_type {
+    TNamed(declared_name) =>
+      if type_parameter_name_is_listed(type_parameter_names, declared_name) &&
+         !substitution.has(declared_name) then
+        substitution.set(declared_name, expected_type)
+      end,
+    TGeneric(declared_name, declared_arguments) =>
+      match expected_type {
+        TGeneric(expected_name, expected_arguments) =>
+          if declared_name == expected_name &&
+             declared_arguments.length() == expected_arguments.length() then
+            let mut argument_index = 0
+            while argument_index < declared_arguments.length() do
+              bind_type_parameters_from_expected(
+                declared_arguments[argument_index],
+                expected_arguments[argument_index],
+                type_parameter_names,
+                substitution)
+              argument_index = argument_index + 1
+            end
+          end,
+        _ => ()
+      },
+    TArray(declared_element) =>
+      match expected_type {
+        TArray(expected_element) =>
+          bind_type_parameters_from_expected(
+            declared_element, expected_element, type_parameter_names, substitution),
+        _ => ()
+      },
+    TFn(declared_parameters, declared_return_type) =>
+      match expected_type {
+        TFn(expected_parameters, expected_return_type) => do
+          let mut parameter_index = 0
+          while parameter_index < declared_parameters.length() &&
+                parameter_index < expected_parameters.length() do
+            bind_type_parameters_from_expected(
+              declared_parameters[parameter_index],
+              expected_parameters[parameter_index],
+              type_parameter_names,
+              substitution)
+            parameter_index = parameter_index + 1
+          end
+          bind_type_parameters_from_expected(
+            declared_return_type, expected_return_type, type_parameter_names, substitution)
+        end,
+        _ => ()
+      },
+    _ => ()
   }
 
 fn callee_name_from_expr(function: Shared<Expr>) -> string =
@@ -78,6 +136,34 @@ fn instantiated_algebraic_constructor_type(
       generic_type_arguments_from_substitution(type_parameter_names, substitution)))
   end
 
+export fn constructor_call_result_type(
+  registry: TypeRegistry,
+  callee_name: string,
+  argument_inferred_types: [Shared<Type>]
+) -> Shared<Type> = do
+  const constructor_type = registry.ctor_type(callee_name)
+  const algebraic_type_name = algebraic_type_name_from_ctor(registry, callee_name)
+  const constructor_type_parameter_names =
+    registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
+  if algebraic_type_name == '' || constructor_type_parameter_names.length() == 0 then
+    return constructor_type
+  end
+  const constructor_parameter_types = registry.ctor_params_for(callee_name)
+  if constructor_parameter_types.length() != argument_inferred_types.length() then
+    return constructor_type
+  end
+  let type_parameter_source_argument_index: Map<string, i32> = Map.new()
+  const substitution = build_call_type_substitution(
+    constructor_parameter_types,
+    argument_inferred_types,
+    constructor_type_parameter_names,
+    type_parameter_source_argument_index,
+    [],
+    span_unknown())
+  instantiated_algebraic_constructor_type(
+    algebraic_type_name, constructor_type_parameter_names, substitution)
+end
+
 fn infer_expr_call_constructor_path(
   callee_name: string,
   with_arguments: InferResult,
@@ -93,23 +179,9 @@ fn infer_expr_call_constructor_path(
   const constructor_type_parameter_names =
     inference_context.registry.algebraic_decl_type_parameter_names_for(algebraic_type_name)
   if constructor_parameter_types.length() != effective_args.length() then return constructor_output end
-  let type_parameter_source_argument_index: Map<string, i32> = Map.new()
-  const substitution = build_call_type_substitution(
-    constructor_parameter_types,
-    argument_inferred_types,
-    constructor_type_parameter_names,
-    type_parameter_source_argument_index,
-    effective_args,
-    call_source_span)
-  const inferred_type =
-    if algebraic_type_name != '' && constructor_type_parameter_names.length() > 0 then
-      instantiated_algebraic_constructor_type(
-        algebraic_type_name, constructor_type_parameter_names, substitution)
-    else
-      constructor_output.inferred_type
-    end
   InferResult {
-    inferred_type: inferred_type,
+    inferred_type: constructor_call_result_type(
+      inference_context.registry, callee_name, argument_inferred_types),
     errors: diagnostics_append(
       constructor_output.errors,
       call_argument_unification_diagnostics(
@@ -160,8 +232,28 @@ fn infer_expr_call_non_constructor_path(
   const bound_errors = trait_bound_diagnostics(
     callee_name, params_for_unify, argument_inferred_types,
     callee_type_parameter_names, call_source_span, effective_args, inference_context)
+  let mut return_substitution: Map<string, Shared<Type>> = Map.new()
+  let type_parameter_source_argument_index: Map<string, i32> = Map.new()
+  if callee_type_parameter_names.length() > 0 then
+    return_substitution = build_call_type_substitution(
+      params_for_unify,
+      argument_inferred_types,
+      callee_type_parameter_names,
+      type_parameter_source_argument_index,
+      effective_args,
+      call_source_span)
+    bind_type_parameters_from_expected(
+      non_constructor_output.inferred_type,
+      inference_context.expected_return_type,
+      callee_type_parameter_names,
+      return_substitution)
+  end
+  const instantiated_return_type =
+    if callee_type_parameter_names.length() == 0 then non_constructor_output.inferred_type
+    else substitute_type(non_constructor_output.inferred_type, return_substitution)
+    end
   InferResult {
-    inferred_type: non_constructor_output.inferred_type,
+    inferred_type: instantiated_return_type,
     errors: diagnostics_append(
       diagnostics_append(non_constructor_output.errors, unification_errors),
       bound_errors)

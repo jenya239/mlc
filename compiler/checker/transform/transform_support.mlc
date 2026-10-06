@@ -5,7 +5,7 @@
 
 import { Expr, RecordLitPart, RecordLitFields, RecordLitSpread } from '../../frontend/ast'
 import { Type, TypeRegistry, TArray, TUnknown, method_return_type_from_object } from '../registry'
-import { binary_operation_result_type, type_is_unknown } from '../semantic_type_structure'
+import { binary_operation_result_type, type_is_unknown, join_match_arm_result_types } from '../semantic_type_structure'
 import { SemanticExpression, sexpr_type } from '../../ir/semantic_ir'
 import { semantic_type_is_tarray, array_element_type_from_semantic_type } from './transform_coerce'
 import { CheckContext } from '../check/check_context'
@@ -86,7 +86,7 @@ export fn merge_conditional_expression_types(
       if type_is_unknown(then_element_type) then Shared.new(TArray(else_element_type))
       else Shared.new(TArray(then_element_type)) end
     else then_type end
-  else then_type end
+  else join_match_arm_result_types(then_type, else_type) end
 end
 
 export fn array_element_type_from_semantic_expression(

@@ -15,6 +15,7 @@ import {
   shared_pointer_inner_type,
   substitute_type,
   named_type_name_from_type,
+  join_match_arm_result_types,
   type_is_unknown
 } from '../semantic_type_structure'
 import { is_result_option_hof_method, is_array_hof_method_on_receiver, hof_call_result_type } from '../hof_method_spec'
@@ -31,6 +32,7 @@ import {
   is_region_handle_alloc_method
 } from '../infer/infer_region_method'
 import { instantiated_constructor_value_type } from '../infer/infer_expr_ident'
+import { constructor_call_result_type } from '../infer/infer_call'
 import { env_for_pattern_substituted } from './pattern_env'
 import { substitution_from_generic } from '../substitution'
 import { check_context_new } from '../check/check_context'
@@ -38,7 +40,7 @@ import * as record_lit_merge from './record_lit_merge'
 import { partial_application_desugar_expr } from './partial_application_desugar'
 import * as named_args from '../named_args'
 import { SemanticExpression, SemanticStatement, SemanticMatchArm, SemanticFieldVal, sexpr_type, SemanticExpressionInt, SemanticExpressionStr, SemanticExpressionUnit, SemanticExpressionExtern, SemanticExpressionIdent, SemanticExpressionBin, SemanticExpressionUn, SemanticExpressionCall, SemanticExpressionMethod, SemanticExpressionField, SemanticExpressionIndex, SemanticExpressionWhile, SemanticExpressionFor, SemanticExpressionMatch, SemanticExpressionRecord, SemanticExpressionRecordUpdate, SemanticExpressionTuple, SemanticExpressionQuestion, SemanticExpressionLambda, SemanticExpressionWith, SemanticExpressionFloat, SemanticExpressionI64, SemanticExpressionU8, SemanticExpressionUsize, SemanticExpressionChar, SemanticExpressionArray, SemanticExpressionIf, SemanticExpressionBlock, SemanticExpressionBool } from '../../ir/semantic_ir'
-import { semantic_type_is_tarray, array_element_type_from_semantic_type, generic_type_name, conditional_else_empty_unknown_array_coerced_to_then_array_element, coerce_expr_to_type } from './transform_coerce'
+import { semantic_type_is_tarray, array_element_type_from_semantic_type, generic_type_name, conditional_else_empty_unknown_array_coerced_to_then_array_element, coerce_expr_to_type, coerce_match_arms_to_type } from './transform_coerce'
 import { TransformContext, transform_context_with_env, transform_context_with_lambda_parameter_types, TransformStmtsResult, empty_transform_context } from './transform_context'
 import { transform_call_arguments_using_callee_semantic_type, function_return_type_from_callee_type } from './transform_call_args'
 import { transform_result_option_hof_method_call, transform_array_hof_method_call, transform_regular_method_call, transform_region_alloc_method_call } from './transform_method'
@@ -396,7 +398,10 @@ extend TransformPass {
         transform_expr, transform_expr_lambda_with_param_types, transform_exprs)
     const result_type =
       if callee_name != '' && self.transform_context.registry.has_ctor(callee_name) then
-        self.transform_context.registry.ctor_type(callee_name)
+        constructor_call_result_type(
+          self.transform_context.registry,
+          callee_name,
+          typed_arguments.map(typed_argument => sexpr_type(typed_argument)))
       else
         function_return_type_from_callee_type(sexpr_type(typed_function))
       end
@@ -533,7 +538,16 @@ extend TransformPass {
     const substitution  = substitution_from_generic(sexpr_type(typed_subject), self.transform_context.registry)
     const typed_arms    = transform_match_arms(
       match_arms, self.transform_context, substitution, sexpr_type(typed_subject), stmts_fn)
-    const result_type   = if typed_arms.length() > 0 then sexpr_type(typed_arms[0].body) else Shared.new(TUnknown) end
+    let mut result_type: Shared<Type> = Shared.new(TUnknown)
+    let mut arm_index = 0
+    while arm_index < typed_arms.length() do
+      const arm_body_type = sexpr_type(typed_arms[arm_index].body)
+      result_type =
+        if arm_index == 0 then arm_body_type
+        else join_match_arm_result_types(result_type, arm_body_type)
+        end
+      arm_index = arm_index + 1
+    end
     const coerced_arms   = coerce_match_arms_to_type(typed_arms, result_type)
     Shared.new(SemanticExpressionMatch(typed_subject, coerced_arms, result_type, source_span))
   end
@@ -768,7 +782,7 @@ fn transform_method_call_after_object(
   if is_result_option_hof_method(receiver_type, method_name) then
     transform_result_option_hof_method_call(
       registry, typed_object, method_name, method_arguments, receiver_type,
-      transform_pass.transform_context, source_span, stmts_fn, transform_exprs)
+      transform_pass.transform_context, source_span, stmts_fn, transform_exprs, transform_expr)
   else if is_array_hof_method_on_receiver(receiver_type, method_name) then
     transform_array_hof_method_call(
       registry, typed_object, method_name, method_arguments, receiver_type,

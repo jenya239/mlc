@@ -4,9 +4,11 @@
 // transform.mlc, so the functions below take them as injected parameters to avoid
 // recreating the cycle transform_context.mlc (slice 2) was built to break.
 
-import { Expr, Stmt, Span } from '../../frontend/ast'
-import { Type, TUnknown } from '../registry'
-import { SemanticExpression, sexpr_type } from '../../ir/semantic_ir'
+import { Expr, Stmt, Span, span_unknown } from '../../frontend/ast'
+import { Type, TypeRegistry, TUnknown } from '../registry'
+import { SemanticExpression, SemanticExpressionIdent, sexpr_type } from '../../ir/semantic_ir'
+import { substitute_type } from '../semantic_type_structure'
+import { build_call_type_substitution } from '../check/call_argument_unify'
 import { coerce_expr_to_type } from './transform_coerce'
 import { partial_application_desugar_expr } from './partial_application_desugar'
 import { TransformContext, TransformStmtsResult } from './transform_context'
@@ -288,6 +290,47 @@ type Transform_call_arguments_fold_state = Transform_call_arguments_fold_state {
   next_argument_index:   i32,
 }
 
+fn callee_function_name_from_semantic_expression(callee: Shared<SemanticExpression>) -> string =
+  match callee {
+    SemanticExpressionIdent(name, _, _) => name,
+    _ => ''
+  }
+
+fn registered_callee_type_parameter_names(
+  callee: Shared<SemanticExpression>,
+  registry: TypeRegistry
+) -> [string] = do
+  const callee_name = callee_function_name_from_semantic_expression(callee)
+  if callee_name != '' && registry.has_fn(callee_name) then
+    registry.registered_function_type_parameter_names(callee_name)
+  else do
+    const empty_type_parameter_names: [string] = []
+    empty_type_parameter_names
+  end
+  end
+end
+
+fn substitution_from_transformed_call_arguments(
+  declared_parameter_types: [Shared<Type>],
+  transformed_arguments: [Shared<SemanticExpression>],
+  type_parameter_names: [string]
+) -> Map<string, Shared<Type>> = do
+  if type_parameter_names.length() == 0 || transformed_arguments.length() == 0 then
+    Map.new()
+  else do
+    let type_parameter_source_argument_index: Map<string, i32> = Map.new()
+    const empty_argument_expressions: [Shared<Expr>] = []
+    build_call_type_substitution(
+      declared_parameter_types.take(transformed_arguments.length()),
+      transformed_arguments.map(transformed_argument => sexpr_type(transformed_argument)),
+      type_parameter_names,
+      type_parameter_source_argument_index,
+      empty_argument_expressions,
+      span_unknown())
+  end
+  end
+end
+
 export fn function_return_type_from_callee_type(type_value: Shared<Type>) -> Shared<Type> =
   match type_value {
     TFn(_, return_type) => return_type,
@@ -316,23 +359,32 @@ export fn function_return_type_from_callee_type(type_value: Shared<Type>) -> Sha
 fn transform_call_arguments_fold_step(
   state: Transform_call_arguments_fold_state,
   argument_expression: Shared<Expr>,
-  expected_formal_parameter_types: [Shared<Type>],
+  declared_parameter_types: [Shared<Type>],
+  type_parameter_names: [string],
   transform_context: TransformContext,
   stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult,
   transform_expr_fn: (Shared<Expr>, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>,
   transform_expr_lambda_with_param_types_fn: ([string], [Shared<Type>], Shared<Expr>, Span, TransformContext, ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression>
-) -> Transform_call_arguments_fold_state =
+) -> Transform_call_arguments_fold_state = do
+  const type_substitution = substitution_from_transformed_call_arguments(
+    declared_parameter_types,
+    state.transformed_arguments,
+    type_parameter_names)
+  const declared_expected_type =
+    expected_call_argument_type_at_index(state.next_argument_index, declared_parameter_types)
+  const expected_formal_parameter_type = substitute_type(declared_expected_type, type_substitution)
   Transform_call_arguments_fold_state {
     transformed_arguments: state.transformed_arguments.concat([
       transform_one_call_argument_using_optional_expected_type(
         argument_expression,
-        expected_call_argument_type_at_index(state.next_argument_index, expected_formal_parameter_types),
+        expected_formal_parameter_type,
         transform_context,
         stmts_fn,
         transform_expr_fn,
         transform_expr_lambda_with_param_types_fn)]),
     next_argument_index: state.next_argument_index + 1,
   }
+end
 
 export fn transform_call_arguments_using_callee_semantic_type(
   callee_semantic_expression: Shared<SemanticExpression>,
@@ -345,6 +397,9 @@ export fn transform_call_arguments_using_callee_semantic_type(
 ) -> [Shared<SemanticExpression>] = do
   const callee_type = sexpr_type(callee_semantic_expression)
   if callee_semantic_type_is_function(callee_type) then
+    const declared_parameter_types = function_parameter_types_from_callee_type(callee_type)
+    const type_parameter_names =
+      registered_callee_type_parameter_names(callee_semantic_expression, transform_context.registry)
     argument_expressions_under_call
       .fold(
         Transform_call_arguments_fold_state {
@@ -355,7 +410,8 @@ export fn transform_call_arguments_using_callee_semantic_type(
           transform_call_arguments_fold_step(
             state,
             argument_expression,
-            function_parameter_types_from_callee_type(callee_type),
+            declared_parameter_types,
+            type_parameter_names,
             transform_context,
             stmts_fn,
             transform_expr_fn,

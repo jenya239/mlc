@@ -66,8 +66,8 @@ fn type_decl_has_type_parameters(program: Program) -> bool =
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  const empty_program = Program { decls: [] }
-  const context = create_codegen_context(empty_program)
+  const empty_codegen_program = Program { decls: [] }
+  const context = create_codegen_context(empty_codegen_program)
   results.push(assert_eq_str('create_codegen_context: gen_expr with ctx',
     print_expr(gen_expr(si(42), context)), '42'))
 
@@ -777,6 +777,132 @@ export fn codegen_tests() -> [TestResult] = do
   results.push(assert_code_not_contains('declared Option generic match is not std::optional',
     option_generic_match_cpp, 'std::optional'))
 
+  const option_map_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> = match opt { Some(x) => Some(mapper(x)), None => None }\n").tokens))
+  results.push(assert_code_contains('Option map visit return is Option<U>',
+    option_map_cpp, '-> Option<U>'))
+  results.push(assert_code_not_contains('Option map visit return is not bare Option',
+    option_map_cpp, '-> Option {'))
+  results.push(assert_code_contains('Option map None arm is None{}',
+    option_map_cpp, 'None{}'))
+
+  const option_none_i32_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn none_i32() -> Option<i32> = None\n").tokens))
+  results.push(assert_code_contains('none_i32 body constructs None{}',
+    option_none_i32_cpp, 'None{}'))
+
+  const option_none_call_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn none<T>() -> Option<T> = None\nfn none_i32() -> Option<i32> = none()\n").tokens))
+  results.push(assert_code_contains('none() call emits none<int>()',
+    option_none_call_cpp, 'none<int>()'))
+
+  const result_zero_argument_call_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn make() -> Result<i32, string> = Ok(1)\nfn run() -> Result<i32, string> = make()\n").tokens))
+  results.push(assert_code_contains('0-arg Result-returning call stays make()',
+    result_zero_argument_call_cpp, 'make()'))
+  results.push(assert_code_not_contains('0-arg Result-returning call is not a template suffix',
+    result_zero_argument_call_cpp, 'make<'))
+
+  const result_if_ok_err_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn choose(flag: bool) -> Result<i32, string> = if flag then Ok(1) else Err(\"x\") end\n").tokens))
+  results.push(assert_code_not_contains('if Ok/Err IIFE does not use Result auto placeholder',
+    result_if_ok_err_cpp, ', auto>'))
+  results.push(assert_code_not_contains('if Ok/Err IIFE does not use <auto> placeholder',
+    result_if_ok_err_cpp, '<auto>'))
+
+  const option_map_lambda_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> = match opt { Some(x) => Some(mapper(x)), None => None }\nfn double_if_some(opt: Option<i32>) -> Option<i32> = map(opt, n => n * 2)\n").tokens))
+  results.push(assert_code_contains('Option map lambda parameter is int',
+    option_map_lambda_cpp, 'int n'))
+  results.push(assert_code_not_contains('Option map lambda parameter is not T',
+    option_map_lambda_cpp, '(T n)'))
+  results.push(assert_code_contains('Option map call instantiates map<int, int>',
+    option_map_lambda_cpp, 'map<int, int>('))
+
+  const generic_none_from_generic_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn none<T>() -> Option<T> = None\nfn wrap_none<T>() -> Option<T> = none()\n").tokens))
+  results.push(assert_code_contains('none() inside generic fn emits none<T>()',
+    generic_none_from_generic_cpp, 'none<T>()'))
+
+  const non_generic_call_cpp = gen_program(parse_program(tokenize(
+    "fn take(value: i32) -> i32 = value\nfn run() -> i32 = take(1)\n").tokens))
+  results.push(assert_code_contains('non-generic call stays take(',
+    non_generic_call_cpp, 'take('))
+  results.push(assert_code_not_contains('non-generic call is not take<',
+    non_generic_call_cpp, 'take<'))
+
+  const named_array_call_cpp = gen_program(parse_program(tokenize(
+    "type Token = Word(string) | Number(i32)\nfn push_token(mut tokens: [Token]) -> unit = ()\nfn tokenize_one(mut tokens: [Token]) -> unit = push_token(tokens)\n").tokens))
+  results.push(assert_code_contains('named-array call stays push_token(',
+    named_array_call_cpp, 'push_token('))
+  results.push(assert_code_not_contains('named-array call is not push_token<',
+    named_array_call_cpp, 'push_token<'))
+
+  const option_method_map_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> = match opt { Some(x) => Some(mapper(x)), None => None }\nfn double_if_some(opt: Option<i32>) -> Option<i32> = opt.map(n => n * 2)\n").tokens))
+  results.push(assert_code_contains('declared Option method map lowers to map<int, int>',
+    option_method_map_cpp, 'map<int, int>('))
+  results.push(assert_code_not_contains('declared Option method map is not mlc::opt::map',
+    option_method_map_cpp, 'mlc::opt::map'))
+  results.push(assert_code_contains('declared Option method map lambda parameter is int',
+    option_method_map_cpp, 'int n'))
+
+  const option_method_and_then_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn and_then<T, U>(opt: Option<T>, mapper: fn(T) -> Option<U>) -> Option<U> = match opt { Some(x) => mapper(x), None => None }\nfn double_if_some(opt: Option<i32>) -> Option<i32> = opt.and_then(n => Some(n * 2))\n").tokens))
+  results.push(assert_code_contains('declared Option method and_then lowers to and_then<int, int>',
+    option_method_and_then_cpp, 'and_then<int, int>('))
+  results.push(assert_code_not_contains('declared Option method and_then is not mlc::opt::and_then',
+    option_method_and_then_cpp, 'mlc::opt::and_then'))
+
+  const option_method_or_else_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn or_else<T>(opt: Option<T>, alternative: () -> Option<T>) -> Option<T> = match opt { Some(_) => opt, None => alternative() }\nfn or_none(opt: Option<i32>) -> Option<i32> = opt.or_else(() => None)\n").tokens))
+  results.push(assert_code_contains('declared Option method or_else lowers to or_else<int>',
+    option_method_or_else_cpp, 'or_else<int>('))
+  results.push(assert_code_not_contains('declared Option method or_else is not mlc::opt::or_else',
+    option_method_or_else_cpp, 'mlc::opt::or_else'))
+
+  const option_some_call_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn some<T>(value: T) -> Option<T> = Some(value)\nfn one() -> Option<i32> = some(1)\n").tokens))
+  results.push(assert_code_contains('some() call emits some<int>(',
+    option_some_call_cpp, 'some<int>('))
+
+  const result_map_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> = match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }\n").tokens))
+  results.push(assert_code_contains('Result map visit return is Result<U, E>',
+    result_map_cpp, '-> Result<U, E>'))
+  results.push(assert_code_not_contains('Result map visit return is not bare Result',
+    result_map_cpp, '-> Result {'))
+
+  const result_map_lambda_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> = match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }\nfn inc(res: Result<i32, string>) -> Result<i32, string> = map(res, n => n + 1)\n").tokens))
+  results.push(assert_code_contains('Result map lambda parameter is int',
+    result_map_lambda_cpp, 'int n'))
+  results.push(assert_code_contains('Result map call instantiates map<int, int, mlc::String>',
+    result_map_lambda_cpp, 'map<int, int, mlc::String>('))
+
+  const result_method_map_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> = match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }\nfn inc(res: Result<i32, string>) -> Result<i32, string> = res.map(n => n + 1)\n").tokens))
+  results.push(assert_code_contains('declared Result method map lowers to map<int, int, mlc::String>',
+    result_method_map_cpp, 'map<int, int, mlc::String>('))
+  results.push(assert_code_not_contains('declared Result method map is not mlc::result::map',
+    result_method_map_cpp, 'mlc::result::map'))
+  results.push(assert_code_contains('declared Result method map lambda parameter is int',
+    result_method_map_cpp, 'int n'))
+
+  const result_method_map_err_cpp = gen_program(parse_program(tokenize(
+    "type Result<T, E> = Ok(T) | Err(E)\nfn map_err<T, E, F>(res: Result<T, E>, mapper: fn(E) -> F) -> Result<T, F> = match res { Ok(x) => Ok(x), Err(e) => Err(mapper(e)) }\nfn wrap_err(res: Result<i32, string>) -> Result<i32, i32> = res.map_err(message => message.length())\n").tokens))
+  results.push(assert_code_contains('declared Result method map_err lowers to map_err<int, mlc::String, int>',
+    result_method_map_err_cpp, 'map_err<int, mlc::String, int>('))
+  results.push(assert_code_not_contains('declared Result method map_err is not mlc::result::map_err',
+    result_method_map_err_cpp, 'mlc::result::map_err'))
+
+  const generic_call_ignores_concrete_named_parameter_cpp = gen_program(parse_program(tokenize(
+    "type Option<T> = Some(T) | None\nfn wrap<T>(value: T, label: string) -> Option<T> = Some(value)\nfn wrapped() -> Option<i32> = wrap(1, \"n\")\n").tokens))
+  results.push(assert_code_contains('generic call suffix is only the type parameter',
+    generic_call_ignores_concrete_named_parameter_cpp, 'wrap<int>('))
+  results.push(assert_code_not_contains('generic call suffix omits concrete string parameter',
+    generic_call_ignores_concrete_named_parameter_cpp, 'wrap<int, '))
+
   const generic_function_parameter_cpp = gen_program(parse_program(tokenize(
     "fn apply<T, U>(value: T, mapper: fn(T) -> U) -> U = mapper(value)\n").tokens))
   results.push(assert_code_contains('generic fn(T) -> U mapper is a template parameter',
@@ -920,6 +1046,8 @@ export fn codegen_tests() -> [TestResult] = do
     'type Result<T, E> = Ok(T) | Err(E)\ntype Value = Number(i32) | Text(string)\nfn parse(value: Value) -> Result<i32, [string]> = match value {\n  Number(number) => Ok(number),\n  Text(text) => Err([text])\n}\nexport fn main() -> i32 = 0'
   const codegen_match_result_cpp = gen_program(parse_program(tokenize(codegen_match_result_return).tokens))
   results.push(assert_code_contains('gen_program: Result match std::visit uses explicit return type',
-    codegen_match_result_cpp, '-> ast::Result<int, mlc::Array<mlc::String>>'))
+    codegen_match_result_cpp, '-> Result<int, mlc::Array<mlc::String>>'))
+  results.push(assert_code_not_contains('declared Result visit is not ast::Result',
+    codegen_match_result_cpp, 'ast::Result'))
   results
 end

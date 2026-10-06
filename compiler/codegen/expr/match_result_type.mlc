@@ -18,8 +18,18 @@ fn full_result_cpp_template(context: CodegenContext, semantic_type: Shared<Type>
   end
 end
 
+fn cpp_type_string_has_auto_placeholder(type_string: string) -> bool =
+  type_string == 'auto'
+    || type_string.contains('<auto>') || type_string.contains('<auto,')
+    || type_string.contains(', auto>') || type_string.contains(', auto,')
+
 export fn expression_result_cpp_type_for_codegen(context: CodegenContext, semantic_type: Shared<Type>) -> string = do
   const direct = sem_type_to_cpp(context, semantic_type)
+  if cpp_type_string_has_auto_placeholder(direct) then
+    const from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type)
+    if from_enclosing != '' then return from_enclosing end
+    return 'auto'
+  end
   if direct.contains(`<`) then return direct end
   if direct != 'ast::Result' then return direct end
   const from_enclosing = full_result_cpp_template(context, context.enclosing_function_return_type)
@@ -82,10 +92,6 @@ end
 // annotation: unlike a bare `auto`, `auto` is not a legal template argument, so
 // it fails to even parse - `direct.contains('<')` alone is not proof that
 // `direct` is usable.
-fn cpp_type_string_has_auto_placeholder(type_string: string) -> bool =
-  type_string == 'auto'
-    || type_string.contains('<auto>') || type_string.contains('<auto,')
-    || type_string.contains(', auto>') || type_string.contains(', auto,')
 
 // The match's own inferred type (direct) is the correct answer whenever it is
 // concrete enough to use as-is; context.enclosing_function_return_type only helps

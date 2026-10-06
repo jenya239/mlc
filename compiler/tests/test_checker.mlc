@@ -6,13 +6,13 @@ import { parse_program, parse_program_with_source_path } from '../frontend/parse
 import { Program, Decl } from '../frontend/ast'
 import { check, check_with_context, program_diagnostics } from '../checker/check/check'
 import { build_registry } from '../checker/registry'
-import { Type, TNamed, TArray } from '../checker/registry_type'
-import { substitute_type, type_description } from '../checker/semantic_type_structure'
+import { Type, TNamed, TArray, TGeneric, TI32, TString, TUnknown } from '../checker/registry_type'
+import { substitute_type, type_description, join_match_arm_result_types } from '../checker/semantic_type_structure'
 import { diagnostic_code_e001, diagnostic_code_e020, diagnostic_code_e081, diagnostic_code_e086, diagnostic_code_w_cycle, diagnostic_code_w_extern_attr, diagnostic_code_w_extern_arity, diagnostic_code_catalog_count } from '../checker/diagnostic_codes'
 import { LoadItem } from '../ir/load_item'
 import { ModularCompileInput, run_modular_compiler_pipeline } from '../pipeline'
 
-fn check_error_count(source: string) -> i32 =
+fn program_error_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
     Ok(_)    => 0,
     Err(errs) => errs.length()
@@ -30,7 +30,7 @@ fn array_of_same_type_parameter_substitution() -> Map<string, Shared<Type>> = do
   substitution
 end
 
-fn check_warning_count(source: string) -> i32 =
+fn program_warning_count(source: string) -> i32 =
   match check(parse_program(tokenize(source).tokens)) {
     Ok(check_output) => check_output.warnings.length(),
     Err(_) => -1
@@ -43,7 +43,7 @@ fn first_checker_warning_line(source: string) -> string =
     Err(_) => ''
   }
 
-fn check_with_context_error_count(entry_source: string, full_source: string) -> i32 =
+fn error_count_with_full_program_context(entry_source: string, full_source: string) -> i32 =
   match check_with_context(parse_program(tokenize(entry_source).tokens), parse_program(tokenize(full_source).tokens)) {
     Ok(_) => 0,
     Err(error_list) => error_list.length()
@@ -73,7 +73,7 @@ fn first_checker_error_for_program(program: Program) -> string =
     Ok(_) => ''
   }
 
-fn check_program_error_count(program: Program) -> i32 =
+fn count_errors_in_program(program: Program) -> i32 =
   match check(program) {
     Ok(_) => 0,
     Err(error_list) => error_list.length()
@@ -103,7 +103,7 @@ export fn checker_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
   results.push(assert_eq_int('empty program - 0 errors',
-    check_error_count(''), 0))
+    program_error_count(''), 0))
 
   results.push(assert_eq_int('diagnostic code catalog count',
     diagnostic_code_catalog_count(), 93))
@@ -118,12 +118,12 @@ export fn checker_tests() -> [TestResult] = do
     diagnostic_code_w_cycle(), 'W-CYCLE'))
 
   results.push(assert_eq_int('Shared cycle without Weak — check Ok (warning only)',
-    check_error_count(
+    program_error_count(
       'type Parent = { children: [Shared<Child>] }\ntype Child = { parent: Shared<Parent> }\nfn main() -> i32 = 0'),
     0))
 
   results.push(assert_eq_int('Shared cycle without Weak — CheckOut.warnings count',
-    check_warning_count(
+    program_warning_count(
       'type Parent = { children: [Shared<Child>] }\ntype Child = { parent: Shared<Parent> }\nfn main() -> i32 = 0'),
     2))
 
@@ -145,7 +145,7 @@ export fn checker_tests() -> [TestResult] = do
     0))
 
   results.push(assert_eq_int('Shared cycle with Weak back edge — CheckOut.warnings empty',
-    check_warning_count(
+    program_warning_count(
       'type Parent2 = { children: [Shared<Child2>] }\ntype Child2 = { parent: Weak<Parent2> }\nfn main() -> i32 = 0'),
     0))
 
@@ -156,12 +156,12 @@ export fn checker_tests() -> [TestResult] = do
     diagnostic_code_w_extern_arity(), 'W-EXTERN-ARITY'))
 
   results.push(assert_eq_int('extern fn from header without attr — check Ok (warning)',
-    check_error_count(
+    program_error_count(
       'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"\nfn main() -> i32 = 0'),
     0))
 
   results.push(assert_eq_int('extern fn from header without attr — one W-EXTERN-ATTR',
-    check_warning_count(
+    program_warning_count(
       'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>"\nfn main() -> i32 = 0'),
     1))
 
@@ -171,22 +171,22 @@ export fn checker_tests() -> [TestResult] = do
     ).contains('warning[W-EXTERN-ATTR]')))
 
   results.push(assert_eq_int('extern fn with blocking — no W-EXTERN-ATTR',
-    check_warning_count(
+    program_warning_count(
       'extern fn pq_exec(query: i32) -> i32 = "PQexec" from "<libpq-fe.h>" blocking\nfn main() -> i32 = 0'),
     0))
 
   results.push(assert_eq_int('extern type without attr — one W-EXTERN-ATTR',
-    check_warning_count(
+    program_warning_count(
       'extern type Handle = "Handle" from "<stdio.h>"\nfn main() -> i32 = 0'),
     1))
 
   results.push(assert_eq_int('extern type thread_safe — no W-EXTERN-ATTR',
-    check_warning_count(
+    program_warning_count(
       'extern type Handle = "Handle" from "<stdio.h>" thread_safe\nfn main() -> i32 = 0'),
     0))
 
   results.push(assert_eq_int('shorthand extern fn (no from) — no W-EXTERN-ATTR',
-    check_warning_count(
+    program_warning_count(
       'extern fn abs(x: i32) -> i32\nfn main() -> i32 = 0'),
     0))
 
@@ -226,37 +226,37 @@ export fn checker_tests() -> [TestResult] = do
     }))
 
   results.push(assert_eq_int('type alias resolves in return type - 0 errors',
-    check_error_count('type Words = [string]\nfn main() -> Words = []'), 0))
+    program_error_count('type Words = [string]\nfn main() -> Words = []'), 0))
 
   results.push(assert_eq_int('cyclic type alias - 1 error',
-    check_error_count('type A = A\nfn main() -> i32 = 0'), 1))
+    program_error_count('type A = A\nfn main() -> i32 = 0'), 1))
 
   results.push(assert_true('cyclic type alias E081',
     first_checker_error_line('type Loop = Loop\nfn main() -> i32 = 0').contains('error[E081]')))
 
   results.push(assert_eq_int('type alias resolves in parameter type - 0 errors',
-    check_error_count('type Count = i32\nfn f(value: Count) -> Count = value'), 0))
+    program_error_count('type Count = i32\nfn f(value: Count) -> Count = value'), 0))
 
   results.push(assert_eq_int('chained type alias resolves - 0 errors',
-    check_error_count('type Offset = i32\ntype Count = Offset\nfn f() -> Count = 1'), 0))
+    program_error_count('type Offset = i32\ntype Count = Offset\nfn f() -> Count = 1'), 0))
 
   results.push(assert_eq_int('generic record field substitutes type param - 0 errors',
-    check_error_count('type Box<T> = { value: T }\nfn f(b: Box<i32>) -> i32 = b.value'), 0))
+    program_error_count('type Box<T> = { value: T }\nfn f(b: Box<i32>) -> i32 = b.value'), 0))
 
   results.push(assert_eq_int('generic type alias expands - 0 errors',
-    check_error_count('type Cell<T> = T\nfn f(x: Cell<i32>) -> i32 = x'), 0))
+    program_error_count('type Cell<T> = T\nfn f(x: Cell<i32>) -> i32 = x'), 0))
 
   results.push(assert_eq_int('mutual cyclic type alias - 2 errors',
-    check_error_count('type A = B\ntype B = A\nfn main() -> i32 = 0'), 2))
+    program_error_count('type A = B\ntype B = A\nfn main() -> i32 = 0'), 2))
 
   results.push(assert_true('mutual cyclic type alias E081',
     first_checker_error_line('type A = B\ntype B = A\nfn main() -> i32 = 0').contains('error[E081]')))
 
   results.push(assert_eq_int('type alias return mismatch - 1 error',
-    check_error_count('type Words = [string]\nfn f() -> Words = 1'), 1))
+    program_error_count('type Words = [string]\nfn f() -> Words = 1'), 1))
 
   results.push(assert_eq_int('fn returning literal - 0 errors',
-    check_error_count('fn f() -> i32 = 42'), 0))
+    program_error_count('fn f() -> i32 = 42'), 0))
 
   results.push(assert_diagnostic_at_with_code(
     'fn return type mismatch — span on body expression',
@@ -267,10 +267,10 @@ export fn checker_tests() -> [TestResult] = do
     'E004'))
 
   results.push(assert_eq_int('fn return type matches — 0 errors',
-    check_error_count('fn f() -> string = "hello"'), 0))
+    program_error_count('fn f() -> string = "hello"'), 0))
 
   results.push(assert_eq_int('fn generic return T — 0 errors',
-    check_error_count('fn id<T>(x: T) -> T = x'), 0))
+    program_error_count('fn id<T>(x: T) -> T = x'), 0))
 
   // --- negative diagnostics: exact formatted output --------------------------------
 
@@ -333,18 +333,18 @@ export fn checker_tests() -> [TestResult] = do
     checker_first_error_contains_nonfunction_i32('fn f() -> i32 = 42()')))
 
   results.push(assert_eq_int('fn using its own param - 0 errors',
-    check_error_count('fn f(x: i32) -> i32 = x'), 0))
+    program_error_count('fn f(x: i32) -> i32 = x'), 0))
 
   results.push(assert_eq_int('fn calling another fn - 0 errors',
-    check_error_count('fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)'), 0))
+    program_error_count('fn add(x: i32, y: i32) -> i32 = x + y\nfn main() -> i32 = add(1, 2)'), 0))
 
   results.push(assert_eq_int('pipe chain of plain functions - 0 errors',
-    check_error_count(
+    program_error_count(
       'fn increment(value: i32) -> i32 = value + 1\nfn double_value(value: i32) -> i32 = value * 2\nfn main() -> i32 = 3 |> increment |> double_value'
     ), 0))
 
   results.push(assert_true('undefined name - at least 1 error',
-    check_error_count('fn f() -> i32 = undefined_name') > 0))
+    program_error_count('fn f() -> i32 = undefined_name') > 0))
 
   results.push(assert_diagnostic_at_with_code(
     'undefined ident: line and column (single line body)',
@@ -368,34 +368,34 @@ export fn checker_tests() -> [TestResult] = do
     'error[E001]: undefined: badident\n  --> unit.mlc:1:17'))
 
   results.push(assert_eq_int('type decl with variants - 0 errors',
-    check_error_count('type Color = Red | Green | Blue'), 0))
+    program_error_count('type Color = Red | Green | Blue'), 0))
 
   results.push(assert_eq_int('fn returning bool - 0 errors',
-    check_error_count('fn f() -> bool = true'), 0))
+    program_error_count('fn f() -> bool = true'), 0))
 
   results.push(assert_eq_int('fn with const binding - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const x = 1\n  x\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const x = 1\n  x\nend'), 0))
 
   results.push(assert_eq_int('let const compile-time binding - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let const c = 42\n  c\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let const c = 42\n  c\nend'), 0))
 
   results.push(assert_eq_int('mlcc2 parity corpus: do-block let mut tail — 0 errors (Ruby/mlcc checker)',
-    check_error_count('fn main() -> i32 = do\n  let mut counter = 0\n  counter\nend'), 0))
+    program_error_count('fn main() -> i32 = do\n  let mut counter = 0\n  counter\nend'), 0))
 
   results.push(assert_eq_int('nested generic in array type annotation - 0 errors',
-    check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let items: [Result<i32, string>] = []\n  0\nend'), 0))
+    program_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let items: [Result<i32, string>] = []\n  0\nend'), 0))
 
   results.push(assert_eq_int('record update expression - 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10 }'), 0))
+    program_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10 }'), 0))
 
   results.push(assert_eq_int('record update two fields — 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10, y: 20 }'), 0))
+    program_error_count('type Point = { x: i32, y: i32 }\nfn f(p: Point) -> Point = Point { ...p, x: 10, y: 20 }'), 0))
 
   results.push(assert_eq_int('trait bound: param method call - 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\nfn show<T: Display>(x: T) -> string = x.to_string()'), 0))
 
   results.push(assert_eq_int('trait bound: call with implementing type — 0 errors',
-    check_error_count('type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'), 0))
+    program_error_count('type Display { fn show(self: Self) -> string }\nextend i32 : Display { fn show(self: i32) -> string = self.to_string() }\nfn print_it<T: Display>(x: T) -> string = x.show()\nfn main() -> string = print_it(42)'), 0))
 
   results.push(assert_diagnostic_at_with_code(
     'trait bound: non-implementing type — span on argument',
@@ -442,10 +442,10 @@ export fn checker_tests() -> [TestResult] = do
     'field x: expected i32, got string'))
 
   results.push(assert_eq_int('record constructor: correct field types — 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, y: 2 }'), 0))
+    program_error_count('type Point = { x: i32, y: i32 }\nfn f() -> Point = Point { x: 1, y: 2 }'), 0))
 
   results.push(assert_eq_int('E4: record field default binary arithmetic — 0 errors',
-    check_error_count('type Line = { offset: i32 = 10 + 5 * 2 }\nfn main() -> i32 = Line {} .offset'), 0))
+    program_error_count('type Line = { offset: i32 = 10 + 5 * 2 }\nfn main() -> i32 = Line {} .offset'), 0))
 
   results.push(assert_checker_diagnostic(
     'negative E043: record field default call not lowerable exact',
@@ -463,37 +463,37 @@ export fn checker_tests() -> [TestResult] = do
     'error[E042]: record field default values are not supported when the type has generic parameters\n  --> 1:30'))
 
   results.push(assert_eq_int('multiline string literal in source — 0 checker errors',
-    check_error_count('fn f() -> string = "hello\nworld"'), 0))
+    program_error_count('fn f() -> string = "hello\nworld"'), 0))
 
   results.push(assert_eq_int('string with escaped newline in source — 0 checker errors',
-    check_error_count('fn f() -> string = "a\\nb"'), 0))
+    program_error_count('fn f() -> string = "a\\nb"'), 0))
 
   results.push(assert_true('two undefined names - at least 1 error',
-    check_error_count('fn f() -> i32 = foo + bar') > 0))
+    program_error_count('fn f() -> i32 = foo + bar') > 0))
 
   results.push(assert_eq_int('builtin print - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  print("hi")\n  0\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  print("hi")\n  0\nend'), 0))
 
   results.push(assert_true('builtin print wrong arity - error',
-    check_error_count('fn f() -> i32 = do\n  print()\n  0\nend') > 0))
+    program_error_count('fn f() -> i32 = do\n  print()\n  0\nend') > 0))
 
   results.push(assert_true('builtin print wrong argument type - error',
-    check_error_count('fn f() -> i32 = do\n  print(42)\n  0\nend') > 0))
+    program_error_count('fn f() -> i32 = do\n  print(42)\n  0\nend') > 0))
 
   results.push(assert_true('tuple variant constructor wrong payload type - error',
-    check_error_count('type Msg = Num(i32) | Empty\nfn f() -> Msg = Num("x")') > 0))
+    program_error_count('type Msg = Num(i32) | Empty\nfn f() -> Msg = Num("x")') > 0))
 
   results.push(assert_eq_int('fn with type param - 0 errors',
-    check_error_count('fn id<T>(x: T) -> T = x'), 0))
+    program_error_count('fn id<T>(x: T) -> T = x'), 0))
 
   results.push(assert_eq_int('fn with type param and bound - 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\nfn id<T: Display>(x: T) -> T = x'), 0))
 
   results.push(assert_eq_int('D3 trait-as-param: single Display parameter — 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\nfn f(x: Display) -> unit = ()'), 0))
 
   results.push(assert_eq_int('D3 trait-as-param: two Display parameters — 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\nfn f(first: Display, second: Display) -> unit = ()'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\nfn f(first: Display, second: Display) -> unit = ()'), 0))
 
   results.push(assert_checker_diagnostic(
     'negative E073: type and trait same name exact',
@@ -501,58 +501,58 @@ export fn checker_tests() -> [TestResult] = do
     'error[E073]: the name "Ambiguous" is declared as both a type and a trait\n  --> 2:6'))
 
   results.push(assert_eq_int('D4 where clause merges trait bounds — 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\ntype EqCompare { fn same(self: Self, other: Self) -> bool }\nfn f<T>(x: T) -> unit where T: Display + EqCompare = ()'), 0))
 
   results.push(assert_true('D4 where clause unknown type parameter — diagnostic',
     first_checker_error_line('fn f<T>(x: T) -> unit where U: Display = ()').contains('E076')))
 
   results.push(assert_eq_int('call generic fn - 0 errors',
-    check_error_count('fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)'), 0))
+    program_error_count('fn id<T>(x: T) -> T = x\nfn f() -> i32 = id(42)'), 0))
 
   results.push(assert_true('generic fn two params same T - conflicting args error',
-    check_error_count('fn pair<T>(a: T, b: T) -> T = a\nfn f() -> i32 = pair(1, "x")') > 0))
+    program_error_count('fn pair<T>(a: T, b: T) -> T = a\nfn f() -> i32 = pair(1, "x")') > 0))
 
   results.push(assert_eq_int('trait decl + extend impl - 0 errors',
-    check_error_count('type Display { fn to_string(self: Self) -> string }\ntype Color = Red | Green\nextend Color : Display { fn to_string(self: Color) -> string = "Red" }'), 0))
+    program_error_count('type Display { fn to_string(self: Self) -> string }\ntype Color = Red | Green\nextend Color : Display { fn to_string(self: Color) -> string = "Red" }'), 0))
 
   results.push(assert_eq_int('method call on param - 0 errors',
-    check_error_count('fn f(c: string) -> string = c.to_string()'), 0))
+    program_error_count('fn f(c: string) -> string = c.to_string()'), 0))
 
   results.push(assert_eq_int('lambda expr - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const g = x => x + 1\n  g(41)\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const g = x => x + 1\n  g(41)\nend'), 0))
 
   results.push(assert_eq_int('typed lambda param — 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const g = (x: i32) => x + 1\n  g(41)\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const g = (x: i32) => x + 1\n  g(41)\nend'), 0))
 
   results.push(assert_eq_int('typed lambda two params — 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const g = (x: i32, y: i32) => x + y\n  g(1, 2)\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const g = (x: i32, y: i32) => x + y\n  g(1, 2)\nend'), 0))
 
   results.push(assert_eq_int('untyped lambda closure — 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const base = 10\n  const g = x => x + base\n  g(5)\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const base = 10\n  const g = x => x + base\n  g(5)\nend'), 0))
 
   results.push(assert_eq_int('array literal return — 0 errors',
-    check_error_count('fn f() -> [i32] = [1, 2]'), 0))
+    program_error_count('fn f() -> [i32] = [1, 2]'), 0))
 
   results.push(assert_eq_int('empty array typed return — 0 errors',
-    check_error_count('fn f() -> [i32] = []'), 0))
+    program_error_count('fn f() -> [i32] = []'), 0))
 
   results.push(assert_eq_int('empty array literal as call arg — 0 errors',
-    check_error_count('fn g(items: [i32]) -> i32 = items.length()\nfn main() -> i32 = g([])'), 0))
+    program_error_count('fn g(items: [i32]) -> i32 = items.length()\nfn main() -> i32 = g([])'), 0))
 
   results.push(assert_true('empty array untyped binary plus — E005',
     first_checker_error_line('fn f() -> i32 = [] + [1]').contains('incompatible operand')))
 
   results.push(assert_eq_int('Ok/Err/Result as known globals - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const r = Ok(42)\n  0\nend'), 0))
 
   results.push(assert_eq_int('Err constructor - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  const e = Err("oops")\n  0\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  const e = Err("oops")\n  0\nend'), 0))
 
   results.push(assert_eq_int('Result return type annotation - 0 errors',
-    check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(42)'), 0))
+    program_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(42)'), 0))
 
   results.push(assert_eq_int('generic sum ctor as call argument - 0 errors',
-    check_error_count(
+    program_error_count(
       'type Opt<T> = Some(T) | None\nfn take(value: Opt<i64>) -> i32 = 0\nfn f() -> i32 = take(Some(42))'),
     0))
 
@@ -562,43 +562,43 @@ export fn checker_tests() -> [TestResult] = do
     'error[E003]: argument expects i64, got string\n  --> 3:26'))
 
   results.push(assert_eq_int('block: let then use binding - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let x = 10\n  x + 1\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let x = 10\n  x + 1\nend'), 0))
 
   results.push(assert_eq_int('for-in: loop variable visible in body - 0 errors',
-    check_error_count('fn sum(items: [i32]) -> i32 = do\n  let mut total = 0\n  for element in items do\n    total = total + element\n  end\n  total\nend'), 0))
+    program_error_count('fn sum(items: [i32]) -> i32 = do\n  let mut total = 0\n  for element in items do\n    total = total + element\n  end\n  total\nend'), 0))
 
   results.push(assert_eq_int('nested for-in — 0 errors',
-    check_error_count('fn f(outer: [i32], inner: [i32]) -> i32 = do\n  let mut total = 0\n  for x in outer do\n    for y in inner do\n      total = total + x + y\n    end\n  end\n  total\nend'), 0))
+    program_error_count('fn f(outer: [i32], inner: [i32]) -> i32 = do\n  let mut total = 0\n  for x in outer do\n    for y in inner do\n      total = total + x + y\n    end\n  end\n  total\nend'), 0))
 
   results.push(assert_eq_int('A3: let (a, b) = (1, 2) - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let (a, b) = (1, 2)\n  a + b\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let (a, b) = (1, 2)\n  a + b\nend'), 0))
 
   results.push(assert_eq_int('A3: let (a, b, c) = (1, 2, 3) - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let (a, b, c) = (1, 2, 3)\n  a + b + c\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let (a, b, c) = (1, 2, 3)\n  a + b + c\nend'), 0))
 
   results.push(assert_eq_int('tuple swap destructure — 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (second, first) = pair\n  first + second\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (second, first) = pair\n  first + second\nend'), 0))
 
   results.push(assert_eq_int('tuple destructure from binding — 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (left, right) = pair\n  left + right\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let pair = (1, 2)\n  let (left, right) = pair\n  left + right\nend'), 0))
 
   results.push(assert_eq_int('record update in block — 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 }\nfn f() -> Point = do\n  let base = Point { x: 1, y: 2 }\n  Point { ...base, x: 10 }\nend'), 0))
+    program_error_count('type Point = { x: i32, y: i32 }\nfn f() -> Point = do\n  let base = Point { x: 1, y: 2 }\n  Point { ...base, x: 10 }\nend'), 0))
 
   results.push(assert_eq_int('A3: let {x, y} = record - 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend'), 0))
+    program_error_count('type Point = { x: i32, y: i32 }\nfn f() -> i32 = do\n  let p = Point { x: 1, y: 2 }\n  let { x, y } = p\n  x + y\nend'), 0))
 
   results.push(assert_eq_int('A3: let [a, ...b] = array - 0 errors',
-    check_error_count('fn f() -> i32 = do\n  let a: [i32] = [1, 2, 3]\n  let [u, ...v] = a\n  u\nend'), 0))
+    program_error_count('fn f() -> i32 = do\n  let a: [i32] = [1, 2, 3]\n  let [u, ...v] = a\n  u\nend'), 0))
 
   results.push(assert_eq_int('A3: let Ok(x) = Ok - 0 errors',
-    check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o else return 0 end\n  n\nend'), 0))
+    program_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> i32 = do\n  let o: Result<i32, string> = Ok(1)\n  let Ok(n) = o else return 0 end\n  n\nend'), 0))
 
   results.push(assert_eq_int('A4: default param call with omitted args - 0 errors',
-    check_error_count('fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f()'), 0))
+    program_error_count('fn f(a: i32 = 1) -> i32 = a\nfn g() -> i32 = f()'), 0))
 
   results.push(assert_eq_int('A4: two defaults call with one arg - 0 errors',
-    check_error_count('fn f(a: i32, b: i32 = 2, c: i32 = 3) -> i32 = a + b + c\nfn g() -> i32 = f(0)'), 0))
+    program_error_count('fn f(a: i32, b: i32 = 2, c: i32 = 3) -> i32 = a + b + c\nfn g() -> i32 = f(0)'), 0))
 
   results.push(assert_checker_diagnostic(
     'negative E036: parameter defaults must be trailing exact',
@@ -626,13 +626,13 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line('fn f(items: [i32]) -> i32 = items["0"]').contains('array index must be i32')))
 
   results.push(assert_eq_int('check_with_context: entry sees helper from full program - 0 errors',
-    check_with_context_error_count('fn main() -> i32 = helper()', 'fn helper() -> i32 = 1\nfn main() -> i32 = helper()'), 0))
+    error_count_with_full_program_context('fn main() -> i32 = helper()', 'fn helper() -> i32 = 1\nfn main() -> i32 = helper()'), 0))
 
   results.push(assert_eq_int('match: constructor arm binds payload - 0 errors',
-    check_error_count('type Answer = Yes(i32) | No\nfn value(answer: Answer) -> i32 = match answer | Yes(n) => n | No => 0\n'), 0))
+    program_error_count('type Answer = Yes(i32) | No\nfn value(answer: Answer) -> i32 = match answer | Yes(n) => n | No => 0\n'), 0))
 
   results.push(assert_eq_int('match guard ok path — 0 errors',
-    check_error_count('type Answer = Yes(i32) | No\nfn positive(answer: Answer) -> i32 = match answer | Yes(n) if n > 0 => n | Yes(_) => 0 | No => 0'), 0))
+    program_error_count('type Answer = Yes(i32) | No\nfn positive(answer: Answer) -> i32 = match answer | Yes(n) if n > 0 => n | Yes(_) => 0 | No => 0'), 0))
 
   results.push(assert_true('match: arm result type must match first arm',
     first_checker_error_line('fn f(flag: bool) -> i32 = match flag | true => 1 | false => "no"').contains('match arm result type')))
@@ -653,40 +653,40 @@ export fn checker_tests() -> [TestResult] = do
     'error[E016]: undefined field: missing on R\n  --> 2:22'))
 
   results.push(assert_true('infer: string + i32 is an error',
-    check_error_count('fn f() -> i32 = "a" + 1') > 0))
+    program_error_count('fn f() -> i32 = "a" + 1') > 0))
 
   results.push(assert_true('infer: i32 + string is an error',
-    check_error_count('fn f() -> i32 = 1 + "a"') > 0))
+    program_error_count('fn f() -> i32 = 1 + "a"') > 0))
 
   results.push(assert_true('infer: string with - is an error',
-    check_error_count('fn f() -> string = "a" - "b"') > 0))
+    program_error_count('fn f() -> string = "a" - "b"') > 0))
 
   results.push(assert_eq_int('infer: string + string still ok',
-    check_error_count('fn f() -> string = "a" + "b"'), 0))
+    program_error_count('fn f() -> string = "a" + "b"'), 0))
 
   results.push(assert_true('infer: ! on i32 is an error',
-    check_error_count('fn f() -> bool = !42') > 0))
+    program_error_count('fn f() -> bool = !42') > 0))
 
   results.push(assert_eq_int('infer: ! on bool ok',
-    check_error_count('fn f() -> bool = !false'), 0))
+    program_error_count('fn f() -> bool = !false'), 0))
 
   results.push(assert_true('infer: i32 == bool is an error',
-    check_error_count('fn f() -> bool = 1 == true') > 0))
+    program_error_count('fn f() -> bool = 1 == true') > 0))
 
   results.push(assert_true('infer: i32 < string is an error',
-    check_error_count('fn f() -> bool = 1 < "a"') > 0))
+    program_error_count('fn f() -> bool = 1 < "a"') > 0))
 
   results.push(assert_true('infer: bool && i32 is an error',
-    check_error_count('fn f() -> bool = true && 1') > 0))
+    program_error_count('fn f() -> bool = true && 1') > 0))
 
   results.push(assert_eq_int('infer: i32 ordering ok',
-    check_error_count('fn f() -> bool = 1 < 2'), 0))
+    program_error_count('fn f() -> bool = 1 < 2'), 0))
 
   results.push(assert_eq_int('infer: string ordering ok',
-    check_error_count('fn f() -> bool = "a" <= "b"'), 0))
+    program_error_count('fn f() -> bool = "a" <= "b"'), 0))
 
   results.push(assert_eq_int('infer: bool && ok',
-    check_error_count('fn f() -> bool = true && false'), 0))
+    program_error_count('fn f() -> bool = true && false'), 0))
 
   results.push(assert_diagnostic_at(
     'infer: unary minus on string',
@@ -731,7 +731,7 @@ export fn checker_tests() -> [TestResult] = do
     'method get expects a Map receiver'))
 
   results.push(assert_eq_int('infer: get and set on Map ok',
-    check_error_count('fn f(m: Map<string, i32>) -> i32 = do\n  m.set("k", 1)\n  m.get("k")\nend'), 0))
+    program_error_count('fn f(m: Map<string, i32>) -> i32 = do\n  m.set("k", 1)\n  m.get("k")\nend'), 0))
 
   results.push(assert_diagnostic_at(
     'infer: builtin map get wrong arity',
@@ -810,10 +810,10 @@ export fn checker_tests() -> [TestResult] = do
     'E027'))
 
   results.push(assert_eq_int('infer: has on Map ok',
-    check_error_count('fn f(m: Map<string, i32>) -> bool = m.has("k")'), 0))
+    program_error_count('fn f(m: Map<string, i32>) -> bool = m.has("k")'), 0))
 
   results.push(assert_eq_int('infer: ref mut Map uses inner type for builtins',
-    check_error_count('fn f(cache: ref mut Map<string, i32>) -> bool = cache.has("k")'), 0))
+    program_error_count('fn f(cache: ref mut Map<string, i32>) -> bool = cache.has("k")'), 0))
 
   // --- if branch type mismatch -----------------------------------------------
 
@@ -825,7 +825,13 @@ export fn checker_tests() -> [TestResult] = do
     'if branch types differ'))
 
   results.push(assert_eq_int('infer: if branch same type — 0 errors',
-    check_error_count('fn f() -> i32 = if true then 1 else 2 end'), 0))
+    program_error_count('fn f() -> i32 = if true then 1 else 2 end'), 0))
+
+  results.push(assert_eq_int(
+    'infer: if Ok(i32) else Err(string) — 0 errors',
+    program_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\nfn choose(flag: bool) -> Result<i32, string> = if flag then Ok(1) else Err("x") end'),
+    0))
 
   results.push(assert_true(
     'infer: if Ok branches different generic instance — E015',
@@ -843,7 +849,7 @@ export fn checker_tests() -> [TestResult] = do
     'match arm result type'))
 
   results.push(assert_eq_int('infer: match arms same type — 0 errors',
-    check_error_count('fn f() -> i32 = match 1 { _ => 0, _ => 1 }'), 0))
+    program_error_count('fn f() -> i32 = match 1 { _ => 0, _ => 1 }'), 0))
 
   results.push(assert_true('infer: match guard must be bool',
     first_checker_error_line('fn f() -> i32 = match 1 { x if x => 0 }').contains('match guard must have type bool')))
@@ -854,7 +860,7 @@ export fn checker_tests() -> [TestResult] = do
   // --- string literal match (TRACK_STRING_MATCH) -----------------------------
 
   results.push(assert_eq_int('string match on string subject — 0 errors',
-    check_error_count('fn f(word: string) -> i32 = match word { | "fn" => 1 | _ => 0 }'), 0))
+    program_error_count('fn f(word: string) -> i32 = match word { | "fn" => 1 | _ => 0 }'), 0))
 
   results.push(assert_true('string match requires string subject E077',
     first_checker_error_line('fn f(n: i32) -> i32 = match n { | "a" => 1 }').contains('E077')))
@@ -869,13 +875,13 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line('fn f(word: string) -> i32 = match word { | 1 => 0 }').contains('E079')))
 
   results.push(assert_eq_int('string match or-pattern literals — 0 errors',
-    check_error_count('fn f(word: string) -> i32 = match word { | "a" | "b" => 1 | _ => 0 }'), 0))
+    program_error_count('fn f(word: string) -> i32 = match word { | "a" | "b" => 1 | _ => 0 }'), 0))
 
   results.push(assert_true('string match duplicate in or-pattern E078',
     first_checker_error_line('fn f(word: string) -> i32 = match word { | "a" | "a" => 1 }').contains('E078')))
 
   results.push(assert_eq_int('or-pattern shared binding names — 0 errors',
-    check_error_count('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(r) => r * r, _ => 0.0 }'), 0))
+    program_error_count('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(r) => r * r, _ => 0.0 }'), 0))
 
   results.push(assert_true('or-pattern binding name mismatch E083',
     first_checker_error_line('type Shape = Circle(f64) | Square(f64)\nfn area(s: Shape) -> f64 = match s { Circle(r) | Square(side) => r * r, _ => 0.0 }').contains('E083') &&
@@ -890,10 +896,10 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on" }').contains('Inactive')))
 
   results.push(assert_eq_int('match all variants covered — 0 errors',
-    check_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on", Inactive => "off" }'), 0))
+    program_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active => "on", Inactive => "off" }'), 0))
 
   results.push(assert_eq_int('match guarded arm plus catch-all — 0 errors',
-    check_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active if true => "on", _ => "off" }'), 0))
+    program_error_count('type Status = Active | Inactive\nfn describe(s: Status) -> string = match s { Active if true => "on", _ => "off" }'), 0))
 
   // --- for loop range type ---------------------------------------------------
 
@@ -905,7 +911,7 @@ export fn checker_tests() -> [TestResult] = do
     'for loop range must be an array'))
 
   results.push(assert_eq_int('infer: for loop range array — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = do for x in a do end; 0 end'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = do for x in a do end; 0 end'), 0))
 
   // --- index diagnostics -----------------------------------------------------
 
@@ -924,7 +930,7 @@ export fn checker_tests() -> [TestResult] = do
     'array index must be i32'))
 
   results.push(assert_eq_int('infer: valid array index — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = a[0]'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = a[0]'), 0))
 
   // --- binary operator type mismatch -----------------------------------------
 
@@ -938,36 +944,36 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line('fn f() -> bool = true < false').contains('ordering requires i32 or string')))
 
   results.push(assert_eq_int('infer: binary + string concat — 0 errors',
-    check_error_count('fn f() -> string = "a" + "b"'), 0))
+    program_error_count('fn f() -> string = "a" + "b"'), 0))
 
   results.push(assert_true('mutation: assign to immutable binding produces error',
     first_checker_error_line('fn f() -> i32 = do let x = 1; x = 2; x end').contains('cannot assign to immutable binding: x')))
 
   results.push(assert_eq_int('mutation: assign to let mut binding — 0 errors',
-    check_error_count('fn f() -> i32 = do let mut x = 1; x = 2; x end'), 0))
+    program_error_count('fn f() -> i32 = do let mut x = 1; x = 2; x end'), 0))
 
   results.push(assert_eq_int(
     'mutation: assign inside fold reducer to outer let mut — 1 error',
-    check_error_count(
+    program_error_count(
       'fn fold_mut_touch(visited: [i32]) -> i32 = do let mut progress_count = 0; let summed = visited.fold(0, (accumulator, element_under_fold) => do progress_count = progress_count + 1; accumulator + element_under_fold end); summed + progress_count end'),
     1))
 
   results.push(assert_eq_int(
     'mutation: assign outer let mut inside match arms — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Hue = Warm | Cold\nfn match_arm_mut(counter: Hue) -> i32 = do let mut running_total = 0; let arm_value = match counter | Warm => do running_total = running_total + 10; 1 end | Cold => do running_total = running_total + 20; 2 end; running_total + arm_value end'),
     0))
 
   results.push(assert_eq_int(
     'mutation: while body assigns let mut counter — 0 errors',
-    check_error_count('fn spin() -> i32 = do let mut step = 0; while step < 2 do step = step + 1 end; step end'),
+    program_error_count('fn spin() -> i32 = do let mut step = 0; while step < 2 do step = step + 1 end; step end'),
     0))
 
   results.push(assert_true('question: ? on non-Result produces error',
     first_checker_error_line('fn f() -> i32 = do let x: i32 = 42; x? end').contains('E068')))
 
   results.push(assert_eq_int('question: ? same error type — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Result<T, E> = Ok(T) | Err(E)\nfn parse(s: string) -> Result<i32, string> = Err("bad")\nfn run(s: string) -> Result<i32, string> = do\n  let value = parse(s)?\n  Ok(value)\nend'),
     0))
 
@@ -978,7 +984,7 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int(
     'question: ? Err mismatch with From impl — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Result<T, E> = Ok(T) | Err(E)\ntrait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\nfn parse(s: string) -> Result<i32, ParseError> = Err(ParseError { message: "bad" })\nfn run(s: string) -> Result<i32, AppError> = do\n  let value = parse(s)?\n  Ok(value)\nend'),
     0))
 
@@ -1050,14 +1056,14 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int(
     'orphan: same-module extend Type : Trait — 0 errors',
-    check_program_error_count(program_from_source_path(
+    count_errors_in_program(program_from_source_path(
       'type Point = { x: i32 }\ntrait Display { fn to_string(self: Display) -> string }\nextend Point : Display {\n  fn to_string(self: Point) -> string = "p"\n}\n',
       'mod_a.mlc')),
     0))
 
   results.push(assert_eq_int(
     'orphan: extend owns type, foreign trait — 0 errors',
-    check_program_error_count(concat_programs(
+    count_errors_in_program(concat_programs(
       program_from_source_path(
         'trait Display { fn to_string(self: Display) -> string }\n',
         'mod_trait.mlc'),
@@ -1068,7 +1074,7 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int(
     'orphan: extend owns trait, foreign type — 0 errors',
-    check_program_error_count(concat_programs(
+    count_errors_in_program(concat_programs(
       program_from_source_path(
         'type Point = { x: i32 }\n',
         'mod_type.mlc'),
@@ -1079,27 +1085,27 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int(
     'orphan: builtin type with local trait — 0 errors',
-    check_program_error_count(program_from_source_path(
+    count_errors_in_program(program_from_source_path(
       'trait Display { fn to_string(self: Display) -> string }\nextend i32 : Display {\n  fn to_string(self: i32) -> string = "n"\n}\n',
       'mod_a.mlc')),
     0))
 
   results.push(assert_eq_int(
     'orphan: bare extend without trait — 0 errors',
-    check_program_error_count(program_from_source_path(
+    count_errors_in_program(program_from_source_path(
       'type Point = { x: i32 }\nextend Point {\n  fn magnitude(self: Point) -> i32 = self.x\n}\n',
       'mod_a.mlc')),
     0))
 
   results.push(assert_eq_int(
     'orphan: empty source_path skips E086 — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Point = { x: i32 }\ntrait Display { fn to_string(self: Display) -> string }\nextend Point : Display {\n  fn to_string(self: Point) -> string = "p"\n}\n'),
     0))
 
   results.push(assert_eq_int(
     'orphan: same-module From<T> extend — 0 errors',
-    check_program_error_count(program_from_source_path(
+    count_errors_in_program(program_from_source_path(
       'trait From<T> { fn from(value: T) -> Self }\ntype ParseError = { message: string }\ntype AppError = { message: string }\nextend AppError : From<ParseError> {\n  fn from(value: ParseError) -> AppError = AppError { message: value.message }\n}\n',
       'mod_a.mlc')),
     0))
@@ -1129,39 +1135,159 @@ export fn checker_tests() -> [TestResult] = do
 
   results.push(assert_eq_int(
     'infer: generic match on Opt<T> — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Opt<T> = Some(T) | None\nfn is_some<T>(opt: Opt<T>) -> bool = match opt { Some(_) => true, None => false }'),
     0))
 
   results.push(assert_eq_int(
     'infer: generic match on Option<T> — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Option<T> = Some(T) | None\nfn is_some<T>(opt: Option<T>) -> bool = match opt { Some(_) => true, None => false }'),
     0))
 
   results.push(assert_eq_int(
     'infer: generic fn(T) -> U parameter — 0 errors',
-    check_error_count(
+    program_error_count(
       'fn apply<T, U>(value: T, mapper: fn(T) -> U) -> U = mapper(value)\nfn f() -> i32 = apply(1, n => n + 1)'),
     0))
 
   results.push(assert_eq_int(
     'infer: generic two-parameter call T,T — 0 errors',
-    check_error_count(
+    program_error_count(
       'fn identity_two<T>(first: T, second: T) -> T = second\nfn call_identity_two<T>(first: T, second: T) -> T = identity_two(first, second)'),
     0))
 
   results.push(assert_eq_int(
     'infer: Option unwrap_or calls unwrap — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Option<T> = Some(T) | None\nfn unwrap<T>(opt: Option<T>, default: T) -> T = default\nfn unwrap_or<T>(opt: Option<T>, default: T) -> T = unwrap(opt, default)'),
     0))
 
+  results.push(assert_eq_str(
+    'type_description: Option<i32> prints type arguments',
+    type_description(Shared.new(TGeneric('Option', [Shared.new(TI32)]))),
+    'Option<i32>'))
+
+  results.push(assert_eq_str(
+    'join: Option unknown with Option<i32> is Option<i32>',
+    type_description(join_match_arm_result_types(
+      Shared.new(TGeneric('Option', [Shared.new(TUnknown)])),
+      Shared.new(TGeneric('Option', [Shared.new(TI32)])))),
+    'Option<i32>'))
+
+  results.push(assert_eq_str(
+    'join: Result fills Ok from one arm and Err from the other',
+    type_description(join_match_arm_result_types(
+      Shared.new(TGeneric('Result', [Shared.new(TUnknown), Shared.new(TString)])),
+      Shared.new(TGeneric('Result', [Shared.new(TI32), Shared.new(TUnknown)])))),
+    'Result<i32, string>'))
+
+  results.push(assert_eq_int(
+    'infer: Option map Some(f(x)) / None — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> =\n  match opt { Some(x) => Some(mapper(x)), None => None }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: Option and_then f(x) / None — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn and_then<T, U>(opt: Option<T>, mapper: fn(T) -> Option<U>) -> Option<U> =\n  match opt { Some(x) => mapper(x), None => None }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: Option or_else None arm — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn or_else<T>(opt: Option<T>, alternative: () -> Option<T>) -> Option<T> =\n  match opt { Some(_) => opt, None => alternative() }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: none<T>() body is None — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn none<T>() -> Option<T> = None'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: none() call from Option<i32> return — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn none<T>() -> Option<T> = None\nfn none_i32() -> Option<i32> = none()'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: None first arm then Some — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn map_none_first<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> =\n  match opt { None => None, Some(x) => Some(mapper(x)) }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: Result map Ok(f(x)) / Err(e) — 0 errors',
+    program_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\nfn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> =\n  match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: Result and_then / Err(e) — 0 errors',
+    program_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\nfn and_then<T, U, E>(res: Result<T, E>, mapper: fn(T) -> Result<U, E>) -> Result<U, E> =\n  match res { Ok(x) => mapper(x), Err(e) => Err(e) }'),
+    0))
+
+  results.push(assert_true(
+    'negative E020: Option<i32> vs Option<string> names the arguments',
+    first_checker_error_line(
+      'type Option<T> = Some(T) | None\nfn bad() -> i32 = match Some(1) { Some(_) => Some(1), None => Some("x") }').contains(
+      'Option<string>') &&
+    first_checker_error_line(
+      'type Option<T> = Some(T) | None\nfn bad() -> i32 = match Some(1) { Some(_) => Some(1), None => Some("x") }').contains(
+      'Option<i32>')))
+
+  results.push(assert_eq_int(
+    'infer: stdlib option.mlc surface — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\n' +
+      'fn is_some<T>(opt: Option<T>) -> bool = match opt { Some(_) => true, None => false }\n' +
+      'fn is_none<T>(opt: Option<T>) -> bool = match opt { Some(_) => false, None => true }\n' +
+      'fn unwrap<T>(opt: Option<T>, default: T) -> T = match opt { Some(x) => x, None => default }\n' +
+      'fn unwrap_or<T>(opt: Option<T>, default: T) -> T = unwrap(opt, default)\n' +
+      'fn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> = match opt { Some(x) => Some(mapper(x)), None => None }\n' +
+      'fn and_then<T, U>(opt: Option<T>, mapper: fn(T) -> Option<U>) -> Option<U> = match opt { Some(x) => mapper(x), None => None }\n' +
+      'fn or_else<T>(opt: Option<T>, alternative: () -> Option<T>) -> Option<T> = match opt { Some(_) => opt, None => alternative() }\n' +
+      'fn some<T>(value: T) -> Option<T> = Some(value)\n' +
+      'fn none<T>() -> Option<T> = None'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: stdlib result.mlc surface — 0 errors',
+    program_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\n' +
+      'fn is_ok<T, E>(res: Result<T, E>) -> bool = match res { Ok(_) => true, Err(_) => false }\n' +
+      'fn is_err<T, E>(res: Result<T, E>) -> bool = match res { Ok(_) => false, Err(_) => true }\n' +
+      'fn unwrap<T, E>(res: Result<T, E>, default: T) -> T = match res { Ok(x) => x, Err(_) => default }\n' +
+      'fn unwrap_or<T, E>(res: Result<T, E>, default: T) -> T = unwrap(res, default)\n' +
+      'fn unwrap_err<T, E>(res: Result<T, E>, default: E) -> E = match res { Ok(_) => default, Err(e) => e }\n' +
+      'fn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> = match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }\n' +
+      'fn map_err<T, E, F>(res: Result<T, E>, mapper: fn(E) -> F) -> Result<T, F> = match res { Ok(x) => Ok(x), Err(e) => Err(mapper(e)) }\n' +
+      'fn and_then<T, U, E>(res: Result<T, E>, mapper: fn(T) -> Result<U, E>) -> Result<U, E> = match res { Ok(x) => mapper(x), Err(e) => Err(e) }\n' +
+      'fn or_else<T, E, F>(res: Result<T, E>, mapper: fn(E) -> Result<T, F>) -> Result<T, F> = match res { Ok(x) => Ok(x), Err(e) => mapper(e) }\n' +
+      'fn ok<T, E>(value: T) -> Result<T, E> = Ok(value)\n' +
+      'fn err<T, E>(error: E) -> Result<T, E> = Err(error)'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: declared Option method map with free map — 0 errors',
+    program_error_count(
+      'type Option<T> = Some(T) | None\nfn map<T, U>(opt: Option<T>, mapper: fn(T) -> U) -> Option<U> = match opt { Some(x) => Some(mapper(x)), None => None }\nfn double_if_some(opt: Option<i32>) -> Option<i32> = opt.map(n => n * 2)'),
+    0))
+
+  results.push(assert_eq_int(
+    'infer: declared Result method map with free map — 0 errors',
+    program_error_count(
+      'type Result<T, E> = Ok(T) | Err(E)\nfn map<T, U, E>(res: Result<T, E>, mapper: fn(T) -> U) -> Result<U, E> = match res { Ok(x) => Ok(mapper(x)), Err(e) => Err(e) }\nfn inc(res: Result<i32, string>) -> Result<i32, string> = res.map(n => n + 1)'),
+    0))
+
   results.push(assert_eq_int('infer: Result map — 0 errors',
-    check_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(1).map(x => x + 1)'), 0))
+    program_error_count('type Result<T, E> = Ok(T) | Err(E)\nfn f() -> Result<i32, string> = Ok(1).map(x => x + 1)'), 0))
 
   results.push(assert_eq_int('infer: Option map — 0 errors',
-    check_error_count('type Option<T> = Some(T) | None\nfn f() -> Option<i32> = Some(1).map(x => x * 2)'), 0))
+    program_error_count('type Option<T> = Some(T) | None\nfn f() -> Option<i32> = Some(1).map(x => x * 2)'), 0))
 
   results.push(assert_checker_diagnostic(
     'negative E059: Result and_then must return Result exact',
@@ -1176,19 +1302,19 @@ export fn checker_tests() -> [TestResult] = do
   // --- array higher-order methods --------------------------------------------
 
   results.push(assert_eq_int('infer: array map — 0 errors',
-    check_error_count('fn f(a: [i32]) -> [i32] = a.map(x => x + 1)'), 0))
+    program_error_count('fn f(a: [i32]) -> [i32] = a.map(x => x + 1)'), 0))
 
   results.push(assert_eq_int('infer: array filter — 0 errors',
-    check_error_count('fn f(a: [i32]) -> [i32] = a.filter(x => x > 0)'), 0))
+    program_error_count('fn f(a: [i32]) -> [i32] = a.filter(x => x > 0)'), 0))
 
   results.push(assert_eq_int('infer: array fold — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = a.fold(0, (s, x) => s + x)'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = a.fold(0, (s, x) => s + x)'), 0))
 
   results.push(assert_eq_int('infer: array flat_map — 0 errors',
-    check_error_count('fn f(a: [i32]) -> [i32] = a.flat_map(x => [x])'), 0))
+    program_error_count('fn f(a: [i32]) -> [i32] = a.flat_map(x => [x])'), 0))
 
   results.push(assert_eq_int('infer: array any — 0 errors',
-    check_error_count('fn f(a: [i32]) -> bool = a.any(x => x > 0)'), 0))
+    program_error_count('fn f(a: [i32]) -> bool = a.any(x => x > 0)'), 0))
 
   results.push(assert_true('infer: array map on non-array receiver',
     first_checker_error_line('fn f() -> [i32] = 42.map(x => x)').contains('E029')))
@@ -1207,7 +1333,7 @@ export fn checker_tests() -> [TestResult] = do
     'error[E047]: fold step function must return the same type as the accumulator (expected i32, got string)\n  --> 1:35'))
 
   results.push(assert_eq_int('infer: array find — 0 errors',
-    check_error_count(
+    program_error_count(
       'type Option<T> = Some(T) | None\nfn f(a: [i32]) -> Option<i32> = a.find(x => x > 0)'), 0))
 
   results.push(assert_true('infer: find Option element must match declared return',
@@ -1216,22 +1342,22 @@ export fn checker_tests() -> [TestResult] = do
       'return type: expected')))
 
   results.push(assert_eq_int('infer: array zip — 0 errors',
-    check_error_count('fn f(a: [i32], b: [string]) -> i32 = a.zip(b).length()'), 0))
+    program_error_count('fn f(a: [i32], b: [string]) -> i32 = a.zip(b).length()'), 0))
 
   results.push(assert_eq_int('infer: array enumerate — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = a.enumerate().length()'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = a.enumerate().length()'), 0))
 
   results.push(assert_eq_int('infer: array join strings — 0 errors',
-    check_error_count('fn f(a: [string]) -> string = a.join(",")'), 0))
+    program_error_count('fn f(a: [string]) -> string = a.join(",")'), 0))
 
   results.push(assert_eq_int('infer: array sum — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = a.sum()'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = a.sum()'), 0))
 
   results.push(assert_eq_int('infer: array flat — 0 errors',
-    check_error_count('fn f(a: [[i32]]) -> [i32] = a.flat()'), 0))
+    program_error_count('fn f(a: [[i32]]) -> [i32] = a.flat()'), 0))
 
   results.push(assert_eq_int('infer: array group_by — 0 errors',
-    check_error_count('fn f(a: [i32]) -> i32 = a.group_by(x => x % 2).length()'), 0))
+    program_error_count('fn f(a: [i32]) -> i32 = a.group_by(x => x % 2).length()'), 0))
 
   results.push(assert_true('infer: sum on non-i32 array',
     first_checker_error_line('fn f(a: [string]) -> i32 = a.sum()').contains('E052')))
@@ -1240,22 +1366,22 @@ export fn checker_tests() -> [TestResult] = do
     first_checker_error_line('fn f(a: [i32]) -> [i32] = a.flat()').contains('E053')))
 
   results.push(assert_eq_int('derive Display: to_string on record — 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 } derive { Display }\nfn f(p: Point) -> string = p.to_string()'), 0))
+    program_error_count('type Point = { x: i32, y: i32 } derive { Display }\nfn f(p: Point) -> string = p.to_string()'), 0))
 
   results.push(assert_eq_int('derive Eq: == on record — 0 errors',
-    check_error_count('type Point = { x: i32, y: i32 } derive { Eq }\nfn f(a: Point, b: Point) -> bool = a == b'), 0))
+    program_error_count('type Point = { x: i32, y: i32 } derive { Eq }\nfn f(a: Point, b: Point) -> bool = a == b'), 0))
 
   results.push(assert_eq_int('derive Display on sum type — 0 errors',
-    check_error_count('type Color = Red | Green | Blue derive { Display }\nfn f(c: Color) -> string = c.to_string()'), 0))
+    program_error_count('type Color = Red | Green | Blue derive { Display }\nfn f(c: Color) -> string = c.to_string()'), 0))
 
   results.push(assert_eq_int('derive Hash: mixed primitive fields on record — 0 errors',
-    check_error_count('type Cell = { tag: i32, flag: bool, label: string } derive { Hash }\nfn main() -> i32 = 0'), 0))
+    program_error_count('type Cell = { tag: i32, flag: bool, label: string } derive { Hash }\nfn main() -> i32 = 0'), 0))
 
   results.push(assert_eq_int('derive Hash: unit sum — 0 errors',
-    check_error_count('type Hue = North | South derive { Hash }\nfn main() -> i32 = 0'), 0))
+    program_error_count('type Hue = North | South derive { Hash }\nfn main() -> i32 = 0'), 0))
 
   results.push(assert_eq_int('derive Hash: tuple and unit variants — 0 errors',
-    check_error_count('type Shape = Circle(i32) | Empty derive { Hash }\nfn main() -> i32 = 0'), 0))
+    program_error_count('type Shape = Circle(i32) | Empty derive { Hash }\nfn main() -> i32 = 0'), 0))
 
   results.push(assert_true('derive: unknown trait name',
     first_checker_error_line('type P = { x: i32 } derive { FooTrait }\nfn main() -> i32 = 0').contains('E071')))
@@ -1276,59 +1402,59 @@ export fn checker_tests() -> [TestResult] = do
 
   // Template literal checker tests
   results.push(assert_eq_int('template: plain string - 0 errors',
-    check_error_count('fn f() -> string = `hello`'), 0))
+    program_error_count('fn f() -> string = `hello`'), 0))
   results.push(assert_eq_int('template: i32 interpolation - 0 errors',
-    check_error_count("fn f(x: i32) -> string = `val \${x}`"), 0))
+    program_error_count("fn f(x: i32) -> string = `val \${x}`"), 0))
   results.push(assert_eq_int('template: string interpolation - 0 errors',
-    check_error_count("fn f(s: string) -> string = `hello \${s}`"), 0))
+    program_error_count("fn f(s: string) -> string = `hello \${s}`"), 0))
   results.push(assert_eq_int('template: bool interpolation - 0 errors',
-    check_error_count("fn f(b: bool) -> string = `\${b}`"), 0))
+    program_error_count("fn f(b: bool) -> string = `\${b}`"), 0))
   results.push(assert_eq_int('template: multi interpolation - 0 errors',
-    check_error_count("fn f(x: i32, y: i32) -> string = `\${x}+\${y}`"), 0))
+    program_error_count("fn f(x: i32, y: i32) -> string = `\${x}+\${y}`"), 0))
   results.push(assert_true('template: undefined var in interpolation - error',
-    check_error_count("fn f() -> string = `\${undefined_var}`") > 0))
+    program_error_count("fn f() -> string = `\${undefined_var}`") > 0))
 
   results.push(assert_eq_int('let-else: PatternCtor without else - 1 error',
-    check_error_count('type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o\n  v\nend'), 1))
+    program_error_count('type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o\n  v\nend'), 1))
 
   results.push(assert_true('let-else: PatternCtor without else reports E067',
     first_checker_error_line('type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o\n  v\nend').contains('E067')))
 
   results.push(assert_eq_int('let-else: PatternCtor with else - 0 errors',
-    check_error_count('type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o else return 0 end\n  v\nend'), 0))
+    program_error_count('type Opt = Some(i32) | None\nfn f(o: Opt) -> i32 = do\n  let Some(v) = o else return 0 end\n  v\nend'), 0))
 
   results.push(assert_eq_int('phantom type: declaration — 0 errors',
-    check_error_count('type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }'), 0))
+    program_error_count('type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }'), 0))
 
   results.push(assert_eq_int('phantom type: fn with phantom param annotation — 0 errors',
-    check_error_count('type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }\nfn use_ast(ast: Ast<Unvalidated>) -> i32 = ast.value'), 0))
+    program_error_count('type Unvalidated\ntype Ast<Phase> = Ast { value: i32 }\nfn use_ast(ast: Ast<Unvalidated>) -> i32 = ast.value'), 0))
 
   results.push(assert_eq_int('phantom type: wrong phantom arg at call site — 1 error',
-    check_error_count('type Unvalidated\ntype Validated\ntype Ast<Phase> = Ast { value: i32 }\nfn expect(ast: Ast<Validated>) -> i32 = 0\nfn make() -> Ast<Unvalidated> = do\n  let ast: Ast<Unvalidated> = Ast { value: 1 }\n  ast\nend\nfn wrong() -> i32 = expect(make())'), 1))
+    program_error_count('type Unvalidated\ntype Validated\ntype Ast<Phase> = Ast { value: i32 }\nfn expect(ast: Ast<Validated>) -> i32 = 0\nfn make() -> Ast<Unvalidated> = do\n  let ast: Ast<Unvalidated> = Ast { value: 1 }\n  ast\nend\nfn wrong() -> i32 = expect(make())'), 1))
 
   results.push(assert_eq_int('private ctor: declaration — 0 errors',
-    check_error_count('type Email = private Email { raw: string }'), 0))
+    program_error_count('type Email = private Email { raw: string }'), 0))
 
   results.push(assert_eq_int('private ctor: construction outside extend — 1 error',
-    check_error_count('type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: "x" }'), 1))
+    program_error_count('type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: "x" }'), 1))
 
   results.push(assert_true('private ctor: construction outside extend reports E065',
     first_checker_error_line('type Email = private Email { raw: string }\nfn f() -> Email = Email { raw: "x" }').contains('E065')))
 
   results.push(assert_eq_int('private ctor: construction inside extend — 0 errors',
-    check_error_count('type Email = private Email { raw: string }\nextend Email { fn make(s: string) -> Email = Email { raw: s } }'), 0))
+    program_error_count('type Email = private Email { raw: string }\nextend Email { fn make(s: string) -> Email = Email { raw: s } }'), 0))
 
   results.push(assert_eq_int('private ctor: matching outside extend allowed — 0 errors',
-    check_error_count('type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }'), 0))
+    program_error_count('type Email = private Email { raw: string }\nfn get_raw(e: Email) -> string = match e { Email { raw } => raw }'), 0))
 
   results.push(assert_eq_int('named args: all-named call — 0 errors',
-    check_error_count('fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(x: 1, y: 2)'), 0))
+    program_error_count('fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(x: 1, y: 2)'), 0))
 
   results.push(assert_eq_int('named args: reverse order — 0 errors',
-    check_error_count('fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(y: 2, x: 1)'), 0))
+    program_error_count('fn f(x: i32, y: i32) -> i32 = x + y\nfn g() -> i32 = f(y: 2, x: 1)'), 0))
 
   results.push(assert_eq_int('named args: mixed positional + named — 0 errors',
-    check_error_count('fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)'), 0))
+    program_error_count('fn f(x: i32, y: i32, z: i32) -> i32 = x\nfn g() -> i32 = f(1, y: 2, z: 3)'), 0))
 
   results.push(assert_checker_diagnostic(
     'negative E034: unknown named parameter exact',
@@ -1346,111 +1472,111 @@ export fn checker_tests() -> [TestResult] = do
     'error[E082]: undefined method: name on R\n  --> 2:32'))
 
   results.push(assert_true('named args: unknown param name — at least 1 error',
-    check_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)') > 0))
+    program_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(bad: 1)') > 0))
 
   results.push(assert_true('named args: type mismatch in named arg',
-    check_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: "str")') > 0))
+    program_error_count('fn f(x: i32) -> i32 = x\nfn g() -> i32 = f(x: "str")') > 0))
 
   results.push(assert_eq_int('c4: i64 annotation - 0 errors',
-    check_error_count('fn f(x: i64) -> i64 = x'), 0))
+    program_error_count('fn f(x: i64) -> i64 = x'), 0))
 
   results.push(assert_eq_int('c4: f64 annotation - 0 errors',
-    check_error_count('fn f(x: f64) -> f64 = x'), 0))
+    program_error_count('fn f(x: f64) -> f64 = x'), 0))
 
   results.push(assert_eq_int('c4: u8 annotation - 0 errors',
-    check_error_count('fn f(x: u8) -> u8 = x'), 0))
+    program_error_count('fn f(x: u8) -> u8 = x'), 0))
 
   results.push(assert_eq_int('c4: usize annotation - 0 errors',
-    check_error_count('fn f(x: usize) -> usize = x'), 0))
+    program_error_count('fn f(x: usize) -> usize = x'), 0))
 
   results.push(assert_eq_int('c4: char annotation - 0 errors',
-    check_error_count('fn f(x: char) -> char = x'), 0))
+    program_error_count('fn f(x: char) -> char = x'), 0))
 
   results.push(assert_eq_int('c4: i64 literal - 0 errors',
-    check_error_count('fn f() -> i64 = 42i64'), 0))
+    program_error_count('fn f() -> i64 = 42i64'), 0))
 
   results.push(assert_eq_int('c4: char literal - 0 errors',
-    check_error_count('fn f() -> char = \'a\''), 0))
+    program_error_count('fn f() -> char = \'a\''), 0))
 
   results.push(assert_eq_int('c4: i64 arithmetic - 0 errors',
-    check_error_count('fn f(x: i64, y: i64) -> i64 = x + y'), 0))
+    program_error_count('fn f(x: i64, y: i64) -> i64 = x + y'), 0))
 
   results.push(assert_eq_int('c4: char arithmetic - 0 errors',
-    check_error_count('fn f(x: char, y: char) -> char = x + y'), 0))
+    program_error_count('fn f(x: char, y: char) -> char = x + y'), 0))
 
   results.push(assert_eq_int('c4: f64 arithmetic - 0 errors',
-    check_error_count('fn f(x: f64, y: f64) -> f64 = x + y'), 0))
+    program_error_count('fn f(x: f64, y: f64) -> f64 = x + y'), 0))
 
   results.push(assert_eq_int('c4: i32 to i64 return widening — 0 errors',
-    check_error_count('fn f(x: i32) -> i64 = x'), 0))
+    program_error_count('fn f(x: i32) -> i64 = x'), 0))
 
   const with_src = 'type Res = { v: i32 } fn make(x: i32) -> Res = Res { v: x } extend Res { fn drop(self: Res) -> i32 = 0 fn read(self: Res) -> i32 = self.v } fn f(x: i32) -> i32 = do with make(x) as r do r.read() end 0 end'
-  results.push(assert_eq_int('c5: with — 0 errors', check_error_count(with_src), 0))
+  results.push(assert_eq_int('c5: with — 0 errors', program_error_count(with_src), 0))
 
   results.push(assert_eq_int('d1: DeclAssocType in trait - 0 errors',
-    check_error_count('type Iter { type Item fn Iter_next(self: Iter) -> i32 }'), 0))
+    program_error_count('type Iter { type Item fn Iter_next(self: Iter) -> i32 }'), 0))
 
   results.push(assert_eq_int('d1: DeclAssocBind in extend - 0 errors',
-    check_error_count('type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }'), 0))
+    program_error_count('type Iter { type Item } type Box<T> = { val: T } extend Box<T>: Iter { type Item = T fn Iter_next(self: Box<T>) -> i32 = 0 }'), 0))
 
   results.push(assert_eq_int('d1: TyAssoc in fn return type - 0 errors',
-    check_error_count('type Iter { type Item } fn first<I: Iter>(x: I) -> I.Item = x'), 0))
+    program_error_count('type Iter { type Item } fn first<I: Iter>(x: I) -> I.Item = x'), 0))
 
   results.push(assert_eq_int('d2: operator overload via Add trait - 0 errors',
-    check_error_count('type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0'), 0))
+    program_error_count('type Vec2 = { x: i32, y: i32 } extend Vec2 : Add<Vec2> { type Output = Vec2 fn add(self: Vec2, rhs: Vec2) -> Vec2 = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } } fn test(a: Vec2, b: Vec2) -> Vec2 = a + b fn main() -> i32 = 0'), 0))
 
   const codegen_invariant_tail_after_else_if_chain =
     'export fn tail_after_chain(kind: string, extra: i32) -> i32 = do\n  let mut accumulator = 0\n  if kind == "a" then\n    accumulator = 1\n  else if kind == "b" then\n    accumulator = 2\n  else\n    accumulator = 3\n  end\n  accumulator + extra\nend\n\nexport fn main() -> i32 = tail_after_chain("a", 100)'
   results.push(assert_eq_int('codegen invariant: do-block tail after else-if chain — 0 errors',
-    check_error_count(codegen_invariant_tail_after_else_if_chain), 0))
+    program_error_count(codegen_invariant_tail_after_else_if_chain), 0))
 
   const codegen_invariant_twin_if_zip_join_style =
     'export fn twin_branch(kind: string, has_arg: bool) -> i32 = do\n  let mut diagnostics_weight = 0\n  if has_arg then\n    if kind == "zip" then\n      diagnostics_weight = 1\n    end\n    if kind == "join" then\n      diagnostics_weight = diagnostics_weight + 2\n    end\n  end\n  diagnostics_weight + 50\nend\n\nexport fn main() -> i32 = twin_branch("zip", true)'
   results.push(assert_eq_int('codegen invariant: sequential if branches (zip/join shape) — 0 errors',
-    check_error_count(codegen_invariant_twin_if_zip_join_style), 0))
+    program_error_count(codegen_invariant_twin_if_zip_join_style), 0))
 
   const codegen_invariant_if_else_flattened =
     'fn merge_unknown_inner(then_inner: i32, else_errors: i32) -> i32 = do\n  if then_inner == 0 then else_errors + 10\n  else then_inner + else_errors\n  end\nend\n\nexport fn conditional_flat(use_merge: bool, then_inner: i32, else_errors: i32) -> i32 = do\n  if !use_merge then else_errors\n  else merge_unknown_inner(then_inner, else_errors)\n  end\nend\n\nexport fn main() -> i32 = conditional_flat(true, 0, 5)'
   results.push(assert_eq_int('codegen invariant: if + else calls helper (flattened match shape) — 0 errors',
-    check_error_count(codegen_invariant_if_else_flattened), 0))
+    program_error_count(codegen_invariant_if_else_flattened), 0))
 
   results.push(assert_eq_int('E6 partial application: let-bound thunk call — 0 errors',
-    check_error_count(
+    program_error_count(
       'fn add_numbers(left: i32, right: i32) -> i32 = left + right\nfn main() -> i32 = do\n  let bound = add_numbers(10, _)\n  bound(3)\nend'
     ), 0))
 
   results.push(assert_true('E6 bare underscore expression — error',
-    check_error_count('fn main() -> i32 = _') > 0))
+    program_error_count('fn main() -> i32 = _') > 0))
 
   const shared_node_decl = 'type Node = { name: string, value: i32 }\n'
 
   results.push(assert_eq_int('infer: flat_map on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> [string] = nodes.flat_map(node => [node.name])'), 0))
 
   results.push(assert_eq_int('infer: any on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> bool = nodes.any(node => node.value > 0)'), 0))
 
   results.push(assert_eq_int('infer: all on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> bool = nodes.all(node => node.value > 0)'), 0))
 
   results.push(assert_eq_int('infer: none on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> bool = nodes.none(node => node.value > 0)'), 0))
 
   results.push(assert_eq_int('infer: find on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'type Option<T> = Some(T) | None\n' +
       'fn f(nodes: [Shared<Node>]) -> Option<Shared<Node>> = nodes.find(node => node.value > 0)'), 0))
 
   results.push(assert_eq_int('infer: sort_by on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.sort_by(node => node.value)'), 0))
 
   results.push(assert_eq_int('infer: filter on Shared<T> with member access — 0 errors',
-    check_error_count(shared_node_decl +
+    program_error_count(shared_node_decl +
       'fn f(nodes: [Shared<Node>]) -> [Shared<Node>] = nodes.filter(node => node.value > 0)'), 0))
 
   results

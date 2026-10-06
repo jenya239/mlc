@@ -118,10 +118,15 @@ fn cpp_generic_base_name(context: CodegenContext, type_name: string) -> string =
   else context.resolve(type_name)
   end
 
-fn maps_option_to_std_optional(context: CodegenContext) -> bool =
+export fn maps_option_to_std_optional(context: CodegenContext) -> bool =
   !context.sum_type_parameter_names.has('Option')
     && context.variant_types.get('Some') != 'Option'
     && context.variant_types.get('None') != 'Option'
+
+export fn maps_result_to_runtime_result(context: CodegenContext) -> bool =
+  !context.sum_type_parameter_names.has('Result')
+    && context.variant_types.get('Ok') != 'Result'
+    && context.variant_types.get('Err') != 'Result'
 
 fn semantic_cyclic_sum_pointer_cpp(context: CodegenContext, semantic_type: Shared<Type>) -> string =
   match semantic_type {

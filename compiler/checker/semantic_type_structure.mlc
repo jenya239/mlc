@@ -137,6 +137,46 @@ export fn type_is_uninstantiated_generic_sum(type_value: Shared<Type>) -> bool =
     _ => false
   }
 
+export fn types_match_arm_compatible(left: Shared<Type>, right: Shared<Type>) -> bool =
+  types_structurally_equal(left, right) ||
+  (named_type_name_from_type(left) != '' &&
+   named_type_name_from_type(left) == named_type_name_from_type(right) &&
+   (type_is_uninstantiated_generic_sum(left) || type_is_uninstantiated_generic_sum(right)))
+
+fn join_type_argument_lists(left_arguments: [Shared<Type>], right_arguments: [Shared<Type>]) -> [Shared<Type>] = do
+  let joined_arguments: [Shared<Type>] = []
+  let mut index = 0
+  while index < left_arguments.length() && index < right_arguments.length() do
+    joined_arguments.push(join_match_arm_result_types(left_arguments[index], right_arguments[index]))
+    index = index + 1
+  end
+  joined_arguments
+end
+
+export fn join_match_arm_result_types(left: Shared<Type>, right: Shared<Type>) -> Shared<Type> =
+  if type_is_unknown(left) then right
+  else if type_is_unknown(right) then left
+  else match left {
+    TGeneric(left_name, left_arguments) =>
+      match right {
+        TGeneric(right_name, right_arguments) =>
+          if left_name == right_name && left_arguments.length() == right_arguments.length() then
+            Shared.new(TGeneric(left_name, join_type_argument_lists(left_arguments, right_arguments)))
+          else left
+          end,
+        TNamed(right_name) =>
+          if left_name == right_name then left else left end,
+        _ => left
+      },
+    TNamed(left_name) =>
+      match right {
+        TGeneric(right_name, _) =>
+          if left_name == right_name then right else left end,
+        _ => left
+      },
+    _ => left
+  }
+
 fn zipped_shared_types_structurally_equal(left_list: [Shared<Type>], right_list: [Shared<Type>]) -> bool =
   zipped_suffix_types_structurally_equal(left_list, right_list, 0)
 
@@ -428,9 +468,10 @@ export fn type_description(type_value: Shared<Type>) -> string =
     TArray(_) => "array",
     TShared(_) => "shared",
     TNamed(type_name) => type_name,
-    TGeneric(type_name, _) =>
+    TGeneric(type_name, type_arguments) =>
       if type_name == '__ExternFn' then "extern fn"
-      else type_name
+      else if type_arguments.length() == 0 then type_name
+      else type_name + "<" + type_arguments.map(type_argument => type_description(type_argument)).join(", ") + ">"
       end,
     TPair(_, _) => "pair",
     TTuple(_) => "tuple",

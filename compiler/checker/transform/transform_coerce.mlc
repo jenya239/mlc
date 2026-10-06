@@ -225,7 +225,7 @@ fn coerce_match_arm_to_type(arm: Shared<SemanticMatchArm>, target_type: Shared<T
 // (std::visit lambdas deduce their return type per-arm); without this, an
 // empty-array catch-all arm (`_ => []`) keeps an unresolved element type and
 // generates an ambiguous `{}` literal that fails to compile.
-fn coerce_match_arms_to_type(
+export fn coerce_match_arms_to_type(
   arms: [Shared<SemanticMatchArm>],
   target_type: Shared<Type>
 ) -> [Shared<SemanticMatchArm>] =
@@ -274,6 +274,18 @@ fn coerce_ident_semantic_expression_to_type(
     _ => expression
   }
 
+fn coerce_match_semantic_expression_to_type(
+  subject: Shared<SemanticExpression>,
+  arms: [Shared<SemanticMatchArm>],
+  source_span: Span,
+  target_type: Shared<Type>
+) -> Shared<SemanticExpression> =
+  Shared.new(SemanticExpressionMatch(
+    subject,
+    coerce_match_arms_to_type(arms, target_type),
+    target_type,
+    source_span))
+
 // Coerce an SemanticExpression to a target type: empty arrays adopt target element type;
 // phantom-typed records adopt target TGeneric type.
 export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_type: Shared<Type>) -> Shared<SemanticExpression> =
@@ -318,7 +330,8 @@ export fn coerce_expr_to_type(expression: Shared<SemanticExpression>, target_typ
     SemanticExpressionIndex(_, _, _, _) => expression,
     SemanticExpressionWhile(_, _, _, _) => expression,
     SemanticExpressionFor(_, _, _, _, _) => expression,
-    SemanticExpressionMatch(_, _, _, _) => expression,
+    SemanticExpressionMatch(subject, arms, _, source_span) =>
+      coerce_match_semantic_expression_to_type(subject, arms, source_span, target_type),
     SemanticExpressionRecordUpdate(_, _, _, _, _) => expression,
     SemanticExpressionTuple(_, _, _) => expression,
     SemanticExpressionQuestion(_, _, _) => expression,

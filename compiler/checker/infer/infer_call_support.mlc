@@ -1,7 +1,7 @@
 // Call / non-constructor inference helpers (no infer_expr dependency).
 
 import { Expr, Span, Diagnostic, diagnostic_error, diagnostic_error_with_code, diagnostics_append } from '../../frontend/ast'
-import { Type } from '../registry'
+import { Type, TUnknown } from '../registry'
 import { CheckContext } from '../check/check_context'
 import { TypeRegistry } from '../registry'
 import { InferResult } from './infer_result'
@@ -10,26 +10,7 @@ import * as semantic_type_structure from '../semantic_type_structure'
 import { diagnostic_code_e002, diagnostic_code_e065 } from '../diagnostic_codes'
 
 fn owner_name_from_constructor_type(constructor_type: Shared<Type>) -> string =
-  match constructor_type {
-    TNamed(type_name) => type_name,
-    TI32 => '',
-    TString => '',
-    TBool => '',
-    TUnit => '',
-    TI64 => '',
-    TF64 => '',
-    TU8 => '',
-    TUsize => '',
-    TChar => '',
-    TUnknown => '',
-    TArray(inner) => '',
-    TShared(inner) => '',
-    TGeneric(type_name, type_arguments) => '',
-    TPair(left, right) => '',
-    TTuple(types) => '',
-    TFn(param_types, return_type) => '',
-    TAssoc(param, assoc) => ''
-  }
+  semantic_type_structure.named_type_name_from_type(constructor_type)
 
 fn callee_min_arity(registry: TypeRegistry, callee_name: string, max_arity: i32) -> i32 =
   if callee_name != '' && registry.has_fn(callee_name) then

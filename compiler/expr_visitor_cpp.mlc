@@ -66,11 +66,13 @@ export fn eval_expr_cpp(
 fn gen_call_function_cpp_expression(
   function_expression: Shared<SemanticExpression>,
   context: CodegenContext,
-  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  template_argument_suffix: string
 ) -> Shared<CppExpression> =
   match function_expression {
     SemanticExpressionIdent(name, _, _) => do
-      emit_helpers.make_identifier_cpp_expression(qualify_function_callee(map_builtin(name), context))
+      emit_helpers.make_identifier_cpp_expression(
+        qualify_function_callee(map_builtin(name), context) + template_argument_suffix)
     end,
     _ => do
       eval_expr_cpp(function_expression, context, gen_stmts)
@@ -133,19 +135,20 @@ fn generic_sum_variant_ctor_type_argument_for_enclosing(
   constructor_name: string,
   context: CodegenContext
 ) -> string = do
-  if owner_name == '' || enclosing_name != owner_name then ''
-  else if context.variant_used_type_parameter_names.has(constructor_name)
+  if owner_name == '' || enclosing_name != owner_name then return '' end
+  if context.variant_used_type_parameter_names.has(constructor_name)
       && context.sum_type_parameter_names.has(owner_name) then
-    generic_sum_variant_ctor_type_argument_from_enclosing(
+    return generic_sum_variant_ctor_type_argument_from_enclosing(
       owner_name,
       context.sum_type_parameter_names.get(owner_name),
       context.variant_used_type_parameter_names.get(constructor_name),
       type_arguments,
       context)
-  else if type_arguments.length() == 1 && !type_is_unknown(type_arguments[0]) then
-    result_wrapper_cpp_type_argument(sem_type_to_cpp(context, type_arguments[0]))
-  else ''
   end
+  if type_arguments.length() == 1 && !type_is_unknown(type_arguments[0]) then
+    return result_wrapper_cpp_type_argument(sem_type_to_cpp(context, type_arguments[0]))
+  end
+  ''
 end
 
 fn generic_sum_variant_ctor_type_argument(
@@ -194,6 +197,123 @@ fn result_wrapper_ctor_type_argument(constructor_name: string, context: CodegenC
   else ''
   end
 end
+
+fn empty_type_parameter_name_list() -> [string] = do
+  const empty_names: [string] = []
+  empty_names
+end
+
+fn callee_ident_name(function_expression: Shared<SemanticExpression>) -> string =
+  match function_expression {
+    SemanticExpressionIdent(name, _, _) => name,
+    _ => ''
+  }
+
+fn registered_callee_type_parameter_names(
+  function_expression: Shared<SemanticExpression>,
+  context: CodegenContext
+) -> [string] = do
+  const callee_name = callee_ident_name(function_expression)
+  if callee_name != '' && context.function_type_parameter_names.has(callee_name) then
+    context.function_type_parameter_names.get(callee_name)
+  else empty_type_parameter_name_list()
+  end
+end
+
+fn type_parameter_name_is_listed(type_parameter_names: [string], type_name: string) -> bool =
+  type_parameter_names.any(type_parameter_name => type_parameter_name == type_name)
+
+fn bind_declared_type_names(
+  declared_type: Shared<Type>,
+  actual_type: Shared<Type>,
+  type_parameter_names: [string],
+  substitution: ref mut Map<string, Shared<Type>>
+) -> unit =
+  if type_is_unknown(actual_type) then ()
+  else match declared_type {
+    TNamed(declared_name) =>
+      if type_parameter_name_is_listed(type_parameter_names, declared_name) &&
+         !substitution.has(declared_name) then
+        substitution.set(declared_name, actual_type)
+      end,
+    TGeneric(declared_name, declared_arguments) =>
+      match actual_type {
+        TGeneric(actual_name, actual_arguments) =>
+          if declared_name == actual_name &&
+             declared_arguments.length() == actual_arguments.length() then
+            let mut argument_index = 0
+            while argument_index < declared_arguments.length() do
+              bind_declared_type_names(
+                declared_arguments[argument_index],
+                actual_arguments[argument_index],
+                type_parameter_names,
+                substitution)
+              argument_index = argument_index + 1
+            end
+          end,
+        _ => ()
+      },
+    TFn(declared_parameters, declared_return_type) =>
+      match actual_type {
+        TFn(actual_parameters, actual_return_type) => do
+          let mut parameter_index = 0
+          while parameter_index < declared_parameters.length() &&
+                parameter_index < actual_parameters.length() do
+            bind_declared_type_names(
+              declared_parameters[parameter_index],
+              actual_parameters[parameter_index],
+              type_parameter_names,
+              substitution)
+            parameter_index = parameter_index + 1
+          end
+          bind_declared_type_names(
+            declared_return_type, actual_return_type, type_parameter_names, substitution)
+        end,
+        _ => ()
+      },
+    TArray(declared_element) =>
+      match actual_type {
+        TArray(actual_element) =>
+          bind_declared_type_names(
+            declared_element, actual_element, type_parameter_names, substitution),
+        _ => ()
+      },
+    _ => ()
+  }
+
+fn generic_function_call_template_suffix(
+  function_expression: Shared<SemanticExpression>,
+  argument_expressions: [Shared<SemanticExpression>],
+  call_semantic_type: Shared<Type>,
+  context: CodegenContext
+) -> string =
+  match sexpr_type(function_expression) {
+    TFn(declared_parameters, declared_return_type) => do
+      const type_parameter_names = registered_callee_type_parameter_names(
+        function_expression, context)
+      if type_parameter_names.length() == 0 then return '' end
+      let substitution: Map<string, Shared<Type>> = Map.new()
+      let mut argument_index = 0
+      while argument_index < declared_parameters.length() &&
+            argument_index < argument_expressions.length() do
+        bind_declared_type_names(
+          declared_parameters[argument_index],
+          sexpr_type(argument_expressions[argument_index]),
+          type_parameter_names,
+          substitution)
+        argument_index = argument_index + 1
+      end
+      bind_declared_type_names(
+        declared_return_type, call_semantic_type, type_parameter_names, substitution)
+      const instantiated_parameter_names = type_parameter_names.filter(type_parameter_name =>
+        substitution.has(type_parameter_name) &&
+        !type_is_unknown(substitution.get(type_parameter_name)))
+      if instantiated_parameter_names.length() == 0 then return '' end
+      `<${instantiated_parameter_names.map(type_parameter_name =>
+        sem_type_to_cpp(context, substitution.get(type_parameter_name))).join(', ')}>`
+    end,
+    _ => ''
+  }
 
 fn constructor_sum_name_if_cyclic(
   function_expression: Shared<SemanticExpression>,
@@ -331,35 +451,6 @@ fn cyclic_option_constructor_sum_cpp_name(
     _ => ''
   }
 
-fn cyclic_sum_cpp_name_from_semantic_type(semantic_type: Shared<Type>, context: CodegenContext) -> string =
-  match semantic_type {
-    TNamed(name) =>
-      if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == name) then
-        context.resolve(name)
-      else if context.variant_types.has(name) &&
-              context.cyclic_sum_type_names.any(cyclic_name =>
-                cyclic_name == context.variant_types.get(name)) then
-        context.resolve(context.variant_types.get(name))
-      else ''
-      end,
-    _ => ''
-  }
-
-fn cyclic_option_some_sum_cpp_name(
-  function_expression: Shared<SemanticExpression>,
-  arguments: [Shared<SemanticExpression>],
-  call_semantic_type: Shared<Type>,
-  context: CodegenContext
-) -> string = do
-  const from_call_type =
-    cyclic_option_constructor_sum_cpp_name(function_expression, call_semantic_type, context)
-  if from_call_type != '' then from_call_type
-  else if (constructor_name_from_function(function_expression) == 'Some') && (arguments.length() == 1) then
-    cyclic_sum_cpp_name_from_semantic_type(sexpr_type(arguments[0]), context)
-  else ''
-  end
-end
-
 fn cyclic_option_some_expression(sum_cpp_name: string, value: Shared<CppExpression>) -> Shared<CppExpression> =
   Shared.new(CppCall(
     Shared.new(CppIdent('std::optional<std::shared_ptr<' + sum_cpp_name + '>>')),
@@ -383,7 +474,7 @@ fn gen_constructor_call_cpp_expression(
     end,
     _ => do
       Shared.new(CppCall(
-        gen_call_function_cpp_expression(function_expression, context, gen_stmts),
+        gen_call_function_cpp_expression(function_expression, context, gen_stmts, ''),
         argument_expressions))
     end
   }
@@ -412,8 +503,7 @@ export fn gen_call_via_cpp_visitor(
       gen_stmts,
       eval_expr_cpp)
   const cyclic_option_sum_cpp =
-    cyclic_option_some_sum_cpp_name(
-      function_expression, arguments, call_semantic_type, context)
+    cyclic_option_constructor_sum_cpp_name(function_expression, call_semantic_type, context)
   if (cyclic_option_sum_cpp != '') &&
      (materialization_outcome.materialized_argument_expressions.length() == 1) then
     mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
@@ -441,7 +531,15 @@ export fn gen_call_via_cpp_visitor(
           context)
       else
         Shared.new(CppCall(
-          gen_call_function_cpp_expression(function_expression, context, gen_stmts),
+          gen_call_function_cpp_expression(
+            function_expression,
+            context,
+            gen_stmts,
+            generic_function_call_template_suffix(
+              function_expression,
+              arguments,
+              call_semantic_type,
+              context)),
           materialization_outcome.materialized_argument_expressions))
       end
     mut_actual_argument.wrap_invoke_with_mut_prelude_cpp(
@@ -1218,8 +1316,14 @@ extend CodegenPass : ExprVisitor<Shared<CppExpression>> {
       if name == 'None' then cyclic_option_sum_cpp_name(self.context, semantic_type) else '' end
     if cyclic_option_sum != '' then
       cyclic_option_none_expression(cyclic_option_sum)
-    else
-      identifiers.gen_identifier_cpp(name, self.context)
+    else do
+      const type_argument_suffix =
+        if name.length() > 0 && name.char_at(0) >= "A" && name.char_at(0) <= "Z" then
+          variant_constructor_template_suffix(name, semantic_type, self.context)
+        else ''
+        end
+      identifiers.gen_identifier_cpp_with_type_argument_suffix(name, self.context, type_argument_suffix)
+    end
     end
   end
   fn visit_bin(self: CodegenPass, operation: string, left_expression: Shared<SemanticExpression>, right_expression: Shared<SemanticExpression>, _semantic_type: Shared<Type>) -> Shared<CppExpression> =
