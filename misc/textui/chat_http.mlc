@@ -1,0 +1,168 @@
+import { get_or } from 'Env'
+import {
+  HttpsErr,
+  HttpsHeader,
+  HttpsOk,
+  HttpsRequest,
+  HttpsResult
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+import { ChatMessage, ChatRole, ReplyFailed, ReplyOutcome, ReplyText } from './chat_model'
+import {
+  chat_json_field,
+  chat_json_index,
+  json_escape,
+  parsed_array,
+  parsed_is_string,
+  parsed_object,
+  parsed_string
+} from './chat_json'
+
+export type ChatConfig = {
+  base_url: string,
+  model: string,
+  api_key: string,
+  system_prompt: string
+}
+
+export type ChatRequestResult =
+  ChatRequestRefused(ReplyOutcome)
+  | ChatRequestReady(HttpsRequest)
+
+export fn chat_config_from(
+  base_url: string,
+  model: string,
+  api_key: string,
+  system_prompt: string
+) -> ChatConfig =
+  ChatConfig {
+    base_url: base_url,
+    model: model,
+    api_key: api_key,
+    system_prompt: system_prompt
+  }
+
+export fn chat_config_load() -> ChatConfig =
+  chat_config_from(
+    get_or("MLC_CHAT_BASE_URL", "https://api.openai.com/v1"),
+    get_or("MLC_CHAT_MODEL", ""),
+    get_or("MLC_CHAT_API_KEY", ""),
+    get_or("MLC_CHAT_SYSTEM", "")
+  )
+
+fn completions_url(base_url: string) -> string = do
+  if base_url.byte_size() > 0 && base_url.byte_at(base_url.byte_size() - 1) == "/" then
+    return base_url + "chat/completions"
+  end
+  base_url + "/chat/completions"
+end
+
+fn role_token(role: ChatRole) -> string =
+  match role
+    | RoleUser => "user"
+    | RoleAssistant => "assistant"
+
+fn message_object(role: string, text: string) -> string =
+  "{\"role\":\"" + json_escape(role) + "\",\"content\":\"" + json_escape(text) + "\"}"
+
+fn messages_json(config: ChatConfig, messages: [ChatMessage]) -> string = do
+  let mut items = ""
+  let mut pending_separator = false
+  if config.system_prompt.byte_size() > 0 then
+    items = message_object("system", config.system_prompt)
+    pending_separator = true
+  end
+  let mut index = 0
+  while index < messages.length() do
+    const entry = messages[index]
+    let mut include_entry = true
+    if entry.failed then
+      include_entry = false
+    end
+    if include_entry then
+      if pending_separator then
+        items = items + ","
+      end
+      items = items + message_object(role_token(entry.role), entry.text)
+      pending_separator = true
+    end
+    index = index + 1
+  end
+  "[" + items + "]"
+end
+
+export fn chat_request_body(config: ChatConfig, messages: [ChatMessage]) -> string =
+  "{\"model\":\"" + json_escape(config.model) + "\",\"messages\":" + messages_json(config, messages) + "}"
+
+fn request_headers(api_key: string) -> [HttpsHeader] = do
+  let mut headers: [HttpsHeader] = []
+  headers.push(HttpsHeader { name: "Content-Type", value: "application/json" })
+  headers.push(HttpsHeader { name: "Authorization", value: "Bearer " + api_key })
+  headers
+end
+
+export fn chat_build_request(config: ChatConfig, messages: [ChatMessage]) -> HttpsRequest =
+  HttpsRequest {
+    method: "POST",
+    url: completions_url(config.base_url),
+    headers: request_headers(config.api_key),
+    body: chat_request_body(config, messages),
+    timeout_milliseconds: 60000,
+    max_response_bytes: 1048576,
+    ca_bundle_path: "",
+    proxy_url: ""
+  }
+
+export fn chat_prepare(config: ChatConfig, messages: [ChatMessage]) -> ChatRequestResult = do
+  if config.api_key.byte_size() == 0 then
+    return ChatRequestRefused(ReplyFailed("MLC_CHAT_API_KEY не задан"))
+  end
+  ChatRequestReady(chat_build_request(config, messages))
+end
+
+fn content_reply(message_object: string) -> ReplyOutcome = do
+  const content = chat_json_field(message_object, "content")
+  if parsed_is_string(content) then
+    return ReplyText(parsed_string(content))
+  end
+  ReplyFailed("пустой ответ")
+end
+
+fn success_reply(body: string) -> ReplyOutcome = do
+  const choices = parsed_array(chat_json_field(body, "choices"))
+  if choices.byte_size() == 0 then
+    return ReplyFailed("пустой ответ")
+  end
+  const first = parsed_object(chat_json_index(choices, 0))
+  if first.byte_size() == 0 then
+    return ReplyFailed("пустой ответ")
+  end
+  const message = parsed_object(chat_json_field(first, "message"))
+  if message.byte_size() == 0 then
+    return ReplyFailed("пустой ответ")
+  end
+  content_reply(message)
+end
+
+fn error_message(body: string) -> string = do
+  const error_object = parsed_object(chat_json_field(body, "error"))
+  if error_object.byte_size() == 0 then
+    return ""
+  end
+  parsed_string(chat_json_field(error_object, "message"))
+end
+
+export fn chat_reply_from(status: i32, body: string) -> ReplyOutcome = do
+  if status < 200 || status > 299 then
+    const message = error_message(body)
+    if message.byte_size() == 0 then
+      return ReplyFailed(status.to_string())
+    end
+    return ReplyFailed(message)
+  end
+  success_reply(body)
+end
+
+export fn chat_reply_from_https(result: HttpsResult) -> ReplyOutcome =
+  match result
+    | HttpsOk(response) => chat_reply_from(response.status, response.body)
+    | HttpsErr(failure) => ReplyFailed(failure.message)

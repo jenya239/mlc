@@ -1,0 +1,140 @@
+import {
+  JsonRead,
+  JsonReadArray,
+  JsonReadBool,
+  JsonReadErr,
+  JsonReadMissing,
+  JsonReadNull,
+  JsonReadNumber,
+  JsonReadObject,
+  JsonReadString,
+  json_read_field,
+  json_read_index
+} from '../../lib/mlc/common/stdlib/data/json_text.mlc'
+
+export type ParsedJson =
+  ParsedString(string)
+  | ParsedObject(string)
+  | ParsedArray(string)
+  | ParsedNull
+  | ParsedMissing
+  | ParsedOther
+
+fn digit_character(value: i32) -> string = do
+  const digits = "0123456789abcdef"
+  if value < 0 || value > 15 then
+    return "0"
+  end
+  digits.byte_at(value)
+end
+
+fn control_code(piece: string) -> i32 = do
+  if piece == "\0" then
+    return 0
+  end
+  // Bytes 1..31. MLC escapes only n, t, r, and 0, so the rest are written as themselves.
+  const controls = "	
+
+"
+  let mut index = 0
+  while index < 31 do
+    if controls.byte_at(index) == piece then
+      return index + 1
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn json_escape(text: string) -> string = do
+  let mut encoded = ""
+  let mut index = 0
+  while index < text.byte_size() do
+    const piece = text.byte_at(index)
+    if piece == "\"" then
+      encoded = encoded + "\\\""
+    else if piece == "\\" then
+      encoded = encoded + "\\\\"
+    else if piece == "\n" then
+      encoded = encoded + "\\n"
+    else if piece == "\r" then
+      encoded = encoded + "\\r"
+    else if piece == "\t" then
+      encoded = encoded + "\\t"
+    else
+      const code = control_code(piece)
+      if code >= 0 then
+        encoded = encoded + "\\u00" + digit_character(code / 16) + digit_character(code % 16)
+      else
+        encoded = encoded + piece
+      end
+    end
+    index = index + 1
+  end
+  encoded
+end
+
+fn piece_of(value: JsonRead) -> ParsedJson =
+  match value
+    | JsonReadNull => ParsedNull
+    | JsonReadBool(_) => ParsedOther
+    | JsonReadNumber(_) => ParsedOther
+    | JsonReadString(text) => ParsedString(text)
+    | JsonReadArray(text) => ParsedArray(text)
+    | JsonReadObject(text) => ParsedObject(text)
+    | JsonReadMissing => ParsedMissing
+    | JsonReadErr(_) => ParsedOther
+
+export fn chat_json_field(text: string, key: string) -> ParsedJson =
+  piece_of(json_read_field(text, key))
+
+export fn chat_json_index(text: string, index: i32) -> ParsedJson =
+  piece_of(json_read_index(text, index))
+
+export fn parsed_string(value: ParsedJson) -> string =
+  match value
+    | ParsedString(text) => text
+    | ParsedObject(_) => ""
+    | ParsedArray(_) => ""
+    | ParsedNull => ""
+    | ParsedMissing => ""
+    | ParsedOther => ""
+
+export fn parsed_object(value: ParsedJson) -> string =
+  match value
+    | ParsedObject(text) => text
+    | ParsedString(_) => ""
+    | ParsedArray(_) => ""
+    | ParsedNull => ""
+    | ParsedMissing => ""
+    | ParsedOther => ""
+
+export fn parsed_array(value: ParsedJson) -> string =
+  match value
+    | ParsedArray(text) => text
+    | ParsedString(_) => ""
+    | ParsedObject(_) => ""
+    | ParsedNull => ""
+    | ParsedMissing => ""
+    | ParsedOther => ""
+
+export fn parsed_is_string(value: ParsedJson) -> bool =
+  match value
+    | ParsedString(_) => true
+    | ParsedObject(_) => false
+    | ParsedArray(_) => false
+    | ParsedNull => false
+    | ParsedMissing => false
+    | ParsedOther => false
+
+export fn chat_json_message_content(document: string, index: i32) -> string = do
+  const listed = parsed_array(chat_json_field(document, "messages"))
+  if listed.byte_size() == 0 then
+    return ""
+  end
+  const entry = parsed_object(chat_json_index(listed, index))
+  if entry.byte_size() == 0 then
+    return ""
+  end
+  parsed_string(chat_json_field(entry, "content"))
+end

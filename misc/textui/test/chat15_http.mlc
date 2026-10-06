@@ -1,0 +1,155 @@
+import { ChatMessage, ReplyFailed, ReplyOutcome, ReplyText } from '../chat_model'
+import { chat_json_message_content } from '../chat_json'
+import {
+  ChatConfig,
+  ChatRequestReady,
+  ChatRequestRefused,
+  ChatRequestResult,
+  chat_build_request,
+  chat_config_from,
+  chat_config_load,
+  chat_prepare,
+  chat_reply_from,
+  chat_reply_from_https,
+  chat_request_body
+} from '../chat_http'
+import { HttpsHeader, HttpsOk, HttpsResponse } from '../../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false }
+
+fn assistant_message(text: string, failed: bool) -> ChatMessage =
+  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+
+fn sample_config() -> ChatConfig =
+  chat_config_from("https://api.openai.com/v1", "gpt-test", "secret-key-value", "")
+
+fn reply_text(outcome: ReplyOutcome) -> string =
+  match outcome
+    | ReplyText(text) => text
+    | ReplyFailed(_) => ""
+
+fn failed_text(outcome: ReplyOutcome) -> string =
+  match outcome
+    | ReplyFailed(text) => text
+    | ReplyText(_) => ""
+
+fn prepared_refusal(result: ChatRequestResult) -> string =
+  match result
+    | ChatRequestRefused(outcome) => failed_text(outcome)
+    | ChatRequestReady(_) => ""
+
+fn main() -> i32 = do
+  const original = "quote \" slash \\ line\n tab\t a\0b привет"
+  let mut messages: [ChatMessage] = []
+  messages.push(assistant_message("secret-leak", true))
+  messages.push(user_message(original))
+  const config = sample_config()
+  const body = chat_request_body(config, messages)
+  if chat_json_message_content(body, 0) != original then
+    return -1
+  end
+  if body.index_of("secret-key-value") >= 0 || body.index_of("secret-leak") >= 0 || body.index_of("api_key") >= 0 then
+    return -2
+  end
+  if body.index_of("\"role\":\"system\"") >= 0 then
+    return -2
+  end
+
+  const with_system = chat_config_from(config.base_url, config.model, config.api_key, "be brief")
+  const system_body = chat_request_body(with_system, [user_message("hi")])
+  if chat_json_message_content(system_body, 0) != "be brief" then
+    return -3
+  end
+  if chat_json_message_content(system_body, 1) != "hi" then
+    return -3
+  end
+
+  const sample = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"a\\nb \\\"q\\\" é\"}}]}"
+  if reply_text(chat_reply_from(200, sample)) != "a\nb \"q\" é" then
+    return -4
+  end
+  const adversarial = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\\\"content\\\": \\\"x\\\"\"}}]}"
+  if reply_text(chat_reply_from(200, adversarial)) != "\"content\": \"x\"" then
+    return -5
+  end
+  const emoji = "{\"choices\":[{\"message\":{\"content\":\"\\uD83D\\uDE00\"}}]}"
+  if reply_text(chat_reply_from(200, emoji)) != "😀" then
+    return -6
+  end
+
+  const error_body = "{\"error\":{\"message\":\"bad key\"}}"
+  const rejected = chat_reply_from(401, error_body)
+  if failed_text(rejected).index_of("bad key") < 0 then
+    return -7
+  end
+  if reply_text(rejected) != "" then
+    return -7
+  end
+  if failed_text(chat_reply_from(500, "")) != "500" then
+    return -8
+  end
+  const empty_content = "{\"choices\":[{\"message\":{\"content\":null}}]}"
+  if failed_text(chat_reply_from(200, empty_content)) != "пустой ответ" then
+    return -9
+  end
+  const missing_content = "{\"choices\":[{\"message\":{\"role\":\"assistant\"}}]}"
+  if failed_text(chat_reply_from(200, missing_content)) != "пустой ответ" then
+    return -9
+  end
+
+  const request = chat_build_request(config, [user_message("hi")])
+  if request.method != "POST" || request.url != "https://api.openai.com/v1/chat/completions" then
+    return -10
+  end
+  if request.body.index_of("secret-key-value") >= 0 || request.timeout_milliseconds != 60000 then
+    return -10
+  end
+  const slashed = chat_build_request(
+    chat_config_from("https://example.com/v1/", config.model, config.api_key, ""),
+    [user_message("hi")]
+  )
+  if slashed.url != "https://example.com/v1/chat/completions" then
+    return -11
+  end
+
+  let mut headers_match = false
+  let mut header_index = 0
+  while header_index < request.headers.length() do
+    const header = request.headers[header_index]
+    if header.name == "Authorization" && header.value == "Bearer secret-key-value" then
+      headers_match = true
+    end
+    header_index = header_index + 1
+  end
+  if headers_match == false then
+    return -12
+  end
+
+  const empty_key = chat_config_from(config.base_url, config.model, "", "")
+  if prepared_refusal(chat_prepare(empty_key, [user_message("hi")])) != "MLC_CHAT_API_KEY не задан" then
+    return -13
+  end
+  const ready = chat_prepare(config, [user_message("hi")])
+  const ready_method = match ready
+    | ChatRequestReady(built) => built.method
+    | ChatRequestRefused(_) => ""
+  if ready_method != "POST" then
+    return -14
+  end
+
+  let mut https_headers: [HttpsHeader] = []
+  const carried = chat_reply_from_https(HttpsOk(HttpsResponse {
+    status: 200,
+    headers: https_headers,
+    body: sample
+  }))
+  if reply_text(carried) != "a\nb \"q\" é" then
+    return -15
+  end
+  const loaded = chat_config_load()
+  if loaded.base_url.byte_size() < 0 then
+    return -16
+  end
+  0
+end
