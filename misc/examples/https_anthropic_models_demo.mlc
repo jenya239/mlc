@@ -1,0 +1,117 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import { https_send_async } from '../../lib/mlc/common/stdlib/net/https_async.mlc'
+import {
+  HttpsHeader, HttpsRequest, HttpsResult, HttpsOk, HttpsErr,
+  InvalidRequest, ResolveFailed, ConnectFailed, TimedOut,
+  CertificateRejected, ResponseTooLarge, TransportFailed
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+
+fn is_ok(result: HttpsResult) -> bool =
+  match result {
+    HttpsOk(_) => true
+    HttpsErr(_) => false
+  }
+
+fn ok_status(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(response) => response.status
+    HttpsErr(_) => 0
+  }
+
+fn ok_body(result: HttpsResult) -> string =
+  match result {
+    HttpsOk(response) => response.body
+    HttpsErr(_) => ""
+  }
+
+fn failure_code(result: HttpsResult) -> i32 =
+  match result {
+    HttpsOk(_) => 0
+    HttpsErr(failure) => match failure.kind {
+      InvalidRequest => 1
+      ResolveFailed => 2
+      ConnectFailed => 3
+      TimedOut => 4
+      CertificateRejected => 5
+      ResponseTooLarge => 6
+      TransportFailed => 7
+    }
+  }
+
+fn skip_space(text: string, start: i32) -> i32 = do
+  let mut index = start
+  while index < text.length() && (text.char_at(index) == " " || text.char_at(index) == "\n" || text.char_at(index) == "\r" || text.char_at(index) == "\t") do
+    index = index + 1
+  end
+  index
+end
+
+fn print_model_identifiers(body: string) -> i32 = do
+  let mut cursor = 0
+  let mut count = 0
+  let mut scanning = true
+  while scanning do
+    if cursor >= body.length() then
+      scanning = false
+    else
+      const tail = body.substring(cursor, body.length() - cursor)
+      const found = tail.index_of("\"id\"")
+      if found < 0 then
+        scanning = false
+      else
+        let mut value_start = skip_space(body, cursor + found + 4)
+        if value_start < body.length() && body.char_at(value_start) == ":" then
+          value_start = skip_space(body, value_start + 1)
+        end
+        if value_start < body.length() && body.char_at(value_start) == "\"" then
+          value_start = value_start + 1
+          const value_tail = body.substring(value_start, body.length() - value_start)
+          const end_quote = value_tail.index_of("\"")
+          if end_quote < 0 then
+            scanning = false
+          else
+            println(value_tail.substring(0, end_quote))
+            count = count + 1
+            cursor = value_start + end_quote + 1
+          end
+        else
+          cursor = cursor + found + 4
+        end
+      end
+    end
+  end
+  count
+end
+
+fn main() -> i32 = do
+  let mut code = 0
+  const key = get_or("ANTHROPIC_API_KEY", "")
+  if key == "" then
+    println("missing_key")
+    code = 1
+  else
+    let result = block_on(https_send_async(HttpsRequest {
+      method: "GET",
+      url: "https://api.anthropic.com/v1/models",
+      headers: [
+        HttpsHeader { name: "x-api-key", value: key },
+        HttpsHeader { name: "anthropic-version", value: "2023-06-01" }
+      ],
+      body: "",
+      timeout_milliseconds: 30000,
+      max_response_bytes: 4194304,
+      ca_bundle_path: "",
+      proxy_url: ""
+    }))
+    if is_ok(result) then
+      println("status=" + ok_status(result).to_string())
+      const count = print_model_identifiers(ok_body(result))
+      println("model_count=" + count.to_string())
+      code = 0
+    else
+      println("failed code=" + failure_code(result).to_string())
+      code = 2
+    end
+  end
+  code
+end
