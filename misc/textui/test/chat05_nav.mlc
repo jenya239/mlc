@@ -1,0 +1,123 @@
+import { theme_default } from '../theme'
+import { text_shaping_new } from '../../gui/text_shaping'
+import {
+  TextLayout,
+  text_layout_build,
+  text_layout_cache_new,
+  wrap_width_none,
+  wrap_width_pixels
+} from '../text_layout'
+import {
+  text_layout_line_end,
+  text_layout_line_start,
+  text_layout_move_vertical
+} from '../text_layout_nav'
+
+fn prefix_width(layout: TextLayout) -> i32 = do
+  let mut width = 0
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    const cluster = layout.clusters[cluster_index]
+    if cluster.byte_offset < 3 then
+      width = width + cluster.width
+    end
+    cluster_index = cluster_index + 1
+  end
+  width
+end
+
+fn on_boundary(layout: TextLayout, index: i32) -> bool = do
+  if index == layout.text.byte_size() then
+    return true
+  end
+  if index >= 0 && index < layout.text.byte_size() && layout.text.byte_at(index) == "\n" then
+    return true
+  end
+  let mut cluster_index = 0
+  while cluster_index < layout.clusters.length() do
+    if layout.clusters[cluster_index].byte_offset == index then
+      return true
+    end
+    cluster_index = cluster_index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const sample = "abcdef\nxy\nabcdef"
+  const plain = text_layout_build(shaping, cache, theme, sample, wrap_width_none())
+  shaping = plain.shaping
+  cache = plain.cache
+  const wrapped = text_layout_build(
+    shaping, cache, theme, sample, wrap_width_pixels(prefix_width(plain.layout) + 1)
+  )
+  const layout = wrapped.layout
+  if layout.lines.length() < 4 then
+    return -1
+  end
+  if layout.lines[0].byte_end >= 6 then
+    return -2
+  end
+  let mut short_line = 0 - 1
+  let mut line_index = 0
+  while line_index < layout.lines.length() do
+    if layout.lines[line_index].byte_start == 7 then
+      short_line = line_index
+    end
+    line_index = line_index + 1
+  end
+  if short_line <= 0 then
+    return -3
+  end
+  const above = short_line - 1
+  if layout.lines[above].byte_end > 6 then
+    return -4
+  end
+
+  const down = text_layout_move_vertical(layout, 6, 1)
+  if down != text_layout_line_end(layout, 7) then
+    return -5
+  end
+  if layout.text.byte_at(down) != "\n" then
+    return -6
+  end
+  const again = text_layout_move_vertical(layout, down, 1)
+  if again < 10 || again > layout.text.byte_size() then
+    return -7
+  end
+  if again > text_layout_line_end(layout, again) then
+    return -8
+  end
+
+  if text_layout_move_vertical(layout, 1, 0 - 1) != 0 then
+    return -9
+  end
+  if text_layout_move_vertical(layout, layout.text.byte_size(), 1) != layout.text.byte_size() then
+    return -10
+  end
+
+  const soft_start = text_layout_line_start(layout, 1)
+  const soft_end = text_layout_line_end(layout, 1)
+  if soft_start != layout.lines[0].byte_start || soft_end > 6 then
+    return -11
+  end
+  const rest_start = text_layout_line_start(layout, layout.lines[above].byte_start)
+  const rest_end = text_layout_line_end(layout, layout.lines[above].byte_start)
+  if rest_start < 0 || rest_end > 6 || rest_start >= rest_end then
+    return -12
+  end
+
+  if on_boundary(layout, down) == false || on_boundary(layout, again) == false then
+    return -13
+  end
+  if on_boundary(layout, soft_start) == false || on_boundary(layout, soft_end) == false then
+    return -14
+  end
+  if on_boundary(layout, rest_start) == false || on_boundary(layout, rest_end) == false then
+    return -15
+  end
+  0
+end

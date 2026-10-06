@@ -1,0 +1,33 @@
+import { TextLayout } from './text_layout'
+import { text_layout_line_end_target, text_layout_line_of_byte } from './text_layout_lines'
+import { text_layout_caret_x, text_layout_index_at } from './text_layout_hit'
+
+export fn text_layout_line_start(layout: TextLayout, index: i32) -> i32 = do
+  if layout.lines.length() == 0 then
+    return 0
+  end
+  layout.lines[text_layout_line_of_byte(layout, index)].byte_start
+end
+
+export fn text_layout_line_end(layout: TextLayout, index: i32) -> i32 =
+  text_layout_line_end_target(layout, text_layout_line_of_byte(layout, index))
+
+// Each call measures goal_x from the caret. UiState does not store a column.
+export fn text_layout_move_vertical(layout: TextLayout, index: i32, line_delta: i32) -> i32 = do
+  if layout.lines.length() == 0 then
+    if line_delta > 0 then
+      return layout.text.byte_size()
+    end
+    return 0
+  end
+  const line_index = text_layout_line_of_byte(layout, index)
+  const target_index = line_index + line_delta
+  if target_index < 0 then
+    return 0
+  end
+  if target_index >= layout.lines.length() then
+    return layout.text.byte_size()
+  end
+  const goal_x = text_layout_caret_x(layout, index)
+  text_layout_index_at(layout, goal_x, layout.lines[target_index].top + 1)
+end
