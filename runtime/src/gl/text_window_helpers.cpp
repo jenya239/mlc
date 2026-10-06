@@ -2,7 +2,6 @@
 
 #include "mlc/gl/glad_gl_abi.hpp"
 #include "mlc/text/freetype_abi.hpp"
-#include "mlc/text/freetype_shim.hpp"
 #include "mlc/text/msdf_bridge.hpp"
 
 #include <cstdint>
@@ -20,15 +19,9 @@ std::vector<uint8_t>& scratch_rgb() {
 } // namespace
 
 int32_t gl_scratch_u8_blit_glyph_a8(int32_t atlas_width, int32_t dest_x, int32_t dest_y) {
-  // Prefer thin abi last-glyph (text_shaping path); fall back to legacy shim.
   const uint8_t* source = text::ft_glyph_a8_data();
-  int32_t glyph_width = text::ft_glyph_width();
-  int32_t glyph_rows = text::ft_glyph_rows();
-  if (source == nullptr) {
-    source = text::glyph_a8_data();
-    glyph_width = text::glyph_width();
-    glyph_rows = text::glyph_rows();
-  }
+  const int32_t glyph_width = text::ft_glyph_width();
+  const int32_t glyph_rows = text::ft_glyph_rows();
   uint8_t* destination = glad_abi::scratch_u8_mutable_data();
   const int32_t destination_size = glad_abi::scratch_u8_size();
   if (source == nullptr || destination == nullptr || atlas_width <= 0

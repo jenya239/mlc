@@ -1,27 +1,25 @@
-// TextShaper via HarfBuzz+FreeType runtime shim (TRACK_TEXT_RENDERING STEP=3).
-
-extern fn shape_glyph_count(font_path: string, text: string, pixel_size: i32) -> i32
-  = "mlc::text::shape_glyph_count" from "mlc/text/harfbuzz_shim.hpp"
-
-extern fn shape_glyph_id_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_id_at" from "mlc/text/harfbuzz_shim.hpp"
-
-extern fn shape_glyph_advance_at(index: i32) -> i32
-  = "mlc::text::shape_glyph_advance_at" from "mlc/text/harfbuzz_shim.hpp"
+// HarfBuzz shape via MLC text_shaping (thin harfbuzz_abi).
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_glyph_advance_at
+} from '../gui/text_shaping'
 
 type ShapedGlyph = { glyph_id: i32, x_advance: i32 }
 
 fn text_shaper_shape(font_path: string, text: string, pixel_size: i32) -> [ShapedGlyph] = do
   let mut glyphs: [ShapedGlyph] = []
-  const count = shape_glyph_count(font_path, text, pixel_size)
-  if count < 0 then
+  let mut state = text_shaping_new()
+  const shaped = text_shaping_shape(state, font_path, pixel_size, text)
+  if shaped.error_code != 0 then
     return glyphs
   end
   let mut index = 0
-  while index < count do
+  while index < shaped.glyph_count do
     glyphs.push(ShapedGlyph {
-      glyph_id: shape_glyph_id_at(index),
-      x_advance: shape_glyph_advance_at(index)
+      glyph_id: text_shaping_glyph_id_at(index),
+      x_advance: text_shaping_glyph_advance_at(index)
     })
     index = index + 1
   end
@@ -44,7 +42,6 @@ fn main() -> i32 = do
     end
     index = index + 1
   end
-  // Latin sanity: "Hi" → 2 glyphs
   const latin = text_shaper_shape(font_path, "Hi", 32)
   if latin.length() != 2 then
     return 4

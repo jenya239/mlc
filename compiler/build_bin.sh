@@ -29,7 +29,6 @@ EXTRA_LINK_LIBS_ALWAYS=(-lutil)
 TEXT_CFLAGS=()
 TEXT_LIBS=()
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
-  RT_SRC+=("$ROOT_DIR/runtime/src/text/freetype_shim.cpp")
   RT_SRC+=("$ROOT_DIR/runtime/src/text/freetype_abi.cpp")
   RT_SRC+=("$ROOT_DIR/runtime/src/text/msdf_bridge.cpp")
   # shellcheck disable=SC2207
@@ -37,7 +36,6 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists freetype2; then
   # shellcheck disable=SC2207
   TEXT_LIBS+=($(pkg-config --libs freetype2))
   if pkg-config --exists harfbuzz; then
-    RT_SRC+=("$ROOT_DIR/runtime/src/text/harfbuzz_shim.cpp")
     RT_SRC+=("$ROOT_DIR/runtime/src/text/harfbuzz_abi.cpp")
     # shellcheck disable=SC2207
     TEXT_CFLAGS+=($(pkg-config --cflags harfbuzz))

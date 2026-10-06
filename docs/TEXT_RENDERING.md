@@ -18,6 +18,7 @@ Last stable **fast many-glyph OpenGL** point is PLAN §32
 [TRACK_TEXT_GLYPH_CACHE_SCALING](archive/tracks/TRACK_TEXT_GLYPH_CACHE_SCALING.md)
 (`c323556f`…`14972c49`): `misc/gui/text_renderer.mlc` +
 `misc/examples/text_ide_panels_demo.mlc` + `scripts/run_text_gl_perf_corpus.rb`.
+New product: PLAN §112 [TRACK_TEXTUI_FILE_MANAGER](agent/TRACK_TEXTUI_FILE_MANAGER.md).
 
 ## 1. Референсы (факты, не код)
 
@@ -82,9 +83,8 @@ mlc::gl::Renderer           — batched quads, A8/MSDF шейдеры
 **Статус 2026-07-13 ([TRACK_TEXT_SHIM_TO_MLC](archive/tracks/TRACK_TEXT_SHIM_TO_MLC.md)
 STEP=1–8):** публичный путь — thin `freetype_abi.hpp` / `harfbuzz_abi.hpp`
 (i64 handles, last-glyph/last-shape slots) + MLC `misc/gui/text_shaping.mlc`
-(face/font `Map` cache, pitch→flat copy). Legacy `freetype_shim` /
-`harfbuzz_shim` — deprecated thin wrappers over abi (no process face cache).
-Live demos use `text_shaping`; golden `text_shaping_vs_shim_gate`.
+(face/font `Map` cache, pitch→flat copy). Deprecated `freetype_shim` /
+`harfbuzz_shim` wrappers are removed; smokes and demos call `text_shaping`.
 
 Требует решения не покрытого текущим `FFI_LAYER.md`: `hb_buffer_get_glyph_infos`
 возвращает `hb_glyph_info_t*` + `unsigned int* length` (C-массив через
@@ -251,8 +251,8 @@ Live demos must use `text_shaping` (STEP=6), not raw shim, for the cache win.
 ### 9.2 Baseline bearing (fixed)
 
 `glyph_bearing_x` / `glyph_bearing_y` expose FreeType `bitmap_left` /
-`bitmap_top` from the last `glyph_bitmap_*` (same slot as `glyph_width` /
-`glyph_rows`).
+`bitmap_top` from the last `ft_face_render_glyph` (same slot as `ft_glyph_width` /
+`ft_glyph_rows`).
 
 GL demos treat `pen_y` as the **baseline**, not the bitmap top:
 
@@ -269,8 +269,6 @@ Same formula as CPU reference in `text_renderer_shim.cpp`
 | `runtime/include/mlc/text/freetype_abi.hpp` + `.cpp` | thin FT (STEP=2 TEXT_SHIM) |
 | `runtime/include/mlc/text/harfbuzz_abi.hpp` + `.cpp` | thin HB (STEP=3) |
 | `misc/gui/text_shaping.mlc` | MLC face/font cache + pitch flatten |
-| `runtime/include/mlc/text/freetype_shim.hpp` + `.cpp` | deprecated thin wrappers; bearing accessors |
-| `runtime/src/text/harfbuzz_shim.cpp` | deprecated thin wrappers over abi |
 | `misc/gui/text_renderer.mlc` | `GlyphCache` stores `bearing_x`/`bearing_y` |
 | `misc/examples/text_dashboard_demo.mlc` | `append_line` + persistent cache/atlas + dirty |
 | `misc/examples/text_window_demo.mlc` | `append_shaped_a8` via text_shaping |

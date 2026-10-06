@@ -1,9 +1,12 @@
 // RenderMode by pixel size (TRACK_TEXT_RENDERING STEP=7.3).
 // Small sizes → A8 bitmap; larger → MSDF/SDF RGB8 (single atlas entry scales).
 
-extern fn glyph_bitmap_packed(font_path: string, codepoint: i32, pixel_size: i32) -> i32
-  = "mlc::text::glyph_bitmap_packed" from "mlc/text/freetype_shim.hpp"
-
+import {
+  text_shaping_new,
+  text_shaping_shape,
+  text_shaping_glyph_id_at,
+  text_shaping_rasterize_glyph
+} from '../gui/text_shaping'
 import { msdf_generate, msdf_width, msdf_byte_count } from '../gui/msdf'
 
 // 0 = BitmapA8, 1 = MsdfRgb8
@@ -25,11 +28,22 @@ fn rasterize_by_mode(
   mode: RenderMode
 ) -> i32 = do
   if mode == 0 then
-    const packed = glyph_bitmap_packed(font_path, codepoint, pixel_size)
-    if packed < 0 then
+    if codepoint != 65 then
       return -1
     end
-    return packed
+    let mut state = text_shaping_new()
+    const shaped = text_shaping_shape(state, font_path, pixel_size, "A")
+    if shaped.error_code != 0 || shaped.glyph_count < 1 then
+      return -1
+    end
+    const glyph_id = text_shaping_glyph_id_at(0)
+    const raster = text_shaping_rasterize_glyph(
+      shaped.state, font_path, pixel_size, glyph_id
+    )
+    if raster.error_code != 0 then
+      return -1
+    end
+    return raster.width * 65536 + raster.rows
   end
   // MSDF field size fixed; display scale is independent of pixel_size.
   const status = msdf_generate(font_path, codepoint, 32, 4)
