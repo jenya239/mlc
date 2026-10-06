@@ -19,7 +19,8 @@ import {
   transcript_role_label,
   transcript_view_new
 } from '../chat_transcript_layout'
-import { paint_transcript } from '../chat_transcript'
+import { paint_transcript, paint_transcript_styled } from '../chat_transcript'
+import { TranscriptSelection } from '../chat_transcript_input'
 
 fn user_message(text: string) -> ChatMessage =
   ChatMessage { role: RoleUser, text: text, failed: false }
@@ -349,6 +350,22 @@ fn main() -> i32 = do
   )
   if restored.cache.rebuilds == warmed.cache.rebuilds then
     return -10
+  end
+  const marked = paint_transcript_styled(
+    theme,
+    three,
+    measured.view,
+    shaping,
+    cache,
+    viewport(220, 800),
+    false,
+    TranscriptSelection { message: 0, anchor: 0, focus: 3, dragging: 0 }
+  )
+  if has_fill_color(marked, theme.selection_background) == false then
+    return -11
+  end
+  if has_fill_color(shown, theme.selection_background) then
+    return -11
   end
   0
 end

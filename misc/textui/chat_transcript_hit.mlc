@@ -1,3 +1,4 @@
+import { chat_body_text } from './chat_highlight'
 import { Theme } from './theme'
 import { ChatModel } from './chat_model'
 import { TextShapingState } from '../gui/text_shaping'
@@ -56,7 +57,8 @@ fn message_body(
   cache: TextLayoutCache,
   theme: Theme,
   width: i32,
-  message: i32
+  message: i32,
+  highlight: bool
 ) -> BodyLayout = do
   if message < 0 || message >= model.messages.length() || message >= view.index.tops.length() then
     const empty = text_layout_build(shaping, cache, theme, "", wrap_width_none())
@@ -75,7 +77,7 @@ fn message_body(
     role.shaping,
     role.cache,
     theme,
-    entry.text,
+    chat_body_text(entry.text, highlight),
     wrap_width_pixels(transcript_content_limit(theme, width))
   )
   BodyLayout {
@@ -96,9 +98,10 @@ export fn transcript_index_in_message(
   scroll: i32,
   message: i32,
   mouse_x: i32,
-  mouse_y: i32
+  mouse_y: i32,
+  highlight: bool
 ) -> BodyLayout = do
-  const placed = message_body(model, view, shaping, cache, theme, rect.width, message)
+  const placed = message_body(model, view, shaping, cache, theme, rect.width, message, highlight)
   const local_x = mouse_x - rect.x - theme.padding
   const local_y = mouse_y - rect.y + scroll - placed.top
   BodyLayout {
@@ -121,7 +124,8 @@ export fn transcript_body_press_index(
   rect: Rect,
   scroll: i32,
   mouse_x: i32,
-  mouse_y: i32
+  mouse_y: i32,
+  highlight: bool
 ) -> BodyLayout = do
   const content_y = mouse_y - rect.y + scroll
   const block = transcript_block_at_y(view, content_y)
@@ -129,7 +133,7 @@ export fn transcript_body_press_index(
     const empty = text_layout_build(shaping, cache, theme, "", wrap_width_none())
     return BodyLayout { layout: empty.layout, top: 0 - 1, shaping: empty.shaping, cache: empty.cache }
   end
-  const placed = message_body(model, view, shaping, cache, theme, rect.width, block)
+  const placed = message_body(model, view, shaping, cache, theme, rect.width, block, highlight)
   const body_bottom = placed.top + placed.layout.pixel_height
   if content_y < placed.top || content_y >= body_bottom then
     return BodyLayout { layout: placed.layout, top: 0 - 1, shaping: placed.shaping, cache: placed.cache }

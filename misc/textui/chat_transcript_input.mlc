@@ -1,3 +1,5 @@
+import { chat_body_text } from './chat_highlight'
+import { chat_body_text } from './chat_highlight'
 import { Theme } from './theme'
 import { ChatModel } from './chat_model'
 import {
@@ -108,6 +110,17 @@ export fn transcript_copy_text(
   cache: TextLayoutCache,
   theme: Theme,
   width: i32
+) -> string =
+  transcript_copy_shown(model, selection, shaping, cache, theme, width, false)
+
+export fn transcript_copy_shown(
+  model: ChatModel,
+  selection: TranscriptSelection,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32,
+  highlight: bool
 ) -> string = do
   if selection.message < 0 || selection.message >= model.messages.length() then
     return ""
@@ -120,7 +133,7 @@ export fn transcript_copy_text(
     role.shaping,
     role.cache,
     theme,
-    entry.text,
+    chat_body_text(entry.text, highlight),
     wrap_width_pixels(transcript_content_limit(theme, width))
   )
   text_layout_slice(body.layout, selection.anchor, selection.focus)
@@ -154,6 +167,22 @@ export fn transcript_input(
   rect: Rect,
   input: UiInput,
   bar_drag: i32
+) -> TranscriptInputResult =
+  transcript_input_shown(
+    theme, view, selection, model, shaping, cache, rect, input, bar_drag, false
+  )
+
+export fn transcript_input_shown(
+  theme: Theme,
+  view: TranscriptView,
+  selection: TranscriptSelection,
+  model: ChatModel,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rect: Rect,
+  input: UiInput,
+  bar_drag: i32,
+  highlight: bool
 ) -> TranscriptInputResult = do
   let mut scroll = shown_scroll(view, rect.height)
   const keyed = apply_scroll_keys(view, input, rect, scroll)
@@ -200,7 +229,7 @@ export fn transcript_input(
   end
   if selection_handled == false && input.left_pressed && rect_contains(rect, input.mouse_x, input.mouse_y) then
     const pressed = transcript_body_press_index(
-      model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y
+      model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y, highlight
     )
     if pressed.top >= 0 then
       next_selection = TranscriptSelection {
@@ -215,7 +244,7 @@ export fn transcript_input(
   if selection_handled == false && selection.dragging != 0 && input.left_down && selection.message >= 0 then
     const dragged = transcript_index_in_message(
       model, view, shaping, cache, theme, rect, scroll,
-      selection.message, input.mouse_x, input.mouse_y
+      selection.message, input.mouse_x, input.mouse_y, highlight
     )
     next_selection = TranscriptSelection {
       message: selection.message,

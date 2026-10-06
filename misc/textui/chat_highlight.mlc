@@ -1,0 +1,331 @@
+import { ColorRgba, Theme } from './theme'
+import { TextLayout } from './text_layout'
+import { text_layout_text_ops } from './text_layout_paint'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { rect_new } from './geometry'
+
+fn is_space(piece: string) -> bool =
+  piece == " " || piece == "\t" || piece == "\r"
+
+fn is_digit(piece: string) -> bool =
+  piece >= "0" && piece <= "9"
+
+fn is_ident(piece: string) -> bool =
+  (piece >= "a" && piece <= "z") || (piece >= "A" && piece <= "Z") || piece == "_" || is_digit(piece)
+
+fn is_keyword(word: string) -> bool =
+  word == "fn" || word == "let" || word == "const" || word == "if" || word == "else" || word == "return" || word == "function" || word == "class" || word == "def" || word == "import" || word == "from" || word == "end" || word == "match" || word == "type" || word == "true" || word == "false" || word == "null" || word == "for" || word == "while" || word == "struct"
+
+fn line_finish(text: string, start: i32) -> i32 = do
+  let mut finish = start
+  while finish < text.byte_size() && text.byte_at(finish) != "\n" do
+    finish = finish + 1
+  end
+  finish
+end
+
+fn fence_line(text: string, start: i32, finish: i32) -> bool = do
+  let mut index = start
+  while index < finish && is_space(text.byte_at(index)) do
+    index = index + 1
+  end
+  if finish - index < 3 then
+    return false
+  end
+  text.byte_at(index) == "`" && text.byte_at(index + 1) == "`" && text.byte_at(index + 2) == "`"
+end
+
+export fn chat_code_ranges(text: string) -> [i32] = do
+  let mut ranges: [i32] = []
+  let mut inside = false
+  let mut range_start = 0
+  let mut start = 0
+  while start < text.byte_size() do
+    const finish = line_finish(text, start)
+    if fence_line(text, start, finish) then
+      if inside then
+        ranges.push(range_start)
+        ranges.push(finish)
+        inside = false
+      else
+        range_start = start
+        inside = true
+      end
+    end
+    start = finish + 1
+  end
+  if inside then
+    ranges.push(range_start)
+    ranges.push(text.byte_size())
+  end
+  ranges
+end
+
+export type ChatFenceBody = {
+  text: string,
+  ranges: [i32]
+}
+
+export fn chat_fence_body(text: string) -> ChatFenceBody = do
+  let mut body = ""
+  let mut ranges: [i32] = []
+  let mut inside = false
+  let mut code_start = 0
+  let mut start = 0
+  let mut kept = false
+  while start < text.byte_size() do
+    const line_end = line_finish(text, start)
+    const marker = fence_line(text, start, line_end)
+    if marker then
+      if inside then
+        ranges.push(code_start)
+        ranges.push(body.byte_size())
+        inside = false
+      else
+        inside = true
+        code_start = body.byte_size()
+      end
+    end
+    if marker == false && kept then
+      body = body + "\n"
+    end
+    if marker == false then
+      body = body + text.byte_substring(start, line_end - start)
+      kept = true
+    end
+    start = line_end + 1
+  end
+  if inside then
+    ranges.push(code_start)
+    ranges.push(body.byte_size())
+  end
+  ChatFenceBody { text: body, ranges: ranges }
+end
+
+export fn chat_body_text(text: string, highlight: bool) -> string = do
+  if highlight then
+    return chat_fence_body(text).text
+  end
+  text
+end
+
+export fn chat_byte_in_code(ranges: [i32], byte_index: i32) -> bool = do
+  let mut index = 0
+  while index + 1 < ranges.length() do
+    if byte_index >= ranges[index] && byte_index < ranges[index + 1] then
+      return true
+    end
+    index = index + 2
+  end
+  false
+end
+
+fn cluster_x(layout: TextLayout, line_index: i32, byte_offset: i32) -> i32 = do
+  let mut place = 0
+  let mut index = 0
+  while index < layout.clusters.length() do
+    const cluster = layout.clusters[index]
+    if cluster.line_index == line_index && cluster.byte_offset <= byte_offset then
+      place = cluster.x
+    end
+    index = index + 1
+  end
+  place
+end
+
+fn slice_text(layout: TextLayout, start: i32, finish: i32) -> string = do
+  if finish <= start then
+    return ""
+  end
+  let mut text = layout.text.byte_substring(start, finish - start)
+  if text.byte_size() > 0 && text.byte_at(text.byte_size() - 1) == "\n" then
+    text = text.byte_substring(0, text.byte_size() - 1)
+  end
+  text
+end
+
+fn token_color(theme: Theme, token_kind: i32, plain: ColorRgba) -> ColorRgba = do
+  if token_kind == 1 then
+    return theme.inspect_hover
+  end
+  if token_kind == 2 then
+    return theme.inspect_stroke
+  end
+  if token_kind == 3 then
+    return theme.muted
+  end
+  if token_kind == 4 then
+    return theme.list_selected
+  end
+  plain
+end
+
+fn push_run(
+  operations: [DrawOp],
+  layout: TextLayout,
+  line_index: i32,
+  origin_x: i32,
+  origin_y: i32,
+  start: i32,
+  finish: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  const text = slice_text(layout, start, finish)
+  if text.byte_size() == 0 then
+    return operations
+  end
+  let mut next = operations
+  next.push(OpText(TextOp {
+    origin_x: origin_x + cluster_x(layout, line_index, start),
+    origin_y: origin_y,
+    color: color,
+    text: text
+  }))
+  next
+end
+
+fn skip_string(text: string, start: i32, finish: i32) -> i32 = do
+  const quote = text.byte_at(start)
+  let mut index = start + 1
+  while index < finish do
+    if text.byte_at(index) == "\\" && index + 1 < finish then
+      index = index + 2
+    else if text.byte_at(index) == quote then
+      return index + 1
+    else
+      index = index + 1
+    end
+  end
+  finish
+end
+
+fn skip_ident(text: string, start: i32, finish: i32) -> i32 = do
+  let mut index = start + 1
+  while index < finish && is_ident(text.byte_at(index)) do
+    index = index + 1
+  end
+  index
+end
+
+fn push_code_tokens(
+  operations: [DrawOp],
+  theme: Theme,
+  layout: TextLayout,
+  line_index: i32,
+  origin_x: i32,
+  origin_y: i32,
+  start: i32,
+  finish: i32,
+  plain: ColorRgba
+) -> [DrawOp] = do
+  let mut next = operations
+  let mut index = start
+  while index < finish && layout.text.byte_at(index) != "\n" do
+    const piece = layout.text.byte_at(index)
+    if piece == "/" && index + 1 < finish && layout.text.byte_at(index + 1) == "/" then
+      return push_run(next, layout, line_index, origin_x, origin_y, index, finish, token_color(theme, 3, plain))
+    end
+    if piece == "#" then
+      return push_run(next, layout, line_index, origin_x, origin_y, index, finish, token_color(theme, 3, plain))
+    end
+    if piece == "\"" || piece == "'" then
+      const string_finish = skip_string(layout.text, index, finish)
+      next = push_run(next, layout, line_index, origin_x, origin_y, index, string_finish, token_color(theme, 2, plain))
+      index = string_finish
+    else if is_digit(piece) then
+      let mut number_finish = index + 1
+      while number_finish < finish && is_digit(layout.text.byte_at(number_finish)) do
+        number_finish = number_finish + 1
+      end
+      next = push_run(next, layout, line_index, origin_x, origin_y, index, number_finish, token_color(theme, 4, plain))
+      index = number_finish
+    else if is_ident(piece) then
+      const ident_finish = skip_ident(layout.text, index, finish)
+      const word = slice_text(layout, index, ident_finish)
+      let mut token_kind = 0
+      if is_keyword(word) then
+        token_kind = 1
+      end
+      next = push_run(next, layout, line_index, origin_x, origin_y, index, ident_finish, token_color(theme, token_kind, plain))
+      index = ident_finish
+    else
+      let mut plain_finish = index + 1
+      while plain_finish < finish do
+        const mark = layout.text.byte_at(plain_finish)
+        if mark == "\n" || mark == "/" || mark == "#" || mark == "\"" || mark == "'" || is_digit(mark) || is_ident(mark) then
+          break
+        end
+        plain_finish = plain_finish + 1
+      end
+      next = push_run(next, layout, line_index, origin_x, origin_y, index, plain_finish, plain)
+      index = plain_finish
+    end
+  end
+  next
+end
+
+export fn chat_highlight_fills(
+  operations: [DrawOp],
+  theme: Theme,
+  layout: TextLayout,
+  origin_x: i32,
+  origin_y: i32,
+  content_width: i32,
+  ranges: [i32]
+) -> [DrawOp] = do
+  let mut next = operations
+  let mut line_index = 0
+  while line_index < layout.lines.length() do
+    const line = layout.lines[line_index]
+    if chat_byte_in_code(ranges, line.byte_start) && fence_line(layout.text, line.byte_start, line.byte_end) == false then
+      let mut width = content_width
+      if width < line.width then
+        width = line.width
+      end
+      next.push(OpFillRect(FillRectOp {
+        rect: rect_new(origin_x, origin_y + line.top, width, line.height),
+        color: theme.overlay_background
+      }))
+    end
+    line_index = line_index + 1
+  end
+  next
+end
+
+export fn chat_highlight_text(
+  operations: [DrawOp],
+  theme: Theme,
+  layout: TextLayout,
+  origin_x: i32,
+  origin_y: i32,
+  plain: ColorRgba,
+  content_width: i32,
+  ranges: [i32]
+) -> [DrawOp] = do
+  if ranges.length() == 0 then
+    let mut plain_ops = operations
+    const pieces = text_layout_text_ops(layout, origin_x, origin_y, plain)
+    let mut index = 0
+    while index < pieces.length() do
+      plain_ops.push(OpText(pieces[index]))
+      index = index + 1
+    end
+    return plain_ops
+  end
+  let mut next = operations
+  let mut line_index = 0
+  while line_index < layout.lines.length() do
+    const line = layout.lines[line_index]
+    const fence = fence_line(layout.text, line.byte_start, line.byte_end)
+    if chat_byte_in_code(ranges, line.byte_start) && fence == false then
+      next = push_code_tokens(
+        next, theme, layout, line_index, origin_x, origin_y + line.top,
+        line.byte_start, line.byte_end, plain
+      )
+    else if fence == false then
+      next = push_run(next, layout, line_index, origin_x, origin_y + line.top, line.byte_start, line.byte_end, plain)
+    end
+    line_index = line_index + 1
+  end
+  next
+end

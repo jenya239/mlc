@@ -1,0 +1,32 @@
+import { DrawOp, FillRectOp, StrokeRectOp } from './draw_op'
+import { LayoutResult } from './layout_result'
+import { Theme } from './theme'
+import { ChatScene } from './chat_scene'
+
+fn widget_rect_ready(layout: LayoutResult, index: i32) -> bool =
+  index >= 0 && index < layout.rects.length() && layout.rects[index].width > 0 && layout.rects[index].height > 0
+
+export fn paint_composer_fill(theme: Theme, layout: LayoutResult, scene: ChatScene) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  if widget_rect_ready(layout, scene.composer.index) == false then
+    return operations
+  end
+  operations.push(OpFillRect(FillRectOp {
+    rect: layout.rects[scene.composer.index],
+    color: theme.overlay_background
+  }))
+  operations
+end
+
+export fn paint_composer_stroke(theme: Theme, layout: LayoutResult, scene: ChatScene) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  if widget_rect_ready(layout, scene.composer.index) == false then
+    return operations
+  end
+  operations.push(OpStrokeRect(StrokeRectOp {
+    rect: layout.rects[scene.composer.index],
+    color: theme.button_stroke,
+    line_width: 1
+  }))
+  operations
+end

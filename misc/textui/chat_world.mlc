@@ -3,6 +3,7 @@ import { ChatModel, chat_model_new } from './chat_model'
 import { WidgetStore } from './store'
 import { ChatScene, build_chat_scene } from './chat_scene'
 import { chat_initial_state } from './chat_update'
+import { chat_sync_chrome } from './chat_meter'
 import { FrameSignature, frame_signature } from './frame_request'
 import { LayoutResult } from './layout_result'
 import { layout_ui } from './layout_pass'
@@ -37,7 +38,8 @@ export type ChatWorld = {
   layout: LayoutResult,
   presented: FrameSignature,
   painted_under: [DrawOp],
-  painted_over: [DrawOp]
+  painted_over: [DrawOp],
+  code_highlight: i32
 }
 
 export fn chat_transcript_rect(layout: LayoutResult, scene: ChatScene) -> Rect = do
@@ -64,11 +66,14 @@ end
 export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWorld = do
   const theme = theme_default()
   const scene = build_chat_scene()
-  const state = chat_initial_state(scene)
+  const opened = chat_sync_chrome(
+    scene.store, chat_initial_state(scene), scene, config, chat_model_new()
+  )
+  const state = opened.state
   let mut offsets: [i32] = []
   let mut ratios: [i32] = []
   const laid = layout_ui(
-    scene.store,
+    opened.store,
     theme,
     text_shaping_new(),
     text_layout_cache_new(),
@@ -77,7 +82,7 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
     offsets,
     ratios
   )
-  const aligned = field_align_scroll(scene.store, laid.layout, theme, state)
+  const aligned = field_align_scroll(opened.store, laid.layout, theme, state)
   const bounds = chat_transcript_rect(laid.layout, scene)
   const measured = transcript_measure(
     chat_model_new(),
@@ -90,7 +95,7 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
   let mut painted_under: [DrawOp] = []
   let mut painted_over: [DrawOp] = []
   ChatWorld {
-    store: scene.store,
+    store: opened.store,
     state: aligned,
     model: chat_model_new(),
     view: chat_view_at_bottom(measured.view, bounds.height),
@@ -102,6 +107,7 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
     layout: laid.layout,
     presented: frame_signature(aligned, width, height),
     painted_under: painted_under,
-    painted_over: painted_over
+    painted_over: painted_over,
+    code_highlight: 1
   }
 end

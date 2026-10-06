@@ -60,6 +60,9 @@ export fn build_label_gallery() -> WidgetStore = do
   )
   const row = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_button(
+    store, row, ButtonData { text: "Chat" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
     store, row, ButtonData { text: "Copy" }, OverflowVisible, 0, true
   )
   store = widget_store_add_checkbox(store, row, "Hidden", false, 0, true)

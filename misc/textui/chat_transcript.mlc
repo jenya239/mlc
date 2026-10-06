@@ -4,6 +4,8 @@ import { block_index_end_visible, block_index_first_visible, block_scroll_bottom
 import { TextShapingState } from '../gui/text_shaping'
 import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none, wrap_width_pixels } from './text_layout'
 import { text_layout_text_ops } from './text_layout_paint'
+import { text_layout_selection_rects } from './text_layout_hit'
+import { TranscriptSelection } from './chat_transcript_input'
 import { DrawOp, FillRectOp } from './draw_op'
 import { Rect, rect_contains, rect_intersect, rect_is_empty, rect_new } from './geometry'
 import { scroll_bar_rect, scroll_thumb_rect } from './widget_scroll'
@@ -14,6 +16,7 @@ import {
   transcript_pending_text,
   transcript_role_label
 } from './chat_transcript_layout'
+import { chat_fence_body, chat_highlight_fills, chat_highlight_text } from './chat_highlight'
 
 fn visible_scroll(view: TranscriptView, view_height: i32) -> i32 = do
   if view.stick_to_bottom != 0 then
@@ -73,6 +76,34 @@ fn push_bubble(
   next
 end
 
+fn paint_selection(
+  operations: [DrawOp],
+  theme: Theme,
+  layout: TextLayout,
+  origin_x: i32,
+  origin_y: i32,
+  anchor: i32,
+  focus: i32
+) -> [DrawOp] = do
+  if anchor == focus then
+    return operations
+  end
+  const boxes = text_layout_selection_rects(layout, anchor, focus)
+  let mut next = operations
+  let mut index = 0
+  while index < boxes.length() do
+    const box = boxes[index]
+    if box.width > 0 && box.height > 0 then
+      next.push(OpFillRect(FillRectOp {
+        rect: rect_new(origin_x + box.x, origin_y + box.y, box.width, box.height),
+        color: theme.selection_background
+      }))
+    end
+    index = index + 1
+  end
+  next
+end
+
 fn paint_message(
   operations: [DrawOp],
   theme: Theme,
@@ -80,8 +111,19 @@ fn paint_message(
   cache: TextLayoutCache,
   message: ChatMessage,
   bounds: Rect,
-  screen_y: i32
+  screen_y: i32,
+  highlight: bool,
+  selected: bool,
+  anchor: i32,
+  focus: i32
 ) -> [DrawOp] = do
+  let mut body_text = message.text
+  let mut code_ranges: [i32] = []
+  if highlight then
+    const visible = chat_fence_body(message.text)
+    body_text = visible.text
+    code_ranges = visible.ranges
+  end
   const role_built = text_layout_build(
     shaping, cache, theme, transcript_role_label(message.role), wrap_width_none()
   )
@@ -89,7 +131,7 @@ fn paint_message(
     role_built.shaping,
     role_built.cache,
     theme,
-    message.text,
+    body_text,
     wrap_width_pixels(transcript_content_limit(theme, bounds.width))
   )
   let mut next = push_bubble(
@@ -108,11 +150,38 @@ fn paint_message(
     theme.muted,
     bounds
   )
+  const body_y = screen_y + theme.padding + role_built.layout.pixel_height
+  if highlight then
+    next = chat_highlight_fills(
+      next,
+      theme,
+      body_built.layout,
+      text_x,
+      body_y,
+      transcript_content_limit(theme, bounds.width),
+      code_ranges
+    )
+  end
+  if selected then
+    next = paint_selection(next, theme, body_built.layout, text_x, body_y, anchor, focus)
+  end
+  if highlight then
+    return chat_highlight_text(
+      next,
+      theme,
+      body_built.layout,
+      text_x,
+      body_y,
+      body_color(theme, message.failed),
+      transcript_content_limit(theme, bounds.width),
+      code_ranges
+    )
+  end
   push_layout_text(
     next,
     body_built.layout,
     text_x,
-    screen_y + theme.padding + role_built.layout.pixel_height,
+    body_y,
     body_color(theme, message.failed),
     bounds
   )
@@ -146,7 +215,9 @@ fn paint_block(
   cache: TextLayoutCache,
   bounds: Rect,
   block_index: i32,
-  screen_y: i32
+  screen_y: i32,
+  highlight: bool,
+  selection: TranscriptSelection
 ) -> [DrawOp] = do
   if block_index >= model.messages.length() then
     return paint_plain(
@@ -154,17 +225,29 @@ fn paint_block(
     )
   end
   paint_message(
-    operations, theme, shaping, cache, model.messages[block_index], bounds, screen_y
+    operations,
+    theme,
+    shaping,
+    cache,
+    model.messages[block_index],
+    bounds,
+    screen_y,
+    highlight,
+    selection.message == block_index,
+    selection.anchor,
+    selection.focus
   )
 end
 
-export fn paint_transcript(
+export fn paint_transcript_styled(
   theme: Theme,
   model: ChatModel,
   view: TranscriptView,
   shaping: TextShapingState,
   cache: TextLayoutCache,
-  rect: Rect
+  rect: Rect,
+  highlight: bool,
+  selection: TranscriptSelection
 ) -> [DrawOp] = do
   let mut operations: [DrawOp] = []
   operations.push(OpPushClip(rect))
@@ -175,7 +258,7 @@ export fn paint_transcript(
   while block_index < finish do
     const screen_y = rect.y + view.index.tops[block_index] - scroll
     operations = paint_block(
-      operations, theme, model, shaping, cache, rect, block_index, screen_y
+      operations, theme, model, shaping, cache, rect, block_index, screen_y, highlight, selection
     )
     block_index = block_index + 1
   end
@@ -197,3 +280,15 @@ export fn paint_transcript(
   operations.push(OpPopClip)
   operations
 end
+
+export fn paint_transcript(
+  theme: Theme,
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rect: Rect
+) -> [DrawOp] =
+  paint_transcript_styled(
+    theme, model, view, shaping, cache, rect, false, transcript_selection_new()
+  )

@@ -76,7 +76,8 @@ fn with_pending(world: ChatWorld) -> ChatWorld =
     layout: world.layout,
     presented: world.presented,
     painted_under: world.painted_under,
-    painted_over: world.painted_over
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight
   }
 
 fn operations_contain(operations: [DrawOp], needle: string) -> bool = do

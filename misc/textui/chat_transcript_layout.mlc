@@ -1,3 +1,4 @@
+import { chat_body_text } from './chat_highlight'
 import { Theme } from './theme'
 import { ChatModel, ChatRole } from './chat_model'
 import { BlockIndex, block_index_build, block_index_empty } from './block_index'
@@ -124,6 +125,17 @@ export fn transcript_measure(
   cache: TextLayoutCache,
   theme: Theme,
   width: i32
+) -> TranscriptMeasure =
+  transcript_measure_shown(model, view, shaping, cache, theme, width, false)
+
+export fn transcript_measure_shown(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32,
+  highlight: bool
 ) -> TranscriptMeasure = do
   let mut current_shaping = shaping
   let mut current_cache = cache
@@ -147,7 +159,7 @@ export fn transcript_measure(
       current_cache,
       theme,
       transcript_role_label(message.role),
-      message.text,
+      chat_body_text(message.text, highlight),
       width
     )
     current_shaping = measured.shaping

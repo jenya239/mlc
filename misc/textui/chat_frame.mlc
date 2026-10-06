@@ -8,15 +8,19 @@ import { layout_ui } from './layout_pass'
 import { field_align_scroll } from './widget_field'
 import { frame_request, frame_request_layouts, frame_request_paints, frame_signature } from './frame_request'
 import { paint_overlay_frame, paint_tree_frame } from './paint_pass'
-import { paint_transcript } from './chat_transcript'
+import { paint_transcript_styled } from './chat_transcript'
+import { paint_composer_fill, paint_composer_stroke } from './chat_chrome'
+import { checkbox_mark } from './checkbox'
+import { chat_sync_chrome } from './chat_meter'
 import {
   TranscriptSelection,
   transcript_consume_press,
-  transcript_copy_text,
-  transcript_input,
-  transcript_pointer_routed
+  transcript_copy_shown,
+  transcript_input_shown,
+  transcript_pointer_routed,
+  transcript_selection_new
 } from './chat_transcript_input'
-import { TranscriptView, transcript_measure } from './chat_transcript_layout'
+import { TranscriptView, transcript_measure_shown } from './chat_transcript_layout'
 import { chat_apply_events } from './chat_update'
 import { chat_session_dispatch, chat_session_poll } from './chat_session'
 import {
@@ -82,13 +86,14 @@ fn frame_clipboard(
   end
   if field_selection_empty then
     const bounds = chat_transcript_rect(world.layout, world.scene)
-    return transcript_copy_text(
+    return transcript_copy_shown(
       world.model,
       world.selection,
       world.shaping,
       world.cache,
       theme_default(),
-      bounds.width
+      bounds.width,
+      world.code_highlight != 0
     )
   end
   world.state.clipboard.clipboard
@@ -111,7 +116,7 @@ export fn chat_frame_run(
   if routed then
     delivered = transcript_consume_press(input, bounds)
   end
-  const handled = transcript_input(
+  const handled = transcript_input_shown(
     theme,
     world.view,
     world.selection,
@@ -120,7 +125,8 @@ export fn chat_frame_run(
     world.cache,
     bounds,
     input,
-    0
+    0,
+    world.code_highlight != 0
   )
   const updated = ui_update(world.store, world.layout, theme, world.state, delivered)
   const applied = chat_apply_events(
@@ -135,11 +141,29 @@ export fn chat_frame_run(
   if model.revision != revision_before || view_changed(view_before, handled.view) || selection_changed(selection_before, handled.selection) then
     state = ui_state_with_listing_revision(state, state.listing_revision + 1)
   end
-  let mut store = applied.store
+  const synced = chat_sync_chrome(applied.store, state, world.scene, world.config, model)
+  state = synced.state
+  let mut store = synced.store
   let mut view = handled.view
+  let mut selection = handled.selection
   let mut shaping = handled.shaping
   let mut cache = handled.cache
   let mut layout = world.layout
+  const highlight = checkbox_mark(store.nodes[world.scene.highlight.index].kind)
+  let mut highlight_flag = 0
+  if highlight then
+    highlight_flag = 1
+  end
+  if highlight_flag != world.code_highlight then
+    selection = transcript_selection_new()
+    view = TranscriptView {
+      width: 0,
+      measured_count: 0,
+      scroll_y: view.scroll_y,
+      stick_to_bottom: view.stick_to_bottom,
+      index: view.index
+    }
+  end
   const request = frame_request(world.presented, frame_signature(state, width, height))
   if frame_request_layouts(request) then
     let mut offsets = state.scroll_offsets
@@ -150,7 +174,9 @@ export fn chat_frame_run(
     layout = laid.layout
     state = field_align_scroll(store, layout, theme, state)
     const next_bounds = chat_transcript_rect(layout, world.scene)
-    const measured = transcript_measure(model, view, shaping, cache, theme, next_bounds.width)
+    const measured = transcript_measure_shown(
+      model, view, shaping, cache, theme, next_bounds.width, highlight
+    )
     view = chat_view_at_bottom(measured.view, next_bounds.height)
     shaping = measured.shaping
     cache = measured.cache
@@ -160,8 +186,19 @@ export fn chat_frame_run(
   let mut painted_over = world.painted_over
   if paints then
     const tree = paint_tree_frame(theme, store, layout, state)
-    const transcript = paint_transcript(theme, model, view, shaping, cache, chat_transcript_rect(layout, world.scene))
-    painted_under = join_operations(tree, transcript)
+    const transcript = paint_transcript_styled(
+      theme,
+      model,
+      view,
+      shaping,
+      cache,
+      chat_transcript_rect(layout, world.scene),
+      highlight,
+      selection
+    )
+    const fill = paint_composer_fill(theme, layout, world.scene)
+    const stroke = paint_composer_stroke(theme, layout, world.scene)
+    painted_under = join_operations(join_operations(join_operations(fill, tree), stroke), transcript)
     painted_over = paint_overlay_frame(theme, store, layout, state)
   end
   let mut presented = world.presented
@@ -173,7 +210,7 @@ export fn chat_frame_run(
     state: state,
     model: model,
     view: view,
-    selection: handled.selection,
+    selection: selection,
     scene: world.scene,
     config: world.config,
     shaping: shaping,
@@ -181,7 +218,8 @@ export fn chat_frame_run(
     layout: layout,
     presented: presented,
     painted_under: painted_under,
-    painted_over: painted_over
+    painted_over: painted_over,
+    code_highlight: highlight_flag
   }
   ChatFrameResult {
     world: next,

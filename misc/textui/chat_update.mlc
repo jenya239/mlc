@@ -2,6 +2,7 @@ import { ChatModel, chat_cancel, chat_clear, chat_submit } from './chat_model'
 import { ChatScene, chat_composer_lines } from './chat_scene'
 import { WidgetStore, field_data_multiline, widget_store_set_visible } from './store'
 import { field_caption, widget_store_set_field_data } from './widget_field'
+import { checkbox_toggle } from './checkbox'
 import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from './ui_event'
 import {
   UiState,
@@ -86,6 +87,10 @@ export fn chat_apply_events(
     end
     if ui_event_is_click_on(event, scene.new_chat) then
       next_model = chat_clear(next_model)
+    end
+    if ui_event_is_click_on(event, scene.highlight) then
+      next_store = checkbox_toggle(next_store, scene.highlight)
+      next_state = ui_state_with_listing_revision(next_state, next_state.listing_revision + 1)
     end
     index = index + 1
   end

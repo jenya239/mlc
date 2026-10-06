@@ -55,7 +55,7 @@ import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { music_host, music_playing, music_release } from './music_host'
-import { chat_main } from './chat_host'
+import { chat_frames } from './chat_host'
 fn application_reload_status() -> i32 = 75
 
 fn remember_window() -> bool = do
@@ -72,9 +72,6 @@ fn remember_window() -> bool = do
 end
 
 fn main() -> i32 = do
-  if has("MLC_TEXTUI_CHAT") then
-    return chat_main()
-  end
   let mut open_width = 1280
   let mut open_height = 800
   const session = window_session_load()
@@ -122,6 +119,7 @@ fn main() -> i32 = do
   let mut frame_index = 0
   let mut reported_inspect = -1
   let mut reload_requested = false
+  let mut close_window = false
   let mut laid_out = layout_ui(
     store,
     theme,
@@ -272,10 +270,31 @@ fn main() -> i32 = do
       if stepped.changed then
         dense_enabled = false
       end
-      const acted = apply_toolbar(
-        store, state, theme, laid_out.layout, owner, button_caption(store, owner),
+      const caption = button_caption(store, owner)
+      let mut acted = apply_toolbar(
+        store, state, theme, laid_out.layout, owner, caption,
         dense_enabled, effect_mode
       )
+      if caption == "Chat" then
+        const hosted = chat_frames(resources, shaping, 0)
+        resources = hosted.resources
+        shaping = hosted.shaping
+        if hosted.error_code != 0 then
+          submit_destroy(hosted.resources)
+          cursor_lens_destroy(lens)
+          image_preview_release()
+          music_release()
+          remember_window()
+          glfw_gl_context_end()
+          return hosted.error_code
+        end
+        if hosted.window_closed then
+          close_window = true
+        end
+        escape_was_down = true
+        presented = frame_signature(state, 0, 0)
+        sample_after_present = true
+      end
       store = acted.store
       state = acted.state
       dense_enabled = acted.dense_enabled
@@ -345,7 +364,7 @@ fn main() -> i32 = do
     if max_frames > 0 && frame_index >= max_frames then
       break
     end
-    if reload_requested then
+    if reload_requested || close_window then
       break
     end
     saved_session = window_session_store(

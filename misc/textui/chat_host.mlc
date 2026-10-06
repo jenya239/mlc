@@ -11,15 +11,22 @@ import {
   glfw_gl_clipboard_set
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { theme_default } from './theme'
-import { text_shaping_new } from '../gui/text_shaping'
-import { submit_create, submit_destroy } from './submit'
+import { TextShapingState, text_shaping_new } from '../gui/text_shaping'
+import { SubmitResources, submit_create, submit_destroy } from './submit'
 import { submit_painted_layers } from './submit_layers'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
-import { chat_config_load } from './chat_http'
 import { chat_wait_seconds } from './chat_session'
 import { ChatWorld, chat_world_new } from './chat_world'
 import { chat_frame_run } from './chat_frame'
 import { frame_signature } from './frame_request'
+import { chat_config_resolve } from './chat_support_env'
+
+export type ChatHostResult = {
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  error_code: i32,
+  window_closed: bool
+}
 
 fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWorld =
   ChatWorld {
@@ -35,34 +42,25 @@ fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWo
     layout: world.layout,
     presented: frame_signature(world.state, width + 1, height),
     painted_under: world.painted_under,
-    painted_over: world.painted_over
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight
   }
 
-export fn chat_main() -> i32 = do
-  const begin_status = glfw_gl_context_begin(1280, 800)
-  if begin_status != 0 then
-    return begin_status
-  end
-  glfw_gl_swap_interval(0)
-  let mut resources = submit_create()
-  if resources.error_code != 0 then
-    const error_code = resources.error_code
-    glfw_gl_context_end()
-    return error_code
-  end
+export fn chat_frames(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  max_frames: i32
+) -> ChatHostResult = do
   const theme = theme_default()
-  let mut shaping = text_shaping_new()
+  let mut resources_now = resources
+  let mut shaping_now = shaping
   const open_width = glfw_gl_window_width()
   const open_height = glfw_gl_window_height()
   let mut world = world_before_first_paint(
-    chat_world_new(chat_config_load(), open_width, open_height),
+    chat_world_new(chat_config_resolve(), open_width, open_height),
     open_width,
     open_height
   )
-  let mut max_frames = 0
-  if has("MLC_TEXTUI_BENCH") then
-    max_frames = 8
-  end
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
   let mut sample_after_present = true
@@ -75,7 +73,12 @@ export fn chat_main() -> i32 = do
     const escape_down = glfw_gl_key_escape_down() != 0
     const escape_pressed = escape_down && escape_was_down == false
     if escape_pressed then
-      break
+      return ChatHostResult {
+        resources: resources_now,
+        shaping: shaping_now,
+        error_code: 0,
+        window_closed: false
+      }
     end
     escape_was_down = escape_down
     const polled = host_poll_input(buttons, host_now_ms())
@@ -89,8 +92,8 @@ export fn chat_main() -> i32 = do
     end
     if frame.paints then
       const submitted = submit_painted_layers(
-        resources,
-        shaping,
+        resources_now,
+        shaping_now,
         theme,
         frame.ops_under,
         frame.ops_over,
@@ -98,22 +101,57 @@ export fn chat_main() -> i32 = do
         height
       )
       if submitted.error_code != 0 then
-        submit_destroy(submitted.resources)
-        glfw_gl_context_end()
-        return submitted.error_code
+        return ChatHostResult {
+          resources: submitted.resources,
+          shaping: submitted.shaping,
+          error_code: submitted.error_code,
+          window_closed: false
+        }
       end
-      resources = submitted.resources
-      shaping = submitted.shaping
+      resources_now = submitted.resources
+      shaping_now = submitted.shaping
       glfw_gl_context_swap_poll()
       sample_after_present = true
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
-      break
+      return ChatHostResult {
+        resources: resources_now,
+        shaping: shaping_now,
+        error_code: 0,
+        window_closed: false
+      }
     end
   end
-  submit_destroy(resources)
+  ChatHostResult {
+    resources: resources_now,
+    shaping: shaping_now,
+    error_code: 0,
+    window_closed: true
+  }
+end
+
+export fn chat_main() -> i32 = do
+  const begin_status = glfw_gl_context_begin(1280, 800)
+  if begin_status != 0 then
+    return begin_status
+  end
+  glfw_gl_swap_interval(0)
+  let mut resources = submit_create()
+  if resources.error_code != 0 then
+    const error_code = resources.error_code
+    glfw_gl_context_end()
+    return error_code
+  end
+  let mut max_frames = 0
+  if has("MLC_TEXTUI_BENCH") then
+    max_frames = 8
+  end
+  const hosted = chat_frames(resources, text_shaping_new(), max_frames)
+  submit_destroy(hosted.resources)
   glfw_gl_context_end()
-  println("[textui] chat closed frames=" + frame_index.to_string())
+  if hosted.error_code != 0 then
+    return hosted.error_code
+  end
   0
 end

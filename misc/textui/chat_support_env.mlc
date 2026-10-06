@@ -1,0 +1,124 @@
+import { ChatConfig, chat_config_from, chat_config_load } from './chat_http'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+
+fn suffix_from(text: string, start: i32) -> string = do
+  let mut value = ""
+  let mut index = start
+  while index < text.byte_size() do
+    value = value + text.byte_at(index)
+    index = index + 1
+  end
+  value
+end
+
+fn starts_with(text: string, prefix: string) -> bool = do
+  if text.byte_size() < prefix.byte_size() then
+    return false
+  end
+  let mut index = 0
+  while index < prefix.byte_size() do
+    if text.byte_at(index) != prefix.byte_at(index) then
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn trim_edge(text: string) -> string = do
+  let mut start = 0
+  let mut finish = text.byte_size()
+  while start < finish do
+    const piece = text.byte_at(start)
+    if piece != " " && piece != "\t" && piece != "\r" && piece != "\n" then
+      break
+    end
+    start = start + 1
+  end
+  while finish > start do
+    const piece = text.byte_at(finish - 1)
+    if piece != " " && piece != "\t" && piece != "\r" && piece != "\n" then
+      break
+    end
+    finish = finish - 1
+  end
+  let mut value = ""
+  let mut index = start
+  while index < finish do
+    value = value + text.byte_at(index)
+    index = index + 1
+  end
+  if value.byte_size() >= 2 then
+    const first = value.byte_at(0)
+    const last = value.byte_at(value.byte_size() - 1)
+    if (first == "\"" && last == "\"") || (first == "'" && last == "'") then
+      let mut inner = ""
+      let mut inner_index = 1
+      while inner_index < value.byte_size() - 1 do
+        inner = inner + value.byte_at(inner_index)
+        inner_index = inner_index + 1
+      end
+      return inner
+    end
+  end
+  value
+end
+
+fn value_named(document: string, name: string) -> string = do
+  const prefix = name + "="
+  let mut start = 0
+  while start <= document.byte_size() do
+    let mut finish = start
+    while finish < document.byte_size() && document.byte_at(finish) != "\n" do
+      finish = finish + 1
+    end
+    let mut line = ""
+    let mut index = start
+    while index < finish do
+      line = line + document.byte_at(index)
+      index = index + 1
+    end
+    if starts_with(line, prefix) then
+      return trim_edge(suffix_from(line, prefix.byte_size()))
+    end
+    start = finish + 1
+  end
+  ""
+end
+
+fn document_at(path: string) -> string = do
+  if file_exists(path) == false then
+    return ""
+  end
+  file_read_to_string(path)
+end
+
+fn support_document() -> string = do
+  const sibling = document_at("../mlc-support/.env")
+  if sibling.byte_size() > 0 then
+    return sibling
+  end
+  document_at("mlc-support/.env")
+end
+
+export fn chat_config_resolve() -> ChatConfig = do
+  const configured = chat_config_load()
+  if configured.api_key.byte_size() > 0 then
+    return configured
+  end
+  const document = support_document()
+  const api_key = value_named(document, "META_AI_API_KEY")
+  if api_key.byte_size() == 0 then
+    return configured
+  end
+  let mut model = value_named(document, "META_AI_MODEL")
+  if model.byte_size() == 0 then
+    model = "muse-spark-1.2-contributor"
+  end
+  chat_config_from("https://api.meta.ai/v1", model, api_key, configured.system_prompt)
+end

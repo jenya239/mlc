@@ -1,0 +1,56 @@
+import { chat_config_from } from '../chat_http'
+import { chat_meter_line, chat_provider_line } from '../chat_meter'
+import { chat_byte_in_code, chat_code_ranges, chat_fence_body } from '../chat_highlight'
+import { chat_model_new } from '../chat_model'
+
+fn main() -> i32 = do
+  const meta = chat_config_from("https://api.meta.ai/v1", "muse-spark-1.2-contributor", "not-a-live-key", "")
+  if chat_provider_line(meta) != "Meta · muse-spark-1.2-contributor" then
+    return -1
+  end
+  const line = chat_meter_line(meta, chat_model_new(), "hello")
+  if line.index_of("токены") < 0 || line.index_of("контекст") < 0 || line.index_of("$") < 0 then
+    return -2
+  end
+  const openai = chat_config_from("https://api.openai.com/v1", "gpt-test", "not-a-live-key", "")
+  if chat_meter_line(openai, chat_model_new(), "").index_of("$") >= 0 then
+    return -3
+  end
+  const sample = "before\n```\nfn x\n```\nafter"
+  const ranges = chat_code_ranges(sample)
+  if ranges.length() != 2 then
+    return -4
+  end
+  let mut fn_at = -1
+  let mut prose_at = -1
+  let mut index = 0
+  while index < sample.byte_size() do
+    if sample.byte_at(index) == "f" && index + 1 < sample.byte_size() && sample.byte_at(index + 1) == "n" then
+      fn_at = index
+    end
+    if sample.byte_at(index) == "b" then
+      prose_at = index
+    end
+    index = index + 1
+  end
+  if fn_at < 0 || chat_byte_in_code(ranges, fn_at) == false then
+    return -5
+  end
+  if prose_at < 0 || chat_byte_in_code(ranges, prose_at) then
+    return -6
+  end
+  const visible = chat_fence_body("before\n```python\nfn x\n```\nafter")
+  if visible.text != "before\nfn x\nafter" then
+    return -7
+  end
+  if visible.text.index_of("`") >= 0 then
+    return -8
+  end
+  if chat_byte_in_code(visible.ranges, visible.text.index_of("fn")) == false then
+    return -9
+  end
+  if chat_byte_in_code(visible.ranges, 0) then
+    return -10
+  end
+  0
+end
