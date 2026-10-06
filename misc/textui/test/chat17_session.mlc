@@ -1,0 +1,171 @@
+import {
+  ChatModel,
+  RoleAssistant,
+  chat_cancel,
+  chat_model_new,
+  chat_submit
+} from '../chat_model'
+import { ChatConfig, chat_config_from } from '../chat_http'
+import {
+  chat_session_dispatch,
+  chat_session_poll,
+  chat_wait_seconds
+} from '../chat_session'
+import { transport_in_flight } from '../chat_transport'
+
+extern fn sleep_milliseconds(milliseconds: i32) -> i32 =
+  "mlc::concurrency::test_sleep_ms" from "mlc/concurrency/test_sleep.hpp" blocking
+
+extern fn monotonic_microseconds() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+fn unreachable_config(api_key: string) -> ChatConfig =
+  chat_config_from("https://127.0.0.1:9/", "gpt-test", api_key, "")
+
+fn last_text(model: ChatModel) -> string = do
+  if model.messages.length() == 0 then
+    return ""
+  end
+  model.messages[model.messages.length() - 1].text
+end
+
+fn last_is_assistant_failure(model: ChatModel) -> bool = do
+  if model.messages.length() == 0 then
+    return false
+  end
+  const message = model.messages[model.messages.length() - 1]
+  const assistant = match message.role
+    | RoleAssistant => true
+    | RoleUser => false
+  if assistant then
+    return message.failed
+  end
+  false
+end
+
+fn poll_until_settled(model: ChatModel) -> ChatModel = do
+  let mut current = model
+  let mut ticks = 0
+  while ticks < 1500 && current.pending do
+    current = chat_session_poll(current)
+    if current.pending then
+      const slept = sleep_milliseconds(10)
+      if slept < 0 then
+        return current
+      end
+    end
+    ticks = ticks + 1
+  end
+  current
+end
+
+fn poll_until_idle(model: ChatModel) -> ChatModel = do
+  let mut current = model
+  let mut ticks = 0
+  while ticks < 1500 do
+    current = chat_session_poll(current)
+    if transport_in_flight() == 0 then
+      return current
+    end
+    const slept = sleep_milliseconds(10)
+    if slept < 0 then
+      return current
+    end
+    ticks = ticks + 1
+  end
+  current
+end
+
+fn main() -> i32 = do
+  const idle = chat_model_new()
+  if chat_wait_seconds(idle) >= 0.0 then
+    return -1
+  end
+  const skipped = chat_session_dispatch(unreachable_config("secret-key-value"), idle, false)
+  if skipped.revision != idle.revision || transport_in_flight() != 0 then
+    return -2
+  end
+
+  const empty_submit = chat_submit(chat_model_new(), "hello")
+  if empty_submit.accepted == false then
+    return -3
+  end
+  const empty_reply = chat_session_dispatch(unreachable_config(""), empty_submit.model, true)
+  if empty_reply.pending then
+    return -4
+  end
+  if last_is_assistant_failure(empty_reply) == false then
+    return -5
+  end
+  if last_text(empty_reply) != "MLC_CHAT_API_KEY не задан" then
+    return -6
+  end
+  if transport_in_flight() != 0 then
+    return -7
+  end
+  if chat_wait_seconds(empty_reply) >= 0.0 then
+    return -8
+  end
+
+  const live_submit = chat_submit(chat_model_new(), "hello")
+  if live_submit.accepted == false then
+    return -9
+  end
+  const started = monotonic_microseconds()
+  const dispatched = chat_session_dispatch(
+    unreachable_config("secret-key-value"),
+    live_submit.model,
+    true
+  )
+  const elapsed = monotonic_microseconds() - started
+  if elapsed >= 50000 then
+    return -10
+  end
+  if dispatched.pending == false then
+    return -11
+  end
+  if chat_wait_seconds(dispatched) != 0.05 then
+    return -12
+  end
+  const settled = poll_until_settled(dispatched)
+  if settled.pending then
+    return -13
+  end
+  if last_is_assistant_failure(settled) == false then
+    return -14
+  end
+  if transport_in_flight() != 0 then
+    return -15
+  end
+
+  const stop_submit = chat_submit(chat_model_new(), "hello")
+  const stop_dispatched = chat_session_dispatch(
+    unreachable_config("secret-key-value"),
+    stop_submit.model,
+    true
+  )
+  if stop_dispatched.pending == false || transport_in_flight() != 1 then
+    return -16
+  end
+  const stopped = chat_cancel(stop_dispatched)
+  if last_text(stopped) != "Остановлено" then
+    return -17
+  end
+  if stopped.pending then
+    return -18
+  end
+  const late = poll_until_idle(stopped)
+  if late.messages.length() != stopped.messages.length() then
+    return -19
+  end
+  if last_text(late) != "Остановлено" then
+    return -20
+  end
+  if late.revision != stopped.revision then
+    return -21
+  end
+  if transport_in_flight() != 0 then
+    return -22
+  end
+  0
+end

@@ -1,0 +1,56 @@
+import { ChatConfig, chat_build_request } from './chat_http'
+import {
+  ChatModel,
+  ReplyFailed,
+  chat_apply_reply,
+  chat_history_for_request
+} from './chat_model'
+import {
+  TransportDone,
+  TransportIdle,
+  transport_poll,
+  transport_start
+} from './chat_transport'
+
+fn request_character_budget() -> i32 =
+  100000
+
+fn dispatch_send(config: ChatConfig, model: ChatModel) -> ChatModel = do
+  if config.api_key.byte_size() == 0 then
+    return chat_apply_reply(
+      model,
+      model.generation,
+      ReplyFailed("MLC_CHAT_API_KEY не задан")
+    )
+  end
+  const history = chat_history_for_request(model, request_character_budget())
+  transport_start(model.generation, chat_build_request(config, history))
+  model
+end
+
+export fn chat_session_dispatch(
+  config: ChatConfig,
+  model: ChatModel,
+  send_requested: bool
+) -> ChatModel = do
+  if send_requested then
+    return dispatch_send(config, model)
+  end
+  model
+end
+
+export fn chat_session_poll(model: ChatModel) -> ChatModel = do
+  const polled = transport_poll()
+  const updated = match polled
+    | TransportIdle => model
+    | TransportDone(delivery) =>
+      chat_apply_reply(model, delivery.generation, delivery.outcome)
+  updated
+end
+
+export fn chat_wait_seconds(model: ChatModel) -> f64 = do
+  if model.pending then
+    return 0.05
+  end
+  0.0 - 1.0
+end
