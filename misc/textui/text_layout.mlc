@@ -77,44 +77,141 @@ fn wrap_width_to_string(wrap_width: WrapWidth) -> string =
 fn text_layout_key(font_path: string, pixel_size: i32, wrap_width: WrapWidth, text: string) -> string =
   font_path + "|" + pixel_size.to_string() + "|" + wrap_width_to_string(wrap_width) + "|" + text
 
-fn build_single_line_layout(
-  text: string,
-  pixel_size: i32,
-  wrap_width: WrapWidth,
+type ParagraphGlyphs = {
+  clusters: [TextCluster],
+  width: i32
+}
+
+type ParagraphShape = {
+  shaping: TextShapingState,
+  clusters: [TextCluster],
+  width: i32
+}
+
+type HardLineLayout = {
+  shaping: TextShapingState,
+  layout: TextLayout
+}
+
+fn append_paragraph_glyphs(
+  clusters: [TextCluster],
   glyph_count: i32,
-  line_height: i32
-) -> TextLayout = do
-  let mut total_width = 0
-  let mut clusters: [TextCluster] = []
+  paragraph_start: i32,
+  line_index: i32
+) -> ParagraphGlyphs = do
+  let mut next_clusters = clusters
+  let mut width = 0
   let mut glyph_index = 0
   while glyph_index < glyph_count do
     const advance = text_shaping_glyph_advance_at(glyph_index) / 64
-    clusters.push(TextCluster {
-      byte_offset: text_shaping_glyph_cluster_at(glyph_index),
-      x: total_width,
+    next_clusters.push(TextCluster {
+      byte_offset: paragraph_start + text_shaping_glyph_cluster_at(glyph_index),
+      x: width,
       width: advance,
-      line_index: 0
+      line_index: line_index
     })
-    total_width = total_width + advance
+    width = width + advance
     glyph_index = glyph_index + 1
   end
+  ParagraphGlyphs { clusters: next_clusters, width: width }
+end
+
+fn shape_paragraph(
+  shaping: TextShapingState,
+  font_path: string,
+  pixel_size: i32,
+  text: string,
+  paragraph_start: i32,
+  paragraph_end: i32,
+  line_index: i32,
+  clusters: [TextCluster]
+) -> ParagraphShape = do
+  if paragraph_end <= paragraph_start then
+    return ParagraphShape { shaping: shaping, clusters: clusters, width: 0 }
+  end
+  const paragraph = text.byte_substring(paragraph_start, paragraph_end - paragraph_start)
+  const shape_result = text_shaping_shape(shaping, font_path, pixel_size, paragraph)
+  const glyphs = append_paragraph_glyphs(
+    clusters,
+    shape_result.glyph_count,
+    paragraph_start,
+    line_index
+  )
+  ParagraphShape {
+    shaping: shape_result.state,
+    clusters: glyphs.clusters,
+    width: glyphs.width
+  }
+end
+
+fn build_hard_line_layout(
+  shaping: TextShapingState,
+  font_path: string,
+  pixel_size: i32,
+  text: string,
+  wrap_width: WrapWidth
+) -> HardLineLayout = do
+  const line_height = text_shaping_line_height(shaping, font_path, pixel_size)
+  let mut current = shaping
   let mut lines: [TextLine] = []
-  lines.push(TextLine {
-    byte_start: 0,
-    byte_end: text.byte_size(),
-    top: 0,
-    height: line_height,
-    width: total_width
-  })
-  TextLayout {
-    text: text,
-    font_id: 0,
-    pixel_size: pixel_size,
-    wrap_width: wrap_width,
-    pixel_width: total_width,
-    pixel_height: line_height,
-    lines: lines,
-    clusters: clusters
+  let mut clusters: [TextCluster] = []
+  let mut pixel_width = 0
+  let mut paragraph_start = 0
+  let mut line_index = 0
+  let mut byte_index = 0
+  let mut finished = false
+  const size = text.byte_size()
+  while finished == false do
+    let mut at_newline = false
+    if byte_index < size && text.byte_at(byte_index) == "\n" then
+      at_newline = true
+    end
+    if byte_index == size || at_newline then
+      const shaped = shape_paragraph(
+        current,
+        font_path,
+        pixel_size,
+        text,
+        paragraph_start,
+        byte_index,
+        line_index,
+        clusters
+      )
+      current = shaped.shaping
+      clusters = shaped.clusters
+      if shaped.width > pixel_width then
+        pixel_width = shaped.width
+      end
+      lines.push(TextLine {
+        byte_start: paragraph_start,
+        byte_end: byte_index,
+        top: line_index * line_height,
+        height: line_height,
+        width: shaped.width
+      })
+      if at_newline then
+        paragraph_start = byte_index + 1
+        line_index = line_index + 1
+      else
+        finished = true
+      end
+    end
+    if finished == false then
+      byte_index = byte_index + 1
+    end
+  end
+  HardLineLayout {
+    shaping: current,
+    layout: TextLayout {
+      text: text,
+      font_id: 0,
+      pixel_size: pixel_size,
+      wrap_width: wrap_width,
+      pixel_width: pixel_width,
+      pixel_height: lines.length() * line_height,
+      lines: lines,
+      clusters: clusters
+    }
   }
 end
 
@@ -134,22 +231,20 @@ export fn text_layout_build(
       layout: by_key.get(key)
     }
   end
-  const shape_result = text_shaping_shape(shaping, theme.font_path, theme.font_size_pixels, text)
-  const line_height = text_shaping_line_height(shape_result.state, theme.font_path, theme.font_size_pixels)
-  const layout = build_single_line_layout(
-    text,
+  const built = build_hard_line_layout(
+    shaping,
+    theme.font_path,
     theme.font_size_pixels,
-    wrap_width,
-    shape_result.glyph_count,
-    line_height
+    text,
+    wrap_width
   )
-  by_key.set(key, layout)
+  by_key.set(key, built.layout)
   TextLayoutBuildResult {
-    shaping: shape_result.state,
+    shaping: built.shaping,
     cache: TextLayoutCache {
       by_key: by_key,
       rebuilds: cache.rebuilds + 1
     },
-    layout: layout
+    layout: built.layout
   }
 end

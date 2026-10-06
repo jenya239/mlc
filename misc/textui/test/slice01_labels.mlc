@@ -115,10 +115,14 @@ fn main() -> i32 = do
     inspect_stroke: theme.inspect_stroke,
     list_hover: theme.list_hover,
     list_selected: theme.list_selected,
+    list_inactive: theme.list_inactive,
     splitter_sash: theme.splitter_sash,
     splitter_hover: theme.splitter_hover,
     splitter_width: theme.splitter_width,
-    splitter_min: theme.splitter_min
+    splitter_min: theme.splitter_min,
+    overlay_scrim: theme.overlay_scrim,
+    overlay_background: theme.overlay_background,
+    overlay_stroke: theme.overlay_stroke
   }
   const small_result = layout_column(store, theme, shaping, cache)
   shaping = small_result.shaping

@@ -1,0 +1,97 @@
+import { theme_default } from '../theme'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_build, text_layout_cache_new, wrap_width_none } from '../text_layout'
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+
+  const plain = text_layout_build(shaping, cache, theme, "hello", wrap_width_none())
+  shaping = plain.shaping
+  cache = plain.cache
+  if plain.layout.lines.length() != 1 then
+    return -1
+  end
+  if plain.layout.pixel_height != plain.layout.lines[0].height then
+    return -2
+  end
+  if plain.layout.lines[0].byte_start != 0 || plain.layout.lines[0].byte_end != 5 then
+    return -3
+  end
+  if plain.layout.pixel_width != plain.layout.lines[0].width then
+    return -4
+  end
+  if plain.layout.clusters.length() == 0 then
+    return -5
+  end
+  if plain.layout.clusters[0].byte_offset != 0 || plain.layout.clusters[0].x != 0 then
+    return -6
+  end
+  let mut cluster_index = 0
+  let mut cursor = 0
+  while cluster_index < plain.layout.clusters.length() do
+    const cluster = plain.layout.clusters[cluster_index]
+    if cluster.line_index != 0 || cluster.x != cursor then
+      return -7
+    end
+    cursor = cursor + cluster.width
+    cluster_index = cluster_index + 1
+  end
+  if cursor != plain.layout.pixel_width then
+    return -8
+  end
+
+  const three = text_layout_build(shaping, cache, theme, "a\nb\nc", wrap_width_none())
+  shaping = three.shaping
+  cache = three.cache
+  if three.layout.lines.length() != 3 then
+    return -9
+  end
+  const line_height = three.layout.lines[0].height
+  if three.layout.pixel_height != line_height * 3 then
+    return -10
+  end
+  if three.layout.lines[0].byte_start != 0 || three.layout.lines[0].byte_end != 1 then
+    return -11
+  end
+  if three.layout.lines[1].byte_start != 2 || three.layout.lines[1].byte_end != 3 then
+    return -12
+  end
+  if three.layout.lines[2].byte_start != 4 || three.layout.lines[2].byte_end != 5 then
+    return -13
+  end
+  if three.layout.lines[0].top != 0 || three.layout.lines[1].top != line_height then
+    return -14
+  end
+  if three.layout.lines[2].top != line_height * 2 then
+    return -15
+  end
+  if three.layout.clusters.length() != 3 then
+    return -16
+  end
+  if three.layout.clusters[0].line_index != 0 || three.layout.clusters[0].byte_offset != 0 then
+    return -17
+  end
+  if three.layout.clusters[1].line_index != 1 || three.layout.clusters[1].byte_offset != 2 then
+    return -18
+  end
+  if three.layout.clusters[2].line_index != 2 || three.layout.clusters[2].byte_offset != 4 then
+    return -19
+  end
+
+  const trailing = text_layout_build(shaping, cache, theme, "a\n", wrap_width_none())
+  if trailing.layout.lines.length() != 2 then
+    return -20
+  end
+  if trailing.layout.pixel_height != trailing.layout.lines[0].height * 2 then
+    return -21
+  end
+  if trailing.layout.lines[0].byte_end != 1 || trailing.layout.lines[1].byte_start != 2 then
+    return -22
+  end
+  if trailing.layout.lines[1].width != 0 then
+    return -23
+  end
+  0
+end
