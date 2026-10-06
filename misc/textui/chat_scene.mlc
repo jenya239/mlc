@@ -1,0 +1,78 @@
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  DirectionRow,
+  LabelData,
+  OverflowHidden,
+  OverflowVisible,
+  WidgetId,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_label,
+  widget_store_empty
+} from './store'
+import { widget_store_add_text_area } from './widget_field'
+
+export type ChatScene = {
+  store: WidgetStore,
+  transcript: WidgetId,
+  composer: WidgetId,
+  send: WidgetId,
+  stop: WidgetId,
+  new_chat: WidgetId
+}
+
+export fn chat_composer_lines() -> i32 =
+  6
+
+fn chat_column() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
+
+fn chat_row() -> BoxData =
+  BoxData { direction: DirectionRow, padding: 0, gap: 10 }
+
+fn last_id(store: WidgetStore) -> WidgetId =
+  store.nodes[store.nodes.length() - 1].id
+
+export fn build_chat_scene() -> ChatScene = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), chat_column(), OverflowVisible, 0, true
+  )
+  const root = store.root
+  store = widget_store_add_box(store, root, chat_row(), OverflowVisible, 0, true)
+  const header = last_id(store)
+  store = widget_store_add_label(
+    store, header, LabelData { text: "Chat" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_box(store, header, chat_row(), OverflowVisible, 1, true)
+  store = widget_store_add_button(
+    store, header, ButtonData { text: "Stop" }, OverflowVisible, 0, false
+  )
+  const stop = last_id(store)
+  store = widget_store_add_button(
+    store, header, ButtonData { text: "New chat" }, OverflowVisible, 0, true
+  )
+  const new_chat = last_id(store)
+  store = widget_store_add_box(store, root, chat_column(), OverflowHidden, 1, true)
+  const transcript = last_id(store)
+  store = widget_store_add_text_area(store, root, "", chat_composer_lines(), 0, true)
+  const composer = last_id(store)
+  store = widget_store_add_box(store, root, chat_row(), OverflowVisible, 0, true)
+  const actions = last_id(store)
+  store = widget_store_add_box(store, actions, chat_row(), OverflowVisible, 1, true)
+  store = widget_store_add_button(
+    store, actions, ButtonData { text: "Send" }, OverflowVisible, 0, true
+  )
+  ChatScene {
+    store: store,
+    transcript: transcript,
+    composer: composer,
+    send: last_id(store),
+    stop: stop,
+    new_chat: new_chat
+  }
+end

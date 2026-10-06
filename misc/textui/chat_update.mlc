@@ -1,0 +1,99 @@
+import { ChatModel, chat_cancel, chat_clear, chat_submit } from './chat_model'
+import { ChatScene, chat_composer_lines } from './chat_scene'
+import { WidgetStore, field_data_multiline, widget_store_set_visible } from './store'
+import { field_caption, widget_store_set_field_data } from './widget_field'
+import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from './ui_event'
+import {
+  UiState,
+  ui_state_new,
+  ui_state_with_field,
+  ui_state_with_field_revision,
+  ui_state_with_listing_revision
+} from './ui_state'
+
+export type ChatEventsResult = {
+  model: ChatModel,
+  store: WidgetStore,
+  state: UiState,
+  send_requested: bool
+}
+
+type StoreState = {
+  store: WidgetStore,
+  state: UiState
+}
+
+export fn chat_initial_state(scene: ChatScene) -> UiState =
+  ui_state_with_field(ui_state_new(), scene.composer, 0, 0)
+
+fn composer_text(store: WidgetStore, scene: ChatScene) -> string =
+  field_caption(store.nodes[scene.composer.index].kind)
+
+fn clear_composer(store: WidgetStore, state: UiState, scene: ChatScene) -> StoreState = do
+  const cleared = widget_store_set_field_data(
+    store, scene.composer, field_data_multiline("", chat_composer_lines())
+  )
+  const focused = ui_state_with_field(state, scene.composer, 0, 0)
+  StoreState {
+    store: cleared,
+    state: ui_state_with_field_revision(focused, state.field_revision + 1)
+  }
+end
+
+fn event_requests_send(scene: ChatScene, event: UiEvent) -> bool = do
+  if ui_event_is_click_on(event, scene.send) then
+    return true
+  end
+  ui_event_is_activate_on(event, scene.composer)
+end
+
+fn show_stop(store: WidgetStore, state: UiState, scene: ChatScene, pending: bool) -> StoreState = do
+  if store.nodes[scene.stop.index].visible == pending then
+    return StoreState { store: store, state: state }
+  end
+  StoreState {
+    store: widget_store_set_visible(store, scene.stop, pending),
+    state: ui_state_with_listing_revision(state, state.listing_revision + 1)
+  }
+end
+
+export fn chat_apply_events(
+  scene: ChatScene,
+  model: ChatModel,
+  store: WidgetStore,
+  state: UiState,
+  events: [UiEvent]
+) -> ChatEventsResult = do
+  let mut next_model = model
+  let mut next_store = store
+  let mut next_state = state
+  let mut send_requested = false
+  let mut index = 0
+  while index < events.length() do
+    const event = events[index]
+    if event_requests_send(scene, event) then
+      const submitted = chat_submit(next_model, composer_text(next_store, scene))
+      next_model = submitted.model
+      if submitted.accepted then
+        const cleared = clear_composer(next_store, next_state, scene)
+        next_store = cleared.store
+        next_state = cleared.state
+        send_requested = true
+      end
+    end
+    if ui_event_is_click_on(event, scene.stop) then
+      next_model = chat_cancel(next_model)
+    end
+    if ui_event_is_click_on(event, scene.new_chat) then
+      next_model = chat_clear(next_model)
+    end
+    index = index + 1
+  end
+  const shown = show_stop(next_store, next_state, scene, next_model.pending)
+  ChatEventsResult {
+    model: next_model,
+    store: shown.store,
+    state: shown.state,
+    send_requested: send_requested
+  }
+end
