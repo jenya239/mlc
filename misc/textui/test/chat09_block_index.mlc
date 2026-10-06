@@ -1,0 +1,130 @@
+import {
+  BlockIndex,
+  block_index_append,
+  block_index_build,
+  block_index_empty,
+  block_index_end_visible,
+  block_index_first_visible,
+  block_index_replace_last,
+  block_scroll_bottom,
+  block_scroll_clamp,
+  block_scroll_is_at_bottom
+} from '../block_index'
+
+fn same_index(left: BlockIndex, right: BlockIndex) -> bool = do
+  if left.gap != right.gap || left.total != right.total then
+    return false
+  end
+  if left.tops.length() != right.tops.length() || left.heights.length() != right.heights.length() then
+    return false
+  end
+  let mut cursor = 0
+  while cursor < left.tops.length() do
+    if left.tops[cursor] != right.tops[cursor] || left.heights[cursor] != right.heights[cursor] then
+      return false
+    end
+    cursor = cursor + 1
+  end
+  true
+end
+
+fn linear_first(index: BlockIndex, scroll_y: i32) -> i32 = do
+  let mut cursor = 0
+  while cursor < index.tops.length() do
+    if index.tops[cursor] + index.heights[cursor] > scroll_y then
+      return cursor
+    end
+    cursor = cursor + 1
+  end
+  index.tops.length()
+end
+
+fn linear_end(index: BlockIndex, scroll_y: i32, view_height: i32) -> i32 = do
+  const window_end = scroll_y + view_height
+  let mut cursor = 0
+  while cursor < index.tops.length() do
+    if index.tops[cursor] >= window_end then
+      return cursor
+    end
+    cursor = cursor + 1
+  end
+  index.tops.length()
+end
+
+fn block_height(ordinal: i32) -> i32 =
+  20 + (ordinal * 7) % 40
+
+fn main() -> i32 = do
+  let mut heights: [i32] = []
+  let mut cursor = 0
+  while cursor < 10000 do
+    heights.push(block_height(cursor))
+    cursor = cursor + 1
+  end
+  const index = block_index_build(heights, 0)
+  let mut sample = 0
+  while sample < 50 do
+    const scroll_y = sample * index.total / 50
+    if block_index_first_visible(index, scroll_y) != linear_first(index, scroll_y) then
+      return -1
+    end
+    if block_index_end_visible(index, scroll_y, 600) != linear_end(index, scroll_y, 600) then
+      return -2
+    end
+    const start = block_index_first_visible(index, scroll_y)
+    const finish = block_index_end_visible(index, scroll_y, 600)
+    if finish - start > 600 / 20 + 2 then
+      return -3
+    end
+    sample = sample + 1
+  end
+
+  let mut appended = block_index_empty(6)
+  appended = block_index_append(appended, 10)
+  appended = block_index_append(appended, 25)
+  appended = block_index_append(appended, 8)
+  let mut few: [i32] = []
+  few.push(10)
+  few.push(25)
+  few.push(8)
+  if same_index(appended, block_index_build(few, 6)) == false then
+    return -4
+  end
+
+  const replaced = block_index_replace_last(appended, 20)
+  if replaced.total - appended.total != 20 - 8 then
+    return -5
+  end
+  if replaced.tops[2] != appended.tops[2] then
+    return -5
+  end
+
+  const empty = block_index_empty(4)
+  if block_scroll_clamp(empty.total, 100, 40) != 0 then
+    return -6
+  end
+  if block_scroll_clamp(100, 200, 40) != 0 then
+    return -6
+  end
+  if block_scroll_clamp(100, 40, 0 - 5) != 0 then
+    return -7
+  end
+  if block_scroll_clamp(100, 40, 10) != 10 then
+    return -7
+  end
+  if block_scroll_clamp(100, 40, 1000) != block_scroll_bottom(100, 40) then
+    return -7
+  end
+
+  const bottom = block_scroll_bottom(100, 40)
+  if block_scroll_is_at_bottom(100, 40, bottom) == false then
+    return -8
+  end
+  if block_scroll_is_at_bottom(100, 40, bottom - 1) then
+    return -8
+  end
+  if block_scroll_is_at_bottom(empty.total, 50, 0) == false then
+    return -8
+  end
+  0
+end

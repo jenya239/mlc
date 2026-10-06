@@ -1,0 +1,105 @@
+export type BlockIndex = {
+  tops: [i32],
+  heights: [i32],
+  gap: i32,
+  total: i32
+}
+
+export fn block_index_empty(gap: i32) -> BlockIndex = do
+  let mut tops: [i32] = []
+  let mut heights: [i32] = []
+  BlockIndex { tops: tops, heights: heights, gap: gap, total: 0 }
+end
+
+export fn block_index_append(index: BlockIndex, height: i32) -> BlockIndex = do
+  let mut tops = index.tops
+  let mut heights = index.heights
+  let mut top = 0
+  if tops.length() > 0 then
+    top = index.total + index.gap
+  end
+  tops.push(top)
+  heights.push(height)
+  BlockIndex {
+    tops: tops,
+    heights: heights,
+    gap: index.gap,
+    total: top + height
+  }
+end
+
+export fn block_index_build(heights: [i32], gap: i32) -> BlockIndex = do
+  let mut index = block_index_empty(gap)
+  let mut cursor = 0
+  while cursor < heights.length() do
+    index = block_index_append(index, heights[cursor])
+    cursor = cursor + 1
+  end
+  index
+end
+
+export fn block_index_replace_last(index: BlockIndex, height: i32) -> BlockIndex = do
+  if index.heights.length() == 0 then
+    return index
+  end
+  let mut heights = index.heights
+  const previous = heights[heights.length() - 1]
+  heights.set(heights.length() - 1, height)
+  BlockIndex {
+    tops: index.tops,
+    heights: heights,
+    gap: index.gap,
+    total: index.total - previous + height
+  }
+end
+
+export fn block_index_first_visible(index: BlockIndex, scroll_y: i32) -> i32 = do
+  let mut low = 0
+  let mut high = index.tops.length()
+  while low < high do
+    const middle = (low + high) / 2
+    if index.tops[middle] + index.heights[middle] <= scroll_y then
+      low = middle + 1
+    else
+      high = middle
+    end
+  end
+  low
+end
+
+export fn block_index_end_visible(index: BlockIndex, scroll_y: i32, view_height: i32) -> i32 = do
+  const window_end = scroll_y + view_height
+  let mut low = 0
+  let mut high = index.tops.length()
+  while low < high do
+    const middle = (low + high) / 2
+    if index.tops[middle] < window_end then
+      low = middle + 1
+    else
+      high = middle
+    end
+  end
+  low
+end
+
+export fn block_scroll_bottom(total: i32, view_height: i32) -> i32 = do
+  let mut offset = total - view_height
+  if offset < 0 then
+    offset = 0
+  end
+  offset
+end
+
+export fn block_scroll_clamp(total: i32, view_height: i32, y: i32) -> i32 = do
+  const limit = block_scroll_bottom(total, view_height)
+  if y <= 0 then
+    return 0
+  end
+  if y >= limit then
+    return limit
+  end
+  y
+end
+
+export fn block_scroll_is_at_bottom(total: i32, view_height: i32, y: i32) -> bool =
+  y >= block_scroll_bottom(total, view_height)
