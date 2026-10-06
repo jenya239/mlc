@@ -1,0 +1,354 @@
+import { ColorRgba, theme_default } from '../theme'
+import { color_equal } from '../submit_color'
+import { ChatMessage, ChatModel, ChatRole, chat_model_new, chat_submit } from '../chat_model'
+import { text_shaping_new } from '../../gui/text_shaping'
+import {
+  text_layout_build,
+  text_layout_cache_new,
+  wrap_width_none,
+  wrap_width_pixels
+} from '../text_layout'
+import { DrawOp } from '../draw_op'
+import { Rect, rect_new } from '../geometry'
+import {
+  TranscriptView,
+  transcript_content_limit,
+  transcript_empty_text,
+  transcript_measure,
+  transcript_pending_text,
+  transcript_role_label,
+  transcript_view_new
+} from '../chat_transcript_layout'
+import { paint_transcript } from '../chat_transcript'
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false }
+
+fn assistant_message(text: string, failed: bool) -> ChatMessage =
+  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+
+fn model_of(messages: [ChatMessage], pending: bool) -> ChatModel =
+  ChatModel { messages: messages, pending: pending, generation: 1, revision: 1 }
+
+fn viewport(width: i32, height: i32) -> Rect =
+  rect_new(10, 20, width, height)
+
+fn unstick(view: TranscriptView, scroll_y: i32) -> TranscriptView =
+  TranscriptView {
+    width: view.width,
+    measured_count: view.measured_count,
+    scroll_y: scroll_y,
+    stick_to_bottom: 0,
+    index: view.index
+  }
+
+fn has_text(operations: [DrawOp], text: string) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpText(data) => data.text == text
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn has_text_color(operations: [DrawOp], text: string, color: ColorRgba) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpText(data) => data.text == text && color_equal(data.color, color)
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn has_fill_color(operations: [DrawOp], color: ColorRgba) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpFillRect(data) => color_equal(data.color, color)
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn rect_inside(outer: Rect, inner: Rect) -> bool = do
+  if inner.x < outer.x || inner.y < outer.y then
+    return false
+  end
+  if inner.x + inner.width > outer.x + outer.width then
+    return false
+  end
+  inner.y + inner.height <= outer.y + outer.height
+end
+
+fn operations_inside(operations: [DrawOp], bounds: Rect) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const inside = match operations[index]
+      | OpFillRect(data) => rect_inside(bounds, data.rect)
+      | OpStrokeRect(data) => rect_inside(bounds, data.rect)
+      | OpPushClip(rect) => rect_inside(bounds, rect)
+      | OpText(data) => data.origin_x >= bounds.x && data.origin_y >= bounds.y && data.origin_x < bounds.x + bounds.width && data.origin_y < bounds.y + bounds.height
+      | OpPopClip => true
+    if inside then
+    else
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn operation_key(operation: DrawOp) -> string = do
+  const key = match operation
+    | OpPopClip => "pop"
+    | OpPushClip(rect) => "push:" + rect.x.to_string() + ":" + rect.y.to_string()
+    | OpFillRect(data) => "fill:" + data.rect.x.to_string() + ":" + data.rect.y.to_string() + ":" + data.rect.width.to_string() + ":" + data.rect.height.to_string()
+    | OpStrokeRect(_) => "stroke"
+    | OpText(data) => "text:" + data.text + ":" + data.origin_x.to_string() + ":" + data.origin_y.to_string()
+  key
+end
+
+fn same_operations(left: [DrawOp], right: [DrawOp]) -> bool = do
+  if left.length() != right.length() then
+    return false
+  end
+  let mut index = 0
+  while index < left.length() do
+    if operation_key(left[index]) != operation_key(right[index]) then
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut messages: [ChatMessage] = []
+  messages.push(user_message("one"))
+  messages.push(assistant_message("two", false))
+  messages.push(assistant_message("bad", true))
+  const three = model_of(messages, false)
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const measured = transcript_measure(
+    three, transcript_view_new(), shaping, cache, theme, 220
+  )
+  shaping = measured.shaping
+  cache = measured.cache
+  if measured.view.index.heights.length() != 3 then
+    return -1
+  end
+  let mut height_index = 0
+  while height_index < 3 do
+    if measured.view.index.heights[height_index] <= 0 then
+      return -1
+    end
+    height_index = height_index + 1
+  end
+  const shown = paint_transcript(
+    theme, three, measured.view, shaping, cache, viewport(220, 800)
+  )
+  if has_text_color(shown, transcript_role_label(RoleUser), theme.muted) == false then
+    return -2
+  end
+  if has_text_color(shown, transcript_role_label(RoleAssistant), theme.muted) == false then
+    return -2
+  end
+  if has_text_color(shown, "two", theme.foreground) == false then
+    return -2
+  end
+  if has_text_color(shown, "bad", theme.inspect_stroke) == false then
+    return -2
+  end
+  if has_fill_color(shown, theme.list_selected) == false then
+    return -2
+  end
+  if has_fill_color(shown, theme.button_background) == false then
+    return -2
+  end
+
+  const long_text = "alpha beta gamma delta epsilon zeta eta theta iota kappa"
+  let mut long_messages: [ChatMessage] = []
+  long_messages.push(user_message(long_text))
+  const long_model = model_of(long_messages, false)
+  const long_measured = transcript_measure(
+    long_model, transcript_view_new(), shaping, cache, theme, 80
+  )
+  const long_layout = text_layout_build(
+    long_measured.shaping,
+    long_measured.cache,
+    theme,
+    long_text,
+    wrap_width_pixels(transcript_content_limit(theme, 80))
+  )
+  if long_layout.layout.lines.length() < 2 then
+    return -3
+  end
+
+  let mut bulk: [ChatMessage] = []
+  let mut bulk_index = 0
+  while bulk_index < 2000 do
+    bulk.push(user_message("m"))
+    bulk_index = bulk_index + 1
+  end
+  const bulk_model = model_of(bulk, false)
+  const bulk_measured = transcript_measure(
+    bulk_model, transcript_view_new(), shaping, cache, theme, 160
+  )
+  const top = paint_transcript(
+    theme, bulk_model, unstick(bulk_measured.view, 0), shaping, cache, viewport(160, 120)
+  )
+  const middle = paint_transcript(
+    theme,
+    bulk_model,
+    unstick(bulk_measured.view, bulk_measured.view.index.total / 2),
+    shaping,
+    cache,
+    viewport(160, 120)
+  )
+  const bottom = paint_transcript(
+    theme, bulk_model, bulk_measured.view, shaping, cache, viewport(160, 120)
+  )
+  if top.length() >= 400 || middle.length() >= 400 || bottom.length() >= 400 then
+    return -4
+  end
+
+  let mut width_messages: [ChatMessage] = []
+  width_messages.push(user_message("alpha"))
+  width_messages.push(assistant_message("beta", false))
+  width_messages.push(user_message("gamma"))
+  const width_model = model_of(width_messages, false)
+  const wide = transcript_measure(
+    width_model, transcript_view_new(), text_shaping_new(), text_layout_cache_new(), theme, 220
+  )
+  const narrow = transcript_measure(
+    width_model, wide.view, wide.shaping, wide.cache, theme, 80
+  )
+  if narrow.cache.rebuilds - wide.cache.rebuilds > width_messages.length() then
+    return -5
+  end
+  const repeated = transcript_measure(
+    width_model, narrow.view, narrow.shaping, narrow.cache, theme, 80
+  )
+  if repeated.cache.rebuilds != narrow.cache.rebuilds then
+    return -5
+  end
+
+  let mut stuck_messages: [ChatMessage] = []
+  let mut stuck_index = 0
+  while stuck_index < 30 do
+    stuck_messages.push(user_message("line-" + stuck_index.to_string()))
+    stuck_index = stuck_index + 1
+  end
+  const stuck_model = model_of(stuck_messages, false)
+  const stuck = transcript_measure(
+    stuck_model, transcript_view_new(), shaping, cache, theme, 200
+  )
+  const stuck_paint = paint_transcript(
+    theme, stuck_model, stuck.view, stuck.shaping, stuck.cache, viewport(200, 80)
+  )
+  if has_text(stuck_paint, "line-29") == false || has_text(stuck_paint, "line-0") then
+    return -6
+  end
+  stuck_messages.push(user_message("line-30"))
+  const grown = model_of(stuck_messages, false)
+  const grown_measured = transcript_measure(
+    grown, stuck.view, stuck.shaping, stuck.cache, theme, 200
+  )
+  const grown_paint = paint_transcript(
+    theme, grown, grown_measured.view, grown_measured.shaping, grown_measured.cache, viewport(200, 80)
+  )
+  if has_text(grown_paint, "line-30") == false || has_text(grown_paint, "line-0") then
+    return -6
+  end
+
+  const asking = chat_submit(chat_model_new(), "hello")
+  const pending_measured = transcript_measure(
+    asking.model, transcript_view_new(), shaping, cache, theme, 200
+  )
+  const pending_rect = viewport(200, 400)
+  const pending_first = paint_transcript(
+    theme,
+    asking.model,
+    pending_measured.view,
+    pending_measured.shaping,
+    pending_measured.cache,
+    pending_rect
+  )
+  const pending_second = paint_transcript(
+    theme,
+    asking.model,
+    pending_measured.view,
+    pending_measured.shaping,
+    pending_measured.cache,
+    pending_rect
+  )
+  if has_text(pending_first, transcript_pending_text()) == false then
+    return -7
+  end
+  if same_operations(pending_first, pending_second) == false then
+    return -7
+  end
+
+  const empty_paint = paint_transcript(
+    theme, chat_model_new(), transcript_view_new(), shaping, cache, viewport(200, 200)
+  )
+  if has_text_color(empty_paint, transcript_empty_text(), theme.muted) == false then
+    return -8
+  end
+  if has_text(empty_paint, transcript_pending_text()) then
+    return -8
+  end
+
+  const clipped = paint_transcript(
+    theme, three, unstick(measured.view, 0), shaping, cache, viewport(220, 36)
+  )
+  if operations_inside(clipped, viewport(220, 36)) == false then
+    return -9
+  end
+
+  let mut warmed = text_layout_build(
+    text_shaping_new(), text_layout_cache_new(), theme, "anchor", wrap_width_none()
+  )
+  let mut extra = 0
+  while extra < 4097 do
+    warmed = text_layout_build(
+      warmed.shaping, warmed.cache, theme, "k" + extra.to_string(), wrap_width_none()
+    )
+    extra = extra + 1
+  end
+  const restored = text_layout_build(
+    warmed.shaping, warmed.cache, theme, "anchor", wrap_width_none()
+  )
+  if restored.cache.rebuilds == warmed.cache.rebuilds then
+    return -10
+  end
+  0
+end

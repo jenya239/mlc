@@ -1,0 +1,85 @@
+export type TextLine = {
+  byte_start: i32,
+  byte_end: i32,
+  top: i32,
+  height: i32,
+  width: i32
+}
+
+export type TextCluster = {
+  byte_offset: i32,
+  x: i32,
+  width: i32,
+  line_index: i32
+}
+
+export type PlacedText = {
+  lines: [TextLine],
+  clusters: [TextCluster],
+  pixel_width: i32,
+  next_line_index: i32
+}
+
+export fn place_visual_lines(
+  paragraph_start: i32,
+  paragraph_end: i32,
+  paragraph_clusters: [TextCluster],
+  starts: [i32],
+  line_height: i32,
+  lines: [TextLine],
+  clusters: [TextCluster],
+  pixel_width: i32,
+  line_index: i32
+) -> PlacedText = do
+  let mut next_lines = lines
+  let mut next_clusters = clusters
+  let mut next_pixel_width = pixel_width
+  let mut next_line_index = line_index
+  let mut visual_index = 0
+  while visual_index < starts.length() do
+    const cluster_begin = starts[visual_index]
+    let mut cluster_end = paragraph_clusters.length()
+    if visual_index + 1 < starts.length() then
+      cluster_end = starts[visual_index + 1]
+    end
+    let mut byte_start = paragraph_start
+    if visual_index > 0 && cluster_begin < paragraph_clusters.length() then
+      byte_start = paragraph_clusters[cluster_begin].byte_offset
+    end
+    let mut byte_end = paragraph_end
+    if visual_index + 1 < starts.length() && cluster_end < paragraph_clusters.length() then
+      byte_end = paragraph_clusters[cluster_end].byte_offset
+    end
+    let mut cluster_x = 0
+    let mut cluster_index = cluster_begin
+    while cluster_index < cluster_end do
+      const source = paragraph_clusters[cluster_index]
+      next_clusters.push(TextCluster {
+        byte_offset: source.byte_offset,
+        x: cluster_x,
+        width: source.width,
+        line_index: next_line_index
+      })
+      cluster_x = cluster_x + source.width
+      cluster_index = cluster_index + 1
+    end
+    if cluster_x > next_pixel_width then
+      next_pixel_width = cluster_x
+    end
+    next_lines.push(TextLine {
+      byte_start: byte_start,
+      byte_end: byte_end,
+      top: next_line_index * line_height,
+      height: line_height,
+      width: cluster_x
+    })
+    next_line_index = next_line_index + 1
+    visual_index = visual_index + 1
+  end
+  PlacedText {
+    lines: next_lines,
+    clusters: next_clusters,
+    pixel_width: next_pixel_width,
+    next_line_index: next_line_index
+  }
+end

@@ -1,0 +1,199 @@
+import { ColorRgba, Theme } from './theme'
+import { ChatMessage, ChatModel, ChatRole } from './chat_model'
+import { block_index_end_visible, block_index_first_visible, block_scroll_bottom, block_scroll_clamp } from './block_index'
+import { TextShapingState } from '../gui/text_shaping'
+import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none, wrap_width_pixels } from './text_layout'
+import { text_layout_text_ops } from './text_layout_paint'
+import { DrawOp, FillRectOp } from './draw_op'
+import { Rect, rect_contains, rect_intersect, rect_is_empty, rect_new } from './geometry'
+import { scroll_bar_rect, scroll_thumb_rect } from './widget_scroll'
+import {
+  TranscriptView,
+  transcript_content_limit,
+  transcript_empty_text,
+  transcript_pending_text,
+  transcript_role_label
+} from './chat_transcript_layout'
+
+fn visible_scroll(view: TranscriptView, view_height: i32) -> i32 = do
+  if view.stick_to_bottom != 0 then
+    return block_scroll_bottom(view.index.total, view_height)
+  end
+  block_scroll_clamp(view.index.total, view_height, view.scroll_y)
+end
+
+fn bubble_color(theme: Theme, role: ChatRole) -> ColorRgba = do
+  const color = match role
+    | RoleUser => theme.list_selected
+    | RoleAssistant => theme.button_background
+  color
+end
+
+fn body_color(theme: Theme, failed: bool) -> ColorRgba = do
+  if failed then
+    return theme.inspect_stroke
+  end
+  theme.foreground
+end
+
+fn push_layout_text(
+  operations: [DrawOp],
+  layout: TextLayout,
+  origin_x: i32,
+  origin_y: i32,
+  color: ColorRgba,
+  bounds: Rect
+) -> [DrawOp] = do
+  let mut next = operations
+  const pieces = text_layout_text_ops(layout, origin_x, origin_y, color)
+  let mut index = 0
+  while index < pieces.length() do
+    const piece = pieces[index]
+    if rect_contains(bounds, piece.origin_x, piece.origin_y) then
+      next.push(OpText(piece))
+    end
+    index = index + 1
+  end
+  next
+end
+
+fn push_bubble(
+  operations: [DrawOp],
+  bounds: Rect,
+  screen_y: i32,
+  height: i32,
+  color: ColorRgba
+) -> [DrawOp] = do
+  let mut next = operations
+  const visible = rect_intersect(bounds, rect_new(bounds.x, screen_y, bounds.width, height))
+  if rect_is_empty(visible) then
+    return next
+  end
+  next.push(OpFillRect(FillRectOp { rect: visible, color: color }))
+  next
+end
+
+fn paint_message(
+  operations: [DrawOp],
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  message: ChatMessage,
+  bounds: Rect,
+  screen_y: i32
+) -> [DrawOp] = do
+  const role_built = text_layout_build(
+    shaping, cache, theme, transcript_role_label(message.role), wrap_width_none()
+  )
+  const body_built = text_layout_build(
+    role_built.shaping,
+    role_built.cache,
+    theme,
+    message.text,
+    wrap_width_pixels(transcript_content_limit(theme, bounds.width))
+  )
+  let mut next = push_bubble(
+    operations,
+    bounds,
+    screen_y,
+    theme.padding + role_built.layout.pixel_height + body_built.layout.pixel_height + theme.padding,
+    bubble_color(theme, message.role)
+  )
+  const text_x = bounds.x + theme.padding
+  next = push_layout_text(
+    next,
+    role_built.layout,
+    text_x,
+    screen_y + theme.padding,
+    theme.muted,
+    bounds
+  )
+  push_layout_text(
+    next,
+    body_built.layout,
+    text_x,
+    screen_y + theme.padding + role_built.layout.pixel_height,
+    body_color(theme, message.failed),
+    bounds
+  )
+end
+
+fn paint_plain(
+  operations: [DrawOp],
+  theme: Theme,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  text: string,
+  bounds: Rect,
+  screen_y: i32
+) -> [DrawOp] = do
+  const built = text_layout_build(shaping, cache, theme, text, wrap_width_none())
+  push_layout_text(
+    operations,
+    built.layout,
+    bounds.x + theme.padding,
+    screen_y + theme.padding,
+    theme.muted,
+    bounds
+  )
+end
+
+fn paint_block(
+  operations: [DrawOp],
+  theme: Theme,
+  model: ChatModel,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  bounds: Rect,
+  block_index: i32,
+  screen_y: i32
+) -> [DrawOp] = do
+  if block_index >= model.messages.length() then
+    return paint_plain(
+      operations, theme, shaping, cache, transcript_pending_text(), bounds, screen_y
+    )
+  end
+  paint_message(
+    operations, theme, shaping, cache, model.messages[block_index], bounds, screen_y
+  )
+end
+
+export fn paint_transcript(
+  theme: Theme,
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  rect: Rect
+) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  operations.push(OpPushClip(rect))
+  const scroll = visible_scroll(view, rect.height)
+  const first = block_index_first_visible(view.index, scroll)
+  const finish = block_index_end_visible(view.index, scroll, rect.height)
+  let mut block_index = first
+  while block_index < finish do
+    const screen_y = rect.y + view.index.tops[block_index] - scroll
+    operations = paint_block(
+      operations, theme, model, shaping, cache, rect, block_index, screen_y
+    )
+    block_index = block_index + 1
+  end
+  if model.messages.length() == 0 && model.pending == false then
+    operations = paint_plain(
+      operations, theme, shaping, cache, transcript_empty_text(), rect, rect.y
+    )
+  end
+  if view.index.total > rect.height then
+    operations.push(OpFillRect(FillRectOp {
+      rect: scroll_bar_rect(theme, rect),
+      color: theme.scrollbar_track
+    }))
+    operations.push(OpFillRect(FillRectOp {
+      rect: scroll_thumb_rect(theme, rect, scroll, view.index.total),
+      color: theme.scrollbar_thumb
+    }))
+  end
+  operations.push(OpPopClip)
+  operations
+end

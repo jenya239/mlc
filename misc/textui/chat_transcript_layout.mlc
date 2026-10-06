@@ -1,0 +1,185 @@
+import { Theme } from './theme'
+import { ChatModel, ChatRole } from './chat_model'
+import { BlockIndex, block_index_build, block_index_empty } from './block_index'
+import { TextShapingState } from '../gui/text_shaping'
+import {
+  TextLayoutCache,
+  text_layout_build,
+  wrap_width_none,
+  wrap_width_pixels
+} from './text_layout'
+
+export type TranscriptView = {
+  width: i32,
+  measured_count: i32,
+  scroll_y: i32,
+  stick_to_bottom: i32,
+  index: BlockIndex
+}
+
+export type TranscriptMeasure = {
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache
+}
+
+type MeasuredBlock = {
+  height: i32,
+  shaping: TextShapingState,
+  cache: TextLayoutCache
+}
+
+export fn transcript_view_new() -> TranscriptView =
+  TranscriptView {
+    width: 0,
+    measured_count: 0,
+    scroll_y: 0,
+    stick_to_bottom: 1,
+    index: block_index_empty(0)
+  }
+
+export fn transcript_role_label(role: ChatRole) -> string = do
+  const label = match role
+    | RoleUser => "Вы"
+    | RoleAssistant => "Ассистент"
+  label
+end
+
+export fn transcript_pending_text() -> string =
+  "…"
+
+export fn transcript_empty_text() -> string =
+  "Нет сообщений"
+
+export fn transcript_content_limit(theme: Theme, width: i32) -> i32 = do
+  let mut inner = width - theme.padding * 2
+  if inner < 1 then
+    inner = 1
+  end
+  inner
+end
+
+export fn transcript_labeled_height(padding: i32, role_height: i32, body_height: i32) -> i32 =
+  padding + role_height + body_height + padding
+
+export fn transcript_plain_height(padding: i32, text_height: i32) -> i32 =
+  padding + text_height + padding
+
+fn measure_labeled_block(
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  label: string,
+  body: string,
+  width: i32
+) -> MeasuredBlock = do
+  const role_built = text_layout_build(shaping, cache, theme, label, wrap_width_none())
+  const body_built = text_layout_build(
+    role_built.shaping,
+    role_built.cache,
+    theme,
+    body,
+    wrap_width_pixels(transcript_content_limit(theme, width))
+  )
+  MeasuredBlock {
+    height: transcript_labeled_height(
+      theme.padding,
+      role_built.layout.pixel_height,
+      body_built.layout.pixel_height
+    ),
+    shaping: body_built.shaping,
+    cache: body_built.cache
+  }
+end
+
+fn measure_plain_block(
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  text: string
+) -> MeasuredBlock = do
+  const built = text_layout_build(shaping, cache, theme, text, wrap_width_none())
+  MeasuredBlock {
+    height: transcript_plain_height(theme.padding, built.layout.pixel_height),
+    shaping: built.shaping,
+    cache: built.cache
+  }
+end
+
+fn prefix_heights(heights: [i32], count: i32) -> [i32] = do
+  if count <= 0 then
+    let mut empty: [i32] = []
+    return empty
+  end
+  if count >= heights.length() then
+    return heights
+  end
+  heights.take(count)
+end
+
+export fn transcript_measure(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32
+) -> TranscriptMeasure = do
+  let mut current_shaping = shaping
+  let mut current_cache = cache
+  let mut heights: [i32] = []
+  let mut start = 0
+  const message_count = model.messages.length()
+  if view.width != width || message_count < view.measured_count then
+    start = 0
+  else
+    heights = prefix_heights(view.index.heights, view.measured_count)
+    if view.measured_count > 0 then
+      start = view.measured_count - 1
+      heights = prefix_heights(heights, start)
+    end
+  end
+  let mut index = start
+  while index < message_count do
+    const message = model.messages[index]
+    const measured = measure_labeled_block(
+      current_shaping,
+      current_cache,
+      theme,
+      transcript_role_label(message.role),
+      message.text,
+      width
+    )
+    current_shaping = measured.shaping
+    current_cache = measured.cache
+    heights.push(measured.height)
+    index = index + 1
+  end
+  if model.pending then
+    const pending = measure_plain_block(
+      current_shaping,
+      current_cache,
+      theme,
+      transcript_pending_text()
+    )
+    current_shaping = pending.shaping
+    current_cache = pending.cache
+    heights.push(pending.height)
+  end
+  const built = block_index_build(heights, 0)
+  let mut scroll_y = view.scroll_y
+  if view.stick_to_bottom != 0 then
+    scroll_y = built.total
+  end
+  TranscriptMeasure {
+    view: TranscriptView {
+      width: width,
+      measured_count: message_count,
+      scroll_y: scroll_y,
+      stick_to_bottom: view.stick_to_bottom,
+      index: built
+    },
+    shaping: current_shaping,
+    cache: current_cache
+  }
+end
