@@ -8,6 +8,8 @@ extern fn rename_file(old_path: string, new_path: string) -> bool
   = "mlc::file::rename_file_value" from "mlc/io/file_abi.hpp" blocking
 extern fn remove_tree(path: string) -> bool
   = "mlc::file::remove_tree_value" from "mlc/io/file_abi.hpp" blocking
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
 extern fn read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
 
@@ -83,6 +85,31 @@ export fn mutate_named_entry(
     end
   end
   if changed == false then
+    return view_of(store, state)
+  end
+  return open_directory_jailed(store, state, directory, root)
+end
+
+export fn create_jailed_directory(
+  store: WidgetStore,
+  state: UiState,
+  root: string,
+  directory: string,
+  name: string
+) -> DirectoryView = do
+  const folder = strip_one_slash(name)
+  if folder == "" || folder == "." || folder == ".." || contains_slash(folder) then
+    return view_of(store, state)
+  end
+  const parent = strip_trailing_slash(directory)
+  if parent == "" || parent == "/" then
+    return view_of(store, state)
+  end
+  const destination = join_path(parent, folder)
+  if path_inside_jail(root, destination) == false then
+    return view_of(store, state)
+  end
+  if create_directories(destination) == false then
     return view_of(store, state)
   end
   return open_directory_jailed(store, state, directory, root)

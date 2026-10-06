@@ -222,8 +222,9 @@ fn main() -> i32 = do
     const chosen = menu_apply(store, state, updated.events)
     store = chosen.store
     state = chosen.state
-    const prompted = dialog_host(
-      store, state, updated.events, DialogTarget { list_index: target_list, row: target_row }
+    const prompted = dialog_host_jailed(
+      store, state, updated.events, DialogTarget { list_index: target_list, row: target_row },
+      jail_root
     )
     store = prompted.store
     state = prompted.state

@@ -43,7 +43,7 @@ import {
   ui_state_with_overlay_open,
   ui_state_with_overlay_revision
 } from './overlay'
-import { jailed_file_text, mutate_named_entry } from './directory_mutate'
+import { create_jailed_directory, jailed_file_text, mutate_named_entry } from './directory_mutate'
 import { path_bar_current } from './path_bar'
 import { directory_target } from './directory_rows'
 import { open_directory_jailed } from './directory_browse'
@@ -259,11 +259,22 @@ end
 
 fn dialog_commit(store: WidgetStore, state: UiState, target: DialogTarget, root: string) -> OverlayView = do
   const title_id = dialog_title_id(store)
-  let mut deleting = false
+  let mut title = ""
   if widget_id_is_none(title_id) == false then
-    if label_text(store.nodes[title_id.index].kind) == "Delete" then
-      deleting = true
+    title = label_text(store.nodes[title_id.index].kind)
+  end
+  if title == "New folder" then
+    let mut name = ""
+    const field_id = dialog_field_id(store)
+    if widget_id_is_none(field_id) == false then
+      name = field_caption(store.nodes[field_id.index].kind)
     end
+    const created = create_jailed_directory(store, state, root, path_bar_current(store), name)
+    return overlay_dismiss(created.store, created.state)
+  end
+  let mut deleting = false
+  if title == "Delete" then
+    deleting = true
   end
   if root != "" then
     let mut replacement = ""
@@ -348,6 +359,9 @@ fn dialog_host_in(
       end
       if choice == "Delete" then
         view = dialog_present(view.store, view.state, "Delete", body, false)
+      end
+      if choice == "New folder" then
+        view = dialog_present(view.store, view.state, "New folder", "", true)
       end
     end
     if ui_event_is_click_on(event, dialog_ok_id(view.store)) then

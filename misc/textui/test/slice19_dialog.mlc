@@ -30,9 +30,12 @@ import {
   dialog_cancel_id,
   dialog_field_id,
   dialog_host,
+  dialog_host_jailed,
   dialog_message_id,
   dialog_ok_id
 } from '../dialog'
+import { create_jailed_directory } from '../directory_mutate'
+import { directory_listing } from '../directory_rows'
 
 fn saved_target() -> DialogTarget =
   DialogTarget { list_index: 0 - 1, row: 0 - 1 }
@@ -119,6 +122,19 @@ fn label_text(kind: WidgetKind) -> string =
     | KindListView(_) => ""
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
+
+fn listing_has_directory(path: string, name: string) -> bool = do
+  const listing = directory_listing(path, false)
+  let mut found = false
+  let mut index = 0
+  while index < listing.directories.length() do
+    if listing.directories[index] == name then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
 
 fn shown(store: WidgetStore, id: WidgetId) -> bool = do
   let mut visible = false
@@ -294,6 +310,55 @@ fn main() -> i32 = do
   end
   if widget_id_is_none(submitted.state.focus) == false then
     return -19
+  end
+
+  state = ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, menu_id.index, 3)
+  )
+  const folder_root = "/tmp/mlc-textui-new-folder"
+  const folder_dialog = dialog_host_jailed(
+    store, state, open_events, saved_target(), folder_root
+  )
+  if folder_dialog.state.overlay_open == false then
+    return -20
+  end
+  if shown(folder_dialog.store, dialog_field_id(folder_dialog.store)) == false then
+    return -21
+  end
+  const plain = dialog_host(store, state, open_events, saved_target())
+  if plain.state.overlay_open == false then
+    return -22
+  end
+  const made = create_jailed_directory(
+    widget_store_empty(), ui_state_new(), folder_root, folder_root, "box"
+  )
+  if listing_has_directory(folder_root, "box/") == false then
+    return -23
+  end
+  const rejected = create_jailed_directory(
+    made.store, made.state, folder_root, folder_root, "a/b"
+  )
+  if listing_has_directory(folder_root, "a/") then
+    return -24
+  end
+  const loose = create_jailed_directory(
+    rejected.store, rejected.state, "", folder_root, "loose"
+  )
+  if listing_has_directory(folder_root, "loose/") == false then
+    return -25
+  end
+  const blocked = create_jailed_directory(
+    loose.store, loose.state, "/tmp/mlc-textui-other-jail", folder_root, "nope"
+  )
+  if listing_has_directory(folder_root, "nope/") then
+    return -26
+  end
+  const at_filesystem_root = create_jailed_directory(
+    blocked.store, blocked.state, "", "/", "should-not"
+  )
+  if listing_has_directory("/", "should-not/") then
+    return -27
   end
   0
 end

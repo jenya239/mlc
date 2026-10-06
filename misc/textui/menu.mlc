@@ -98,6 +98,7 @@ export fn attach_file_menu(store: WidgetStore) -> WidgetStore = do
   rows.push("Open")
   rows.push("Rename")
   rows.push("Delete")
+  rows.push("New folder")
   return widget_store_add_list_view(next, layer, ListData { texts: rows }, 0, true)
 end
 
