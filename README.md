@@ -2,12 +2,14 @@
 
 Экспериментальный самохостящийся компилятор. MLC-исходники → C++20.
 
-## Статус (май 2026)
+## Статус (2026-07-19)
 
-- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем сборка (по умолчанию `clang++`, см. `MLC_CXX`) → `compiler/out/mlcc`. Холодный старт с нуля через Ruby (`MLCC_FORCE_RUBY=1`) — ~14 мин; обычный инкрементальный ребилд существующего `mlcc` — секунды (skip при неизменённом содержимом `.mlc`, полная регенерация при правке).
-- **447 тестов** self-hosted компилятора (`rake test_compiler_mlc`): они пересобирают **только** `compiler/out/run_tests` через Ruby; **свежий `mlcc` после правок в `compiler/**` — только `compiler/build.sh`**.
+- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем сборка (по умолчанию `clang++`, см. `MLC_CXX`) → `compiler/out/mlcc`. Холодный старт с нуля через Ruby (`MLCC_FORCE_RUBY=1`) — порядка минут; обычный инкрементальный ребилд существующего `mlcc` — секунды (skip при неизменённом содержимом `.mlc`, полная регенерация при правке).
+- **Self-hosted тесты** (`rake test_compiler_mlc`): пересобирают **только** `compiler/out/run_tests` через Ruby; **свежий `mlcc` после правок в `compiler/**` — только `compiler/build.sh`**. Точное число тестов растёт с каждым треком — см. вывод команды, не фиксируем здесь, чтобы не устаревало.
+- **Codegen — типизированный CppAST, не строковая конкатенация**: `compiler/cpp_ir/cpp_ast.mlc` строится из `SemanticIR`/MIR и печатается через `cpp_emit/print.mlc`; старый string-templating модуль `codegen/expr/expr.mlc` удалён ([TRACK_CODEGEN_CPPAST_ONLY](docs/archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md), закрыт 2026-07-17). Не 100% — остаточные `CppStatementFragment`/print-at-call-site мостики есть, но основной путь типизирован.
 - **Самосборка**: точка входа `compiler/main.mlc` с импортами — `compiler/out/mlcc -o <dir> compiler/main.mlc`; контроль корректности кодогена: второй проход бинарём, собранным из выхода первого (`mlcc2`), и **`diff -rq` двух каталогов C++** (ожидается пустой diff). При нехватке `/tmp` задать `TMPDIR` внутри репозитория.
-- Ruby-компилятор (`lib/mlc/`): ~1106 unit-тестов — bootstrap и эталон семантики, не удаляется.
+- **Concurrency в self-hosted `mlcc`**: `spawn`/`Mutex`/`Channel`/`Task`/`TaskScope`/`Isolate` — язык поддерживает многопоточность (atomic refcount; `COW`-detach не атомарен — не делить мутируемые коллекции между потоками без синхронизации). Ruby-компилятор (`lib/mlc/`) этого не имеет — временный разрыв, детали: [docs/MLC.md](docs/MLC.md) §«Два пайплайна».
+- Ruby-компилятор (`lib/mlc/`): bootstrap и эталон семантики (~1100 unit-тестов), не удаляется.
 
 ## Архитектура
 
@@ -126,28 +128,31 @@ int area(std::shared_ptr<Shape> s) {
 ## Структура проекта
 
 ```
-compiler/           — self-hosted компилятор (~23K строк MLC)
+compiler/           — self-hosted компилятор (~49K строк MLC)
   main.mlc          — точка входа
   lexer.mlc, ast.mlc
   parser/           — exprs, decls, types, predicates
   checker/          — name resolution, type inference, transform → SemanticIR
-  codegen/          — генерация C++ из SemanticIR
-  cpp/              — C++ AST (для парсинга C++ в тестах)
+  mir/              — MIR (flat IR между SemanticIR и CppAST)
+  cpp_ir/           — CppAST (типизированное представление C++)
+  codegen/          — lowering SemanticIR/MIR → CppAST
+  cpp_emit/         — печать CppAST → C++ source
   tests/            — unit + e2e тесты
   out/              — скомпилированный mlcc (бинарник + артефакты)
 lib/mlc/            — Ruby bootstrap-компилятор (эталон, не удаляется)
-runtime/            — C++20 runtime (String COW, Array COW, HashMap COW, io)
-test/mlc/           — unit-тесты Ruby-компилятора (~1100 тестов)
+runtime/            — C++20 runtime (String COW, Array COW, HashMap COW, io, concurrency)
+misc/textui/        — file manager (PLAN §112)
+test/mlc/           — unit-тесты Ruby-компилятора
 docs/               — архитектура, план развития, дизайн языка
 ```
 
 ## Тесты
 
 ```bash
-# Self-hosted компилятор (447 тестов, ~10 мин включая сборку)
+# Self-hosted компилятор (rebuild + run_tests)
 bundle exec rake test_compiler_mlc
 
-# Ruby-компилятор (1106 тестов, быстро)
+# Ruby-компилятор (быстро, без сборки mlcc)
 bundle exec rake test_mlc
 
 # Оба
@@ -185,4 +190,4 @@ Language reference (syntax by area, examples from e2e/demos):
 
 Reproducible commands: `scripts/reddit_demo.sh` (`--run`, `--record-baseline`).
 
-Media checklist (screenshot / asciinema): [docs/agent/REDDIT_DEMO_MEDIA.md](docs/agent/REDDIT_DEMO_MEDIA.md). Baseline numbers: [docs/agent/reddit_demo_baseline.txt](docs/agent/reddit_demo_baseline.txt).
+Media checklist (screenshot / asciinema): [docs/archive/tracks/REDDIT_DEMO_MEDIA.md](docs/archive/tracks/REDDIT_DEMO_MEDIA.md). Baseline numbers: [docs/archive/tracks/reddit_demo_baseline.txt](docs/archive/tracks/reddit_demo_baseline.txt).
