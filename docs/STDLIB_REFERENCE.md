@@ -21,6 +21,7 @@ module surface — out of scope here.
 - [JsonText](#jsontext)
 - [WebSocket](#websocket)
 - [Postgres](#postgres)
+- [Sqlite](#sqlite)
 - [Crypto](#crypto)
 - [Log](#log)
 - [Env](#env)
@@ -473,6 +474,42 @@ Source: [`misc/examples/postgres_select_demo.mlc`](../misc/examples/postgres_sel
 
 Postgres only; blocking libpq. PoC-level API (no prepared statements / pool in
 this module). Link requires libpq.
+
+## Sqlite
+
+Module: [`lib/mlc/common/stdlib/db/sqlite.mlc`](../lib/mlc/common/stdlib/db/sqlite.mlc).
+mlcc consumers import that path. Handles are `i32`. Errors are returned on the
+result value. Blob values are lowercase hex (`SqliteBlobHex`).
+
+Demo: [`misc/examples/sqlite_demo.mlc`](../misc/examples/sqlite_demo.mlc).
+Gate: `scripts/run_sqlite_gate.sh` (exit 2 when `sqlite3.h` is missing).
+Shim: `runtime/include/mlc/db/sqlite_abi.hpp`, link `-lsqlite3` only for the
+consumer.
+
+| Name | Signature | Description |
+|------|-----------|-------------|
+| `SqliteError` | `{ code, extended_code, message }` | Primary code, extended code, message |
+| `SqliteValue` | `Null \| Integer(i64) \| Float(f64) \| Text(string) \| BlobHex(string)` | Cell or bind value |
+| `open_file` | `(path: string) -> SqliteHandleResult` | Read-write, create, no mutex |
+| `open_readonly` | `(path: string) -> SqliteHandleResult` | Read-only |
+| `open_memory` | `() -> SqliteHandleResult` | `:memory:` |
+| `close_db` | `(connection_handle: i32) -> SqliteUnitResult` | Finalize statements, then close |
+| `exec` | `(connection_handle: i32, sql: string) -> SqliteUnitResult` | Run SQL with no result rows |
+| `prepare` | `(connection_handle: i32, sql: string) -> SqliteHandleResult` | One statement; trailing SQL is an error |
+| `bind_null` / `bind_i64` / `bind_f64` / `bind_text` / `bind_blob_hex` / `bind_value` | parameter index starts at 1 | Bind one parameter |
+| `step` | `(statement_handle: i32) -> SqliteStepResult` | `Row`, `Done`, or error |
+| `column` | `(statement_handle: i32, column_index: i32) -> SqliteValueResult` | Column index starts at 0 |
+| `begin_transaction` / `begin_immediate` / `commit` / `rollback` | `(connection_handle: i32) -> SqliteUnitResult` | Transaction control |
+| `in_transaction` | `(connection_handle: i32) -> SqliteBoolResult` | True while autocommit is off |
+| `error_is_busy` / `error_is_locked` / `error_is_constraint` | `(error: SqliteError) -> bool` | Codes 5, 6, and 19 |
+
+### Limitations
+
+System `libsqlite3`, not a vendored amalgamation. One connection per thread.
+No URI, shared cache, or full mutex. `bind_text` stops at the first NUL. A
+busy `COMMIT` leaves the transaction open. Second `close_db` / `finalize` is
+code 21. Ruby `compile_project` does not lower this module; see
+[TRACK_STDLIB_SQLITE](agent/TRACK_STDLIB_SQLITE.md).
 
 ## Crypto
 

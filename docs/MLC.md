@@ -543,6 +543,27 @@ Protocol on MLC (`std/net/websocket.mlc`):
 
 Не в v1: ORM, pool, prepared statements, COPY, async/`spawn`.
 
+#### Sqlite (sqlite3 stdlib)
+
+Зафиксировано 2026-10-06 (`TRACK_STDLIB_SQLITE`). Runtime (`mlc::db`,
+`runtime/include/mlc/db/sqlite_abi.hpp`):
+
+- Модуль `Sqlite` (`lib/mlc/common/stdlib/db/sqlite.mlc`). Потребитель mlcc
+  импортирует файл по пути. `extern lib "sqlite3"`; базовая сборка `mlcc` sqlite
+  не линкует.
+- Соединение и statement — `i32`. Ошибка едет в результате (`code`,
+  `extended_code`, `message`), отдельного `last_error()` нет. BLOB — hex.
+- Gate: `scripts/run_sqlite_gate.sh` (нет `sqlite3.h` — код 2). Пример:
+  `misc/examples/sqlite_demo.mlc`.
+- На этой машине слинкована системная SQLite 3.45.1. Пол порога в шиме:
+  `SQLITE_VERSION_NUMBER >= 3007015`.
+
+Ruby `MLC.compile_project` этот модуль не опускает (`i64_from_i32`: ожидался
+`i64`, пришёл `i32`). Голый `import Sqlite::{...}` в Ruby даёт
+`mlc::sqlite::…`, не символ шима. Ruby-компилятор не патчился.
+
+Не в этой поставке: пул, async, ORM, миграции, URI, blob-поток, backup.
+
 #### Crypto (libsodium stdlib)
 
 Зафиксировано 2026-07-10 (`TRACK_STDLIB_CRYPTO`). Runtime (`mlc::crypto`):

@@ -1,0 +1,11 @@
+extern lib "sqlite3"
+
+extern fn sqlite3_libversion_number() -> i32 =
+  "sqlite3_libversion_number" from "sqlite3.h" blocking
+
+fn main() -> i32 = do
+  if sqlite3_libversion_number() < 3007015 then
+    return 1
+  end
+  0
+end

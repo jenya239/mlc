@@ -1,0 +1,253 @@
+//! @module std/db/sqlite
+//! @category db
+//! @type mixed
+//! @namespace mlc::db
+//!
+//! SQLite through sqlite_abi.hpp. Public handles are i32. Errors travel in the
+//! result value. Link with `extern lib "sqlite3"`.
+
+module Sqlite
+
+extern lib "sqlite3"
+
+export type SqliteError = { code: i32, extended_code: i32, message: string }
+
+export type SqliteValue =
+  SqliteNull
+  | SqliteInteger(i64)
+  | SqliteFloat(f64)
+  | SqliteText(string)
+  | SqliteBlobHex(string)
+
+export type SqliteUnitResult = SqliteUnitOk | SqliteUnitErr(SqliteError)
+export type SqliteHandleResult = SqliteHandleOk(i32) | SqliteHandleErr(SqliteError)
+export type SqliteIntResult = SqliteIntOk(i64) | SqliteIntErr(SqliteError)
+export type SqliteBoolResult = SqliteBoolOk(bool) | SqliteBoolErr(SqliteError)
+export type SqliteStepResult = SqliteStepRow | SqliteStepDone | SqliteStepErr(SqliteError)
+export type SqliteValueResult = SqliteValueOk(SqliteValue) | SqliteValueErr(SqliteError)
+
+extern fn sqlite_libversion_s() -> string =
+  "mlc::db::sqlite_libversion_s" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_libversion_number_i() -> i32 =
+  "mlc::db::sqlite_libversion_number_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_open_i(path: string, open_kind: i32) -> i32 =
+  "mlc::db::sqlite_open_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_close_i(connection_handle: i32) -> i32 =
+  "mlc::db::sqlite_close_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_exec_i(connection_handle: i32, sql: string) -> i32 =
+  "mlc::db::sqlite_exec_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_busy_timeout_i(connection_handle: i32, milliseconds: i32) -> i32 =
+  "mlc::db::sqlite_busy_timeout_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_changes_i(connection_handle: i32) -> i32 =
+  "mlc::db::sqlite_changes_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_last_insert_rowid_l(connection_handle: i32) -> i64 =
+  "mlc::db::sqlite_last_insert_rowid_l" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_autocommit_i(connection_handle: i32) -> i32 =
+  "mlc::db::sqlite_autocommit_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_prepare_i(connection_handle: i32, sql: string) -> i32 =
+  "mlc::db::sqlite_prepare_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_bind_null_i(statement_handle: i32, parameter_index: i32) -> i32 =
+  "mlc::db::sqlite_bind_null_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_bind_i64_i(statement_handle: i32, parameter_index: i32, value: i64) -> i32 =
+  "mlc::db::sqlite_bind_i64_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_bind_f64_i(statement_handle: i32, parameter_index: i32, value: f64) -> i32 =
+  "mlc::db::sqlite_bind_f64_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_bind_text_i(statement_handle: i32, parameter_index: i32, value: string) -> i32 =
+  "mlc::db::sqlite_bind_text_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_bind_blob_hex_i(statement_handle: i32, parameter_index: i32, value: string) -> i32 =
+  "mlc::db::sqlite_bind_blob_hex_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_step_i(statement_handle: i32) -> i32 =
+  "mlc::db::sqlite_step_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_reset_i(statement_handle: i32) -> i32 =
+  "mlc::db::sqlite_reset_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_clear_bindings_i(statement_handle: i32) -> i32 =
+  "mlc::db::sqlite_clear_bindings_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_finalize_i(statement_handle: i32) -> i32 =
+  "mlc::db::sqlite_finalize_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_count_i(statement_handle: i32) -> i32 =
+  "mlc::db::sqlite_column_count_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_type_i(statement_handle: i32, column_index: i32) -> i32 =
+  "mlc::db::sqlite_column_type_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_i64_l(statement_handle: i32, column_index: i32) -> i64 =
+  "mlc::db::sqlite_column_i64_l" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_f64_d(statement_handle: i32, column_index: i32) -> f64 =
+  "mlc::db::sqlite_column_f64_d" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_text_s(statement_handle: i32, column_index: i32) -> string =
+  "mlc::db::sqlite_column_text_s" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_column_blob_hex_s(statement_handle: i32, column_index: i32) -> string =
+  "mlc::db::sqlite_column_blob_hex_s" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_last_error_code_i() -> i32 =
+  "mlc::db::sqlite_last_error_code_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_last_error_extended_i() -> i32 =
+  "mlc::db::sqlite_last_error_extended_i" from "mlc/db/sqlite_abi.hpp" blocking
+extern fn sqlite_last_error_message_s() -> string =
+  "mlc::db::sqlite_last_error_message_s" from "mlc/db/sqlite_abi.hpp" blocking
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn read_error() -> SqliteError =
+  SqliteError {
+    code: sqlite_last_error_code_i(),
+    extended_code: sqlite_last_error_extended_i(),
+    message: sqlite_last_error_message_s()
+  }
+
+fn status_unit(result_code: i32) -> SqliteUnitResult = do
+  if result_code != 0 then
+    return SqliteUnitErr(read_error())
+  end
+  SqliteUnitOk
+end
+
+fn status_handle(handle: i32) -> SqliteHandleResult = do
+  if handle == 0 then
+    return SqliteHandleErr(read_error())
+  end
+  SqliteHandleOk(handle)
+end
+
+export fn libversion() -> string = sqlite_libversion_s()
+
+export fn libversion_number() -> i32 = sqlite_libversion_number_i()
+
+export fn open_file(path: string) -> SqliteHandleResult =
+  status_handle(sqlite_open_i(path, 0))
+
+export fn open_readonly(path: string) -> SqliteHandleResult =
+  status_handle(sqlite_open_i(path, 1))
+
+export fn open_memory() -> SqliteHandleResult =
+  open_file(":memory:")
+
+export fn close_db(connection_handle: i32) -> SqliteUnitResult =
+  status_unit(sqlite_close_i(connection_handle))
+
+export fn exec(connection_handle: i32, sql: string) -> SqliteUnitResult =
+  status_unit(sqlite_exec_i(connection_handle, sql))
+
+export fn busy_timeout(connection_handle: i32, milliseconds: i32) -> SqliteUnitResult =
+  status_unit(sqlite_busy_timeout_i(connection_handle, milliseconds))
+
+export fn changes(connection_handle: i32) -> SqliteIntResult = do
+  let count = sqlite_changes_i(connection_handle)
+  let error = read_error()
+  if error.code != 0 then
+    return SqliteIntErr(error)
+  end
+  SqliteIntOk(i64_from_i32(count))
+end
+
+export fn last_insert_rowid(connection_handle: i32) -> SqliteIntResult = do
+  let row_identifier = sqlite_last_insert_rowid_l(connection_handle)
+  let error = read_error()
+  if error.code != 0 then
+    return SqliteIntErr(error)
+  end
+  SqliteIntOk(row_identifier)
+end
+
+export fn begin_transaction(connection_handle: i32) -> SqliteUnitResult =
+  exec(connection_handle, "BEGIN")
+
+export fn begin_immediate(connection_handle: i32) -> SqliteUnitResult =
+  exec(connection_handle, "BEGIN IMMEDIATE")
+
+export fn commit(connection_handle: i32) -> SqliteUnitResult =
+  exec(connection_handle, "COMMIT")
+
+export fn rollback(connection_handle: i32) -> SqliteUnitResult =
+  exec(connection_handle, "ROLLBACK")
+
+export fn in_transaction(connection_handle: i32) -> SqliteBoolResult = do
+  let autocommit = sqlite_autocommit_i(connection_handle)
+  let error = read_error()
+  if error.code != 0 then
+    return SqliteBoolErr(error)
+  end
+  SqliteBoolOk(autocommit == 0)
+end
+
+export fn prepare(connection_handle: i32, sql: string) -> SqliteHandleResult =
+  status_handle(sqlite_prepare_i(connection_handle, sql))
+
+export fn bind_null(statement_handle: i32, parameter_index: i32) -> SqliteUnitResult =
+  status_unit(sqlite_bind_null_i(statement_handle, parameter_index))
+
+export fn bind_i64(statement_handle: i32, parameter_index: i32, value: i64) -> SqliteUnitResult =
+  status_unit(sqlite_bind_i64_i(statement_handle, parameter_index, value))
+
+export fn bind_f64(statement_handle: i32, parameter_index: i32, value: f64) -> SqliteUnitResult =
+  status_unit(sqlite_bind_f64_i(statement_handle, parameter_index, value))
+
+export fn bind_text(statement_handle: i32, parameter_index: i32, value: string) -> SqliteUnitResult =
+  status_unit(sqlite_bind_text_i(statement_handle, parameter_index, value))
+
+export fn bind_blob_hex(statement_handle: i32, parameter_index: i32, value: string) -> SqliteUnitResult =
+  status_unit(sqlite_bind_blob_hex_i(statement_handle, parameter_index, value))
+
+export fn bind_value(statement_handle: i32, parameter_index: i32, value: SqliteValue) -> SqliteUnitResult =
+  match value {
+    SqliteNull => bind_null(statement_handle, parameter_index),
+    SqliteInteger(integer_value) => bind_i64(statement_handle, parameter_index, integer_value),
+    SqliteFloat(float_value) => bind_f64(statement_handle, parameter_index, float_value),
+    SqliteText(text_value) => bind_text(statement_handle, parameter_index, text_value),
+    SqliteBlobHex(hex_value) => bind_blob_hex(statement_handle, parameter_index, hex_value)
+  }
+
+export fn step(statement_handle: i32) -> SqliteStepResult = do
+  let result_code = sqlite_step_i(statement_handle)
+  if result_code == 100 then
+    return SqliteStepRow
+  end
+  if result_code == 101 then
+    return SqliteStepDone
+  end
+  SqliteStepErr(read_error())
+end
+
+export fn column_count(statement_handle: i32) -> SqliteIntResult = do
+  let count = sqlite_column_count_i(statement_handle)
+  let error = read_error()
+  if error.code != 0 then
+    return SqliteIntErr(error)
+  end
+  SqliteIntOk(i64_from_i32(count))
+end
+
+export fn column(statement_handle: i32, column_index: i32) -> SqliteValueResult = do
+  let type_code = sqlite_column_type_i(statement_handle, column_index)
+  if type_code < 0 then
+    return SqliteValueErr(read_error())
+  end
+  if type_code == 5 then
+    return SqliteValueOk(SqliteNull)
+  end
+  if type_code == 1 then
+    return SqliteValueOk(SqliteInteger(sqlite_column_i64_l(statement_handle, column_index)))
+  end
+  if type_code == 2 then
+    return SqliteValueOk(SqliteFloat(sqlite_column_f64_d(statement_handle, column_index)))
+  end
+  if type_code == 3 then
+    return SqliteValueOk(SqliteText(sqlite_column_text_s(statement_handle, column_index)))
+  end
+  if type_code == 4 then
+    return SqliteValueOk(SqliteBlobHex(sqlite_column_blob_hex_s(statement_handle, column_index)))
+  end
+  SqliteValueErr(read_error())
+end
+
+export fn reset(statement_handle: i32) -> SqliteUnitResult =
+  status_unit(sqlite_reset_i(statement_handle))
+
+export fn clear_bindings(statement_handle: i32) -> SqliteUnitResult =
+  status_unit(sqlite_clear_bindings_i(statement_handle))
+
+export fn finalize(statement_handle: i32) -> SqliteUnitResult =
+  status_unit(sqlite_finalize_i(statement_handle))
+
+export fn error_is_busy(error: SqliteError) -> bool = error.code == 5
+
+export fn error_is_locked(error: SqliteError) -> bool = error.code == 6
+
+export fn error_is_constraint(error: SqliteError) -> bool = error.code == 19

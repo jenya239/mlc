@@ -1,0 +1,8 @@
+import { libversion_number } from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn main() -> i32 = do
+  if libversion_number() < 3007015 then
+    return 1
+  end
+  0
+end

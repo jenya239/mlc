@@ -1,0 +1,103 @@
+import {
+  SqliteHandleResult,
+  SqliteHandleOk,
+  SqliteHandleErr,
+  SqliteStepResult,
+  SqliteStepRow,
+  SqliteStepDone,
+  SqliteStepErr,
+  SqliteUnitResult,
+  SqliteUnitOk,
+  SqliteUnitErr,
+  SqliteValue,
+  SqliteValueResult,
+  SqliteValueOk,
+  SqliteValueErr,
+  SqliteNull,
+  SqliteInteger,
+  SqliteFloat,
+  SqliteText,
+  SqliteBlobHex,
+  bind_text,
+  close_db,
+  column,
+  exec,
+  finalize,
+  open_memory,
+  prepare,
+  step
+} from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn unit_code(value: SqliteUnitResult) -> i32 =
+  match value {
+    SqliteUnitOk => 0,
+    SqliteUnitErr(_) => 1
+  }
+
+fn handle_of(value: SqliteHandleResult) -> i32 =
+  match value {
+    SqliteHandleOk(handle) => handle,
+    SqliteHandleErr(_) => 0
+  }
+
+fn kind_of_step(value: SqliteStepResult) -> i32 =
+  match value {
+    SqliteStepRow => 1,
+    SqliteStepDone => 2,
+    SqliteStepErr(_) => 3
+  }
+
+fn cell_text(cell: SqliteValue) -> string =
+  match cell {
+    SqliteText(text) => text,
+    SqliteNull => "",
+    SqliteInteger(_) => "",
+    SqliteFloat(_) => "",
+    SqliteBlobHex(_) => ""
+  }
+
+fn ok_text(value: SqliteValueResult) -> string =
+  match value {
+    SqliteValueOk(cell) => cell_text(cell),
+    SqliteValueErr(_) => ""
+  }
+
+fn main() -> i32 = do
+  let connection = handle_of(open_memory())
+  if connection <= 0 then
+    return 1
+  end
+  if unit_code(exec(connection, "CREATE TABLE item(label TEXT)")) != 0 then
+    return 2
+  end
+  let insert = handle_of(prepare(connection, "INSERT INTO item(label) VALUES (?1)"))
+  if insert <= 0 then
+    return 3
+  end
+  if unit_code(bind_text(insert, 1, "sqlite")) != 0 then
+    return 4
+  end
+  if kind_of_step(step(insert)) != 2 then
+    return 5
+  end
+  if unit_code(finalize(insert)) != 0 then
+    return 6
+  end
+  let query = handle_of(prepare(connection, "SELECT label FROM item"))
+  if query <= 0 then
+    return 7
+  end
+  if kind_of_step(step(query)) != 1 then
+    return 8
+  end
+  if ok_text(column(query, 0)) != "sqlite" then
+    return 9
+  end
+  if unit_code(finalize(query)) != 0 then
+    return 10
+  end
+  if unit_code(close_db(connection)) != 0 then
+    return 11
+  end
+  0
+end

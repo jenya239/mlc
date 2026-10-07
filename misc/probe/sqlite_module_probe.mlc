@@ -1,0 +1,76 @@
+import {
+  SqliteIntResult,
+  SqliteIntOk,
+  SqliteIntErr,
+  SqliteUnitResult,
+  SqliteUnitOk,
+  SqliteUnitErr,
+  SqliteHandleResult,
+  SqliteHandleOk,
+  SqliteHandleErr,
+  changes,
+  close_db,
+  exec,
+  libversion_number,
+  open_memory
+} from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+extern fn posix_close(descriptor: i32) -> i32 =
+  "close" from "<unistd.h>" blocking
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn unit_code(value: SqliteUnitResult) -> i32 =
+  match value {
+    SqliteUnitOk => 0,
+    SqliteUnitErr(error) => error.code
+  }
+
+fn unit_message_empty(value: SqliteUnitResult) -> bool =
+  match value {
+    SqliteUnitOk => true,
+    SqliteUnitErr(error) => error.message.byte_size() == 0
+  }
+
+fn handle_of(value: SqliteHandleResult) -> i32 =
+  match value {
+    SqliteHandleOk(handle) => handle,
+    SqliteHandleErr(_) => 0
+  }
+
+fn int_is(value: SqliteIntResult, expected: i32) -> bool =
+  match value {
+    SqliteIntOk(count) => count == i64_from_i32(expected),
+    SqliteIntErr(_) => false
+  }
+
+fn main() -> i32 = do
+  if libversion_number() < 3007015 then
+    return 1
+  end
+  let _descriptor = posix_close(0 - 1)
+  let connection = handle_of(open_memory())
+  if connection <= 0 then
+    return 2
+  end
+  if unit_code(exec(connection, "CREATE TABLE item(name TEXT)")) != 0 then
+    return 3
+  end
+  if unit_code(exec(connection, "INSERT INTO item(name) VALUES ('a')")) != 0 then
+    return 4
+  end
+  if int_is(changes(connection), 1) == false then
+    return 5
+  end
+  let broken = exec(connection, "NOT SQL")
+  if unit_code(broken) != 1 || unit_message_empty(broken) then
+    return 6
+  end
+  if unit_code(close_db(connection)) != 0 then
+    return 7
+  end
+  if unit_code(close_db(connection)) != 21 then
+    return 8
+  end
+  0
+end

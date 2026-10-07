@@ -1,0 +1,252 @@
+import { get_or } from '../../lib/mlc/common/stdlib/env/env.mlc'
+import {
+  SqliteBoolResult,
+  SqliteBoolOk,
+  SqliteBoolErr,
+  SqliteError,
+  SqliteHandleResult,
+  SqliteHandleOk,
+  SqliteHandleErr,
+  SqliteStepResult,
+  SqliteStepRow,
+  SqliteStepDone,
+  SqliteStepErr,
+  SqliteUnitResult,
+  SqliteUnitOk,
+  SqliteUnitErr,
+  SqliteValue,
+  SqliteValueResult,
+  SqliteValueOk,
+  SqliteValueErr,
+  SqliteNull,
+  SqliteInteger,
+  SqliteFloat,
+  SqliteText,
+  SqliteBlobHex,
+  begin_immediate,
+  begin_transaction,
+  busy_timeout,
+  close_db,
+  column,
+  commit,
+  error_is_busy,
+  exec,
+  finalize,
+  in_transaction,
+  open_file,
+  open_memory,
+  prepare,
+  rollback,
+  step
+} from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn unit_code(value: SqliteUnitResult) -> i32 =
+  match value {
+    SqliteUnitOk => 0,
+    SqliteUnitErr(error) => error.code
+  }
+
+fn handle_of(value: SqliteHandleResult) -> i32 =
+  match value {
+    SqliteHandleOk(handle) => handle,
+    SqliteHandleErr(_) => 0
+  }
+
+fn kind_of_step(value: SqliteStepResult) -> i32 =
+  match value {
+    SqliteStepRow => 1,
+    SqliteStepDone => 2,
+    SqliteStepErr(_) => 3
+  }
+
+fn cell_integer(cell: SqliteValue) -> i64 =
+  match cell {
+    SqliteInteger(number) => number,
+    SqliteNull => i64_from_i32(0),
+    SqliteFloat(_) => i64_from_i32(0),
+    SqliteText(_) => i64_from_i32(0),
+    SqliteBlobHex(_) => i64_from_i32(0)
+  }
+
+fn ok_cell(value: SqliteValueResult) -> SqliteValue =
+  match value {
+    SqliteValueOk(cell) => cell,
+    SqliteValueErr(_) => SqliteNull
+  }
+
+fn flag_bit(flag: bool) -> i32 = do
+  if flag then
+    return 1
+  end
+  0
+end
+
+fn transaction_bit(value: SqliteBoolResult) -> i32 =
+  match value {
+    SqliteBoolOk(flag) => flag_bit(flag),
+    SqliteBoolErr(_) => 0 - 1
+  }
+
+fn busy_bit(value: SqliteUnitResult) -> i32 =
+  match value {
+    SqliteUnitOk => 0,
+    SqliteUnitErr(error) => busy_code(error)
+  }
+
+fn busy_code(error: SqliteError) -> i32 = do
+  if error_is_busy(error) && error.message.byte_size() > 0 then
+    return error.code
+  end
+  0 - 1
+end
+
+fn row_count(connection_handle: i32) -> i32 = do
+  let query = handle_of(prepare(connection_handle, "SELECT COUNT(*) FROM item"))
+  if query <= 0 then
+    return 0 - 1
+  end
+  if kind_of_step(step(query)) != 1 then
+    return 0 - 1
+  end
+  let count = cell_integer(ok_cell(column(query, 0)))
+  if unit_code(finalize(query)) != 0 then
+    return 0 - 1
+  end
+  if count == i64_from_i32(0) then
+    return 0
+  end
+  if count == i64_from_i32(1) then
+    return 1
+  end
+  0 - 1
+end
+
+fn check_memory() -> i32 = do
+  let connection = handle_of(open_memory())
+  if connection <= 0 then
+    return 1
+  end
+  if unit_code(exec(connection, "CREATE TABLE item(name TEXT)")) != 0 then
+    return 2
+  end
+  if transaction_bit(in_transaction(connection)) != 0 then
+    return 3
+  end
+  if unit_code(begin_transaction(connection)) != 0 then
+    return 4
+  end
+  if transaction_bit(in_transaction(connection)) != 1 then
+    return 5
+  end
+  if unit_code(exec(connection, "INSERT INTO item(name) VALUES ('a')")) != 0 then
+    return 6
+  end
+  if unit_code(rollback(connection)) != 0 then
+    return 7
+  end
+  if row_count(connection) != 0 then
+    return 8
+  end
+  if transaction_bit(in_transaction(connection)) != 0 then
+    return 9
+  end
+  if unit_code(begin_transaction(connection)) != 0 then
+    return 10
+  end
+  if unit_code(exec(connection, "INSERT INTO item(name) VALUES ('b')")) != 0 then
+    return 11
+  end
+  if unit_code(commit(connection)) != 0 then
+    return 12
+  end
+  if row_count(connection) != 1 then
+    return 13
+  end
+  if unit_code(begin_transaction(connection)) != 0 then
+    return 14
+  end
+  if unit_code(begin_transaction(connection)) != 1 then
+    return 15
+  end
+  if unit_code(rollback(connection)) != 0 then
+    return 16
+  end
+  if unit_code(close_db(connection)) != 0 then
+    return 17
+  end
+  0
+end
+
+fn check_file(path: string) -> i32 = do
+  let first = handle_of(open_file(path))
+  let second = handle_of(open_file(path))
+  if first <= 0 || second <= 0 then
+    return 21
+  end
+  if unit_code(exec(first, "CREATE TABLE IF NOT EXISTS item(name TEXT)")) != 0 then
+    return 22
+  end
+  if unit_code(begin_immediate(first)) != 0 then
+    return 23
+  end
+  if unit_code(busy_timeout(second, 0)) != 0 then
+    return 24
+  end
+  if busy_bit(begin_immediate(second)) != 5 then
+    return 25
+  end
+  if transaction_bit(in_transaction(second)) != 0 then
+    return 26
+  end
+  if unit_code(rollback(first)) != 0 then
+    return 27
+  end
+  if unit_code(begin_transaction(first)) != 0 then
+    return 28
+  end
+  if unit_code(exec(first, "SELECT COUNT(*) FROM item")) != 0 then
+    return 29
+  end
+  if unit_code(begin_immediate(second)) != 0 then
+    return 30
+  end
+  if unit_code(exec(second, "INSERT INTO item(name) VALUES ('x')")) != 0 then
+    return 31
+  end
+  if busy_bit(commit(second)) != 5 then
+    return 32
+  end
+  if transaction_bit(in_transaction(second)) != 1 then
+    return 33
+  end
+  if unit_code(rollback(second)) != 0 then
+    return 34
+  end
+  if transaction_bit(in_transaction(second)) != 0 then
+    return 35
+  end
+  if unit_code(commit(first)) != 0 then
+    return 36
+  end
+  if unit_code(close_db(first)) != 0 then
+    return 37
+  end
+  if unit_code(close_db(second)) != 0 then
+    return 38
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let memory_code = check_memory()
+  if memory_code != 0 then
+    return memory_code
+  end
+  let path = get_or("MLC_SQLITE_DB", "")
+  if path.byte_size() == 0 then
+    return 20
+  end
+  check_file(path)
+end

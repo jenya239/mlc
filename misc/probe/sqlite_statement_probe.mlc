@@ -1,0 +1,203 @@
+import {
+  SqliteHandleResult,
+  SqliteHandleOk,
+  SqliteHandleErr,
+  SqliteStepResult,
+  SqliteStepRow,
+  SqliteStepDone,
+  SqliteStepErr,
+  SqliteUnitResult,
+  SqliteUnitOk,
+  SqliteUnitErr,
+  SqliteValue,
+  SqliteValueResult,
+  SqliteValueOk,
+  SqliteValueErr,
+  SqliteNull,
+  SqliteInteger,
+  SqliteFloat,
+  SqliteText,
+  SqliteBlobHex,
+  bind_blob_hex,
+  bind_f64,
+  bind_i64,
+  bind_null,
+  bind_text,
+  close_db,
+  column,
+  exec,
+  finalize,
+  open_memory,
+  prepare,
+  step
+} from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn unit_code(value: SqliteUnitResult) -> i32 =
+  match value {
+    SqliteUnitOk => 0,
+    SqliteUnitErr(error) => error.code
+  }
+
+fn handle_of(value: SqliteHandleResult) -> i32 =
+  match value {
+    SqliteHandleOk(handle) => handle,
+    SqliteHandleErr(_) => 0
+  }
+
+fn kind_of_step(value: SqliteStepResult) -> i32 =
+  match value {
+    SqliteStepRow => 1,
+    SqliteStepDone => 2,
+    SqliteStepErr(_) => 3
+  }
+
+fn value_kind(value: SqliteValueResult) -> i32 =
+  match value {
+    SqliteValueOk(cell) => cell_kind(cell),
+    SqliteValueErr(_) => 0
+  }
+
+fn cell_kind(cell: SqliteValue) -> i32 =
+  match cell {
+    SqliteNull => 5,
+    SqliteInteger(_) => 1,
+    SqliteFloat(_) => 2,
+    SqliteText(_) => 3,
+    SqliteBlobHex(_) => 4
+  }
+
+fn cell_integer(cell: SqliteValue) -> i64 =
+  match cell {
+    SqliteInteger(number) => number,
+    SqliteNull => i64_from_i32(0),
+    SqliteFloat(_) => i64_from_i32(0),
+    SqliteText(_) => i64_from_i32(0),
+    SqliteBlobHex(_) => i64_from_i32(0)
+  }
+
+fn cell_text(cell: SqliteValue) -> string =
+  match cell {
+    SqliteText(text) => text,
+    SqliteNull => "",
+    SqliteInteger(_) => "",
+    SqliteFloat(_) => "",
+    SqliteBlobHex(_) => ""
+  }
+
+fn cell_hex(cell: SqliteValue) -> string =
+  match cell {
+    SqliteBlobHex(text) => text,
+    SqliteNull => "",
+    SqliteInteger(_) => "",
+    SqliteFloat(_) => "",
+    SqliteText(_) => ""
+  }
+
+fn cell_float_is_two(cell: SqliteValue) -> bool =
+  match cell {
+    SqliteFloat(number) => number == 2.0,
+    SqliteNull => false,
+    SqliteInteger(_) => false,
+    SqliteText(_) => false,
+    SqliteBlobHex(_) => false
+  }
+
+fn ok_cell(value: SqliteValueResult) -> SqliteValue =
+  match value {
+    SqliteValueOk(cell) => cell,
+    SqliteValueErr(_) => SqliteNull
+  }
+
+fn main() -> i32 = do
+  let connection = handle_of(open_memory())
+  if connection <= 0 then
+    return 1
+  end
+  if unit_code(exec(connection, "CREATE TABLE item(id INTEGER, amount REAL, label TEXT, payload BLOB, note TEXT)")) != 0 then
+    return 2
+  end
+  if handle_of(prepare(connection, "SELECT 1; SELECT 2")) != 0 then
+    return 3
+  end
+  if unit_code(unit_of_prepare(connection, "SELECT 1; SELECT 2")) != 21 then
+    return 4
+  end
+  let insert = handle_of(prepare(connection, "INSERT INTO item(id, amount, label, payload, note) VALUES (?1, ?2, ?3, ?4, ?5)"))
+  if insert <= 0 then
+    return 5
+  end
+  if unit_code(bind_i64(insert, 0, i64_from_i32(1))) != 25 then
+    return 6
+  end
+  if unit_code(bind_i64(insert, 1, i64_from_i32(7))) != 0 then
+    return 7
+  end
+  if unit_code(bind_f64(insert, 2, 2.0)) != 0 then
+    return 8
+  end
+  if unit_code(bind_text(insert, 3, "hello")) != 0 then
+    return 9
+  end
+  if unit_code(bind_blob_hex(insert, 4, "ab")) != 0 then
+    return 10
+  end
+  if unit_code(bind_null(insert, 5)) != 0 then
+    return 11
+  end
+  if kind_of_step(step(insert)) != 2 then
+    return 12
+  end
+  if unit_code(finalize(insert)) != 0 then
+    return 13
+  end
+  if unit_code(finalize(insert)) != 21 then
+    return 14
+  end
+  let query = handle_of(prepare(connection, "SELECT id, amount, label, payload, note FROM item"))
+  if query <= 0 then
+    return 15
+  end
+  if kind_of_step(step(query)) != 1 then
+    return 16
+  end
+  let identifier = ok_cell(column(query, 0))
+  if cell_kind(identifier) != 1 || cell_integer(identifier) != i64_from_i32(7) then
+    return 17
+  end
+  let amount = ok_cell(column(query, 1))
+  if cell_float_is_two(amount) == false then
+    return 18
+  end
+  let label = ok_cell(column(query, 2))
+  if cell_text(label) != "hello" then
+    return 19
+  end
+  let payload = ok_cell(column(query, 3))
+  if cell_hex(payload) != "ab" then
+    return 20
+  end
+  if value_kind(column(query, 4)) != 5 then
+    return 21
+  end
+  if value_kind(column(query, 5)) != 0 then
+    return 22
+  end
+  if kind_of_step(step(query)) != 2 then
+    return 23
+  end
+  if unit_code(finalize(query)) != 0 then
+    return 24
+  end
+  if unit_code(close_db(connection)) != 0 then
+    return 25
+  end
+  0
+end
+
+fn unit_of_prepare(connection_handle: i32, sql: string) -> SqliteUnitResult =
+  match prepare(connection_handle, sql) {
+    SqliteHandleOk(_) => SqliteUnitOk,
+    SqliteHandleErr(error) => SqliteUnitErr(error)
+  }
