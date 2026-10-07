@@ -1,0 +1,206 @@
+import { ChatMessage, ChatModel, RoleAssistant, RoleUser, chat_model_new } from '../chat_model'
+import { database_close, database_file_path, database_open } from '../chat_database'
+import {
+  ChatPersistence,
+  persistence_closed,
+  persistence_restore,
+  persistence_sync
+} from '../chat_persistence'
+import { store_conversation_create } from '../chat_store'
+import {
+  query_begin,
+  query_exec,
+  query_i64_is,
+  query_rollback,
+  query_text
+} from '../statement_query'
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false }
+
+fn assistant_message(text: string, failed: bool) -> ChatMessage =
+  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+
+fn model_with(messages: [ChatMessage], revision: i32) -> ChatModel =
+  ChatModel { messages: messages, pending: false, generation: 0, revision: revision }
+
+fn holding(database: i32) -> ChatPersistence = do
+  const closed = persistence_closed()
+  ChatPersistence {
+    database: database,
+    conversation_id: closed.conversation_id,
+    persisted_count: 0,
+    failed_revision: -1,
+    failed_length: -1
+  }
+end
+
+fn repeated_ya(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + "я"
+    index = index + 1
+  end
+  text
+end
+
+fn wipe(database: i32) -> i32 = do
+  if query_exec(database, "DELETE FROM message") != 0 then
+    return 1
+  end
+  if query_exec(database, "DELETE FROM conversation") != 0 then
+    return 1
+  end
+  if query_exec(database, "DELETE FROM app_state") != 0 then
+    return 1
+  end
+  query_exec(database, "DELETE FROM action")
+end
+
+fn main() -> i32 = do
+  const path = database_file_path()
+  if path == "" then
+    return 2
+  end
+  const database = database_open(path, "")
+  if database == 0 then
+    return 3
+  end
+  let mut greeted: [ChatMessage] = []
+  greeted.push(user_message("Привет"))
+  const greeting = model_with(greeted, 1)
+  let mut persistence = persistence_sync(holding(database), "", chat_model_new(), greeting)
+  if persistence.persisted_count != 1 then
+    return 4
+  end
+  if query_text(database, "SELECT title FROM conversation ORDER BY id DESC LIMIT 1") != "Привет" then
+    return 5
+  end
+  if query_text(database, "SELECT detail FROM action ORDER BY id DESC LIMIT 1") != persistence.conversation_id.to_string() then
+    return 6
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM action WHERE detail LIKE '%Привет%'", 0) == false then
+    return 7
+  end
+  persistence = persistence_sync(persistence, "", greeting, greeting)
+  if persistence.persisted_count != 1 || query_i64_is(database, "SELECT COUNT(*) FROM message", 1) == false then
+    return 8
+  end
+  let mut answered: [ChatMessage] = []
+  answered.push(user_message("Привет"))
+  answered.push(assistant_message("ответ", false))
+  const answer = model_with(answered, 2)
+  persistence = persistence_sync(persistence, "", greeting, answer)
+  if persistence.persisted_count != 2 then
+    return 9
+  end
+  let mut renamed: [ChatMessage] = []
+  renamed.push(user_message(repeated_ya(61)))
+  const long_title = model_with(renamed, 3)
+  persistence = persistence_sync(persistence, "", answer, long_title)
+  const title = query_text(database, "SELECT title FROM conversation ORDER BY id DESC LIMIT 1")
+  if title.length() != 60 || title.byte_size() != 120 then
+    return 10
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM message", 1) == false then
+    return 11
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM action WHERE kind = 'conversation_cleared'", 1) == false then
+    return 12
+  end
+  let mut hidden: [ChatMessage] = []
+  hidden.push(user_message("hello secret-token world"))
+  hidden.push(assistant_message("see secret-token please", true))
+  const secret_model = model_with(hidden, 4)
+  persistence = persistence_sync(persistence, "secret-token", long_title, secret_model)
+  if query_text(database, "SELECT title FROM conversation ORDER BY id DESC LIMIT 1") != "hello  world" then
+    return 13
+  end
+  if query_text(database, "SELECT body FROM message WHERE failed = 1") != "Ошибка (текст скрыт)" then
+    return 14
+  end
+  if query_text(database, "SELECT body FROM message WHERE failed = 0") != "hello  world" then
+    return 15
+  end
+  const before_rollback = query_text(database, "SELECT COUNT(*) FROM message")
+  if query_begin(database) != 0 then
+    return 16
+  end
+  if query_exec(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (" +
+    persistence.conversation_id.to_string() + ", 50, 0, 'rollback-body', 0, 1)"
+  ) != 0 then
+    return 17
+  end
+  if query_rollback(database) != 0 then
+    return 18
+  end
+  if query_text(database, "SELECT COUNT(*) FROM message") != before_rollback then
+    return 19
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM message WHERE body = 'rollback-body'", 0) == false then
+    return 20
+  end
+  if wipe(database) != 0 then
+    return 21
+  end
+  const created = store_conversation_create(database)
+  if created.code != 0 then
+    return 22
+  end
+  const bulk = query_exec(
+    database,
+    "WITH RECURSIVE counter(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM counter WHERE n < 1001) " +
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) " +
+    "SELECT " + created.row.to_string() + ", n, 1, CAST(n AS TEXT), 0, 1 FROM counter"
+  )
+  if bulk != 0 then
+    return 23
+  end
+  const tail = persistence_restore(holding(database))
+  if tail.model.messages.length() != 1000 then
+    return 24
+  end
+  if tail.model.messages[0].text != "2" || tail.model.messages[999].text != "1001" then
+    return 25
+  end
+  if wipe(database) != 0 then
+    return 26
+  end
+  const pending = store_conversation_create(database)
+  if pending.code != 0 then
+    return 27
+  end
+  if query_exec(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (" +
+    pending.row.to_string() + ", 1, 0, 'ещё', 0, 1)"
+  ) != 0 then
+    return 28
+  end
+  const interrupted = persistence_restore(holding(database))
+  if interrupted.model.messages.length() != 2 then
+    return 29
+  end
+  if interrupted.model.messages[1].text != "Прервано" || interrupted.model.messages[1].failed == false then
+    return 30
+  end
+  if interrupted.persistence.persisted_count != 2 then
+    return 31
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM message WHERE body = 'Прервано'", 1) == false then
+    return 32
+  end
+  if query_exec(database, "DELETE FROM conversation") != 0 then
+    return 33
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM message", 0) == false then
+    return 34
+  end
+  if database_close(database) != 0 then
+    return 35
+  end
+  0
+end

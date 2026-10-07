@@ -1,0 +1,28 @@
+import {
+  query_bind_text,
+  query_exec,
+  query_prepare,
+  query_step_done,
+  query_stop
+} from './statement_query'
+
+fn action_insert_sql() -> string =
+  "INSERT INTO action (at, kind, detail) VALUES (CAST(strftime('%s','now') AS INTEGER), ?1, ?2)"
+
+export fn action_record(database: i32, kind: string, detail: string) -> i32 = do
+  const statement = query_prepare(database, action_insert_sql())
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_text(statement, 1, kind) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 2, detail) != 0 then
+    return query_stop(statement, 1)
+  end
+  const inserted = query_step_done(statement)
+  if inserted != 0 then
+    return inserted
+  end
+  query_exec(database, "DELETE FROM action WHERE id <= last_insert_rowid() - 200")
+end

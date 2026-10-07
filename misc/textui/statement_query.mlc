@@ -1,0 +1,191 @@
+import {
+  SqliteBoolResult,
+  SqliteBoolErr,
+  SqliteBoolOk,
+  SqliteHandleResult,
+  SqliteHandleErr,
+  SqliteHandleOk,
+  SqliteIntResult,
+  SqliteIntErr,
+  SqliteIntOk,
+  SqliteStepResult,
+  SqliteStepDone,
+  SqliteStepErr,
+  SqliteStepRow,
+  SqliteUnitResult,
+  SqliteUnitErr,
+  SqliteUnitOk,
+  SqliteValueResult,
+  SqliteValueErr,
+  SqliteValueOk,
+  SqliteText,
+  SqliteBlobHex,
+  SqliteFloat,
+  SqliteInteger,
+  SqliteNull,
+  begin_immediate,
+  bind_i64,
+  bind_text,
+  busy_timeout,
+  changes,
+  close_db,
+  column,
+  commit,
+  exec,
+  finalize,
+  in_transaction,
+  last_insert_rowid,
+  prepare,
+  rollback,
+  step
+} from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn widen(value: i32) -> i64 = value
+
+fn unit_code(value: SqliteUnitResult) -> i32 =
+  match value
+    | SqliteUnitOk => 0
+    | SqliteUnitErr(error) => error.code
+
+export fn query_exec(database: i32, sql: string) -> i32 =
+  unit_code(exec(database, sql))
+
+export fn query_prepare(database: i32, sql: string) -> i32 =
+  match prepare(database, sql)
+    | SqliteHandleOk(handle) => handle
+    | SqliteHandleErr(_) => 0
+
+export fn query_bind_text(statement: i32, index: i32, text: string) -> i32 =
+  unit_code(bind_text(statement, index, text))
+
+export fn query_bind_i64(statement: i32, index: i32, value: i64) -> i32 =
+  unit_code(bind_i64(statement, index, value))
+
+export fn query_bind_i32(statement: i32, index: i32, value: i32) -> i32 =
+  query_bind_i64(statement, index, widen(value))
+
+export fn query_step_code(statement: i32) -> i32 =
+  match step(statement)
+    | SqliteStepRow => 100
+    | SqliteStepDone => 101
+    | SqliteStepErr(error) => error.code
+
+export fn query_finalize(statement: i32) -> i32 = do
+  if statement == 0 then
+    return 0
+  end
+  unit_code(finalize(statement))
+end
+
+export fn query_stop(statement: i32, code: i32) -> i32 = do
+  query_finalize(statement)
+  code
+end
+
+export fn query_step_done(statement: i32) -> i32 = do
+  const stepped = query_step_code(statement)
+  query_finalize(statement)
+  if stepped != 101 then
+    return stepped
+  end
+  0
+end
+
+fn cell_text_value(cell: SqliteValue) -> string =
+  match cell {
+    SqliteText(text) => text,
+    SqliteNull => "",
+    SqliteInteger(_) => "",
+    SqliteFloat(_) => "",
+    SqliteBlobHex(_) => ""
+  }
+
+fn cell_i64_value(cell: SqliteValue) -> i64 =
+  match cell {
+    SqliteInteger(number) => number,
+    SqliteNull => widen(0),
+    SqliteFloat(_) => widen(0),
+    SqliteText(_) => widen(0),
+    SqliteBlobHex(_) => widen(0)
+  }
+
+fn cell_text(value: SqliteValueResult) -> string =
+  match value {
+    SqliteValueOk(cell) => cell_text_value(cell),
+    SqliteValueErr(_) => ""
+  }
+
+fn cell_i64(value: SqliteValueResult) -> i64 =
+  match value {
+    SqliteValueOk(cell) => cell_i64_value(cell),
+    SqliteValueErr(_) => widen(0)
+  }
+
+export fn query_column_text(statement: i32, index: i32) -> string =
+  cell_text(column(statement, index))
+
+export fn query_column_i64(statement: i32, index: i32) -> i64 =
+  cell_i64(column(statement, index))
+
+export fn query_begin(database: i32) -> i32 =
+  unit_code(begin_immediate(database))
+
+export fn query_commit(database: i32) -> i32 =
+  unit_code(commit(database))
+
+export fn query_rollback(database: i32) -> i32 =
+  unit_code(rollback(database))
+
+export fn query_transaction_open(database: i32) -> bool =
+  match in_transaction(database)
+    | SqliteBoolOk(flag) => flag
+    | SqliteBoolErr(_) => false
+
+export fn query_changed(database: i32) -> bool =
+  match changes(database)
+    | SqliteIntOk(count) => count > widen(0)
+    | SqliteIntErr(_) => false
+
+export fn query_last_rowid(database: i32) -> i64 =
+  match last_insert_rowid(database)
+    | SqliteIntOk(rowid) => rowid
+    | SqliteIntErr(_) => widen(0)
+
+export fn query_busy(database: i32, milliseconds: i32) -> i32 =
+  unit_code(busy_timeout(database, milliseconds))
+
+export fn query_close(database: i32) -> i32 =
+  unit_code(close_db(database))
+
+export fn query_i64(database: i32, sql: string) -> i64 = do
+  const statement = query_prepare(database, sql)
+  if statement == 0 then
+    return widen(0)
+  end
+  const stepped = query_step_code(statement)
+  if stepped != 100 then
+    query_finalize(statement)
+    return widen(0)
+  end
+  const number = query_column_i64(statement, 0)
+  query_finalize(statement)
+  number
+end
+
+export fn query_text(database: i32, sql: string) -> string = do
+  const statement = query_prepare(database, sql)
+  if statement == 0 then
+    return ""
+  end
+  const stepped = query_step_code(statement)
+  if stepped != 100 then
+    query_finalize(statement)
+    return ""
+  end
+  const text = query_column_text(statement, 0)
+  query_finalize(statement)
+  text
+end
+
+export fn query_i64_is(database: i32, sql: string, expected: i32) -> bool =
+  query_i64(database, sql) == widen(expected)

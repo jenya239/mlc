@@ -1,0 +1,113 @@
+import { database_blocked, database_close, database_file_path, database_open } from '../chat_database'
+import { query_exec, query_i64_is, query_text } from '../statement_query'
+
+fn main() -> i32 = do
+  const path = database_file_path()
+  if path == "" then
+    return 2
+  end
+  const jail = path + "_jail"
+  if database_blocked("", path) then
+    return 3
+  end
+  if database_blocked(jail, path) then
+    return 4
+  end
+  if database_blocked(jail, jail + "/nested.sqlite") == false then
+    return 5
+  end
+  if database_blocked(jail, jail + "/../outside.sqlite") then
+    return 6
+  end
+  if database_open(jail + "/nested.sqlite", jail) != 0 then
+    return 7
+  end
+  const database = database_open(path, "")
+  if database == 0 then
+    return 8
+  end
+  if query_i64_is(database, "PRAGMA user_version", 1) == false then
+    return 9
+  end
+  if query_i64_is(database, "PRAGMA foreign_keys", 1) == false then
+    return 10
+  end
+  if query_text(database, "PRAGMA journal_mode") != "wal" then
+    return 11
+  end
+  const missing = query_exec(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (999, 1, 0, 'x', 0, 1)"
+  )
+  if missing != 19 then
+    return 12
+  end
+  if query_exec(
+    database,
+    "INSERT INTO conversation (title, created_at, updated_at) VALUES ('', 1, 1)"
+  ) != 0 then
+    return 13
+  end
+  if query_exec(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (1, 1, 0, 'a', 0, 1)"
+  ) != 0 then
+    return 14
+  end
+  const duplicate = query_exec(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (1, 1, 0, 'b', 0, 1)"
+  )
+  if duplicate != 19 then
+    return 15
+  end
+  if query_exec(
+    database,
+    "INSERT INTO conversation (title, created_at, updated_at, archived) VALUES ('old', 1, 1, 1)"
+  ) != 0 then
+    return 16
+  end
+  const closed = database_close(database)
+  if closed != 0 then
+    return 17
+  end
+  const reopened = database_open(path, "")
+  if reopened == 0 then
+    return 18
+  end
+  if query_i64_is(reopened, "PRAGMA user_version", 1) == false then
+    return 19
+  end
+  if query_i64_is(reopened, "SELECT COUNT(*) FROM message", 1) == false then
+    return 20
+  end
+  if query_i64_is(reopened, "SELECT COUNT(*) FROM conversation WHERE title = 'old'", 0) == false then
+    return 21
+  end
+  const bulk = query_exec(
+    reopened,
+    "WITH RECURSIVE counter(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM counter WHERE n < 201) " +
+    "INSERT INTO conversation (title, created_at, updated_at, archived) " +
+    "SELECT 'kept', 2000000000, n, 1 FROM counter"
+  )
+  if bulk != 0 then
+    return 22
+  end
+  if database_close(reopened) != 0 then
+    return 23
+  end
+  const retained = database_open(path, "")
+  if retained == 0 then
+    return 24
+  end
+  if query_i64_is(retained, "SELECT COUNT(*) FROM conversation WHERE archived = 1", 200) == false then
+    return 25
+  end
+  if query_i64_is(retained, "SELECT COUNT(*) FROM conversation WHERE archived = 0", 1) == false then
+    return 26
+  end
+  if database_close(retained) != 0 then
+    return 27
+  end
+  0
+end

@@ -1,0 +1,175 @@
+import { get_or, has } from 'Env'
+import { SqliteHandleErr, SqliteHandleOk, open_file } from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+import { path_inside_jail } from './directory_jail'
+import {
+  query_busy,
+  query_changed,
+  query_close,
+  query_exec,
+  query_i64
+} from './statement_query'
+
+extern fn absolute_path(path: string) -> string
+  = "mlc::file::absolute_path_value" from "mlc/io/file_abi.hpp" blocking
+
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+
+fn widen(value: i32) -> i64 = value
+
+fn parent_directory(path: string) -> string = do
+  let mut index = path.byte_size() - 1
+  while index > 0 do
+    if path.byte_at(index) == "/" then
+      return path.byte_substring(0, index)
+    end
+    index = index - 1
+  end
+  "."
+end
+
+export fn database_file_path() -> string = do
+  const configured = get_or("MLC_TEXTUI_DATABASE", "")
+  if configured != "" then
+    return configured
+  end
+  if has("MLC_TEXTUI_BENCH") then
+    return ""
+  end
+  const data_home = get_or("XDG_DATA_HOME", "")
+  if data_home != "" then
+    return data_home + "/mlc/textui.sqlite"
+  end
+  const home = get_or("HOME", "")
+  if home == "" then
+    return ""
+  end
+  home + "/.local/share/mlc/textui.sqlite"
+end
+
+export fn database_blocked(jail_root: string, path: string) -> bool = do
+  if jail_root == "" || path == "" then
+    return false
+  end
+  path_inside_jail(absolute_path(jail_root), absolute_path(path))
+end
+
+fn schema_sql() -> string =
+  "CREATE TABLE IF NOT EXISTS conversation (" +
+  "id INTEGER PRIMARY KEY, " +
+  "title TEXT NOT NULL DEFAULT '', " +
+  "created_at INTEGER NOT NULL, " +
+  "updated_at INTEGER NOT NULL, " +
+  "archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))" +
+  ");" +
+  "CREATE INDEX IF NOT EXISTS conversation_recent ON conversation (archived, updated_at DESC, id DESC);" +
+  "CREATE TABLE IF NOT EXISTS message (" +
+  "id INTEGER PRIMARY KEY, " +
+  "conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE, " +
+  "ordinal INTEGER NOT NULL, " +
+  "role INTEGER NOT NULL CHECK (role IN (0, 1)), " +
+  "body TEXT NOT NULL, " +
+  "failed INTEGER NOT NULL CHECK (failed IN (0, 1)), " +
+  "created_at INTEGER NOT NULL, " +
+  "UNIQUE(conversation_id, ordinal)" +
+  ");" +
+  "CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);" +
+  "CREATE TABLE IF NOT EXISTS action (" +
+  "id INTEGER PRIMARY KEY, " +
+  "at INTEGER NOT NULL, " +
+  "kind TEXT NOT NULL, " +
+  "detail TEXT NOT NULL" +
+  ");"
+
+fn database_retain(database: i32) -> i32 = do
+  const aged = query_exec(
+    database,
+    "DELETE FROM conversation WHERE archived = 1 AND created_at < CAST(strftime('%s','now') AS INTEGER) - 7776000"
+  )
+  if aged != 0 then
+    return aged
+  end
+  let mut removed = query_changed(database)
+  const capped = query_exec(
+    database,
+    "DELETE FROM conversation WHERE archived = 1 AND id NOT IN (" +
+    "SELECT id FROM conversation WHERE archived = 1 ORDER BY updated_at DESC, id DESC LIMIT 200)"
+  )
+  if capped != 0 then
+    return capped
+  end
+  if query_changed(database) then
+    removed = true
+  end
+  if removed == false then
+    return 0
+  end
+  query_exec(database, "PRAGMA incremental_vacuum(200)")
+end
+
+fn database_configure(database: i32) -> i32 = do
+  const waited = query_busy(database, 50)
+  if waited != 0 then
+    return waited
+  end
+  const version = query_i64(database, "PRAGMA user_version")
+  if version == widen(0) then
+    const vacuum = query_exec(database, "PRAGMA auto_vacuum=INCREMENTAL")
+    if vacuum != 0 then
+      return vacuum
+    end
+  end
+  const journal = query_exec(database, "PRAGMA journal_mode=WAL")
+  if journal != 0 then
+    return journal
+  end
+  const synchronous = query_exec(database, "PRAGMA synchronous=NORMAL")
+  if synchronous != 0 then
+    return synchronous
+  end
+  const foreign_keys = query_exec(database, "PRAGMA foreign_keys=ON")
+  if foreign_keys != 0 then
+    return foreign_keys
+  end
+  if version == widen(0) then
+    const created = query_exec(database, schema_sql())
+    if created != 0 then
+      return created
+    end
+    const marked = query_exec(database, "PRAGMA user_version=1")
+    if marked != 0 then
+      return marked
+    end
+  end
+  database_retain(database)
+end
+
+fn opened_handle(path: string) -> i32 =
+  match open_file(path)
+    | SqliteHandleOk(handle) => handle
+    | SqliteHandleErr(_) => 0
+
+export fn database_open(path: string, jail_root: string) -> i32 = do
+  if path == "" || database_blocked(jail_root, path) then
+    return 0
+  end
+  if create_directories(parent_directory(path)) == false then
+    return 0
+  end
+  const handle = opened_handle(path)
+  if handle == 0 then
+    return 0
+  end
+  if database_configure(handle) != 0 then
+    query_close(handle)
+    return 0
+  end
+  handle
+end
+
+export fn database_close(database: i32) -> i32 = do
+  if database == 0 then
+    return 0
+  end
+  query_close(database)
+end

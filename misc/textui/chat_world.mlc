@@ -1,5 +1,7 @@
 import { ChatConfig } from './chat_http'
 import { ChatModel, chat_model_new } from './chat_model'
+import { database_file_path, database_open } from './chat_database'
+import { ChatPersistence, persistence_closed, persistence_restore } from './chat_persistence'
 import { WidgetStore } from './store'
 import { ChatScene, build_chat_scene } from './chat_scene'
 import { chat_initial_state } from './chat_update'
@@ -39,7 +41,8 @@ export type ChatWorld = {
   presented: FrameSignature,
   painted_under: [DrawOp],
   painted_over: [DrawOp],
-  code_highlight: i32
+  code_highlight: i32,
+  persistence: ChatPersistence
 }
 
 export fn chat_transcript_rect(layout: LayoutResult, scene: ChatScene) -> Rect = do
@@ -63,11 +66,17 @@ export fn chat_view_at_bottom(view: TranscriptView, view_height: i32) -> Transcr
   }
 end
 
-export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWorld = do
+fn chat_world_build(
+  config: ChatConfig,
+  width: i32,
+  height: i32,
+  model: ChatModel,
+  persistence: ChatPersistence
+) -> ChatWorld = do
   const theme = theme_default()
   const scene = build_chat_scene()
   const opened = chat_sync_chrome(
-    scene.store, chat_initial_state(scene), scene, config, chat_model_new()
+    scene.store, chat_initial_state(scene), scene, config, model
   )
   const state = opened.state
   let mut offsets: [i32] = []
@@ -85,7 +94,7 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
   const aligned = field_align_scroll(opened.store, laid.layout, theme, state)
   const bounds = chat_transcript_rect(laid.layout, scene)
   const measured = transcript_measure(
-    chat_model_new(),
+    model,
     transcript_view_new(),
     laid.shaping,
     laid.cache,
@@ -97,7 +106,7 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
   ChatWorld {
     store: opened.store,
     state: aligned,
-    model: chat_model_new(),
+    model: model,
     view: chat_view_at_bottom(measured.view, bounds.height),
     selection: transcript_selection_new(),
     scene: scene,
@@ -108,6 +117,31 @@ export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWor
     presented: frame_signature(aligned, width, height),
     painted_under: painted_under,
     painted_over: painted_over,
-    code_highlight: 1
+    code_highlight: 1,
+    persistence: persistence
   }
+end
+
+export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWorld =
+  chat_world_build(config, width, height, chat_model_new(), persistence_closed())
+
+export fn chat_world_open(
+  config: ChatConfig,
+  width: i32,
+  height: i32,
+  jail_root: string
+) -> ChatWorld = do
+  const database = database_open(database_file_path(), jail_root)
+  if database == 0 then
+    return chat_world_new(config, width, height)
+  end
+  const closed = persistence_closed()
+  const loaded = persistence_restore(ChatPersistence {
+    database: database,
+    conversation_id: closed.conversation_id,
+    persisted_count: 0,
+    failed_revision: -1,
+    failed_length: -1
+  })
+  chat_world_build(config, width, height, loaded.model, loaded.persistence)
 end

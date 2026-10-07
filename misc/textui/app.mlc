@@ -276,7 +276,7 @@ fn main() -> i32 = do
         dense_enabled, effect_mode
       )
       if caption == "Chat" then
-        const hosted = chat_frames(resources, shaping, 0)
+        const hosted = chat_frames(resources, shaping, 0, jail_root)
         resources = hosted.resources
         shaping = hosted.shaping
         if hosted.error_code != 0 then

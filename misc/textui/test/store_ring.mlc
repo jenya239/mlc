@@ -1,0 +1,34 @@
+import { action_record } from '../action_ring'
+import { database_close, database_file_path, database_open } from '../chat_database'
+import { query_i64_is } from '../statement_query'
+
+fn main() -> i32 = do
+  const path = database_file_path()
+  if path == "" then
+    return 2
+  end
+  const database = database_open(path, "")
+  if database == 0 then
+    return 3
+  end
+  let mut index = 0
+  while index < 250 do
+    if action_record(database, "message_submitted", "42") != 0 then
+      return 4
+    end
+    index = index + 1
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM action", 200) == false then
+    return 5
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM action WHERE detail = '42'", 200) == false then
+    return 6
+  end
+  if query_i64_is(database, "SELECT COUNT(*) FROM action WHERE detail LIKE '%Привет%'", 0) == false then
+    return 7
+  end
+  if database_close(database) != 0 then
+    return 8
+  end
+  0
+end

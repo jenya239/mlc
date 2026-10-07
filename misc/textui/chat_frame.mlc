@@ -28,6 +28,7 @@ import {
   chat_transcript_rect,
   chat_view_at_bottom
 } from './chat_world'
+import { persistence_sync } from './chat_persistence'
 
 export type ChatFrameResult = {
   world: ChatWorld,
@@ -106,6 +107,7 @@ export fn chat_frame_run(
   height: i32
 ) -> ChatFrameResult = do
   const theme = theme_default()
+  const model_before = world.model
   const revision_before = world.model.revision
   const view_before = world.view
   const selection_before = world.selection
@@ -137,6 +139,7 @@ export fn chat_frame_run(
     updated.events
   )
   model = chat_session_dispatch(world.config, applied.model, applied.send_requested)
+  const persistence = persistence_sync(world.persistence, world.config.api_key, model_before, model)
   let mut state = applied.state
   if model.revision != revision_before || view_changed(view_before, handled.view) || selection_changed(selection_before, handled.selection) then
     state = ui_state_with_listing_revision(state, state.listing_revision + 1)
@@ -219,7 +222,8 @@ export fn chat_frame_run(
     presented: presented,
     painted_under: painted_under,
     painted_over: painted_over,
-    code_highlight: highlight_flag
+    code_highlight: highlight_flag,
+    persistence: persistence
   }
   ChatFrameResult {
     world: next,

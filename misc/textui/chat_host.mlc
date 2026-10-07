@@ -16,7 +16,8 @@ import { SubmitResources, submit_create, submit_destroy } from './submit'
 import { submit_painted_layers } from './submit_layers'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
 import { chat_wait_seconds } from './chat_session'
-import { ChatWorld, chat_world_new } from './chat_world'
+import { ChatWorld, chat_world_open } from './chat_world'
+import { persistence_close } from './chat_persistence'
 import { chat_frame_run } from './chat_frame'
 import { frame_signature } from './frame_request'
 import { chat_config_resolve } from './chat_support_env'
@@ -43,13 +44,15 @@ fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWo
     presented: frame_signature(world.state, width + 1, height),
     painted_under: world.painted_under,
     painted_over: world.painted_over,
-    code_highlight: world.code_highlight
+    code_highlight: world.code_highlight,
+    persistence: world.persistence
   }
 
 export fn chat_frames(
   resources: SubmitResources,
   shaping: TextShapingState,
-  max_frames: i32
+  max_frames: i32,
+  jail_root: string
 ) -> ChatHostResult = do
   const theme = theme_default()
   let mut resources_now = resources
@@ -57,7 +60,7 @@ export fn chat_frames(
   const open_width = glfw_gl_window_width()
   const open_height = glfw_gl_window_height()
   let mut world = world_before_first_paint(
-    chat_world_new(chat_config_resolve(), open_width, open_height),
+    chat_world_open(chat_config_resolve(), open_width, open_height, jail_root),
     open_width,
     open_height
   )
@@ -65,69 +68,66 @@ export fn chat_frames(
   let mut frame_index = 0
   let mut sample_after_present = true
   let mut escape_was_down = false
-  while glfw_gl_context_should_close() == 0 do
+  let mut error_code = 0
+  let mut running = true
+  while running && glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input(chat_wait_seconds(world.model))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0
     const escape_pressed = escape_down && escape_was_down == false
-    if escape_pressed then
-      return ChatHostResult {
-        resources: resources_now,
-        shaping: shaping_now,
-        error_code: 0,
-        window_closed: false
-      }
-    end
     escape_was_down = escape_down
-    const polled = host_poll_input(buttons, host_now_ms())
-    buttons = polled.buttons
-    const width = glfw_gl_window_width()
-    const height = glfw_gl_window_height()
-    const frame = chat_frame_run(world, polled.input, width, height)
-    world = frame.world
-    if frame.clipboard != "" then
-      glfw_gl_clipboard_set(frame.clipboard)
+    if escape_pressed then
+      running = false
     end
-    if frame.paints then
-      const submitted = submit_painted_layers(
-        resources_now,
-        shaping_now,
-        theme,
-        frame.ops_under,
-        frame.ops_over,
-        width,
-        height
-      )
-      if submitted.error_code != 0 then
-        return ChatHostResult {
-          resources: submitted.resources,
-          shaping: submitted.shaping,
-          error_code: submitted.error_code,
-          window_closed: false
-        }
+    if running then
+      const polled = host_poll_input(buttons, host_now_ms())
+      buttons = polled.buttons
+      const width = glfw_gl_window_width()
+      const height = glfw_gl_window_height()
+      const frame = chat_frame_run(world, polled.input, width, height)
+      world = frame.world
+      if frame.clipboard != "" then
+        glfw_gl_clipboard_set(frame.clipboard)
       end
-      resources_now = submitted.resources
-      shaping_now = submitted.shaping
-      glfw_gl_context_swap_poll()
-      sample_after_present = true
+      if frame.paints then
+        const submitted = submit_painted_layers(
+          resources_now,
+          shaping_now,
+          theme,
+          frame.ops_under,
+          frame.ops_over,
+          width,
+          height
+        )
+        resources_now = submitted.resources
+        shaping_now = submitted.shaping
+        if submitted.error_code != 0 then
+          error_code = submitted.error_code
+          running = false
+        end
+        if running then
+          glfw_gl_context_swap_poll()
+          sample_after_present = true
+        end
+      end
+      frame_index = frame_index + 1
+      if max_frames > 0 && frame_index >= max_frames then
+        running = false
+      end
     end
-    frame_index = frame_index + 1
-    if max_frames > 0 && frame_index >= max_frames then
-      return ChatHostResult {
-        resources: resources_now,
-        shaping: shaping_now,
-        error_code: 0,
-        window_closed: false
-      }
-    end
+  end
+  persistence_close(world.persistence)
+  let mut window_closed = false
+  if running then
+    window_closed = true
   end
   ChatHostResult {
     resources: resources_now,
     shaping: shaping_now,
-    error_code: 0,
-    window_closed: true
+    error_code: error_code,
+    window_closed: window_closed
   }
 end
 
@@ -147,7 +147,7 @@ export fn chat_main() -> i32 = do
   if has("MLC_TEXTUI_BENCH") then
     max_frames = 8
   end
-  const hosted = chat_frames(resources, text_shaping_new(), max_frames)
+  const hosted = chat_frames(resources, text_shaping_new(), max_frames, "")
   submit_destroy(hosted.resources)
   glfw_gl_context_end()
   if hosted.error_code != 0 then

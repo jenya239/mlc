@@ -1,0 +1,19 @@
+export fn redacted_error(text: string, secret: string) -> string = do
+  if secret.byte_size() > 0 && text.contains(secret) then
+    return "Ошибка (текст скрыт)"
+  end
+  text
+end
+
+export fn redacted_plain(text: string, secret: string) -> string = do
+  if secret.byte_size() == 0 then
+    return text
+  end
+  let mut current = text
+  let mut removed = current.replace(secret, "")
+  while removed != current do
+    current = removed
+    removed = current.replace(secret, "")
+  end
+  current
+end

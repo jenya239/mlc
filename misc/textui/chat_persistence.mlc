@@ -1,0 +1,346 @@
+import { action_record } from './action_ring'
+import { redacted_error, redacted_plain } from './chat_redaction'
+import {
+  ChatMessage,
+  ChatModel,
+  ChatRole,
+  RoleAssistant,
+  RoleUser,
+  chat_model_new
+} from './chat_model'
+import { database_close } from './chat_database'
+import {
+  StoreId,
+  store_active_read,
+  store_active_write,
+  store_conversation_create,
+  store_conversation_present,
+  store_conversation_touch,
+  store_latest_open,
+  store_message_insert,
+  store_messages_delete,
+  store_messages_load,
+  store_title_assign,
+  store_title_clear
+} from './chat_store'
+import { query_begin, query_commit, query_rollback, query_transaction_open } from './statement_query'
+import { prefix_bytes, prefix_code_points } from './text_boundary'
+
+fn widen(value: i32) -> i64 = value
+
+fn i64_zero() -> i64 = widen(0)
+
+export type ChatPersistence = {
+  database: i32,
+  conversation_id: i64,
+  persisted_count: i32,
+  failed_revision: i32,
+  failed_length: i32
+}
+
+export type PersistenceLoad = {
+  persistence: ChatPersistence,
+  model: ChatModel
+}
+
+export fn persistence_closed() -> ChatPersistence =
+  ChatPersistence {
+    database: 0,
+    conversation_id: i64_zero(),
+    persisted_count: 0,
+    failed_revision: -1,
+    failed_length: -1
+  }
+
+export fn persistence_close(persistence: ChatPersistence) -> i32 =
+  database_close(persistence.database)
+
+fn role_code(role: ChatRole) -> i32 =
+  match role
+    | RoleUser => 0
+    | RoleAssistant => 1
+
+fn message_matches(left: ChatMessage, right: ChatMessage) -> bool = do
+  if left.text != right.text || left.failed != right.failed then
+    return false
+  end
+  role_code(left.role) == role_code(right.role)
+end
+
+fn model_extends(before: ChatModel, after: ChatModel) -> bool = do
+  if after.messages.length() < before.messages.length() then
+    return false
+  end
+  let mut index = 0
+  while index < before.messages.length() do
+    if message_matches(before.messages[index], after.messages[index]) == false then
+      return false
+    end
+    index = index + 1
+  end
+  true
+end
+
+fn stored_body(message: ChatMessage, secret: string) -> string = do
+  if message.failed then
+    return prefix_bytes(redacted_error(message.text, secret), 500)
+  end
+  redacted_plain(message.text, secret)
+end
+
+fn first_user_text(model: ChatModel) -> string = do
+  let mut index = 0
+  while index < model.messages.length() do
+    if role_code(model.messages[index].role) == 0 then
+      return model.messages[index].text
+    end
+    index = index + 1
+  end
+  ""
+end
+
+fn marked_failed(persistence: ChatPersistence, after: ChatModel) -> ChatPersistence = do
+  if query_transaction_open(persistence.database) then
+    query_rollback(persistence.database)
+  end
+  ChatPersistence {
+    database: persistence.database,
+    conversation_id: persistence.conversation_id,
+    persisted_count: persistence.persisted_count,
+    failed_revision: after.revision,
+    failed_length: after.messages.length()
+  }
+end
+
+fn marked_saved(persistence: ChatPersistence, conversation: i64, after: ChatModel) -> ChatPersistence =
+  ChatPersistence {
+    database: persistence.database,
+    conversation_id: conversation,
+    persisted_count: after.messages.length(),
+    failed_revision: -1,
+    failed_length: -1
+  }
+
+fn write_messages(
+  database: i32,
+  conversation: i64,
+  model: ChatModel,
+  secret: string,
+  start: i32
+) -> i32 = do
+  let mut index = start
+  while index < model.messages.length() do
+    const message = model.messages[index]
+    let mut failed_flag = 0
+    if message.failed then
+      failed_flag = 1
+    end
+    const inserted = store_message_insert(
+      database,
+      conversation,
+      role_code(message.role),
+      stored_body(message, secret),
+      failed_flag
+    )
+    if inserted != 0 then
+      return inserted
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn write_actions(
+  database: i32,
+  conversation: i64,
+  model: ChatModel,
+  start: i32,
+  replacing: bool
+) -> i32 = do
+  const detail = conversation.to_string()
+  if replacing then
+    const cleared = action_record(database, "conversation_cleared", detail)
+    if cleared != 0 then
+      return cleared
+    end
+  end
+  let mut index = start
+  while index < model.messages.length() do
+    const message = model.messages[index]
+    if role_code(message.role) == 0 then
+      const submitted = action_record(database, "message_submitted", detail)
+      if submitted != 0 then
+        return submitted
+      end
+    end
+    if message.text == "Остановлено" then
+      const canceled = action_record(database, "reply_canceled", detail)
+      if canceled != 0 then
+        return canceled
+      end
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn write_title(database: i32, conversation: i64, model: ChatModel, secret: string) -> i32 = do
+  const text = first_user_text(model)
+  if text == "" then
+    return 0
+  end
+  store_title_assign(
+    database,
+    conversation,
+    prefix_code_points(redacted_plain(text, secret), 60)
+  )
+end
+
+fn persistence_write(
+  persistence: ChatPersistence,
+  secret: string,
+  after: ChatModel,
+  start: i32,
+  replacing: bool
+) -> ChatPersistence = do
+  if query_transaction_open(persistence.database) then
+    if query_rollback(persistence.database) != 0 then
+      return marked_failed(persistence, after)
+    end
+  end
+  if query_begin(persistence.database) != 0 then
+    return marked_failed(persistence, after)
+  end
+  let mut conversation = persistence.conversation_id
+  if conversation == i64_zero() then
+    const created: StoreId = store_conversation_create(persistence.database)
+    if created.code != 0 || created.row == i64_zero() then
+      return marked_failed(persistence, after)
+    end
+    conversation = created.row
+  end
+  if replacing then
+    if store_messages_delete(persistence.database, conversation) != 0 then
+      return marked_failed(persistence, after)
+    end
+    if store_title_clear(persistence.database, conversation) != 0 then
+      return marked_failed(persistence, after)
+    end
+  end
+  if write_messages(persistence.database, conversation, after, secret, start) != 0 then
+    return marked_failed(persistence, after)
+  end
+  if write_actions(persistence.database, conversation, after, start, replacing) != 0 then
+    return marked_failed(persistence, after)
+  end
+  if write_title(persistence.database, conversation, after, secret) != 0 then
+    return marked_failed(persistence, after)
+  end
+  if store_conversation_touch(persistence.database, conversation) != 0 then
+    return marked_failed(persistence, after)
+  end
+  if store_active_write(persistence.database, conversation) != 0 then
+    return marked_failed(persistence, after)
+  end
+  if query_commit(persistence.database) != 0 then
+    return marked_failed(persistence, after)
+  end
+  marked_saved(persistence, conversation, after)
+end
+
+export fn persistence_sync(
+  persistence: ChatPersistence,
+  secret: string,
+  before: ChatModel,
+  after: ChatModel
+) -> ChatPersistence = do
+  if persistence.database == 0 then
+    return persistence
+  end
+  const after_length = after.messages.length()
+  if persistence.failed_revision == after.revision && persistence.failed_length == after_length then
+    return persistence
+  end
+  if before.revision == after.revision && before.messages.length() == after_length then
+    return persistence
+  end
+  const extends_before = model_extends(before, after)
+  if extends_before && after_length == persistence.persisted_count then
+    return persistence
+  end
+  if after_length == 0 && persistence.conversation_id == i64_zero() then
+    return persistence
+  end
+  let mut start = 0
+  let mut replacing = false
+  const saved_prefix = extends_before && before.messages.length() == persistence.persisted_count
+  if saved_prefix && persistence.conversation_id != i64_zero() then
+    start = persistence.persisted_count
+  end
+  if saved_prefix == false && persistence.conversation_id != i64_zero() then
+    replacing = true
+  end
+  if start > after_length then
+    start = 0
+    replacing = true
+  end
+  persistence_write(persistence, secret, after, start, replacing)
+end
+
+fn model_from(messages: [ChatMessage]) -> ChatModel =
+  ChatModel {
+    messages: messages,
+    pending: false,
+    generation: 0,
+    revision: 0
+  }
+
+fn needs_interrupt(model: ChatModel) -> bool = do
+  const length = model.messages.length()
+  if length == 0 then
+    return false
+  end
+  const last = model.messages[length - 1]
+  if last.failed then
+    return false
+  end
+  role_code(last.role) == 0
+end
+
+export fn persistence_restore(persistence: ChatPersistence) -> PersistenceLoad = do
+  const empty = chat_model_new()
+  if persistence.database == 0 then
+    return PersistenceLoad { persistence: persistence, model: empty }
+  end
+  let mut conversation = store_active_read(persistence.database)
+  if conversation == i64_zero() || store_conversation_present(persistence.database, conversation) == false then
+    conversation = store_latest_open(persistence.database)
+  end
+  if conversation == i64_zero() then
+    return PersistenceLoad { persistence: persistence, model: empty }
+  end
+  const loaded = store_messages_load(persistence.database, conversation)
+  if loaded.code != 0 then
+    return PersistenceLoad { persistence: persistence, model: empty }
+  end
+  const model = model_from(loaded.messages)
+  let mut next = ChatPersistence {
+    database: persistence.database,
+    conversation_id: conversation,
+    persisted_count: loaded.messages.length(),
+    failed_revision: -1,
+    failed_length: -1
+  }
+  let mut restored = model
+  if needs_interrupt(model) then
+    let mut messages = model.messages
+    messages.push(ChatMessage { role: RoleAssistant, text: "Прервано", failed: true })
+    const after = model_from(messages)
+    next = persistence_sync(next, "", model, after)
+    restored = after
+  end
+  if store_active_read(persistence.database) != conversation then
+    store_active_write(persistence.database, conversation)
+  end
+  PersistenceLoad { persistence: next, model: restored }
+end

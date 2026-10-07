@@ -1,0 +1,209 @@
+import { ChatMessage, ChatRole, RoleAssistant, RoleUser } from './chat_model'
+import {
+  query_bind_i32,
+  query_bind_i64,
+  query_bind_text,
+  query_column_i64,
+  query_column_text,
+  query_finalize,
+  query_i64,
+  query_last_rowid,
+  query_prepare,
+  query_step_code,
+  query_step_done,
+  query_stop
+} from './statement_query'
+
+fn widen(value: i32) -> i64 = value
+
+export type StoreId = {
+  code: i32,
+  row: i64
+}
+
+export type StoreMessages = {
+  code: i32,
+  messages: [ChatMessage]
+}
+
+fn role_from_number(value: i64) -> ChatRole = do
+  if value == widen(0) then
+    return RoleUser
+  end
+  RoleAssistant
+end
+
+fn failed_from_number(value: i64) -> bool =
+  value != widen(0)
+
+fn reversed_messages(messages: [ChatMessage]) -> [ChatMessage] = do
+  let mut ordered: [ChatMessage] = []
+  let mut index = messages.length() - 1
+  while index >= 0 do
+    ordered.push(messages[index])
+    index = index - 1
+  end
+  ordered
+end
+
+export fn store_conversation_create(database: i32) -> StoreId = do
+  const inserted = query_step_done(query_prepare(
+    database,
+    "INSERT INTO conversation (title, created_at, updated_at) VALUES ('', CAST(strftime('%s','now') AS INTEGER), CAST(strftime('%s','now') AS INTEGER))"
+  ))
+  if inserted != 0 then
+    return StoreId { code: inserted, row: widen(0) }
+  end
+  StoreId { code: 0, row: query_last_rowid(database) }
+end
+
+export fn store_message_insert(
+  database: i32,
+  conversation: i64,
+  role_code: i32,
+  body: string,
+  failed_flag: i32
+) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) " +
+    "VALUES (?1, COALESCE((SELECT MAX(ordinal) FROM message WHERE conversation_id = ?1), 0) + 1, " +
+    "?2, ?3, ?4, CAST(strftime('%s','now') AS INTEGER))"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_i32(statement, 2, role_code) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 3, body) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_i32(statement, 4, failed_flag) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_messages_delete(database: i32, conversation: i64) -> i32 = do
+  const statement = query_prepare(database, "DELETE FROM message WHERE conversation_id = ?1")
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_title_clear(database: i32, conversation: i64) -> i32 = do
+  const statement = query_prepare(database, "UPDATE conversation SET title = '' WHERE id = ?1")
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_title_assign(database: i32, conversation: i64, title: string) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "UPDATE conversation SET title = ?1 WHERE id = ?2 AND title = ''"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_text(statement, 1, title) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_i64(statement, 2, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_conversation_touch(database: i32, conversation: i64) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "UPDATE conversation SET updated_at = CAST(strftime('%s','now') AS INTEGER) WHERE id = ?1"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_active_write(database: i32, conversation: i64) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "INSERT OR REPLACE INTO app_state (key, value) VALUES ('active_conversation', CAST(?1 AS TEXT))"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_active_read(database: i32) -> i64 =
+  query_i64(database, "SELECT CAST(value AS INTEGER) FROM app_state WHERE key = 'active_conversation'")
+
+export fn store_latest_open(database: i32) -> i64 =
+  query_i64(
+    database,
+    "SELECT id FROM conversation WHERE archived = 0 ORDER BY updated_at DESC, id DESC LIMIT 1"
+  )
+
+export fn store_conversation_present(database: i32, conversation: i64) -> bool = do
+  const statement = query_prepare(database, "SELECT id FROM conversation WHERE id = ?1")
+  if statement == 0 then
+    return false
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    query_finalize(statement)
+    return false
+  end
+  const stepped = query_step_code(statement)
+  query_finalize(statement)
+  stepped == 100
+end
+
+export fn store_messages_load(database: i32, conversation: i64) -> StoreMessages = do
+  let mut messages: [ChatMessage] = []
+  const statement = query_prepare(
+    database,
+    "SELECT role, body, failed FROM message WHERE conversation_id = ?1 ORDER BY ordinal DESC LIMIT 1000"
+  )
+  if statement == 0 then
+    return StoreMessages { code: 1, messages: messages }
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    query_finalize(statement)
+    return StoreMessages { code: 1, messages: messages }
+  end
+  let mut stepped = query_step_code(statement)
+  while stepped == 100 do
+    messages.push(ChatMessage {
+      role: role_from_number(query_column_i64(statement, 0)),
+      text: query_column_text(statement, 1),
+      failed: failed_from_number(query_column_i64(statement, 2))
+    })
+    stepped = query_step_code(statement)
+  end
+  query_finalize(statement)
+  if stepped != 101 then
+    let mut empty: [ChatMessage] = []
+    return StoreMessages { code: stepped, messages: empty }
+  end
+  StoreMessages { code: 0, messages: reversed_messages(messages) }
+end

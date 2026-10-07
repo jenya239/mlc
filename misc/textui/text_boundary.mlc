@@ -1,0 +1,36 @@
+export fn prefix_code_points(text: string, maximum_points: i32) -> string = do
+  if maximum_points <= 0 then
+    return ""
+  end
+  if text.length() <= maximum_points then
+    return text
+  end
+  let mut result = ""
+  let mut index = 0
+  while index < maximum_points do
+    result = result + text.char_at(index)
+    index = index + 1
+  end
+  result
+end
+
+export fn prefix_bytes(text: string, maximum_bytes: i32) -> string = do
+  if maximum_bytes <= 0 then
+    return ""
+  end
+  if text.byte_size() <= maximum_bytes then
+    return text
+  end
+  let mut result = ""
+  let mut index = 0
+  const points = text.length()
+  while index < points do
+    const character = text.char_at(index)
+    if result.byte_size() + character.byte_size() > maximum_bytes then
+      return result
+    end
+    result = result + character
+    index = index + 1
+  end
+  result
+end
