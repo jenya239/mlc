@@ -1,0 +1,213 @@
+import { theme_default } from '../theme'
+import { color_equal } from '../submit_color'
+import { ChatMessage, ChatModel, RoleUser, chat_model_new } from '../chat_model'
+import { text_shaping_new } from '../../gui/text_shaping'
+import { text_layout_cache_new } from '../text_layout'
+import { DrawOp } from '../draw_op'
+import { rect_new } from '../geometry'
+import { block_index_build } from '../block_index'
+import {
+  TranscriptView,
+  transcript_measure,
+  transcript_view_new
+} from '../chat_transcript_layout'
+import { paint_transcript_styled } from '../chat_transcript'
+import {
+  TranscriptSelection,
+  transcript_copy_shown,
+  transcript_selection_new
+} from '../chat_transcript_input'
+import { transcript_caret_at } from '../chat_transcript_hit'
+
+fn user_message(text: string) -> ChatMessage =
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
+
+fn model_of(messages: [ChatMessage], pending: bool) -> ChatModel =
+  ChatModel { messages: messages, pending: pending, generation: 1, revision: 1 }
+
+fn selection_between(
+  anchor_block: i32,
+  anchor_byte: i32,
+  focus_block: i32,
+  focus_byte: i32
+) -> TranscriptSelection =
+  TranscriptSelection {
+    anchor_block: anchor_block,
+    anchor_byte: anchor_byte,
+    focus_block: focus_block,
+    focus_byte: focus_byte,
+    dragging: 0
+  }
+
+fn selection_fills(operations: [DrawOp]) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  const theme = theme_default()
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpFillRect(data) => color_equal(data.color, theme.selection_background)
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      count = count + 1
+    end
+    index = index + 1
+  end
+  count
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  let mut messages: [ChatMessage] = []
+  messages.push(user_message("abcdef"))
+  messages.push(user_message("zzzzzz"))
+  const pair = model_of(messages, false)
+  const area = rect_new(0, 0, 220, 400)
+  let mut measured = transcript_measure(pair, transcript_view_new(), shaping, cache, theme, area.width)
+  shaping = measured.shaping
+  cache = measured.cache
+  const forward = transcript_copy_shown(
+    pair,
+    selection_between(0, 4, 1, 2),
+    shaping,
+    cache,
+    theme,
+    area.width,
+    false
+  )
+  if forward != "ef\nzz" then
+    return -1
+  end
+  const reversed = transcript_copy_shown(
+    pair,
+    selection_between(1, 2, 0, 4),
+    shaping,
+    cache,
+    theme,
+    area.width,
+    false
+  )
+  if reversed != forward then
+    return -2
+  end
+  let mut triple: [ChatMessage] = []
+  triple.push(user_message("ab"))
+  triple.push(user_message("cd"))
+  triple.push(user_message("ef"))
+  const joined = transcript_copy_shown(
+    model_of(triple, false),
+    selection_between(0, 1, 2, 1),
+    shaping,
+    cache,
+    theme,
+    area.width,
+    false
+  )
+  if joined != "b\ncd\ne" then
+    return -3
+  end
+  const fenced = model_of([user_message("```\nfn a\n```")], false)
+  const shown = transcript_copy_shown(
+    fenced,
+    selection_between(0, 0, 0, 100),
+    shaping,
+    cache,
+    theme,
+    area.width,
+    true
+  )
+  if shown != "fn a" then
+    return -4
+  end
+  if transcript_copy_shown(pair, transcript_selection_new(), shaping, cache, theme, area.width, false) != "" then
+    return -5
+  end
+
+  const role_caret = transcript_caret_at(
+    pair, measured.view, shaping, cache, theme, area, 0, area.x + theme.padding, area.y + 1, false
+  )
+  if role_caret.block != 0 || role_caret.byte_index != 0 then
+    return -6
+  end
+  const bottom_y = measured.view.index.tops[0] + measured.view.index.heights[0] - 1
+  const bottom_caret = transcript_caret_at(
+    pair, measured.view, shaping, cache, theme, area, 0, area.x + theme.padding, area.y + bottom_y, false
+  )
+  if bottom_caret.block != 0 || bottom_caret.byte_index != 6 then
+    return -7
+  end
+
+  const gapped = TranscriptView {
+    width: area.width,
+    measured_count: 2,
+    scroll_y: 0,
+    stick_to_bottom: 0,
+    index: block_index_build([40, 40], 20)
+  }
+  const upper_gap = transcript_caret_at(
+    pair, gapped, shaping, cache, theme, area, 0, 8, 45, false
+  )
+  if upper_gap.block != 0 || upper_gap.byte_index != 6 then
+    return -8
+  end
+  const lower_gap = transcript_caret_at(
+    pair, gapped, shaping, cache, theme, area, 0, 8, 55, false
+  )
+  if lower_gap.block != 1 || lower_gap.byte_index != 0 then
+    return -9
+  end
+
+  const waiting_model = model_of([user_message("abcdef")], true)
+  const waiting = transcript_measure(
+    waiting_model,
+    transcript_view_new(),
+    shaping,
+    cache,
+    theme,
+    area.width
+  )
+  if waiting.view.index.tops.length() != 2 then
+    return -10
+  end
+  const pending_y = waiting.view.index.tops[1] + waiting.view.index.heights[1] / 2
+  const pending_caret = transcript_caret_at(
+    waiting_model,
+    waiting.view,
+    waiting.shaping,
+    waiting.cache,
+    theme,
+    area,
+    0,
+    8,
+    pending_y,
+    false
+  )
+  if pending_caret.block != 0 || pending_caret.byte_index != 6 then
+    return -11
+  end
+  const empty_caret = transcript_caret_at(
+    chat_model_new(), measured.view, shaping, cache, theme, area, 0, 8, 8, false
+  )
+  if empty_caret.block >= 0 then
+    return -12
+  end
+
+  const painted = paint_transcript_styled(
+    theme,
+    pair,
+    measured.view,
+    shaping,
+    cache,
+    area,
+    false,
+    selection_between(0, 0, 1, 2)
+  )
+  if selection_fills(painted) < 2 then
+    return -13
+  end
+  0
+end

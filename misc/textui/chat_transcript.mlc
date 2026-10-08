@@ -7,6 +7,7 @@ import { TextLayout, TextLayoutCache, text_layout_build, wrap_width_none, wrap_w
 import { text_layout_text_ops } from './text_layout_paint'
 import { text_layout_selection_rects } from './text_layout_hit'
 import { TranscriptSelection } from './chat_transcript_input'
+import { TranscriptCaret, transcript_block_slice } from './chat_transcript_caret'
 import { DrawOp, FillRectOp } from './draw_op'
 import { Rect, rect_contains, rect_intersect, rect_is_empty, rect_new } from './geometry'
 import { scroll_bar_rect, scroll_thumb_rect } from './widget_scroll'
@@ -115,9 +116,9 @@ fn paint_message(
   bounds: Rect,
   screen_y: i32,
   highlight: bool,
-  selected: bool,
-  anchor: i32,
-  focus: i32
+  block_index: i32,
+  message_count: i32,
+  selection: TranscriptSelection
 ) -> [DrawOp] = do
   let mut body_text = message.text
   let mut code_ranges: [i32] = []
@@ -183,8 +184,15 @@ fn paint_message(
       code_ranges
     )
   end
-  if selected then
-    next = paint_selection(next, theme, body_built.layout, text_x, body_y, anchor, focus)
+  const slice = transcript_block_slice(
+    block_index,
+    body_text.byte_size(),
+    message_count,
+    TranscriptCaret { block: selection.anchor_block, byte_index: selection.anchor_byte },
+    TranscriptCaret { block: selection.focus_block, byte_index: selection.focus_byte }
+  )
+  if slice.covered then
+    next = paint_selection(next, theme, body_built.layout, text_x, body_y, slice.start, slice.finish)
   end
   if highlight then
     next = chat_highlight_text(
@@ -266,9 +274,9 @@ fn paint_block(
     bounds,
     screen_y,
     highlight,
-    selection.message == block_index,
-    selection.anchor,
-    selection.focus
+    block_index,
+    model.messages.length(),
+    selection
   )
 end
 

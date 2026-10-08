@@ -1,5 +1,3 @@
-import { chat_body_text } from './chat_highlight'
-import { chat_body_text } from './chat_highlight'
 import { Theme } from './theme'
 import { ChatModel } from './chat_model'
 import {
@@ -8,31 +6,23 @@ import {
   block_scroll_is_at_bottom
 } from './block_index'
 import { TextShapingState } from '../gui/text_shaping'
+import { TextLayoutCache } from './text_layout'
 import {
-  TextLayoutCache,
-  text_layout_build,
-  wrap_width_none,
-  wrap_width_pixels
-} from './text_layout'
-import { text_layout_slice } from './text_layout_hit'
-import {
-  transcript_block_at_y,
-  transcript_body_press_index,
-  transcript_index_in_message
-} from './chat_transcript_hit'
+  TranscriptCaret,
+  transcript_caret_missing,
+  transcript_copy_carets
+} from './chat_transcript_caret'
+import { transcript_caret_at } from './chat_transcript_hit'
 import { Rect, rect_contains } from './geometry'
 import { scroll_bar_rect, scroll_offset_from_track, scroll_step } from './widget_scroll'
 import { UiInput } from './ui_input'
-import {
-  TranscriptView,
-  transcript_content_limit,
-  transcript_role_label
-} from './chat_transcript_layout'
+import { TranscriptView } from './chat_transcript_layout'
 
 export type TranscriptSelection = {
-  message: i32,
-  anchor: i32,
-  focus: i32,
+  anchor_block: i32,
+  anchor_byte: i32,
+  focus_block: i32,
+  focus_byte: i32,
   dragging: i32
 }
 
@@ -45,7 +35,46 @@ export type TranscriptInputResult = {
 }
 
 export fn transcript_selection_new() -> TranscriptSelection =
-  TranscriptSelection { message: 0 - 1, anchor: 0, focus: 0, dragging: 0 }
+  TranscriptSelection {
+    anchor_block: 0 - 1,
+    anchor_byte: 0,
+    focus_block: 0 - 1,
+    focus_byte: 0,
+    dragging: 0
+  }
+
+fn selection_anchor(selection: TranscriptSelection) -> TranscriptCaret =
+  TranscriptCaret { block: selection.anchor_block, byte_index: selection.anchor_byte }
+
+fn selection_focus(selection: TranscriptSelection) -> TranscriptCaret =
+  TranscriptCaret { block: selection.focus_block, byte_index: selection.focus_byte }
+
+fn selection_collapsed(caret: TranscriptCaret, dragging: i32) -> TranscriptSelection =
+  TranscriptSelection {
+    anchor_block: caret.block,
+    anchor_byte: caret.byte_index,
+    focus_block: caret.block,
+    focus_byte: caret.byte_index,
+    dragging: dragging
+  }
+
+fn selection_moved(selection: TranscriptSelection, caret: TranscriptCaret, dragging: i32) -> TranscriptSelection =
+  TranscriptSelection {
+    anchor_block: selection.anchor_block,
+    anchor_byte: selection.anchor_byte,
+    focus_block: caret.block,
+    focus_byte: caret.byte_index,
+    dragging: dragging
+  }
+
+fn selection_settled(selection: TranscriptSelection) -> TranscriptSelection =
+  TranscriptSelection {
+    anchor_block: selection.anchor_block,
+    anchor_byte: selection.anchor_byte,
+    focus_block: selection.focus_block,
+    focus_byte: selection.focus_byte,
+    dragging: 0
+  }
 
 export fn transcript_pointer_routed(input: UiInput, rect: Rect) -> bool =
   input.left_pressed && rect_contains(rect, input.mouse_x, input.mouse_y)
@@ -121,23 +150,8 @@ export fn transcript_copy_shown(
   theme: Theme,
   width: i32,
   highlight: bool
-) -> string = do
-  if selection.message < 0 || selection.message >= model.messages.length() then
-    return ""
-  end
-  const entry = model.messages[selection.message]
-  const role = text_layout_build(
-    shaping, cache, theme, transcript_role_label(entry.role), wrap_width_none()
-  )
-  const body = text_layout_build(
-    role.shaping,
-    role.cache,
-    theme,
-    chat_body_text(entry.text, highlight),
-    wrap_width_pixels(transcript_content_limit(theme, width))
-  )
-  text_layout_slice(body.layout, selection.anchor, selection.focus)
-end
+) -> string =
+  transcript_copy_carets(model, selection_anchor(selection), selection_focus(selection), highlight)
 
 fn apply_scroll_keys(
   view: TranscriptView,
@@ -219,48 +233,29 @@ export fn transcript_input_shown(
   let mut next_selection = selection
   let mut selection_handled = false
   if next_bar != 0 then
-    next_selection = TranscriptSelection {
-      message: selection.message,
-      anchor: selection.anchor,
-      focus: selection.focus,
-      dragging: 0
-    }
+    next_selection = selection_settled(selection)
     selection_handled = true
   end
   if selection_handled == false && input.left_pressed && rect_contains(rect, input.mouse_x, input.mouse_y) then
-    const pressed = transcript_body_press_index(
+    const pressed = transcript_caret_at(
       model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y, highlight
     )
-    if pressed.top >= 0 then
-      next_selection = TranscriptSelection {
-        message: transcript_block_at_y(view, input.mouse_y - rect.y + scroll),
-        anchor: pressed.top,
-        focus: pressed.top,
-        dragging: 1
-      }
+    if transcript_caret_missing(pressed) == false then
+      next_selection = selection_collapsed(pressed, 1)
     end
     selection_handled = true
   end
-  if selection_handled == false && selection.dragging != 0 && input.left_down && selection.message >= 0 then
-    const dragged = transcript_index_in_message(
-      model, view, shaping, cache, theme, rect, scroll,
-      selection.message, input.mouse_x, input.mouse_y, highlight
+  if selection_handled == false && selection.dragging != 0 && input.left_down && selection.anchor_block >= 0 then
+    const dragged = transcript_caret_at(
+      model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y, highlight
     )
-    next_selection = TranscriptSelection {
-      message: selection.message,
-      anchor: selection.anchor,
-      focus: dragged.top,
-      dragging: 1
-    }
+    if transcript_caret_missing(dragged) == false then
+      next_selection = selection_moved(selection, dragged, 1)
+    end
     selection_handled = true
   end
   if selection_handled == false && input.left_down == false then
-    next_selection = TranscriptSelection {
-      message: selection.message,
-      anchor: selection.anchor,
-      focus: selection.focus,
-      dragging: 0
-    }
+    next_selection = selection_settled(selection)
   end
   TranscriptInputResult {
     view: with_scroll(view, scroll, rect.height),

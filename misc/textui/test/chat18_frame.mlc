@@ -216,7 +216,10 @@ fn main() -> i32 = do
     280,
     700
   )
-  if dragged.world.selection.anchor == dragged.world.selection.focus then
+  if dragged.world.selection.anchor_block != dragged.world.selection.focus_block then
+    return -15
+  end
+  if dragged.world.selection.anchor_byte == dragged.world.selection.focus_byte then
     return -15
   end
   const copied = chat_frame_run(
@@ -235,6 +238,16 @@ fn main() -> i32 = do
   )
   if copied.clipboard != expected || expected == "" then
     return -16
+  end
+  const composer = dragged.world.layout.rects[dragged.world.scene.composer.index]
+  const dismissed = chat_frame_run(
+    dragged.world,
+    pointer_input(composer.x + 4, composer.y + 4, true, true, 0, false),
+    280,
+    700
+  )
+  if dismissed.world.selection.anchor_block != 0 - 1 then
+    return -17
   end
   0
 end

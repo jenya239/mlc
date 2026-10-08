@@ -232,7 +232,7 @@ fn main() -> i32 = do
     pointer_input(wide.x + theme.padding, body_y, true, true, 0, "", false),
     0
   )
-  if pressed.selection.message != 0 || pressed.selection.dragging == 0 then
+  if pressed.selection.anchor_block != 0 || pressed.selection.focus_block != 0 || pressed.selection.dragging == 0 then
     return -9
   end
   const dragged = transcript_input(
@@ -246,7 +246,10 @@ fn main() -> i32 = do
     pointer_input(wide.x + wide.width - theme.padding - 1, body_y, false, true, 0, "", false),
     pressed.bar_drag
   )
-  if dragged.selection.message != 0 || dragged.selection.anchor == dragged.selection.focus then
+  if dragged.selection.anchor_block != 0 || dragged.selection.focus_block != 0 then
+    return -10
+  end
+  if dragged.selection.anchor_byte == dragged.selection.focus_byte then
     return -10
   end
   const other_y = wide.y + measured.view.index.tops[1] + theme.padding + role.layout.pixel_height + 1
@@ -261,14 +264,20 @@ fn main() -> i32 = do
     pointer_input(wide.x + theme.padding, other_y, false, true, 0, "", false),
     dragged.bar_drag
   )
-  if stayed.selection.message != 0 then
+  if stayed.selection.anchor_block != 0 || stayed.selection.focus_block != 1 then
     return -11
   end
 
   const hello = model_of([user_message("hello")])
   const copied = transcript_copy_text(
     hello,
-    TranscriptSelection { message: 0, anchor: 0, focus: 5, dragging: 0 },
+    TranscriptSelection {
+      anchor_block: 0,
+      anchor_byte: 0,
+      focus_block: 0,
+      focus_byte: 5,
+      dragging: 0
+    },
     shaping,
     cache,
     theme,
@@ -288,7 +297,7 @@ fn main() -> i32 = do
   const ignored = transcript_input(
     theme, measured.view, transcript_selection_new(), pair, shaping, cache, wide, missed, 0
   )
-  if ignored.selection.message != 0 - 1 then
+  if ignored.selection.anchor_block != 0 - 1 then
     return -15
   end
 

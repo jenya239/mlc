@@ -10,6 +10,7 @@ import {
   wrap_width_pixels
 } from './text_layout'
 import { text_layout_index_at } from './text_layout_hit'
+import { TranscriptCaret, transcript_caret_none } from './chat_transcript_caret'
 import { Rect } from './geometry'
 import {
   TranscriptView,
@@ -149,4 +150,127 @@ export fn transcript_body_press_index(
     shaping: placed.shaping,
     cache: placed.cache
   }
+end
+
+fn caret_of(block: i32, byte_index: i32) -> TranscriptCaret =
+  TranscriptCaret { block: block, byte_index: byte_index }
+
+fn body_byte_count(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32,
+  message: i32,
+  highlight: bool
+) -> i32 = do
+  const placed = message_body(model, view, shaping, cache, theme, width, message, highlight)
+  placed.layout.text.byte_size()
+end
+
+fn caret_in_block(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  rect: Rect,
+  block: i32,
+  content_y: i32,
+  mouse_x: i32,
+  highlight: bool
+) -> TranscriptCaret = do
+  const placed = message_body(model, view, shaping, cache, theme, rect.width, block, highlight)
+  const limit = placed.layout.text.byte_size()
+  if content_y < placed.top then
+    return caret_of(block, 0)
+  end
+  if content_y >= placed.top + placed.layout.pixel_height then
+    return caret_of(block, limit)
+  end
+  const local_x = mouse_x - rect.x - theme.padding
+  const local_y = content_y - placed.top
+  caret_of(
+    block,
+    clamp_index(text_layout_index_at(placed.layout, local_x, local_y), limit)
+  )
+end
+
+fn caret_in_gap(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  width: i32,
+  content_y: i32,
+  highlight: bool
+) -> TranscriptCaret = do
+  let mut index = 0
+  while index + 1 < view.index.tops.length() do
+    const bottom = view.index.tops[index] + view.index.heights[index]
+    const next_top = view.index.tops[index + 1]
+    if content_y >= bottom && content_y < next_top then
+      const middle = bottom + (next_top - bottom) / 2
+      if content_y < middle then
+        if index < model.messages.length() then
+          return caret_of(
+            index,
+            body_byte_count(model, view, shaping, cache, theme, width, index, highlight)
+          )
+        end
+        return transcript_caret_none()
+      end
+      const lower = index + 1
+      if lower < model.messages.length() then
+        return caret_of(lower, 0)
+      end
+      if model.messages.length() > 0 then
+        const last = model.messages.length() - 1
+        return caret_of(
+          last,
+          body_byte_count(model, view, shaping, cache, theme, width, last, highlight)
+        )
+      end
+      return transcript_caret_none()
+    end
+    index = index + 1
+  end
+  transcript_caret_none()
+end
+
+export fn transcript_caret_at(
+  model: ChatModel,
+  view: TranscriptView,
+  shaping: TextShapingState,
+  cache: TextLayoutCache,
+  theme: Theme,
+  rect: Rect,
+  scroll: i32,
+  mouse_x: i32,
+  mouse_y: i32,
+  highlight: bool
+) -> TranscriptCaret = do
+  if model.messages.length() == 0 then
+    return transcript_caret_none()
+  end
+  const content_y = mouse_y - rect.y + scroll
+  if content_y < 0 then
+    return transcript_caret_none()
+  end
+  const block = transcript_block_at_y(view, content_y)
+  if block >= model.messages.length() then
+    const last = model.messages.length() - 1
+    return caret_of(
+      last,
+      body_byte_count(model, view, shaping, cache, theme, rect.width, last, highlight)
+    )
+  end
+  if block >= 0 then
+    return caret_in_block(
+      model, view, shaping, cache, theme, rect, block, content_y, mouse_x, highlight
+    )
+  end
+  caret_in_gap(model, view, shaping, cache, theme, rect.width, content_y, highlight)
 end

@@ -1,0 +1,137 @@
+import { chat_body_text } from './chat_highlight'
+import { ChatModel } from './chat_model'
+
+export type TranscriptCaret = {
+  block: i32,
+  byte_index: i32
+}
+
+export type TranscriptBlockSlice = {
+  start: i32,
+  finish: i32,
+  covered: bool
+}
+
+type OrderedCarets = {
+  start: TranscriptCaret,
+  finish: TranscriptCaret
+}
+
+export fn transcript_caret_none() -> TranscriptCaret =
+  TranscriptCaret { block: 0 - 1, byte_index: 0 }
+
+export fn transcript_caret_missing(caret: TranscriptCaret) -> bool =
+  caret.block < 0
+
+export fn transcript_caret_equal(left: TranscriptCaret, right: TranscriptCaret) -> bool =
+  left.block == right.block && left.byte_index == right.byte_index
+
+export fn transcript_caret_before(left: TranscriptCaret, right: TranscriptCaret) -> bool = do
+  if left.block < right.block then
+    return true
+  end
+  if left.block > right.block then
+    return false
+  end
+  left.byte_index < right.byte_index
+end
+
+fn order_carets(anchor: TranscriptCaret, focus: TranscriptCaret) -> OrderedCarets = do
+  if transcript_caret_before(focus, anchor) then
+    return OrderedCarets { start: focus, finish: anchor }
+  end
+  OrderedCarets { start: anchor, finish: focus }
+end
+
+fn bounded(index: i32, limit: i32) -> i32 = do
+  if index < 0 then
+    return 0
+  end
+  if index > limit then
+    return limit
+  end
+  index
+end
+
+fn body_piece(text: string, start: i32, finish: i32) -> string = do
+  const limit = text.byte_size()
+  const from_index = bounded(start, limit)
+  const to_index = bounded(finish, limit)
+  if to_index <= from_index then
+    return ""
+  end
+  text.byte_substring(from_index, to_index - from_index)
+end
+
+export fn transcript_block_slice(
+  block: i32,
+  body_size: i32,
+  message_count: i32,
+  anchor: TranscriptCaret,
+  focus: TranscriptCaret
+) -> TranscriptBlockSlice = do
+  if transcript_caret_missing(anchor) || transcript_caret_missing(focus) then
+    return TranscriptBlockSlice { start: 0, finish: 0, covered: false }
+  end
+  if transcript_caret_equal(anchor, focus) then
+    return TranscriptBlockSlice { start: 0, finish: 0, covered: false }
+  end
+  if anchor.block >= message_count || focus.block >= message_count then
+    return TranscriptBlockSlice { start: 0, finish: 0, covered: false }
+  end
+  const ordered = order_carets(anchor, focus)
+  if block < ordered.start.block || block > ordered.finish.block then
+    return TranscriptBlockSlice { start: 0, finish: 0, covered: false }
+  end
+  let mut start = 0
+  let mut finish = body_size
+  if block == ordered.start.block then
+    start = bounded(ordered.start.byte_index, body_size)
+  end
+  if block == ordered.finish.block then
+    finish = bounded(ordered.finish.byte_index, body_size)
+  end
+  if finish < start then
+    finish = start
+  end
+  TranscriptBlockSlice { start: start, finish: finish, covered: finish > start }
+end
+
+export fn transcript_copy_carets(
+  model: ChatModel,
+  anchor: TranscriptCaret,
+  focus: TranscriptCaret,
+  highlight: bool
+) -> string = do
+  if transcript_caret_missing(anchor) || transcript_caret_missing(focus) then
+    return ""
+  end
+  if transcript_caret_equal(anchor, focus) then
+    return ""
+  end
+  const ordered = order_carets(anchor, focus)
+  if ordered.start.block < 0 || ordered.finish.block >= model.messages.length() then
+    return ""
+  end
+  let mut copied = ""
+  let mut index = ordered.start.block
+  while index <= ordered.finish.block do
+    const body = chat_body_text(model.messages[index].text, highlight)
+    let mut piece = body
+    if index == ordered.start.block && index == ordered.finish.block then
+      piece = body_piece(body, ordered.start.byte_index, ordered.finish.byte_index)
+    end
+    if index == ordered.start.block && index != ordered.finish.block then
+      piece = body_piece(body, ordered.start.byte_index, body.byte_size())
+    end
+    if index != ordered.start.block && index == ordered.finish.block then
+      piece = body_piece(body, 0, ordered.finish.byte_index)
+    end
+    if index != ordered.start.block then
+      copied = copied + "\n"
+    end
+    copied = copied + piece
+    index = index + 1
+  end
+  copied
+end
