@@ -3,6 +3,7 @@ import { database_close, database_file_path, database_open } from '../chat_datab
 import {
   ChatPersistence,
   persistence_closed,
+  persistence_detach,
   persistence_restore,
   persistence_sync
 } from '../chat_persistence'
@@ -16,10 +17,10 @@ import {
 } from '../statement_query'
 
 fn user_message(text: string) -> ChatMessage =
-  ChatMessage { role: RoleUser, text: text, failed: false }
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
 
 fn assistant_message(text: string, failed: bool) -> ChatMessage =
-  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+  ChatMessage { role: RoleAssistant, text: text, failed: failed, provider: "", model_name: "" }
 
 fn model_with(messages: [ChatMessage], revision: i32) -> ChatModel =
   ChatModel { messages: messages, pending: false, generation: 0, revision: revision }
@@ -31,7 +32,9 @@ fn holding(database: i32) -> ChatPersistence = do
     conversation_id: closed.conversation_id,
     persisted_count: 0,
     failed_revision: -1,
-    failed_length: -1
+    failed_length: -1,
+    provider_name: "",
+    model_name: ""
   }
 end
 
@@ -68,13 +71,25 @@ fn main() -> i32 = do
     return 3
   end
   let mut greeted: [ChatMessage] = []
-  greeted.push(user_message("Привет"))
+  greeted.push(ChatMessage {
+    role: RoleUser,
+    text: "Привет",
+    failed: false,
+    provider: "Meta",
+    model_name: "muse"
+  })
   const greeting = model_with(greeted, 1)
   let mut persistence = persistence_sync(holding(database), "", chat_model_new(), greeting)
   if persistence.persisted_count != 1 then
     return 4
   end
   if query_text(database, "SELECT title FROM conversation ORDER BY id DESC LIMIT 1") != "Привет" then
+    return 5
+  end
+  if query_text(database, "SELECT provider FROM message") != "Meta" then
+    return 5
+  end
+  if query_text(database, "SELECT model FROM message") != "muse" then
     return 5
   end
   if query_text(database, "SELECT detail FROM action ORDER BY id DESC LIMIT 1") != persistence.conversation_id.to_string() then
@@ -187,11 +202,25 @@ fn main() -> i32 = do
   if interrupted.model.messages[1].text != "Прервано" || interrupted.model.messages[1].failed == false then
     return 30
   end
+  if interrupted.model.messages[0].provider != "" || interrupted.model.messages[1].provider != "" then
+    return 30
+  end
+  if interrupted.model.messages[0].model_name != "" || interrupted.model.messages[1].model_name != "" then
+    return 30
+  end
   if interrupted.persistence.persisted_count != 2 then
     return 31
   end
   if query_i64_is(database, "SELECT COUNT(*) FROM message WHERE body = 'Прервано'", 1) == false then
     return 32
+  end
+  const detached = persistence_detach(interrupted.persistence)
+  if detached.conversation_id != persistence_closed().conversation_id then
+    return 36
+  end
+  persistence_sync(detached, "", interrupted.model, chat_model_new())
+  if query_i64_is(database, "SELECT COUNT(*) FROM message WHERE body = 'Прервано'", 1) == false then
+    return 37
   end
   if query_exec(database, "DELETE FROM conversation") != 0 then
     return 33

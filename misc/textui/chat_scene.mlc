@@ -4,15 +4,21 @@ import {
   DirectionColumn,
   DirectionRow,
   LabelData,
+  ListData,
   OverflowHidden,
   OverflowVisible,
+  SplitterData,
   WidgetId,
   WidgetStore,
   widget_id_none,
   widget_store_add_box,
   widget_store_add_button,
   widget_store_add_label,
-  widget_store_empty
+  widget_store_add_list_view,
+  widget_store_add_scroll_view,
+  widget_store_add_splitter,
+  widget_store_empty,
+  widget_store_with_menu
 } from './store'
 import { widget_store_add_text_area } from './widget_field'
 import { widget_store_add_checkbox } from './checkbox'
@@ -26,7 +32,11 @@ export type ChatScene = {
   highlight: WidgetId,
   send: WidgetId,
   stop: WidgetId,
-  new_chat: WidgetId
+  new_chat: WidgetId,
+  back: WidgetId,
+  catalog_list: WidgetId,
+  provider_button: WidgetId,
+  model_button: WidgetId
 }
 
 export fn chat_composer_lines() -> i32 =
@@ -38,8 +48,24 @@ fn chat_column() -> BoxData =
 fn chat_row() -> BoxData =
   BoxData { direction: DirectionRow, padding: 0, gap: 10 }
 
+fn message_column() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 10 }
+
+fn roster_column() -> BoxData =
+  BoxData { direction: DirectionColumn, padding: 0, gap: 8 }
+
 fn last_id(store: WidgetStore) -> WidgetId =
   store.nodes[store.nodes.length() - 1].id
+
+fn attach_choice_menu(store: WidgetStore) -> WidgetStore = do
+  let mut next = widget_store_add_box(
+    store, widget_id_none(), message_column(), OverflowHidden, 0, false
+  )
+  const layer = last_id(next)
+  next = widget_store_with_menu(next, layer)
+  let mut rows: [string] = []
+  widget_store_add_list_view(next, layer, ListData { texts: rows }, 0, true)
+end
 
 export fn build_chat_scene() -> ChatScene = do
   let mut store = widget_store_empty()
@@ -49,6 +75,10 @@ export fn build_chat_scene() -> ChatScene = do
   const root = store.root
   store = widget_store_add_box(store, root, chat_row(), OverflowVisible, 0, true)
   const header = last_id(store)
+  store = widget_store_add_button(
+    store, header, ButtonData { text: "Back" }, OverflowVisible, 0, true
+  )
+  const back = last_id(store)
   store = widget_store_add_label(
     store, header, LabelData { text: "Chat" }, OverflowVisible, 0, true
   )
@@ -64,9 +94,32 @@ export fn build_chat_scene() -> ChatScene = do
     store, header, ButtonData { text: "New chat" }, OverflowVisible, 0, true
   )
   const new_chat = last_id(store)
-  store = widget_store_add_box(store, root, chat_column(), OverflowHidden, 1, true)
+  store = widget_store_add_splitter(
+    store, root, SplitterData { direction: DirectionRow, ratio_thousandths: 220 }, 1, true
+  )
+  const splitter = last_id(store)
+  store = widget_store_add_box(store, splitter, roster_column(), OverflowHidden, 0, true)
+  const choices = last_id(store)
+  store = widget_store_add_scroll_view(store, choices, 1, true)
+  const scroller = last_id(store)
+  let mut catalog_rows: [string] = []
+  store = widget_store_add_list_view(store, scroller, ListData { texts: catalog_rows }, 0, true)
+  const catalog_list = last_id(store)
+  store = widget_store_add_box(store, splitter, message_column(), OverflowHidden, 1, true)
+  const messages = last_id(store)
+  store = widget_store_add_box(store, messages, message_column(), OverflowHidden, 1, true)
   const transcript = last_id(store)
-  store = widget_store_add_text_area(store, root, "", chat_composer_lines(), 0, true)
+  store = widget_store_add_box(store, messages, chat_row(), OverflowVisible, 0, true)
+  const route = last_id(store)
+  store = widget_store_add_button(
+    store, route, ButtonData { text: "Провайдер" }, OverflowVisible, 0, true
+  )
+  const provider_button = last_id(store)
+  store = widget_store_add_button(
+    store, route, ButtonData { text: "модель" }, OverflowVisible, 0, true
+  )
+  const model_button = last_id(store)
+  store = widget_store_add_text_area(store, messages, "", chat_composer_lines(), 0, true)
   const composer = last_id(store)
   store = widget_store_add_box(store, root, chat_row(), OverflowVisible, 0, true)
   const actions = last_id(store)
@@ -78,6 +131,8 @@ export fn build_chat_scene() -> ChatScene = do
   store = widget_store_add_button(
     store, actions, ButtonData { text: "Send" }, OverflowVisible, 0, true
   )
+  const send = last_id(store)
+  store = attach_choice_menu(store)
   ChatScene {
     store: store,
     title: title,
@@ -85,8 +140,12 @@ export fn build_chat_scene() -> ChatScene = do
     composer: composer,
     meter: meter,
     highlight: highlight,
-    send: last_id(store),
+    send: send,
     stop: stop,
-    new_chat: new_chat
+    new_chat: new_chat,
+    back: back,
+    catalog_list: catalog_list,
+    provider_button: provider_button,
+    model_button: model_button
   }
 end

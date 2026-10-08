@@ -16,10 +16,10 @@ import {
 import { HttpsHeader, HttpsOk, HttpsResponse } from '../../../lib/mlc/common/stdlib/net/https_request.mlc'
 
 fn user_message(text: string) -> ChatMessage =
-  ChatMessage { role: RoleUser, text: text, failed: false }
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
 
 fn assistant_message(text: string, failed: bool) -> ChatMessage =
-  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+  ChatMessage { role: RoleAssistant, text: text, failed: failed, provider: "", model_name: "" }
 
 fn sample_config() -> ChatConfig =
   chat_config_from("https://api.openai.com/v1", "gpt-test", "secret-key-value", "")

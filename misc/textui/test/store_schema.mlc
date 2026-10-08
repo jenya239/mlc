@@ -1,5 +1,70 @@
 import { database_blocked, database_close, database_file_path, database_open } from '../chat_database'
-import { query_exec, query_i64_is, query_text } from '../statement_query'
+import { SqliteHandleErr, SqliteHandleOk, open_file } from '../../../lib/mlc/common/stdlib/db/sqlite.mlc'
+import { query_close, query_exec, query_i64_is, query_text } from '../statement_query'
+
+fn opened_handle(path: string) -> i32 =
+  match open_file(path)
+    | SqliteHandleOk(handle) => handle
+    | SqliteHandleErr(_) => 0
+
+fn legacy_sql() -> string =
+  "CREATE TABLE conversation (" +
+  "id INTEGER PRIMARY KEY, title TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, " +
+  "updated_at INTEGER NOT NULL, archived INTEGER NOT NULL DEFAULT 0, " +
+  "provider TEXT NOT NULL DEFAULT '', model TEXT NOT NULL DEFAULT '');" +
+  "CREATE TABLE message (" +
+  "id INTEGER PRIMARY KEY, conversation_id INTEGER NOT NULL, ordinal INTEGER NOT NULL, " +
+  "role INTEGER NOT NULL, body TEXT NOT NULL, failed INTEGER NOT NULL, created_at INTEGER NOT NULL);" +
+  "CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);" +
+  "INSERT INTO conversation (title, created_at, updated_at) VALUES ('legacy', 2, 2);" +
+  "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) VALUES (1, 1, 1, 'old', 0, 2);"
+
+fn migrate_legacy(path: string) -> i32 = do
+  const handle = opened_handle(path)
+  if handle == 0 then
+    return 28
+  end
+  if query_exec(handle, legacy_sql()) != 0 then
+    query_close(handle)
+    return 29
+  end
+  if query_exec(handle, "PRAGMA user_version=2") != 0 then
+    query_close(handle)
+    return 30
+  end
+  if query_close(handle) != 0 then
+    return 31
+  end
+  const migrated = database_open(path, "")
+  if migrated == 0 then
+    return 32
+  end
+  if query_i64_is(migrated, "PRAGMA user_version", 3) == false then
+    database_close(migrated)
+    return 33
+  end
+  if query_text(migrated, "SELECT name FROM pragma_table_info('message') WHERE name = 'provider'") != "provider" then
+    database_close(migrated)
+    return 34
+  end
+  if query_text(migrated, "SELECT name FROM pragma_table_info('message') WHERE name = 'model'") != "model" then
+    database_close(migrated)
+    return 35
+  end
+  if query_text(migrated, "SELECT provider FROM message") != "" then
+    database_close(migrated)
+    return 36
+  end
+  if query_text(migrated, "SELECT model FROM message") != "" then
+    database_close(migrated)
+    return 37
+  end
+  if query_text(migrated, "SELECT body FROM message") != "old" then
+    database_close(migrated)
+    return 38
+  end
+  database_close(migrated)
+end
 
 fn main() -> i32 = do
   const path = database_file_path()
@@ -22,11 +87,27 @@ fn main() -> i32 = do
   if database_open(jail + "/nested.sqlite", jail) != 0 then
     return 7
   end
+  const legacy = migrate_legacy(path + ".v2")
+  if legacy != 0 then
+    return legacy
+  end
   const database = database_open(path, "")
   if database == 0 then
     return 8
   end
-  if query_i64_is(database, "PRAGMA user_version", 1) == false then
+  if query_i64_is(database, "PRAGMA user_version", 3) == false then
+    return 9
+  end
+  if query_text(database, "SELECT name FROM pragma_table_info('conversation') WHERE name = 'provider'") != "provider" then
+    return 9
+  end
+  if query_text(database, "SELECT name FROM pragma_table_info('conversation') WHERE name = 'model'") != "model" then
+    return 9
+  end
+  if query_text(database, "SELECT name FROM pragma_table_info('message') WHERE name = 'provider'") != "provider" then
+    return 9
+  end
+  if query_text(database, "SELECT name FROM pragma_table_info('message') WHERE name = 'model'") != "model" then
     return 9
   end
   if query_i64_is(database, "PRAGMA foreign_keys", 1) == false then
@@ -75,7 +156,7 @@ fn main() -> i32 = do
   if reopened == 0 then
     return 18
   end
-  if query_i64_is(reopened, "PRAGMA user_version", 1) == false then
+  if query_i64_is(reopened, "PRAGMA user_version", 3) == false then
     return 19
   end
   if query_i64_is(reopened, "SELECT COUNT(*) FROM message", 1) == false then

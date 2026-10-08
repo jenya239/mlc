@@ -1,4 +1,4 @@
-import { chat_config_from } from '../chat_http'
+import { chat_build_request, chat_config_from, chat_request_body } from '../chat_http'
 import { chat_meter_line, chat_provider_line } from '../chat_meter'
 import { chat_byte_in_code, chat_code_ranges, chat_fence_body } from '../chat_highlight'
 import { chat_model_new } from '../chat_model'
@@ -51,6 +51,30 @@ fn main() -> i32 = do
   end
   if chat_byte_in_code(visible.ranges, 0) then
     return -10
+  end
+  const anthropic = chat_config_from("https://api.anthropic.com/v1", "claude-test", "fixture-anthropic", "be brief")
+  const body = chat_request_body(anthropic, [])
+  if body.index_of("max_tokens") < 0 || body.index_of("fixture-anthropic") >= 0 then
+    return -11
+  end
+  const request = chat_build_request(anthropic, [])
+  if request.url.index_of("/messages") < 0 then
+    return -12
+  end
+  let mut saw_key = false
+  let mut saw_bearer = false
+  let mut header_index = 0
+  while header_index < request.headers.length() do
+    if request.headers[header_index].name == "x-api-key" then
+      saw_key = true
+    end
+    if request.headers[header_index].name == "Authorization" then
+      saw_bearer = true
+    end
+    header_index = header_index + 1
+  end
+  if saw_key == false || saw_bearer then
+    return -13
   end
   0
 end

@@ -28,14 +28,19 @@ import {
   chat_transcript_rect,
   chat_view_at_bottom
 } from './chat_world'
+import { catalog_model_label, catalog_model_name, catalog_provider_label, catalog_provider_name } from './chat_catalog'
+import { chat_stamp_submission } from './chat_model'
+import { picker_apply } from './chat_picker'
 import { persistence_sync } from './chat_persistence'
+import { roster_refresh } from './chat_roster'
 
 export type ChatFrameResult = {
   world: ChatWorld,
   ops_under: [DrawOp],
   ops_over: [DrawOp],
   paints: bool,
-  clipboard: string
+  clipboard: string,
+  leave_requested: bool
 }
 
 fn view_changed(before: TranscriptView, after: TranscriptView) -> bool = do
@@ -138,13 +143,59 @@ export fn chat_frame_run(
     updated.state,
     updated.events
   )
-  model = chat_session_dispatch(world.config, applied.model, applied.send_requested)
-  const persistence = persistence_sync(world.persistence, world.config.api_key, model_before, model)
-  let mut state = applied.state
-  if model.revision != revision_before || view_changed(view_before, handled.view) || selection_changed(selection_before, handled.selection) then
+  let mut submitted_model = applied.model
+  if applied.send_requested then
+    submitted_model = chat_stamp_submission(
+      applied.model,
+      catalog_provider_name(world.catalog),
+      catalog_model_name(world.catalog)
+    )
+  end
+  const directed = picker_apply(
+    world.catalog,
+    world.roster,
+    world.persistence,
+    world.config,
+    world.scene,
+    applied.store,
+    applied.state,
+    model_before,
+    submitted_model,
+    applied.fresh_requested,
+    applied.provider_requested,
+    applied.model_requested,
+    world.dismiss_picker,
+    world.layout,
+    updated.events
+  )
+  model = chat_session_dispatch(directed.config, directed.model, applied.send_requested)
+  const persistence = persistence_sync(
+    directed.persistence, directed.config.api_key, directed.model_before, model
+  )
+  const refreshed = roster_refresh(
+    directed.roster,
+    persistence.database,
+    directed.store,
+    directed.state,
+    world.scene,
+    directed.persistence.conversation_id,
+    directed.persistence.persisted_count,
+    persistence.conversation_id,
+    persistence.persisted_count
+  )
+  let mut state = refreshed.state
+  if model.revision != revision_before || directed.replaced || view_changed(view_before, handled.view) || selection_changed(selection_before, handled.selection) then
     state = ui_state_with_listing_revision(state, state.listing_revision + 1)
   end
-  const synced = chat_sync_chrome(applied.store, state, world.scene, world.config, model)
+  const synced = chat_sync_chrome(
+    refreshed.store,
+    state,
+    world.scene,
+    directed.config,
+    model,
+    catalog_provider_label(directed.catalog),
+    catalog_model_label(directed.catalog)
+  )
   state = synced.state
   let mut store = synced.store
   let mut view = handled.view
@@ -157,7 +208,7 @@ export fn chat_frame_run(
   if highlight then
     highlight_flag = 1
   end
-  if highlight_flag != world.code_highlight then
+  if directed.replaced || highlight_flag != world.code_highlight then
     selection = transcript_selection_new()
     view = TranscriptView {
       width: 0,
@@ -215,7 +266,7 @@ export fn chat_frame_run(
     view: view,
     selection: selection,
     scene: world.scene,
-    config: world.config,
+    config: directed.config,
     shaping: shaping,
     cache: cache,
     layout: layout,
@@ -223,13 +274,17 @@ export fn chat_frame_run(
     painted_under: painted_under,
     painted_over: painted_over,
     code_highlight: highlight_flag,
-    persistence: persistence
+    persistence: persistence,
+    catalog: directed.catalog,
+    roster: refreshed.roster,
+    dismiss_picker: 0
   }
   ChatFrameResult {
     world: next,
     ops_under: painted_under,
     ops_over: painted_over,
     paints: paints,
-    clipboard: frame_clipboard(next, input, selection_is_empty(state.selection))
+    clipboard: frame_clipboard(next, input, selection_is_empty(state.selection)),
+    leave_requested: applied.leave_requested
   }
 end

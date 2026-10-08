@@ -1,5 +1,6 @@
 import { chat_body_text } from './chat_highlight'
-import { Theme } from './theme'
+import { transcript_route_caption, transcript_route_font_size } from './chat_transcript_route'
+import { Theme, theme_with_font_size } from './theme'
 import { ChatModel, ChatRole } from './chat_model'
 import { BlockIndex, block_index_build, block_index_empty } from './block_index'
 import { TextShapingState } from '../gui/text_shaping'
@@ -60,8 +61,13 @@ export fn transcript_content_limit(theme: Theme, width: i32) -> i32 = do
   inner
 end
 
-export fn transcript_labeled_height(padding: i32, role_height: i32, body_height: i32) -> i32 =
-  padding + role_height + body_height + padding
+export fn transcript_labeled_height(
+  padding: i32,
+  role_height: i32,
+  body_height: i32,
+  caption_height: i32
+) -> i32 =
+  padding + role_height + body_height + caption_height + padding
 
 export fn transcript_plain_height(padding: i32, text_height: i32) -> i32 =
   padding + text_height + padding
@@ -72,6 +78,7 @@ fn measure_labeled_block(
   theme: Theme,
   label: string,
   body: string,
+  caption: string,
   width: i32
 ) -> MeasuredBlock = do
   const role_built = text_layout_build(shaping, cache, theme, label, wrap_width_none())
@@ -82,14 +89,30 @@ fn measure_labeled_block(
     body,
     wrap_width_pixels(transcript_content_limit(theme, width))
   )
+  let mut caption_height = 0
+  let mut shaping_now = body_built.shaping
+  let mut cache_now = body_built.cache
+  if caption.byte_size() > 0 then
+    const caption_built = text_layout_build(
+      body_built.shaping,
+      body_built.cache,
+      theme_with_font_size(theme, transcript_route_font_size()),
+      caption,
+      wrap_width_pixels(transcript_content_limit(theme, width))
+    )
+    caption_height = caption_built.layout.pixel_height
+    shaping_now = caption_built.shaping
+    cache_now = caption_built.cache
+  end
   MeasuredBlock {
     height: transcript_labeled_height(
       theme.padding,
       role_built.layout.pixel_height,
-      body_built.layout.pixel_height
+      body_built.layout.pixel_height,
+      caption_height
     ),
-    shaping: body_built.shaping,
-    cache: body_built.cache
+    shaping: shaping_now,
+    cache: cache_now
   }
 end
 
@@ -160,6 +183,7 @@ export fn transcript_measure_shown(
       theme,
       transcript_role_label(message.role),
       chat_body_text(message.text, highlight),
+      transcript_route_caption(message),
       width
     )
     current_shaping = measured.shaping

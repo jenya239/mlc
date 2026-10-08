@@ -16,7 +16,11 @@ export type ChatEventsResult = {
   model: ChatModel,
   store: WidgetStore,
   state: UiState,
-  send_requested: bool
+  send_requested: bool,
+  leave_requested: bool,
+  fresh_requested: bool,
+  provider_requested: bool,
+  model_requested: bool
 }
 
 type StoreState = {
@@ -69,6 +73,10 @@ export fn chat_apply_events(
   let mut next_store = store
   let mut next_state = state
   let mut send_requested = false
+  let mut leave_requested = false
+  let mut fresh_requested = false
+  let mut provider_requested = false
+  let mut model_requested = false
   let mut index = 0
   while index < events.length() do
     const event = events[index]
@@ -85,8 +93,18 @@ export fn chat_apply_events(
     if ui_event_is_click_on(event, scene.stop) then
       next_model = chat_cancel(next_model)
     end
-    if ui_event_is_click_on(event, scene.new_chat) then
+    if ui_event_is_click_on(event, scene.new_chat) && next_model.pending == false then
       next_model = chat_clear(next_model)
+      fresh_requested = true
+    end
+    if ui_event_is_click_on(event, scene.provider_button) then
+      provider_requested = true
+    end
+    if ui_event_is_click_on(event, scene.model_button) then
+      model_requested = true
+    end
+    if ui_event_is_click_on(event, scene.back) then
+      leave_requested = true
     end
     if ui_event_is_click_on(event, scene.highlight) then
       next_store = checkbox_toggle(next_store, scene.highlight)
@@ -99,6 +117,10 @@ export fn chat_apply_events(
     model: next_model,
     store: shown.store,
     state: shown.state,
-    send_requested: send_requested
+    send_requested: send_requested,
+    leave_requested: leave_requested,
+    fresh_requested: fresh_requested,
+    provider_requested: provider_requested,
+    model_requested: model_requested
   }
 end

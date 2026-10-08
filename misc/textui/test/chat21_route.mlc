@@ -1,0 +1,152 @@
+import { ChatMessage, ChatModel, RoleAssistant, RoleUser, chat_model_new } from '../chat_model'
+import { color_equal } from '../submit_color'
+import { Theme, theme_default, theme_with_font_size } from '../theme'
+import { text_shaping_new } from '../../gui/text_shaping'
+import {
+  text_layout_build,
+  text_layout_cache_new,
+  wrap_width_pixels
+} from '../text_layout'
+import { DrawOp } from '../draw_op'
+import { Rect, rect_new } from '../geometry'
+import {
+  transcript_content_limit,
+  transcript_measure,
+  transcript_view_new
+} from '../chat_transcript_layout'
+import { transcript_route_caption, transcript_route_font_size } from '../chat_transcript_route'
+import { paint_transcript } from '../chat_transcript'
+
+fn message(role_user: bool, text: string, provider: string, model_name: string) -> ChatMessage = do
+  if role_user then
+    return ChatMessage {
+      role: RoleUser,
+      text: text,
+      failed: false,
+      provider: provider,
+      model_name: model_name
+    }
+  end
+  ChatMessage {
+    role: RoleAssistant,
+    text: text,
+    failed: false,
+    provider: provider,
+    model_name: model_name
+  }
+end
+
+fn model_of(entry: ChatMessage) -> ChatModel = do
+  let mut messages: [ChatMessage] = []
+  messages.push(entry)
+  ChatModel { messages: messages, pending: false, generation: 1, revision: 1 }
+end
+
+fn block_height(model: ChatModel, theme: Theme, width: i32) -> i32 = do
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const measured = transcript_measure(model, transcript_view_new(), shaping, cache, theme, width)
+  if measured.view.index.heights.length() != 1 then
+    return 0 - 1
+  end
+  measured.view.index.heights[0]
+end
+
+fn has_caption(operations: [DrawOp], text: string, theme: Theme) -> bool = do
+  let mut found = false
+  let mut index = 0
+  while index < operations.length() do
+    const matched = match operations[index]
+      | OpText(data) => data.text == text && color_equal(data.color, theme.muted)
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if matched then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const user_plain = message(true, "hello", "", "")
+  const user_routed = message(true, "hello", "Meta", "muse")
+  if transcript_route_caption(user_plain) != "" || transcript_route_caption(user_routed) != "" then
+    return 1
+  end
+  const assistant_plain = message(false, "ok", "", "")
+  const assistant_routed = message(false, "ok", "Meta", "muse")
+  const assistant_failed = ChatMessage {
+    role: RoleAssistant,
+    text: "no",
+    failed: true,
+    provider: "Meta",
+    model_name: "muse"
+  }
+  if transcript_route_caption(assistant_plain) != "" then
+    return 2
+  end
+  if transcript_route_caption(assistant_routed) != "Meta · muse" then
+    return 2
+  end
+  if transcript_route_caption(assistant_failed) != "Meta · muse" then
+    return 2
+  end
+  if block_height(model_of(user_plain), theme, 200) != block_height(model_of(user_routed), theme, 200) then
+    return 3
+  end
+  const plain_height = block_height(model_of(assistant_plain), theme, 200)
+  const routed_height = block_height(model_of(assistant_routed), theme, 200)
+  if plain_height < 1 || routed_height <= plain_height then
+    return 4
+  end
+  let mut shaping = text_shaping_new()
+  let mut cache = text_layout_cache_new()
+  const caption = text_layout_build(
+    shaping,
+    cache,
+    theme_with_font_size(theme, transcript_route_font_size()),
+    "Meta · muse",
+    wrap_width_pixels(transcript_content_limit(theme, 200))
+  )
+  if routed_height - plain_height != caption.layout.pixel_height then
+    return 5
+  end
+  const routed_model = model_of(assistant_routed)
+  const routed_measured = transcript_measure(
+    routed_model, transcript_view_new(), shaping, cache, theme, 200
+  )
+  const painted = paint_transcript(
+    theme,
+    routed_model,
+    routed_measured.view,
+    routed_measured.shaping,
+    routed_measured.cache,
+    rect_new(0, 0, 200, 400)
+  )
+  if has_caption(painted, "Meta · muse", theme) == false then
+    return 6
+  end
+  const user_model = model_of(user_routed)
+  const user_measured = transcript_measure(
+    user_model, transcript_view_new(), shaping, cache, theme, 200
+  )
+  const user_paint = paint_transcript(
+    theme,
+    user_model,
+    user_measured.view,
+    user_measured.shaping,
+    user_measured.cache,
+    rect_new(0, 0, 200, 400)
+  )
+  if has_caption(user_paint, "Meta · muse", theme) then
+    return 7
+  end
+  if chat_model_new().messages.length() != 0 then
+    return 8
+  end
+  0
+end

@@ -60,7 +60,9 @@ fn schema_sql() -> string =
   "title TEXT NOT NULL DEFAULT '', " +
   "created_at INTEGER NOT NULL, " +
   "updated_at INTEGER NOT NULL, " +
-  "archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1))" +
+  "archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1)), " +
+  "provider TEXT NOT NULL DEFAULT '', " +
+  "model TEXT NOT NULL DEFAULT ''" +
   ");" +
   "CREATE INDEX IF NOT EXISTS conversation_recent ON conversation (archived, updated_at DESC, id DESC);" +
   "CREATE TABLE IF NOT EXISTS message (" +
@@ -71,6 +73,8 @@ fn schema_sql() -> string =
   "body TEXT NOT NULL, " +
   "failed INTEGER NOT NULL CHECK (failed IN (0, 1)), " +
   "created_at INTEGER NOT NULL, " +
+  "provider TEXT NOT NULL DEFAULT '', " +
+  "model TEXT NOT NULL DEFAULT '', " +
   "UNIQUE(conversation_id, ordinal)" +
   ");" +
   "CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);" +
@@ -136,13 +140,45 @@ fn database_configure(database: i32) -> i32 = do
     if created != 0 then
       return created
     end
-    const marked = query_exec(database, "PRAGMA user_version=1")
+    const marked = query_exec(database, "PRAGMA user_version=3")
+    if marked != 0 then
+      return marked
+    end
+  end
+  if version == widen(1) then
+    const altered = query_exec(
+      database,
+      "ALTER TABLE conversation ADD COLUMN provider TEXT NOT NULL DEFAULT '';" +
+      "ALTER TABLE conversation ADD COLUMN model TEXT NOT NULL DEFAULT ''"
+    )
+    if altered != 0 then
+      return altered
+    end
+    const routed = query_exec(database, message_route_sql())
+    if routed != 0 then
+      return routed
+    end
+    const marked = query_exec(database, "PRAGMA user_version=3")
+    if marked != 0 then
+      return marked
+    end
+  end
+  if version == widen(2) then
+    const routed = query_exec(database, message_route_sql())
+    if routed != 0 then
+      return routed
+    end
+    const marked = query_exec(database, "PRAGMA user_version=3")
     if marked != 0 then
       return marked
     end
   end
   database_retain(database)
 end
+
+fn message_route_sql() -> string =
+  "ALTER TABLE message ADD COLUMN provider TEXT NOT NULL DEFAULT '';" +
+  "ALTER TABLE message ADD COLUMN model TEXT NOT NULL DEFAULT ''"
 
 fn opened_handle(path: string) -> i32 =
   match open_file(path)

@@ -1,0 +1,392 @@
+import {
+  ChatCatalog,
+  catalog_choose_model,
+  catalog_choose_provider,
+  catalog_config,
+  catalog_model_name,
+  catalog_model_texts_at,
+  catalog_prefer,
+  catalog_provider_name,
+  catalog_provider_texts
+} from './chat_catalog'
+import { ChatConfig } from './chat_http'
+import { ChatModel } from './chat_model'
+import { ChatPersistence, persistence_detach } from './chat_persistence'
+import {
+  ChatRoster,
+  pane_conversations,
+  pane_models,
+  pane_providers,
+  show_conversations
+} from './chat_roster'
+import { ChatScene } from './chat_scene'
+import { LayoutResult } from './layout_result'
+import { menu_list_id, menu_open } from './menu'
+import { store_messages_load, store_route_assign, store_route_read, store_state_write } from './chat_store'
+import { WidgetId, WidgetStore, widget_store_set_list_texts } from './store'
+import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from './ui_event'
+import { UiState, ui_state_with_list_selected } from './ui_state'
+import { list_selected_at, list_selected_put } from './widget_list'
+
+fn widen(value: i32) -> i64 = value
+
+export type PickerOutcome = {
+  model: ChatModel,
+  model_before: ChatModel,
+  persistence: ChatPersistence,
+  config: ChatConfig,
+  catalog: ChatCatalog,
+  roster: ChatRoster,
+  store: WidgetStore,
+  state: UiState,
+  replaced: bool
+}
+
+fn with_names(persistence: ChatPersistence, catalog: ChatCatalog) -> ChatPersistence =
+  ChatPersistence {
+    database: persistence.database,
+    conversation_id: persistence.conversation_id,
+    persisted_count: persistence.persisted_count,
+    failed_revision: persistence.failed_revision,
+    failed_length: persistence.failed_length,
+    provider_name: catalog_provider_name(catalog),
+    model_name: catalog_model_name(catalog)
+  }
+
+fn remember_route(persistence: ChatPersistence, catalog: ChatCatalog) -> i32 = do
+  if persistence.database == 0 then
+    return 0
+  end
+  const provider = catalog_provider_name(catalog)
+  const model_name = catalog_model_name(catalog)
+  if provider.byte_size() == 0 then
+    return 0
+  end
+  if store_state_write(persistence.database, "active_provider", provider) != 0 then
+    return 1
+  end
+  if store_state_write(persistence.database, "active_model", model_name) != 0 then
+    return 1
+  end
+  if persistence.conversation_id == widen(0) then
+    return 0
+  end
+  store_route_assign(persistence.database, persistence.conversation_id, provider, model_name)
+end
+
+fn revert_row(state: UiState, scene: ChatScene, row: i32) -> UiState =
+  ui_state_with_list_selected(
+    state,
+    list_selected_put(state.list_selected, scene.catalog_list.index, row)
+  )
+
+type OverlayMenu = {
+  store: WidgetStore,
+  state: UiState
+}
+
+fn present_menu(
+  store: WidgetStore,
+  state: UiState,
+  texts: [string],
+  origin_x: i32,
+  origin_y: i32,
+  row: i32
+) -> OverlayMenu = do
+  const listed = widget_store_set_list_texts(store, menu_list_id(store), texts)
+  const opened = menu_open(listed, state, origin_x, origin_y)
+  const list_id = menu_list_id(opened.store)
+  OverlayMenu {
+    store: opened.store,
+    state: ui_state_with_list_selected(
+      opened.state,
+      list_selected_put(opened.state.list_selected, list_id.index, row)
+    )
+  }
+end
+
+fn anchor_x(layout: LayoutResult, id: WidgetId) -> i32 = do
+  if id.index < 0 || id.index >= layout.rects.length() then
+    return 0
+  end
+  layout.rects[id.index].x
+end
+
+fn anchor_y(layout: LayoutResult, id: WidgetId) -> i32 = do
+  if id.index < 0 || id.index >= layout.rects.length() then
+    return 0
+  end
+  const rect = layout.rects[id.index]
+  rect.y + rect.height
+end
+
+fn event_activates_menu(events: [UiEvent], store: WidgetStore) -> bool = do
+  const list_id = menu_list_id(store)
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_activate_on(events[index], list_id) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn event_dismisses_menu(events: [UiEvent], store: WidgetStore) -> bool = do
+  if store.placed == false then
+    return false
+  end
+  let mut index = 0
+  while index < events.length() do
+    if ui_event_is_click_on(events[index], store.overlay) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn choosing_roster(roster: ChatRoster, pane: i32, row: i32, draft_provider: i32) -> ChatRoster =
+  ChatRoster {
+    pane: pane,
+    row: row,
+    conversation_row: roster.conversation_row,
+    draft_provider: draft_provider,
+    conversation_identifiers: roster.conversation_identifiers,
+    conversation_titles: roster.conversation_titles
+  }
+
+type PickerParts = {
+  model: ChatModel,
+  persistence: ChatPersistence,
+  roster: ChatRoster,
+  state: UiState,
+  replaced: bool
+}
+
+fn unchanged_parts(
+  model: ChatModel,
+  persistence: ChatPersistence,
+  roster: ChatRoster,
+  state: UiState
+) -> PickerParts =
+  PickerParts {
+    model: model,
+    persistence: persistence,
+    roster: roster,
+    state: state,
+    replaced: false
+  }
+
+fn open_conversation(
+  persistence: ChatPersistence,
+  model: ChatModel,
+  roster: ChatRoster,
+  state: UiState,
+  scene: ChatScene,
+  selected: i32
+) -> PickerParts = do
+  if selected < 0 || selected >= roster.conversation_identifiers.length() then
+    return unchanged_parts(model, persistence, roster, state)
+  end
+  const loaded = store_messages_load(persistence.database, roster.conversation_identifiers[selected])
+  if loaded.code != 0 then
+    return unchanged_parts(model, persistence, roster, state)
+  end
+  PickerParts {
+    model: ChatModel {
+      messages: loaded.messages,
+      pending: false,
+      generation: model.generation,
+      revision: model.revision
+    },
+    persistence: ChatPersistence {
+      database: persistence.database,
+      conversation_id: roster.conversation_identifiers[selected],
+      persisted_count: loaded.messages.length(),
+      failed_revision: -1,
+      failed_length: -1,
+      provider_name: persistence.provider_name,
+      model_name: persistence.model_name
+    },
+    roster: ChatRoster {
+      pane: pane_conversations(),
+      row: selected,
+      conversation_row: selected,
+      draft_provider: 0 - 1,
+      conversation_identifiers: roster.conversation_identifiers,
+      conversation_titles: roster.conversation_titles
+    },
+    state: revert_row(state, scene, selected),
+    replaced: true
+  }
+end
+
+export fn picker_apply(
+  catalog: ChatCatalog,
+  roster: ChatRoster,
+  persistence: ChatPersistence,
+  config: ChatConfig,
+  scene: ChatScene,
+  store: WidgetStore,
+  state: UiState,
+  model_started: ChatModel,
+  model: ChatModel,
+  fresh_requested: bool,
+  provider_requested: bool,
+  model_requested: bool,
+  dismiss_picker: i32,
+  layout: LayoutResult,
+  events: [UiEvent]
+) -> PickerOutcome = do
+  let mut next_catalog = catalog
+  let mut next_store = store
+  let mut next_state = state
+  let mut next_roster = roster
+  let mut next_persistence = persistence
+  let mut next_model = model
+  let mut model_before = model_started
+  let mut replaced = false
+  if (dismiss_picker != 0 && next_roster.pane != pane_conversations()) || event_dismisses_menu(events, next_store) then
+    const collapsed = show_conversations(next_store, next_state, scene, next_roster)
+    next_store = collapsed.store
+    next_state = collapsed.state
+    next_roster = collapsed.roster
+  end
+  if provider_requested then
+    if next_roster.pane == pane_providers() then
+      const collapsed = show_conversations(next_store, next_state, scene, next_roster)
+      next_store = collapsed.store
+      next_state = collapsed.state
+      next_roster = collapsed.roster
+    else
+      const texts = catalog_provider_texts(next_catalog)
+      if texts.length() > 0 then
+        const opened = present_menu(
+          next_store,
+          next_state,
+          texts,
+          anchor_x(layout, scene.provider_button),
+          anchor_y(layout, scene.provider_button),
+          next_catalog.provider_index
+        )
+        next_store = opened.store
+        next_state = opened.state
+        next_roster = choosing_roster(next_roster, pane_providers(), next_catalog.provider_index, 0 - 1)
+      end
+    end
+  end
+  if model_requested then
+    if next_roster.pane == pane_models() then
+      const collapsed = show_conversations(next_store, next_state, scene, next_roster)
+      next_store = collapsed.store
+      next_state = collapsed.state
+      next_roster = collapsed.roster
+    else
+      const texts = catalog_model_texts_at(next_catalog, next_catalog.provider_index)
+      if texts.length() > 0 then
+        const opened = present_menu(
+          next_store,
+          next_state,
+          texts,
+          anchor_x(layout, scene.model_button),
+          anchor_y(layout, scene.model_button),
+          next_catalog.model_index
+        )
+        next_store = opened.store
+        next_state = opened.state
+        next_roster = choosing_roster(next_roster, pane_models(), next_catalog.model_index, 0 - 1)
+      end
+    end
+  end
+  if fresh_requested then
+    next_persistence = persistence_detach(next_persistence)
+    const detached = ChatRoster {
+      pane: pane_conversations(),
+      row: 0 - 1,
+      conversation_row: 0 - 1,
+      draft_provider: 0 - 1,
+      conversation_identifiers: next_roster.conversation_identifiers,
+      conversation_titles: next_roster.conversation_titles
+    }
+    const cleared = show_conversations(next_store, next_state, scene, detached)
+    next_store = cleared.store
+    next_state = cleared.state
+    next_roster = cleared.roster
+    replaced = true
+  end
+  const selected = list_selected_at(next_state.list_selected, scene.catalog_list.index)
+  if selected >= 0 && selected != next_roster.conversation_row then
+    if next_model.pending then
+      next_state = revert_row(next_state, scene, next_roster.conversation_row)
+    else
+      const opened = open_conversation(next_persistence, next_model, next_roster, next_state, scene, selected)
+      next_model = opened.model
+      next_persistence = opened.persistence
+      next_roster = opened.roster
+      next_state = opened.state
+      if opened.replaced then
+        const route = store_route_read(next_persistence.database, next_persistence.conversation_id)
+        next_catalog = catalog_prefer(next_catalog, route.provider, route.model_name)
+        const shown = show_conversations(next_store, next_state, scene, next_roster)
+        next_store = shown.store
+        next_state = shown.state
+        next_roster = shown.roster
+        model_before = next_model
+        replaced = true
+      end
+    end
+  end
+  let mut provider_picked = false
+  if event_activates_menu(events, next_store) && next_roster.pane == pane_providers() then
+    const picked = list_selected_at(next_state.list_selected, menu_list_id(next_store).index)
+    if picked >= 0 && picked < next_catalog.providers.length() then
+      const texts = catalog_model_texts_at(next_catalog, picked)
+      if texts.length() > 0 then
+        const opened = present_menu(
+          next_store,
+          next_state,
+          texts,
+          next_store.place_x,
+          next_store.place_y,
+          0
+        )
+        next_store = opened.store
+        next_state = opened.state
+        next_roster = choosing_roster(next_roster, pane_models(), 0, picked)
+        provider_picked = true
+      end
+    end
+  end
+  if provider_picked == false && event_activates_menu(events, next_store) && next_roster.pane == pane_models() then
+      const picked = list_selected_at(next_state.list_selected, menu_list_id(next_store).index)
+      let mut provider_index = next_catalog.provider_index
+      if next_roster.draft_provider >= 0 then
+        provider_index = next_roster.draft_provider
+      end
+      if picked >= 0 && provider_index < next_catalog.providers.length() then
+        const models = next_catalog.providers[provider_index].models
+        if picked < models.length() then
+          next_catalog = catalog_choose_provider(next_catalog, provider_index)
+          next_catalog = catalog_choose_model(next_catalog, picked)
+          remember_route(next_persistence, next_catalog)
+          const shown = show_conversations(next_store, next_state, scene, next_roster)
+          next_store = shown.store
+          next_state = shown.state
+          next_roster = shown.roster
+        end
+      end
+  end
+  next_persistence = with_names(next_persistence, next_catalog)
+  PickerOutcome {
+    model: next_model,
+    model_before: model_before,
+    persistence: next_persistence,
+    config: catalog_config(next_catalog, config.system_prompt),
+    catalog: next_catalog,
+    roster: next_roster,
+    store: next_store,
+    state: next_state,
+    replaced: replaced
+  }
+end

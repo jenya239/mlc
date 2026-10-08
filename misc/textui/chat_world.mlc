@@ -1,7 +1,20 @@
+import {
+  ChatCatalog,
+  catalog_config,
+  catalog_from_config,
+  catalog_model_label,
+  catalog_model_name,
+  catalog_prefer,
+  catalog_provider_label,
+  catalog_provider_name,
+  catalog_resolve
+} from './chat_catalog'
 import { ChatConfig } from './chat_http'
 import { ChatModel, chat_model_new } from './chat_model'
 import { database_file_path, database_open } from './chat_database'
 import { ChatPersistence, persistence_closed, persistence_restore } from './chat_persistence'
+import { ChatRoster, roster_empty, roster_install, roster_load } from './chat_roster'
+import { store_route_read, store_state_read } from './chat_store'
 import { WidgetStore } from './store'
 import { ChatScene, build_chat_scene } from './chat_scene'
 import { chat_initial_state } from './chat_update'
@@ -42,7 +55,10 @@ export type ChatWorld = {
   painted_under: [DrawOp],
   painted_over: [DrawOp],
   code_highlight: i32,
-  persistence: ChatPersistence
+  persistence: ChatPersistence,
+  catalog: ChatCatalog,
+  roster: ChatRoster,
+  dismiss_picker: i32
 }
 
 export fn chat_transcript_rect(layout: LayoutResult, scene: ChatScene) -> Rect = do
@@ -71,12 +87,21 @@ fn chat_world_build(
   width: i32,
   height: i32,
   model: ChatModel,
-  persistence: ChatPersistence
+  persistence: ChatPersistence,
+  catalog: ChatCatalog,
+  roster: ChatRoster
 ) -> ChatWorld = do
   const theme = theme_default()
   const scene = build_chat_scene()
+  const listed = roster_install(scene.store, chat_initial_state(scene), scene, roster)
   const opened = chat_sync_chrome(
-    scene.store, chat_initial_state(scene), scene, config, model
+    listed.store,
+    listed.state,
+    scene,
+    config,
+    model,
+    catalog_provider_label(catalog),
+    catalog_model_label(catalog)
   )
   const state = opened.state
   let mut offsets: [i32] = []
@@ -118,12 +143,17 @@ fn chat_world_build(
     painted_under: painted_under,
     painted_over: painted_over,
     code_highlight: 1,
-    persistence: persistence
+    persistence: persistence,
+    catalog: catalog,
+    roster: listed.roster,
+    dismiss_picker: 0
   }
 end
 
 export fn chat_world_new(config: ChatConfig, width: i32, height: i32) -> ChatWorld =
-  chat_world_build(config, width, height, chat_model_new(), persistence_closed())
+  chat_world_build(
+    config, width, height, chat_model_new(), persistence_closed(), catalog_from_config(config), roster_empty()
+  )
 
 export fn chat_world_open(
   config: ChatConfig,
@@ -131,17 +161,55 @@ export fn chat_world_open(
   height: i32,
   jail_root: string
 ) -> ChatWorld = do
+  let mut catalog = catalog_resolve()
   const database = database_open(database_file_path(), jail_root)
   if database == 0 then
-    return chat_world_new(config, width, height)
+    if catalog.providers.length() == 0 then
+      catalog = catalog_from_config(config)
+    end
+    return chat_world_build(
+      catalog_config(catalog, config.system_prompt),
+      width,
+      height,
+      chat_model_new(),
+      persistence_closed(),
+      catalog,
+      roster_empty()
+    )
   end
+  catalog = catalog_prefer(
+    catalog,
+    store_state_read(database, "active_provider"),
+    store_state_read(database, "active_model")
+  )
   const closed = persistence_closed()
   const loaded = persistence_restore(ChatPersistence {
     database: database,
     conversation_id: closed.conversation_id,
     persisted_count: 0,
     failed_revision: -1,
-    failed_length: -1
+    failed_length: -1,
+    provider_name: "",
+    model_name: ""
   })
-  chat_world_build(config, width, height, loaded.model, loaded.persistence)
+  const route = store_route_read(database, loaded.persistence.conversation_id)
+  catalog = catalog_prefer(catalog, route.provider, route.model_name)
+  const persistence = ChatPersistence {
+    database: loaded.persistence.database,
+    conversation_id: loaded.persistence.conversation_id,
+    persisted_count: loaded.persistence.persisted_count,
+    failed_revision: loaded.persistence.failed_revision,
+    failed_length: loaded.persistence.failed_length,
+    provider_name: catalog_provider_name(catalog),
+    model_name: catalog_model_name(catalog)
+  }
+  chat_world_build(
+    catalog_config(catalog, config.system_prompt),
+    width,
+    height,
+    loaded.model,
+    persistence,
+    catalog,
+    roster_load(database, persistence.conversation_id)
+  )
 end

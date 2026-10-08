@@ -1,0 +1,375 @@
+import { get_or } from 'Env'
+import {
+  JsonReadArray,
+  JsonReadBool,
+  JsonReadErr,
+  JsonReadMissing,
+  JsonReadNull,
+  JsonReadNumber,
+  JsonReadObject,
+  JsonReadString,
+  json_read_field
+} from '../../lib/mlc/common/stdlib/data/json_text.mlc'
+import { ChatConfig, chat_config_from, chat_config_load, chat_config_resolve } from './chat_http'
+import { chat_provider_name } from './chat_meter'
+import { support_value } from './chat_support_env'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+extern fn file_exists(path: string) -> bool
+  = "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+
+export type ChatProvider = {
+  name: string,
+  base_url: string,
+  api_key: string,
+  models: [string]
+}
+
+export type ChatCatalog = {
+  providers: [ChatProvider],
+  provider_index: i32,
+  model_index: i32
+}
+
+fn json_string(document: string, key: string) -> string =
+  match json_read_field(document, key)
+    | JsonReadString(text) => text
+    | JsonReadObject(_) => ""
+    | JsonReadArray(_) => ""
+    | JsonReadNumber(_) => ""
+    | JsonReadBool(_) => ""
+    | JsonReadNull => ""
+    | JsonReadMissing => ""
+    | JsonReadErr(_) => ""
+
+fn json_object(document: string, key: string) -> string =
+  match json_read_field(document, key)
+    | JsonReadObject(text) => text
+    | JsonReadString(_) => ""
+    | JsonReadArray(_) => ""
+    | JsonReadNumber(_) => ""
+    | JsonReadBool(_) => ""
+    | JsonReadNull => ""
+    | JsonReadMissing => ""
+    | JsonReadErr(_) => ""
+
+fn without_trailing_commas(text: string) -> string = do
+  let mut result = ""
+  let mut index = 0
+  let mut quoted = false
+  let mut escaped = false
+  while index < text.byte_size() do
+    const piece = text.byte_at(index)
+    let mut keep = true
+    if quoted then
+      if escaped then
+        escaped = false
+      else if piece == "\\" then
+        escaped = true
+      else if piece == "\"" then
+        quoted = false
+      end
+    else if piece == "\"" then
+      quoted = true
+    else if piece == "," then
+      let mut look = index + 1
+      while look < text.byte_size() do
+        const ahead = text.byte_at(look)
+        if ahead != " " && ahead != "\t" && ahead != "\n" && ahead != "\r" then
+          break
+        end
+        look = look + 1
+      end
+      if look < text.byte_size() then
+        const closer = text.byte_at(look)
+        if closer == "}" || closer == "]" then
+          keep = false
+        end
+      end
+    end
+    if keep then
+      result = result + piece
+    end
+    index = index + 1
+  end
+  result
+end
+
+fn document_at(path: string) -> string = do
+  if path == "" || file_exists(path) == false then
+    return ""
+  end
+  without_trailing_commas(file_read_to_string(path))
+end
+
+fn sublime_document() -> string = do
+  const home = get_or("HOME", "")
+  if home == "" then
+    return ""
+  end
+  document_at(home + "/.config/sublime-text/Packages/User/st-llm.sublime-settings")
+end
+
+fn push_model(models: [string], name: string) -> [string] = do
+  if name.byte_size() == 0 then
+    return models
+  end
+  let mut index = 0
+  while index < models.length() do
+    if models[index] == name then
+      return models
+    end
+    index = index + 1
+  end
+  let mut next = models
+  next.push(name)
+  next
+end
+
+fn models_named(name: string, preferred: string) -> [string] = do
+  let mut models: [string] = []
+  models = push_model(models, preferred)
+  if name == "OpenAI" then
+    models = push_model(models, "gpt-4o-mini")
+    models = push_model(models, "gpt-4o")
+  end
+  if name == "xAI" then
+    models = push_model(models, "grok-beta")
+    models = push_model(models, "grok-2")
+  end
+  if name == "Anthropic" then
+    models = push_model(models, "claude-3-5-sonnet-20241022")
+    models = push_model(models, "claude-3-5-haiku-20241022")
+  end
+  if name == "Meta" then
+    models = push_model(models, "muse-spark-1.2-contributor")
+    models = push_model(models, "muse-spark-1.2")
+  end
+  models
+end
+
+fn display_name(token: string) -> string = do
+  if token == "openai" then
+    return "OpenAI"
+  end
+  if token == "xai" then
+    return "xAI"
+  end
+  if token == "anthropic" then
+    return "Anthropic"
+  end
+  if token == "meta" then
+    return "Meta"
+  end
+  ""
+end
+
+fn add_provider(
+  providers: [ChatProvider],
+  name: string,
+  base_url: string,
+  api_key: string,
+  preferred: string
+) -> [ChatProvider] = do
+  if api_key.byte_size() == 0 then
+    return providers
+  end
+  let mut next = providers
+  next.push(ChatProvider {
+    name: name,
+    base_url: base_url,
+    api_key: api_key,
+    models: models_named(name, preferred)
+  })
+  next
+end
+
+fn index_named(catalog: ChatCatalog, name: string) -> i32 = do
+  if name.byte_size() == 0 then
+    return 0 - 1
+  end
+  let mut index = 0
+  while index < catalog.providers.length() do
+    if catalog.providers[index].name == name then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn model_index(provider: ChatProvider, model_name: string) -> i32 = do
+  if model_name.byte_size() == 0 then
+    return 0
+  end
+  let mut index = 0
+  while index < provider.models.length() do
+    if provider.models[index] == model_name then
+      return index
+    end
+    index = index + 1
+  end
+  0
+end
+
+export fn catalog_choose_provider(catalog: ChatCatalog, index: i32) -> ChatCatalog = do
+  if index < 0 || index >= catalog.providers.length() then
+    return catalog
+  end
+  ChatCatalog {
+    providers: catalog.providers,
+    provider_index: index,
+    model_index: 0
+  }
+end
+
+export fn catalog_choose_model(catalog: ChatCatalog, index: i32) -> ChatCatalog = do
+  if catalog.providers.length() == 0 then
+    return catalog
+  end
+  const provider = catalog.providers[catalog.provider_index]
+  if index < 0 || index >= provider.models.length() then
+    return catalog
+  end
+  ChatCatalog {
+    providers: catalog.providers,
+    provider_index: catalog.provider_index,
+    model_index: index
+  }
+end
+
+export fn catalog_prefer(catalog: ChatCatalog, provider_name: string, model_name: string) -> ChatCatalog = do
+  const index = index_named(catalog, provider_name)
+  if index < 0 then
+    return catalog
+  end
+  const chosen = catalog_choose_provider(catalog, index)
+  const provider = chosen.providers[chosen.provider_index]
+  catalog_choose_model(chosen, model_index(provider, model_name))
+end
+
+export fn catalog_provider_name(catalog: ChatCatalog) -> string = do
+  if catalog.providers.length() == 0 then
+    return ""
+  end
+  catalog.providers[catalog.provider_index].name
+end
+
+export fn catalog_model_name(catalog: ChatCatalog) -> string = do
+  if catalog.providers.length() == 0 then
+    return ""
+  end
+  const provider = catalog.providers[catalog.provider_index]
+  if provider.models.length() == 0 then
+    return ""
+  end
+  provider.models[catalog.model_index]
+end
+
+export fn catalog_provider_label(catalog: ChatCatalog) -> string = do
+  const name = catalog_provider_name(catalog)
+  if name.byte_size() == 0 then
+    return "Провайдер"
+  end
+  name
+end
+
+export fn catalog_model_label(catalog: ChatCatalog) -> string = do
+  const name = catalog_model_name(catalog)
+  if name.byte_size() == 0 then
+    return "модель"
+  end
+  name
+end
+
+export fn catalog_provider_texts(catalog: ChatCatalog) -> [string] = do
+  let mut texts: [string] = []
+  let mut index = 0
+  while index < catalog.providers.length() do
+    texts.push(catalog.providers[index].name)
+    index = index + 1
+  end
+  texts
+end
+
+export fn catalog_model_texts_at(catalog: ChatCatalog, provider_index: i32) -> [string] = do
+  let mut texts: [string] = []
+  if provider_index < 0 || provider_index >= catalog.providers.length() then
+    return texts
+  end
+  const models = catalog.providers[provider_index].models
+  let mut index = 0
+  while index < models.length() do
+    texts.push(models[index])
+    index = index + 1
+  end
+  texts
+end
+
+export fn catalog_model_texts(catalog: ChatCatalog) -> [string] =
+  catalog_model_texts_at(catalog, catalog.provider_index)
+
+export fn catalog_config(catalog: ChatCatalog, system_prompt: string) -> ChatConfig = do
+  if catalog.providers.length() == 0 then
+    return chat_config_from("", "", "", system_prompt)
+  end
+  const provider = catalog.providers[catalog.provider_index]
+  chat_config_from(provider.base_url, catalog_model_name(catalog), provider.api_key, system_prompt)
+end
+
+export fn catalog_from_config(config: ChatConfig) -> ChatCatalog = do
+  let mut providers: [ChatProvider] = []
+  const name = chat_provider_name(config.base_url)
+  providers = add_provider(providers, name, config.base_url, config.api_key, config.model)
+  if providers.length() == 0 then
+    providers.push(ChatProvider {
+      name: name,
+      base_url: config.base_url,
+      api_key: config.api_key,
+      models: models_named(name, config.model)
+    })
+  end
+  ChatCatalog { providers: providers, provider_index: 0, model_index: 0 }
+end
+
+export fn catalog_resolve() -> ChatCatalog = do
+  const loaded = chat_config_load()
+  if loaded.api_key.byte_size() > 0 then
+    return catalog_from_config(loaded)
+  end
+  const document = sublime_document()
+  const keys = json_object(document, "keys")
+  let mut providers: [ChatProvider] = []
+  providers = add_provider(
+    providers, "OpenAI", "https://api.openai.com/v1",
+    json_string(keys, "openai"), json_string(json_object(document, "openai"), "model")
+  )
+  providers = add_provider(
+    providers, "xAI", "https://api.x.ai/v1",
+    json_string(keys, "xai"), json_string(json_object(document, "xai"), "model")
+  )
+  providers = add_provider(
+    providers, "Anthropic", "https://api.anthropic.com/v1",
+    json_string(keys, "anthropic"), json_string(json_object(document, "anthropic"), "model")
+  )
+  let mut meta_model = support_value("META_AI_MODEL")
+  if meta_model.byte_size() == 0 then
+    meta_model = "muse-spark-1.2-contributor"
+  end
+  providers = add_provider(
+    providers, "Meta", "https://api.meta.ai/v1", support_value("META_AI_API_KEY"), meta_model
+  )
+  if providers.length() == 0 then
+    return catalog_from_config(chat_config_resolve())
+  end
+  let mut catalog = ChatCatalog { providers: providers, provider_index: 0, model_index: 0 }
+  const active = display_name(json_string(document, "active_provider"))
+  if index_named(catalog, active) >= 0 then
+    catalog = catalog_choose_provider(catalog, index_named(catalog, active))
+  else if index_named(catalog, "Meta") >= 0 then
+    catalog = catalog_choose_provider(catalog, index_named(catalog, "Meta"))
+  end
+  catalog
+end

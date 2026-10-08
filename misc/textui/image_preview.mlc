@@ -8,6 +8,7 @@ import { Rect, rect_new } from './geometry'
 import { Theme } from './theme'
 import { list_row_height } from './widget_list'
 import { UiState } from './ui_state'
+import { gl_bind_framebuffer, gl_get_integer_at } from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
 extern fn image_preview_load(path: string) -> i32
   = "mlc::image_preview::load_value" from "mlc/gl/image_preview.hpp" blocking
@@ -316,10 +317,16 @@ export fn image_preview_arm(
   end
 end
 
+fn draw_framebuffer_target() -> i32 = 36009
+
+fn draw_framebuffer_binding() -> i32 = 36006
+
 export fn image_preview_draw(window_width: i32, window_height: i32, clear_framebuffer: bool) -> unit = do
   if clear_framebuffer then
+    const draw_target = gl_get_integer_at(draw_framebuffer_binding(), 0)
     image_preview_draw_background(window_width, window_height, 1)
     image_preview_bars_draw_now(window_width, window_height)
+    gl_bind_framebuffer(draw_framebuffer_target(), draw_target)
   end
 end
 

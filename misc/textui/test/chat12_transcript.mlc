@@ -23,10 +23,10 @@ import { paint_transcript, paint_transcript_styled } from '../chat_transcript'
 import { TranscriptSelection } from '../chat_transcript_input'
 
 fn user_message(text: string) -> ChatMessage =
-  ChatMessage { role: RoleUser, text: text, failed: false }
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
 
 fn assistant_message(text: string, failed: bool) -> ChatMessage =
-  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+  ChatMessage { role: RoleAssistant, text: text, failed: failed, provider: "", model_name: "" }
 
 fn model_of(messages: [ChatMessage], pending: bool) -> ChatModel =
   ChatModel { messages: messages, pending: pending, generation: 1, revision: 1 }

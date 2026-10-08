@@ -93,6 +93,9 @@ end
 fn uses_responses_api(base_url: string) -> bool =
   base_url.index_of("api.meta.ai") >= 0
 
+fn uses_messages_api(base_url: string) -> bool =
+  base_url.index_of("api.anthropic.com") >= 0
+
 fn responses_content_type(role: ChatRole) -> string =
   match role
     | RoleUser => "input_text"
@@ -130,24 +133,50 @@ fn responses_url(base_url: string) -> string = do
   base_url + "/responses"
 end
 
+fn anthropic_body(config: ChatConfig, messages: [ChatMessage]) -> string = do
+  let mut body = "{\"model\":\"" + json_escape(config.model) + "\",\"max_tokens\":4096"
+  if config.system_prompt.byte_size() > 0 then
+    body = body + ",\"system\":\"" + json_escape(config.system_prompt) + "\""
+  end
+  body + ",\"messages\":" + messages_json(chat_config_from(config.base_url, config.model, config.api_key, ""), messages) + "}"
+end
+
 export fn chat_request_body(config: ChatConfig, messages: [ChatMessage]) -> string = do
   if uses_responses_api(config.base_url) then
     return "{\"model\":\"" + json_escape(config.model) + "\",\"stream\":false,\"input\":" + responses_input(config, messages) + "}"
   end
+  if uses_messages_api(config.base_url) then
+    return anthropic_body(config, messages)
+  end
   "{\"model\":\"" + json_escape(config.model) + "\",\"messages\":" + messages_json(config, messages) + "}"
+end
+
+fn messages_url(base_url: string) -> string = do
+  if base_url.byte_size() > 0 && base_url.byte_at(base_url.byte_size() - 1) == "/" then
+    return base_url + "messages"
+  end
+  base_url + "/messages"
 end
 
 fn request_url(config: ChatConfig) -> string = do
   if uses_responses_api(config.base_url) then
     return responses_url(config.base_url)
   end
+  if uses_messages_api(config.base_url) then
+    return messages_url(config.base_url)
+  end
   completions_url(config.base_url)
 end
 
-fn request_headers(api_key: string) -> [HttpsHeader] = do
+fn request_headers(config: ChatConfig) -> [HttpsHeader] = do
   let mut headers: [HttpsHeader] = []
   headers.push(HttpsHeader { name: "Content-Type", value: "application/json" })
-  headers.push(HttpsHeader { name: "Authorization", value: "Bearer " + api_key })
+  if uses_messages_api(config.base_url) then
+    headers.push(HttpsHeader { name: "x-api-key", value: config.api_key })
+    headers.push(HttpsHeader { name: "anthropic-version", value: "2023-06-01" })
+    return headers
+  end
+  headers.push(HttpsHeader { name: "Authorization", value: "Bearer " + config.api_key })
   headers
 end
 
@@ -155,7 +184,7 @@ export fn chat_build_request(config: ChatConfig, messages: [ChatMessage]) -> Htt
   HttpsRequest {
     method: "POST",
     url: request_url(config),
-    headers: request_headers(config.api_key),
+    headers: request_headers(config),
     body: chat_request_body(config, messages),
     timeout_milliseconds: 60000,
     max_response_bytes: 1048576,
@@ -212,7 +241,29 @@ fn responses_reply(output: string) -> ReplyOutcome = do
   ReplyFailed("пустой ответ")
 end
 
+fn anthropic_text(content: string) -> string = do
+  let mut index = 0
+  while index < 32 do
+    const piece = parsed_object(chat_json_index(content, index))
+    if piece.byte_size() == 0 then
+      return ""
+    end
+    if parsed_string(chat_json_field(piece, "type")) == "text" then
+      return parsed_string(chat_json_field(piece, "text"))
+    end
+    index = index + 1
+  end
+  ""
+end
+
 fn success_reply(body: string) -> ReplyOutcome = do
+  const blocks = parsed_array(chat_json_field(body, "content"))
+  if blocks.byte_size() > 0 then
+    const text = anthropic_text(blocks)
+    if text.byte_size() > 0 then
+      return ReplyText(text)
+    end
+  end
   const output = parsed_array(chat_json_field(body, "output"))
   if output.byte_size() > 0 then
     return responses_reply(output)

@@ -62,13 +62,15 @@ export fn store_message_insert(
   conversation: i64,
   role_code: i32,
   body: string,
-  failed_flag: i32
+  failed_flag: i32,
+  provider: string,
+  model_name: string
 ) -> i32 = do
   const statement = query_prepare(
     database,
-    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at) " +
+    "INSERT INTO message (conversation_id, ordinal, role, body, failed, created_at, provider, model) " +
     "VALUES (?1, COALESCE((SELECT MAX(ordinal) FROM message WHERE conversation_id = ?1), 0) + 1, " +
-    "?2, ?3, ?4, CAST(strftime('%s','now') AS INTEGER))"
+    "?2, ?3, ?4, CAST(strftime('%s','now') AS INTEGER), ?5, ?6)"
   )
   if statement == 0 then
     return 1
@@ -83,6 +85,12 @@ export fn store_message_insert(
     return query_stop(statement, 1)
   end
   if query_bind_i32(statement, 4, failed_flag) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 5, provider) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 6, model_name) != 0 then
     return query_stop(statement, 1)
   end
   query_step_done(statement)
@@ -182,7 +190,7 @@ export fn store_messages_load(database: i32, conversation: i64) -> StoreMessages
   let mut messages: [ChatMessage] = []
   const statement = query_prepare(
     database,
-    "SELECT role, body, failed FROM message WHERE conversation_id = ?1 ORDER BY ordinal DESC LIMIT 1000"
+    "SELECT role, body, failed, provider, model FROM message WHERE conversation_id = ?1 ORDER BY ordinal DESC LIMIT 1000"
   )
   if statement == 0 then
     return StoreMessages { code: 1, messages: messages }
@@ -196,7 +204,9 @@ export fn store_messages_load(database: i32, conversation: i64) -> StoreMessages
     messages.push(ChatMessage {
       role: role_from_number(query_column_i64(statement, 0)),
       text: query_column_text(statement, 1),
-      failed: failed_from_number(query_column_i64(statement, 2))
+      failed: failed_from_number(query_column_i64(statement, 2)),
+      provider: query_column_text(statement, 3),
+      model_name: query_column_text(statement, 4)
     })
     stepped = query_step_code(statement)
   end
@@ -206,4 +216,127 @@ export fn store_messages_load(database: i32, conversation: i64) -> StoreMessages
     return StoreMessages { code: stepped, messages: empty }
   end
   StoreMessages { code: 0, messages: reversed_messages(messages) }
+end
+
+export type StoreRoster = {
+  code: i32,
+  identifiers: [i64],
+  titles: [string]
+}
+
+export type StoreRoute = {
+  provider: string,
+  model_name: string
+}
+
+export fn store_conversations_recent(database: i32) -> StoreRoster = do
+  let mut identifiers: [i64] = []
+  let mut titles: [string] = []
+  if database == 0 then
+    return StoreRoster { code: 0, identifiers: identifiers, titles: titles }
+  end
+  const statement = query_prepare(
+    database,
+    "SELECT id, title FROM conversation WHERE archived = 0 ORDER BY updated_at DESC, id DESC LIMIT 50"
+  )
+  if statement == 0 then
+    return StoreRoster { code: 1, identifiers: identifiers, titles: titles }
+  end
+  let mut stepped = query_step_code(statement)
+  while stepped == 100 do
+    identifiers.push(query_column_i64(statement, 0))
+    titles.push(query_column_text(statement, 1))
+    stepped = query_step_code(statement)
+  end
+  query_finalize(statement)
+  if stepped != 101 then
+    let mut no_identifiers: [i64] = []
+    let mut no_titles: [string] = []
+    return StoreRoster { code: stepped, identifiers: no_identifiers, titles: no_titles }
+  end
+  StoreRoster { code: 0, identifiers: identifiers, titles: titles }
+end
+
+export fn store_route_assign(database: i32, conversation: i64, provider: string, model_name: string) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "UPDATE conversation SET provider = ?1, model = ?2 WHERE id = ?3"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_text(statement, 1, provider) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 2, model_name) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_i64(statement, 3, conversation) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_route_read(database: i32, conversation: i64) -> StoreRoute = do
+  if database == 0 || conversation == widen(0) then
+    return StoreRoute { provider: "", model_name: "" }
+  end
+  const statement = query_prepare(database, "SELECT provider, model FROM conversation WHERE id = ?1")
+  if statement == 0 then
+    return StoreRoute { provider: "", model_name: "" }
+  end
+  if query_bind_i64(statement, 1, conversation) != 0 then
+    query_finalize(statement)
+    return StoreRoute { provider: "", model_name: "" }
+  end
+  const stepped = query_step_code(statement)
+  if stepped != 100 then
+    query_finalize(statement)
+    return StoreRoute { provider: "", model_name: "" }
+  end
+  const route = StoreRoute {
+    provider: query_column_text(statement, 0),
+    model_name: query_column_text(statement, 1)
+  }
+  query_finalize(statement)
+  route
+end
+
+export fn store_state_write(database: i32, key: string, value: string) -> i32 = do
+  const statement = query_prepare(
+    database,
+    "INSERT OR REPLACE INTO app_state (key, value) VALUES (?1, ?2)"
+  )
+  if statement == 0 then
+    return 1
+  end
+  if query_bind_text(statement, 1, key) != 0 then
+    return query_stop(statement, 1)
+  end
+  if query_bind_text(statement, 2, value) != 0 then
+    return query_stop(statement, 1)
+  end
+  query_step_done(statement)
+end
+
+export fn store_state_read(database: i32, key: string) -> string = do
+  if database == 0 then
+    return ""
+  end
+  const statement = query_prepare(database, "SELECT value FROM app_state WHERE key = ?1")
+  if statement == 0 then
+    return ""
+  end
+  if query_bind_text(statement, 1, key) != 0 then
+    query_finalize(statement)
+    return ""
+  end
+  const stepped = query_step_code(statement)
+  if stepped != 100 then
+    query_finalize(statement)
+    return ""
+  end
+  const value = query_column_text(statement, 0)
+  query_finalize(statement)
+  value
 end

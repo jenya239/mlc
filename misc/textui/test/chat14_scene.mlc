@@ -3,7 +3,7 @@ import { chat_model_new } from '../chat_model'
 import { ChatScene, build_chat_scene } from '../chat_scene'
 import { chat_apply_events, chat_initial_state } from '../chat_update'
 import { field_caption, widget_store_set_field_data } from '../widget_field'
-import { WidgetStore, field_data_multiline, widget_id_equals } from '../store'
+import { WidgetStore, field_data_multiline, widget_id_equals, widget_id_is_none } from '../store'
 import { TextShapingState, text_shaping_new } from '../../gui/text_shaping'
 import { TextLayoutCache, text_layout_cache_new } from '../text_layout'
 import { Rect } from '../geometry'
@@ -88,13 +88,22 @@ fn main() -> i32 = do
   let mut cache = text_layout_cache_new()
   const scene = build_chat_scene()
   const root_children = scene.store.nodes[scene.store.root.index].children
-  if root_children.length() != 4 then
+  if root_children.length() != 3 then
     return -1
   end
-  if widget_id_equals(root_children[1], scene.transcript) == false then
+  if widget_id_equals(root_children[1], scene.transcript) then
     return -1
   end
-  if widget_id_equals(root_children[2], scene.composer) == false then
+  if scene.store.nodes[scene.catalog_list.index].visible == false then
+    return -1
+  end
+  if widget_id_is_none(scene.store.menu) || scene.store.placed then
+    return -1
+  end
+  if scene.store.nodes[scene.store.menu.index].visible then
+    return -1
+  end
+  if widget_id_equals(root_children[2], scene.composer) then
     return -1
   end
   if scene.store.nodes[scene.transcript.index].children.length() != 0 then
@@ -109,13 +118,37 @@ fn main() -> i32 = do
   const header = rect_of(laid, root_children[0].index)
   const transcript = rect_of(laid, scene.transcript.index)
   const composer = rect_of(laid, scene.composer.index)
-  if transcript.width != 900 - 16 || transcript.x != header.x then
+  if transcript.x <= header.x || transcript.width >= 900 - 16 || transcript.width < 300 then
     return -3
   end
   if transcript.y != header.y + header.height + theme.gap then
     return -4
   end
-  if composer.y != transcript.y + transcript.height + theme.gap then
+  if composer.x != transcript.x || composer.width != transcript.width then
+    return -5
+  end
+  const provider = rect_of(laid, scene.provider_button.index)
+  const model_button = rect_of(laid, scene.model_button.index)
+  const route = scene.store.nodes[scene.provider_button.index].parent
+  if widget_id_equals(scene.store.nodes[scene.model_button.index].parent, route) == false then
+    return -5
+  end
+  if widget_id_equals(scene.store.nodes[route.index].parent, scene.store.nodes[scene.composer.index].parent) == false then
+    return -5
+  end
+  if widget_id_equals(scene.store.nodes[scene.send.index].parent, scene.store.nodes[scene.composer.index].parent) then
+    return -5
+  end
+  if provider.y < transcript.y + transcript.height || model_button.y != provider.y then
+    return -5
+  end
+  if model_button.x <= provider.x then
+    return -5
+  end
+  if provider.x < transcript.x || model_button.x + model_button.width > transcript.x + transcript.width then
+    return -5
+  end
+  if composer.y < provider.y + provider.height then
     return -5
   end
   const empty_transcript = transcript.height
@@ -248,10 +281,16 @@ fn main() -> i32 = do
   if fresh_click.events.length() == 0 then
     return -16
   end
-  const cleared = chat_apply_events(
+  const ignored = chat_apply_events(
     scene, sent.model, fresh_click.store, fresh_click.state, fresh_click.events
   )
-  if cleared.model.messages.length() != 0 || cleared.model.pending then
+  if ignored.fresh_requested || ignored.model.messages.length() != 1 || ignored.model.pending == false then
+    return -16
+  end
+  const cleared = chat_apply_events(
+    scene, stopped.model, fresh_click.store, fresh_click.state, fresh_click.events
+  )
+  if cleared.fresh_requested == false || cleared.model.messages.length() != 0 || cleared.model.pending then
     return -16
   end
   if cleared.store.nodes[scene.stop.index].visible then
@@ -259,6 +298,60 @@ fn main() -> i32 = do
   end
   if chat_model_new().pending then
     return -17
+  end
+
+  laid = place(scene.store, theme, shaping, cache)
+  const back_rect = rect_of(laid, scene.back.index)
+  const back_click = ui_update(
+    scene.store,
+    laid.layout,
+    theme,
+    chat_initial_state(scene),
+    click_input(back_rect.x + back_rect.width / 2, back_rect.y + back_rect.height / 2)
+  )
+  if back_click.events.length() == 0 then
+    return -18
+  end
+  const leaving = chat_apply_events(
+    scene, chat_model_new(), back_click.store, back_click.state, back_click.events
+  )
+  if leaving.leave_requested == false then
+    return -18
+  end
+  if cleared.leave_requested || cleared.provider_requested then
+    return -19
+  end
+  laid = place(scene.store, theme, shaping, cache)
+  const provider_rect = rect_of(laid, scene.provider_button.index)
+  const provider_click = ui_update(
+    scene.store,
+    laid.layout,
+    theme,
+    chat_initial_state(scene),
+    click_input(provider_rect.x + provider_rect.width / 2, provider_rect.y + provider_rect.height / 2)
+  )
+  if provider_click.events.length() == 0 then
+    return -20
+  end
+  const choosing = chat_apply_events(
+    scene, chat_model_new(), provider_click.store, provider_click.state, provider_click.events
+  )
+  if choosing.provider_requested == false || choosing.model_requested then
+    return -20
+  end
+  const model_rect = rect_of(laid, scene.model_button.index)
+  const model_click = ui_update(
+    scene.store,
+    laid.layout,
+    theme,
+    chat_initial_state(scene),
+    click_input(model_rect.x + model_rect.width / 2, model_rect.y + model_rect.height / 2)
+  )
+  const modeling = chat_apply_events(
+    scene, chat_model_new(), model_click.store, model_click.state, model_click.events
+  )
+  if modeling.model_requested == false then
+    return -21
   end
   0
 end

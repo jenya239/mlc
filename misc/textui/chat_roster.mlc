@@ -1,0 +1,147 @@
+import { ChatScene } from './chat_scene'
+import { store_conversations_recent } from './chat_store'
+import { overlay_dismiss } from './overlay'
+import { WidgetStore, widget_store_set_list_texts } from './store'
+import { UiState, ui_state_with_list_selected, ui_state_with_listing_revision } from './ui_state'
+import { list_selected_put } from './widget_list'
+
+export type ChatRoster = {
+  pane: i32,
+  row: i32,
+  conversation_row: i32,
+  draft_provider: i32,
+  conversation_identifiers: [i64],
+  conversation_titles: [string]
+}
+
+export type ChatListUpdate = {
+  store: WidgetStore,
+  state: UiState,
+  roster: ChatRoster
+}
+
+export fn pane_conversations() -> i32 = 0
+
+export fn pane_providers() -> i32 = 1
+
+export fn pane_models() -> i32 = 2
+
+fn visible_title(title: string) -> string = do
+  if title.byte_size() == 0 then
+    return "Новый"
+  end
+  title
+end
+
+export fn roster_empty() -> ChatRoster = do
+  let mut identifiers: [i64] = []
+  let mut titles: [string] = []
+  ChatRoster {
+    pane: pane_conversations(),
+    row: 0 - 1,
+    conversation_row: 0 - 1,
+    draft_provider: 0 - 1,
+    conversation_identifiers: identifiers,
+    conversation_titles: titles
+  }
+end
+
+fn index_of_identifier(identifiers: [i64], conversation: i64) -> i32 = do
+  let mut index = 0
+  while index < identifiers.length() do
+    if identifiers[index] == conversation then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn finish(
+  store: WidgetStore,
+  state: UiState,
+  roster: ChatRoster
+) -> ChatListUpdate =
+  ChatListUpdate {
+    store: store,
+    state: ui_state_with_listing_revision(state, state.listing_revision + 1),
+    roster: roster
+  }
+
+fn install_conversations(
+  store: WidgetStore,
+  state: UiState,
+  scene: ChatScene,
+  roster: ChatRoster
+) -> ChatListUpdate = do
+  const listed = widget_store_set_list_texts(store, scene.catalog_list, roster.conversation_titles)
+  const closed = overlay_dismiss(listed, state)
+  const selected = list_selected_put(closed.state.list_selected, scene.catalog_list.index, roster.conversation_row)
+  finish(
+    closed.store,
+    ui_state_with_list_selected(closed.state, selected),
+    ChatRoster {
+      pane: pane_conversations(),
+      row: roster.conversation_row,
+      conversation_row: roster.conversation_row,
+      draft_provider: 0 - 1,
+      conversation_identifiers: roster.conversation_identifiers,
+      conversation_titles: roster.conversation_titles
+    }
+  )
+end
+
+export fn show_conversations(
+  store: WidgetStore,
+  state: UiState,
+  scene: ChatScene,
+  roster: ChatRoster
+) -> ChatListUpdate =
+  install_conversations(store, state, scene, roster)
+
+export fn roster_load(database: i32, conversation: i64) -> ChatRoster = do
+  const recent = store_conversations_recent(database)
+  let mut titles: [string] = []
+  let mut index = 0
+  while index < recent.titles.length() do
+    titles.push(visible_title(recent.titles[index]))
+    index = index + 1
+  end
+  const row = index_of_identifier(recent.identifiers, conversation)
+  ChatRoster {
+    pane: pane_conversations(),
+    row: row,
+    conversation_row: row,
+    draft_provider: 0 - 1,
+    conversation_identifiers: recent.identifiers,
+    conversation_titles: titles
+  }
+end
+
+export fn roster_install(
+  store: WidgetStore,
+  state: UiState,
+  scene: ChatScene,
+  roster: ChatRoster
+) -> ChatListUpdate =
+  install_conversations(store, state, scene, roster)
+
+export fn roster_refresh(
+  roster: ChatRoster,
+  database: i32,
+  store: WidgetStore,
+  state: UiState,
+  scene: ChatScene,
+  before_identifier: i64,
+  before_count: i32,
+  after_identifier: i64,
+  after_count: i32
+) -> ChatListUpdate = do
+  if roster.pane != pane_conversations() then
+    return ChatListUpdate { store: store, state: state, roster: roster }
+  end
+  if before_identifier == after_identifier && before_count == after_count then
+    return ChatListUpdate { store: store, state: state, roster: roster }
+  end
+  show_conversations(store, state, scene, roster_load(database, after_identifier))
+end

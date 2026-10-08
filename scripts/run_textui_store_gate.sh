@@ -41,12 +41,12 @@ run_program() {
     "$MLCC" -o "$out" "$entry"
   if ! grep -qx 'sqlite3' "$out/mlc_link_libs.txt"; then
     echo "[textui store] FAIL: sqlite3 missing from link libs for $name" >&2
-    rm -f "$database" "${database}-journal" "${database}-wal" "${database}-shm"
+    rm -f "$database" "${database}.v2" "${database}-journal" "${database}-wal" "${database}-shm" "${database}.v2-journal" "${database}.v2-wal" "${database}.v2-shm"
     exit 1
   fi
   if grep -R -n 'sqlite3.h' "$out" --include='*.hpp' >/dev/null 2>&1; then
     echo "[textui store] FAIL: sqlite3.h leaked into a generated header for $name" >&2
-    rm -f "$database" "${database}-journal" "${database}-wal" "${database}-shm"
+    rm -f "$database" "${database}.v2" "${database}-journal" "${database}-wal" "${database}-shm" "${database}.v2-journal" "${database}.v2-wal" "${database}.v2-shm"
     exit 1
   fi
   MLCC_PCH=0 MLCC_OBJ_CLEAN=1 "$ROOT/compiler/build_bin.sh" "$out" "$out/bin"

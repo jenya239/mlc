@@ -3,7 +3,9 @@ export type ChatRole = RoleUser | RoleAssistant
 export type ChatMessage = {
   role: ChatRole,
   text: string,
-  failed: bool
+  failed: bool,
+  provider: string,
+  model_name: string
 }
 
 export type ReplyOutcome = ReplyText(string) | ReplyFailed(string)
@@ -36,7 +38,13 @@ export fn chat_submit(model: ChatModel, text: string) -> ChatSubmit = do
     return ChatSubmit { model: model, accepted: false }
   end
   let mut messages = model.messages
-  messages.push(ChatMessage { role: RoleUser, text: trimmed, failed: false })
+  messages.push(ChatMessage {
+    role: RoleUser,
+    text: trimmed,
+    failed: false,
+    provider: "",
+    model_name: ""
+  })
   ChatSubmit {
     model: ChatModel {
       messages: messages,
@@ -45,6 +53,70 @@ export fn chat_submit(model: ChatModel, text: string) -> ChatSubmit = do
       revision: model.revision + 1
     },
     accepted: true
+  }
+end
+
+fn last_user_message(messages: [ChatMessage]) -> ChatMessage = do
+  let mut found = ChatMessage {
+    role: RoleUser,
+    text: "",
+    failed: false,
+    provider: "",
+    model_name: ""
+  }
+  let mut index = 0
+  while index < messages.length() do
+    const user = match messages[index].role
+      | RoleUser => true
+      | RoleAssistant => false
+    if user then
+      found = messages[index]
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn assistant_message(text: string, failed: bool, messages: [ChatMessage]) -> ChatMessage = do
+  const sent = last_user_message(messages)
+  ChatMessage {
+    role: RoleAssistant,
+    text: text,
+    failed: failed,
+    provider: sent.provider,
+    model_name: sent.model_name
+  }
+end
+
+export fn chat_stamp_submission(
+  model: ChatModel,
+  provider: string,
+  model_name: string
+) -> ChatModel = do
+  const count = model.messages.length()
+  if count == 0 || model.pending == false then
+    return model
+  end
+  const last = model.messages[count - 1]
+  const user = match last.role
+    | RoleUser => true
+    | RoleAssistant => false
+  if user == false then
+    return model
+  end
+  let mut messages = model.messages
+  messages.set(count - 1, ChatMessage {
+    role: last.role,
+    text: last.text,
+    failed: last.failed,
+    provider: provider,
+    model_name: model_name
+  })
+  ChatModel {
+    messages: messages,
+    pending: model.pending,
+    generation: model.generation,
+    revision: model.revision
   }
 end
 
@@ -57,8 +129,8 @@ export fn chat_apply_reply(
     return model
   end
   const reply = match outcome
-    | ReplyText(text) => ChatMessage { role: RoleAssistant, text: text, failed: false }
-    | ReplyFailed(text) => ChatMessage { role: RoleAssistant, text: text, failed: true }
+    | ReplyText(text) => assistant_message(text, false, model.messages)
+    | ReplyFailed(text) => assistant_message(text, true, model.messages)
   let mut messages = model.messages
   messages.push(reply)
   ChatModel {
@@ -72,11 +144,7 @@ end
 export fn chat_cancel(model: ChatModel) -> ChatModel = do
   if model.pending then
     let mut messages = model.messages
-    messages.push(ChatMessage {
-      role: RoleAssistant,
-      text: "Остановлено",
-      failed: true
-    })
+    messages.push(assistant_message("Остановлено", true, model.messages))
     return ChatModel {
       messages: messages,
       pending: false,

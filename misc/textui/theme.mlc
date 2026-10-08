@@ -41,6 +41,37 @@ export type Theme = {
 export fn theme_content_inset(theme: Theme) -> i32 =
   theme.padding
 
+export fn theme_with_font_size(theme: Theme, font_size_pixels: i32) -> Theme =
+  Theme {
+    font_path: theme.font_path,
+    font_size_pixels: font_size_pixels,
+    padding: theme.padding,
+    gap: theme.gap,
+    background: theme.background,
+    foreground: theme.foreground,
+    muted: theme.muted,
+    selection_background: theme.selection_background,
+    button_background: theme.button_background,
+    button_hover: theme.button_hover,
+    button_pressed: theme.button_pressed,
+    button_stroke: theme.button_stroke,
+    scrollbar_track: theme.scrollbar_track,
+    scrollbar_thumb: theme.scrollbar_thumb,
+    scrollbar_width: theme.scrollbar_width,
+    inspect_hover: theme.inspect_hover,
+    inspect_stroke: theme.inspect_stroke,
+    list_hover: theme.list_hover,
+    list_selected: theme.list_selected,
+    list_inactive: theme.list_inactive,
+    splitter_sash: theme.splitter_sash,
+    splitter_hover: theme.splitter_hover,
+    splitter_width: theme.splitter_width,
+    splitter_min: theme.splitter_min,
+    overlay_scrim: theme.overlay_scrim,
+    overlay_background: theme.overlay_background,
+    overlay_stroke: theme.overlay_stroke
+  }
+
 export fn theme_default() -> Theme =
   Theme {
     font_path: "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",

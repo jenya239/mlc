@@ -6,6 +6,7 @@ import {
   chat_clear,
   chat_history_for_request,
   chat_model_new,
+  chat_stamp_submission,
   chat_submit
 } from '../chat_model'
 
@@ -39,10 +40,10 @@ fn same_history(left: [ChatMessage], right: [ChatMessage]) -> bool = do
 end
 
 fn user_message(text: string) -> ChatMessage =
-  ChatMessage { role: RoleUser, text: text, failed: false }
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
 
 fn assistant_message(text: string, failed: bool) -> ChatMessage =
-  ChatMessage { role: RoleAssistant, text: text, failed: failed }
+  ChatMessage { role: RoleAssistant, text: text, failed: failed, provider: "", model_name: "" }
 
 fn main() -> i32 = do
   const fresh = chat_model_new()
@@ -167,6 +168,30 @@ fn main() -> i32 = do
   if same_history(chat_history_for_request(failed_model, 100), asked_again) then
   else
     return -8
+  end
+
+  const stamped = chat_stamp_submission(chat_submit(chat_model_new(), "hi").model, "Meta", "muse")
+  if stamped.messages[0].provider != "Meta" || stamped.messages[0].model_name != "muse" then
+    return -9
+  end
+  const copied = chat_apply_reply(stamped, stamped.generation, ReplyText("yes"))
+  if copied.messages[1].provider != "Meta" || copied.messages[1].model_name != "muse" then
+    return -9
+  end
+  if copied.messages[1].failed then
+    return -9
+  end
+  const failed_copy = chat_apply_reply(stamped, stamped.generation, ReplyFailed("no"))
+  if failed_copy.messages[1].provider != "Meta" || failed_copy.messages[1].failed == false then
+    return -9
+  end
+  const canceled = chat_cancel(stamped)
+  if canceled.messages[1].provider != "Meta" || canceled.messages[1].model_name != "muse" then
+    return -9
+  end
+  const plain = chat_apply_reply(chat_submit(chat_model_new(), "hi").model, 1, ReplyText("x"))
+  if plain.messages[1].provider != "" || plain.messages[1].model_name != "" then
+    return -9
   end
   0
 end

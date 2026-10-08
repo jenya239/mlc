@@ -16,6 +16,8 @@ import {
   store_conversation_create,
   store_conversation_present,
   store_conversation_touch,
+  store_route_assign,
+  store_state_write,
   store_latest_open,
   store_message_insert,
   store_messages_delete,
@@ -35,7 +37,9 @@ export type ChatPersistence = {
   conversation_id: i64,
   persisted_count: i32,
   failed_revision: i32,
-  failed_length: i32
+  failed_length: i32,
+  provider_name: string,
+  model_name: string
 }
 
 export type PersistenceLoad = {
@@ -49,11 +53,24 @@ export fn persistence_closed() -> ChatPersistence =
     conversation_id: i64_zero(),
     persisted_count: 0,
     failed_revision: -1,
-    failed_length: -1
+    failed_length: -1,
+    provider_name: "",
+    model_name: ""
   }
 
 export fn persistence_close(persistence: ChatPersistence) -> i32 =
   database_close(persistence.database)
+
+export fn persistence_detach(persistence: ChatPersistence) -> ChatPersistence =
+  ChatPersistence {
+    database: persistence.database,
+    conversation_id: i64_zero(),
+    persisted_count: 0,
+    failed_revision: -1,
+    failed_length: -1,
+    provider_name: persistence.provider_name,
+    model_name: persistence.model_name
+  }
 
 fn role_code(role: ChatRole) -> i32 =
   match role
@@ -108,7 +125,9 @@ fn marked_failed(persistence: ChatPersistence, after: ChatModel) -> ChatPersiste
     conversation_id: persistence.conversation_id,
     persisted_count: persistence.persisted_count,
     failed_revision: after.revision,
-    failed_length: after.messages.length()
+    failed_length: after.messages.length(),
+    provider_name: persistence.provider_name,
+    model_name: persistence.model_name
   }
 end
 
@@ -118,7 +137,9 @@ fn marked_saved(persistence: ChatPersistence, conversation: i64, after: ChatMode
     conversation_id: conversation,
     persisted_count: after.messages.length(),
     failed_revision: -1,
-    failed_length: -1
+    failed_length: -1,
+    provider_name: persistence.provider_name,
+    model_name: persistence.model_name
   }
 
 fn write_messages(
@@ -140,7 +161,9 @@ fn write_messages(
       conversation,
       role_code(message.role),
       stored_body(message, secret),
-      failed_flag
+      failed_flag,
+      message.provider,
+      message.model_name
     )
     if inserted != 0 then
       return inserted
@@ -242,6 +265,17 @@ fn persistence_write(
   if store_active_write(persistence.database, conversation) != 0 then
     return marked_failed(persistence, after)
   end
+  if persistence.provider_name.byte_size() > 0 then
+    if store_route_assign(persistence.database, conversation, persistence.provider_name, persistence.model_name) != 0 then
+      return marked_failed(persistence, after)
+    end
+    if store_state_write(persistence.database, "active_provider", persistence.provider_name) != 0 then
+      return marked_failed(persistence, after)
+    end
+    if store_state_write(persistence.database, "active_model", persistence.model_name) != 0 then
+      return marked_failed(persistence, after)
+    end
+  end
   if query_commit(persistence.database) != 0 then
     return marked_failed(persistence, after)
   end
@@ -329,12 +363,21 @@ export fn persistence_restore(persistence: ChatPersistence) -> PersistenceLoad =
     conversation_id: conversation,
     persisted_count: loaded.messages.length(),
     failed_revision: -1,
-    failed_length: -1
+    failed_length: -1,
+    provider_name: persistence.provider_name,
+    model_name: persistence.model_name
   }
   let mut restored = model
   if needs_interrupt(model) then
     let mut messages = model.messages
-    messages.push(ChatMessage { role: RoleAssistant, text: "Прервано", failed: true })
+    const interrupted = model.messages[model.messages.length() - 1]
+    messages.push(ChatMessage {
+      role: RoleAssistant,
+      text: "Прервано",
+      failed: true,
+      provider: interrupted.provider,
+      model_name: interrupted.model_name
+    })
     const after = model_from(messages)
     next = persistence_sync(next, "", model, after)
     restored = after

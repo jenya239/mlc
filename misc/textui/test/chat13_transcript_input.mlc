@@ -35,7 +35,7 @@ import { UiState, ui_state_new } from '../ui_state'
 import { ui_update } from '../ui_update'
 
 fn user_message(text: string) -> ChatMessage =
-  ChatMessage { role: RoleUser, text: text, failed: false }
+  ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
 
 fn model_of(messages: [ChatMessage]) -> ChatModel =
   ChatModel { messages: messages, pending: false, generation: 1, revision: 1 }

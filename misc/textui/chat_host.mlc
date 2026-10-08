@@ -17,10 +17,12 @@ import { submit_painted_layers } from './submit_layers'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
 import { chat_wait_seconds } from './chat_session'
 import { ChatWorld, chat_world_open } from './chat_world'
+import { pane_conversations } from './chat_roster'
 import { persistence_close } from './chat_persistence'
 import { chat_frame_run } from './chat_frame'
 import { frame_signature } from './frame_request'
 import { chat_config_resolve } from './chat_support_env'
+import { cursor_lens_show_window } from './cursor_lens'
 
 export type ChatHostResult = {
   resources: SubmitResources,
@@ -45,7 +47,32 @@ fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWo
     painted_under: world.painted_under,
     painted_over: world.painted_over,
     code_highlight: world.code_highlight,
-    persistence: world.persistence
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: 0
+  }
+
+fn world_dismiss_picker(world: ChatWorld) -> ChatWorld =
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: world.presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight,
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: 1
   }
 
 export fn chat_frames(
@@ -78,7 +105,10 @@ export fn chat_frames(
     const escape_down = glfw_gl_key_escape_down() != 0
     const escape_pressed = escape_down && escape_was_down == false
     escape_was_down = escape_down
-    if escape_pressed then
+    if escape_pressed && world.roster.pane != pane_conversations() then
+      world = world_dismiss_picker(world)
+    end
+    if escape_pressed && world.roster.pane == pane_conversations() then
       running = false
     end
     if running then
@@ -92,6 +122,7 @@ export fn chat_frames(
         glfw_gl_clipboard_set(frame.clipboard)
       end
       if frame.paints then
+        cursor_lens_show_window()
         const submitted = submit_painted_layers(
           resources_now,
           shaping_now,
@@ -113,7 +144,7 @@ export fn chat_frames(
         end
       end
       frame_index = frame_index + 1
-      if max_frames > 0 && frame_index >= max_frames then
+      if frame.leave_requested || (max_frames > 0 && frame_index >= max_frames) then
         running = false
       end
     end

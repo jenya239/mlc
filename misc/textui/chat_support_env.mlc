@@ -106,6 +106,9 @@ fn support_document() -> string = do
   document_at("mlc-support/.env")
 end
 
+export fn support_value(name: string) -> string =
+  value_named(support_document(), name)
+
 export fn chat_config_resolve() -> ChatConfig = do
   const configured = chat_config_load()
   if configured.api_key.byte_size() > 0 then

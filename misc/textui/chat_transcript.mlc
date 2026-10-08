@@ -1,4 +1,5 @@
-import { ColorRgba, Theme } from './theme'
+import { ColorRgba, Theme, theme_with_font_size } from './theme'
+import { transcript_route_caption, transcript_route_font_size } from './chat_transcript_route'
 import { ChatMessage, ChatModel, ChatRole } from './chat_model'
 import { block_index_end_visible, block_index_first_visible, block_scroll_bottom, block_scroll_clamp } from './block_index'
 import { TextShapingState } from '../gui/text_shaping'
@@ -13,6 +14,7 @@ import {
   TranscriptView,
   transcript_content_limit,
   transcript_empty_text,
+  transcript_labeled_height,
   transcript_pending_text,
   transcript_role_label
 } from './chat_transcript_layout'
@@ -134,11 +136,30 @@ fn paint_message(
     body_text,
     wrap_width_pixels(transcript_content_limit(theme, bounds.width))
   )
+  const caption = transcript_route_caption(message)
+  let mut caption_layout = body_built.layout
+  let mut caption_height = 0
+  if caption.byte_size() > 0 then
+    const caption_built = text_layout_build(
+      body_built.shaping,
+      body_built.cache,
+      theme_with_font_size(theme, transcript_route_font_size()),
+      caption,
+      wrap_width_pixels(transcript_content_limit(theme, bounds.width))
+    )
+    caption_layout = caption_built.layout
+    caption_height = caption_built.layout.pixel_height
+  end
   let mut next = push_bubble(
     operations,
     bounds,
     screen_y,
-    theme.padding + role_built.layout.pixel_height + body_built.layout.pixel_height + theme.padding,
+    transcript_labeled_height(
+      theme.padding,
+      role_built.layout.pixel_height,
+      body_built.layout.pixel_height,
+      caption_height
+    ),
     bubble_color(theme, message.role)
   )
   const text_x = bounds.x + theme.padding
@@ -166,7 +187,7 @@ fn paint_message(
     next = paint_selection(next, theme, body_built.layout, text_x, body_y, anchor, focus)
   end
   if highlight then
-    return chat_highlight_text(
+    next = chat_highlight_text(
       next,
       theme,
       body_built.layout,
@@ -176,15 +197,27 @@ fn paint_message(
       transcript_content_limit(theme, bounds.width),
       code_ranges
     )
+  else
+    next = push_layout_text(
+      next,
+      body_built.layout,
+      text_x,
+      body_y,
+      body_color(theme, message.failed),
+      bounds
+    )
   end
-  push_layout_text(
-    next,
-    body_built.layout,
-    text_x,
-    body_y,
-    body_color(theme, message.failed),
-    bounds
-  )
+  if caption_height > 0 then
+    next = push_layout_text(
+      next,
+      caption_layout,
+      text_x,
+      body_y + body_built.layout.pixel_height,
+      theme.muted,
+      bounds
+    )
+  end
+  next
 end
 
 fn paint_plain(

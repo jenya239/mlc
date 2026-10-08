@@ -1,0 +1,25 @@
+import { ChatMessage, ChatRole, RoleAssistant, RoleUser } from './chat_model'
+
+export fn transcript_route_font_size() -> i32 =
+  10
+
+fn assistant_role(role: ChatRole) -> bool =
+  match role
+    | RoleAssistant => true
+    | RoleUser => false
+
+export fn transcript_route_caption(message: ChatMessage) -> string = do
+  if assistant_role(message.role) == false then
+    return ""
+  end
+  if message.provider.byte_size() == 0 && message.model_name.byte_size() == 0 then
+    return ""
+  end
+  if message.provider.byte_size() == 0 then
+    return message.model_name
+  end
+  if message.model_name.byte_size() == 0 then
+    return message.provider
+  end
+  message.provider + " · " + message.model_name
+end

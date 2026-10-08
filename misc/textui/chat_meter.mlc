@@ -3,6 +3,7 @@ import { ChatMessage, ChatModel, ChatRole } from './chat_model'
 import { ChatScene } from './chat_scene'
 import { field_caption } from './widget_field'
 import {
+  ButtonData,
   LabelData,
   WidgetId,
   WidgetKind,
@@ -29,6 +30,9 @@ export fn chat_provider_name(base_url: string) -> string = do
   end
   if contains_text(base_url, "api.anthropic.com") then
     return "Anthropic"
+  end
+  if contains_text(base_url, "api.x.ai") then
+    return "xAI"
   end
   "HTTP"
 end
@@ -168,6 +172,31 @@ fn label_text(kind: WidgetKind) -> string =
     | KindTextField(_) => ""
     | KindIcon(_) => ""
 
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindLabel(_) => ""
+    | KindBox(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn set_button(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
+  if id.index < 0 || id.index >= store.nodes.length() then
+    return store
+  end
+  if button_text(store.nodes[id.index].kind) == text then
+    return store
+  end
+  const node = store.nodes[id.index]
+  let mut nodes = store.nodes
+  nodes.set(id.index, widget_node_with_kind(node, KindButton(ButtonData { text: text })))
+  widget_store_keep(nodes, store)
+end
+
 fn set_label(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
   if id.index < 0 || id.index >= store.nodes.length() then
     return store
@@ -186,14 +215,16 @@ export fn chat_sync_chrome(
   state: UiState,
   scene: ChatScene,
   config: ChatConfig,
-  model: ChatModel
+  model: ChatModel,
+  provider_label: string,
+  model_label: string
 ) -> ChatChrome = do
   const draft = field_caption(store.nodes[scene.composer.index].kind)
-  const title = chat_provider_line(config)
   const meter = chat_meter_line(config, model, draft)
-  const titled = set_label(store, scene.title, title)
-  const metered = set_label(titled, scene.meter, meter)
-  if metered.nodes.length() == store.nodes.length() && label_text(metered.nodes[scene.meter.index].kind) == label_text(store.nodes[scene.meter.index].kind) && label_text(metered.nodes[scene.title.index].kind) == label_text(store.nodes[scene.title.index].kind) then
+  const provided = set_button(store, scene.provider_button, provider_label)
+  const modeled = set_button(provided, scene.model_button, model_label)
+  const metered = set_label(modeled, scene.meter, meter)
+  if metered.nodes.length() == store.nodes.length() && label_text(metered.nodes[scene.meter.index].kind) == label_text(store.nodes[scene.meter.index].kind) && button_text(metered.nodes[scene.provider_button.index].kind) == button_text(store.nodes[scene.provider_button.index].kind) && button_text(metered.nodes[scene.model_button.index].kind) == button_text(store.nodes[scene.model_button.index].kind) then
     return ChatChrome { store: store, state: state }
   end
   ChatChrome {

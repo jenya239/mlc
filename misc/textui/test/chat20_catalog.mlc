@@ -1,0 +1,48 @@
+import { chat_config_from } from '../chat_http'
+import {
+  ChatCatalog,
+  ChatProvider,
+  catalog_choose_model,
+  catalog_choose_provider,
+  catalog_config,
+  catalog_model_texts,
+  catalog_prefer,
+  catalog_provider_texts
+} from '../chat_catalog'
+
+fn provider(name: string, base_url: string, api_key: string, model_name: string) -> ChatProvider = do
+  let mut models: [string] = []
+  models.push(model_name)
+  ChatProvider { name: name, base_url: base_url, api_key: api_key, models: models }
+end
+
+fn main() -> i32 = do
+  let mut providers: [ChatProvider] = []
+  providers.push(provider("OpenAI", "https://api.openai.com/v1", "fixture-openai", "gpt-4o-mini"))
+  providers.push(provider("xAI", "https://api.x.ai/v1", "fixture-xai", "grok-beta"))
+  const catalog = ChatCatalog { providers: providers, provider_index: 0, model_index: 0 }
+  const texts = catalog_provider_texts(catalog)
+  if texts.length() != 2 || texts[0] != "OpenAI" || texts[1] != "xAI" then
+    return 1
+  end
+  const chosen = catalog_choose_provider(catalog, 1)
+  const config = catalog_config(chosen, "be brief")
+  if config.base_url != "https://api.x.ai/v1" || config.model != "grok-beta" then
+    return 2
+  end
+  if config.api_key != "fixture-xai" || config.system_prompt != "be brief" then
+    return 3
+  end
+  const models = catalog_model_texts(chosen)
+  if models.length() != 1 || models[0] != "grok-beta" then
+    return 4
+  end
+  const preferred = catalog_prefer(catalog, "xAI", "grok-beta")
+  if preferred.provider_index != 1 || catalog_choose_model(preferred, 0).model_index != 0 then
+    return 5
+  end
+  if catalog_prefer(catalog, "Meta", "").provider_index != 0 then
+    return 6
+  end
+  0
+end
