@@ -1,0 +1,47 @@
+import { tokenize } from '../../compiler/frontend/lexer'
+import { parse_program_with_errors } from '../../compiler/frontend/parser/decls'
+import { Program, Decl, DeclExported, DeclFn } from '../../compiler/frontend/ast'
+import { LexOut } from '../../compiler/frontend/ast_tokens'
+import { ProgramParseValue } from '../../compiler/frontend/parser/predicates'
+
+fn print_messages(prefix: string, messages: [string]) -> i32 = do
+  let mut index = 0
+  while index < messages.length() do
+    println(prefix + messages[index])
+    index = index + 1
+  end
+  1
+end
+
+fn declaration_is_exported_main(declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclExported(exported_declaration) => match exported_declaration {
+      DeclFn(function_name, _, _, _, _, _, _) => function_name == "main",
+      _ => false
+    },
+    _ => false
+  }
+
+fn main() -> i32 = do
+  const source_text = "export fn main() -> i32 = 42"
+  const lexer_output: LexOut = tokenize(source_text)
+  if lexer_output.errors.length() > 0 then
+    return print_messages("lexer error: ", lexer_output.errors)
+  end
+  const parse_value: ProgramParseValue = parse_program_with_errors(lexer_output.tokens, "frontend_probe.mlc")
+  if parse_value.errors.length() > 0 then
+    return print_messages("parser error: ", parse_value.errors)
+  end
+  const program: Program = parse_value.program
+  if program.decls.length() != 1 then
+    println("frontend_probe declaration count " + program.decls.length().to_string())
+    return 1
+  end
+  if !declaration_is_exported_main(program.decls[0]) then
+    println("frontend_probe expected DeclExported DeclFn main")
+    return 1
+  end
+  println("frontend_probe=ok")
+  println("[script_vm] frontend_probe_unit ok")
+  0
+end

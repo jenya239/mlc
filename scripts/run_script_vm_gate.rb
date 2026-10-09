@@ -13,6 +13,7 @@ registered_units = [
   ["closures_fibers", ["bash", "scripts/run_script_vm_closures_fibers_unit.sh"]],
   ["embedding_abi", ["bash", "scripts/run_script_vm_embedding_abi_unit.sh"]],
   ["runner_selfcheck", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/runner_selfcheck_unit.mlc"]],
+  ["frontend_probe", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/frontend_probe_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)
