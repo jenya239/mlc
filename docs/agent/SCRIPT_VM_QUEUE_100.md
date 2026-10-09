@@ -1894,3 +1894,20 @@ Sonnet доступен очереди только через соседний 
 4. Запись в script-профиле — объект кучи со ссылочной семантикой: `let b = a` разделяет объект. Это расхождение с нативной value-семантикой MLC принято и входит в список шага 100.
 5. Поля подмножества — только `i32` и `bool`. Тип с числом полей больше 255 даёт диагностику `record_too_wide`.
 6. Символы и интернированные имена как ключи — вне очереди.
+
+### S4 — lowering
+
+`compiler/**` этим шагом не правится. Загрузка исходного текста через C ABI остаётся `emb_unsupported`.
+
+1. Файлы: `script_vm/lower/lower_types.mlc`, `lower_builder.mlc`, `lower_scope.mlc`, `lower_records.mlc`, `lower_expression.mlc`, `lower_statement.mlc`, `lower_function.mlc`, `lower_module.mlc`; `script_vm/bytecode_wide.mlc`; `script_vm/tools/script_tool.mlc`; фикстуры `script_vm/tests/fixtures/*.mlc`.
+2. Вход — текст MLC. `tokenize` и `parse_program_with_errors` читаются из `compiler/frontend/` как библиотека, импорт `../../compiler/frontend/...`. Правок там нет. Если шаг 9 покажет, что импорт невозможен, очередь ставит `blocked`, решение за пользователем.
+3. Подмножество: top-level `fn` и `export fn` с параметрами и результатом `i32` или `bool`; `type Name = { f: i32, g: bool }`. Выражения: литералы `i32` и `bool`, идентификатор, унарные `-` и `!`, бинарные `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=` (только `i32`; равенство `bool` VM не поддерживает, диагностика `bool_equality_unsupported`), `&&`, `||`, `if`/`else` обоих видов, вызов top-level функции по имени, литерал записи, чтение поля, присваивание локалу и полю. Операторы: `const`, `let`, `let mut`, присваивание `StmtExpr(ExprBin("=", ...))`, `while`, `return`. Тело `do ... end` с финальным выражением.
+4. Не лоуэрятся: extern, trait, generics, строки, массивы, `match`, `for`, лямбды, `break`/`continue`, float, методы, `?`, spawn, with, scope, region. Каждая такая конструкция даёт диагностику `unsupported_<вид>`.
+5. Блок со statements в позиции выражения — диагностика `unsupported_expression_block`.
+6. Экспортируются только `export fn` с параметрами и результатом `i32` или `bool`. Иначе диагностика `export_signature`.
+7. Регистры: параметры `0..n-1`, затем локалы, затем временные стеком. Больше 256 регистров — `too_many_registers`.
+8. `CALL`: непрерывный блок временных `[функция, аргумент1..аргументN]`. Функция — `MAKE_CLOSURE tmp, proto_index, 0`. Результат пишется в целевой регистр.
+9. `JUMP` и `JUMP_IF_FALSE` lowerer всегда выпускает в wide-форме из двух слов. Размер инструкции не зависит от смещения, патч безопасен.
+10. Выход — `LowerResult { diagnostics: [LowerDiagnostic], bytes: [i32] }`. `LowerDiagnostic { code: string, message: string, line: i32, column: i32 }`.
+11. Коды диагностик: `syntax_error`, `unsupported_<вид>`, `unknown_identifier`, `unknown_function`, `call_arity`, `assign_immutable`, `unknown_record`, `unknown_field`, `record_missing_field`, `record_too_wide`, `export_signature`, `too_many_registers`, `type_mismatch`, `bool_equality_unsupported`.
+12. CLI `script_tool`: `compile <вход.mlc> <выход.txt>` пишет blob десятичными байтами через пробел; `run <вход.mlc> <экспорт> [целые аргументы]`.
