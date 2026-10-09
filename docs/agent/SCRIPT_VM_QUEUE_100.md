@@ -1870,3 +1870,16 @@ Sonnet доступен очереди только через соседний 
 `script_vm/interpreter.mlc:90–97`: `run_err_verify` `"verify"`, `run_err_type` `"type"`, `run_err_overflow` `"overflow"`, `run_err_div_zero` `"div_zero"`, `run_err_no_return` `"no_return"`, `run_err_unsupported_opcode` `"unsupported_opcode"`, `run_err_bounds` `"bounds"`, `run_err_stack` `"stack"`. CONFIRMED.
 
 `run_err_to_code` (`embedding.mlc:312–323`) переводит verify→2, type→3, bounds→4, stack→5; overflow, div_zero, no_return и unsupported_opcode попадают в ветку `else` и становятся `emb_type` (3). CONFIRMED.
+
+### S2 — falsy/Nil
+
+Новый контракт `JUMP_IF_FALSE A`. Код `value_is_falsy` этим шагом не меняется.
+
+- `Bool(false)` — переход.
+- `Bool(true)` — переход не выполняется.
+- Любой `Int32`, включая 0 — переход не выполняется.
+- Любой `Float64`, включая 0.0 и NaN — переход не выполняется.
+- Любой HeapRef — переход не выполняется.
+- `Nil` — `RunErr("type", primary)`.
+
+Основание: `docs/MLC_SCRIPT_VM.md` §14 (нет неявных приведений, нет повсеместного null). Nil — значение пустого регистра, не значение языка. Текущее поведение (`value_is_falsy` в `interpreter.mlc:214`: Nil, false, Int32(0), Float64(0.0) считаются ложью) фиксируется characterization-тестами шага 10 под именами `legacy_falsy_*` и заменяется в шагах 48–49. Lowerer всегда подаёт в `JUMP_IF_FALSE` результат сравнения или bool-операции.
