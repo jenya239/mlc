@@ -1911,3 +1911,20 @@ Sonnet доступен очереди только через соседний 
 10. Выход — `LowerResult { diagnostics: [LowerDiagnostic], bytes: [i32] }`. `LowerDiagnostic { code: string, message: string, line: i32, column: i32 }`.
 11. Коды диагностик: `syntax_error`, `unsupported_<вид>`, `unknown_identifier`, `unknown_function`, `call_arity`, `assign_immutable`, `unknown_record`, `unknown_field`, `record_missing_field`, `record_too_wide`, `export_signature`, `too_many_registers`, `type_mismatch`, `bool_equality_unsupported`.
 12. CLI `script_tool`: `compile <вход.mlc> <выход.txt>` пишет blob десятичными байтами через пробел; `run <вход.mlc> <экспорт> [целые аргументы]`.
+
+### S5 — состояние, лимиты, GC
+
+Публичный функциональный API `heap_*` и `run_*` остаётся: тесты импортируют его. Код этим шагом не меняется.
+
+1. Изменяемое состояние — параметры `ref mut` и `.set(index, value)` по полям записи. Образец: `register_decl_into(registry: ref mut TypeRegistry, ...)` в `compiler/checker/registry.mlc`. `mlc::Array::set` копирует буфер только если он разделяется.
+2. У массивов нет `.pop()`. Стек — массив плюс явный счётчик: `stack_top`, `frame_depth`, `free_object_count`.
+3. `VmState { stack, stack_top, frame_proto, frame_program_counter, frame_base, frame_closure, frame_return_register, frame_depth, instruction_count, error_code, error_at, return_value }`.
+4. `Heap`: слот — только скаляры (`header`, `child`, `element_start`, `element_count`, `size_class`, `live`). Элементы — один `element_arena: [Value]`. Свободные id — `free_object_ids` и `free_object_count`. Есть `gc_threshold`.
+5. Новые функции кучи имеют префикс `heap_in_place_` и принимают `heap: ref mut Heap`. Функциональные `heap_alloc_*`, `heap_write_barrier` и `heap_collect` реализуются поверх них копией на границе.
+6. Если шаг 17 покажет, что `.set` через `ref mut` копирует буфер, очередь ставит `blocked`. Переход на внешний буфер через C++ ABI без решения пользователя не делается.
+7. `RunLimits { instruction_limit: i64, heap_limit_objects: i32 }`. Ноль значит без лимита. Лимит инструкций L допускает ровно L исполненных инструкций, затем `RunErr("instruction_limit", word_index_следующей_инструкции)`.
+8. `RunErr("heap_limit", primary)`. Лимит L допускает не более L живых объектов после сборки.
+9. Автосборка на safepoint аллокации (`NEW_ARRAY`, `NEW_RECORD`, `MAKE_CLOSURE`). При `heap_limit_objects > 0` — когда `live_count >= лимит`. При нуле — когда `live_count >= gc_threshold` (старт 1024, после сборки `max(1024, 2 * live_count)`). Корни: `heap.roots` плюс `stack[0 .. stack_top)` плюс `frame_closure[0 .. frame_depth)`.
+10. Коды embedding: `emb_instruction_limit() = 9`, `emb_heap_limit() = 10`, `emb_overflow() = 11`, `emb_div_zero() = 12`. Сейчас `run_err_to_code` отображает `overflow`, `div_zero`, `no_return` и `unsupported_opcode` в `emb_type()`. После шага 90 `overflow` и `div_zero` получают свои коды, остальные остаются `emb_type()`. В ABI `instruction_limit` — `uint64_t`, сторона MLC принимает `i64`. Бридж клампит значение больше `INT64_MAX` к `INT64_MAX`. Ноль значит без лимита.
+11. Числа: только Int32 (переполнение — `RunErr("overflow")`) и Float64. `INT_MIN / -1` — `overflow`. BigInt нет.
+12. Бенчи: B1 `sum_loop_heap` (`run_arithmetic`, N=60000, метрика `ns_per_insn`, инструкций `4 + 5*N + 3`). B2 `sum_loop_frames` (`run_program`, то же). B3 `fib20` (`run_program`, метрика `ns_per_call`, 21891 вызов). B4 `record_alloc` (`run_with_heap`, N=1000 и N=4000: `ns_per_alloc_n1000`, `ns_per_alloc_n4000`, `scaling_ratio_x100 = ns_per_alloc_n4000*100/ns_per_alloc_n1000`).

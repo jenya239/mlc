@@ -1,8 +1,8 @@
-current_step: 4
+current_step: 5
 status: ready
-last_result: done step 4: S4 lowering surface frozen, compiler untouched
-last_verify: rg -c '^### S4 ' docs/agent/SCRIPT_VM_QUEUE_100.md => 1; git diff --stat -- docs/agent/SCRIPT_VM_QUEUE_100.md docs/agent/SCRIPT_VM_QUEUE_STATE.md => only those two files
-next_step: 5
+last_result: done step 5: S5 state, limits, and GC policy frozen, code unchanged
+last_verify: rg -c '^### S5 ' docs/agent/SCRIPT_VM_QUEUE_100.md => 1; git diff --stat -- docs/agent/SCRIPT_VM_QUEUE_100.md docs/agent/SCRIPT_VM_QUEUE_STATE.md => only those two files
+next_step: 6
 consult_count: 0
 consult_response:
 consult_verdict:
