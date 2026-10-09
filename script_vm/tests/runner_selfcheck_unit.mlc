@@ -1,0 +1,4 @@
+fn main() -> i32 = do
+  println("[script_vm] runner_selfcheck_unit ok")
+  0
+end
