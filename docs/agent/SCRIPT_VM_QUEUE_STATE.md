@@ -1,8 +1,8 @@
-current_step: 37
-status: consult_ready
-last_result: blocked step 38: GATE(all) failed compiling vm_state; local value_is_int32 collides with value.mlc
-last_verify: ruby scripts/run_script_vm_gate.rb => exit 1; script_vm_gate FAIL vm_state; error: cannot define or redeclare 'value_is_int32' here because namespace 'vm_state_unit' does not enclose namespace 'value'; too many arguments to function call, expected single argument 'value', have 2 arguments
-next_step: 38
-consult_count: 1
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261010_170525.md
+current_step: 38
+status: ready
+last_result: done step 38: size limit 400 applies to every script_vm mlc file; vm_state local int32 check renamed
+last_verify: ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok exit 0; ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=19 exit 0; sabotage script_vm/tmp_size_probe.mlc 401 lines => script_vm/tmp_size_probe.mlc 401 > 400 exit 1; deleted; SIZE exit 0; gate ok units=19; probe absent
+next_step: 39
+consult_count: 0
+consult_response:
 consult_verdict:
