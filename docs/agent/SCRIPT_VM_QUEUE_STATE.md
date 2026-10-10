@@ -1,8 +1,8 @@
 current_step: 28
-status: ready
-last_result: done step 28: CALL/closure differential cases; first fail call_integer unsupported_opcode
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/unified_executor_unit.mlc => exit 1; FAIL: call_integer got=unsupported_opcode
+status: consult_ready
+last_result: blocked step 29: SIZE script_vm/tests/unified_executor_unit.mlc 402 > 400, file outside allowed_files
+last_verify: ruby scripts/run_script_vm_file_size.rb => script_vm/tests/unified_executor_unit.mlc 402 > 400
 next_step: 29
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261010_152546.md
 consult_verdict:
