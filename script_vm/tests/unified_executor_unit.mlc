@@ -1,0 +1,296 @@
+import {
+  Value,
+  ValueNil,
+  ValueBool,
+  ValueInt32,
+  value_encode,
+  value_raw_equal
+} from '../value'
+import {
+  instruction_encode,
+  instruction_opcode_jump,
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_return,
+  instruction_words_jump,
+  instruction_words_jump_if_false
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunOk,
+  RunErr,
+  RunHeapResult,
+  run_with_heap,
+  run_program_with_args
+} from '../interpreter'
+import { heap_new, heap_live_object_count, heap_write_barrier_hits } from '../heap'
+import { run_state_single_function, run_state_program } from '../executor'
+
+fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm unified_executor_unit] FAIL: " + message)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn check_same(label: string, old_result: RunHeapResult, new_result: RunHeapResult) -> i32 = do
+  if heap_live_object_count(old_result.heap) != heap_live_object_count(new_result.heap) then
+    return fail(label + " live count")
+  end
+  if heap_write_barrier_hits(old_result.heap) != heap_write_barrier_hits(new_result.heap) then
+    return fail(label + " write barrier")
+  end
+  match old_result.result {
+    RunOk(old_value) => match new_result.result {
+      RunOk(new_value) =>
+        if value_raw_equal(old_value, new_value) then
+          0
+        else
+          fail(label + " value")
+        end,
+      _ => fail(label + " expected ok")
+    },
+    RunErr(old_code, old_word_index) => match new_result.result {
+      RunErr(new_code, new_word_index) =>
+        if old_code == new_code && old_word_index == new_word_index then
+          0
+        else
+          fail(label + " error")
+        end,
+      _ => fail(label + " expected error")
+    }
+  }
+end
+
+fn check_single(label: string, words: [i32], constants: [Value], register_count: i32) -> i32 = do
+  const old_result = run_with_heap(heap_new(), words, constants, register_count)
+  const new_result = run_state_single_function(heap_new(), words, constants, register_count)
+  check_same(label, old_result, new_result)
+end
+
+fn load_and_return_words(constant_index: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, constant_index))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn wide_constants(payload: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  let mut index = 0
+  while index < 256 do
+    constants.push(int_value(0))
+    index = index + 1
+  end
+  constants.push(payload)
+  constants
+end
+
+fn move_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn jump_forward_narrow_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_jump(2))
+  words = append_words(words, instruction_words_load_const(0, 1))
+  words = append_words(words, instruction_words_load_const(0, 1))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn jump_backward_narrow_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_jump(2))
+  words = append_words(words, instruction_words_load_const(0, 1))
+  words = append_words(words, instruction_words_jump(2))
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_jump(0 - 4))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn jump_forward_wide_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_jump(1))
+  words = append_words(words, instruction_words_load_const(0, 1))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn wide_jump_words(offset: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(instruction_opcode_jump(), 0, 0, 1).word)
+  words.push(offset)
+  words
+end
+
+fn jump_backward_wide_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_jump(2))
+  words = append_words(words, instruction_words_load_const(0, 1))
+  words = append_words(words, instruction_words_jump(3))
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, wide_jump_words(0 - 5))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn jump_if_false_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_jump_if_false(1, 2))
+  words = append_words(words, instruction_words_load_const(0, 2))
+  words = append_words(words, instruction_words_load_const(0, 2))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn jump_if_false_constants(condition_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(int_value(0))
+  constants.push(condition_value)
+  constants.push(int_value(7))
+  constants
+end
+
+fn two_integers(left_number: i32, right_number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(int_value(left_number))
+  constants.push(int_value(right_number))
+  constants
+end
+
+fn one_integer(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(int_value(number))
+  constants
+end
+
+fn return_proto(source_register: i32, register_count: i32) -> FunctionProto = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_return(source_register))
+  let mut constants: [Value] = []
+  FunctionProto { words: words, constants: constants, register_count: register_count }
+end
+
+fn check_program(label: string, proto: FunctionProto, entry_proto_index: i32, args: [Value]) -> i32 = do
+  let mut protos: [FunctionProto] = []
+  protos.push(proto)
+  const old_result = run_program_with_args(heap_new(), protos, entry_proto_index, args)
+  const new_result = run_state_program(heap_new(), protos, entry_proto_index, args)
+  check_same(label, old_result, new_result)
+end
+
+fn argument_values() -> [Value] = do
+  let mut args: [Value] = []
+  args.push(int_value(11))
+  args.push(int_value(22))
+  args
+end
+
+fn empty_arguments() -> [Value] = do
+  let mut args: [Value] = []
+  args
+end
+
+fn run_cases() -> i32 = do
+  const load_const_narrow = check_single("load_const_narrow", load_and_return_words(0), one_integer(42), 1)
+  if load_const_narrow != 0 then
+    return load_const_narrow
+  end
+  const load_const_wide = check_single("load_const_wide", load_and_return_words(256), wide_constants(int_value(42)), 1)
+  if load_const_wide != 0 then
+    return load_const_wide
+  end
+  const move_case = check_single("move", move_words(), one_integer(42), 2)
+  if move_case != 0 then
+    return move_case
+  end
+  const return_case = check_single("return", load_and_return_words(0), one_integer(5), 1)
+  if return_case != 0 then
+    return return_case
+  end
+  const jump_forward_narrow = check_single("jump_forward_narrow", jump_forward_narrow_words(), two_integers(1, 2), 1)
+  if jump_forward_narrow != 0 then
+    return jump_forward_narrow
+  end
+  const jump_backward_narrow = check_single("jump_backward_narrow", jump_backward_narrow_words(), two_integers(4, 9), 1)
+  if jump_backward_narrow != 0 then
+    return jump_backward_narrow
+  end
+  const jump_forward_wide = check_single("jump_forward_wide", jump_forward_wide_words(), two_integers(1, 2), 1)
+  if jump_forward_wide != 0 then
+    return jump_forward_wide
+  end
+  const jump_backward_wide = check_single("jump_backward_wide", jump_backward_wide_words(), two_integers(4, 9), 1)
+  if jump_backward_wide != 0 then
+    return jump_backward_wide
+  end
+  const jump_if_false_taken = check_single("jump_if_false_taken", jump_if_false_words(), jump_if_false_constants(bool_value(false)), 2)
+  if jump_if_false_taken != 0 then
+    return jump_if_false_taken
+  end
+  const jump_if_false_not_taken = check_single("jump_if_false_not_taken", jump_if_false_words(), jump_if_false_constants(bool_value(true)), 2)
+  if jump_if_false_not_taken != 0 then
+    return jump_if_false_not_taken
+  end
+  const legacy_falsy_nil = check_single("legacy_falsy_nil", jump_if_false_words(), jump_if_false_constants(nil_value()), 2)
+  if legacy_falsy_nil != 0 then
+    return legacy_falsy_nil
+  end
+  const legacy_falsy_int_zero = check_single("legacy_falsy_int_zero", jump_if_false_words(), jump_if_false_constants(int_value(0)), 2)
+  if legacy_falsy_int_zero != 0 then
+    return legacy_falsy_int_zero
+  end
+  const no_return = check_single("no_return", instruction_words_load_const(0, 0), one_integer(1), 1)
+  if no_return != 0 then
+    return no_return
+  end
+  const verify_error = check_single("verify", instruction_words_load_const(3, 0), one_integer(1), 1)
+  if verify_error != 0 then
+    return verify_error
+  end
+  const args_register_zero = check_program("args_register_zero", return_proto(0, 2), 0, argument_values())
+  if args_register_zero != 0 then
+    return args_register_zero
+  end
+  const args_register_one = check_program("args_register_one", return_proto(1, 2), 0, argument_values())
+  if args_register_one != 0 then
+    return args_register_one
+  end
+  const entry_high = check_program("entry_proto_index_high", return_proto(0, 1), 1, empty_arguments())
+  if entry_high != 0 then
+    return entry_high
+  end
+  check_program("entry_proto_index_negative", return_proto(0, 1), 0 - 1, empty_arguments())
+end
+
+fn main() -> i32 = do
+  const status = run_cases()
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] unified_executor_unit ok")
+  0
+end
