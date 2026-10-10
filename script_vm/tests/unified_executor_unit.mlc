@@ -26,11 +26,12 @@ import {
   instruction_words_jump,
   instruction_words_jump_if_false,
   instruction_words_binary,
-  instruction_words_call,
-  instruction_words_make_closure,
-  instruction_words_get_upval,
-  instruction_words_set_upval,
-  instruction_upvalue_source_word
+  instruction_words_new_array,
+  instruction_words_get_index,
+  instruction_words_set_index,
+  instruction_words_new_record,
+  instruction_words_get_prop,
+  instruction_words_set_prop
 } from '../bytecode'
 import {
   FunctionProto,
@@ -40,8 +41,9 @@ import {
   run_with_heap,
   run_program_with_args
 } from '../interpreter'
-import { heap_new, heap_live_object_count, heap_write_barrier_hits, heap_alloc_closure } from '../heap'
+import { heap_new, heap_live_object_count, heap_write_barrier_hits } from '../heap'
 import { run_state_single_function, run_state_program } from '../executor'
+import { run_unified_executor_frame_cases } from './unified_executor_frames_unit'
 fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
 fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
 fn nil_value() -> Value = value_encode(ValueNil)
@@ -263,104 +265,98 @@ fn gate_program(status: i32, label: string, proto: FunctionProto, entry_proto_in
   end
   check_program(label, proto, entry_proto_index, args)
 end
-fn check_frames(label: string, protos: [FunctionProto]) -> i32 = do
-  let mut args: [Value] = []
-  check_same(label, run_program_with_args(heap_new(), protos, 0, args), run_state_program(heap_new(), protos, 0, args))
-end
-fn gate_frames(status: i32, label: string, protos: [FunctionProto]) -> i32 = do
-  if status != 0 then
-    return status
-  end
-  check_frames(label, protos)
-end
-fn prototype(words: [i32], constants: [Value], register_count: i32) -> FunctionProto =
-  FunctionProto { words: words, constants: constants, register_count: register_count }
-fn push_prototype(prototypes: [FunctionProto], item: FunctionProto) -> [FunctionProto] = do
-  let mut next = prototypes
-  next.push(item)
-  next
-end
-fn int_constants(number: i32) -> [Value] = do
-  let mut constants: [Value] = []
-  constants.push(int_value(number))
-  constants
-end
-fn source_words(is_local: i32, index: i32) -> [i32] = do
-  let mut words: [i32] = []
-  words.push(instruction_upvalue_source_word(is_local, index))
-  words
-end
-fn local_sources(register_index: i32) -> [i32] = source_words(1, register_index)
-fn parent_sources() -> [i32] = source_words(0, 0)
-fn empty_constants() -> [Value] = do
-  let mut constants: [Value] = []
-  constants
-end
-fn call_integer_prototypes() -> [FunctionProto] = do
-  const words = chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_call(1, 0, 0)), instruction_words_return(1))
-  push_prototype([], prototype(words, int_constants(0), 2))
-end
-fn argument_prototypes() -> [FunctionProto] = do
-  const callee = chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_binary(instruction_opcode_add(), 2, 0, 1)), instruction_words_return(2))
-  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
-  push_prototype(push_prototype([], prototype(entry, int_constants(41), 3)), prototype(callee, int_constants(1), 3))
-end
-fn isolation_prototypes() -> [FunctionProto] = do
-  const callee = chain(chain([], instruction_words_load_const(1, 0)), instruction_words_return(1))
-  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, [])), instruction_words_call(2, 0, 1)), instruction_words_binary(instruction_opcode_add(), 3, 1, 2)), instruction_words_return(3))
-  push_prototype(push_prototype([], prototype(entry, int_constants(99), 4)), prototype(callee, int_constants(1), 2))
-end
-fn capture_entry(callee_words: [i32], callee_constants: [Value], callee_registers: i32, captured: i32) -> [FunctionProto] = do
-  const entry = chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_return(2))
-  push_prototype(push_prototype([], prototype(entry, int_constants(captured), 3)), prototype(callee_words, callee_constants, callee_registers))
-end
-fn capture_local_prototypes() -> [FunctionProto] =
-  capture_entry(chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0)), empty_constants(), 1, 9)
-fn set_upvalue_prototypes() -> [FunctionProto] = do
-  const callee = chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_set_upval(0, 0)), instruction_words_get_upval(1, 0)), instruction_words_return(1))
-  capture_entry(callee, int_constants(4), 2, 0)
-end
-fn parent_prototypes() -> [FunctionProto] = do
-  const inner = chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0))
-  const middle = chain(chain([], instruction_words_make_closure(0, 2, parent_sources())), instruction_words_return(0))
-  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_call(3, 2, 0)), instruction_words_return(3))
-  push_prototype(push_prototype(push_prototype([], prototype(entry, int_constants(5), 4)), prototype(middle, empty_constants(), 1)), prototype(inner, empty_constants(), 1))
-end
-fn recursive_callee_words() -> [i32] =
-  chain(chain(chain(chain(chain(chain(chain(chain(chain(chain(chain(chain([], instruction_words_load_const(2, 0)), instruction_words_binary(instruction_opcode_le(), 3, 1, 2)), instruction_words_jump_if_false(3, 2)), instruction_words_load_const(4, 0)), instruction_words_return(4)), instruction_words_load_const(5, 1)), instruction_words_binary(instruction_opcode_sub(), 6, 1, 5)), instruction_words_move(1, 0)), instruction_words_move(2, 6)), instruction_words_call(7, 0, 2)), instruction_words_load_const(8, 1)), instruction_words_binary(instruction_opcode_add(), 9, 7, 8)), instruction_words_return(9))
-fn recursive_prototypes() -> [FunctionProto] = do
-  const entry = chain(chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(2, 0)), instruction_words_move(1, 0)), instruction_words_call(3, 0, 2)), instruction_words_return(3))
-  push_prototype(push_prototype([], prototype(entry, int_constants(8), 4)), prototype(recursive_callee_words(), two_values(int_value(0), int_value(1)), 10))
-end
-fn stack_prototypes() -> [FunctionProto] = do
-  const callee = chain(chain(chain([], instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
-  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
-  push_prototype(push_prototype([], prototype(entry, empty_constants(), 3)), prototype(callee, empty_constants(), 3))
-end
-fn bad_closure_prototypes() -> [FunctionProto] = do
-  const words = chain(chain([], instruction_words_call(1, 0, 0)), instruction_words_return(1))
-  push_prototype([], prototype(words, empty_constants(), 2))
-end
-fn check_bad_closure() -> i32 = do
-  let old_alloc = heap_alloc_closure(heap_new(), 7, 0)
-  let new_alloc = heap_alloc_closure(heap_new(), 7, 0)
-  let mut old_args: [Value] = []
-  old_args.push(old_alloc.value)
-  let mut new_args: [Value] = []
-  new_args.push(new_alloc.value)
-  check_same("call_proto_out_of_range", run_program_with_args(old_alloc.heap, bad_closure_prototypes(), 0, old_args), run_state_program(new_alloc.heap, bad_closure_prototypes(), 0, new_args))
-end
-fn gate_bad_closure(status: i32) -> i32 = do
-  if status != 0 then
-    return status
-  end
-  check_bad_closure()
-end
 fn gate_arithmetic(status: i32) -> i32 = do
   if status != 0 then
     return status
   end
   check_arithmetic()
+end
+fn push_constant(constants: [Value], value: Value) -> [Value] = do
+  let mut next = constants
+  next.push(value)
+  next
+end
+fn three_values(first: Value, second: Value, third: Value) -> [Value] =
+  push_constant(two_values(first, second), third)
+fn four_values(first: Value, second: Value, third: Value, fourth: Value) -> [Value] =
+  push_constant(three_values(first, second, third), fourth)
+fn no_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants
+end
+fn new_array_words() -> [i32] =
+  chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_return(0))
+fn array_round_trip_words() -> [i32] = do
+  let head = chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_load_const(2, 1))
+  chain(chain(chain(chain(head, instruction_words_load_const(3, 2)), instruction_words_set_index(0, 2, 3)), instruction_words_get_index(4, 0, 2)), instruction_words_return(4))
+end
+fn record_round_trip_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_new_record(0, 2)), instruction_words_load_const(1, 0)), instruction_words_set_prop(0, 1, 1)), instruction_words_get_prop(2, 0, 1)), instruction_words_return(2))
+fn indexed_get_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_load_const(2, 1)), instruction_words_get_index(3, 0, 2)), instruction_words_return(3))
+fn indexed_set_words() -> [i32] =
+  chain(chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_load_const(2, 1)), instruction_words_load_const(3, 2)), instruction_words_set_index(0, 2, 3)), instruction_words_return(3))
+fn record_get_index_words() -> [i32] =
+  chain(chain(chain(chain([], instruction_words_new_record(0, 1)), instruction_words_load_const(1, 0)), instruction_words_get_index(2, 0, 1)), instruction_words_return(2))
+fn scalar_get_index_words() -> [i32] =
+  chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_load_const(1, 1)), instruction_words_get_index(2, 0, 1)), instruction_words_return(2))
+fn record_set_index_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_new_record(0, 1)), instruction_words_load_const(1, 0)), instruction_words_load_const(2, 1)), instruction_words_set_index(0, 1, 2)), instruction_words_return(2))
+fn scalar_set_index_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_load_const(1, 1)), instruction_words_load_const(2, 2)), instruction_words_set_index(0, 1, 2)), instruction_words_return(2))
+fn get_prop_past_words() -> [i32] =
+  chain(chain(chain([], instruction_words_new_record(0, 1)), instruction_words_get_prop(1, 0, 1)), instruction_words_return(1))
+fn array_get_prop_words() -> [i32] =
+  chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_get_prop(2, 0, 0)), instruction_words_return(2))
+fn scalar_get_prop_words() -> [i32] =
+  chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_get_prop(1, 0, 0)), instruction_words_return(1))
+fn set_prop_past_words() -> [i32] =
+  chain(chain(chain(chain([], instruction_words_new_record(0, 1)), instruction_words_load_const(1, 0)), instruction_words_set_prop(0, 1, 1)), instruction_words_return(1))
+fn array_set_prop_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_load_const(2, 1)), instruction_words_set_prop(0, 0, 2)), instruction_words_return(2))
+fn scalar_set_prop_words() -> [i32] =
+  chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_load_const(1, 1)), instruction_words_set_prop(0, 0, 1)), instruction_words_return(1))
+fn barrier_words() -> [i32] = do
+  let head = chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_load_const(2, 1)), instruction_words_load_const(3, 2))
+  chain(chain(chain(chain(chain(head, instruction_words_set_index(0, 2, 3)), instruction_words_new_record(4, 1)), instruction_words_load_const(5, 3)), instruction_words_set_prop(4, 0, 5)), instruction_words_return(3))
+end
+fn live_words() -> [i32] =
+  chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_new_array(2, 1)), instruction_words_new_record(3, 1)), instruction_words_return(0))
+fn array_alias_words() -> [i32] = do
+  let head = chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_move(2, 0)), instruction_words_load_const(3, 1))
+  chain(chain(chain(chain(head, instruction_words_load_const(4, 2)), instruction_words_set_index(0, 3, 4)), instruction_words_get_index(5, 2, 3)), instruction_words_return(5))
+end
+fn record_alias_words() -> [i32] =
+  chain(chain(chain(chain(chain(chain([], instruction_words_new_record(0, 1)), instruction_words_move(1, 0)), instruction_words_load_const(2, 0)), instruction_words_set_prop(0, 0, 2)), instruction_words_get_prop(3, 1, 0)), instruction_words_return(3))
+fn run_heap_cases(status: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  let mut next = check_single("new_array_negative", new_array_words(), one_integer(0 - 1), 2)
+  next = gate_single(next, "new_array", new_array_words(), one_integer(2), 2)
+  next = gate_single(next, "array_round_trip", array_round_trip_words(), three_values(int_value(2), int_value(1), int_value(42)), 5)
+  next = gate_single(next, "record_round_trip", record_round_trip_words(), one_integer(7), 3)
+  next = gate_single(next, "new_array_bool", new_array_words(), push_constant(no_constants(), bool_value(false)), 2)
+  next = gate_single(next, "get_index_negative", indexed_get_words(), two_values(int_value(1), int_value(0 - 1)), 4)
+  next = gate_single(next, "get_index_past", indexed_get_words(), two_values(int_value(1), int_value(1)), 4)
+  next = gate_single(next, "get_index_bool", indexed_get_words(), two_values(int_value(1), bool_value(true)), 4)
+  next = gate_single(next, "get_index_record", record_get_index_words(), one_integer(0), 3)
+  next = gate_single(next, "get_index_int", scalar_get_index_words(), two_values(int_value(0), int_value(0)), 3)
+  next = gate_single(next, "set_index_negative", indexed_set_words(), three_values(int_value(1), int_value(0 - 1), int_value(4)), 4)
+  next = gate_single(next, "set_index_past", indexed_set_words(), three_values(int_value(1), int_value(1), int_value(4)), 4)
+  next = gate_single(next, "set_index_bool", indexed_set_words(), three_values(int_value(1), bool_value(false), int_value(4)), 4)
+  next = gate_single(next, "set_index_record", record_set_index_words(), two_values(int_value(0), int_value(4)), 3)
+  next = gate_single(next, "set_index_int", scalar_set_index_words(), three_values(int_value(0), int_value(0), int_value(4)), 3)
+  next = gate_single(next, "get_prop_past", get_prop_past_words(), no_constants(), 2)
+  next = gate_single(next, "get_prop_array", array_get_prop_words(), one_integer(1), 3)
+  next = gate_single(next, "get_prop_int", scalar_get_prop_words(), one_integer(0), 2)
+  next = gate_single(next, "set_prop_past", set_prop_past_words(), one_integer(8), 2)
+  next = gate_single(next, "set_prop_array", array_set_prop_words(), two_values(int_value(1), int_value(8)), 3)
+  next = gate_single(next, "set_prop_int", scalar_set_prop_words(), two_values(int_value(0), int_value(8)), 2)
+  next = gate_single(next, "write_barrier", barrier_words(), four_values(int_value(1), int_value(0), int_value(5), int_value(6)), 6)
+  next = gate_single(next, "live_objects", live_words(), one_integer(1), 4)
+  next = gate_single(next, "array_alias", array_alias_words(), three_values(int_value(1), int_value(0), int_value(42)), 6)
+  gate_single(next, "record_alias", record_alias_words(), one_integer(9), 4)
 end
 fn run_cases() -> i32 = do
   let mut status = check_single("load_const_narrow", load_and_return_words(0), one_integer(42), 1)
@@ -382,15 +378,8 @@ fn run_cases() -> i32 = do
   status = gate_program(status, "entry_proto_index_high", return_proto(0, 1), 1, empty_arguments())
   status = gate_program(status, "entry_proto_index_negative", return_proto(0, 1), 0 - 1, empty_arguments())
   status = gate_arithmetic(status)
-  status = gate_frames(status, "call_integer", call_integer_prototypes())
-  status = gate_frames(status, "call_argument", argument_prototypes())
-  status = gate_frames(status, "register_isolation", isolation_prototypes())
-  status = gate_frames(status, "capture_local", capture_local_prototypes())
-  status = gate_frames(status, "set_upvalue", set_upvalue_prototypes())
-  status = gate_frames(status, "capture_parent", parent_prototypes())
-  status = gate_frames(status, "recursion_depth_8", recursive_prototypes())
-  status = gate_frames(status, "stack_depth", stack_prototypes())
-  gate_bad_closure(status)
+  status = run_unified_executor_frame_cases(status)
+  run_heap_cases(status)
 end
 fn main() -> i32 = do
   const status = run_cases()
