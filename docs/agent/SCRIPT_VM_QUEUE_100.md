@@ -120,10 +120,10 @@ Sonnet доступен очереди только через соседний 
 
 Следующий ход видит `consult_ready` и первую строку ответа `consult_step: <N> grounds`.
 
-- `verdict: stop` или пустой verdict — `consult_verdict: stop`, `status: blocked`, код не менять, остановиться. Основание достаточное, нужен человек.
-- `verdict: amend` — один раз поправить правило или раннер. Шаг `next_step` в этом ходе не начинать.
-  - Можно править в этом файле разделы «Консультация при остановке», «Проверка основания остановки» и «Идентичный промпт очереди», дописать Decision log `### S<N> — основание остановки`, и править уже закоммиченный очередью `scripts/run_script_vm_*.rb` только в захвате вывода процесса, кодах выхода и таймаутах.
-  - `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**`, смена контракта шага и правка тестов шага — это `stop`: код не менять.
+- `verdict: stop` или пустой verdict — если совет описывает правку только карточки текущего шага (поля `sabotage`, `gate`, `red`, `green`, `contract`, `done_when`) или раннера в рамках пункта `amend` ниже, выполнить её как `amend` и не замирать. Иначе `consult_verdict: stop`, `status: blocked`, код не менять, остановиться.
+- `verdict: amend` — один раз поправить правило, карточку текущего шага или раннер. Шаг `next_step` в этом ходе не начинать.
+  - Можно править в этом файле разделы «Консультация при остановке», «Проверка основания остановки» и «Идентичный промпт очереди», поля `sabotage`, `gate`, `red`, `green`, `contract`, `done_when` карточки текущего шага, дописать Decision log `### S<N> — основание остановки`, и править уже закоммиченный очередью `scripts/run_script_vm_*.rb` в захвате вывода процесса, кодах выхода, таймаутах и сравнении записанных файлов бенча.
+  - `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**` и правка теста так, чтобы реальный баг VM проходил — это `stop`: код не менять.
   - После принятой правки: `consult_count: 0`, `consult_response` и `consult_verdict` пустые, `status: ready`, `next_step` не менять. Коммит явным списком. Сообщение `script_vm queue step <N>: правка правила остановки`.
 
 `status: blocked` при `consult_verdict: stop` или `over_budget`, либо при `consult_count` больше 1: API не вызывать, шаг не повторять, остановиться.
@@ -142,7 +142,7 @@ Sonnet доступен очереди только через соседний 
 3. Если current_step больше 0, команда `git log --oneline -1 --grep "^script_vm queue step <current_step>:"` обязана найти коммит. Не нашла — status blocked, consult_count не меняй, last_result «нет коммита шага <current_step>», остановись. Sonnet не вызывай.
 4. Если status равен blocked и consult_verdict равен stop или over_budget — API не вызывай, шаг не повторяй, остановись: основание подтверждено либо запрос сверх потолка. Если status равен blocked и consult_count равен 1 — код не правь. Выполни раздел «Проверка основания остановки» и остановись. Если status равен blocked и consult_count больше 1 — API не вызывай, шаг не повторяй, остановись.
 5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Если в consult-файле есть строка `kind: grounds`, выполни раздел «Проверка основания остановки», иначе «Консультация при остановке». Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`. Не вызывай субагента Cursor и не зови другую модель.
-6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: stop` или пустой verdict — status blocked, consult_verdict stop, код не меняй, остановись. `verdict: amend` — один раз примени раздел «Проверка основания остановки»; совет про compiler/ или lib/mlc/ запиши как stop и код не меняй. Иначе ищи `verdict:` совета по шагу. human, пустой verdict или over_budget: status blocked, consult_verdict human (для over_budget — over_budget), код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету, только внутри allowed_files. Совет про compiler/ или lib/mlc/ не выполняй: consult_verdict human, остановись.
+6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: amend` — один раз примени раздел «Проверка основания остановки». `verdict: stop` или пустой verdict — если совет описывает правку только карточки текущего шага или раннера в рамках того же раздела, выполни её как amend и не замирай; иначе status blocked, consult_verdict stop, код не меняй, остановись. Совет про compiler/ или lib/mlc/ запиши как stop и код не меняй. Иначе ищи `verdict:` совета по шагу. human, пустой verdict или over_budget: status blocked, consult_verdict human (для over_budget — over_budget), код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету, только внутри allowed_files. Совет про compiler/ или lib/mlc/ не выполняй: consult_verdict human, остановись.
 7. Иначе сразу запиши в STATE: status: in_progress (остальные поля не менять) и выполни ровно шаг next_step.
 8. Следуй полям шага: depends уже закоммичены; правь только allowed_files; red до green; запусти gate точно как записано; выполни sabotage, если он не «none», и верни файл в исходное состояние (`git checkout -- <файл>` для файла, закоммиченного ранее, иначе обратной правкой), затем повтори gate и убедись, что он снова зелёный.
 9. Не редактируй docs/PLAN.md, docs/agent/SESSION.md, docs/agent/CONTINUITY.md, compiler/ (включая compiler/vm/), lib/mlc/, misc/textui/, misc/editor/. Не запускай compiler/build.sh, self-host diff, пересборку compiler/out/mlcc. Чужие незакоммиченные правки в рабочем дереве не трогай.
@@ -429,7 +429,7 @@ Sonnet доступен очереди только через соседний 
 - red: none — замер
 - green: `BENCH(--record baseline)` затем `BENCH(--record current)`; дописать `### S16 — baseline` с 6 числами, датой и машиной (`uname -m`, `nproc`)
 - gate: `test -s script_vm/tests/bench_baseline.txt` и `wc -l script_vm/tests/bench_baseline.txt` → `6`; `BENCH(--max-ratio B1.ns_per_insn=baseline:300)` → exit 0 (проверка, что раннер читает файл)
-- sabotage: `BENCH(--require-lower B1.ns_per_insn=baseline)` сразу после записи обязан дать exit 1 (значение не строго меньше самого себя)
+- sabotage: записать вручную `script_vm/tests/bench_current.txt` со значением `B1.ns_per_insn 1` и вызвать `BENCH(--require-lower B1.ns_per_insn=current)` → exit 1; вернуть прежнее содержимое `bench_current.txt`. Файл baseline не менять
 - performance: эти 6 чисел — эталон для шагов 19, 32, 33, 46, 47
 - done_when: оба файла есть, S16 дописан
 - state_update: 6 чисел baseline
@@ -931,7 +931,7 @@ Sonnet доступен очереди только через соседний 
 - red: none — замер
 - green: `BENCH(--record current)`; дописать `### S47 — итог пола производительности`: таблица baseline → current по 6 метрикам и отношение
 - gate: `BENCH(--require-lower B1.ns_per_insn=baseline --require-lower B2.ns_per_insn=baseline --require-lower B3.ns_per_call=baseline --require-lower B4.ns_per_alloc_n4000=baseline --max-absolute B4.scaling_ratio_x100=250)` → exit 0
-- sabotage: `BENCH(--require-lower B1.ns_per_insn=current)` сразу после записи обязан дать exit 1 (равенство не «строго ниже»)
+- sabotage: записать вручную `script_vm/tests/bench_current.txt` со значением `B1.ns_per_insn 1` и вызвать `BENCH(--require-lower B1.ns_per_insn=current)` → exit 1; вернуть файл к записанному current
 - performance: итоговая таблица в S47; если какой-то `--require-lower` не прошёл — `blocked` с числами (правило 12)
 - done_when: S47 дописан, gate зелёный
 - state_update: таблица baseline → current
@@ -1952,3 +1952,18 @@ Sonnet доступен очереди только через соседний 
 ### S10 — основание остановки
 
 Остановка шага 10 на человеке недостаточна. Контракт шага не меняется: `allowed_files`, gate и тест те же. `capture_process` в `scripts/run_script_vm_unit.rb` читал stdout и stderr только после `Process.wait2`. Предупреждения компиляции заполняли pipe, `build_bin` умирал по таймауту 600 с с пустым выводом. Прямой запуск того же бинаря печатал `char_arith checks=64` и `[script_vm] char_arith_unit ok`. Раннер читает оба потока параллельно с процессом. Таймаут по-прежнему возвращает пустой вывод и `:timeout`.
+
+### S16 — baseline
+
+Запись 2026-10-10, машина `x86_64`, `nproc` 8. Числа — минимум из 5 запусков `ruby scripts/run_script_vm_bench.rb --record baseline`, без округления.
+
+- `B1.ns_per_insn` 176
+- `B2.ns_per_insn` 302
+- `B3.ns_per_call` 8023
+- `B4.ns_per_alloc_n1000` 22066
+- `B4.ns_per_alloc_n4000` 163446
+- `B4.scaling_ratio_x100` 671
+
+### S16 — основание остановки
+
+Саботаж «живой замер строго меньше только что записанного baseline» снят. `--require-lower` всегда перемеривает минимум из 5 запусков, и шум 176 → 161 давал exit 0. Саботаж шага 16 и такой же самосравнивающий саботаж шага 47 проверяют раннер синтетическим эталоном `B1.ns_per_insn 1` во временном `bench_current.txt`, затем файл возвращается. Baseline не перезаписывается. Если совет описывает только такую правку карточки шага или раннера, исполнитель применяет её и не ждёт человека.

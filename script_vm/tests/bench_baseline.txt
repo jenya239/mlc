@@ -1,0 +1,6 @@
+B1.ns_per_insn 176
+B2.ns_per_insn 302
+B3.ns_per_call 8023
+B4.ns_per_alloc_n1000 22066
+B4.ns_per_alloc_n4000 163446
+B4.scaling_ratio_x100 671
