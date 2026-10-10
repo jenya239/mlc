@@ -1,0 +1,160 @@
+import {
+  Value,
+  ValueNil,
+  ValueInt32,
+  ValueHeapRef,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  Heap,
+  heap_new,
+  heap_collect,
+  heap_live_object_count,
+  heap_in_place_alloc_record,
+  heap_in_place_write,
+  heap_in_place_read,
+  heap_in_place_element_count,
+  heap_in_place_root_push,
+  heap_slot_count
+} from '../heap'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm heap_reuse_unit] FAIL: " + message)
+  1
+end
+
+fn heap_object_id(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => object_id,
+    _ => 0 - 1
+  }
+
+fn expect_count(actual: i32, expected: i32, label: string) -> i32 = do
+  if actual == expected then
+    return 0
+  end
+  fail(label + " expected " + expected.to_string() + " got " + actual.to_string())
+end
+
+fn expect_object_id(value: Value, expected: i32, label: string) -> i32 =
+  expect_count(heap_object_id(value), expected, label)
+
+fn encoded_nil() -> Value = value_encode(ValueNil)
+
+fn fields_are_nil(heap: ref mut Heap, record: Value) -> bool = do
+  const count = heap_in_place_element_count(heap, record)
+  if count != 2 then
+    return false
+  end
+  let mut index = 0
+  let mut matched = true
+  while index < count && matched do
+    const same = value_raw_equal(heap_in_place_read(heap, record, index), encoded_nil())
+    matched = matched && same
+    index = index + 1
+  end
+  matched
+end
+
+fn write_both_fields(heap: ref mut Heap, record: Value, number: i32) -> unit = do
+  heap_in_place_write(heap, record, 0, value_encode(ValueInt32(number)))
+  heap_in_place_write(heap, record, 1, value_encode(ValueInt32(number + 1)))
+end
+
+fn fresh_record_status(
+  heap: ref mut Heap,
+  record: Value,
+  expected_object_id: i32,
+  expected_live: i32,
+  expected_slots: i32,
+  label: string
+) -> i32 = do
+  const object_status = expect_object_id(record, expected_object_id, label + "_object_id")
+  if object_status != 0 then
+    return object_status
+  end
+  const live_status = expect_count(heap_live_object_count(heap), expected_live, label + "_live")
+  if live_status != 0 then
+    return live_status
+  end
+  const slot_status = expect_count(heap_slot_count(heap), expected_slots, label + "_slots")
+  if slot_status != 0 then
+    return slot_status
+  end
+  const flag_status = expect_count(heap.slots[expected_object_id].header.gc_flags, 0, label + "_gc_flags")
+  if flag_status != 0 then
+    return flag_status
+  end
+  if fields_are_nil(heap, record) then
+    return 0
+  end
+  fail(label + "_nil")
+end
+
+fn allocate_initial(heap: ref mut Heap) -> i32 = do
+  let mut index = 0
+  let mut records: [Value] = []
+  while index < 4 do
+    const record = heap_in_place_alloc_record(heap, 2)
+    records.push(record)
+    const object_status = expect_object_id(record, index, "initial_object_id")
+    if object_status != 0 then
+      return object_status
+    end
+    const live_status = expect_count(heap_live_object_count(heap), index + 1, "initial_live")
+    if live_status != 0 then
+      return live_status
+    end
+    index = index + 1
+  end
+  const slot_status = expect_count(heap_slot_count(heap), 4, "initial_slots")
+  if slot_status != 0 then
+    return slot_status
+  end
+  write_both_fields(heap, records[0], 10)
+  write_both_fields(heap, records[2], 20)
+  write_both_fields(heap, records[3], 30)
+  heap_in_place_root_push(heap, records[1])
+  0
+end
+
+fn main() -> i32 = do
+  let mut heap = heap_new()
+  const initial_status = allocate_initial(heap)
+  if initial_status != 0 then
+    return initial_status
+  end
+  heap = heap_collect(heap)
+  const collected_live = expect_count(heap_live_object_count(heap), 1, "collected_live")
+  if collected_live != 0 then
+    return collected_live
+  end
+  const collected_slots = expect_count(heap_slot_count(heap), 4, "collected_slots")
+  if collected_slots != 0 then
+    return collected_slots
+  end
+  const first = heap_in_place_alloc_record(heap, 2)
+  const first_status = fresh_record_status(heap, first, 3, 2, 4, "reuse_0")
+  if first_status != 0 then
+    return first_status
+  end
+  const second = heap_in_place_alloc_record(heap, 2)
+  const second_status = fresh_record_status(heap, second, 2, 3, 4, "reuse_1")
+  if second_status != 0 then
+    return second_status
+  end
+  const third = heap_in_place_alloc_record(heap, 2)
+  const third_status = fresh_record_status(heap, third, 0, 4, 4, "reuse_2")
+  if third_status != 0 then
+    return third_status
+  end
+  const fourth = heap_in_place_alloc_record(heap, 2)
+  const fourth_status = fresh_record_status(heap, fourth, 4, 5, 5, "reuse_3")
+  if fourth_status != 0 then
+    return fourth_status
+  end
+  println("[script_vm] heap_reuse_unit ok")
+  0
+end
