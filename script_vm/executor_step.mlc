@@ -1,0 +1,13 @@
+import { VmState } from './vm_state'
+
+export fn executor_step_continue() -> i32 = 0
+
+export fn executor_step_returned() -> i32 = 1
+
+export fn executor_step_error() -> i32 = 2
+
+export fn executor_fail(state: ref mut VmState, code: string, at: i32) -> i32 = do
+  state.error_code = code
+  state.error_at = at
+  executor_step_error()
+end

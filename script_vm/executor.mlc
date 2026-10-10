@@ -1,0 +1,215 @@
+import { Value, ValueNil, value_encode } from './value'
+import {
+  Instruction,
+  DecodedAbc,
+  instruction_decode,
+  instruction_word_span,
+  instruction_load_const_index,
+  instruction_jump_offset,
+  instruction_opcode_load_const,
+  instruction_opcode_move,
+  instruction_opcode_return,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false
+} from './bytecode'
+import { VerifyOk, VerifyErr, verify_function } from './verifier'
+import { Heap } from './heap'
+import {
+  FunctionProto,
+  RunHeapResult,
+  RunOk,
+  RunErr,
+  run_err_verify,
+  run_err_type,
+  run_err_no_return,
+  run_err_unsupported_opcode
+} from './run_result'
+import {
+  VmState,
+  vm_state_new,
+  vm_state_push_frame,
+  vm_state_pop_frame,
+  vm_state_frame_depth,
+  vm_state_register,
+  vm_state_set_register,
+  vm_state_program_counter,
+  vm_state_set_program_counter,
+  vm_state_frame_proto,
+  vm_state_frame_return_register
+} from './vm_state'
+import { value_is_falsy } from './arith'
+import {
+  executor_step_continue,
+  executor_step_returned,
+  executor_fail
+} from './executor_step'
+
+type VerifyScan = { failed: bool, at: i32 }
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+fn verify_protos(protos: [FunctionProto]) -> VerifyScan = do
+  let mut proto_index = 0
+  let mut failed = false
+  let mut at = 0
+  while proto_index < protos.length() && !failed do
+    let proto = protos[proto_index]
+    let verified = verify_function(proto.words, proto.register_count, proto.constants.length())
+    match verified {
+      VerifyErr(_code, word_index) => do
+        failed = true
+        at = word_index
+      end,
+      VerifyOk => do end
+    }
+    proto_index = proto_index + 1
+  end
+  VerifyScan { failed: failed, at: at }
+end
+
+fn place_arguments(state: ref mut VmState, register_count: i32, args: [Value]) -> unit = do
+  let mut arg_index = 0
+  while arg_index < args.length() && arg_index < register_count do
+    vm_state_set_register(state, arg_index, args[arg_index])
+    arg_index = arg_index + 1
+  end
+end
+
+fn executor_exec_load_const(
+  state: ref mut VmState,
+  proto: FunctionProto,
+  decoded: DecodedAbc,
+  words: [i32],
+  primary: i32,
+  span: i32
+) -> i32 = do
+  let constant_index = instruction_load_const_index(words, primary)
+  vm_state_set_register(state, decoded.a, proto.constants[constant_index])
+  vm_state_set_program_counter(state, primary + span)
+  executor_step_continue()
+end
+
+fn executor_exec_move(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
+  vm_state_set_register(state, decoded.a, vm_state_register(state, decoded.b))
+  vm_state_set_program_counter(state, primary + span)
+  executor_step_continue()
+end
+
+fn executor_exec_return(state: ref mut VmState, decoded: DecodedAbc) -> i32 = do
+  let value = vm_state_register(state, decoded.a)
+  if vm_state_frame_depth(state) == 1 then
+    state.return_value = value
+    executor_step_returned()
+  else
+    let return_register = vm_state_frame_return_register(state)
+    vm_state_pop_frame(state)
+    vm_state_set_register(state, return_register, value)
+    executor_step_continue()
+  end
+end
+
+fn executor_exec_jump(state: ref mut VmState, words: [i32], primary: i32, span: i32) -> i32 = do
+  let offset = instruction_jump_offset(words, primary)
+  vm_state_set_program_counter(state, primary + span + offset)
+  executor_step_continue()
+end
+
+fn executor_exec_jump_if_false(
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  words: [i32],
+  primary: i32,
+  span: i32
+) -> i32 = do
+  if value_is_falsy(vm_state_register(state, decoded.a)) then
+    executor_exec_jump(state, words, primary, span)
+  else
+    vm_state_set_program_counter(state, primary + span)
+    executor_step_continue()
+  end
+end
+
+fn executor_exec(
+  state: ref mut VmState,
+  proto: FunctionProto,
+  decoded: DecodedAbc,
+  words: [i32],
+  primary: i32,
+  span: i32
+) -> i32 = do
+  if decoded.opcode == instruction_opcode_load_const() then
+    executor_exec_load_const(state, proto, decoded, words, primary, span)
+  else if decoded.opcode == instruction_opcode_move() then
+    executor_exec_move(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_return() then
+    executor_exec_return(state, decoded)
+  else if decoded.opcode == instruction_opcode_jump() then
+    executor_exec_jump(state, words, primary, span)
+  else if decoded.opcode == instruction_opcode_jump_if_false() then
+    executor_exec_jump_if_false(state, decoded, words, primary, span)
+  else
+    executor_fail(state, run_err_unsupported_opcode(), primary)
+  end
+end
+
+fn executor_step_one(state: ref mut VmState, protos: [FunctionProto]) -> i32 = do
+  let proto = protos[vm_state_frame_proto(state)]
+  let words = proto.words
+  let program_counter = vm_state_program_counter(state)
+  if program_counter >= words.length() then
+    executor_fail(state, run_err_no_return(), words.length())
+  else
+    let primary = program_counter
+    let decoded = instruction_decode(Instruction { word: words[primary] })
+    let span = instruction_word_span(words, primary)
+    executor_exec(state, proto, decoded, words, primary, span)
+  end
+end
+
+fn execute_state(heap: Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value]) -> RunHeapResult = do
+  let mut heap_state = heap
+  let mut state = vm_state_new()
+  let entry = protos[entry_proto_index]
+  vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
+  place_arguments(state, entry.register_count, args)
+  let mut finished = false
+  while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished do
+    let step = executor_step_one(state, protos)
+    if step == executor_step_returned() then
+      finished = true
+    end
+  end
+  if state.error_code != "" then
+    RunHeapResult { heap: heap_state, result: RunErr(state.error_code, state.error_at) }
+  else
+    RunHeapResult { heap: heap_state, result: RunOk(state.return_value) }
+  end
+end
+
+export fn run_state_program(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value]
+) -> RunHeapResult = do
+  let verification = verify_protos(protos)
+  if verification.failed then
+    RunHeapResult { heap: heap, result: RunErr(run_err_verify(), verification.at) }
+  else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
+    RunHeapResult { heap: heap, result: RunErr(run_err_type(), 0) }
+  else
+    execute_state(heap, protos, entry_proto_index, args)
+  end
+end
+
+export fn run_state_single_function(
+  heap: Heap,
+  words: [i32],
+  constants: [Value],
+  register_count: i32
+) -> RunHeapResult = do
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: register_count })
+  let mut args: [Value] = []
+  run_state_program(heap, protos, 0, args)
+end
