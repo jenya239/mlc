@@ -1,0 +1,102 @@
+import { Value, ValueNil, value_encode } from './value'
+
+export type ObjectHeader = {
+  type_id: i32,
+  gc_flags: i32,
+  object_flags: i32,
+  shape_or_meta: i64
+}
+
+export type HeapSlot = {
+  header: ObjectHeader,
+  child: Value,
+  elements: [Value],
+  size_class: i32,
+  live: bool
+}
+
+export type Heap = {
+  slots: [HeapSlot],
+  freelist_32: [i32],
+  freelist_64: [i32],
+  freelist_128: [i32],
+  freelist_256: [i32],
+  roots: [Value],
+  live_count: i32,
+  write_barrier_hits: i32,
+  scratch_object_id: i32
+}
+
+export type HeapAlloc = { heap: Heap, value: Value }
+
+export fn heap_type_cell() -> i32 = 1
+export fn heap_type_array() -> i32 = 2
+export fn heap_type_record() -> i32 = 3
+export fn heap_type_closure() -> i32 = 4
+
+export fn heap_new() -> Heap =
+  Heap {
+    slots: [],
+    freelist_32: [],
+    freelist_64: [],
+    freelist_128: [],
+    freelist_256: [],
+    roots: [],
+    live_count: 0,
+    write_barrier_hits: 0,
+    scratch_object_id: 0 - 1
+  }
+
+export fn heap_live_object_count(heap: Heap) -> i32 = heap.live_count
+
+export fn heap_write_barrier_hits(heap: Heap) -> i32 = heap.write_barrier_hits
+
+export fn heap_size_class_bytes(size_class: i32) -> i32 =
+  if size_class == 0 then
+    32
+  else if size_class == 1 then
+    64
+  else if size_class == 2 then
+    128
+  else
+    256
+  end
+
+export fn slots_with(slots: [HeapSlot], object_id: i32, slot: HeapSlot) -> [HeapSlot] = do
+  let mut out: [HeapSlot] = []
+  let mut index = 0
+  while index < slots.length() do
+    if index == object_id then
+      out.push(slot)
+    else
+      out.push(slots[index])
+    end
+    index = index + 1
+  end
+  out
+end
+
+export fn elements_with(elements: [Value], index: i32, value: Value) -> [Value] = do
+  let mut out: [Value] = []
+  let mut cursor = 0
+  while cursor < elements.length() do
+    if cursor == index then
+      out.push(value)
+    else
+      out.push(elements[cursor])
+    end
+    cursor = cursor + 1
+  end
+  out
+end
+
+export fn make_nil_elements(length: i32) -> [Value] = do
+  let mut elements: [Value] = []
+  let mut index = 0
+  const nil_value = value_encode(ValueNil)
+  while index < length do
+    elements.push(nil_value)
+    index = index + 1
+  end
+  elements
+end

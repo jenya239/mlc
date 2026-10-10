@@ -28,7 +28,13 @@ import {
 import {
   heap_new,
   heap_live_object_count,
-  heap_write_barrier_hits
+  heap_write_barrier_hits,
+  heap_alloc_record,
+  heap_object_type_id,
+  heap_type_cell,
+  heap_type_array,
+  heap_type_record,
+  heap_type_closure
 } from '../heap'
 
 type Check = { count: i32, status: i32 }
@@ -371,6 +377,12 @@ fn main() -> i32 = do
   check = expect_count(check, heap_live_object_count(live_run.heap), 3, "heap_live_object_count", 23)
   check = expect_int32(check, execute_heap_program(array_alias_words(), length_index_value(1, int_value(0), 42), 6).result, 42, "array_alias", 24)
   check = expect_int32(check, execute_heap_program(record_alias_words(), single_int(9), 4).result, 9, "record_alias", 25)
+  const record_allocation = heap_alloc_record(heap_new(), 1)
+  check = expect_count(check, heap_object_type_id(record_allocation.heap, record_allocation.value), 3, "record_type_id", 26)
+  check = expect_count(check, heap_type_cell(), 1, "heap_type_cell", 27)
+  check = expect_count(check, heap_type_array(), 2, "heap_type_array", 28)
+  check = expect_count(check, heap_type_record(), 3, "heap_type_record", 29)
+  check = expect_count(check, heap_type_closure(), 4, "heap_type_closure", 30)
   if check.status != 0 then
     return check.status
   end
