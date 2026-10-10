@@ -17,6 +17,7 @@ registered_units = [
   ["char_arith", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/char_arith_unit.mlc"]],
   ["char_heap_ops", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/char_heap_ops_unit.mlc"]],
   ["char_frames", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/char_frames_unit.mlc"]],
+  ["char_blob", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/char_blob_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)

@@ -1,0 +1,174 @@
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  emb_ok,
+  emb_unsupported,
+  emb_verify,
+  emb_format,
+  emb_not_found,
+  emb_type,
+  emb_encode_add1_module,
+  emb_verify_module_bytes,
+  emb_call_export_bytes
+} from '../embedding'
+
+type Check = { count: i32, status: i32 }
+
+fn expected_add1_length() -> i32 = 60
+
+fn expected_magic_byte() -> i32 = 77
+
+fn expected_prefix() -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes.push(expected_magic_byte())
+  bytes.push(72)
+  bytes.push(83)
+  bytes.push(67)
+  bytes.push(1)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(1)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(4)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes
+end
+
+fn prefix_bytes(bytes: [i32], length: i32) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < length do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn replace_byte(bytes: [i32], target: i32, value: i32) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < target do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied.push(value)
+  index = target + 1
+  while index < bytes.length() do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn with_extra_byte(bytes: [i32]) -> [i32] = do
+  let mut copied = prefix_bytes(bytes, bytes.length())
+  copied.push(0)
+  copied
+end
+
+fn advance_prefix(bytes: [i32], expected: [i32], index: i32) -> i32 = do
+  if index >= expected.length() then
+    return index
+  end
+  if bytes[index] != expected[index] then
+    return 0 - (index + 1)
+  end
+  index + 1
+end
+
+fn prefix_matches(bytes: [i32]) -> bool = do
+  const expected = expected_prefix()
+  let mut index = 0
+  while index >= 0 && index < expected.length() do
+    index = advance_prefix(bytes, expected, index)
+  end
+  index == expected.length()
+end
+
+fn advance_truncation(bytes: [i32], length: i32) -> i32 = do
+  if length >= bytes.length() then
+    return length
+  end
+  if emb_verify_module_bytes(prefix_bytes(bytes, length)) == emb_ok() then
+    return 0 - 1
+  end
+  length + 1
+end
+
+fn truncations_reject(bytes: [i32]) -> bool = do
+  let mut length = 0
+  while length >= 0 && length < bytes.length() do
+    length = advance_truncation(bytes, length)
+  end
+  length == bytes.length()
+end
+
+fn integer_from_raw(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn stop(check: Check, message: string, failure_code: i32) -> Check = do
+  println("[script_vm char_blob_unit] FAIL: " + message)
+  Check { count: check.count, status: failure_code }
+end
+
+fn pass(check: Check) -> Check = Check { count: check.count + 1, status: 0 }
+
+fn expect_true(check: Check, flag: bool, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !flag then
+    return stop(check, label, failure_code)
+  end
+  pass(check)
+end
+
+fn expect_code(check: Check, actual: i32, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if actual != expected then
+    return stop(check, label + " got=" + actual.to_string(), failure_code)
+  end
+  pass(check)
+end
+
+fn main() -> i32 = do
+  let mut check = Check { count: 0, status: 0 }
+  const bytes = emb_encode_add1_module()
+  check = expect_code(check, bytes.length(), expected_add1_length(), "add1_length", 1)
+  check = expect_true(check, prefix_matches(bytes), "add1_prefix", 2)
+  check = expect_code(check, emb_verify_module_bytes(prefix_bytes(bytes, 7)), emb_format(), "short_blob", 3)
+  check = expect_code(check, emb_verify_module_bytes(replace_byte(bytes, 0, 0)), emb_unsupported(), "foreign_magic", 4)
+  check = expect_code(check, emb_verify_module_bytes(replace_byte(bytes, 4, 2)), emb_format(), "foreign_version", 5)
+  check = expect_true(check, truncations_reject(bytes), "truncation", 6)
+  check = expect_code(check, emb_verify_module_bytes(with_extra_byte(bytes)), emb_format(), "extra_tail", 7)
+  check = expect_code(check, emb_verify_module_bytes(replace_byte(bytes, 28, 1)), emb_verify(), "bad_register", 8)
+  let mut empty_arguments: [i64] = []
+  check = expect_code(check, emb_call_export_bytes(bytes, "missing", empty_arguments).code, emb_not_found(), "unknown_export", 9)
+  let mut add_arguments: [i64] = []
+  add_arguments.push(value_encode(ValueInt32(41)).raw)
+  const added = emb_call_export_bytes(bytes, "add1", add_arguments)
+  check = expect_code(check, added.code, emb_ok(), "add1_code", 10)
+  check = expect_code(check, integer_from_raw(added.raw), 42, "add1_value", 11)
+  const missing_argument = emb_call_export_bytes(bytes, "add1", empty_arguments)
+  check = expect_code(check, missing_argument.code, emb_type(), "add1_without_arguments", 12)
+  if check.status != 0 then
+    return check.status
+  end
+  println("char_blob checks=" + check.count.to_string())
+  println("[script_vm] char_blob_unit ok")
+  0
+end
