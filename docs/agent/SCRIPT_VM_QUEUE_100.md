@@ -48,7 +48,7 @@
 
 - `STATE` = `docs/agent/SCRIPT_VM_QUEUE_STATE.md`
 - `PLAN100` = `docs/agent/SCRIPT_VM_QUEUE_100.md`
-- `F0` (запрещено везде, если шаг не разрешил явно): `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**`, `docs/PLAN.md`, `docs/agent/SESSION.md`, `docs/agent/CONTINUITY.md`, любые другие `docs/**`, `runtime/**`, `scripts/run_script_vm_*_red.sh`, существующие `script_vm/tests/*_unit.mlc` и `scripts/run_script_vm_*_unit.sh`, `compiler/out/**`.
+- `F0` (запрещено везде, если шаг не разрешил явно и ответ Sonnet не назвал файл): `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**`, `docs/PLAN.md`, `docs/agent/SESSION.md`, `docs/agent/CONTINUITY.md`, любые другие `docs/**`, `runtime/**`, `scripts/run_script_vm_*_red.sh`, существующие `script_vm/tests/*_unit.mlc` и `scripts/run_script_vm_*_unit.sh`, `compiler/out/**`. Исключение — пункт 18.
 - `RUN(name)` = `ruby scripts/run_script_vm_unit.rb script_vm/tests/<name>_unit.mlc`; успех: exit 0 и в stdout строка `[script_vm] <name>_unit ok`.
 - `RED(name)` = та же команда обязана завершиться ненулевым кодом; в `last_verify` записывается первая строка отказа.
 - `GATE(list)` = `ruby scripts/run_script_vm_gate.rb <list>`; успех: exit 0 и последняя строка stdout `script_vm_gate ok units=<число имён в list>`. `GATE(all)` — без аргументов, все зарегистрированные.
@@ -74,7 +74,8 @@
 14. Коммиты: `git add <явный список путей>` (никогда `-A`, `-a`); сообщение `script_vm queue step <N>: <короткий заголовок>` (для red-шага — с суффиксом ` (red)`); без `--trailer`; без `git push`. В рабочем дереве лежат чужие незакоммиченные правки `misc/textui/**` — не трогать, не stash, не checkout. `tmp/` и `.tmp/` не коммитить (в `.gitignore`).
 15. В коммит каждого шага входят: реально изменённые файлы из `allowed_files`, `STATE`, и `PLAN100`, только если шаг дописывает Decision log.
 16. Дописывать в `PLAN100` можно только секцию `## Decision log` внизу файла: заголовок `### S<номер шага> — тема`. Остальной текст файла не править.
-17. Если шаг требует файла вне `allowed_files` или из `F0` — `blocked`, причина в `last_result`.
+17. Если шаг требует файла вне `allowed_files` или из `F0` и ответ Sonnet этот файл не назвал — `blocked`, причина в `last_result`.
+18. Ответ Sonnet, который прямо называет путь и правку, разрешает менять этот файл. `allowed_files` и `F0` на него не действуют: тест, `compiler/`, `lib/mlc/`, `misc/textui/`, `misc/editor/`, `runtime/` и прочие пути тоже. Чужой незакоммиченный файл, который ответ не назвал, не трогать. В коммит входят названные файлы и `STATE`.
 
 ### Протокол состояния (`STATE`)
 
@@ -90,7 +91,7 @@
 
 Sonnet доступен очереди только через соседний репозиторий `mlc-support`, скрипт `review_script_vm_queue_consult.rb`. Не вызывать Sonnet через субагента Cursor, Task, `cursor_llm_complete` и любой другой канал. Скрипт совета не применяет патчи и не пишет в дерево MLC.
 
-На один номер шага — один платный ответ о самом шаге. Если этот ответ или провал gate велит остановить очередь, следом один платный ответ «Проверка основания остановки»: достаточный ли повод, или правило лучше поправить. После `verdict: stop` или `over_budget` очередь ждёт человека.
+На один номер шага — один платный ответ о самом шаге. Если этот ответ или провал gate велит остановить очередь, следом один платный ответ «Проверка основания остановки»: достаточный ли повод, или правило лучше поправить. `over_budget` ждёт человека. `verdict: stop` ждёт человека только когда совет не называет файлы и правку. Если называет — исполнитель меняет эти файлы сам и не спрашивает человека. Любой названный путь разрешён (пункт 18).
 
 Ход консультации (вход: `blocked` и `consult_count: 0`, либо `consulting` без строки `kind: grounds`):
 
@@ -104,7 +105,7 @@ Sonnet доступен очереди только через соседний 
 Следующий ход видит `consult_ready`. Прочитать ответ. Скрипт пишет сверху строку `consult_step:`. Строка совета начинается с `verdict: retry`, `verdict: patch` или `verdict: human`.
 
 - `human` или пустой verdict — `status: blocked`, `consult_verdict: human`, `consult_count` оставить 1, код не менять, остановиться. Следующий ход выполняет «Проверку основания остановки», а не замирает.
-- `retry` или `patch` — один раз выполнить шаг `next_step`. Правки только в `allowed_files`. Совет, который тянет `compiler/**` или `lib/mlc/**`, не выполнять: записать `consult_verdict: human` и остановиться, как при `human`. Затем обычный gate. Успех — обычное продвижение и сброс полей консультации. Провал — `blocked`, `consult_count` остаётся 1, `consult_verdict: human`. Второй совет по шагу не запрашивать; следующий ход проверяет основание остановки.
+- `retry` или `patch` — один раз выполнить шаг `next_step` по совету. Если совет прямо называет файлы вне `allowed_files` или из `F0`, править и их (пункт 18). Затем обычный gate. Успех — обычное продвижение и сброс полей консультации. Провал — `blocked`, `consult_count` остаётся 1, `consult_verdict: human`. Второй совет по шагу не запрашивать; следующий ход проверяет основание остановки.
 
 ### Проверка основания остановки
 
@@ -120,13 +121,13 @@ Sonnet доступен очереди только через соседний 
 
 Следующий ход видит `consult_ready` и первую строку ответа `consult_step: <N> grounds`.
 
-- `verdict: stop` или пустой verdict — если совет описывает правку только карточки текущего шага (поля `sabotage`, `gate`, `red`, `green`, `contract`, `done_when`) или раннера в рамках пункта `amend` ниже, выполнить её как `amend` и не замирать. Иначе `consult_verdict: stop`, `status: blocked`, код не менять, остановиться.
-- `verdict: amend` — один раз поправить правило, карточку текущего шага или раннер. Шаг `next_step` в этом ходе не начинать.
-  - Можно править в этом файле разделы «Консультация при остановке», «Проверка основания остановки» и «Идентичный промпт очереди», поля `sabotage`, `gate`, `red`, `green`, `contract`, `done_when` карточки текущего шага, дописать Decision log `### S<N> — основание остановки`, и править уже закоммиченный очередью `scripts/run_script_vm_*.rb` в захвате вывода процесса, кодах выхода, таймаутах и сравнении записанных файлов бенча.
-  - `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**` и правка теста так, чтобы реальный баг VM проходил — это `stop`: код не менять.
-  - После принятой правки: `consult_count: 0`, `consult_response` и `consult_verdict` пустые, `status: ready`, `next_step` не менять. Коммит явным списком. Сообщение `script_vm queue step <N>: правка правила остановки`.
+- `verdict: stop` или пустой verdict — если совет прямо называет файлы и правку, выполнить её один раз, как `amend`, и не замирать. Иначе `consult_verdict: stop`, `status: blocked`, код не менять, остановиться.
+- `verdict: amend` — один раз выполнить названную правку. Шаг `next_step` в этом ходе не начинать.
+  - Любой файл, который совет прямо назвал, можно менять (пункт 18): карточка текущего шага (поля `sabotage`, `gate`, `red`, `green`, `contract`, `done_when`), разделы «Консультация при остановке», «Проверка основания остановки» и «Идентичный промпт очереди», Decision log `### S<N> — основание остановки`, раннер `scripts/run_script_vm_*.rb`, тест, `compiler/`, `lib/mlc/`, `misc/textui/`, `misc/editor/`, `runtime/`.
+  - Файл, который совет не назвал, не менять.
+  - После принятой правки: `consult_count: 0`, `consult_response` и `consult_verdict` пустые, `status: ready`, `next_step` не менять. Коммит явным списком названных файлов и `STATE`. Сообщение `script_vm queue step <N>: правка правила остановки`.
 
-`status: blocked` при `consult_verdict: stop` или `over_budget`, либо при `consult_count` больше 1: API не вызывать, шаг не повторять, остановиться.
+`status: blocked` при `consult_verdict: over_budget`: API не вызывать, шаг не повторять, остановиться. `consult_verdict: stop`: API не вызывать; если сохранённый ответ прямо называет файлы и правку, выполнить её один раз в этом ходе. Иначе остановиться и ждать человека. `consult_count` больше 1 само по себе ход не замораживает, если этот ответ ещё не применён.
 
 ### Шаблон шага
 
@@ -140,12 +141,12 @@ Sonnet доступен очереди только через соседний 
 1. Прочитай docs/agent/SCRIPT_VM_QUEUE_STATE.md и docs/agent/SCRIPT_VM_QUEUE_100.md: разделы «Общие правила», «Протокол состояния», «Консультация при остановке» и «Проверка основания остановки», затем целиком шаг с номером next_step.
 2. Если status равен queue_complete — ответь одной строкой «очередь завершена» и остановись.
 3. Если current_step больше 0, команда `git log --oneline -1 --grep "^script_vm queue step <current_step>:"` обязана найти коммит. Не нашла — status blocked, consult_count не меняй, last_result «нет коммита шага <current_step>», остановись. Sonnet не вызывай.
-4. Если status равен blocked и consult_verdict равен stop или over_budget — API не вызывай, шаг не повторяй, остановись: основание подтверждено либо запрос сверх потолка. Если status равен blocked и consult_count равен 1 — код не правь. Выполни раздел «Проверка основания остановки» и остановись. Если status равен blocked и consult_count больше 1 — API не вызывай, шаг не повторяй, остановись.
-5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Если в consult-файле есть строка `kind: grounds`, выполни раздел «Проверка основания остановки», иначе «Консультация при остановке». Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`. Не вызывай субагента Cursor и не зови другую модель.
-6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: amend` — один раз примени раздел «Проверка основания остановки». `verdict: stop` или пустой verdict — если совет описывает правку только карточки текущего шага или раннера в рамках того же раздела, выполни её как amend и не замирай; иначе status blocked, consult_verdict stop, код не меняй, остановись. Совет про compiler/ или lib/mlc/ запиши как stop и код не меняй. Иначе ищи `verdict:` совета по шагу. human, пустой verdict или over_budget: status blocked, consult_verdict human (для over_budget — over_budget), код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету, только внутри allowed_files. Совет про compiler/ или lib/mlc/ не выполняй: consult_verdict human, остановись.
+4. Если status равен blocked и consult_verdict равен over_budget — API не вызывай, шаг не повторяй, остановись: запрос сверх потолка. Если status равен blocked и consult_verdict равен stop — API не вызывай. Прочитай consult_response. Если совет прямо называет файлы и правку, выполни её один раз в этом ходе и не жди человека: любой названный путь можно менять, в том числе вне allowed_files, в compiler/, lib/mlc/, misc/textui/, misc/editor/, runtime/ и в тестах. Файл, который совет не назвал, не трогай. Если такой правки в ответе нет — остановись. Если status равен blocked и consult_count равен 1, а consult_verdict не stop — код не правь. Выполни раздел «Проверка основания остановки» и остановись. Если status равен blocked и consult_count больше 1, а ответ не называет ещё не применённую правку файлов — API не вызывай, шаг не повторяй, остановись.
+5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Если в consult-файле есть строка `kind: grounds` для этого же next_step, выполни раздел «Проверка основания остановки», иначе «Консультация при остановке». Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`. Не вызывай субагента Cursor и не зови другую модель.
+6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: amend` — один раз примени раздел «Проверка основания остановки». `verdict: stop` или пустой verdict — если совет прямо называет файлы и правку, выполни её как amend и не замирай; иначе status blocked, consult_verdict stop, код не меняй, остановись. Иначе ищи `verdict:` совета по шагу. human или пустой verdict: status blocked, consult_verdict human, код не меняй, остановись; следующий ход проверяет основание, а не ждёт человека. over_budget: status blocked, consult_verdict over_budget, код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету. Если совет прямо называет файлы вне allowed_files или из F0, правь и их. Файл, который совет не назвал, не трогай.
 7. Иначе сразу запиши в STATE: status: in_progress (остальные поля не менять) и выполни ровно шаг next_step.
-8. Следуй полям шага: depends уже закоммичены; правь только allowed_files; red до green; запусти gate точно как записано; выполни sabotage, если он не «none», и верни файл в исходное состояние (`git checkout -- <файл>` для файла, закоммиченного ранее, иначе обратной правкой), затем повтори gate и убедись, что он снова зелёный.
-9. Не редактируй docs/PLAN.md, docs/agent/SESSION.md, docs/agent/CONTINUITY.md, compiler/ (включая compiler/vm/), lib/mlc/, misc/textui/, misc/editor/. Не запускай compiler/build.sh, self-host diff, пересборку compiler/out/mlcc. Чужие незакоммиченные правки в рабочем дереве не трогай.
+8. Следуй полям шага: depends уже закоммичены; правь только allowed_files; red до green; запусти gate точно как записано; выполни sabotage, если он не «none», и верни файл в исходное состояние (`git checkout -- <файл>` для файла, закоммиченного ранее, иначе обратной правкой), затем повтори gate и убедись, что он снова зелёный. Саботаж `--require-lower` не сравнивает свежий замер с файлом, который этот же шаг только что записал: подмени эталон строкой `B1.ns_per_insn 1`, дождись exit 1 и верни файл.
+9. Не редактируй docs/PLAN.md, docs/agent/SESSION.md, docs/agent/CONTINUITY.md, compiler/ (включая compiler/vm/), lib/mlc/, misc/textui/, misc/editor/, кроме файлов, которые текущий ответ Sonnet прямо назвал. Не запускай compiler/build.sh, self-host diff, пересборку compiler/out/mlcc. Чужие незакоммиченные правки, которые совет не назвал, не трогай.
 10. Gate прошёл: обнови STATE по разделу «Протокол состояния» (current_step = N, status ready, consult_count 0, consult_response и consult_verdict пустые, last_result, last_verify, next_step = N+1; после шага 100 — status queue_complete, next_step none). Затем закоммить только файлы шага и STATE (и PLAN100, если шаг дописывал Decision log) явным списком в `git add`; сообщение `script_vm queue step <N>: <заголовок шага>` (для red-шага с суффиксом ` (red)`); без --trailer, без push.
 11. Gate не прошёл: next_step и consult_count не меняй, status blocked, в last_result причина, в last_verify упавшая команда и первые строки вывода. Не коммить код. Sonnet в этом ходу не вызывай. Следующий шаг не начинай.
 12. Один шаг за ход. После коммита, консультации или blocked остановись и ответь коротко: номер шага, команда gate или путь consult_response, исход.
@@ -1979,4 +1980,8 @@ Sonnet доступен очереди только через соседний 
 - `probe_array_set_in_while` → ok. `.set` в `while` по `ref mut` полю записывает все три элемента.
 - `probe_match_in_while` → ok. `match` по sum-типу внутри `while` дал 11. Ветка `if condition then Left else Right end` в C++ становится тернарным оператором с несовместимыми типами вариантов и не линкуется; выбор варианта — отдельная функция с `return`.
 - `probe_two_ref_mut_params` → ok. Два `ref mut` параметра разных типов оба видны вызывающему.
+
+### S22 — файлы по подтверждению Sonnet
+
+Запись 2026-10-10. Любой файл можно менять, если ответ Sonnet прямо называет путь и правку. `allowed_files` и `F0` на такой файл не действуют: тест, `compiler/`, `lib/mlc/`, `misc/textui/`, `misc/editor/`, `runtime/`. Файл, который ответ не назвал, не трогать. Уже сохранённый `verdict: stop`, который называет файлы и правку, исполнитель применяет один раз и не ждёт человека.
 

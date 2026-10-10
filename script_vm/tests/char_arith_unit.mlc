@@ -32,7 +32,6 @@ import {
   run_arithmetic,
   run_with_heap,
   run_err_verify,
-  run_err_type,
   run_err_overflow,
   run_err_div_zero,
   run_err_no_return
@@ -272,18 +271,18 @@ fn check_arithmetic(check: Check) -> Check = do
   current = check_float_ok(current, instruction_opcode_sub(), 5.5, 1.25, 5.5 - 1.25, "float_sub", 7)
   current = check_float_ok(current, instruction_opcode_mul(), 1.5, 4.0, 1.5 * 4.0, "float_mul", 8)
   current = check_float_ok(current, instruction_opcode_div(), 7.5, 2.5, 7.5 / 2.5, "float_div", 9)
-  current = check_values_error(current, instruction_opcode_add(), int_value(1), float_value(2.0), run_err_type(), "mixed_add", 10)
-  current = check_values_error(current, instruction_opcode_sub(), int_value(1), float_value(2.0), run_err_type(), "mixed_sub", 11)
-  current = check_values_error(current, instruction_opcode_mul(), int_value(1), float_value(2.0), run_err_type(), "mixed_mul", 12)
-  current = check_values_error(current, instruction_opcode_div(), int_value(1), float_value(2.0), run_err_type(), "mixed_div", 13)
-  current = check_values_error(current, instruction_opcode_add(), bool_value(false), int_value(1), run_err_type(), "bool_add", 14)
-  current = check_values_error(current, instruction_opcode_sub(), bool_value(false), int_value(1), run_err_type(), "bool_sub", 15)
-  current = check_values_error(current, instruction_opcode_mul(), bool_value(false), int_value(1), run_err_type(), "bool_mul", 16)
-  current = check_values_error(current, instruction_opcode_div(), bool_value(false), int_value(1), run_err_type(), "bool_div", 17)
-  current = check_values_error(current, instruction_opcode_add(), nil_value(), int_value(1), run_err_type(), "nil_add", 18)
-  current = check_values_error(current, instruction_opcode_sub(), nil_value(), int_value(1), run_err_type(), "nil_sub", 19)
-  current = check_values_error(current, instruction_opcode_mul(), nil_value(), int_value(1), run_err_type(), "nil_mul", 20)
-  current = check_values_error(current, instruction_opcode_div(), nil_value(), int_value(1), run_err_type(), "nil_div", 21)
+  current = check_values_error(current, instruction_opcode_add(), int_value(1), float_value(2.0), "type", "mixed_add", 10)
+  current = check_values_error(current, instruction_opcode_sub(), int_value(1), float_value(2.0), "type", "mixed_sub", 11)
+  current = check_values_error(current, instruction_opcode_mul(), int_value(1), float_value(2.0), "type", "mixed_mul", 12)
+  current = check_values_error(current, instruction_opcode_div(), int_value(1), float_value(2.0), "type", "mixed_div", 13)
+  current = check_values_error(current, instruction_opcode_add(), bool_value(false), int_value(1), "type", "bool_add", 14)
+  current = check_values_error(current, instruction_opcode_sub(), bool_value(false), int_value(1), "type", "bool_sub", 15)
+  current = check_values_error(current, instruction_opcode_mul(), bool_value(false), int_value(1), "type", "bool_mul", 16)
+  current = check_values_error(current, instruction_opcode_div(), bool_value(false), int_value(1), "type", "bool_div", 17)
+  current = check_values_error(current, instruction_opcode_add(), nil_value(), int_value(1), "type", "nil_add", 18)
+  current = check_values_error(current, instruction_opcode_sub(), nil_value(), int_value(1), "type", "nil_sub", 19)
+  current = check_values_error(current, instruction_opcode_mul(), nil_value(), int_value(1), "type", "nil_mul", 20)
+  current = check_values_error(current, instruction_opcode_div(), nil_value(), int_value(1), "type", "nil_div", 21)
   current = check_values_error(current, instruction_opcode_add(), int_value(2147483647), int_value(1), run_err_overflow(), "overflow_add", 22)
   current = check_values_error(current, instruction_opcode_sub(), int_value(int32_minimum()), int_value(1), run_err_overflow(), "overflow_sub", 23)
   current = check_values_error(current, instruction_opcode_mul(), int_value(2147483647), int_value(2), run_err_overflow(), "overflow_mul", 24)
@@ -318,12 +317,12 @@ end
 
 fn check_compare_errors(check: Check, left_value: Value, right_value: Value, label_prefix: string, first_code: i32) -> Check = do
   let mut current = check
-  current = check_values_error(current, instruction_opcode_eq(), left_value, right_value, run_err_type(), label_prefix + "_eq", first_code)
-  current = check_values_error(current, instruction_opcode_ne(), left_value, right_value, run_err_type(), label_prefix + "_ne", first_code + 1)
-  current = check_values_error(current, instruction_opcode_lt(), left_value, right_value, run_err_type(), label_prefix + "_lt", first_code + 2)
-  current = check_values_error(current, instruction_opcode_le(), left_value, right_value, run_err_type(), label_prefix + "_le", first_code + 3)
-  current = check_values_error(current, instruction_opcode_gt(), left_value, right_value, run_err_type(), label_prefix + "_gt", first_code + 4)
-  current = check_values_error(current, instruction_opcode_ge(), left_value, right_value, run_err_type(), label_prefix + "_ge", first_code + 5)
+  current = check_values_error(current, instruction_opcode_eq(), left_value, right_value, "type", label_prefix + "_eq", first_code)
+  current = check_values_error(current, instruction_opcode_ne(), left_value, right_value, "type", label_prefix + "_ne", first_code + 1)
+  current = check_values_error(current, instruction_opcode_lt(), left_value, right_value, "type", label_prefix + "_lt", first_code + 2)
+  current = check_values_error(current, instruction_opcode_le(), left_value, right_value, "type", label_prefix + "_le", first_code + 3)
+  current = check_values_error(current, instruction_opcode_gt(), left_value, right_value, "type", label_prefix + "_gt", first_code + 4)
+  current = check_values_error(current, instruction_opcode_ge(), left_value, right_value, "type", label_prefix + "_ge", first_code + 5)
   current
 end
 
