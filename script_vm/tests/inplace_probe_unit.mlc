@@ -1,0 +1,107 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+type Cells = { values: [Value] }
+
+fn cells_set(cells: ref mut Cells, index: i32, value: Value) -> unit = do
+  cells.values.set(index, value)
+end
+
+fn cells_with_length(element_count: i32) -> Cells = do
+  let mut values: [Value] = []
+  let encoded_zero = value_encode(ValueInt32(0))
+  let mut index = 0
+  while index < element_count do
+    values.push(encoded_zero)
+    index = index + 1
+  end
+  Cells { values: values }
+end
+
+fn integer_at(cells: Cells, index: i32) -> i32 =
+  match value_decode(cells.values[index]) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn next_slot(slot: i32, element_count: i32) -> i32 = do
+  if slot + 1 == element_count then
+    return 0
+  end
+  slot + 1
+end
+
+fn visibility_holds() -> bool = do
+  let mut cells = cells_with_length(1)
+  cells_set(cells, 0, value_encode(ValueInt32(7)))
+  integer_at(cells, 0) == 7
+end
+
+fn copy_stays_isolated() -> bool = do
+  let mut cells = cells_with_length(1)
+  let mut copy = cells
+  cells_set(copy, 0, value_encode(ValueInt32(9)))
+  integer_at(cells, 0) == 0
+end
+
+fn nanoseconds_per_set(elapsed_microseconds: i32, iteration_count: i32) -> i32 = do
+  if elapsed_microseconds < 0 || iteration_count <= 0 || elapsed_microseconds > 2000000 then
+    return 0 - 1
+  end
+  elapsed_microseconds * 1000 / iteration_count
+end
+
+fn measure_nanoseconds_per_set(element_count: i32) -> i32 = do
+  let mut cells = cells_with_length(element_count)
+  let encoded_value = value_encode(ValueInt32(1))
+  let iteration_count = 200000
+  let started_microseconds = script_vm_perf_now_us()
+  let mut iteration = 0
+  let mut slot = 0
+  while iteration < iteration_count do
+    cells_set(cells, slot, encoded_value)
+    slot = next_slot(slot, element_count)
+    iteration = iteration + 1
+  end
+  let elapsed_microseconds = script_vm_perf_now_us() - started_microseconds
+  nanoseconds_per_set(elapsed_microseconds, iteration_count)
+end
+
+fn scaling_ratio(large_nanoseconds: i32, small_nanoseconds: i32) -> i32 = do
+  if large_nanoseconds < 0 || small_nanoseconds <= 0 then
+    return 0 - 1
+  end
+  large_nanoseconds * 100 / small_nanoseconds
+end
+
+fn probe_status(visibility: bool, isolated: bool, ratio: i32) -> i32 = do
+  if visibility == false then
+    return 1
+  end
+  if isolated == false then
+    return 2
+  end
+  if ratio < 0 || ratio > 300 then
+    return 3
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let visibility = visibility_holds()
+  let isolated = copy_stays_isolated()
+  let small_nanoseconds = measure_nanoseconds_per_set(1000)
+  let large_nanoseconds = measure_nanoseconds_per_set(16000)
+  let ratio = scaling_ratio(large_nanoseconds, small_nanoseconds)
+  println("probe_inplace_ns_per_set_small=" + small_nanoseconds.to_string())
+  println("probe_inplace_ns_per_set_large=" + large_nanoseconds.to_string())
+  println("probe_inplace_scaling_ratio_x100=" + ratio.to_string())
+  let status = probe_status(visibility, isolated, ratio)
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] inplace_probe_unit ok")
+  0
+end
