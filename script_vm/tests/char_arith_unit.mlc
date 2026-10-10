@@ -1,0 +1,392 @@
+import {
+  Value,
+  ValueNil,
+  ValueBool,
+  ValueInt32,
+  ValueFloat64,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_words_jump_if_false,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge
+} from '../bytecode'
+import {
+  RunResult,
+  RunOk,
+  RunErr,
+  RunHeapResult,
+  run_arithmetic,
+  run_with_heap,
+  run_err_verify,
+  run_err_type,
+  run_err_overflow,
+  run_err_div_zero,
+  run_err_no_return
+} from '../interpreter'
+import { heap_new } from '../heap'
+
+type Check = { count: i32, status: i32 }
+
+fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn float_value(number: f64) -> Value = value_encode(ValueFloat64(number))
+
+fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+fn not_a_number() -> f64 = 0.0 / 0.0
+
+fn int32_minimum() -> i32 = 0 - 2147483647 - 1
+
+fn binary_instruction_word_index() -> i32 = 2
+
+fn legacy_falsy_int_zero_jumps() -> bool = true
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn two_values(left_value: Value, right_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(left_value)
+  constants.push(right_value)
+  constants
+end
+
+fn binary_words(opcode: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(opcode, 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn falsy_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_jump_if_false(1, 1))
+  words = append_words(words, instruction_words_load_const(0, 2))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn falsy_constants(condition_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(int_value(0))
+  constants.push(condition_value)
+  constants.push(int_value(7))
+  constants
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn run_ok_value(result: RunResult) -> Value =
+  match result {
+    RunOk(value) => value,
+    RunErr(_code, _word_index) => int_value(0)
+  }
+
+fn results_match(left_result: RunResult, right_result: RunResult) -> bool =
+  match left_result {
+    RunOk(left_value) => match right_result {
+      RunOk(right_value) => value_raw_equal(left_value, right_value),
+      _ => false
+    },
+    RunErr(left_code, left_word_index) => match right_result {
+      RunErr(right_code, right_word_index) =>
+        left_code == right_code && left_word_index == right_word_index,
+      _ => false
+    }
+  }
+
+fn run_arithmetic_and_heap(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+  const arithmetic_result = run_arithmetic(words, constants, register_count)
+  const heap_run: RunHeapResult = run_with_heap(heap_new(), words, constants, register_count)
+  if results_match(arithmetic_result, heap_run.result) then
+    arithmetic_result
+  else
+    RunErr("heap_mismatch", 0)
+  end
+end
+
+fn stop(check: Check, message: string, failure_code: i32) -> Check = do
+  println("[script_vm char_arith_unit] FAIL: " + message)
+  Check { count: check.count, status: failure_code }
+end
+
+fn pass(check: Check) -> Check =
+  Check { count: check.count + 1, status: 0 }
+
+fn expect_int32(check: Check, result: RunResult, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  match value_decode(run_ok_value(result)) {
+    ValueInt32(number) => do
+      if number != expected then
+        return stop(check, label + " got=" + number.to_string(), failure_code)
+      end
+      pass(check)
+    end,
+    _ => stop(check, label + " expected Int32", failure_code)
+  }
+end
+
+fn expect_float_bits(check: Check, result: RunResult, expected: f64, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  if !value_raw_equal(run_ok_value(result), float_value(expected)) then
+    return stop(check, label + " bits differ", failure_code)
+  end
+  pass(check)
+end
+
+fn expect_bool(check: Check, result: RunResult, expected: bool, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  match value_decode(run_ok_value(result)) {
+    ValueBool(flag) => do
+      if flag != expected then
+        return stop(check, label + " bool mismatch", failure_code)
+      end
+      pass(check)
+    end,
+    _ => stop(check, label + " expected Bool", failure_code)
+  }
+end
+
+fn expect_error(
+  check: Check,
+  result: RunResult,
+  expected_code: string,
+  expected_word_index: i32,
+  label: string,
+  failure_code: i32
+) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if is_run_ok(result) then
+    return stop(check, label + " expected error", failure_code)
+  end
+  if error_code(result) != expected_code then
+    return stop(check, label + " code got=" + error_code(result), failure_code)
+  end
+  if error_word_index(result) != expected_word_index then
+    return stop(check, label + " word_index got=" + error_word_index(result).to_string(), failure_code)
+  end
+  pass(check)
+end
+
+fn check_int_ok(check: Check, opcode: i32, left_number: i32, right_number: i32, expected: i32, label: string, failure_code: i32) -> Check =
+  expect_int32(
+    check,
+    run_arithmetic_and_heap(binary_words(opcode), two_values(int_value(left_number), int_value(right_number)), 3),
+    expected,
+    label,
+    failure_code
+  )
+
+fn check_float_ok(check: Check, opcode: i32, left_number: f64, right_number: f64, expected: f64, label: string, failure_code: i32) -> Check =
+  expect_float_bits(
+    check,
+    run_arithmetic_and_heap(binary_words(opcode), two_values(float_value(left_number), float_value(right_number)), 3),
+    expected,
+    label,
+    failure_code
+  )
+
+fn check_values_error(check: Check, opcode: i32, left_value: Value, right_value: Value, expected_code: string, label: string, failure_code: i32) -> Check =
+  expect_error(
+    check,
+    run_arithmetic_and_heap(binary_words(opcode), two_values(left_value, right_value), 3),
+    expected_code,
+    binary_instruction_word_index(),
+    label,
+    failure_code
+  )
+
+fn check_compare_bool(check: Check, opcode: i32, left_value: Value, right_value: Value, expected: bool, label: string, failure_code: i32) -> Check =
+  expect_bool(
+    check,
+    run_arithmetic_and_heap(binary_words(opcode), two_values(left_value, right_value), 3),
+    expected,
+    label,
+    failure_code
+  )
+
+fn check_arithmetic(check: Check) -> Check = do
+  let mut current = check
+  current = check_int_ok(current, instruction_opcode_add(), 20, 22, 42, "int_add", 1)
+  current = check_int_ok(current, instruction_opcode_sub(), 20, 5, 15, "int_sub", 2)
+  current = check_int_ok(current, instruction_opcode_mul(), 6, 7, 42, "int_mul", 3)
+  current = check_int_ok(current, instruction_opcode_div(), 20, 4, 5, "int_div", 4)
+  current = check_int_ok(current, instruction_opcode_div(), 0 - 7, 2, 0 - 3, "int_div_negative", 5)
+  current = check_float_ok(current, instruction_opcode_add(), 1.5, 2.25, 1.5 + 2.25, "float_add", 6)
+  current = check_float_ok(current, instruction_opcode_sub(), 5.5, 1.25, 5.5 - 1.25, "float_sub", 7)
+  current = check_float_ok(current, instruction_opcode_mul(), 1.5, 4.0, 1.5 * 4.0, "float_mul", 8)
+  current = check_float_ok(current, instruction_opcode_div(), 7.5, 2.5, 7.5 / 2.5, "float_div", 9)
+  current = check_values_error(current, instruction_opcode_add(), int_value(1), float_value(2.0), run_err_type(), "mixed_add", 10)
+  current = check_values_error(current, instruction_opcode_sub(), int_value(1), float_value(2.0), run_err_type(), "mixed_sub", 11)
+  current = check_values_error(current, instruction_opcode_mul(), int_value(1), float_value(2.0), run_err_type(), "mixed_mul", 12)
+  current = check_values_error(current, instruction_opcode_div(), int_value(1), float_value(2.0), run_err_type(), "mixed_div", 13)
+  current = check_values_error(current, instruction_opcode_add(), bool_value(false), int_value(1), run_err_type(), "bool_add", 14)
+  current = check_values_error(current, instruction_opcode_sub(), bool_value(false), int_value(1), run_err_type(), "bool_sub", 15)
+  current = check_values_error(current, instruction_opcode_mul(), bool_value(false), int_value(1), run_err_type(), "bool_mul", 16)
+  current = check_values_error(current, instruction_opcode_div(), bool_value(false), int_value(1), run_err_type(), "bool_div", 17)
+  current = check_values_error(current, instruction_opcode_add(), nil_value(), int_value(1), run_err_type(), "nil_add", 18)
+  current = check_values_error(current, instruction_opcode_sub(), nil_value(), int_value(1), run_err_type(), "nil_sub", 19)
+  current = check_values_error(current, instruction_opcode_mul(), nil_value(), int_value(1), run_err_type(), "nil_mul", 20)
+  current = check_values_error(current, instruction_opcode_div(), nil_value(), int_value(1), run_err_type(), "nil_div", 21)
+  current = check_values_error(current, instruction_opcode_add(), int_value(2147483647), int_value(1), run_err_overflow(), "overflow_add", 22)
+  current = check_values_error(current, instruction_opcode_sub(), int_value(int32_minimum()), int_value(1), run_err_overflow(), "overflow_sub", 23)
+  current = check_values_error(current, instruction_opcode_mul(), int_value(2147483647), int_value(2), run_err_overflow(), "overflow_mul", 24)
+  current = check_values_error(current, instruction_opcode_div(), int_value(1), int_value(0), run_err_div_zero(), "div_zero_int", 25)
+  current = check_values_error(current, instruction_opcode_div(), float_value(1.0), float_value(0.0), run_err_div_zero(), "div_zero_float", 26)
+  current
+end
+
+fn check_ordered_compares(check: Check, left_value: Value, right_value: Value, label_prefix: string, first_code: i32) -> Check = do
+  let mut current = check
+  current = check_compare_bool(current, instruction_opcode_eq(), left_value, right_value, false, label_prefix + "_eq", first_code)
+  current = check_compare_bool(current, instruction_opcode_ne(), left_value, right_value, true, label_prefix + "_ne", first_code + 1)
+  current = check_compare_bool(current, instruction_opcode_lt(), left_value, right_value, true, label_prefix + "_lt", first_code + 2)
+  current = check_compare_bool(current, instruction_opcode_le(), left_value, right_value, true, label_prefix + "_le", first_code + 3)
+  current = check_compare_bool(current, instruction_opcode_gt(), left_value, right_value, false, label_prefix + "_gt", first_code + 4)
+  current = check_compare_bool(current, instruction_opcode_ge(), left_value, right_value, false, label_prefix + "_ge", first_code + 5)
+  current
+end
+
+fn check_not_a_number_compares(check: Check) -> Check = do
+  const left_value = float_value(not_a_number())
+  const right_value = float_value(not_a_number())
+  let mut current = check
+  current = check_compare_bool(current, instruction_opcode_eq(), left_value, right_value, false, "not_a_number_eq", 39)
+  current = check_compare_bool(current, instruction_opcode_ne(), left_value, right_value, true, "not_a_number_ne", 40)
+  current = check_compare_bool(current, instruction_opcode_lt(), left_value, right_value, false, "not_a_number_lt", 41)
+  current = check_compare_bool(current, instruction_opcode_le(), left_value, right_value, false, "not_a_number_le", 42)
+  current = check_compare_bool(current, instruction_opcode_gt(), left_value, right_value, false, "not_a_number_gt", 43)
+  current = check_compare_bool(current, instruction_opcode_ge(), left_value, right_value, false, "not_a_number_ge", 44)
+  current
+end
+
+fn check_compare_errors(check: Check, left_value: Value, right_value: Value, label_prefix: string, first_code: i32) -> Check = do
+  let mut current = check
+  current = check_values_error(current, instruction_opcode_eq(), left_value, right_value, run_err_type(), label_prefix + "_eq", first_code)
+  current = check_values_error(current, instruction_opcode_ne(), left_value, right_value, run_err_type(), label_prefix + "_ne", first_code + 1)
+  current = check_values_error(current, instruction_opcode_lt(), left_value, right_value, run_err_type(), label_prefix + "_lt", first_code + 2)
+  current = check_values_error(current, instruction_opcode_le(), left_value, right_value, run_err_type(), label_prefix + "_le", first_code + 3)
+  current = check_values_error(current, instruction_opcode_gt(), left_value, right_value, run_err_type(), label_prefix + "_gt", first_code + 4)
+  current = check_values_error(current, instruction_opcode_ge(), left_value, right_value, run_err_type(), label_prefix + "_ge", first_code + 5)
+  current
+end
+
+fn check_compare(check: Check) -> Check = do
+  let mut current = check_ordered_compares(check, int_value(2), int_value(5), "int", 27)
+  current = check_ordered_compares(current, float_value(2.0), float_value(5.0), "float", 33)
+  current = check_not_a_number_compares(current)
+  current = check_compare_errors(current, int_value(1), float_value(1.0), "mixed_compare", 45)
+  current = check_compare_errors(current, bool_value(true), bool_value(false), "bool_compare", 51)
+  current
+end
+
+fn check_limits(check: Check) -> Check = do
+  let mut no_return_words: [i32] = []
+  no_return_words = append_words(no_return_words, instruction_words_load_const(0, 0))
+  let mut current = expect_error(
+    check,
+    run_arithmetic_and_heap(no_return_words, two_values(int_value(1), int_value(0)), 1),
+    run_err_no_return(),
+    no_return_words.length(),
+    "no_return",
+    57
+  )
+  let mut verify_words: [i32] = []
+  verify_words = append_words(verify_words, instruction_words_load_const(3, 0))
+  verify_words = append_words(verify_words, instruction_words_return(0))
+  current = expect_error(
+    current,
+    run_arithmetic_and_heap(verify_words, two_values(int_value(1), int_value(0)), 1),
+    run_err_verify(),
+    0,
+    "verify",
+    58
+  )
+  current
+end
+
+fn check_legacy_falsy(check: Check, condition_value: Value, jumps: bool, label: string, failure_code: i32) -> Check = do
+  const result = run_arithmetic_and_heap(falsy_words(), falsy_constants(condition_value), 2)
+  if jumps then
+    expect_int32(check, result, 0, label, failure_code)
+  else
+    expect_int32(check, result, 7, label, failure_code)
+  end
+end
+
+fn check_falsy(check: Check) -> Check = do
+  let mut current = check
+  current = check_legacy_falsy(current, nil_value(), true, "legacy_falsy_nil", 59)
+  current = check_legacy_falsy(current, bool_value(false), true, "legacy_falsy_false", 60)
+  current = check_legacy_falsy(current, int_value(0), legacy_falsy_int_zero_jumps(), "legacy_falsy_int_zero", 61)
+  current = check_legacy_falsy(current, float_value(0.0), true, "legacy_falsy_float_zero", 62)
+  current = check_legacy_falsy(current, int_value(1), false, "legacy_falsy_int_one", 63)
+  current = check_legacy_falsy(current, bool_value(true), false, "legacy_falsy_true", 64)
+  current
+end
+
+fn main() -> i32 = do
+  const check = check_falsy(check_limits(check_compare(check_arithmetic(Check { count: 0, status: 0 }))))
+  if check.status != 0 then
+    return check.status
+  end
+  println("char_arith checks=" + check.count.to_string())
+  println("[script_vm] char_arith_unit ok")
+  0
+end
