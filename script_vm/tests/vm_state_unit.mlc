@@ -1,0 +1,184 @@
+import { Value, ValueNil, ValueInt32, value_encode, value_decode, value_raw_equal } from '../value'
+import {
+  VmState,
+  vm_state_new,
+  vm_state_push_frame,
+  vm_state_pop_frame,
+  vm_state_frame_depth,
+  vm_state_register,
+  vm_state_set_register,
+  vm_state_program_counter,
+  vm_state_set_program_counter,
+  vm_state_frame_proto,
+  vm_state_frame_closure,
+  vm_state_frame_return_register,
+  vm_state_stack_capacity,
+  vm_state_stack_top
+} from '../vm_state'
+
+fn fresh_state() -> VmState = vm_state_new()
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn value_is_nil(value: Value) -> bool = value_raw_equal(value, nil_value())
+
+fn value_is_int32(value: Value, expected: i32) -> bool =
+  match value_decode(value) {
+    ValueInt32(number) => number == expected,
+    _ => false
+  }
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm vm_state_unit] FAIL: " + message)
+  1
+end
+
+fn fresh_registers_are_nil() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 1, 3, nil_value(), 0)
+  value_is_nil(vm_state_register(state, 0)) && value_is_nil(vm_state_register(state, 1)) && value_is_nil(vm_state_register(state, 2))
+end
+
+fn written_register_is_read() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 1, 3, nil_value(), 0)
+  vm_state_set_register(state, 1, integer_value(41))
+  value_is_int32(vm_state_register(state, 1), 41)
+end
+
+fn registers_are_isolated() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 1, 3, nil_value(), 0)
+  vm_state_set_register(state, 0, integer_value(11))
+  vm_state_set_register(state, 1, integer_value(12))
+  let top_after_first = vm_state_stack_top(state)
+  vm_state_push_frame(state, 2, 2, nil_value(), 1)
+  if !value_is_nil(vm_state_register(state, 0)) then
+    return false
+  end
+  if !value_is_nil(vm_state_register(state, 1)) then
+    return false
+  end
+  vm_state_set_register(state, 0, integer_value(22))
+  vm_state_pop_frame(state)
+  if vm_state_stack_top(state) != top_after_first then
+    return false
+  end
+  if !value_is_int32(vm_state_register(state, 0), 11) then
+    return false
+  end
+  value_is_int32(vm_state_register(state, 1), 12)
+end
+
+fn reused_register_is_cleared() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 1, 2, nil_value(), 0)
+  vm_state_set_register(state, 0, integer_value(22))
+  vm_state_pop_frame(state)
+  vm_state_push_frame(state, 1, 2, nil_value(), 0)
+  value_is_nil(vm_state_register(state, 0))
+end
+
+fn capacity_stays_at_first_cycle() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 1, 3, nil_value(), 0)
+  vm_state_pop_frame(state)
+  let capacity_after_first_cycle = vm_state_stack_capacity(state)
+  let mut cycle = 0
+  while cycle < 10000 do
+    vm_state_push_frame(state, 1, 3, nil_value(), 0)
+    vm_state_pop_frame(state)
+    cycle = cycle + 1
+  end
+  vm_state_stack_capacity(state) <= capacity_after_first_cycle
+end
+
+fn frame_depth_tracks_push_and_pop() -> bool = do
+  let mut state = fresh_state()
+  if vm_state_frame_depth(state) != 0 then
+    return false
+  end
+  vm_state_push_frame(state, 1, 1, nil_value(), 0)
+  if vm_state_frame_depth(state) != 1 then
+    return false
+  end
+  vm_state_push_frame(state, 2, 1, nil_value(), 0)
+  if vm_state_frame_depth(state) != 2 then
+    return false
+  end
+  vm_state_pop_frame(state)
+  if vm_state_frame_depth(state) != 1 then
+    return false
+  end
+  vm_state_pop_frame(state)
+  vm_state_frame_depth(state) == 0
+end
+
+fn program_counter_is_per_frame() -> bool = do
+  let mut state = fresh_state()
+  vm_state_push_frame(state, 4, 1, nil_value(), 7)
+  vm_state_set_program_counter(state, 10)
+  vm_state_push_frame(state, 5, 1, nil_value(), 8)
+  vm_state_set_program_counter(state, 20)
+  if vm_state_program_counter(state) != 20 then
+    return false
+  end
+  vm_state_pop_frame(state)
+  vm_state_program_counter(state) == 10
+end
+
+fn frame_metadata_is_current_frame() -> bool = do
+  let mut state = fresh_state()
+  let first_closure = integer_value(1)
+  let second_closure = integer_value(2)
+  vm_state_push_frame(state, 4, 1, first_closure, 7)
+  vm_state_push_frame(state, 5, 1, second_closure, 8)
+  if vm_state_frame_proto(state) != 5 then
+    return false
+  end
+  if vm_state_frame_return_register(state) != 8 then
+    return false
+  end
+  if !value_raw_equal(vm_state_frame_closure(state), second_closure) then
+    return false
+  end
+  vm_state_pop_frame(state)
+  if vm_state_frame_proto(state) != 4 then
+    return false
+  end
+  if vm_state_frame_return_register(state) != 7 then
+    return false
+  end
+  value_raw_equal(vm_state_frame_closure(state), first_closure)
+end
+
+fn main() -> i32 = do
+  if !fresh_registers_are_nil() then
+    return fail("fresh registers are not Nil")
+  end
+  if !written_register_is_read() then
+    return fail("register 1 write is not read")
+  end
+  if !registers_are_isolated() then
+    return fail("frames are not isolated")
+  end
+  if !reused_register_is_cleared() then
+    return fail("reused register is not Nil")
+  end
+  if !capacity_stays_at_first_cycle() then
+    return fail("stack capacity grew after the first cycle")
+  end
+  if !frame_depth_tracks_push_and_pop() then
+    return fail("frame depth does not track push and pop")
+  end
+  if !program_counter_is_per_frame() then
+    return fail("program counter is not stored per frame")
+  end
+  if !frame_metadata_is_current_frame() then
+    return fail("frame metadata is not the current frame")
+  end
+  println("[script_vm] vm_state_unit ok")
+  0
+end
