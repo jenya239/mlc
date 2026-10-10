@@ -1,0 +1,380 @@
+import {
+  Value,
+  ValueBool,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_new_array,
+  instruction_words_get_index,
+  instruction_words_set_index,
+  instruction_words_new_record,
+  instruction_words_get_prop,
+  instruction_words_set_prop,
+  instruction_words_return
+} from '../bytecode'
+import {
+  RunResult,
+  RunOk,
+  RunErr,
+  RunHeapResult,
+  run_with_heap,
+  run_err_type,
+  run_err_bounds
+} from '../interpreter'
+import {
+  heap_new,
+  heap_live_object_count,
+  heap_write_barrier_hits
+} from '../heap'
+
+type Check = { count: i32, status: i32 }
+
+fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
+
+fn expected_write_barrier_hits() -> i32 = 2
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut words = destination
+  let mut index = 0
+  while index < source.length() do
+    words.push(source[index])
+    index = index + 1
+  end
+  words
+end
+fn constants_push(constants: [Value], value: Value) -> [Value] = do
+  let mut next = constants
+  next.push(value)
+  next
+end
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn run_ok_value(result: RunResult) -> Value =
+  match result {
+    RunOk(value) => value,
+    RunErr(_code, _word_index) => int_value(0)
+  }
+
+fn execute_heap_program(words: [i32], constants: [Value], register_count: i32) -> RunHeapResult =
+  run_with_heap(heap_new(), words, constants, register_count)
+
+fn stop(check: Check, message: string, failure_code: i32) -> Check = do
+  println("[script_vm char_heap_ops_unit] FAIL: " + message)
+  Check { count: check.count, status: failure_code }
+end
+fn pass(check: Check) -> Check =
+  Check { count: check.count + 1, status: 0 }
+
+fn expect_int32(check: Check, result: RunResult, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  match value_decode(run_ok_value(result)) {
+    ValueInt32(number) => do
+      if number != expected then
+        return stop(check, label + " got=" + number.to_string(), failure_code)
+      end
+      pass(check)
+    end,
+    _ => stop(check, label + " expected Int32", failure_code)
+  }
+end
+fn expect_error(
+  check: Check,
+  result: RunResult,
+  expected_code: string,
+  expected_word_index: i32,
+  label: string,
+  failure_code: i32
+) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if is_run_ok(result) then
+    return stop(check, label + " expected error", failure_code)
+  end
+  if error_code(result) != expected_code then
+    return stop(check, label + " code got=" + error_code(result), failure_code)
+  end
+  if error_word_index(result) != expected_word_index then
+    return stop(check, label + " word_index got=" + error_word_index(result).to_string(), failure_code)
+  end
+  pass(check)
+end
+fn expect_count(check: Check, actual: i32, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if actual != expected then
+    return stop(check, label + " got=" + actual.to_string(), failure_code)
+  end
+  pass(check)
+end
+fn array_round_trip_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(0, 2, 3))
+  words = append_words(words, instruction_words_get_index(4, 0, 2))
+  words = append_words(words, instruction_words_return(4))
+  words
+end
+fn array_round_trip_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(2))
+  constants = constants_push(constants, int_value(1))
+  constants = constants_push(constants, int_value(42))
+  constants
+end
+fn record_round_trip_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 2))
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_set_prop(0, 1, 1))
+  words = append_words(words, instruction_words_get_prop(2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn new_array_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+fn indexed_get_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_get_index(3, 0, 2))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+fn indexed_set_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(0, 2, 3))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+fn two_ints(left_number: i32, right_number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(left_number))
+  constants = constants_push(constants, int_value(right_number))
+  constants
+end
+fn length_and_index(length: i32, index_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(length))
+  constants = constants_push(constants, index_value)
+  constants
+end
+fn length_index_value(length: i32, index_value: Value, stored: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(length))
+  constants = constants_push(constants, index_value)
+  constants = constants_push(constants, int_value(stored))
+  constants
+end
+fn record_get_index_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_get_index(2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn scalar_get_index_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_get_index(2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn record_set_index_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_set_index(0, 1, 2))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn scalar_set_index_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_load_const(2, 2))
+  words = append_words(words, instruction_words_set_index(0, 1, 2))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn get_prop_past_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_get_prop(1, 0, 1))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+fn array_get_prop_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_get_prop(2, 0, 0))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn scalar_get_prop_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_get_prop(1, 0, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+fn set_prop_past_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_set_prop(0, 1, 1))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+fn array_set_prop_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_set_prop(0, 0, 2))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn scalar_set_prop_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_set_prop(0, 0, 1))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+fn barrier_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(0, 2, 3))
+  words = append_words(words, instruction_words_new_record(4, 1))
+  words = append_words(words, instruction_words_load_const(5, 3))
+  words = append_words(words, instruction_words_set_prop(4, 0, 5))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+fn barrier_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(1))
+  constants = constants_push(constants, int_value(0))
+  constants = constants_push(constants, int_value(5))
+  constants = constants_push(constants, int_value(6))
+  constants
+end
+fn live_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_new_array(2, 1))
+  words = append_words(words, instruction_words_new_record(3, 1))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+fn array_alias_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_move(2, 0))
+  words = append_words(words, instruction_words_load_const(3, 1))
+  words = append_words(words, instruction_words_load_const(4, 2))
+  words = append_words(words, instruction_words_set_index(0, 3, 4))
+  words = append_words(words, instruction_words_get_index(5, 2, 3))
+  words = append_words(words, instruction_words_return(5))
+  words
+end
+fn record_alias_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_set_prop(0, 0, 2))
+  words = append_words(words, instruction_words_get_prop(3, 1, 0))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+fn single_int(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants = constants_push(constants, int_value(number))
+  constants
+end
+fn main() -> i32 = do
+  let mut check = Check { count: 0, status: 0 }
+  check = expect_int32(check, execute_heap_program(array_round_trip_words(), array_round_trip_constants(), 5).result, 42, "array_round_trip", 1)
+  check = expect_int32(check, execute_heap_program(record_round_trip_words(), single_int(7), 3).result, 7, "record_round_trip", 2)
+  check = expect_error(check, execute_heap_program(new_array_words(), single_int(0 - 1), 2).result, run_err_bounds(), 1, "new_array_negative", 3)
+  check = expect_error(check, execute_heap_program(new_array_words(), constants_push([], bool_value(false)), 2).result, run_err_type(), 1, "new_array_bool", 4)
+  check = expect_error(check, execute_heap_program(indexed_get_words(), length_and_index(1, int_value(0 - 1)), 4).result, run_err_bounds(), 3, "get_index_negative", 5)
+  check = expect_error(check, execute_heap_program(indexed_get_words(), length_and_index(1, int_value(1)), 4).result, run_err_bounds(), 3, "get_index_past", 6)
+  check = expect_error(check, execute_heap_program(indexed_get_words(), length_and_index(1, bool_value(true)), 4).result, run_err_type(), 3, "get_index_bool", 7)
+  check = expect_error(check, execute_heap_program(record_get_index_words(), single_int(0), 3).result, run_err_type(), 2, "get_index_record", 8)
+  check = expect_error(check, execute_heap_program(scalar_get_index_words(), two_ints(0, 0), 3).result, run_err_type(), 2, "get_index_int", 9)
+  check = expect_error(check, execute_heap_program(indexed_set_words(), length_index_value(1, int_value(0 - 1), 4), 4).result, run_err_bounds(), 4, "set_index_negative", 10)
+  check = expect_error(check, execute_heap_program(indexed_set_words(), length_index_value(1, int_value(1), 4), 4).result, run_err_bounds(), 4, "set_index_past", 11)
+  check = expect_error(check, execute_heap_program(indexed_set_words(), length_index_value(1, bool_value(false), 4), 4).result, run_err_type(), 4, "set_index_bool", 12)
+  check = expect_error(check, execute_heap_program(record_set_index_words(), two_ints(0, 4), 3).result, run_err_type(), 3, "set_index_record", 13)
+  check = expect_error(check, execute_heap_program(scalar_set_index_words(), length_index_value(0, int_value(0), 4), 3).result, run_err_type(), 3, "set_index_int", 14)
+  check = expect_error(check, execute_heap_program(get_prop_past_words(), [], 2).result, run_err_bounds(), 1, "get_prop_past", 15)
+  check = expect_error(check, execute_heap_program(array_get_prop_words(), single_int(1), 3).result, run_err_type(), 2, "get_prop_array", 16)
+  check = expect_error(check, execute_heap_program(scalar_get_prop_words(), single_int(0), 2).result, run_err_type(), 1, "get_prop_int", 17)
+  check = expect_error(check, execute_heap_program(set_prop_past_words(), single_int(8), 2).result, run_err_bounds(), 2, "set_prop_past", 18)
+  check = expect_error(check, execute_heap_program(array_set_prop_words(), two_ints(1, 8), 3).result, run_err_type(), 3, "set_prop_array", 19)
+  check = expect_error(check, execute_heap_program(scalar_set_prop_words(), two_ints(0, 8), 2).result, run_err_type(), 2, "set_prop_int", 20)
+  const barrier_run = execute_heap_program(barrier_words(), barrier_constants(), 6)
+  check = expect_int32(check, barrier_run.result, 5, "barrier_value", 21)
+  check = expect_count(check, heap_write_barrier_hits(barrier_run.heap), expected_write_barrier_hits(), "heap_write_barrier_hits", 22)
+  const live_run = execute_heap_program(live_words(), single_int(1), 4)
+  check = expect_count(check, heap_live_object_count(live_run.heap), 3, "heap_live_object_count", 23)
+  check = expect_int32(check, execute_heap_program(array_alias_words(), length_index_value(1, int_value(0), 42), 6).result, 42, "array_alias", 24)
+  check = expect_int32(check, execute_heap_program(record_alias_words(), single_int(9), 4).result, 9, "record_alias", 25)
+  if check.status != 0 then
+    return check.status
+  end
+  println("char_heap_ops checks=" + check.count.to_string())
+  println("[script_vm] char_heap_ops_unit ok")
+  0
+end
