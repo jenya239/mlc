@@ -1,0 +1,98 @@
+import {
+  Value,
+  ValueInt32,
+  value_decode
+} from '../value'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_arithmetic,
+  run_program,
+  run_with_heap
+} from '../interpreter'
+import { heap_new, heap_live_object_count } from '../heap'
+import {
+  fixture_sum_loop,
+  fixture_sum_loop_instruction_count,
+  fixture_fib_protos,
+  fixture_fib_call_count,
+  fixture_record_alloc_loop
+} from './bench_fixtures'
+
+type Check = { count: i32, status: i32 }
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn integer_from_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn stop(check: Check, message: string, failure_code: i32) -> Check = do
+  println("[script_vm bench_fixtures_unit] FAIL: " + message)
+  Check { count: check.count, status: failure_code }
+end
+
+fn pass(check: Check) -> Check = Check { count: check.count + 1, status: 0 }
+
+fn expect_equal(check: Check, actual: i32, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if actual != expected then
+    return stop(check, label + " got=" + actual.to_string(), failure_code)
+  end
+  pass(check)
+end
+
+fn expect_result(check: Check, result: RunResult, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  expect_equal(check, integer_from_result(result), expected, label, failure_code)
+end
+
+fn single_prototype(item: FunctionProto) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(item)
+  prototypes
+end
+
+fn main() -> i32 = do
+  let mut check = Check { count: 0, status: 0 }
+  const sum_one_hundred = fixture_sum_loop(100)
+  check = expect_result(check, run_arithmetic(sum_one_hundred.words, sum_one_hundred.constants, sum_one_hundred.register_count), 5050, "sum_100", 1)
+  const sum_sixty_thousand = fixture_sum_loop(60000)
+  check = expect_result(check, run_arithmetic(sum_sixty_thousand.words, sum_sixty_thousand.constants, sum_sixty_thousand.register_count), 1800030000, "sum_60000_arithmetic", 2)
+  check = expect_result(check, run_program(heap_new(), single_prototype(sum_sixty_thousand), 0).result, 1800030000, "sum_60000_program", 3)
+  check = expect_equal(check, fixture_sum_loop_instruction_count(100), 507, "sum_instruction_count", 4)
+  check = expect_result(check, run_program(heap_new(), fixture_fib_protos(), 0).result, 55, "fib_10", 5)
+  check = expect_equal(check, fixture_fib_call_count(10), 177, "fib_call_count_10", 6)
+  check = expect_equal(check, fixture_fib_call_count(20), 21891, "fib_call_count_20", 7)
+  const record_loop = fixture_record_alloc_loop(1000)
+  const record_run = run_with_heap(heap_new(), record_loop.words, record_loop.constants, record_loop.register_count)
+  check = expect_result(check, record_run.result, 1000, "record_loop", 8)
+  check = expect_equal(check, heap_live_object_count(record_run.heap), 1000, "record_live_count", 9)
+  if check.status != 0 then
+    return check.status
+  end
+  println("bench_fixtures checks=" + check.count.to_string())
+  println("[script_vm] bench_fixtures_unit ok")
+  0
+end

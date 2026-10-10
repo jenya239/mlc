@@ -1,0 +1,139 @@
+import { Value, ValueInt32, value_encode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump,
+  instruction_words_jump_if_false,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_words_new_record,
+  instruction_words_set_prop,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_le
+} from '../bytecode'
+import { FunctionProto } from '../interpreter'
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn push_constant(constants: [Value], number: i32) -> [Value] = do
+  let mut next = constants
+  next.push(value_encode(ValueInt32(number)))
+  next
+end
+
+fn empty_upvalue_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+export fn fixture_sum_loop_instruction_count(iteration_limit: i32) -> i32 =
+  4 + 5 * iteration_limit + 3
+
+export fn fixture_sum_loop(iteration_limit: i32) -> FunctionProto = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_load_const(2, 2))
+  words = append_words(words, instruction_words_load_const(4, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 0, 0, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 1, 1, 4))
+  words = append_words(words, instruction_words_jump(0 - 5))
+  words = append_words(words, instruction_words_return(0))
+  let mut constants: [Value] = []
+  constants = push_constant(constants, 0)
+  constants = push_constant(constants, 1)
+  constants = push_constant(constants, iteration_limit)
+  FunctionProto { words: words, constants: constants, register_count: 5 }
+end
+
+fn fibonacci_callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 2))
+  words = append_words(words, instruction_words_move(4, 1))
+  words = append_words(words, instruction_words_return(4))
+  words = append_words(words, instruction_words_load_const(5, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 6, 1, 5))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 7, 6, 5))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 6))
+  words = append_words(words, instruction_words_call(8, 0, 2))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 7))
+  words = append_words(words, instruction_words_call(9, 0, 2))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 10, 8, 9))
+  words = append_words(words, instruction_words_return(10))
+  words
+end
+
+fn fibonacci_entry_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_make_closure(0, 1, empty_upvalue_sources()))
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_call(3, 0, 2))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+
+export fn fixture_fib_protos() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: fibonacci_entry_words(),
+    constants: push_constant([], 10),
+    register_count: 4
+  })
+  prototypes.push(FunctionProto {
+    words: fibonacci_callee_words(),
+    constants: push_constant([], 1),
+    register_count: 11
+  })
+  prototypes
+end
+
+export fn fixture_fib_call_count(number: i32) -> i32 = do
+  let mut previous = 1
+  let mut current = 1
+  let mut index = 2
+  while index <= number do
+    const next = 1 + current + previous
+    previous = current
+    current = next
+    index = index + 1
+  end
+  current
+end
+
+export fn fixture_record_alloc_loop(iteration_count: i32) -> FunctionProto = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_load_const(2, 2))
+  words = append_words(words, instruction_words_load_const(4, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 5))
+  words = append_words(words, instruction_words_new_record(5, 2))
+  words = append_words(words, instruction_words_set_prop(5, 0, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 0, 0, 4))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 1, 1, 4))
+  words = append_words(words, instruction_words_jump(0 - 7))
+  words = append_words(words, instruction_words_return(0))
+  let mut constants: [Value] = []
+  constants = push_constant(constants, 0)
+  constants = push_constant(constants, 1)
+  constants = push_constant(constants, iteration_count)
+  FunctionProto { words: words, constants: constants, register_count: 6 }
+end

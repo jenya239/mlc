@@ -1,8 +1,8 @@
-current_step: 13
+current_step: 14
 status: ready
-last_result: done step 13: char_blob characterization locks add1 image length 60, first 16 bytes, and emb codes; checks=12
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/char_blob_unit.mlc => exit 0, char_blob checks=12, unit ok char_blob; ruby scripts/run_script_vm_gate.rb char_blob embedding_abi => exit 0, script_vm_gate ok units=2; sabotage magic byte 76 => exit 1, FAIL add1_prefix; restored gate green
-next_step: 14
+last_result: done step 14: bench fixtures lock sum 1..100 and 1..60000, fib(10)=55, call counts, and 1000 record allocations; checks=9
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/bench_fixtures_unit.mlc => exit 0, bench_fixtures checks=9, unit ok bench_fixtures; ruby scripts/run_script_vm_gate.rb bench_fixtures => exit 0, script_vm_gate ok units=1; sabotage ADD sum to SUB => exit 1, FAIL sum_100 got=-5050; restored gate green
+next_step: 15
 consult_count: 0
 consult_response:
 consult_verdict:
