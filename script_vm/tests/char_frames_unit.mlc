@@ -1,8 +1,10 @@
 import {
   Value,
   ValueInt32,
+  ValueBool,
   value_encode,
-  value_decode
+  value_decode,
+  value_raw_equal
 } from '../value'
 import {
   instruction_words_load_const,
@@ -32,16 +34,15 @@ import {
   run_err_type,
   run_err_bounds,
   run_err_stack,
-  run_err_verify,
-  run_err_unsupported_opcode
+  run_err_verify
 } from '../interpreter'
-import { heap_new, heap_alloc_closure } from '../heap'
+import { heap_new, heap_alloc_closure, heap_alloc_array } from '../heap'
 
 type Check = { count: i32, status: i32 }
 
 fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
 
-fn gap_pin_mul_unsupported_expects_run_ok() -> bool = false
+fn gap_pin_mul_unsupported_expects_run_ok() -> bool = true
 
 fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   let mut words = destination
@@ -263,7 +264,32 @@ fn check_gap_multiplication(check: Check) -> Check = do
   if gap_pin_mul_unsupported_expects_run_ok() then
     return expect_int32(check, multiplication, 42, "gap_pin_mul_unsupported", 14)
   end
-  expect_error(check, multiplication, run_err_unsupported_opcode(), 2, "gap_pin_mul_unsupported", 14)
+  expect_error(check, multiplication, "unsupported_opcode", 2, "gap_pin_mul_unsupported", 14)
+end
+fn check_gap_equal(check: Check) -> Check = do
+  const equal = execute_entry(equal_prototypes())
+  if !is_run_ok(equal) then
+    return stop(check, "gap_pin_eq_unsupported expected RunOk got=" + error_code(equal), 15)
+  end
+  match value_decode(run_ok_value(equal)) {
+    ValueBool(flag) => do
+      if !flag then
+        return stop(check, "gap_pin_eq_unsupported got=false", 15)
+      end
+      pass(check)
+    end,
+    _ => stop(check, "gap_pin_eq_unsupported expected Bool", 15)
+  }
+end
+fn check_gap_new_array(check: Check) -> Check = do
+  const created = execute_entry(new_array_prototypes())
+  if !is_run_ok(created) then
+    return stop(check, "gap_pin_new_array_unsupported expected RunOk got=" + error_code(created), 16)
+  end
+  if !value_raw_equal(run_ok_value(created), heap_alloc_array(heap_new(), 1).value) then
+    return stop(check, "gap_pin_new_array_unsupported value", 16)
+  end
+  pass(check)
 end
 
 fn main() -> i32 = do
@@ -285,8 +311,8 @@ fn main() -> i32 = do
   check = expect_error(check, run_program(heap_new(), push_prototype([], prototype(return_words(), [], 1)), 1).result, run_err_type(), 0, "entry_out_of_range", 12)
   check = expect_error(check, execute_entry(verify_prototypes()), run_err_verify(), 0, "verify_other_prototype", 13)
   check = check_gap_multiplication(check)
-  check = expect_error(check, execute_entry(equal_prototypes()), run_err_unsupported_opcode(), 2, "gap_pin_eq_unsupported", 15)
-  check = expect_error(check, execute_entry(new_array_prototypes()), run_err_unsupported_opcode(), 1, "gap_pin_new_array_unsupported", 16)
+  check = check_gap_equal(check)
+  check = check_gap_new_array(check)
   let mut host_arguments: [Value] = []
   host_arguments.push(int_value(42))
   check = expect_int32(check, run_program_with_args(heap_new(), host_argument_prototypes(), 0, host_arguments).result, 42, "host_arguments", 17)

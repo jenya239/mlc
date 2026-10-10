@@ -57,13 +57,12 @@ import {
   vm_state_frame_proto,
   vm_state_frame_return_register
 } from './vm_state'
-import { value_is_falsy } from './arith'
+import { apply_binary, apply_compare, value_is_falsy } from './arith'
 import {
   executor_step_continue,
   executor_step_returned,
   executor_fail
 } from './executor_step'
-import { executor_exec_binary, executor_exec_compare } from './executor_arith'
 import {
   ExecutorHeapStep,
   executor_heap_step,
@@ -112,102 +111,25 @@ fn place_arguments(state: ref mut VmState, register_count: i32, args: [Value]) -
   end
 end
 
-fn executor_exec_load_const(
-  state: ref mut VmState,
-  proto: FunctionProto,
-  decoded: DecodedAbc,
-  words: [i32],
-  primary: i32,
-  span: i32
-) -> i32 = do
-  let constant_index = instruction_load_const_index(words, primary)
-  vm_state_set_register(state, decoded.a, proto.constants[constant_index])
-  vm_state_set_program_counter(state, primary + span)
-  executor_step_continue()
+fn copy_frame_registers(state: ref mut VmState, register_count: i32) -> [Value] = do
+  let mut registers: [Value] = []
+  let mut index = 0
+  while index < register_count do
+    registers.push(vm_state_register(state, index))
+    index = index + 1
+  end
+  registers
 end
 
-fn executor_exec_move(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
-  vm_state_set_register(state, decoded.a, vm_state_register(state, decoded.b))
-  vm_state_set_program_counter(state, primary + span)
-  executor_step_continue()
-end
-
-fn executor_exec_return(state: ref mut VmState, decoded: DecodedAbc) -> i32 = do
-  let value = vm_state_register(state, decoded.a)
-  if vm_state_frame_depth(state) == 1 then
-    state.return_value = value
-    executor_step_returned()
-  else
-    let return_register = vm_state_frame_return_register(state)
-    vm_state_pop_frame(state)
-    vm_state_set_register(state, return_register, value)
-    executor_step_continue()
+fn write_frame_registers(state: ref mut VmState, registers: [Value]) -> unit = do
+  let mut index = 0
+  while index < registers.length() do
+    vm_state_set_register(state, index, registers[index])
+    index = index + 1
   end
 end
 
-fn executor_exec_jump(state: ref mut VmState, words: [i32], primary: i32, span: i32) -> i32 = do
-  let offset = instruction_jump_offset(words, primary)
-  vm_state_set_program_counter(state, primary + span + offset)
-  executor_step_continue()
-end
-
-fn executor_exec_jump_if_false(
-  state: ref mut VmState,
-  decoded: DecodedAbc,
-  words: [i32],
-  primary: i32,
-  span: i32
-) -> i32 = do
-  if value_is_falsy(vm_state_register(state, decoded.a)) then
-    executor_exec_jump(state, words, primary, span)
-  else
-    vm_state_set_program_counter(state, primary + span)
-    executor_step_continue()
-  end
-end
-
-fn executor_exec(
-  state: ref mut VmState,
-  proto: FunctionProto,
-  decoded: DecodedAbc,
-  words: [i32],
-  primary: i32,
-  span: i32
-) -> i32 = do
-  if decoded.opcode == instruction_opcode_load_const() then
-    executor_exec_load_const(state, proto, decoded, words, primary, span)
-  else if decoded.opcode == instruction_opcode_move() then
-    executor_exec_move(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_return() then
-    executor_exec_return(state, decoded)
-  else if decoded.opcode == instruction_opcode_jump() then
-    executor_exec_jump(state, words, primary, span)
-  else if decoded.opcode == instruction_opcode_jump_if_false() then
-    executor_exec_jump_if_false(state, decoded, words, primary, span)
-  else if decoded.opcode == instruction_opcode_add() then
-    executor_exec_binary(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_sub() then
-    executor_exec_binary(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_mul() then
-    executor_exec_binary(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_div() then
-    executor_exec_binary(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_eq() then
-    executor_exec_compare(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_ne() then
-    executor_exec_compare(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_lt() then
-    executor_exec_compare(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_le() then
-    executor_exec_compare(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_gt() then
-    executor_exec_compare(state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_ge() then
-    executor_exec_compare(state, decoded, primary, span)
-  else
-    executor_fail(state, run_err_unsupported_opcode(), primary)
-  end
-end
+fn frame_step_leave() -> i32 = 3
 
 fn dispatch_instruction(
   heap: Heap,
@@ -220,15 +142,7 @@ fn dispatch_instruction(
   let primary = program_counter
   let decoded = instruction_decode(Instruction { word: words[primary] })
   let span = instruction_word_span(words, primary)
-  if decoded.opcode == instruction_opcode_call() then
-    executor_exec_call(heap, state, protos, proto, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_make_closure() then
-    executor_exec_make_closure(heap, state, protos, proto, decoded, words, primary, span)
-  else if decoded.opcode == instruction_opcode_get_upval() then
-    executor_exec_get_upval(heap, state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_set_upval() then
-    executor_exec_set_upval(heap, state, decoded, primary, span)
-  else if decoded.opcode == instruction_opcode_new_array() then
+  if decoded.opcode == instruction_opcode_new_array() then
     executor_exec_new_array(heap, state, decoded, primary, span)
   else if decoded.opcode == instruction_opcode_get_index() then
     executor_exec_get_index(heap, state, decoded, primary, span)
@@ -240,19 +154,96 @@ fn dispatch_instruction(
     executor_exec_get_prop(heap, state, decoded, primary, span)
   else if decoded.opcode == instruction_opcode_set_prop() then
     executor_exec_set_prop(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_call() then
+    executor_exec_call(heap, state, protos, proto, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_make_closure() then
+    executor_exec_make_closure(heap, state, protos, proto, decoded, words, primary, span)
+  else if decoded.opcode == instruction_opcode_get_upval() then
+    executor_exec_get_upval(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_set_upval() then
+    executor_exec_set_upval(heap, state, decoded, primary, span)
   else
-    executor_heap_step(heap, executor_exec(state, proto, decoded, words, primary, span))
+    executor_heap_step(heap, executor_fail(state, run_err_unsupported_opcode(), primary))
   end
 end
 
-fn executor_step_one(heap: Heap, state: ref mut VmState, protos: [FunctionProto]) -> ExecutorHeapStep = do
+fn execute_current_frame(heap: Heap, state: ref mut VmState, protos: [FunctionProto]) -> ExecutorHeapStep = do
   let proto = protos[vm_state_frame_proto(state)]
   let words = proto.words
-  let program_counter = vm_state_program_counter(state)
-  if program_counter >= words.length() then
-    executor_heap_step(heap, executor_fail(state, run_err_no_return(), words.length()))
+  let frame_depth = vm_state_frame_depth(state)
+  let continue_step = executor_step_continue()
+  let mut registers = copy_frame_registers(state, proto.register_count)
+  let mut heap_state = heap
+  let mut program_counter = vm_state_program_counter(state)
+  let mut step = continue_step
+  while step == continue_step && state.error_code == "" do
+    if program_counter >= words.length() then
+      step = executor_fail(state, run_err_no_return(), words.length())
+    else
+      let primary = program_counter
+      let decoded = instruction_decode(Instruction { word: words[primary] })
+      let span = instruction_word_span(words, primary)
+      if decoded.opcode == instruction_opcode_add() || decoded.opcode == instruction_opcode_sub() || decoded.opcode == instruction_opcode_mul() || decoded.opcode == instruction_opcode_div() then
+        let outcome = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+        if outcome.err_code != "" then
+          step = executor_fail(state, outcome.err_code, primary)
+        else
+          registers.set(decoded.a, outcome.value)
+          program_counter = primary + span
+        end
+      else if decoded.opcode == instruction_opcode_le() || decoded.opcode == instruction_opcode_eq() || decoded.opcode == instruction_opcode_ne() || decoded.opcode == instruction_opcode_lt() || decoded.opcode == instruction_opcode_gt() || decoded.opcode == instruction_opcode_ge() then
+        let outcome = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+        if outcome.err_code != "" then
+          step = executor_fail(state, outcome.err_code, primary)
+        else
+          registers.set(decoded.a, outcome.value)
+          program_counter = primary + span
+        end
+      else if decoded.opcode == instruction_opcode_jump_if_false() then
+        if value_is_falsy(registers[decoded.a]) then
+          program_counter = primary + span + instruction_jump_offset(words, primary)
+        else
+          program_counter = primary + span
+        end
+      else if decoded.opcode == instruction_opcode_jump() then
+        program_counter = primary + span + instruction_jump_offset(words, primary)
+      else if decoded.opcode == instruction_opcode_load_const() then
+        registers.set(decoded.a, proto.constants[instruction_load_const_index(words, primary)])
+        program_counter = primary + span
+      else if decoded.opcode == instruction_opcode_move() then
+        registers.set(decoded.a, registers[decoded.b])
+        program_counter = primary + span
+      else if decoded.opcode == instruction_opcode_return() then
+        let value = registers[decoded.a]
+        if vm_state_frame_depth(state) == 1 then
+          state.return_value = value
+          step = executor_step_returned()
+        else
+          let return_register = vm_state_frame_return_register(state)
+          vm_state_pop_frame(state)
+          vm_state_set_register(state, return_register, value)
+          step = frame_step_leave()
+        end
+      else
+        write_frame_registers(state, registers)
+        vm_state_set_program_counter(state, primary)
+        let outcome = dispatch_instruction(heap_state, state, protos, proto, words, primary)
+        heap_state = outcome.heap
+        if outcome.step != continue_step || state.error_code != "" then
+          step = outcome.step
+        else if vm_state_frame_depth(state) != frame_depth then
+          step = frame_step_leave()
+        else
+          registers = copy_frame_registers(state, proto.register_count)
+          program_counter = vm_state_program_counter(state)
+        end
+      end
+    end
+  end
+  if step == frame_step_leave() then
+    executor_heap_step(heap_state, continue_step)
   else
-    dispatch_instruction(heap, state, protos, proto, words, program_counter)
+    executor_heap_step(heap_state, step)
   end
 end
 
@@ -264,7 +255,7 @@ fn execute_state(heap: Heap, protos: [FunctionProto], entry_proto_index: i32, ar
   place_arguments(state, entry.register_count, args)
   let mut finished = false
   while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished do
-    let outcome = executor_step_one(heap_state, state, protos)
+    let outcome = execute_current_frame(heap_state, state, protos)
     heap_state = outcome.heap
     if outcome.step == executor_step_returned() then
       finished = true
