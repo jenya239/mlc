@@ -2,6 +2,7 @@
 #include "mlc/script_vm/embedding_abi.h"
 
 #include "embedding.hpp"
+#include "embedding_codes.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -64,23 +65,23 @@ MlcResult mlc_vm_load_module(
 ) {
   MlcResult result{};
   if (vm == nullptr || name == nullptr || source_or_bytecode == nullptr) {
-    result.code = embedding::emb_type();
+    result.code = embedding_codes::emb_type();
     return result;
   }
   if (size > static_cast<size_t>(0x7fffffff)) {
-    result.code = embedding::emb_format();
+    result.code = embedding_codes::emb_format();
     return result;
   }
   const auto data_pointer = reinterpret_cast<std::int64_t>(source_or_bytecode);
   const auto size_i32 = static_cast<std::int32_t>(size);
   const auto code = embedding::emb_verify_module_ptr(data_pointer, size_i32);
-  if (code != embedding::emb_ok()) {
+  if (code != embedding_codes::emb_ok()) {
     result.code = code;
     return result;
   }
   const auto* bytes = static_cast<const std::uint8_t*>(source_or_bytecode);
   vm->state.modules[std::string(name)] = std::vector<std::uint8_t>(bytes, bytes + size);
-  result.code = embedding::emb_ok();
+  result.code = embedding_codes::emb_ok();
   return result;
 }
 
@@ -110,20 +111,20 @@ MlcResult mlc_vm_call(
 ) {
   MlcResult result{};
   if (vm == nullptr || result_value == nullptr) {
-    result.code = embedding::emb_type();
+    result.code = embedding_codes::emb_type();
     return result;
   }
   if (callable == 0 || callable > static_cast<MlcHandle>(vm->state.handles.size())) {
-    result.code = embedding::emb_bad_handle();
+    result.code = embedding_codes::emb_bad_handle();
     return result;
   }
   HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(callable - 1)];
   if (!slot.live) {
-    result.code = embedding::emb_bad_handle();
+    result.code = embedding_codes::emb_bad_handle();
     return result;
   }
   if (argc > static_cast<size_t>(0x7fffffff)) {
-    result.code = embedding::emb_bounds();
+    result.code = embedding_codes::emb_bounds();
     return result;
   }
   std::int64_t result_raw = 0;
@@ -139,7 +140,7 @@ MlcResult mlc_vm_call(
       result_pointer
   );
   result.code = code;
-  if (code == embedding::emb_ok()) {
+  if (code == embedding_codes::emb_ok()) {
     result_value->raw = result_raw;
   }
   return result;

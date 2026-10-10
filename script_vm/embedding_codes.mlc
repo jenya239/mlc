@@ -1,0 +1,9 @@
+export fn emb_ok() -> i32 = 0
+export fn emb_unsupported() -> i32 = 1
+export fn emb_verify() -> i32 = 2
+export fn emb_type() -> i32 = 3
+export fn emb_bounds() -> i32 = 4
+export fn emb_stack() -> i32 = 5
+export fn emb_format() -> i32 = 6
+export fn emb_not_found() -> i32 = 7
+export fn emb_bad_handle() -> i32 = 8
