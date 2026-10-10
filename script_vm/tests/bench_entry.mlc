@@ -1,0 +1,195 @@
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump_if_false,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_arithmetic,
+  run_program,
+  run_with_heap
+} from '../interpreter'
+import { heap_new } from '../heap'
+import {
+  fixture_sum_loop,
+  fixture_sum_loop_instruction_count,
+  fixture_fib_call_count,
+  fixture_record_alloc_loop
+} from './bench_fixtures'
+
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn push_constant(constants: [Value], number: i32) -> [Value] = do
+  let mut next = constants
+  next.push(value_encode(ValueInt32(number)))
+  next
+end
+
+fn empty_upvalue_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn integer_from_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn nanoseconds_per_item(elapsed_microseconds: i32, accepted: bool, item_count: i32) -> i32 = do
+  if !accepted || elapsed_microseconds < 0 || elapsed_microseconds > 2000000 || item_count <= 0 then
+    return 0 - 1
+  end
+  elapsed_microseconds * 1000 / item_count
+end
+
+fn scaling_ratio(larger: i32, smaller: i32) -> i32 = do
+  if larger < 0 || smaller <= 0 then
+    return 0 - 1
+  end
+  larger * 100 / smaller
+end
+
+fn measure_sum_arithmetic() -> i32 = do
+  const prototype = fixture_sum_loop(60000)
+  const started = script_vm_perf_now_us()
+  const result = run_arithmetic(prototype.words, prototype.constants, prototype.register_count)
+  const elapsed = script_vm_perf_now_us() - started
+  nanoseconds_per_item(elapsed, integer_from_result(result) == 1800030000, fixture_sum_loop_instruction_count(60000))
+end
+
+fn measure_sum_program() -> i32 = do
+  const prototype = fixture_sum_loop(60000)
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(prototype)
+  const started = script_vm_perf_now_us()
+  const result = run_program(heap_new(), prototypes, 0).result
+  const elapsed = script_vm_perf_now_us() - started
+  nanoseconds_per_item(elapsed, integer_from_result(result) == 1800030000, fixture_sum_loop_instruction_count(60000))
+end
+
+fn fibonacci_callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 2))
+  words = append_words(words, instruction_words_move(4, 1))
+  words = append_words(words, instruction_words_return(4))
+  words = append_words(words, instruction_words_load_const(5, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 6, 1, 5))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 7, 6, 5))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 6))
+  words = append_words(words, instruction_words_call(8, 0, 2))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 7))
+  words = append_words(words, instruction_words_call(9, 0, 2))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 10, 8, 9))
+  words = append_words(words, instruction_words_return(10))
+  words
+end
+
+fn fibonacci_entry_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_make_closure(0, 1, empty_upvalue_sources()))
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_call(3, 0, 2))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+
+fn fibonacci_twenty_prototypes() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: fibonacci_entry_words(),
+    constants: push_constant([], 20),
+    register_count: 4
+  })
+  prototypes.push(FunctionProto {
+    words: fibonacci_callee_words(),
+    constants: push_constant([], 1),
+    register_count: 11
+  })
+  prototypes
+end
+
+fn measure_fibonacci() -> i32 = do
+  const prototypes = fibonacci_twenty_prototypes()
+  const call_count = fixture_fib_call_count(20)
+  const started = script_vm_perf_now_us()
+  const result = run_program(heap_new(), prototypes, 0).result
+  const elapsed = script_vm_perf_now_us() - started
+  nanoseconds_per_item(elapsed, integer_from_result(result) == 6765, call_count)
+end
+
+fn measure_record(iteration_count: i32) -> i32 = do
+  const prototype = fixture_record_alloc_loop(iteration_count)
+  const started = script_vm_perf_now_us()
+  const result = run_with_heap(heap_new(), prototype.words, prototype.constants, prototype.register_count).result
+  const elapsed = script_vm_perf_now_us() - started
+  nanoseconds_per_item(elapsed, integer_from_result(result) == iteration_count, iteration_count)
+end
+
+fn print_bench(name: string, metric: string, value: i32) -> i32 = do
+  println("[script_vm] bench name=" + name + " metric=" + metric + " value=" + value.to_string())
+  0
+end
+
+fn report(
+  arithmetic_nanoseconds: i32,
+  program_nanoseconds: i32,
+  call_nanoseconds: i32,
+  small_allocation: i32,
+  large_allocation: i32
+) -> i32 = do
+  const ratio = scaling_ratio(large_allocation, small_allocation)
+  if arithmetic_nanoseconds < 0 || program_nanoseconds < 0 || call_nanoseconds < 0 || small_allocation < 0 || large_allocation < 0 || ratio < 0 then
+    return 1
+  end
+  print_bench("B1", "ns_per_insn", arithmetic_nanoseconds)
+  print_bench("B2", "ns_per_insn", program_nanoseconds)
+  print_bench("B3", "ns_per_call", call_nanoseconds)
+  print_bench("B4", "ns_per_alloc_n1000", small_allocation)
+  print_bench("B4", "ns_per_alloc_n4000", large_allocation)
+  print_bench("B4", "scaling_ratio_x100", ratio)
+  0
+end
+
+fn main() -> i32 = do
+  const arithmetic_nanoseconds = measure_sum_arithmetic()
+  const program_nanoseconds = measure_sum_program()
+  const call_nanoseconds = measure_fibonacci()
+  const small_allocation = measure_record(1000)
+  const large_allocation = measure_record(4000)
+  report(arithmetic_nanoseconds, program_nanoseconds, call_nanoseconds, small_allocation, large_allocation)
+end
