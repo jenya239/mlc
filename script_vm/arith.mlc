@@ -1,0 +1,200 @@
+import {
+  Value,
+  ValueNil,
+  ValueBool,
+  ValueInt32,
+  ValueFloat64,
+  ValueHeapRef,
+  value_encode,
+  value_decode
+} from './value'
+import {
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge,
+  instruction_jump_offset
+} from './bytecode'
+import {
+  run_err_type,
+  run_err_overflow,
+  run_err_div_zero,
+  run_err_unsupported_opcode
+} from './run_result'
+
+extern fn script_vm_int32_checked_add(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_add" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_checked_sub(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_sub" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_checked_mul(left: i32, right: i32) -> i32 =
+  "mlc::script_vm::int32_checked_mul" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_int32_arith_ok() -> i32 =
+  "mlc::script_vm::int32_arith_ok" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+
+fn float_is_zero(number: f64) -> bool =
+  number == 0.0
+
+export type ArithOpResult = { err_code: string, value: Value }
+
+export fn apply_binary(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+  const left_rep = value_decode(left_value)
+  const right_rep = value_decode(right_value)
+  let mut code = ""
+  let mut out = value_encode(ValueNil)
+
+  match left_rep {
+    ValueInt32(left_number) =>
+      match right_rep {
+        ValueInt32(right_number) => do
+          if opcode == instruction_opcode_div() then
+            if right_number == 0 then
+              code = run_err_div_zero()
+            else
+              out = value_encode(ValueInt32(left_number / right_number))
+            end
+          else if opcode == instruction_opcode_add() then
+            const sum = script_vm_int32_checked_add(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(sum))
+            end
+          else if opcode == instruction_opcode_sub() then
+            const difference = script_vm_int32_checked_sub(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(difference))
+            end
+          else if opcode == instruction_opcode_mul() then
+            const product = script_vm_int32_checked_mul(left_number, right_number)
+            if script_vm_int32_arith_ok() == 0 then
+              code = run_err_overflow()
+            else
+              out = value_encode(ValueInt32(product))
+            end
+          else
+            code = run_err_unsupported_opcode()
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    ValueFloat64(left_number) =>
+      match right_rep {
+        ValueFloat64(right_number) => do
+          if opcode == instruction_opcode_div() then
+            if float_is_zero(right_number) then
+              code = run_err_div_zero()
+            else
+              out = value_encode(ValueFloat64(left_number / right_number))
+            end
+          else if opcode == instruction_opcode_add() then
+            out = value_encode(ValueFloat64(left_number + right_number))
+          else if opcode == instruction_opcode_sub() then
+            out = value_encode(ValueFloat64(left_number - right_number))
+          else if opcode == instruction_opcode_mul() then
+            out = value_encode(ValueFloat64(left_number * right_number))
+          else
+            code = run_err_unsupported_opcode()
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    _ => do
+      code = run_err_type()
+    end
+  }
+
+  ArithOpResult { err_code: code, value: out }
+end
+
+export fn value_is_falsy(value: Value) -> bool =
+  match value_decode(value) {
+    ValueNil => true,
+    ValueBool(flag) => !flag,
+    ValueInt32(number) => number == 0,
+    ValueFloat64(number) => number == 0.0,
+    ValueHeapRef(_object_id) => false
+  }
+
+export fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+  const left_rep = value_decode(left_value)
+  const right_rep = value_decode(right_value)
+  let mut code = ""
+  let mut out = value_encode(ValueNil)
+
+  match left_rep {
+    ValueInt32(left_number) =>
+      match right_rep {
+        ValueInt32(right_number) => do
+          let mut flag = false
+          if opcode == instruction_opcode_eq() then
+            flag = left_number == right_number
+          else if opcode == instruction_opcode_ne() then
+            flag = left_number != right_number
+          else if opcode == instruction_opcode_lt() then
+            flag = left_number < right_number
+          else if opcode == instruction_opcode_le() then
+            flag = left_number <= right_number
+          else if opcode == instruction_opcode_gt() then
+            flag = left_number > right_number
+          else if opcode == instruction_opcode_ge() then
+            flag = left_number >= right_number
+          else
+            code = run_err_unsupported_opcode()
+          end
+          if code == "" then
+            out = value_encode(ValueBool(flag))
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    ValueFloat64(left_number) =>
+      match right_rep {
+        ValueFloat64(right_number) => do
+          let mut flag = false
+          if opcode == instruction_opcode_eq() then
+            flag = left_number == right_number
+          else if opcode == instruction_opcode_ne() then
+            flag = left_number != right_number
+          else if opcode == instruction_opcode_lt() then
+            flag = left_number < right_number
+          else if opcode == instruction_opcode_le() then
+            flag = left_number <= right_number
+          else if opcode == instruction_opcode_gt() then
+            flag = left_number > right_number
+          else if opcode == instruction_opcode_ge() then
+            flag = left_number >= right_number
+          else
+            code = run_err_unsupported_opcode()
+          end
+          if code == "" then
+            out = value_encode(ValueBool(flag))
+          end
+        end,
+        _ => do
+          code = run_err_type()
+        end
+      },
+    _ => do
+      code = run_err_type()
+    end
+  }
+
+  ArithOpResult { err_code: code, value: out }
+end
+
+export fn jump_target(words: [i32], primary: i32, span: i32) -> i32 =
+  primary + span + instruction_jump_offset(words, primary)
