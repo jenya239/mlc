@@ -1,0 +1,245 @@
+import { Value, ValueInt32, value_encode, value_raw_equal } from '../value'
+import {
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_le,
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_return,
+  instruction_words_jump_if_false,
+  instruction_words_binary,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_words_get_upval,
+  instruction_words_set_upval,
+  instruction_upvalue_source_word
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunOk,
+  RunErr,
+  RunHeapResult,
+  run_program_with_args
+} from '../interpreter'
+import { heap_new, heap_live_object_count, heap_write_barrier_hits, heap_alloc_closure } from '../heap'
+import { run_state_program } from '../executor'
+
+fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
+fn fail(message: string) -> i32 = do
+  println("[script_vm unified_executor_unit] FAIL: " + message)
+  1
+end
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+fn check_same(label: string, old_result: RunHeapResult, new_result: RunHeapResult) -> i32 = do
+  if heap_live_object_count(old_result.heap) != heap_live_object_count(new_result.heap) then
+    return fail(label + " live count")
+  end
+  if heap_write_barrier_hits(old_result.heap) != heap_write_barrier_hits(new_result.heap) then
+    return fail(label + " write barrier")
+  end
+  match old_result.result {
+    RunOk(old_value) => match new_result.result {
+      RunOk(new_value) =>
+        if value_raw_equal(old_value, new_value) then
+          0
+        else
+          fail(label + " value")
+        end,
+      RunErr(new_code, _new_word_index) => fail(label + " got=" + new_code)
+    },
+    RunErr(old_code, old_word_index) => match new_result.result {
+      RunErr(new_code, new_word_index) =>
+        if old_code == new_code && old_word_index == new_word_index then
+          0
+        else
+          fail(label + " got=" + new_code)
+        end,
+      _ => fail(label + " expected error")
+    }
+  }
+end
+fn chain(left: [i32], right: [i32]) -> [i32] = append_words(left, right)
+fn two_values(left_value: Value, right_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(left_value)
+  constants.push(right_value)
+  constants
+end
+fn check_frames(label: string, protos: [FunctionProto]) -> i32 = do
+  let mut args: [Value] = []
+  check_same(label, run_program_with_args(heap_new(), protos, 0, args), run_state_program(heap_new(), protos, 0, args))
+end
+fn gate_frames(status: i32, label: string, protos: [FunctionProto]) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  check_frames(label, protos)
+end
+fn prototype(words: [i32], constants: [Value], register_count: i32) -> FunctionProto =
+  FunctionProto { words: words, constants: constants, register_count: register_count }
+fn push_prototype(prototypes: [FunctionProto], item: FunctionProto) -> [FunctionProto] = do
+  let mut next = prototypes
+  next.push(item)
+  next
+end
+fn int_constants(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(int_value(number))
+  constants
+end
+fn source_words(is_local: i32, index: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_upvalue_source_word(is_local, index))
+  words
+end
+fn local_sources(register_index: i32) -> [i32] = source_words(1, register_index)
+fn parent_sources() -> [i32] = source_words(0, 0)
+fn empty_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants
+end
+fn call_integer_prototypes() -> [FunctionProto] = do
+  const words = chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_call(1, 0, 0)), instruction_words_return(1))
+  push_prototype([], prototype(words, int_constants(0), 2))
+end
+fn argument_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_binary(instruction_opcode_add(), 2, 0, 1)), instruction_words_return(2))
+  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, int_constants(41), 3)), prototype(callee, int_constants(1), 3))
+end
+fn isolation_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain([], instruction_words_load_const(1, 0)), instruction_words_return(1))
+  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, [])), instruction_words_call(2, 0, 1)), instruction_words_binary(instruction_opcode_add(), 3, 1, 2)), instruction_words_return(3))
+  push_prototype(push_prototype([], prototype(entry, int_constants(99), 4)), prototype(callee, int_constants(1), 2))
+end
+fn capture_entry(callee_words: [i32], callee_constants: [Value], callee_registers: i32, captured: i32) -> [FunctionProto] = do
+  const entry = chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, int_constants(captured), 3)), prototype(callee_words, callee_constants, callee_registers))
+end
+fn capture_local_prototypes() -> [FunctionProto] =
+  capture_entry(chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0)), empty_constants(), 1, 9)
+fn set_upvalue_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_set_upval(0, 0)), instruction_words_get_upval(1, 0)), instruction_words_return(1))
+  capture_entry(callee, int_constants(4), 2, 0)
+end
+fn parent_prototypes() -> [FunctionProto] = do
+  const inner = chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0))
+  const middle = chain(chain([], instruction_words_make_closure(0, 2, parent_sources())), instruction_words_return(0))
+  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_call(3, 2, 0)), instruction_words_return(3))
+  push_prototype(push_prototype(push_prototype([], prototype(entry, int_constants(5), 4)), prototype(middle, empty_constants(), 1)), prototype(inner, empty_constants(), 1))
+end
+fn recursive_callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 2))
+  words = append_words(words, instruction_words_load_const(4, 0))
+  words = append_words(words, instruction_words_return(4))
+  words = append_words(words, instruction_words_load_const(5, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 6, 1, 5))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 6))
+  words = append_words(words, instruction_words_call(7, 0, 2))
+  words = append_words(words, instruction_words_load_const(8, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 9, 7, 8))
+  words = append_words(words, instruction_words_return(9))
+  words
+end
+fn recursive_prototypes() -> [FunctionProto] = do
+  const entry = chain(chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(2, 0)), instruction_words_move(1, 0)), instruction_words_call(3, 0, 2)), instruction_words_return(3))
+  push_prototype(push_prototype([], prototype(entry, int_constants(8), 4)), prototype(recursive_callee_words(), two_values(int_value(0), int_value(1)), 10))
+end
+fn stack_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain([], instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, empty_constants(), 3)), prototype(callee, empty_constants(), 3))
+end
+fn bad_closure_prototypes() -> [FunctionProto] = do
+  const words = chain(chain([], instruction_words_call(1, 0, 0)), instruction_words_return(1))
+  push_prototype([], prototype(words, empty_constants(), 2))
+end
+fn check_bad_closure() -> i32 = do
+  let old_alloc = heap_alloc_closure(heap_new(), 7, 0)
+  let new_alloc = heap_alloc_closure(heap_new(), 7, 0)
+  let mut old_args: [Value] = []
+  old_args.push(old_alloc.value)
+  let mut new_args: [Value] = []
+  new_args.push(new_alloc.value)
+  check_same("call_proto_out_of_range", run_program_with_args(old_alloc.heap, bad_closure_prototypes(), 0, old_args), run_state_program(new_alloc.heap, bad_closure_prototypes(), 0, new_args))
+end
+fn gate_bad_closure(status: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  check_bad_closure()
+end
+fn countdown_prototypes(argument: i32) -> [FunctionProto] = do
+  const entry = chain(chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(2, 0)), instruction_words_move(1, 0)), instruction_words_call(3, 0, 2)), instruction_words_return(3))
+  push_prototype(push_prototype([], prototype(entry, int_constants(argument), 4)), prototype(recursive_callee_words(), two_values(int_value(0), int_value(1)), 10))
+end
+fn run_countdown(argument: i32) -> RunHeapResult = do
+  let mut args: [Value] = []
+  run_state_program(heap_new(), countdown_prototypes(argument), 0, args)
+end
+fn expect_countdown_value(label: string, argument: i32) -> i32 = do
+  let result = run_countdown(argument)
+  match result.result {
+    RunOk(value) =>
+      if value_raw_equal(value, int_value(argument)) then
+        0
+      else
+        fail(label + " value")
+      end,
+    RunErr(code, word_index) => fail(label + " got=" + code + " at=" + word_index.to_string())
+  }
+end
+fn expect_countdown_stack(label: string, argument: i32, word_index: i32) -> i32 = do
+  let result = run_countdown(argument)
+  match result.result {
+    RunErr(code, at) =>
+      if code == "stack" && at == word_index then
+        0
+      else
+        fail(label + " got=" + code + " at=" + at.to_string())
+      end,
+    RunOk(_value) => fail(label + " expected error")
+  }
+end
+fn check_literal_frame_depth() -> i32 = do
+  let success_frames = 255
+  let overflow_frames = 256
+  let call_word_index = 9
+  let success = expect_countdown_value("frame_depth_255", success_frames - 1)
+  if success != 0 then
+    return success
+  end
+  expect_countdown_stack("frame_depth_256", overflow_frames - 1, call_word_index)
+end
+fn gate_literal_frame_depth(status: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  check_literal_frame_depth()
+end
+export fn run_unified_executor_frame_cases(status: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  let mut next = gate_frames(0, "call_integer", call_integer_prototypes())
+  next = gate_frames(next, "call_argument", argument_prototypes())
+  next = gate_frames(next, "register_isolation", isolation_prototypes())
+  next = gate_frames(next, "capture_local", capture_local_prototypes())
+  next = gate_frames(next, "set_upvalue", set_upvalue_prototypes())
+  next = gate_frames(next, "capture_parent", parent_prototypes())
+  next = gate_frames(next, "recursion_depth_8", recursive_prototypes())
+  next = gate_frames(next, "stack_depth", stack_prototypes())
+  next = gate_literal_frame_depth(next)
+  gate_bad_closure(next)
+end
