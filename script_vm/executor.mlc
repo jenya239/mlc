@@ -24,7 +24,13 @@ import {
   instruction_opcode_call,
   instruction_opcode_make_closure,
   instruction_opcode_get_upval,
-  instruction_opcode_set_upval
+  instruction_opcode_set_upval,
+  instruction_opcode_new_array,
+  instruction_opcode_get_index,
+  instruction_opcode_set_index,
+  instruction_opcode_new_record,
+  instruction_opcode_get_prop,
+  instruction_opcode_set_prop
 } from './bytecode'
 import { VerifyOk, VerifyErr, verify_function } from './verifier'
 import { Heap } from './heap'
@@ -66,6 +72,14 @@ import {
   executor_exec_get_upval,
   executor_exec_set_upval
 } from './executor_calls'
+import {
+  executor_exec_new_array,
+  executor_exec_get_index,
+  executor_exec_set_index,
+  executor_exec_new_record,
+  executor_exec_get_prop,
+  executor_exec_set_prop
+} from './executor_heap'
 
 type VerifyScan = { failed: bool, at: i32 }
 
@@ -214,6 +228,18 @@ fn dispatch_instruction(
     executor_exec_get_upval(heap, state, decoded, primary, span)
   else if decoded.opcode == instruction_opcode_set_upval() then
     executor_exec_set_upval(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_new_array() then
+    executor_exec_new_array(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_get_index() then
+    executor_exec_get_index(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_set_index() then
+    executor_exec_set_index(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_new_record() then
+    executor_exec_new_record(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_get_prop() then
+    executor_exec_get_prop(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_set_prop() then
+    executor_exec_set_prop(heap, state, decoded, primary, span)
   else
     executor_heap_step(heap, executor_exec(state, proto, decoded, words, primary, span))
   end
