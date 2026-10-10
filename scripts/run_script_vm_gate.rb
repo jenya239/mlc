@@ -22,6 +22,7 @@ registered_units = [
   ["inplace_probe", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/inplace_probe_unit.mlc"]],
   ["language_probe", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/language_probe_unit.mlc"]],
   ["vm_state", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/vm_state_unit.mlc"]],
+  ["heap_inplace", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/heap_inplace_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)

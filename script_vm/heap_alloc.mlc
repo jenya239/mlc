@@ -7,74 +7,76 @@ import {
   heap_type_cell,
   heap_type_array,
   heap_type_record,
-  heap_type_closure,
-  make_nil_elements
+  heap_type_closure
 } from './heap_types'
 
-fn append_nil_elements(arena: [Value], element_count: i32) -> [Value] = do
-  let mut next = arena
-  let mut index = 0
-  const nils = make_nil_elements(element_count)
-  while index < nils.length() do
-    next.push(nils[index])
-    index = index + 1
-  end
-  next
-end
-
-fn heap_alloc_slot(
-  heap: Heap,
+fn heap_in_place_alloc_object(
+  heap: ref mut Heap,
   type_id: i32,
   object_flags: i32,
   shape_or_meta: i64,
   element_count: i32,
   size_class: i32
-) -> HeapAlloc = do
-  let mut slots = heap.slots
-  const object_id = slots.length()
+) -> Value = do
+  const object_id = heap.slots.length()
   const element_start = heap.element_arena.length()
-  const arena = append_nil_elements(heap.element_arena, element_count)
-  const appended = arena.length() - element_start
+  const nil_value = value_encode(ValueNil)
+  let mut appended = 0
+  while appended < element_count do
+    heap.element_arena.push(nil_value)
+    appended = appended + 1
+  end
   const header = ObjectHeader {
     type_id: type_id,
     gc_flags: 0,
     object_flags: object_flags,
     shape_or_meta: shape_or_meta
   }
-  const slot = HeapSlot {
+  heap.slots.push(HeapSlot {
     header: header,
-    child: value_encode(ValueNil),
+    child: nil_value,
     element_start: element_start,
     element_count: appended,
     size_class: size_class,
     live: true
-  }
-  slots.push(slot)
-  HeapAlloc {
-    heap: Heap {
-      slots: slots,
-      element_arena: arena,
-      freelist_32: heap.freelist_32,
-      freelist_64: heap.freelist_64,
-      freelist_128: heap.freelist_128,
-      freelist_256: heap.freelist_256,
-      roots: heap.roots,
-      live_count: heap.live_count + 1,
-      write_barrier_hits: heap.write_barrier_hits,
-      scratch_object_id: object_id
-    },
-    value: value_encode(ValueHeapRef(object_id))
-  }
+  })
+  heap.live_count = heap.live_count + 1
+  heap.scratch_object_id = object_id
+  value_encode(ValueHeapRef(object_id))
 end
 
-export fn heap_alloc_cell(heap: Heap) -> HeapAlloc =
-  heap_alloc_slot(heap, heap_type_cell(), 0, 0, 0, 1)
+export fn heap_in_place_alloc_cell(heap: ref mut Heap) -> Value =
+  heap_in_place_alloc_object(heap, heap_type_cell(), 0, 0, 0, 1)
 
-export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc =
-  heap_alloc_slot(heap, heap_type_array(), 0, 0, length, 2)
+export fn heap_in_place_alloc_array(heap: ref mut Heap, length: i32) -> Value =
+  heap_in_place_alloc_object(heap, heap_type_array(), 0, 0, length, 2)
 
-export fn heap_alloc_record(heap: Heap, field_count: i32) -> HeapAlloc =
-  heap_alloc_slot(heap, heap_type_record(), 0, 0, field_count, 2)
+export fn heap_in_place_alloc_record(heap: ref mut Heap, field_count: i32) -> Value =
+  heap_in_place_alloc_object(heap, heap_type_record(), 0, 0, field_count, 2)
 
-export fn heap_alloc_closure(heap: Heap, proto_index: i32, upvalue_count: i32) -> HeapAlloc =
-  heap_alloc_slot(heap, heap_type_closure(), proto_index, 0, upvalue_count, 2)
+export fn heap_in_place_alloc_closure(heap: ref mut Heap, proto_index: i32, upvalue_count: i32) -> Value =
+  heap_in_place_alloc_object(heap, heap_type_closure(), proto_index, 0, upvalue_count, 2)
+
+export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
+  let mut next = heap
+  const value = heap_in_place_alloc_cell(next)
+  HeapAlloc { heap: next, value: value }
+end
+
+export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc = do
+  let mut next = heap
+  const value = heap_in_place_alloc_array(next, length)
+  HeapAlloc { heap: next, value: value }
+end
+
+export fn heap_alloc_record(heap: Heap, field_count: i32) -> HeapAlloc = do
+  let mut next = heap
+  const value = heap_in_place_alloc_record(next, field_count)
+  HeapAlloc { heap: next, value: value }
+end
+
+export fn heap_alloc_closure(heap: Heap, proto_index: i32, upvalue_count: i32) -> HeapAlloc = do
+  let mut next = heap
+  const value = heap_in_place_alloc_closure(next, proto_index, upvalue_count)
+  HeapAlloc { heap: next, value: value }
+end

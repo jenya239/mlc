@@ -1,0 +1,157 @@
+import { Value, ValueNil, ValueHeapRef, value_encode, value_decode } from './value'
+import { HeapSlot, Heap, heap_type_cell, heap_type_closure } from './heap_types'
+
+fn encoded_nil() -> Value = value_encode(ValueNil)
+
+fn empty_values() -> [Value] = do
+  let mut values: [Value] = []
+  values
+end
+
+export fn heap_slot_count(heap: Heap) -> i32 = heap.slots.length()
+
+export fn heap_in_place_read(heap: ref mut Heap, parent: Value, index: i32) -> Value =
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        encoded_nil()
+      else if object_id >= heap.slots.length() then
+        encoded_nil()
+      else
+        const slot = heap.slots[object_id]
+        if !slot.live then
+          encoded_nil()
+        else if index < 0 then
+          encoded_nil()
+        else if index >= slot.element_count then
+          encoded_nil()
+        else
+          heap.element_arena[slot.element_start + index]
+        end
+      end
+    end,
+    _ => encoded_nil()
+  }
+
+export fn heap_in_place_element_count(heap: ref mut Heap, parent: Value) -> i32 =
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0
+      else if object_id >= heap.slots.length() then
+        0
+      else if !heap.slots[object_id].live then
+        0
+      else
+        heap.slots[object_id].element_count
+      end
+    end,
+    _ => 0
+  }
+
+export fn heap_in_place_type_id(heap: ref mut Heap, value: Value) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0
+      else if object_id >= heap.slots.length() then
+        0
+      else if !heap.slots[object_id].live then
+        0
+      else
+        heap.slots[object_id].header.type_id
+      end
+    end,
+    _ => 0
+  }
+
+export fn heap_in_place_closure_proto_index(heap: ref mut Heap, closure: Value) -> i32 =
+  match value_decode(closure) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        0 - 1
+      else if object_id >= heap.slots.length() then
+        0 - 1
+      else if !heap.slots[object_id].live then
+        0 - 1
+      else if heap.slots[object_id].header.type_id != heap_type_closure() then
+        0 - 1
+      else
+        heap.slots[object_id].header.object_flags
+      end
+    end,
+    _ => 0 - 1
+  }
+
+export fn heap_in_place_cell_child(heap: ref mut Heap, cell: Value) -> Value =
+  match value_decode(cell) {
+    ValueHeapRef(object_id) => do
+      if object_id < 0 then
+        encoded_nil()
+      else if object_id >= heap.slots.length() then
+        encoded_nil()
+      else if !heap.slots[object_id].live then
+        encoded_nil()
+      else if heap.slots[object_id].header.type_id != heap_type_cell() then
+        encoded_nil()
+      else
+        heap.slots[object_id].child
+      end
+    end,
+    _ => encoded_nil()
+  }
+
+fn replace_slot_child(heap: ref mut Heap, object_id: i32, slot: HeapSlot, value: Value) -> unit = do
+  heap.slots.set(object_id, HeapSlot {
+    header: slot.header,
+    child: value,
+    element_start: slot.element_start,
+    element_count: slot.element_count,
+    size_class: slot.size_class,
+    live: true
+  })
+end
+
+fn write_arena_value(heap: ref mut Heap, slot: HeapSlot, slot_index: i32, value: Value) -> unit = do
+  if slot_index >= 0 && slot_index < slot.element_count then
+    heap.element_arena.set(slot.element_start + slot_index, value)
+  end
+end
+
+fn write_live_value(heap: ref mut Heap, object_id: i32, slot: HeapSlot, slot_index: i32, value: Value) -> unit = do
+  if slot.header.type_id == heap_type_cell() then
+    replace_slot_child(heap, object_id, slot, value)
+  else
+    write_arena_value(heap, slot, slot_index, value)
+  end
+end
+
+fn write_live_slot(heap: ref mut Heap, object_id: i32, slot_index: i32, value: Value) -> unit = do
+  const slot = heap.slots[object_id]
+  if slot.live then
+    write_live_value(heap, object_id, slot, slot_index, value)
+  end
+end
+
+fn write_decoded(heap: ref mut Heap, parent: Value, slot_index: i32, value: Value) -> unit =
+  match value_decode(parent) {
+    ValueHeapRef(object_id) => do
+      if object_id >= 0 && object_id < heap.slots.length() then
+        write_live_slot(heap, object_id, slot_index, value)
+      end
+    end,
+    _ => do end
+  }
+
+export fn heap_in_place_write(heap: ref mut Heap, parent: Value, slot_index: i32, value: Value) -> unit = do
+  write_decoded(heap, parent, slot_index, value)
+  heap.write_barrier_hits = heap.write_barrier_hits + 1
+end
+
+export fn heap_in_place_root_push(heap: ref mut Heap, value: Value) -> unit = do
+  heap.roots.push(value)
+end
+
+export fn heap_in_place_root_clear(heap: ref mut Heap) -> unit = do
+  heap.roots = empty_values()
+end
