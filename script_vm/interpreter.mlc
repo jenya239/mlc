@@ -66,18 +66,21 @@ import {
   heap_closure_proto_index,
   heap_cell_child
 } from './heap'
-
-export type RunResult =
-  | RunOk(Value)
-  | RunErr(string, i32)
-
-export type RunHeapResult = { heap: Heap, result: RunResult }
-
-export type FunctionProto = {
-  words: [i32],
-  constants: [Value],
-  register_count: i32
-}
+import {
+  RunResult,
+  RunOk,
+  RunErr,
+  RunHeapResult,
+  FunctionProto,
+  run_err_verify,
+  run_err_type,
+  run_err_overflow,
+  run_err_div_zero,
+  run_err_no_return,
+  run_err_unsupported_opcode,
+  run_err_bounds,
+  run_err_stack
+} from './run_result'
 
 type CallFrame = {
   proto_index: i32,
@@ -86,15 +89,6 @@ type CallFrame = {
   closure: Value,
   return_dst: i32
 }
-
-export fn run_err_verify() -> string = "verify"
-export fn run_err_type() -> string = "type"
-export fn run_err_overflow() -> string = "overflow"
-export fn run_err_div_zero() -> string = "div_zero"
-export fn run_err_no_return() -> string = "no_return"
-export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
-export fn run_err_bounds() -> string = "bounds"
-export fn run_err_stack() -> string = "stack"
 
 extern fn script_vm_int32_checked_add(left: i32, right: i32) -> i32 =
   "mlc::script_vm::int32_checked_add" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
