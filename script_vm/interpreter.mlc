@@ -312,10 +312,10 @@ fn execute_with_heap(
     const span = instruction_word_span(words, primary)
     if decoded.opcode == instruction_opcode_load_const() then
       const constant_index = instruction_load_const_index(words, primary)
-      registers = registers_set(registers, decoded.a, constants[constant_index])
+      registers.set(decoded.a, constants[constant_index])
       program_counter = program_counter + span
     else if decoded.opcode == instruction_opcode_move() then
-      registers = registers_set(registers, decoded.a, registers[decoded.b])
+      registers.set(decoded.a, registers[decoded.b])
       program_counter = program_counter + span
     else if decoded.opcode == instruction_opcode_add() then
       const add_result = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
@@ -323,7 +323,7 @@ fn execute_with_heap(
         err_code = add_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, add_result.value)
+        registers.set(decoded.a, add_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_sub() then
@@ -332,7 +332,7 @@ fn execute_with_heap(
         err_code = sub_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, sub_result.value)
+        registers.set(decoded.a, sub_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_mul() then
@@ -341,7 +341,7 @@ fn execute_with_heap(
         err_code = mul_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, mul_result.value)
+        registers.set(decoded.a, mul_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_div() then
@@ -350,7 +350,7 @@ fn execute_with_heap(
         err_code = div_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, div_result.value)
+        registers.set(decoded.a, div_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_eq() then
@@ -359,7 +359,7 @@ fn execute_with_heap(
         err_code = eq_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, eq_result.value)
+        registers.set(decoded.a, eq_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_ne() then
@@ -368,7 +368,7 @@ fn execute_with_heap(
         err_code = ne_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, ne_result.value)
+        registers.set(decoded.a, ne_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_lt() then
@@ -377,7 +377,7 @@ fn execute_with_heap(
         err_code = lt_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, lt_result.value)
+        registers.set(decoded.a, lt_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_le() then
@@ -386,7 +386,7 @@ fn execute_with_heap(
         err_code = le_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, le_result.value)
+        registers.set(decoded.a, le_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_gt() then
@@ -395,7 +395,7 @@ fn execute_with_heap(
         err_code = gt_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, gt_result.value)
+        registers.set(decoded.a, gt_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_ge() then
@@ -404,7 +404,7 @@ fn execute_with_heap(
         err_code = ge_result.err_code
         err_at = primary
       else
-        registers = registers_set(registers, decoded.a, ge_result.value)
+        registers.set(decoded.a, ge_result.value)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_return() then
@@ -427,7 +427,7 @@ fn execute_with_heap(
           else
             const alloc = heap_alloc_array(heap_state, length)
             heap_state = alloc.heap
-            registers = registers_set(registers, decoded.a, alloc.value)
+            registers.set(decoded.a, alloc.value)
             program_counter = program_counter + span
           end
         end,
@@ -448,7 +448,7 @@ fn execute_with_heap(
               err_at = primary
             else
               const element = heap_get_element(heap_state, registers[decoded.b], index)
-              registers = registers_set(registers, decoded.a, element)
+              registers.set(decoded.a, element)
               program_counter = program_counter + span
             end
           end,
@@ -487,7 +487,7 @@ fn execute_with_heap(
     else if decoded.opcode == instruction_opcode_new_record() then
       const alloc = heap_alloc_record(heap_state, decoded.b)
       heap_state = alloc.heap
-      registers = registers_set(registers, decoded.a, alloc.value)
+      registers.set(decoded.a, alloc.value)
       program_counter = program_counter + span
     else if decoded.opcode == instruction_opcode_get_prop() then
       if heap_object_type_id(heap_state, registers[decoded.b]) != heap_type_record() then
@@ -498,7 +498,7 @@ fn execute_with_heap(
         err_at = primary
       else
         const element = heap_get_element(heap_state, registers[decoded.b], decoded.c)
-        registers = registers_set(registers, decoded.a, element)
+        registers.set(decoded.a, element)
         program_counter = program_counter + span
       end
     else if decoded.opcode == instruction_opcode_set_prop() then
