@@ -1,8 +1,8 @@
 current_step: 31
-status: ready
-last_result: done step 31: NEW_ARRAY, GET_INDEX, SET_INDEX, NEW_RECORD, GET_PROP, SET_PROP in executor_heap
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/unified_executor_unit.mlc => [script_vm] unified_executor_unit ok exit 0; ruby scripts/run_script_vm_gate.rb heap_gc_arena arrays_records char_heap_ops unified_executor => script_vm_gate ok units=4 exit 0; sabotage SET_INDEX without heap_write_barrier => FAIL array_round_trip write barrier exit 1; restored; unit ok exit 0; gate ok units=4; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+status: consult_ready
+last_result: blocked step 32: B1.ns_per_insn not below baseline after two runs (203 and 214 vs 176)
+last_verify: ruby scripts/run_script_vm_bench.rb --require-lower B1.ns_per_insn=baseline --require-lower B2.ns_per_insn=baseline --require-lower B3.ns_per_call=baseline --max-ratio B4.ns_per_alloc_n1000=baseline:130 => require-lower failed B1.ns_per_insn=baseline value=203 reference=176; retry value=214 reference=176 exit 1
 next_step: 32
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261010_160241.md
 consult_verdict:
