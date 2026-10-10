@@ -8,9 +8,19 @@ import {
   instruction_jump_offset,
   instruction_opcode_load_const,
   instruction_opcode_move,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
   instruction_opcode_return,
   instruction_opcode_jump,
-  instruction_opcode_jump_if_false
+  instruction_opcode_jump_if_false,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge
 } from './bytecode'
 import { VerifyOk, VerifyErr, verify_function } from './verifier'
 import { Heap } from './heap'
@@ -43,6 +53,7 @@ import {
   executor_step_returned,
   executor_fail
 } from './executor_step'
+import { executor_exec_binary, executor_exec_compare } from './executor_arith'
 
 type VerifyScan = { failed: bool, at: i32 }
 
@@ -147,6 +158,26 @@ fn executor_exec(
     executor_exec_jump(state, words, primary, span)
   else if decoded.opcode == instruction_opcode_jump_if_false() then
     executor_exec_jump_if_false(state, decoded, words, primary, span)
+  else if decoded.opcode == instruction_opcode_add() then
+    executor_exec_binary(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_sub() then
+    executor_exec_binary(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_mul() then
+    executor_exec_binary(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_div() then
+    executor_exec_binary(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_eq() then
+    executor_exec_compare(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_ne() then
+    executor_exec_compare(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_lt() then
+    executor_exec_compare(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_le() then
+    executor_exec_compare(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_gt() then
+    executor_exec_compare(state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_ge() then
+    executor_exec_compare(state, decoded, primary, span)
   else
     executor_fail(state, run_err_unsupported_opcode(), primary)
   end

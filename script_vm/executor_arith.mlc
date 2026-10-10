@@ -1,0 +1,51 @@
+import { Value } from './value'
+import { DecodedAbc, instruction_opcode_add, instruction_opcode_sub } from './bytecode'
+import { apply_binary, apply_compare } from './arith'
+import {
+  VmState,
+  vm_state_register,
+  vm_state_set_register,
+  vm_state_program_counter,
+  vm_state_set_program_counter
+} from './vm_state'
+import { executor_step_continue, executor_fail } from './executor_step'
+
+fn executor_store_outcome(
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32,
+  err_code: string,
+  value: Value
+) -> i32 = do
+  if err_code != "" then
+    executor_fail(state, err_code, primary)
+  else
+    vm_state_set_register(state, decoded.a, value)
+    vm_state_set_program_counter(state, vm_state_program_counter(state) + span)
+    executor_step_continue()
+  end
+end
+
+export fn executor_exec_binary(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
+  let opcode = if decoded.opcode == instruction_opcode_sub() then
+    instruction_opcode_sub()
+  else
+    decoded.opcode
+  end
+  let outcome = apply_binary(
+    opcode,
+    vm_state_register(state, decoded.b),
+    vm_state_register(state, decoded.c)
+  )
+  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+end
+
+export fn executor_exec_compare(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
+  let outcome = apply_compare(
+    decoded.opcode,
+    vm_state_register(state, decoded.b),
+    vm_state_register(state, decoded.c)
+  )
+  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+end
