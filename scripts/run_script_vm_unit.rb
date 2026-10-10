@@ -45,6 +45,10 @@ def capture_process(arguments, timeout_seconds)
   child_process_identifier = Process.spawn(*arguments, out: output_writer, err: error_writer)
   output_writer.close
   error_writer.close
+  output_text = +""
+  error_text = +""
+  output_reader_thread = Thread.new { output_text.replace(output_reader.read.to_s) }
+  error_reader_thread = Thread.new { error_text.replace(error_reader.read.to_s) }
   process_status = nil
   begin
     Timeout.timeout(timeout_seconds) do
@@ -57,12 +61,14 @@ def capture_process(arguments, timeout_seconds)
     rescue Errno::ECHILD
       nil
     end
+    output_reader_thread.join
+    error_reader_thread.join
     output_reader.close
     error_reader.close
     return ["", "", :timeout]
   end
-  output_text = output_reader.read
-  error_text = error_reader.read
+  output_reader_thread.join
+  error_reader_thread.join
   output_reader.close
   error_reader.close
   [output_text, error_text, process_status]

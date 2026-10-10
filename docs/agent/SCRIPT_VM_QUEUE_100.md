@@ -90,9 +90,9 @@
 
 Sonnet доступен очереди только через соседний репозиторий `mlc-support`, скрипт `review_script_vm_queue_consult.rb`. Не вызывать Sonnet через субагента Cursor, Task, `cursor_llm_complete` и любой другой канал. Скрипт совета не применяет патчи и не пишет в дерево MLC.
 
-На один номер шага — один платный ответ. Второй провал того же шага после совета останавливает очередь на человеке.
+На один номер шага — один платный ответ о самом шаге. Если этот ответ или провал gate велит остановить очередь, следом один платный ответ «Проверка основания остановки»: достаточный ли повод, или правило лучше поправить. После `verdict: stop` или `over_budget` очередь ждёт человека.
 
-Ход консультации (вход: `blocked` и `consult_count: 0`, либо `consulting`):
+Ход консультации (вход: `blocked` и `consult_count: 0`, либо `consulting` без строки `kind: grounds`):
 
 1. Записать `status: consulting`. Код `script_vm/` не менять.
 2. Перезаписать `/home/jenya/workspaces/current/mlc-support/steps/script_vm_queue_consult.md`. Первая строка `step: <N>`. Дальше текст шага `N` из этого плана, `last_result`, `last_verify` и секция `## Files` — только существующие пути из `allowed_files` этого шага. В список нельзя класть `compiler/`, `lib/mlc/`, `misc/textui/`, `misc/editor/`.
@@ -103,10 +103,30 @@ Sonnet доступен очереди только через соседний 
 
 Следующий ход видит `consult_ready`. Прочитать ответ. Скрипт пишет сверху строку `consult_step:`. Строка совета начинается с `verdict: retry`, `verdict: patch` или `verdict: human`.
 
-- `human` или пустой verdict — оставить `blocked`, `consult_verdict` скопировать, код не менять, остановиться.
-- `retry` или `patch` — один раз выполнить шаг `next_step`. Правки только в `allowed_files`. Совет, который тянет `compiler/**` или `lib/mlc/**`, не выполнять: это `human`. Затем обычный gate. Успех — обычное продвижение и сброс полей консультации. Провал — `blocked`, `consult_count` остаётся 1, второй совет не запрашивать.
+- `human` или пустой verdict — `status: blocked`, `consult_verdict: human`, `consult_count` оставить 1, код не менять, остановиться. Следующий ход выполняет «Проверку основания остановки», а не замирает.
+- `retry` или `patch` — один раз выполнить шаг `next_step`. Правки только в `allowed_files`. Совет, который тянет `compiler/**` или `lib/mlc/**`, не выполнять: записать `consult_verdict: human` и остановиться, как при `human`. Затем обычный gate. Успех — обычное продвижение и сброс полей консультации. Провал — `blocked`, `consult_count` остаётся 1, `consult_verdict: human`. Второй совет по шагу не запрашивать; следующий ход проверяет основание остановки.
 
-Вход `blocked` при `consult_count` не 0: API не вызывать, шаг не повторять, остановиться и написать, что нужен человек.
+### Проверка основания остановки
+
+Вопрос к Sonnet: основание остановить очередь достаточное, или останавливает само правило и его лучше поправить. Тот же скрипт `review_script_vm_queue_consult.rb`. Ответ шага не переиспользуется: в запросе строка `kind: grounds`, в ответе первая строка `consult_step: <N> grounds`.
+
+Вход: `status: blocked`, `consult_count: 1`, `consult_verdict` не `stop` и не `over_budget`. Либо `status: consulting`, и в consult-файле уже есть строка `kind: grounds`.
+
+1. Записать `status: consulting`. Код `script_vm/` не менять.
+2. Перезаписать `/home/jenya/workspaces/current/mlc-support/steps/script_vm_queue_consult.md`. Первые строки `step: <N>` и `kind: grounds`. Дальше `last_result`, `last_verify`, текущий `consult_verdict`, путь предыдущего `consult_response`, цитата его `verdict:` и абзац причины, и цитата правила из этого файла, из-за которого ход собрался остановиться. Секция `## Files`: `docs/agent/SCRIPT_VM_QUEUE_100.md`, `docs/agent/SCRIPT_VM_QUEUE_STATE.md` и существующий `scripts/run_script_vm_*.rb`, если его путь есть в `last_verify`. В список нельзя класть `compiler/`, `lib/mlc/`, `misc/textui/`, `misc/editor/`.
+3. Запустить скрипт с `--dry-run`, затем без него. Потолок тот же, $1.50.
+4. Exit 2 или строка `consult_over_budget`: `consult_count: 2`, `consult_verdict: over_budget`, `status: blocked`, в `last_result` сумма и потолок. Остановиться.
+5. Успех — строка `consult_response: <путь>`. Записать путь, `consult_count: 2`, `consult_verdict:` пусто, `status: consult_ready`. Закоммитить только `STATE`. Остановиться.
+
+Следующий ход видит `consult_ready` и первую строку ответа `consult_step: <N> grounds`.
+
+- `verdict: stop` или пустой verdict — `consult_verdict: stop`, `status: blocked`, код не менять, остановиться. Основание достаточное, нужен человек.
+- `verdict: amend` — один раз поправить правило или раннер. Шаг `next_step` в этом ходе не начинать.
+  - Можно править в этом файле разделы «Консультация при остановке», «Проверка основания остановки» и «Идентичный промпт очереди», дописать Decision log `### S<N> — основание остановки`, и править уже закоммиченный очередью `scripts/run_script_vm_*.rb` только в захвате вывода процесса, кодах выхода и таймаутах.
+  - `compiler/**`, `lib/mlc/**`, `misc/textui/**`, `misc/editor/**`, смена контракта шага и правка тестов шага — это `stop`: код не менять.
+  - После принятой правки: `consult_count: 0`, `consult_response` и `consult_verdict` пустые, `status: ready`, `next_step` не менять. Коммит явным списком. Сообщение `script_vm queue step <N>: правка правила остановки`.
+
+`status: blocked` при `consult_verdict: stop` или `over_budget`, либо при `consult_count` больше 1: API не вызывать, шаг не повторять, остановиться.
 
 ### Шаблон шага
 
@@ -117,12 +137,12 @@ Sonnet доступен очереди только через соседний 
 ```
 Ты исполнитель очереди SCRIPT_VM_QUEUE (MLC Script VM, каталог script_vm/). Один ход — один шаг. Состояние хранится только в файле.
 
-1. Прочитай docs/agent/SCRIPT_VM_QUEUE_STATE.md и docs/agent/SCRIPT_VM_QUEUE_100.md: разделы «Общие правила», «Протокол состояния» и «Консультация при остановке», затем целиком шаг с номером next_step.
+1. Прочитай docs/agent/SCRIPT_VM_QUEUE_STATE.md и docs/agent/SCRIPT_VM_QUEUE_100.md: разделы «Общие правила», «Протокол состояния», «Консультация при остановке» и «Проверка основания остановки», затем целиком шаг с номером next_step.
 2. Если status равен queue_complete — ответь одной строкой «очередь завершена» и остановись.
 3. Если current_step больше 0, команда `git log --oneline -1 --grep "^script_vm queue step <current_step>:"` обязана найти коммит. Не нашла — status blocked, consult_count не меняй, last_result «нет коммита шага <current_step>», остановись. Sonnet не вызывай.
-4. Если status равен blocked и consult_count не 0 — API не вызывай, шаг не повторяй, остановись: после консультации нужен человек.
-5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Выполни раздел «Консультация при остановке» и остановись. Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`. Не вызывай субагента Cursor и не зови другую модель.
-6. Если status равен consult_ready — прочитай consult_response и найди строку `verdict:`. human, пустой verdict или over_budget: status blocked, код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету, только внутри allowed_files. Совет про compiler/ или lib/mlc/ не выполняй.
+4. Если status равен blocked и consult_verdict равен stop или over_budget — API не вызывай, шаг не повторяй, остановись: основание подтверждено либо запрос сверх потолка. Если status равен blocked и consult_count равен 1 — код не правь. Выполни раздел «Проверка основания остановки» и остановись. Если status равен blocked и consult_count больше 1 — API не вызывай, шаг не повторяй, остановись.
+5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Если в consult-файле есть строка `kind: grounds`, выполни раздел «Проверка основания остановки», иначе «Консультация при остановке». Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`. Не вызывай субагента Cursor и не зови другую модель.
+6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: stop` или пустой verdict — status blocked, consult_verdict stop, код не меняй, остановись. `verdict: amend` — один раз примени раздел «Проверка основания остановки»; совет про compiler/ или lib/mlc/ запиши как stop и код не меняй. Иначе ищи `verdict:` совета по шагу. human, пустой verdict или over_budget: status blocked, consult_verdict human (для over_budget — over_budget), код не меняй, остановись. retry или patch: один раз выполни шаг next_step по совету, только внутри allowed_files. Совет про compiler/ или lib/mlc/ не выполняй: consult_verdict human, остановись.
 7. Иначе сразу запиши в STATE: status: in_progress (остальные поля не менять) и выполни ровно шаг next_step.
 8. Следуй полям шага: depends уже закоммичены; правь только allowed_files; red до green; запусти gate точно как записано; выполни sabotage, если он не «none», и верни файл в исходное состояние (`git checkout -- <файл>` для файла, закоммиченного ранее, иначе обратной правкой), затем повтори gate и убедись, что он снова зелёный.
 9. Не редактируй docs/PLAN.md, docs/agent/SESSION.md, docs/agent/CONTINUITY.md, compiler/ (включая compiler/vm/), lib/mlc/, misc/textui/, misc/editor/. Не запускай compiler/build.sh, self-host diff, пересборку compiler/out/mlcc. Чужие незакоммиченные правки в рабочем дереве не трогай.
@@ -1928,3 +1948,7 @@ Sonnet доступен очереди только через соседний 
 10. Коды embedding: `emb_instruction_limit() = 9`, `emb_heap_limit() = 10`, `emb_overflow() = 11`, `emb_div_zero() = 12`. Сейчас `run_err_to_code` отображает `overflow`, `div_zero`, `no_return` и `unsupported_opcode` в `emb_type()`. После шага 90 `overflow` и `div_zero` получают свои коды, остальные остаются `emb_type()`. В ABI `instruction_limit` — `uint64_t`, сторона MLC принимает `i64`. Бридж клампит значение больше `INT64_MAX` к `INT64_MAX`. Ноль значит без лимита.
 11. Числа: только Int32 (переполнение — `RunErr("overflow")`) и Float64. `INT_MIN / -1` — `overflow`. BigInt нет.
 12. Бенчи: B1 `sum_loop_heap` (`run_arithmetic`, N=60000, метрика `ns_per_insn`, инструкций `4 + 5*N + 3`). B2 `sum_loop_frames` (`run_program`, то же). B3 `fib20` (`run_program`, метрика `ns_per_call`, 21891 вызов). B4 `record_alloc` (`run_with_heap`, N=1000 и N=4000: `ns_per_alloc_n1000`, `ns_per_alloc_n4000`, `scaling_ratio_x100 = ns_per_alloc_n4000*100/ns_per_alloc_n1000`).
+
+### S10 — основание остановки
+
+Остановка шага 10 на человеке недостаточна. Контракт шага не меняется: `allowed_files`, gate и тест те же. `capture_process` в `scripts/run_script_vm_unit.rb` читал stdout и stderr только после `Process.wait2`. Предупреждения компиляции заполняли pipe, `build_bin` умирал по таймауту 600 с с пустым выводом. Прямой запуск того же бинаря печатал `char_arith checks=64` и `[script_vm] char_arith_unit ok`. Раннер читает оба потока параллельно с процессом. Таймаут по-прежнему возвращает пустой вывод и `:timeout`.
