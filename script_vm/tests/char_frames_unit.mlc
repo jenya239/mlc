@@ -1,0 +1,299 @@
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_move,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump_if_false,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_words_get_upval,
+  instruction_words_set_upval,
+  instruction_words_new_array,
+  instruction_upvalue_source_word,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_eq,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_program,
+  run_program_with_args,
+  run_err_type,
+  run_err_bounds,
+  run_err_stack,
+  run_err_verify,
+  run_err_unsupported_opcode
+} from '../interpreter'
+import { heap_new, heap_alloc_closure } from '../heap'
+
+type Check = { count: i32, status: i32 }
+
+fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn gap_pin_mul_unsupported_expects_run_ok() -> bool = false
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut words = destination
+  let mut index = 0
+  while index < source.length() do
+    words.push(source[index])
+    index = index + 1
+  end
+  words
+end
+
+fn chain(left: [i32], right: [i32]) -> [i32] = append_words(left, right)
+
+fn push_constant(constants: [Value], value: Value) -> [Value] = do
+  let mut next = constants
+  next.push(value)
+  next
+end
+
+fn int_constants(number: i32) -> [Value] = push_constant([], int_value(number))
+
+fn prototype(words: [i32], constants: [Value], register_count: i32) -> FunctionProto =
+  FunctionProto { words: words, constants: constants, register_count: register_count }
+
+fn push_prototype(prototypes: [FunctionProto], item: FunctionProto) -> [FunctionProto] = do
+  let mut next = prototypes
+  next.push(item)
+  next
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn is_run_ok(result: RunResult) -> bool =
+  match result { RunOk(_value) => true, _ => false }
+
+fn run_ok_value(result: RunResult) -> Value =
+  match result {
+    RunOk(value) => value,
+    RunErr(_code, _word_index) => int_value(0)
+  }
+
+fn execute_entry(prototypes: [FunctionProto]) -> RunResult =
+  run_program(heap_new(), prototypes, 0).result
+
+fn stop(check: Check, message: string, failure_code: i32) -> Check = do
+  println("[script_vm char_frames_unit] FAIL: " + message)
+  Check { count: check.count, status: failure_code }
+end
+
+fn pass(check: Check) -> Check = Check { count: check.count + 1, status: 0 }
+
+fn expect_int32(check: Check, result: RunResult, expected: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if !is_run_ok(result) then
+    return stop(check, label + " expected RunOk got=" + error_code(result), failure_code)
+  end
+  match value_decode(run_ok_value(result)) {
+    ValueInt32(number) => do
+      if number != expected then
+        return stop(check, label + " got=" + number.to_string(), failure_code)
+      end
+      pass(check)
+    end,
+    _ => stop(check, label + " expected Int32", failure_code)
+  }
+end
+
+fn expect_error(check: Check, result: RunResult, expected_code: string, expected_word_index: i32, label: string, failure_code: i32) -> Check = do
+  if check.status != 0 then
+    return check
+  end
+  if is_run_ok(result) then
+    return stop(check, label + " expected error", failure_code)
+  end
+  if error_code(result) != expected_code then
+    return stop(check, label + " code got=" + error_code(result), failure_code)
+  end
+  if error_word_index(result) != expected_word_index then
+    return stop(check, label + " word_index got=" + error_word_index(result).to_string(), failure_code)
+  end
+  pass(check)
+end
+
+fn push_constant_words(word: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(word)
+  words
+end
+
+fn local_sources(register_index: i32) -> [i32] = push_constant_words(instruction_upvalue_source_word(1, register_index))
+
+fn parent_sources() -> [i32] = push_constant_words(instruction_upvalue_source_word(0, 0))
+
+fn argument_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_binary(instruction_opcode_add(), 2, 0, 1)), instruction_words_return(2))
+  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, int_constants(41), 3)), prototype(callee, int_constants(1), 3))
+end
+
+fn isolation_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain([], instruction_words_load_const(1, 0)), instruction_words_return(1))
+  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, [])), instruction_words_call(2, 0, 1)), instruction_words_binary(instruction_opcode_add(), 3, 1, 2)), instruction_words_return(3))
+  push_prototype(push_prototype([], prototype(entry, int_constants(99), 4)), prototype(callee, int_constants(1), 2))
+end
+
+fn capture_entry(callee_words: [i32], callee_constants: [Value], callee_registers: i32, captured: i32) -> [FunctionProto] = do
+  const entry = chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, int_constants(captured), 3)), prototype(callee_words, callee_constants, callee_registers))
+end
+
+fn capture_local_prototypes() -> [FunctionProto] =
+  capture_entry(chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0)), [], 1, 9)
+
+fn set_upvalue_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_set_upval(0, 0)), instruction_words_get_upval(1, 0)), instruction_words_return(1))
+  capture_entry(callee, int_constants(4), 2, 0)
+end
+
+fn parent_prototypes() -> [FunctionProto] = do
+  const inner = chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0))
+  const middle = chain(chain([], instruction_words_make_closure(0, 2, parent_sources())), instruction_words_return(0))
+  const entry = chain(chain(chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_make_closure(0, 1, local_sources(1))), instruction_words_call(2, 0, 0)), instruction_words_call(3, 2, 0)), instruction_words_return(3))
+  push_prototype(push_prototype(push_prototype([], prototype(entry, int_constants(5), 4)), prototype(middle, [], 1)), prototype(inner, [], 1))
+end
+
+fn recursive_callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 3, 1, 2))
+  words = append_words(words, instruction_words_jump_if_false(3, 2))
+  words = append_words(words, instruction_words_load_const(4, 0))
+  words = append_words(words, instruction_words_return(4))
+  words = append_words(words, instruction_words_load_const(5, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_sub(), 6, 1, 5))
+  words = append_words(words, instruction_words_move(1, 0))
+  words = append_words(words, instruction_words_move(2, 6))
+  words = append_words(words, instruction_words_call(7, 0, 2))
+  words = append_words(words, instruction_words_load_const(8, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 9, 7, 8))
+  words = append_words(words, instruction_words_return(9))
+  words
+end
+
+fn recursive_prototypes() -> [FunctionProto] = do
+  const entry = chain(chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_load_const(2, 0)), instruction_words_move(1, 0)), instruction_words_call(3, 0, 2)), instruction_words_return(3))
+  let mut constants: [Value] = []
+  constants = push_constant(constants, int_value(0))
+  constants = push_constant(constants, int_value(1))
+  push_prototype(push_prototype([], prototype(entry, int_constants(8), 4)), prototype(recursive_callee_words(), constants, 10))
+end
+
+fn stack_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain(chain([], instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  const entry = chain(chain(chain(chain([], instruction_words_make_closure(0, 1, [])), instruction_words_move(1, 0)), instruction_words_call(2, 0, 1)), instruction_words_return(2))
+  push_prototype(push_prototype([], prototype(entry, [], 3)), prototype(callee, [], 3))
+end
+
+fn call_integer_prototypes() -> [FunctionProto] = do
+  const words = chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_call(1, 0, 0)), instruction_words_return(1))
+  push_prototype([], prototype(words, int_constants(0), 2))
+end
+
+fn bad_closure_prototypes() -> [FunctionProto] = do
+  const words = chain(chain([], instruction_words_call(1, 0, 0)), instruction_words_return(1))
+  push_prototype([], prototype(words, [], 2))
+end
+
+fn outside_upvalue_prototypes() -> [FunctionProto] = do
+  const words = chain(chain([], instruction_words_get_upval(0, 0)), instruction_words_return(0))
+  push_prototype([], prototype(words, [], 1))
+end
+
+fn bounds_upvalue_prototypes() -> [FunctionProto] = do
+  const callee = chain(chain([], instruction_words_get_upval(0, 1)), instruction_words_return(0))
+  capture_entry(callee, [], 1, 1)
+end
+
+fn return_words() -> [i32] = instruction_words_return(0)
+
+fn verify_prototypes() -> [FunctionProto] = do
+  const bad = chain(chain([], instruction_words_load_const(3, 0)), instruction_words_return(0))
+  push_prototype(push_prototype([], prototype(return_words(), [], 1)), prototype(bad, int_constants(0), 1))
+end
+
+fn unsupported_words(opcode: i32) -> [i32] =
+  chain(chain(chain(chain([], instruction_words_load_const(0, 0)), instruction_words_load_const(1, 1)), instruction_words_binary(opcode, 2, 0, 1)), instruction_words_return(2))
+
+fn pair_constants(left_number: i32, right_number: i32) -> [Value] =
+  push_constant(push_constant([], int_value(left_number)), int_value(right_number))
+
+fn mul_prototypes() -> [FunctionProto] =
+  push_prototype([], prototype(unsupported_words(instruction_opcode_mul()), pair_constants(6, 7), 3))
+
+fn equal_prototypes() -> [FunctionProto] =
+  push_prototype([], prototype(unsupported_words(instruction_opcode_eq()), pair_constants(1, 1), 3))
+
+fn new_array_prototypes() -> [FunctionProto] = do
+  const words = chain(chain(chain([], instruction_words_load_const(1, 0)), instruction_words_new_array(0, 1)), instruction_words_return(0))
+  push_prototype([], prototype(words, int_constants(1), 2))
+end
+
+fn host_argument_prototypes() -> [FunctionProto] =
+  push_prototype([], prototype(return_words(), [], 1))
+
+fn check_gap_multiplication(check: Check) -> Check = do
+  const multiplication = execute_entry(mul_prototypes())
+  if gap_pin_mul_unsupported_expects_run_ok() then
+    return expect_int32(check, multiplication, 42, "gap_pin_mul_unsupported", 14)
+  end
+  expect_error(check, multiplication, run_err_unsupported_opcode(), 2, "gap_pin_mul_unsupported", 14)
+end
+
+fn main() -> i32 = do
+  let mut check = Check { count: 0, status: 0 }
+  check = expect_int32(check, execute_entry(argument_prototypes()), 42, "call_argument", 1)
+  check = expect_int32(check, execute_entry(isolation_prototypes()), 100, "register_isolation", 2)
+  check = expect_int32(check, execute_entry(capture_local_prototypes()), 9, "capture_local", 3)
+  check = expect_int32(check, execute_entry(set_upvalue_prototypes()), 4, "set_upvalue", 4)
+  check = expect_int32(check, execute_entry(parent_prototypes()), 5, "capture_parent", 5)
+  check = expect_int32(check, execute_entry(recursive_prototypes()), 8, "recursion_depth_8", 6)
+  check = expect_error(check, execute_entry(stack_prototypes()), run_err_stack(), 1, "stack_depth", 7)
+  check = expect_error(check, execute_entry(call_integer_prototypes()), run_err_type(), 1, "call_integer", 8)
+  const closure_alloc = heap_alloc_closure(heap_new(), 7, 0)
+  let mut closure_arguments: [Value] = []
+  closure_arguments.push(closure_alloc.value)
+  check = expect_error(check, run_program_with_args(closure_alloc.heap, bad_closure_prototypes(), 0, closure_arguments).result, run_err_type(), 0, "call_proto_out_of_range", 9)
+  check = expect_error(check, execute_entry(outside_upvalue_prototypes()), run_err_type(), 0, "get_upval_outside", 10)
+  check = expect_error(check, execute_entry(bounds_upvalue_prototypes()), run_err_bounds(), 0, "get_upval_bounds", 11)
+  check = expect_error(check, run_program(heap_new(), push_prototype([], prototype(return_words(), [], 1)), 1).result, run_err_type(), 0, "entry_out_of_range", 12)
+  check = expect_error(check, execute_entry(verify_prototypes()), run_err_verify(), 0, "verify_other_prototype", 13)
+  check = check_gap_multiplication(check)
+  check = expect_error(check, execute_entry(equal_prototypes()), run_err_unsupported_opcode(), 2, "gap_pin_eq_unsupported", 15)
+  check = expect_error(check, execute_entry(new_array_prototypes()), run_err_unsupported_opcode(), 1, "gap_pin_new_array_unsupported", 16)
+  let mut host_arguments: [Value] = []
+  host_arguments.push(int_value(42))
+  check = expect_int32(check, run_program_with_args(heap_new(), host_argument_prototypes(), 0, host_arguments).result, 42, "host_arguments", 17)
+  if check.status != 0 then
+    return check.status
+  end
+  println("char_frames checks=" + check.count.to_string())
+  println("[script_vm] char_frames_unit ok")
+  0
+end
