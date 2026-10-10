@@ -6,7 +6,9 @@ import {
   ValueFloat64,
   ValueHeapRef,
   value_encode,
-  value_decode
+  value_decode,
+  value_is_int32,
+  value_int32
 } from './value'
 import {
   instruction_opcode_add,
@@ -36,13 +38,82 @@ extern fn script_vm_int32_checked_mul(left: i32, right: i32) -> i32 =
   "mlc::script_vm::int32_checked_mul" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
 extern fn script_vm_int32_arith_ok() -> i32 =
   "mlc::script_vm::int32_arith_ok" from "mlc/script_vm/int32_arith_abi.hpp" thread_safe
+extern fn script_vm_encode_nil() -> i64 =
+  "mlc::script_vm::encode_nil" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_bool(flag: i32) -> i64 =
+  "mlc::script_vm::encode_bool" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+extern fn script_vm_encode_int32(number: i32) -> i64 =
+  "mlc::script_vm::encode_int32" from "mlc/script_vm/value_rep_abi.hpp" thread_safe
+
+fn encoded_nil() -> Value = Value { raw: script_vm_encode_nil() }
+
+fn encoded_bool(flag: bool) -> Value =
+  Value { raw: script_vm_encode_bool(if flag then 1 else 0) }
+
+fn encoded_int32(number: i32) -> Value = Value { raw: script_vm_encode_int32(number) }
 
 fn float_is_zero(number: f64) -> bool =
   number == 0.0
 
 export type ArithOpResult = { err_code: string, value: Value }
 
-export fn apply_binary(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+fn apply_int32_binary(opcode: i32, left_number: i32, right_number: i32) -> ArithOpResult =
+  if opcode == instruction_opcode_div() then
+    if right_number == 0 then
+      ArithOpResult { err_code: run_err_div_zero(), value: encoded_nil() }
+    else
+      ArithOpResult { err_code: "", value: encoded_int32(left_number / right_number) }
+    end
+  else if opcode == instruction_opcode_add() then
+    let sum = script_vm_int32_checked_add(left_number, right_number)
+    if script_vm_int32_arith_ok() == 0 then
+      ArithOpResult { err_code: run_err_overflow(), value: encoded_nil() }
+    else
+      ArithOpResult { err_code: "", value: encoded_int32(sum) }
+    end
+  else if opcode == instruction_opcode_sub() then
+    let difference = script_vm_int32_checked_sub(left_number, right_number)
+    if script_vm_int32_arith_ok() == 0 then
+      ArithOpResult { err_code: run_err_overflow(), value: encoded_nil() }
+    else
+      ArithOpResult { err_code: "", value: encoded_int32(difference) }
+    end
+  else if opcode == instruction_opcode_mul() then
+    let product = script_vm_int32_checked_mul(left_number, right_number)
+    if script_vm_int32_arith_ok() == 0 then
+      ArithOpResult { err_code: run_err_overflow(), value: encoded_nil() }
+    else
+      ArithOpResult { err_code: "", value: encoded_int32(product) }
+    end
+  else
+    ArithOpResult { err_code: run_err_unsupported_opcode(), value: encoded_nil() }
+  end
+
+fn apply_int32_compare(opcode: i32, left_number: i32, right_number: i32) -> ArithOpResult =
+  if opcode == instruction_opcode_eq() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number == right_number) }
+  else if opcode == instruction_opcode_ne() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number != right_number) }
+  else if opcode == instruction_opcode_lt() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number < right_number) }
+  else if opcode == instruction_opcode_le() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number <= right_number) }
+  else if opcode == instruction_opcode_gt() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number > right_number) }
+  else if opcode == instruction_opcode_ge() then
+    ArithOpResult { err_code: "", value: encoded_bool(left_number >= right_number) }
+  else
+    ArithOpResult { err_code: run_err_unsupported_opcode(), value: encoded_nil() }
+  end
+
+export fn apply_binary(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult =
+  if value_is_int32(left_value) && value_is_int32(right_value) then
+    apply_int32_binary(opcode, value_int32(left_value), value_int32(right_value))
+  else
+    apply_binary_general(opcode, left_value, right_value)
+  end
+
+fn apply_binary_general(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
   const left_rep = value_decode(left_value)
   const right_rep = value_decode(right_value)
   let mut code = ""
@@ -127,7 +198,14 @@ export fn value_is_falsy(value: Value) -> bool =
     ValueHeapRef(_object_id) => false
   }
 
-export fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
+export fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult =
+  if value_is_int32(left_value) && value_is_int32(right_value) then
+    apply_int32_compare(opcode, value_int32(left_value), value_int32(right_value))
+  else
+    apply_compare_general(opcode, left_value, right_value)
+  end
+
+fn apply_compare_general(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult = do
   const left_rep = value_decode(left_value)
   const right_rep = value_decode(right_value)
   let mut code = ""

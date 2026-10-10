@@ -1,4 +1,4 @@
-import { Value } from './value'
+import { Value, value_is_int32 } from './value'
 import { DecodedAbc, instruction_opcode_add, instruction_opcode_sub } from './bytecode'
 import { apply_binary, apply_compare } from './arith'
 import {
@@ -27,25 +27,52 @@ fn executor_store_outcome(
   end
 end
 
+fn executor_finish_binary(
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32,
+  opcode: i32,
+  left_value: Value,
+  right_value: Value
+) -> i32 = do
+  let outcome = apply_binary(opcode, left_value, right_value)
+  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+end
+
+fn executor_finish_compare(
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32,
+  left_value: Value,
+  right_value: Value
+) -> i32 = do
+  let outcome = apply_compare(decoded.opcode, left_value, right_value)
+  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+end
+
 export fn executor_exec_binary(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
   let opcode = if decoded.opcode == instruction_opcode_sub() then
     instruction_opcode_sub()
   else
     decoded.opcode
   end
-  let outcome = apply_binary(
-    opcode,
-    vm_state_register(state, decoded.b),
-    vm_state_register(state, decoded.c)
-  )
-  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+  let left_value = vm_state_register(state, decoded.b)
+  let right_value = vm_state_register(state, decoded.c)
+  if value_is_int32(left_value) && value_is_int32(right_value) then
+    executor_finish_binary(state, decoded, primary, span, opcode, left_value, right_value)
+  else
+    executor_finish_binary(state, decoded, primary, span, opcode, left_value, right_value)
+  end
 end
 
 export fn executor_exec_compare(state: ref mut VmState, decoded: DecodedAbc, primary: i32, span: i32) -> i32 = do
-  let outcome = apply_compare(
-    decoded.opcode,
-    vm_state_register(state, decoded.b),
-    vm_state_register(state, decoded.c)
-  )
-  executor_store_outcome(state, decoded, primary, span, outcome.err_code, outcome.value)
+  let left_value = vm_state_register(state, decoded.b)
+  let right_value = vm_state_register(state, decoded.c)
+  if value_is_int32(left_value) && value_is_int32(right_value) then
+    executor_finish_compare(state, decoded, primary, span, left_value, right_value)
+  else
+    executor_finish_compare(state, decoded, primary, span, left_value, right_value)
+  end
 end

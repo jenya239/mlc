@@ -60,6 +60,12 @@ export fn value_decode(value: Value) -> ValueRep = do
   end
 end
 
+export fn value_is_int32(value: Value) -> bool =
+  script_vm_decode_kind(value.raw) == 3
+
+export fn value_int32(value: Value) -> i32 =
+  script_vm_decode_int32(value.raw)
+
 export fn value_byte_size() -> i32 = script_vm_value_byte_size()
 
 export fn value_raw_equal(left: Value, right: Value) -> bool =
