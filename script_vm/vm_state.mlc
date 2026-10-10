@@ -1,0 +1,113 @@
+import { Value, ValueNil, value_encode } from './value'
+
+export type VmState = {
+  stack: [Value],
+  stack_top: i32,
+  frame_proto: [i32],
+  frame_program_counter: [i32],
+  frame_base: [i32],
+  frame_closure: [Value],
+  frame_return_register: [i32],
+  frame_depth: i32,
+  instruction_count: i32,
+  error_code: string,
+  error_at: i32,
+  return_value: Value
+}
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+export fn vm_state_new() -> VmState =
+  VmState {
+    stack: [],
+    stack_top: 0,
+    frame_proto: [],
+    frame_program_counter: [],
+    frame_base: [],
+    frame_closure: [],
+    frame_return_register: [],
+    frame_depth: 0,
+    instruction_count: 0,
+    error_code: "",
+    error_at: 0,
+    return_value: nil_value()
+  }
+
+fn grow_stack_to(state: ref mut VmState, needed_length: i32) -> unit = do
+  let encoded_nil = nil_value()
+  while state.stack.length() < needed_length do
+    state.stack.push(encoded_nil)
+  end
+end
+
+fn clear_register_span(state: ref mut VmState, base: i32, register_count: i32) -> unit = do
+  let encoded_nil = nil_value()
+  let mut offset = 0
+  while offset < register_count do
+    state.stack.set(base + offset, encoded_nil)
+    offset = offset + 1
+  end
+end
+
+fn write_frame_slot(state: ref mut VmState, proto_index: i32, base: i32, closure: Value, return_register: i32) -> unit = do
+  let depth = state.frame_depth
+  if depth < state.frame_proto.length() then
+    state.frame_proto.set(depth, proto_index)
+    state.frame_program_counter.set(depth, 0)
+    state.frame_base.set(depth, base)
+    state.frame_closure.set(depth, closure)
+    state.frame_return_register.set(depth, return_register)
+  else
+    state.frame_proto.push(proto_index)
+    state.frame_program_counter.push(0)
+    state.frame_base.push(base)
+    state.frame_closure.push(closure)
+    state.frame_return_register.push(return_register)
+  end
+end
+
+export fn vm_state_push_frame(state: ref mut VmState, proto_index: i32, register_count: i32, closure: Value, return_register: i32) -> unit = do
+  let base = state.stack_top
+  let needed_length = base + register_count
+  grow_stack_to(state, needed_length)
+  clear_register_span(state, base, register_count)
+  write_frame_slot(state, proto_index, base, closure, return_register)
+  state.stack_top = needed_length
+  state.frame_depth = state.frame_depth + 1
+end
+
+export fn vm_state_pop_frame(state: ref mut VmState) -> unit = do
+  state.frame_depth = state.frame_depth - 1
+  state.stack_top = state.frame_base[state.frame_depth]
+end
+
+export fn vm_state_frame_depth(state: ref mut VmState) -> i32 = state.frame_depth
+
+fn current_frame_index(state: ref mut VmState) -> i32 = state.frame_depth - 1
+
+export fn vm_state_register(state: ref mut VmState, index: i32) -> Value =
+  state.stack[state.frame_base[current_frame_index(state)] + index]
+
+export fn vm_state_set_register(state: ref mut VmState, index: i32, value: Value) -> unit = do
+  state.stack.set(state.frame_base[current_frame_index(state)] + index, value)
+end
+
+export fn vm_state_program_counter(state: ref mut VmState) -> i32 =
+  state.frame_program_counter[current_frame_index(state)]
+
+export fn vm_state_set_program_counter(state: ref mut VmState, program_counter: i32) -> unit = do
+  state.frame_program_counter.set(current_frame_index(state), program_counter)
+end
+
+export fn vm_state_frame_proto(state: ref mut VmState) -> i32 =
+  state.frame_proto[current_frame_index(state)]
+
+export fn vm_state_frame_closure(state: ref mut VmState) -> Value =
+  state.frame_closure[current_frame_index(state)]
+
+export fn vm_state_frame_return_register(state: ref mut VmState) -> i32 =
+  state.frame_return_register[current_frame_index(state)]
+
+export fn vm_state_stack_capacity(state: ref mut VmState) -> i32 = state.stack.length()
+
+export fn vm_state_stack_top(state: ref mut VmState) -> i32 = state.stack_top
