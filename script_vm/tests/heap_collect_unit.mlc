@@ -1,0 +1,206 @@
+import { Value, ValueInt32, value_encode, value_decode, value_raw_equal } from '../value'
+import {
+  Heap,
+  heap_new,
+  heap_collect,
+  heap_root_push,
+  heap_live_object_count,
+  heap_in_place_alloc_cell,
+  heap_in_place_alloc_array,
+  heap_in_place_alloc_record,
+  heap_in_place_write,
+  heap_in_place_read,
+  heap_in_place_root_push,
+  heap_in_place_collect,
+  heap_arena_cell_count
+} from '../heap'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm heap_collect_unit] FAIL: " + message)
+  1
+end
+
+fn expect_count(actual: i32, expected: i32, label: string) -> i32 = do
+  if actual == expected then
+    return 0
+  end
+  fail(label + " expected " + expected.to_string() + " got " + actual.to_string())
+end
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn decoded_int32(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn empty_values() -> [Value] = do
+  let mut values: [Value] = []
+  values
+end
+
+fn chain_length() -> i32 = 100000
+
+fn array_length() -> i32 = 100
+
+fn array_count() -> i32 = 10
+
+fn long_cell_chain_status(heap: ref mut Heap) -> i32 = do
+  const head = heap_in_place_alloc_cell(heap)
+  let mut previous = head
+  let mut index = 1
+  while index < chain_length() do
+    const cell = heap_in_place_alloc_cell(heap)
+    heap_in_place_write(heap, previous, 0, cell)
+    previous = cell
+    index = index + 1
+  end
+  heap_in_place_root_push(heap, head)
+  heap_in_place_collect(heap, empty_values())
+  expect_count(heap_live_object_count(heap), chain_length(), "chain_live")
+end
+
+fn link_record_cycle(heap: ref mut Heap) -> Value = do
+  const left = heap_in_place_alloc_record(heap, 1)
+  const right = heap_in_place_alloc_record(heap, 1)
+  heap_in_place_write(heap, left, 0, right)
+  heap_in_place_write(heap, right, 0, left)
+  left
+end
+
+fn cycle_expected_live(rooted: bool) -> i32 = do
+  if rooted then
+    return 2
+  end
+  0
+end
+
+fn push_root_when(heap: ref mut Heap, value: Value, rooted: bool) -> unit = do
+  if rooted then
+    heap_in_place_root_push(heap, value)
+  end
+end
+
+fn cycle_live_status(heap: ref mut Heap, rooted: bool, label: string) -> i32 = do
+  const left = link_record_cycle(heap)
+  push_root_when(heap, left, rooted)
+  heap_in_place_collect(heap, empty_values())
+  expect_count(heap_live_object_count(heap), cycle_expected_live(rooted), label)
+end
+
+fn rooted_heap(heap: Heap, left: Value, rooted: bool) -> Heap = do
+  if rooted then
+    return heap_root_push(heap, left)
+  end
+  heap
+end
+
+fn functional_cycle_status(rooted: bool, label: string) -> i32 = do
+  let mut heap = heap_new()
+  const left = link_record_cycle(heap)
+  heap = rooted_heap(heap, left, rooted)
+  heap = heap_collect(heap)
+  expect_count(heap_live_object_count(heap), cycle_expected_live(rooted), label)
+end
+
+fn extra_root_status(heap: ref mut Heap) -> i32 = do
+  const kept = heap_in_place_alloc_cell(heap)
+  const dropped = heap_in_place_alloc_cell(heap)
+  if value_raw_equal(kept, dropped) then
+    return fail("extra_roots_distinct")
+  end
+  const root_status = expect_count(heap.roots.length(), 0, "extra_roots_heap_roots")
+  if root_status != 0 then
+    return root_status
+  end
+  let mut extra_roots = empty_values()
+  extra_roots.push(kept)
+  heap_in_place_collect(heap, extra_roots)
+  expect_count(heap_live_object_count(heap), 1, "extra_roots_live")
+end
+
+fn build_arrays(heap: ref mut Heap) -> [Value] = do
+  let mut arrays: [Value] = []
+  let mut index = 0
+  while index < array_count() do
+    arrays.push(heap_in_place_alloc_array(heap, array_length()))
+    index = index + 1
+  end
+  arrays
+end
+
+fn fill_array(heap: ref mut Heap, array: Value, length: i32) -> unit = do
+  let mut index = 0
+  while index < length do
+    heap_in_place_write(heap, array, index, integer_value(index + 1))
+    index = index + 1
+  end
+end
+
+fn array_matches(heap: ref mut Heap, array: Value, length: i32) -> bool = do
+  let mut index = 0
+  let mut matched = true
+  while index < length && matched do
+    matched = decoded_int32(heap_in_place_read(heap, array, index)) == index + 1
+    index = index + 1
+  end
+  matched
+end
+
+fn compaction_status(heap: ref mut Heap) -> i32 = do
+  const arrays = build_arrays(heap)
+  fill_array(heap, arrays[0], array_length())
+  heap_in_place_root_push(heap, arrays[0])
+  heap_in_place_collect(heap, empty_values())
+  const arena_status = expect_count(heap_arena_cell_count(heap), array_length(), "arena_cells")
+  if arena_status != 0 then
+    return arena_status
+  end
+  const live_status = expect_count(heap_live_object_count(heap), 1, "arena_live")
+  if live_status != 0 then
+    return live_status
+  end
+  if array_matches(heap, arrays[0], array_length()) then
+    return 0
+  end
+  fail("arena_values")
+end
+
+fn main() -> i32 = do
+  let mut chain_heap = heap_new()
+  const chain_status = long_cell_chain_status(chain_heap)
+  if chain_status != 0 then
+    return chain_status
+  end
+  let mut unrooted_heap = heap_new()
+  const unrooted_status = cycle_live_status(unrooted_heap, false, "cycle_unrooted")
+  if unrooted_status != 0 then
+    return unrooted_status
+  end
+  let mut rooted_heap = heap_new()
+  const rooted_status = cycle_live_status(rooted_heap, true, "cycle_rooted")
+  if rooted_status != 0 then
+    return rooted_status
+  end
+  let mut extra_heap = heap_new()
+  const extra_status = extra_root_status(extra_heap)
+  if extra_status != 0 then
+    return extra_status
+  end
+  let mut arena_heap = heap_new()
+  const arena_status = compaction_status(arena_heap)
+  if arena_status != 0 then
+    return arena_status
+  end
+  const functional_unrooted = functional_cycle_status(false, "functional_unrooted")
+  if functional_unrooted != 0 then
+    return functional_unrooted
+  end
+  const functional_rooted = functional_cycle_status(true, "functional_rooted")
+  if functional_rooted != 0 then
+    return functional_rooted
+  end
+  println("[script_vm] heap_collect_unit ok")
+  0
+end
