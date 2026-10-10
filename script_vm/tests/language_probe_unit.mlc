@@ -1,0 +1,150 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+
+type Cells = { values: [Value] }
+type InnerCells = { values: [Value] }
+type NestedState = { inner: InnerCells }
+type Counter = { total: i32 }
+type ProbeTag = Left | Right
+
+fn cells_with_length(element_count: i32) -> Cells = do
+  let mut values: [Value] = []
+  let encoded_zero = value_encode(ValueInt32(0))
+  let mut index = 0
+  while index < element_count do
+    values.push(encoded_zero)
+    index = index + 1
+  end
+  Cells { values: values }
+end
+
+fn integer_at(cells: Cells, index: i32) -> i32 =
+  match value_decode(cells.values[index]) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn probe_tail_after_if_chain() -> string = do
+  let mut marker = 0
+  let selector = 2
+  if selector == 0 then
+    marker = 1
+  else if selector == 1 then
+    marker = 2
+  else
+    marker = 3
+  end
+  marker = marker + 10
+  if marker == 13 then
+    return "ok"
+  end
+  "broken"
+end
+
+fn return_from_while(cells: ref mut Cells) -> i32 = do
+  let mut index = 0
+  while index < 4 do
+    cells.values.set(0, value_encode(ValueInt32(index)))
+    if index == 1 then
+      return index
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn probe_return_in_while_in_ref_mut() -> string = do
+  let mut cells = cells_with_length(1)
+  if return_from_while(cells) == 1 && integer_at(cells, 0) == 1 then
+    return "ok"
+  end
+  "broken"
+end
+
+fn probe_ref_mut_whole_assignment() -> string = "broken"
+
+fn write_nested(state: ref mut NestedState) -> unit = do
+  state.inner.values.set(0, value_encode(ValueInt32(4)))
+end
+
+fn probe_nested_field_set() -> string = do
+  let mut values: [Value] = []
+  values.push(value_encode(ValueInt32(0)))
+  let mut state = NestedState { inner: InnerCells { values: values } }
+  write_nested(state)
+  match value_decode(state.inner.values[0]) {
+    ValueInt32(number) => if number == 4 then "ok" else "broken" end,
+    _ => "broken"
+  }
+end
+
+fn fill_three(cells: ref mut Cells) -> unit = do
+  let mut index = 0
+  while index < 3 do
+    cells.values.set(index, value_encode(ValueInt32(index + 1)))
+    index = index + 1
+  end
+end
+
+fn probe_array_set_in_while() -> string = do
+  let mut cells = cells_with_length(3)
+  fill_three(cells)
+  if integer_at(cells, 0) == 1 && integer_at(cells, 1) == 2 && integer_at(cells, 2) == 3 then
+    return "ok"
+  end
+  "broken"
+end
+
+fn tag_at(index: i32) -> ProbeTag = do
+  if index == 0 then
+    return Left
+  end
+  Right
+end
+
+fn match_total() -> i32 = do
+  let mut index = 0
+  let mut total = 0
+  while index < 2 do
+    let tag = tag_at(index)
+    total = match tag {
+      Left => total + 1,
+      Right => total + 10
+    }
+    index = index + 1
+  end
+  total
+end
+
+fn probe_match_in_while() -> string = do
+  if match_total() == 11 then
+    return "ok"
+  end
+  "broken"
+end
+
+fn write_both(cells: ref mut Cells, counter: ref mut Counter) -> unit = do
+  cells.values.set(0, value_encode(ValueInt32(5)))
+  counter.total = 6
+end
+
+fn probe_two_ref_mut_params() -> string = do
+  let mut cells = cells_with_length(1)
+  let mut counter = Counter { total: 0 }
+  write_both(cells, counter)
+  if integer_at(cells, 0) == 5 && counter.total == 6 then
+    return "ok"
+  end
+  "broken"
+end
+
+fn main() -> i32 = do
+  println("probe_tail_after_if_chain=" + probe_tail_after_if_chain())
+  println("probe_return_in_while_in_ref_mut=" + probe_return_in_while_in_ref_mut())
+  println("probe_ref_mut_whole_assignment=" + probe_ref_mut_whole_assignment())
+  println("probe_nested_field_set=" + probe_nested_field_set())
+  println("probe_array_set_in_while=" + probe_array_set_in_while())
+  println("probe_match_in_while=" + probe_match_in_while())
+  println("probe_two_ref_mut_params=" + probe_two_ref_mut_params())
+  println("[script_vm] language_probe_unit ok")
+  0
+end

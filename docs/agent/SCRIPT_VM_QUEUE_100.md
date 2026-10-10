@@ -1967,3 +1967,16 @@ Sonnet доступен очереди только через соседний 
 ### S16 — основание остановки
 
 Саботаж «живой замер строго меньше только что записанного baseline» снят. `--require-lower` всегда перемеривает минимум из 5 запусков, и шум 176 → 161 давал exit 0. Саботаж шага 16 и такой же самосравнивающий саботаж шага 47 проверяют раннер синтетическим эталоном `B1.ns_per_insn 1` во временном `bench_current.txt`, затем файл возвращается. Baseline не перезаписывается. Если совет описывает только такую правку карточки шага или раннера, исполнитель применяет её и не ждёт человека.
+
+### S18 — языковые пробы
+
+Запись 2026-10-10, бинарь `compiler/out/mlcc`.
+
+- `probe_tail_after_if_chain` → ok. После `if/else-if/else` из трёх веток присваивание `marker = marker + 10` исполнилось, маркер стал 13.
+- `probe_return_in_while_in_ref_mut` → ok. `return` из `while` в функции с `ref mut` вернул 1, и запись в буфер до возврата видна вызывающему.
+- `probe_ref_mut_whole_assignment` → broken. `fn reset(cells: ref mut Cells) -> unit = do cells = Cells { values: [] } end` не проходит checker: `error[E031]: cannot assign to immutable binding: cells`. Обход: обработчики возвращают результат структурой, а не присваивают `ref mut` целиком.
+- `probe_nested_field_set` → ok. `state.inner.values.set(0, x)` через `ref mut` видно вызывающему.
+- `probe_array_set_in_while` → ok. `.set` в `while` по `ref mut` полю записывает все три элемента.
+- `probe_match_in_while` → ok. `match` по sum-типу внутри `while` дал 11. Ветка `if condition then Left else Right end` в C++ становится тернарным оператором с несовместимыми типами вариантов и не линкуется; выбор варианта — отдельная функция с `return`.
+- `probe_two_ref_mut_params` → ok. Два `ref mut` параметра разных типов оба видны вызывающему.
+
