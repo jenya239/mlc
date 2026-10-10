@@ -19,14 +19,11 @@ export type HeapSlot = {
 export type Heap = {
   slots: [HeapSlot],
   element_arena: [Value],
-  freelist_32: [i32],
-  freelist_64: [i32],
-  freelist_128: [i32],
-  freelist_256: [i32],
+  free_object_ids: [i32],
+  free_object_count: i32,
   roots: [Value],
   live_count: i32,
-  write_barrier_hits: i32,
-  scratch_object_id: i32
+  write_barrier_hits: i32
 }
 
 export type HeapAlloc = { heap: Heap, value: Value }
@@ -40,14 +37,11 @@ export fn heap_new() -> Heap =
   Heap {
     slots: [],
     element_arena: [],
-    freelist_32: [],
-    freelist_64: [],
-    freelist_128: [],
-    freelist_256: [],
+    free_object_ids: [],
+    free_object_count: 0,
     roots: [],
     live_count: 0,
-    write_barrier_hits: 0,
-    scratch_object_id: 0 - 1
+    write_barrier_hits: 0
   }
 
 export fn heap_live_object_count(heap: Heap) -> i32 = heap.live_count

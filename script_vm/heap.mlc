@@ -85,6 +85,5 @@ export fn heap_write_barrier(
 ) -> Heap = do
   let mut next = heap
   heap_in_place_write(next, parent, slot_index, new_child)
-  next.scratch_object_id = 0 - 1
   next
 end

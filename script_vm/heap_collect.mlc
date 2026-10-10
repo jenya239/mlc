@@ -7,14 +7,11 @@ export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
   Heap {
     slots: heap.slots,
     element_arena: heap.element_arena,
-    freelist_32: heap.freelist_32,
-    freelist_64: heap.freelist_64,
-    freelist_128: heap.freelist_128,
-    freelist_256: heap.freelist_256,
+    free_object_ids: heap.free_object_ids,
+    free_object_count: heap.free_object_count,
     roots: roots,
     live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits,
-    scratch_object_id: 0 - 1
+    write_barrier_hits: heap.write_barrier_hits
   }
 end
 
@@ -22,14 +19,11 @@ export fn heap_root_clear(heap: Heap) -> Heap =
   Heap {
     slots: heap.slots,
     element_arena: heap.element_arena,
-    freelist_32: heap.freelist_32,
-    freelist_64: heap.freelist_64,
-    freelist_128: heap.freelist_128,
-    freelist_256: heap.freelist_256,
+    free_object_ids: heap.free_object_ids,
+    free_object_count: heap.free_object_count,
     roots: [],
     live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits,
-    scratch_object_id: 0 - 1
+    write_barrier_hits: heap.write_barrier_hits
   }
 
 fn mark_value(heap: Heap, value: Value) -> Heap =
@@ -79,17 +73,23 @@ fn mark_object(heap: Heap, object_id: i32) -> Heap = do
   let mut next = Heap {
     slots: slots_with(heap.slots, object_id, marked_slot),
     element_arena: heap.element_arena,
-    freelist_32: heap.freelist_32,
-    freelist_64: heap.freelist_64,
-    freelist_128: heap.freelist_128,
-    freelist_256: heap.freelist_256,
+    free_object_ids: heap.free_object_ids,
+    free_object_count: heap.free_object_count,
     roots: heap.roots,
     live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits,
-    scratch_object_id: 0 - 1
+    write_barrier_hits: heap.write_barrier_hits
   }
   next = mark_value(next, slot.child)
   mark_arena_span(next, slot.element_start, slot.element_count)
+end
+
+fn stored_free_object_id(free_object_ids: ref mut [i32], free_object_count: i32, object_id: i32) -> i32 = do
+  if free_object_count < free_object_ids.length() then
+    free_object_ids.set(free_object_count, object_id)
+    return free_object_count + 1
+  end
+  free_object_ids.push(object_id)
+  free_object_count + 1
 end
 
 export fn heap_collect(heap: Heap) -> Heap = do
@@ -100,10 +100,8 @@ export fn heap_collect(heap: Heap) -> Heap = do
     root_index = root_index + 1
   end
   let mut slots = next.slots
-  let mut freelist_32 = next.freelist_32
-  let mut freelist_64 = next.freelist_64
-  let mut freelist_128 = next.freelist_128
-  let mut freelist_256 = next.freelist_256
+  let mut free_object_ids = next.free_object_ids
+  let mut free_object_count = next.free_object_count
   let mut live_count = 0
   let mut object_id = 0
   while object_id < slots.length() do
@@ -135,19 +133,11 @@ export fn heap_collect(heap: Heap) -> Heap = do
           },
           child: value_encode(ValueNil),
           element_start: slot.element_start,
-          element_count: 0,
+          element_count: slot.element_count,
           size_class: slot.size_class,
           live: false
         })
-        if slot.size_class == 0 then
-          freelist_32.push(object_id)
-        else if slot.size_class == 1 then
-          freelist_64.push(object_id)
-        else if slot.size_class == 2 then
-          freelist_128.push(object_id)
-        else
-          freelist_256.push(object_id)
-        end
+        free_object_count = stored_free_object_id(free_object_ids, free_object_count, object_id)
       end
     end
     object_id = object_id + 1
@@ -155,13 +145,10 @@ export fn heap_collect(heap: Heap) -> Heap = do
   Heap {
     slots: slots,
     element_arena: next.element_arena,
-    freelist_32: freelist_32,
-    freelist_64: freelist_64,
-    freelist_128: freelist_128,
-    freelist_256: freelist_256,
+    free_object_ids: free_object_ids,
+    free_object_count: free_object_count,
     roots: next.roots,
     live_count: live_count,
-    write_barrier_hits: next.write_barrier_hits,
-    scratch_object_id: 0 - 1
+    write_barrier_hits: next.write_barrier_hits
   }
 end

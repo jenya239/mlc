@@ -862,7 +862,7 @@ Sonnet доступен очереди только через соседний 
 - kind: green
 - depends: 42
 - goal: `free_object_ids` + `free_object_count` вместо `freelist_32..256`
-- allowed_files: `script_vm/heap_types.mlc`, `script_vm/heap_alloc.mlc`, `script_vm/heap_collect.mlc`, `scripts/run_script_vm_gate.rb` (регистрация `heap_reuse`), `STATE`
+- allowed_files: `script_vm/heap_types.mlc`, `script_vm/heap_alloc.mlc`, `script_vm/heap_collect.mlc`, `script_vm/heap.mlc` (консультация разрешила правку вне исходного списка из-за удаления поля `scratch_object_id`), `scripts/run_script_vm_gate.rb` (регистрация `heap_reuse`), `STATE`
 - forbidden: F0
 - contract: S5 п.2, п.4: `Heap` теряет четыре `freelist_*` и `scratch_object_id`, получает `free_object_ids: [i32]`, `free_object_count: i32`; push на sweep: если `count < length` — `.set`, иначе `.push`; `count += 1`; pop при аллокации: `count -= 1`, id = `free_object_ids[count]`; размерный класс слота перезаписывается новым объектом (`heap_size_class_bytes` не меняется); вспомогательная функция выбора id — отдельная функция, возвращающая значение (правило 13, R1)
 - red: шаг 42

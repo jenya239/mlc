@@ -10,6 +10,69 @@ import {
   heap_type_closure
 } from './heap_types'
 
+fn selected_free_object_id(free_object_ids: [i32], free_object_count: i32) -> i32 =
+  free_object_ids[free_object_count - 1]
+
+fn taken_object_id(heap: ref mut Heap) -> i32 = do
+  if heap.free_object_count <= 0 then
+    return heap.slots.length()
+  end
+  const object_id = selected_free_object_id(heap.free_object_ids, heap.free_object_count)
+  heap.free_object_count = heap.free_object_count - 1
+  object_id
+end
+
+fn stored_element_count(element_count: i32) -> i32 = do
+  if element_count > 0 then
+    return element_count
+  end
+  0
+end
+
+fn append_nil_span(heap: ref mut Heap, element_count: i32) -> i32 = do
+  const element_start = heap.element_arena.length()
+  const nil_value = value_encode(ValueNil)
+  let mut index = 0
+  while index < element_count do
+    heap.element_arena.push(nil_value)
+    index = index + 1
+  end
+  element_start
+end
+
+fn write_nil_span(heap: ref mut Heap, element_start: i32, element_count: i32) -> unit = do
+  const nil_value = value_encode(ValueNil)
+  let mut index = 0
+  while index < element_count do
+    heap.element_arena.set(element_start + index, nil_value)
+    index = index + 1
+  end
+end
+
+fn reused_element_start(heap: ref mut Heap, object_id: i32, element_count: i32) -> i32 = do
+  const slot = heap.slots[object_id]
+  if element_count <= slot.element_count then
+    write_nil_span(heap, slot.element_start, element_count)
+    return slot.element_start
+  end
+  append_nil_span(heap, element_count)
+end
+
+fn prepared_element_start(heap: ref mut Heap, object_id: i32, element_count: i32) -> i32 = do
+  if object_id >= heap.slots.length() then
+    return append_nil_span(heap, element_count)
+  end
+  reused_element_start(heap, object_id, element_count)
+end
+
+fn install_slot(heap: ref mut Heap, object_id: i32, slot: HeapSlot) -> unit = do
+  if object_id < heap.slots.length() then
+    heap.slots.set(object_id, slot)
+  else
+    heap.slots.push(slot)
+  end
+end
+
 fn heap_in_place_alloc_object(
   heap: ref mut Heap,
   type_id: i32,
@@ -18,30 +81,25 @@ fn heap_in_place_alloc_object(
   element_count: i32,
   size_class: i32
 ) -> Value = do
-  const object_id = heap.slots.length()
-  const element_start = heap.element_arena.length()
+  const stored_count = stored_element_count(element_count)
+  const object_id = taken_object_id(heap)
+  const element_start = prepared_element_start(heap, object_id, stored_count)
   const nil_value = value_encode(ValueNil)
-  let mut appended = 0
-  while appended < element_count do
-    heap.element_arena.push(nil_value)
-    appended = appended + 1
-  end
   const header = ObjectHeader {
     type_id: type_id,
     gc_flags: 0,
     object_flags: object_flags,
     shape_or_meta: shape_or_meta
   }
-  heap.slots.push(HeapSlot {
+  install_slot(heap, object_id, HeapSlot {
     header: header,
     child: nil_value,
     element_start: element_start,
-    element_count: appended,
+    element_count: stored_count,
     size_class: size_class,
     live: true
   })
   heap.live_count = heap.live_count + 1
-  heap.scratch_object_id = object_id
   value_encode(ValueHeapRef(object_id))
 end
 
