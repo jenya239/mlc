@@ -1,8 +1,8 @@
 current_step: 22
-status: ready
-last_result: done step 22: RunResult and run_err_* moved to run_result.mlc; interpreter.mlc 977→971; units=12
-last_verify: ruby scripts/run_script_vm_gate.rb value_rep bytecode_format verifier interpreter_arithmetic control_flow heap_gc_arena arrays_records closures_fibers embedding_abi char_arith char_heap_ops char_frames => script_vm_gate ok units=12 exit 0; sabotage run_err_type typo => script_vm_gate FAIL char_arith exit 1 mixed_add code got=typo; restored; gate again ok units=12
+status: consult_ready
+last_result: blocked step 23: sabotage LT `<` to `<=` left GATE(char_arith) green; the only LT cases are 2<5 and NaN, where `<` and `<=` agree
+last_verify: ruby scripts/run_script_vm_gate.rb char_arith => script_vm_gate ok units=1 exit 0; char_arith checks=64; [script_vm] char_arith_unit ok
 next_step: 23
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261010_144500.md
 consult_verdict:
