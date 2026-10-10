@@ -1,0 +1,341 @@
+import { Value } from './value'
+import {
+  DecodedAbc,
+  instruction_upvalue_source_is_local,
+  instruction_upvalue_source_index
+} from './bytecode'
+import {
+  Heap,
+  heap_alloc_cell,
+  heap_alloc_closure,
+  heap_write_barrier,
+  heap_object_type_id,
+  heap_type_closure,
+  heap_type_cell,
+  heap_closure_proto_index,
+  heap_get_element,
+  heap_element_count,
+  heap_cell_child
+} from './heap'
+import { FunctionProto, run_err_type, run_err_bounds, run_err_stack } from './run_result'
+import {
+  VmState,
+  vm_state_frame_depth,
+  vm_state_frame_closure,
+  vm_state_register,
+  vm_state_set_register,
+  vm_state_set_program_counter,
+  vm_state_push_frame
+} from './vm_state'
+import { executor_step_continue, executor_fail } from './executor_step'
+
+export type ExecutorHeapStep = { heap: Heap, step: i32 }
+
+type ExecutorUpvalueFill = { heap: Heap, error_code: string, error_at: i32 }
+
+type CallArgument = { index: i32, value: Value }
+
+export fn executor_max_frame_depth() -> i32 = 256
+
+export fn executor_heap_step(heap: Heap, step: i32) -> ExecutorHeapStep =
+  ExecutorHeapStep { heap: heap, step: step }
+
+fn fill_one_upvalue(
+  heap: Heap,
+  closure_value: Value,
+  parent_closure: Value,
+  registers: [Value],
+  is_local: i32,
+  source_index: i32,
+  upvalue_index: i32,
+  primary: i32
+) -> ExecutorUpvalueFill =
+  if is_local != 0 then
+    let cell_alloc = heap_alloc_cell(heap)
+    let with_child = heap_write_barrier(cell_alloc.heap, cell_alloc.value, 0, registers[source_index])
+    let with_slot = heap_write_barrier(with_child, closure_value, upvalue_index, cell_alloc.value)
+    ExecutorUpvalueFill { heap: with_slot, error_code: "", error_at: 0 }
+  else if heap_object_type_id(heap, parent_closure) != heap_type_closure() then
+    ExecutorUpvalueFill { heap: heap, error_code: run_err_type(), error_at: primary }
+  else
+    let parent_cell = heap_get_element(heap, parent_closure, source_index)
+    let with_slot = heap_write_barrier(heap, closure_value, upvalue_index, parent_cell)
+    ExecutorUpvalueFill { heap: with_slot, error_code: "", error_at: 0 }
+  end
+
+fn fill_closure_upvalues(
+  heap: Heap,
+  closure_value: Value,
+  parent_closure: Value,
+  registers: [Value],
+  words: [i32],
+  primary: i32,
+  upvalue_count: i32
+) -> ExecutorUpvalueFill = do
+  let mut heap_state = heap
+  let mut error_code = ""
+  let mut error_at = 0
+  let mut upvalue_index = 0
+  while upvalue_index < upvalue_count && error_code == "" do
+    let source_word = words[primary + 1 + upvalue_index]
+    let is_local = instruction_upvalue_source_is_local(source_word)
+    let source_index = instruction_upvalue_source_index(source_word)
+    let step = fill_one_upvalue(
+      heap_state,
+      closure_value,
+      parent_closure,
+      registers,
+      is_local,
+      source_index,
+      upvalue_index,
+      primary
+    )
+    heap_state = step.heap
+    error_code = step.error_code
+    error_at = step.error_at
+    upvalue_index = upvalue_index + 1
+  end
+  ExecutorUpvalueFill { heap: heap_state, error_code: error_code, error_at: error_at }
+end
+
+fn frame_registers(state: ref mut VmState, register_count: i32) -> [Value] = do
+  let mut registers: [Value] = []
+  let mut index = 0
+  while index < register_count do
+    registers.push(vm_state_register(state, index))
+    index = index + 1
+  end
+  registers
+end
+
+fn collect_call_arguments(
+  state: ref mut VmState,
+  caller_register_count: i32,
+  function_register: i32,
+  argument_count: i32,
+  callee_register_count: i32
+) -> [CallArgument] = do
+  let mut copied: [CallArgument] = []
+  let mut argument_index = 0
+  while argument_index < argument_count do
+    let source = function_register + 1 + argument_index
+    if source < caller_register_count && argument_index < callee_register_count then
+      copied.push(CallArgument { index: argument_index, value: vm_state_register(state, source) })
+    end
+    argument_index = argument_index + 1
+  end
+  copied
+end
+
+fn place_call_arguments(state: ref mut VmState, copied: [CallArgument]) -> unit = do
+  let mut index = 0
+  while index < copied.length() do
+    let argument = copied[index]
+    vm_state_set_register(state, argument.index, argument.value)
+    index = index + 1
+  end
+end
+
+fn open_callee_frame(
+  heap: Heap,
+  state: ref mut VmState,
+  function_value: Value,
+  callee_proto_index: i32,
+  callee_register_count: i32,
+  return_register: i32,
+  copied: [CallArgument],
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  vm_state_set_program_counter(state, primary + span)
+  vm_state_push_frame(state, callee_proto_index, callee_register_count, function_value, return_register)
+  place_call_arguments(state, copied)
+  executor_heap_step(heap, executor_step_continue())
+end
+
+fn call_closure(
+  heap: Heap,
+  state: ref mut VmState,
+  protos: [FunctionProto],
+  caller_register_count: i32,
+  decoded: DecodedAbc,
+  function_value: Value,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  let callee_proto_index = heap_closure_proto_index(heap, function_value)
+  if callee_proto_index < 0 || callee_proto_index >= protos.length() then
+    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+  else
+    let callee_proto = protos[callee_proto_index]
+    let copied = collect_call_arguments(
+      state,
+      caller_register_count,
+      decoded.b,
+      decoded.c,
+      callee_proto.register_count
+    )
+    open_callee_frame(
+      heap,
+      state,
+      function_value,
+      callee_proto_index,
+      callee_proto.register_count,
+      decoded.a,
+      copied,
+      primary,
+      span
+    )
+  end
+end
+
+export fn executor_exec_call(
+  heap: Heap,
+  state: ref mut VmState,
+  protos: [FunctionProto],
+  caller_proto: FunctionProto,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  if vm_state_frame_depth(state) >= executor_max_frame_depth() then
+    executor_heap_step(heap, executor_fail(state, run_err_stack(), primary))
+  else
+    let function_value = vm_state_register(state, decoded.b)
+    if heap_object_type_id(heap, function_value) != heap_type_closure() then
+      executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    else
+      call_closure(
+        heap,
+        state,
+        protos,
+        caller_proto.register_count,
+        decoded,
+        function_value,
+        primary,
+        span
+      )
+    end
+  end
+end
+
+fn finish_make_closure(
+  heap: Heap,
+  state: ref mut VmState,
+  proto: FunctionProto,
+  decoded: DecodedAbc,
+  words: [i32],
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  let registers = frame_registers(state, proto.register_count)
+  let parent_closure = vm_state_frame_closure(state)
+  let alloc = heap_alloc_closure(heap, decoded.b, decoded.c)
+  let filled = fill_closure_upvalues(
+    alloc.heap,
+    alloc.value,
+    parent_closure,
+    registers,
+    words,
+    primary,
+    decoded.c
+  )
+  if filled.error_code != "" then
+    executor_heap_step(filled.heap, executor_fail(state, filled.error_code, filled.error_at))
+  else
+    vm_state_set_register(state, decoded.a, alloc.value)
+    vm_state_set_program_counter(state, primary + span)
+    executor_heap_step(filled.heap, executor_step_continue())
+  end
+end
+
+export fn executor_exec_make_closure(
+  heap: Heap,
+  state: ref mut VmState,
+  protos: [FunctionProto],
+  proto: FunctionProto,
+  decoded: DecodedAbc,
+  words: [i32],
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  if decoded.b < 0 || decoded.b >= protos.length() then
+    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+  else
+    finish_make_closure(heap, state, proto, decoded, words, primary, span)
+  end
+end
+
+fn read_upvalue(
+  heap: Heap,
+  state: ref mut VmState,
+  closure: Value,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  if decoded.b < 0 || decoded.b >= heap_element_count(heap, closure) then
+    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+  else
+    let cell = heap_get_element(heap, closure, decoded.b)
+    if heap_object_type_id(heap, cell) != heap_type_cell() then
+      executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    else
+      vm_state_set_register(state, decoded.a, heap_cell_child(heap, cell))
+      vm_state_set_program_counter(state, primary + span)
+      executor_heap_step(heap, executor_step_continue())
+    end
+  end
+end
+
+export fn executor_exec_get_upval(
+  heap: Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  let closure = vm_state_frame_closure(state)
+  if heap_object_type_id(heap, closure) != heap_type_closure() then
+    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+  else
+    read_upvalue(heap, state, closure, decoded, primary, span)
+  end
+end
+
+fn store_upvalue(
+  heap: Heap,
+  state: ref mut VmState,
+  closure: Value,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  if decoded.a < 0 || decoded.a >= heap_element_count(heap, closure) then
+    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+  else
+    let cell = heap_get_element(heap, closure, decoded.a)
+    if heap_object_type_id(heap, cell) != heap_type_cell() then
+      executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    else
+      let next_heap = heap_write_barrier(heap, cell, 0, vm_state_register(state, decoded.b))
+      vm_state_set_program_counter(state, primary + span)
+      executor_heap_step(next_heap, executor_step_continue())
+    end
+  end
+end
+
+export fn executor_exec_set_upval(
+  heap: Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> ExecutorHeapStep = do
+  let closure = vm_state_frame_closure(state)
+  if heap_object_type_id(heap, closure) != heap_type_closure() then
+    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+  else
+    store_upvalue(heap, state, closure, decoded, primary, span)
+  end
+end

@@ -20,7 +20,11 @@ import {
   instruction_opcode_lt,
   instruction_opcode_le,
   instruction_opcode_gt,
-  instruction_opcode_ge
+  instruction_opcode_ge,
+  instruction_opcode_call,
+  instruction_opcode_make_closure,
+  instruction_opcode_get_upval,
+  instruction_opcode_set_upval
 } from './bytecode'
 import { VerifyOk, VerifyErr, verify_function } from './verifier'
 import { Heap } from './heap'
@@ -54,6 +58,14 @@ import {
   executor_fail
 } from './executor_step'
 import { executor_exec_binary, executor_exec_compare } from './executor_arith'
+import {
+  ExecutorHeapStep,
+  executor_heap_step,
+  executor_exec_call,
+  executor_exec_make_closure,
+  executor_exec_get_upval,
+  executor_exec_set_upval
+} from './executor_calls'
 
 type VerifyScan = { failed: bool, at: i32 }
 
@@ -183,17 +195,38 @@ fn executor_exec(
   end
 end
 
-fn executor_step_one(state: ref mut VmState, protos: [FunctionProto]) -> i32 = do
+fn dispatch_instruction(
+  heap: Heap,
+  state: ref mut VmState,
+  protos: [FunctionProto],
+  proto: FunctionProto,
+  words: [i32],
+  program_counter: i32
+) -> ExecutorHeapStep = do
+  let primary = program_counter
+  let decoded = instruction_decode(Instruction { word: words[primary] })
+  let span = instruction_word_span(words, primary)
+  if decoded.opcode == instruction_opcode_call() then
+    executor_exec_call(heap, state, protos, proto, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_make_closure() then
+    executor_exec_make_closure(heap, state, protos, proto, decoded, words, primary, span)
+  else if decoded.opcode == instruction_opcode_get_upval() then
+    executor_exec_get_upval(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_set_upval() then
+    executor_exec_set_upval(heap, state, decoded, primary, span)
+  else
+    executor_heap_step(heap, executor_exec(state, proto, decoded, words, primary, span))
+  end
+end
+
+fn executor_step_one(heap: Heap, state: ref mut VmState, protos: [FunctionProto]) -> ExecutorHeapStep = do
   let proto = protos[vm_state_frame_proto(state)]
   let words = proto.words
   let program_counter = vm_state_program_counter(state)
   if program_counter >= words.length() then
-    executor_fail(state, run_err_no_return(), words.length())
+    executor_heap_step(heap, executor_fail(state, run_err_no_return(), words.length()))
   else
-    let primary = program_counter
-    let decoded = instruction_decode(Instruction { word: words[primary] })
-    let span = instruction_word_span(words, primary)
-    executor_exec(state, proto, decoded, words, primary, span)
+    dispatch_instruction(heap, state, protos, proto, words, program_counter)
   end
 end
 
@@ -205,8 +238,9 @@ fn execute_state(heap: Heap, protos: [FunctionProto], entry_proto_index: i32, ar
   place_arguments(state, entry.register_count, args)
   let mut finished = false
   while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished do
-    let step = executor_step_one(state, protos)
-    if step == executor_step_returned() then
+    let outcome = executor_step_one(heap_state, state, protos)
+    heap_state = outcome.heap
+    if outcome.step == executor_step_returned() then
       finished = true
     end
   end
