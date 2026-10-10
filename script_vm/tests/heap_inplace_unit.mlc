@@ -1,0 +1,299 @@
+import { Value, ValueInt32, value_encode, value_raw_equal } from '../value'
+import {
+  Heap,
+  heap_new,
+  heap_alloc_cell,
+  heap_alloc_array,
+  heap_alloc_record,
+  heap_alloc_closure,
+  heap_write_barrier,
+  heap_live_object_count,
+  heap_write_barrier_hits,
+  heap_get_element,
+  heap_element_count,
+  heap_object_type_id,
+  heap_cell_child,
+  heap_closure_proto_index,
+  heap_in_place_alloc_cell,
+  heap_in_place_alloc_array,
+  heap_in_place_alloc_record,
+  heap_in_place_alloc_closure,
+  heap_in_place_write,
+  heap_in_place_read,
+  heap_in_place_type_id,
+  heap_in_place_element_count,
+  heap_in_place_closure_proto_index,
+  heap_in_place_cell_child,
+  heap_in_place_root_push,
+  heap_in_place_root_clear,
+  heap_slot_count
+} from '../heap'
+
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+type Sample = { heap: Heap, objects: [Value], reads: [Value] }
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm heap_inplace_unit] FAIL: " + message)
+  1
+end
+
+fn build_functional() -> Sample = do
+  let mut heap = heap_new()
+  let mut objects: [Value] = []
+  let mut reads: [Value] = []
+  let mut round_index = 0
+  while round_index < 6 do
+    const cell_allocation = heap_alloc_cell(heap)
+    heap = cell_allocation.heap
+    objects.push(cell_allocation.value)
+    heap = heap_write_barrier(heap, cell_allocation.value, 0, integer_value(round_index))
+    reads.push(heap_cell_child(heap, cell_allocation.value))
+    const array_allocation = heap_alloc_array(heap, 2)
+    heap = array_allocation.heap
+    objects.push(array_allocation.value)
+    heap = heap_write_barrier(heap, array_allocation.value, 0, integer_value(round_index + 10))
+    reads.push(heap_get_element(heap, array_allocation.value, 0))
+    const record_allocation = heap_alloc_record(heap, 2)
+    heap = record_allocation.heap
+    objects.push(record_allocation.value)
+    heap = heap_write_barrier(heap, record_allocation.value, 1, integer_value(round_index + 20))
+    const closure_allocation = heap_alloc_closure(heap, round_index + 1, 1)
+    heap = closure_allocation.heap
+    objects.push(closure_allocation.value)
+    heap = heap_write_barrier(heap, closure_allocation.value, 0, integer_value(round_index + 30))
+    round_index = round_index + 1
+  end
+  Sample { heap: heap, objects: objects, reads: reads }
+end
+
+fn build_in_place(heap: ref mut Heap) -> Sample = do
+  let mut objects: [Value] = []
+  let mut reads: [Value] = []
+  let mut round_index = 0
+  while round_index < 6 do
+    const cell = heap_in_place_alloc_cell(heap)
+    objects.push(cell)
+    heap_in_place_write(heap, cell, 0, integer_value(round_index))
+    reads.push(heap_in_place_cell_child(heap, cell))
+    const array = heap_in_place_alloc_array(heap, 2)
+    objects.push(array)
+    heap_in_place_write(heap, array, 0, integer_value(round_index + 10))
+    reads.push(heap_in_place_read(heap, array, 0))
+    const record = heap_in_place_alloc_record(heap, 2)
+    objects.push(record)
+    heap_in_place_write(heap, record, 1, integer_value(round_index + 20))
+    const closure = heap_in_place_alloc_closure(heap, round_index + 1, 1)
+    objects.push(closure)
+    heap_in_place_write(heap, closure, 0, integer_value(round_index + 30))
+    round_index = round_index + 1
+  end
+  Sample { heap: heap, objects: objects, reads: reads }
+end
+
+fn elements_match(
+  functional_heap: Heap,
+  inplace_heap: ref mut Heap,
+  functional_object: Value,
+  inplace_object: Value
+) -> bool = do
+  const count = heap_element_count(functional_heap, functional_object)
+  if count != heap_in_place_element_count(inplace_heap, inplace_object) then
+    return false
+  end
+  let mut index = 0
+  let mut matched = true
+  while index < count && matched do
+    const same = value_raw_equal(
+      heap_get_element(functional_heap, functional_object, index),
+      heap_in_place_read(inplace_heap, inplace_object, index)
+    )
+    matched = matched && same
+    index = index + 1
+  end
+  matched
+end
+
+fn same_object(
+  functional_heap: Heap,
+  inplace_heap: ref mut Heap,
+  functional_object: Value,
+  inplace_object: Value
+) -> bool = do
+  if heap_object_type_id(functional_heap, functional_object) != heap_in_place_type_id(inplace_heap, inplace_object) then
+    return false
+  end
+  if !value_raw_equal(heap_cell_child(functional_heap, functional_object), heap_in_place_cell_child(inplace_heap, inplace_object)) then
+    return false
+  end
+  if heap_closure_proto_index(functional_heap, functional_object) != heap_in_place_closure_proto_index(inplace_heap, inplace_object) then
+    return false
+  end
+  elements_match(functional_heap, inplace_heap, functional_object, inplace_object)
+end
+
+fn reads_match(functional_reads: [Value], inplace_reads: [Value]) -> i32 = do
+  if functional_reads.length() != inplace_reads.length() then
+    return fail("read count")
+  end
+  let mut index = 0
+  let mut status = 0
+  while index < functional_reads.length() && status == 0 do
+    const same = value_raw_equal(functional_reads[index], inplace_reads[index])
+    status = read_status(status, same, index)
+    index = index + 1
+  end
+  status
+end
+
+fn read_status(status: i32, same: bool, index: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  if same then
+    return 0
+  end
+  fail("read " + index.to_string())
+end
+
+fn objects_match(functional: Sample, inplace_heap: ref mut Heap, inplace: Sample) -> i32 = do
+  if functional.objects.length() != inplace.objects.length() then
+    return fail("object count")
+  end
+  let mut index = 0
+  let mut status = 0
+  while index < functional.objects.length() && status == 0 do
+    const same = same_object(functional.heap, inplace_heap, functional.objects[index], inplace.objects[index])
+    status = object_status(status, same, index)
+    index = index + 1
+  end
+  status
+end
+
+fn object_status(status: i32, same: bool, index: i32) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  if same then
+    return 0
+  end
+  fail("object " + index.to_string())
+end
+
+fn samples_match(functional: Sample, inplace_heap: ref mut Heap, inplace: Sample) -> i32 = do
+  if heap_live_object_count(functional.heap) != heap_live_object_count(inplace.heap) then
+    return fail("live count")
+  end
+  if heap_write_barrier_hits(functional.heap) != heap_write_barrier_hits(inplace.heap) then
+    return fail("write barrier")
+  end
+  if heap_slot_count(functional.heap) != heap_slot_count(inplace.heap) then
+    return fail("slot count")
+  end
+  if heap_slot_count(inplace.heap) != functional.objects.length() then
+    return fail("slot count objects")
+  end
+  const read_status_code = reads_match(functional.reads, inplace.reads)
+  if read_status_code != 0 then
+    return read_status_code
+  end
+  objects_match(functional, inplace_heap, inplace)
+end
+
+fn copies_stay_isolated() -> i32 = do
+  let mut heap = heap_new()
+  const cell = heap_in_place_alloc_cell(heap)
+  const snapshot = heap
+  const child_before = heap_cell_child(snapshot, cell)
+  heap_in_place_write(heap, cell, 0, integer_value(7))
+  heap_in_place_root_push(heap, cell)
+  const extra = heap_in_place_alloc_array(heap, 1)
+  heap_in_place_write(heap, extra, 0, integer_value(8))
+  if !value_raw_equal(heap_cell_child(snapshot, cell), child_before) then
+    return fail("snapshot child")
+  end
+  if heap_write_barrier_hits(snapshot) != 0 then
+    return fail("snapshot barrier")
+  end
+  if heap_live_object_count(snapshot) != 1 then
+    return fail("snapshot live")
+  end
+  if snapshot.roots.length() != 0 then
+    return fail("snapshot roots")
+  end
+  if heap_slot_count(snapshot) != 1 then
+    return fail("snapshot slots")
+  end
+  if !value_raw_equal(heap_in_place_cell_child(heap, cell), integer_value(7)) then
+    return fail("mutated child")
+  end
+  if heap_write_barrier_hits(heap) != 2 then
+    return fail("mutated barrier")
+  end
+  if heap_live_object_count(heap) != 2 then
+    return fail("mutated live")
+  end
+  if heap.roots.length() != 1 then
+    return fail("mutated roots")
+  end
+  if heap_slot_count(heap) != 2 then
+    return fail("mutated slots")
+  end
+  heap_in_place_root_clear(heap)
+  if heap.roots.length() != 0 then
+    return fail("cleared roots")
+  end
+  0
+end
+
+fn nanoseconds_per_pair(pair_count: i32) -> i32 = do
+  let mut heap = heap_new()
+  const started = script_vm_perf_now_us()
+  let mut index = 0
+  while index < pair_count do
+    const record = heap_in_place_alloc_record(heap, 2)
+    heap_in_place_write(heap, record, 0, integer_value(index))
+    index = index + 1
+  end
+  const elapsed = script_vm_perf_now_us() - started
+  elapsed * 1000 / pair_count
+end
+
+fn measure_scaling() -> i32 = do
+  const small_nanoseconds = nanoseconds_per_pair(1000)
+  const large_nanoseconds = nanoseconds_per_pair(4000)
+  println("heap_inplace_ns_per_pair_n1000 " + small_nanoseconds.to_string())
+  println("heap_inplace_ns_per_pair_n4000 " + large_nanoseconds.to_string())
+  if small_nanoseconds <= 0 then
+    return fail("n1000 elapsed")
+  end
+  const scaling_ratio = large_nanoseconds * 100 / small_nanoseconds
+  println("heap_inplace_scaling_ratio_x100 " + scaling_ratio.to_string())
+  if scaling_ratio > 250 then
+    return fail("scaling ratio")
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const functional = build_functional()
+  let mut inplace_heap = heap_new()
+  const inplace = build_in_place(inplace_heap)
+  const sample_status = samples_match(functional, inplace_heap, inplace)
+  if sample_status != 0 then
+    return sample_status
+  end
+  const isolation_status = copies_stay_isolated()
+  if isolation_status != 0 then
+    return isolation_status
+  end
+  const scaling_status = measure_scaling()
+  if scaling_status != 0 then
+    return scaling_status
+  end
+  println("[script_vm] heap_inplace_unit ok")
+  0
+end

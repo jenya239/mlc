@@ -1,8 +1,8 @@
-current_step: 38
+current_step: 39
 status: ready
-last_result: done step 38: size limit 400 applies to every script_vm mlc file; vm_state local int32 check renamed
-last_verify: ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok exit 0; ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=19 exit 0; sabotage script_vm/tmp_size_probe.mlc 401 lines => script_vm/tmp_size_probe.mlc 401 > 400 exit 1; deleted; SIZE exit 0; gate ok units=19; probe absent
-next_step: 39
+last_result: done step 39: heap_inplace unit calls heap_in_place_* before the API exists
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/heap_inplace_unit.mlc => exit 1; error: error[E001]: undefined: heap_in_place_alloc_cell
+next_step: 40
 consult_count: 0
 consult_response:
 consult_verdict:
