@@ -267,6 +267,9 @@ fn check_gap_multiplication(check: Check) -> Check = do
   expect_error(check, multiplication, "unsupported_opcode", 2, "gap_pin_mul_unsupported", 14)
 end
 fn check_gap_equal(check: Check) -> Check = do
+  if check.status != 0 then
+    return check
+  end
   const equal = execute_entry(equal_prototypes())
   if !is_run_ok(equal) then
     return stop(check, "gap_pin_eq_unsupported expected RunOk got=" + error_code(equal), 15)
@@ -282,6 +285,9 @@ fn check_gap_equal(check: Check) -> Check = do
   }
 end
 fn check_gap_new_array(check: Check) -> Check = do
+  if check.status != 0 then
+    return check
+  end
   const created = execute_entry(new_array_prototypes())
   if !is_run_ok(created) then
     return stop(check, "gap_pin_new_array_unsupported expected RunOk got=" + error_code(created), 16)
