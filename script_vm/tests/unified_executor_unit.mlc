@@ -3,17 +3,29 @@ import {
   ValueNil,
   ValueBool,
   ValueInt32,
+  ValueFloat64,
   value_encode,
   value_raw_equal
 } from '../value'
 import {
   instruction_encode,
   instruction_opcode_jump,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge,
   instruction_words_load_const,
   instruction_words_move,
   instruction_words_return,
   instruction_words_jump,
-  instruction_words_jump_if_false
+  instruction_words_jump_if_false,
+  instruction_words_binary
 } from '../bytecode'
 import {
   FunctionProto,
@@ -25,18 +37,13 @@ import {
 } from '../interpreter'
 import { heap_new, heap_live_object_count, heap_write_barrier_hits } from '../heap'
 import { run_state_single_function, run_state_program } from '../executor'
-
 fn int_value(number: i32) -> Value = value_encode(ValueInt32(number))
-
 fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
-
 fn nil_value() -> Value = value_encode(ValueNil)
-
 fn fail(message: string) -> i32 = do
   println("[script_vm unified_executor_unit] FAIL: " + message)
   1
 end
-
 fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   let mut index = 0
   while index < source.length() do
@@ -45,7 +52,6 @@ fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   end
   destination
 end
-
 fn check_same(label: string, old_result: RunHeapResult, new_result: RunHeapResult) -> i32 = do
   if heap_live_object_count(old_result.heap) != heap_live_object_count(new_result.heap) then
     return fail(label + " live count")
@@ -61,7 +67,7 @@ fn check_same(label: string, old_result: RunHeapResult, new_result: RunHeapResul
         else
           fail(label + " value")
         end,
-      _ => fail(label + " expected ok")
+      RunErr(new_code, _new_word_index) => fail(label + " got=" + new_code)
     },
     RunErr(old_code, old_word_index) => match new_result.result {
       RunErr(new_code, new_word_index) =>
@@ -74,20 +80,17 @@ fn check_same(label: string, old_result: RunHeapResult, new_result: RunHeapResul
     }
   }
 end
-
 fn check_single(label: string, words: [i32], constants: [Value], register_count: i32) -> i32 = do
   const old_result = run_with_heap(heap_new(), words, constants, register_count)
   const new_result = run_state_single_function(heap_new(), words, constants, register_count)
   check_same(label, old_result, new_result)
 end
-
 fn load_and_return_words(constant_index: i32) -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(0, constant_index))
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn wide_constants(payload: Value) -> [Value] = do
   let mut constants: [Value] = []
   let mut index = 0
@@ -98,7 +101,6 @@ fn wide_constants(payload: Value) -> [Value] = do
   constants.push(payload)
   constants
 end
-
 fn move_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(0, 0))
@@ -106,7 +108,6 @@ fn move_words() -> [i32] = do
   words = append_words(words, instruction_words_return(1))
   words
 end
-
 fn jump_forward_narrow_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(0, 0))
@@ -116,7 +117,6 @@ fn jump_forward_narrow_words() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn jump_backward_narrow_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_jump(2))
@@ -127,7 +127,6 @@ fn jump_backward_narrow_words() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn jump_forward_wide_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(0, 0))
@@ -136,14 +135,12 @@ fn jump_forward_wide_words() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn wide_jump_words(offset: i32) -> [i32] = do
   let mut words: [i32] = []
   words.push(instruction_encode(instruction_opcode_jump(), 0, 0, 1).word)
   words.push(offset)
   words
 end
-
 fn jump_backward_wide_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_jump(2))
@@ -154,7 +151,6 @@ fn jump_backward_wide_words() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn jump_if_false_words() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(0, 0))
@@ -165,7 +161,6 @@ fn jump_if_false_words() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   words
 end
-
 fn jump_if_false_constants(condition_value: Value) -> [Value] = do
   let mut constants: [Value] = []
   constants.push(int_value(0))
@@ -173,27 +168,23 @@ fn jump_if_false_constants(condition_value: Value) -> [Value] = do
   constants.push(int_value(7))
   constants
 end
-
 fn two_integers(left_number: i32, right_number: i32) -> [Value] = do
   let mut constants: [Value] = []
   constants.push(int_value(left_number))
   constants.push(int_value(right_number))
   constants
 end
-
 fn one_integer(number: i32) -> [Value] = do
   let mut constants: [Value] = []
   constants.push(int_value(number))
   constants
 end
-
 fn return_proto(source_register: i32, register_count: i32) -> FunctionProto = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_return(source_register))
   let mut constants: [Value] = []
   FunctionProto { words: words, constants: constants, register_count: register_count }
 end
-
 fn check_program(label: string, proto: FunctionProto, entry_proto_index: i32, args: [Value]) -> i32 = do
   let mut protos: [FunctionProto] = []
   protos.push(proto)
@@ -201,19 +192,115 @@ fn check_program(label: string, proto: FunctionProto, entry_proto_index: i32, ar
   const new_result = run_state_program(heap_new(), protos, entry_proto_index, args)
   check_same(label, old_result, new_result)
 end
-
 fn argument_values() -> [Value] = do
   let mut args: [Value] = []
   args.push(int_value(11))
   args.push(int_value(22))
   args
 end
-
 fn empty_arguments() -> [Value] = do
   let mut args: [Value] = []
   args
 end
-
+fn float_value(number: f64) -> Value = value_encode(ValueFloat64(number))
+fn not_a_number() -> f64 = 0.0 / 0.0
+fn int32_minimum() -> i32 = 0 - 2147483647 - 1
+fn two_values(left_value: Value, right_value: Value) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(left_value)
+  constants.push(right_value)
+  constants
+end
+fn binary_words(opcode: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(opcode, 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+fn frame_oracle_is_heap(opcode: i32) -> bool =
+  opcode == instruction_opcode_mul() || opcode == instruction_opcode_div() || opcode == instruction_opcode_eq() || opcode == instruction_opcode_ne() || opcode == instruction_opcode_lt() || opcode == instruction_opcode_le() || opcode == instruction_opcode_gt() || opcode == instruction_opcode_ge()
+fn check_frame_pair(label: string, opcode: i32, words: [i32], constants: [Value]) -> i32 = do
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 3 })
+  let mut args: [Value] = []
+  if frame_oracle_is_heap(opcode) then
+    check_same(label, run_with_heap(heap_new(), words, constants, 3), run_state_program(heap_new(), protos, 0, args))
+  else
+    check_same(label, run_program_with_args(heap_new(), protos, 0, args), run_state_program(heap_new(), protos, 0, args))
+  end
+end
+fn check_pair(label: string, opcode: i32, left_value: Value, right_value: Value) -> i32 = do
+  let words = binary_words(opcode)
+  let constants = two_values(left_value, right_value)
+  let single_status = check_single(label, words, constants, 3)
+  if single_status != 0 then
+    return single_status
+  end
+  check_frame_pair(label + "_frame", opcode, words, constants)
+end
+fn gate_pair(status: i32, label: string, opcode: i32, left_value: Value, right_value: Value) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  check_pair(label, opcode, left_value, right_value)
+end
+fn gate_four(status: i32, prefix: string, left_value: Value, right_value: Value) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  let mut current = check_pair(prefix + "_add", instruction_opcode_add(), left_value, right_value)
+  current = gate_pair(current, prefix + "_sub", instruction_opcode_sub(), left_value, right_value)
+  current = gate_pair(current, prefix + "_mul", instruction_opcode_mul(), left_value, right_value)
+  gate_pair(current, prefix + "_div", instruction_opcode_div(), left_value, right_value)
+end
+fn gate_compares(status: i32, prefix: string, left_value: Value, right_value: Value) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  let mut current = check_pair(prefix + "_eq", instruction_opcode_eq(), left_value, right_value)
+  current = gate_pair(current, prefix + "_ne", instruction_opcode_ne(), left_value, right_value)
+  current = gate_pair(current, prefix + "_lt", instruction_opcode_lt(), left_value, right_value)
+  current = gate_pair(current, prefix + "_le", instruction_opcode_le(), left_value, right_value)
+  current = gate_pair(current, prefix + "_gt", instruction_opcode_gt(), left_value, right_value)
+  gate_pair(current, prefix + "_ge", instruction_opcode_ge(), left_value, right_value)
+end
+fn gate_equal_compares(status: i32, prefix: string, value: Value) -> i32 = do
+  if status != 0 then
+    return status
+  end
+  let mut current = check_pair(prefix + "_lt", instruction_opcode_lt(), value, value)
+  current = gate_pair(current, prefix + "_le", instruction_opcode_le(), value, value)
+  current = gate_pair(current, prefix + "_gt", instruction_opcode_gt(), value, value)
+  gate_pair(current, prefix + "_ge", instruction_opcode_ge(), value, value)
+end
+fn check_arithmetic() -> i32 = do
+  let mut status = check_pair("int_add", instruction_opcode_add(), int_value(20), int_value(22))
+  status = gate_pair(status, "int_sub", instruction_opcode_sub(), int_value(20), int_value(5))
+  status = gate_pair(status, "int_mul", instruction_opcode_mul(), int_value(6), int_value(7))
+  status = gate_pair(status, "int_div", instruction_opcode_div(), int_value(20), int_value(4))
+  status = gate_pair(status, "int_div_negative", instruction_opcode_div(), int_value(0 - 7), int_value(2))
+  status = gate_pair(status, "float_add", instruction_opcode_add(), float_value(1.5), float_value(2.25))
+  status = gate_pair(status, "float_sub", instruction_opcode_sub(), float_value(5.5), float_value(1.25))
+  status = gate_pair(status, "float_mul", instruction_opcode_mul(), float_value(1.5), float_value(4.0))
+  status = gate_pair(status, "float_div", instruction_opcode_div(), float_value(7.5), float_value(2.5))
+  status = gate_four(status, "mixed", int_value(1), float_value(2.0))
+  status = gate_four(status, "bool", bool_value(false), int_value(1))
+  status = gate_four(status, "nil", nil_value(), int_value(1))
+  status = gate_pair(status, "overflow_add", instruction_opcode_add(), int_value(2147483647), int_value(1))
+  status = gate_pair(status, "overflow_sub", instruction_opcode_sub(), int_value(int32_minimum()), int_value(1))
+  status = gate_pair(status, "overflow_mul", instruction_opcode_mul(), int_value(2147483647), int_value(2))
+  status = gate_pair(status, "div_zero_int", instruction_opcode_div(), int_value(1), int_value(0))
+  status = gate_pair(status, "div_zero_float", instruction_opcode_div(), float_value(1.0), float_value(0.0))
+  status = gate_compares(status, "int", int_value(2), int_value(5))
+  status = gate_compares(status, "float", float_value(2.0), float_value(5.0))
+  status = gate_equal_compares(status, "int_equal", int_value(5))
+  status = gate_equal_compares(status, "float_equal", float_value(3.0))
+  status = gate_compares(status, "not_a_number", float_value(not_a_number()), float_value(not_a_number()))
+  status = gate_compares(status, "mixed_compare", int_value(1), float_value(1.0))
+  gate_compares(status, "bool_compare", bool_value(true), bool_value(false))
+end
 fn run_cases() -> i32 = do
   const load_const_narrow = check_single("load_const_narrow", load_and_return_words(0), one_integer(42), 1)
   if load_const_narrow != 0 then
@@ -283,9 +370,12 @@ fn run_cases() -> i32 = do
   if entry_high != 0 then
     return entry_high
   end
-  check_program("entry_proto_index_negative", return_proto(0, 1), 0 - 1, empty_arguments())
+  let mut status = check_program("entry_proto_index_negative", return_proto(0, 1), 0 - 1, empty_arguments())
+  if status != 0 then
+    return status
+  end
+  check_arithmetic()
 end
-
 fn main() -> i32 = do
   const status = run_cases()
   if status != 0 then
