@@ -99,10 +99,10 @@ export fn heap_get_element(heap: Heap, parent: Value, index: i32) -> Value =
           value_encode(ValueNil)
         else if index < 0 then
           value_encode(ValueNil)
-        else if index >= slot.elements.length() then
+        else if index >= slot.element_count then
           value_encode(ValueNil)
         else
-          slot.elements[index]
+          heap.element_arena[slot.element_start + index]
         end
       end
     end,
@@ -118,7 +118,7 @@ export fn heap_element_count(heap: Heap, parent: Value) -> i32 =
       else if !heap.slots[object_id].live then
         0
       else
-        heap.slots[object_id].elements.length()
+        heap.slots[object_id].element_count
       end
     end,
     _ => 0
@@ -131,6 +131,7 @@ export fn heap_write_barrier(
   new_child: Value
 ) -> Heap = do
   let mut slots = heap.slots
+  let mut arena = heap.element_arena
   match value_decode(parent) {
     ValueHeapRef(object_id) => do
       if object_id >= 0 && object_id < slots.length() then
@@ -140,18 +141,13 @@ export fn heap_write_barrier(
             slots = slots_with(slots, object_id, HeapSlot {
               header: slot.header,
               child: new_child,
-              elements: slot.elements,
+              element_start: slot.element_start,
+              element_count: slot.element_count,
               size_class: slot.size_class,
               live: true
             })
-          else if slot_index >= 0 && slot_index < slot.elements.length() then
-            slots = slots_with(slots, object_id, HeapSlot {
-              header: slot.header,
-              child: slot.child,
-              elements: elements_with(slot.elements, slot_index, new_child),
-              size_class: slot.size_class,
-              live: true
-            })
+          else if slot_index >= 0 && slot_index < slot.element_count then
+            arena = elements_with(arena, slot.element_start + slot_index, new_child)
           end
         end
       end
@@ -160,6 +156,7 @@ export fn heap_write_barrier(
   }
   Heap {
     slots: slots,
+    element_arena: arena,
     freelist_32: heap.freelist_32,
     freelist_64: heap.freelist_64,
     freelist_128: heap.freelist_128,

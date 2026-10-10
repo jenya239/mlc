@@ -10,13 +10,15 @@ export type ObjectHeader = {
 export type HeapSlot = {
   header: ObjectHeader,
   child: Value,
-  elements: [Value],
+  element_start: i32,
+  element_count: i32,
   size_class: i32,
   live: bool
 }
 
 export type Heap = {
   slots: [HeapSlot],
+  element_arena: [Value],
   freelist_32: [i32],
   freelist_64: [i32],
   freelist_128: [i32],
@@ -37,6 +39,7 @@ export fn heap_type_closure() -> i32 = 4
 export fn heap_new() -> Heap =
   Heap {
     slots: [],
+    element_arena: [],
     freelist_32: [],
     freelist_64: [],
     freelist_128: [],

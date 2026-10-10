@@ -1,8 +1,8 @@
-current_step: 39
+current_step: 40
 status: ready
-last_result: done step 39: heap_inplace unit calls heap_in_place_* before the API exists
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/heap_inplace_unit.mlc => exit 1; error: error[E001]: undefined: heap_in_place_alloc_cell
-next_step: 40
+last_result: done step 40: HeapSlot stores element_start and element_count; values live in element_arena
+last_verify: ruby scripts/run_script_vm_gate.rb heap_gc_arena arrays_records char_heap_ops closures_fibers char_frames => script_vm_gate ok units=5; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok; ruby scripts/run_script_vm_bench.rb --max-ratio B4.ns_per_alloc_n1000=current:130 => B4.ns_per_alloc_n1000 13061; sabotage heap_get_element element_start+index+1 => script_vm_gate FAIL char_heap_ops exit 1, restored
+next_step: 41
 consult_count: 0
 consult_response:
 consult_verdict:
