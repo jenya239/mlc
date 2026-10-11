@@ -6,6 +6,7 @@ import {
   RunOk,
   RunErr,
   RunHeapResult,
+  RunLimits,
   FunctionProto,
   run_err_verify,
   run_err_type,
@@ -16,7 +17,7 @@ import {
   run_err_bounds,
   run_err_stack
 } from './run_result'
-import { run_state_single_function, run_state_program } from './executor'
+import { run_state_single_function, run_state_program, run_state_program_limited } from './executor'
 
 fn empty_arguments() -> [Value] = do
   let mut arguments: [Value] = []
@@ -44,3 +45,12 @@ export fn run_program_with_args(
   args: [Value]
 ) -> RunHeapResult =
   run_state_program(heap, protos, entry_proto_index, args)
+
+export fn run_program_with_args_limited(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value],
+  limits: RunLimits
+) -> RunHeapResult =
+  run_state_program_limited(heap, protos, entry_proto_index, args, limits)

@@ -10,12 +10,16 @@ export type VmState = {
   frame_return_register: [i32],
   frame_depth: i32,
   instruction_count: i32,
+  instruction_limit: i64,
+  heap_limit_objects: i32,
   error_code: string,
   error_at: i32,
   return_value: Value
 }
 
 fn nil_value() -> Value = value_encode(ValueNil)
+
+fn zero_instruction_limit() -> i64 = 0
 
 export fn vm_state_new() -> VmState =
   VmState {
@@ -28,6 +32,8 @@ export fn vm_state_new() -> VmState =
     frame_return_register: [],
     frame_depth: 0,
     instruction_count: 0,
+    instruction_limit: zero_instruction_limit(),
+    heap_limit_objects: 0,
     error_code: "",
     error_at: 0,
     return_value: nil_value()

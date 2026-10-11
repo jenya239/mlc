@@ -21,3 +21,14 @@ export fn run_err_no_return() -> string = "no_return"
 export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
 export fn run_err_bounds() -> string = "bounds"
 export fn run_err_stack() -> string = "stack"
+export fn run_err_instruction_limit() -> string = "instruction_limit"
+
+export type RunLimits = { instruction_limit: i64, heap_limit_objects: i32 }
+
+fn instruction_limit_from_i32(number: i32) -> i64 = number
+
+export fn run_limits_unlimited() -> RunLimits =
+  RunLimits { instruction_limit: instruction_limit_from_i32(0), heap_limit_objects: 0 }
+
+export fn run_limits_new(instruction_limit: i64, heap_limit_objects: i32) -> RunLimits =
+  RunLimits { instruction_limit: instruction_limit, heap_limit_objects: heap_limit_objects }

@@ -39,10 +39,13 @@ import {
   RunHeapResult,
   RunOk,
   RunErr,
+  RunLimits,
+  run_limits_unlimited,
   run_err_verify,
   run_err_type,
   run_err_no_return,
-  run_err_unsupported_opcode
+  run_err_unsupported_opcode,
+  run_err_instruction_limit
 } from './run_result'
 import {
   VmState,
@@ -129,6 +132,28 @@ end
 
 fn frame_step_leave() -> i32 = 3
 
+fn instruction_count_as_limit(count: i32) -> i64 = count
+
+fn zero_instruction_limit() -> i64 = 0
+
+fn instruction_limit_reached(state: ref mut VmState) -> bool = do
+  if state.instruction_limit > zero_instruction_limit() then
+    instruction_count_as_limit(state.instruction_count) >= state.instruction_limit
+  else
+    false
+  end
+end
+
+fn note_instruction(state: ref mut VmState) -> bool = do
+  state.instruction_count = state.instruction_count + 1
+  true
+end
+
+fn apply_run_limits(state: ref mut VmState, limits: RunLimits) -> unit = do
+  state.instruction_limit = limits.instruction_limit
+  state.heap_limit_objects = limits.heap_limit_objects
+end
+
 fn dispatch_instruction(
   heap: ref mut Heap,
   state: ref mut VmState,
@@ -174,7 +199,10 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
   let mut program_counter = vm_state_program_counter(state)
   let mut step = continue_step
   while step == continue_step && state.error_code == "" do
-    if program_counter >= words.length() then
+    if instruction_limit_reached(state) then
+      step = executor_fail(state, run_err_instruction_limit(), program_counter)
+    else if note_instruction(state) then
+      if program_counter >= words.length() then
       step = executor_fail(state, run_err_no_return(), words.length())
     else
       let primary = program_counter
@@ -238,6 +266,9 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
         end
       end
     end
+    else
+      step = step
+    end
   end
   if step == frame_step_leave() then
     continue_step
@@ -246,8 +277,9 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
   end
 end
 
-fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value]) -> RunHeapResult = do
+fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value], limits: RunLimits) -> RunHeapResult = do
   let mut state = vm_state_new()
+  apply_run_limits(state, limits)
   let entry = protos[entry_proto_index]
   vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
   place_arguments(state, entry.register_count, args)
@@ -265,11 +297,12 @@ fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index:
   end
 end
 
-export fn run_state_program(
+export fn run_state_program_limited(
   heap: Heap,
   protos: [FunctionProto],
   entry_proto_index: i32,
-  args: [Value]
+  args: [Value],
+  limits: RunLimits
 ) -> RunHeapResult = do
   let mut heap_state = heap
   let verification = verify_protos(protos)
@@ -278,9 +311,17 @@ export fn run_state_program(
   else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
     RunHeapResult { heap: heap_state, result: RunErr(run_err_type(), 0) }
   else
-    execute_state(heap_state, protos, entry_proto_index, args)
+    execute_state(heap_state, protos, entry_proto_index, args, limits)
   end
 end
+
+export fn run_state_program(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value]
+) -> RunHeapResult =
+  run_state_program_limited(heap, protos, entry_proto_index, args, run_limits_unlimited())
 
 export fn run_state_single_function(
   heap: Heap,
