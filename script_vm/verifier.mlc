@@ -33,7 +33,9 @@ import {
   instruction_opcode_call,
   instruction_opcode_make_closure,
   instruction_opcode_get_upval,
-  instruction_opcode_set_upval
+  instruction_opcode_set_upval,
+  instruction_upvalue_source_is_local,
+  instruction_upvalue_source_index
 } from './bytecode'
 
 export type VerifyResult =
@@ -162,7 +164,7 @@ fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
   else if decoded.opcode == instruction_opcode_set_prop() then
     register_in_range(decoded.a, register_count) && register_in_range(decoded.c, register_count)
   else if decoded.opcode == instruction_opcode_call() then
-    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count)
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && decoded.b + decoded.c < register_count
   else if decoded.opcode == instruction_opcode_make_closure() then
     register_in_range(decoded.a, register_count)
   else if decoded.opcode == instruction_opcode_get_upval() then
@@ -173,6 +175,30 @@ fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
     true
   end
 end
+
+fn source_word_ok(source_word: i32, register_count: i32) -> bool =
+  if instruction_upvalue_source_is_local(source_word) != 0 then
+    instruction_upvalue_source_index(source_word) < register_count
+  else
+    true
+  end
+
+fn sources_in_range(words: [i32], primary: i32, source_count: i32, register_count: i32) -> bool = do
+  let mut index = 0
+  let mut accepted = true
+  while index < source_count && accepted do
+    accepted = source_word_ok(words[primary + 1 + index], register_count)
+    index = index + 1
+  end
+  accepted
+end
+
+fn closure_sources_ok(words: [i32], primary: i32, decoded: DecodedAbc, register_count: i32) -> bool =
+  if decoded.opcode == instruction_opcode_make_closure() then
+    sources_in_range(words, primary, decoded.c, register_count)
+  else
+    true
+  end
 
 fn branch_target_ok(words: [i32], primaries: [i32], primary: i32) -> bool = do
   const span = instruction_word_span(words, primary)
@@ -224,7 +250,7 @@ export fn verify_function(words: [i32], register_count: i32, constant_count: i32
       const primary = primaries[check_index]
       const word_value = words[primary]
       const decoded = instruction_decode(Instruction { word: word_value })
-      if !registers_ok(decoded, register_count) then
+      if !registers_ok(decoded, register_count) || !closure_sources_ok(words, primary, decoded, register_count) then
         later_code = verify_err_register()
         later_at = primary
       else if decoded.opcode == instruction_opcode_load_const() then
