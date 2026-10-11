@@ -2042,3 +2042,22 @@ N = 60000, то же, что `fixture_sum_loop` для B1. Ожидаемая с
 
 `fixed_share_x100` не больше 50. Кэш декодирования не входит в эту очередь.
 
+### S97 — sabotage VM
+
+9 мутаций пойманы указанным гейтом с первого раза. 1 (`decode_module` без проверки магии) оставила `RUN(blob_limits)` зелёным: этот юнит магию не проверяет. Закрыта `sweep_gap`: чужая магия при мутации дала `foreign_magic code=0`, после `git checkout` — `sweep_gap checks=1`.
+
+| Мутация | Гейт | Исход |
+|---------|------|-------|
+| ADD в `execute_current_frame` заменён на SUB | `GATE(ARITH)` | красный: `int ADD expected 3 got=-1` |
+| Убрана проверка `INT_MIN / -1` в `apply_int32_binary` | `RUN(int32_div_overflow)` | красный: `PANIC: integer overflow` |
+| `value_jump_decision` для Int32(0) возвращает 1 | `RUN(falsy_contract)` | красный: `int_zero_falls_through` |
+| Убрана проверка глубины фреймов | `RUN(char_frames)` | красный: `binary timeout` |
+| Убрана bounds-проверка SET_PROP | `RUN(char_heap_ops)` | красный: `set_prop_past expected error` |
+| `enqueue_slot_children` не помечает детей | `RUN(heap_collect)` | красный: `chain_live expected 100000 got 1` |
+| `taken_object_id` не берёт `free_object_ids` | `RUN(heap_reuse)` | красный: `reuse_0_object_id expected 3 got 4` |
+| `vm_state_live_roots` возвращает пустой список | `RUN(gc_roots)` | красный: `live_root_keeps_field result=-1` |
+| `verify_function` пропускает окно аргументов CALL | `RUN(verifier_hardening)` | красный: `call_window_out_of_range` |
+| `decode_module` пропускает проверку магии | `RUN(blob_limits)` | зелёный; закрыто `sweep_gap` |
+
+После отката всех мутаций `git status --short script_vm` показывает только `sweep_gap_unit.mlc`. `ruby scripts/run_script_vm_gate.rb` → exit 0, `script_vm_gate ok units=42`.
+

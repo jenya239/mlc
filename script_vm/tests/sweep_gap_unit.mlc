@@ -1,0 +1,33 @@
+import {
+  emb_unsupported,
+  emb_encode_add1_module,
+  emb_verify_module_bytes
+} from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm sweep_gap_unit] FAIL: " + label)
+  1
+end
+
+fn replace_first_byte(bytes: [i32], value: i32) -> [i32] = do
+  let mut copied: [i32] = []
+  copied.push(value)
+  let mut index = 1
+  while index < bytes.length() do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn main() -> i32 = do
+  const bytes = emb_encode_add1_module()
+  const foreign_magic = replace_first_byte(bytes, 0)
+  const code = emb_verify_module_bytes(foreign_magic)
+  if code != emb_unsupported() then
+    return fail("foreign_magic code=" + code.to_string())
+  end
+  println("sweep_gap checks=1")
+  println("[script_vm] sweep_gap_unit ok")
+  0
+end
