@@ -1,8 +1,8 @@
-current_step: 107
+current_step: 108
 status: ready
-last_result: done step 107: red repl_balance падает, модуля repl_balance нет
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_balance_unit.mlc => mlcc failed
-next_step: 108
+last_result: done step 108: repl_balance_incomplete считает отдельные слова do и end
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_balance_unit.mlc => unit ok repl_balance; ruby scripts/run_script_vm_gate.rb repl_balance => script_vm_gate ok units=1; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+next_step: 109
 consult_count: 0
 consult_response:
 consult_verdict:

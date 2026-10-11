@@ -1,0 +1,32 @@
+fn character_is_word(character: string) -> bool =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".index_of(character) >= 0
+
+fn word_at(text: string, index: i32, word: string) -> bool = do
+  let word_length = word.length()
+  if index + word_length > text.length() then
+    false
+  else
+    let previous_is_boundary = index == 0 || !character_is_word(text.substring(index - 1, 1))
+    let next_index = index + word_length
+    let next_is_boundary = next_index >= text.length() || !character_is_word(text.substring(next_index, 1))
+    previous_is_boundary && next_is_boundary && text.substring(index, word_length) == word
+  end
+end
+
+export fn repl_balance_incomplete(text: string) -> bool = do
+  let mut index = 0
+  let mut do_count = 0
+  let mut end_count = 0
+  while index < text.length() do
+    if word_at(text, index, "do") then
+      do_count = do_count + 1
+      index = index + 2
+    else if word_at(text, index, "end") then
+      end_count = end_count + 1
+      index = index + 3
+    else
+      index = index + 1
+    end
+  end
+  do_count > end_count
+end

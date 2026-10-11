@@ -45,6 +45,7 @@ registered_units = [
   ["lower_records", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_records_unit.mlc"]],
   ["lower_diagnostics", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_diagnostics_unit.mlc"]],
   ["embedding_limits", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/embedding_limits_unit.mlc"]],
+  ["repl_balance", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_balance_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)
