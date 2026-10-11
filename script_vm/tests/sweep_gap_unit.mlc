@@ -1,7 +1,11 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueInt32, value_decode } from '../value'
 import {
+  emb_ok,
   emb_unsupported,
   emb_encode_add1_module,
-  emb_verify_module_bytes
+  emb_verify_module_bytes,
+  emb_call_export_bytes
 } from '../embedding'
 
 fn fail(label: string) -> i32 = do
@@ -20,6 +24,46 @@ fn replace_first_byte(bytes: [i32], value: i32) -> [i32] = do
   copied
 end
 
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn block_binding() -> string =
+  "while total < 0 do let first = 1 let second = 1 let third = 1 let fourth = 1 let fifth = 1 let sixth = 1 let seventh = 1 let eighth = first total = total + eighth end "
+
+fn many_blocks_source() -> string = do
+  let mut source = "export fn main() -> i32 = do let mut total = 0 "
+  let mut index = 0
+  while index < 40 do
+    source = source + block_binding()
+    index = index + 1
+  end
+  source + "total end"
+end
+
+fn expect_block_registers_reused() -> i32 = do
+  const lowered = lower_source(many_blocks_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("block_registers diagnostics=" + lowered.diagnostics[0].code)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+  if called.code != emb_ok() then
+    return fail("block_registers code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != 0 then
+    return fail("block_registers value=" + decoded_int(called.raw).to_string())
+  end
+  println("block_registers")
+  0
+end
+
 fn main() -> i32 = do
   const bytes = emb_encode_add1_module()
   const foreign_magic = replace_first_byte(bytes, 0)
@@ -27,7 +71,10 @@ fn main() -> i32 = do
   if code != emb_unsupported() then
     return fail("foreign_magic code=" + code.to_string())
   end
-  println("sweep_gap checks=1")
+  if expect_block_registers_reused() != 0 then
+    return 1
+  end
+  println("sweep_gap checks=2")
   println("[script_vm] sweep_gap_unit ok")
   0
 end

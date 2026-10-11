@@ -32,8 +32,8 @@ stages.push([
   "bench",
   [
     "ruby", "scripts/run_script_vm_bench.rb",
-    "--max-ratio", "B1.ns_per_insn=current:110",
-    "--max-ratio", "B3.ns_per_call=current:110"
+    "--max-ratio", "B1.ns_per_insn=baseline:50",
+    "--max-ratio", "B3.ns_per_call=baseline:50"
   ]
 ])
 

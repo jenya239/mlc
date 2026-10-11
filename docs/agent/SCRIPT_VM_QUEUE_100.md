@@ -2061,3 +2061,24 @@ N = 60000, то же, что `fixture_sum_loop` для B1. Ожидаемая с
 
 После отката всех мутаций `git status --short script_vm` показывает только `sweep_gap_unit.mlc`. `ruby scripts/run_script_vm_gate.rb` → exit 0, `script_vm_gate ok units=42`.
 
+### S98 — sabotage lowerer/embedding
+
+9 мутаций пойманы указанным гейтом с первого раза. 1 (блок не освобождает регистры локалов) оставила зелёными и `RUN(lower_diagnostics)`, и `RUN(lower_loops)`. Закрыта `sweep_gap`: сорок циклов `while` с восемью локалами на мутации дали `too_many_registers`, после `git checkout` — `block_registers` и `sweep_gap checks=2`.
+
+Стадия `bench` единого гейта сравнивает `B1.ns_per_insn` и `B3.ns_per_call` с `baseline:50`, как в S55. Записанный `current` не менялся.
+
+| Мутация | Гейт | Исход |
+|---------|------|-------|
+| `proto_builder_patch_to_here` смещён на 1 | `RUN(lower_builder)` | красный: `patched_jump_plus_one` |
+| `JUMP_IF_FALSE` в `if` ведёт в конец | `RUN(lower_control)` | красный: `maximum_negative_maximum value=-1` |
+| для `-` выпускается ADD | `RUN(lower_arithmetic)` | красный: `sub value=58` |
+| блок не освобождает регистры локалов | `RUN(lower_diagnostics)`, `RUN(lower_loops)` | оба зелёные; закрыто `sweep_gap` |
+| аргументы вызова смещены на 1 | `RUN(lower_calls)` | красный: `double_plus_one code=3` |
+| индекс поля записи инвертирован | `RUN(lower_records)` | красный: `field_order value=4` |
+| `export_signature` не проверяется | `RUN(lower_diagnostics)` | красный: `export_float_parameter` |
+| `module_encode` пишет `word_count + 1` | `RUN(module_encode)` | красный: `pair_verify code=6` |
+| бридж не передаёт `heap_limit_objects` | `ruby scripts/run_script_vm_lowered_host.rb` | красный: `heap_limit got=0 expected=10` |
+| бридж не проверяет `live` при `mlc_handle_release` | `ruby scripts/run_script_vm_handle_host.rb` | красный: `double_release_panics panics=0` |
+
+После отката мутаций в `script_vm` и `runtime/src/script_vm` остаётся только правка `sweep_gap_unit.mlc`. `ruby scripts/run_script_vm_queue_gate.rb` → exit 0, `script_vm_queue_gate ok stages=7` (`B1.ns_per_insn` 71, `B3.ns_per_call` 2261).
+
