@@ -100,11 +100,18 @@ fn accept_declaration(session: ref mut ReplSession, text: string) -> ReplAnswer 
   end
 end
 
+fn append_pending(pending: string, chunk: string) -> string =
+  if pending.length() == 0 then
+    chunk
+  else
+    pending + "\n" + chunk
+  end
+
 export fn repl_session_new() -> ReplSession =
   ReplSession { accepted_source: "", pending: "" }
 
 export fn repl_session_submit(session: ref mut ReplSession, chunk: string) -> ReplAnswer = do
-  let combined = session.pending + chunk
+  let combined = append_pending(session.pending, chunk)
   if chunk_is_blank(chunk) || repl_balance_incomplete(combined) then
     session.pending = combined
     ReplIncomplete
