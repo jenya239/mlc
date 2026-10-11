@@ -1,0 +1,37 @@
+import {
+  repl_session_new,
+  repl_session_submit,
+  ReplIncomplete,
+  ReplAccepted,
+  ReplValueInt32,
+  ReplValueString,
+  ReplDiagnostic
+} from '../repl_session'
+
+fn main() -> i32 = do
+  let mut session = repl_session_new()
+  let answer = repl_session_submit(session, "")
+  match answer {
+    ReplIncomplete => do
+      println("repl answer=incomplete")
+      println("[script_vm] repl_session_unit ok")
+      0
+    end,
+    ReplAccepted => do
+      println("repl answer=accepted")
+      1
+    end,
+    ReplValueInt32(number) => do
+      println("repl answer=value kind=int32 number=" + number.to_string())
+      1
+    end,
+    ReplValueString(string_length) => do
+      println("repl answer=value kind=string length=" + string_length.to_string())
+      1
+    end,
+    ReplDiagnostic(code, line, column) => do
+      println("repl answer=diagnostic code=" + code + " line=" + line.to_string() + " column=" + column.to_string())
+      1
+    end
+  }
+end
