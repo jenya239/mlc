@@ -47,6 +47,7 @@ registered_units = [
   ["embedding_limits", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/embedding_limits_unit.mlc"]],
   ["repl_balance", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_balance_unit.mlc"]],
   ["repl_session", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_session_unit.mlc"]],
+  ["string_heap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/string_heap_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)

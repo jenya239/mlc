@@ -33,6 +33,7 @@ export fn heap_type_cell() -> i32 = 1
 export fn heap_type_array() -> i32 = 2
 export fn heap_type_record() -> i32 = 3
 export fn heap_type_closure() -> i32 = 4
+export fn heap_type_string() -> i32 = 5
 
 fn initial_gc_threshold() -> i32 = 1024
 
