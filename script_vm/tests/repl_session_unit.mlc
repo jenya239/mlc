@@ -37,6 +37,23 @@ fn expect_diagnostic(answer: ReplAnswer) -> i32 = do
   }
 end
 
+fn diagnostic_is_positioned_unknown(answer: ReplAnswer) -> bool =
+  match answer {
+    ReplDiagnostic(code, line_number, column) =>
+      code == "unknown_identifier" && line_number > 0 && column > 0,
+    _ => false
+  }
+
+fn expect_unknown_identifier(answer: ReplAnswer) -> i32 = do
+  let printed = answer_line(answer)
+  println(printed)
+  if diagnostic_is_positioned_unknown(answer) then
+    0
+  else
+    1
+  end
+end
+
 fn main() -> i32 = do
   let mut session = repl_session_new()
   let mut status = expect_answer(repl_session_submit(session, ""), "repl answer=incomplete")
@@ -81,6 +98,9 @@ fn main() -> i32 = do
       repl_session_submit(session, "1"),
       "repl answer=value kind=int32 number=1"
     )
+  end
+  if status == 0 then
+    status = expect_unknown_identifier(repl_session_submit(session, "missing_name"))
   end
   if status == 0 then
     println("[script_vm] repl_session_unit ok")
