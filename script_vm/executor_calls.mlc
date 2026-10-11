@@ -28,6 +28,7 @@ import {
   vm_state_push_frame
 } from './vm_state'
 import { executor_step_continue, executor_fail } from './executor_step'
+import { executor_collect_if_needed } from './executor_gc'
 
 export type ExecutorHeapStep = { heap: Heap, step: i32 }
 
@@ -251,6 +252,7 @@ export fn executor_exec_make_closure(
   primary: i32,
   span: i32
 ) -> i32 = do
+  executor_collect_if_needed(state, heap)
   if decoded.b < 0 || decoded.b >= protos.length() then
     return executor_fail(state, run_err_type(), primary)
   end

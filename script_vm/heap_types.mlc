@@ -23,7 +23,8 @@ export type Heap = {
   free_object_count: i32,
   roots: [Value],
   live_count: i32,
-  write_barrier_hits: i32
+  write_barrier_hits: i32,
+  gc_threshold: i32
 }
 
 export type HeapAlloc = { heap: Heap, value: Value }
@@ -33,6 +34,8 @@ export fn heap_type_array() -> i32 = 2
 export fn heap_type_record() -> i32 = 3
 export fn heap_type_closure() -> i32 = 4
 
+fn initial_gc_threshold() -> i32 = 1024
+
 export fn heap_new() -> Heap =
   Heap {
     slots: [],
@@ -41,7 +44,8 @@ export fn heap_new() -> Heap =
     free_object_count: 0,
     roots: [],
     live_count: 0,
-    write_barrier_hits: 0
+    write_barrier_hits: 0,
+    gc_threshold: initial_gc_threshold()
   }
 
 export fn heap_live_object_count(heap: Heap) -> i32 = heap.live_count

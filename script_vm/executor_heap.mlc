@@ -19,6 +19,7 @@ import {
   vm_state_set_program_counter
 } from './vm_state'
 import { executor_step_continue, executor_fail } from './executor_step'
+import { executor_collect_if_needed } from './executor_gc'
 
 fn executor_store_allocated(
   state: ref mut VmState,
@@ -70,11 +71,13 @@ export fn executor_exec_new_array(
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> i32 =
+) -> i32 = do
+  executor_collect_if_needed(state, heap)
   match value_decode(vm_state_register(state, decoded.b)) {
     ValueInt32(length) => executor_new_array_length(heap, state, decoded, primary, span, length),
     _ => executor_fail(state, run_err_type(), primary)
   }
+end
 
 fn executor_read_array_element(
   heap: ref mut Heap,
@@ -188,7 +191,8 @@ export fn executor_exec_new_record(
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> i32 =
+) -> i32 = do
+  executor_collect_if_needed(state, heap)
   executor_store_allocated(
     state,
     decoded.a,
@@ -196,6 +200,7 @@ export fn executor_exec_new_record(
     primary,
     span
   )
+end
 
 fn executor_read_record_field(
   heap: ref mut Heap,

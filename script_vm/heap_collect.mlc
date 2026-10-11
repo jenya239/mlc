@@ -11,7 +11,8 @@ export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
     free_object_count: heap.free_object_count,
     roots: roots,
     live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits
+    write_barrier_hits: heap.write_barrier_hits,
+    gc_threshold: heap.gc_threshold
   }
 end
 
@@ -23,7 +24,8 @@ export fn heap_root_clear(heap: Heap) -> Heap =
     free_object_count: heap.free_object_count,
     roots: [],
     live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits
+    write_barrier_hits: heap.write_barrier_hits,
+    gc_threshold: heap.gc_threshold
   }
 
 export fn heap_arena_cell_count(heap: Heap) -> i32 = heap.element_arena.length()

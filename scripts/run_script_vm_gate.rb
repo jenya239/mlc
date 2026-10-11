@@ -28,6 +28,7 @@ registered_units = [
   ["falsy_contract", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/falsy_contract_unit.mlc"]],
   ["int32_div_overflow", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/int32_div_overflow_unit.mlc"]],
   ["instruction_limit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/instruction_limit_unit.mlc"]],
+  ["gc_roots", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/gc_roots_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)

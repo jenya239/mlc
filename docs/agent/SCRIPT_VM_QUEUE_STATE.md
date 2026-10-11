@@ -1,8 +1,8 @@
-current_step: 54
+current_step: 55
 status: ready
-last_result: blocked step 55: BENCH B1 49 > 33 and B3 1861 > 1179; the same bench on the tree before this step also failed (B1 60, B3 2251)
-last_verify: ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=current:110 --max-ratio B3.ns_per_call=current:110 => exit 1; max-ratio failed B1.ns_per_insn=current:110 value=49 reference=30; max-ratio failed B3.ns_per_call=current:110 value=1861 reference=1072
-next_step: 55
+last_result: done step 55: allocation safepoint collects from stack and frame roots
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/gc_roots_unit.mlc => exit 0 checks=5; ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=26; ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50 => exit 0 B1.ns_per_insn 56 B3.ns_per_call 1964; sabotage empty live roots => RUN exit 1 FAIL live_root_keeps_field result=-1, restored, gates green
+next_step: 56
 consult_count: 0
 consult_response: 
 consult_verdict: 

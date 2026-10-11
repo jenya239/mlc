@@ -117,3 +117,27 @@ export fn vm_state_frame_return_register(state: ref mut VmState) -> i32 =
 export fn vm_state_stack_capacity(state: ref mut VmState) -> i32 = state.stack.length()
 
 export fn vm_state_stack_top(state: ref mut VmState) -> i32 = state.stack_top
+
+fn append_stack_roots(state: ref mut VmState, roots: [Value]) -> [Value] = do
+  let mut index = 0
+  while index < state.stack_top do
+    roots.push(state.stack[index])
+    index = index + 1
+  end
+  roots
+end
+
+fn append_frame_closure_roots(state: ref mut VmState, roots: [Value]) -> [Value] = do
+  let mut frame_index = 0
+  while frame_index < state.frame_depth do
+    roots.push(state.frame_closure[frame_index])
+    frame_index = frame_index + 1
+  end
+  roots
+end
+
+export fn vm_state_live_roots(state: ref mut VmState) -> [Value] = do
+  let mut roots: [Value] = []
+  roots = append_stack_roots(state, roots)
+  append_frame_closure_roots(state, roots)
+end
