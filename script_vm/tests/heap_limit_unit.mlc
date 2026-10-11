@@ -1,0 +1,221 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump,
+  instruction_words_jump_if_false,
+  instruction_words_new_array,
+  instruction_words_set_index,
+  instruction_words_new_record,
+  instruction_words_make_closure,
+  instruction_opcode_add,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  RunHeapResult,
+  run_limits_new,
+  run_err_heap_limit
+} from '../run_result'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_program_with_args_limited
+} from '../interpreter'
+import { heap_new, heap_live_object_count } from '../heap'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn unlimited_instruction_count() -> i64 = 0
+
+fn allocation_word_index() -> i32 = 7
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm heap_limit_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn empty_upvalues() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn loop_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(10))
+  constants.push(integer_value(0))
+  constants.push(integer_value(1))
+  constants.push(integer_value(4))
+  constants
+end
+
+fn fill_loop(allocate_words: [i32]) -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_new_array(0, 2))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_load_const(4, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 5, 1, 4))
+  words = append_words(words, instruction_words_jump_if_false(5, 4))
+  words = append_words(words, allocate_words)
+  words = append_words(words, instruction_words_set_index(0, 1, 6))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 1, 1, 3))
+  words = append_words(words, instruction_words_jump(0 - 6))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn entry_prototypes(allocate_words: [i32]) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: fill_loop(allocate_words),
+    constants: loop_constants(),
+    register_count: 7
+  })
+  prototypes
+end
+
+fn record_prototypes() -> [FunctionProto] =
+  entry_prototypes(instruction_words_new_record(6, 1))
+
+fn array_prototypes() -> [FunctionProto] =
+  entry_prototypes(instruction_words_new_array(6, 3))
+
+fn callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn callee_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(0))
+  constants
+end
+
+fn closure_prototypes() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: fill_loop(instruction_words_make_closure(6, 1, empty_upvalues())),
+    constants: loop_constants(),
+    register_count: 7
+  })
+  prototypes.push(FunctionProto {
+    words: callee_words(),
+    constants: callee_constants(),
+    register_count: 1
+  })
+  prototypes
+end
+
+fn run_with_heap_limit(prototypes: [FunctionProto], heap_object_limit: i32) -> RunHeapResult =
+  run_program_with_args_limited(
+    heap_new(),
+    prototypes,
+    0,
+    empty_arguments(),
+    run_limits_new(unlimited_instruction_count(), heap_object_limit)
+  )
+
+fn expect_limit_stops(prototypes: [FunctionProto], label: string) -> i32 = do
+  const outcome = run_with_heap_limit(prototypes, 5)
+  if error_code(outcome.result) != run_err_heap_limit() || error_word_index(outcome.result) != allocation_word_index() then
+    return fail(label + " code=" + error_code(outcome.result))
+  end
+  const live_count = heap_live_object_count(outcome.heap)
+  if live_count == 5 then
+    println(label)
+    0
+  else
+    fail(label + " live=" + live_count.to_string())
+  end
+end
+
+fn expect_integer(result: RunResult, expected: i32, label: string) -> i32 = do
+  const actual = integer_result(result)
+  if actual == expected then
+    println(label)
+    0
+  else
+    fail(label + " result=" + actual.to_string())
+  end
+end
+
+fn expect_limit_passes(prototypes: [FunctionProto], label: string) -> i32 =
+  expect_integer(run_with_heap_limit(prototypes, 6).result, 5, label)
+
+fn expect_unlimited(prototypes: [FunctionProto], label: string) -> i32 =
+  expect_integer(run_with_heap_limit(prototypes, 0).result, 5, label)
+
+fn main() -> i32 = do
+  const record_stop = expect_limit_stops(record_prototypes(), "record_limit_stops")
+  if record_stop != 0 then
+    return record_stop
+  end
+  const record_pass = expect_limit_passes(record_prototypes(), "record_limit_passes")
+  if record_pass != 0 then
+    return record_pass
+  end
+  const array_stop = expect_limit_stops(array_prototypes(), "array_limit_stops")
+  if array_stop != 0 then
+    return array_stop
+  end
+  const array_pass = expect_limit_passes(array_prototypes(), "array_limit_passes")
+  if array_pass != 0 then
+    return array_pass
+  end
+  const closure_stop = expect_limit_stops(closure_prototypes(), "closure_limit_stops")
+  if closure_stop != 0 then
+    return closure_stop
+  end
+  const closure_pass = expect_limit_passes(closure_prototypes(), "closure_limit_passes")
+  if closure_pass != 0 then
+    return closure_pass
+  end
+  const unlimited = expect_unlimited(record_prototypes(), "limit_zero_unlimited")
+  if unlimited != 0 then
+    return unlimited
+  end
+  println("heap_limit checks=7")
+  println("[script_vm] heap_limit_unit ok")
+  0
+end
