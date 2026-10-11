@@ -1803,3 +1803,17 @@
 8. Лоуэр массива — `script_vm/lower/lower_array.mlc`: `ExprArray`, `ExprIndex`, присваивание индекса. Элементы этой очереди — `i32` и `bool`.
 9. Массив ссылочный, как запись.
 10. `break`/`continue` — `script_vm/lower/lower_iteration.mlc`. Коды `break_outside_loop` и `continue_outside_loop`. `for имя in массив` снижается к индексу и `while`.
+
+### S105 — C ABI REPL
+
+Каталога `script_vm/c_abi/` нет. Сигнатуры старых `mlc_vm_*` не меняются.
+
+Три файла реализации: объявления в `runtime/include/mlc/script_vm/embedding_abi.h`, реализация в `runtime/src/script_vm/embedding_abi.cpp`, логика в `script_vm/repl_embed.mlc`.
+
+`MlcRepl` — отдельный объект, не поле `MlcVm`. Функции: `mlc_repl_create(const MlcVmConfig*)`, `mlc_repl_destroy`, `mlc_repl_submit(MlcRepl*, const char* text, size_t size, MlcReplAnswer* answer)`.
+
+Поля `MlcReplAnswer`: `status` (`MLC_REPL_INCOMPLETE` 0, `MLC_REPL_ACCEPTED` 1, `MLC_REPL_VALUE` 2, `MLC_REPL_DIAGNOSTIC` 3), `value` int32, `string_length` int32 (−1, если значение не строка), `line`, `column`, `code_text[64]`. Код диагностики длиннее 63 символов обрезается, буфер заканчивается нулём.
+
+`mlc_repl_submit` на `NULL` сессии или `NULL` ответе возвращает −1 и не вызывает panic. Повторный `mlc_repl_destroy` одной сессии пишет в panic callback текст с `double release` и не вызывает `abort`. `NULL` destroy — пустая операция.
+
+Хост-тест: `script_vm/tests/repl_host.cpp` и `scripts/run_script_vm_repl_host.rb` по образцу `scripts/run_script_vm_lowered_host.rb`.
