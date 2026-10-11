@@ -16,7 +16,11 @@ import {
   Expr,
   ExprBlock,
   Param,
-  Span
+  Span,
+  TypeExpr,
+  TyBool,
+  TyI32,
+  expr_span
 } from '../../compiler/frontend/ast'
 import { instruction_words_return } from '../bytecode'
 import { FunctionProto } from '../run_result'
@@ -34,6 +38,12 @@ import {
   lower_type_of
 } from './lower_call'
 import { diagnostic_at } from './lower_control'
+import {
+  LowerDiagnosticSink,
+  lower_diagnostic_add,
+  lower_diagnostic_sink_new,
+  lower_diagnostics_merged
+} from './lower_diagnostics'
 import { lower_expression } from './lower_expression'
 import {
   classify_type_declaration,
@@ -131,14 +141,15 @@ end
 
 fn lower_prepared_body(
   scope: ref mut LowerScope,
+  sink: ref mut LowerDiagnosticSink,
   builder: ref mut ProtoBuilder,
   expression: Shared<Expr>,
   target: i32
 ) -> LowerType =
   match expression {
     ExprBlock(statements, final_expression, _) =>
-      lower_block(scope, builder, statements, final_expression, target),
-    _ => lower_expression(scope, builder, expression, target)
+      lower_block(scope, sink, builder, statements, final_expression, target),
+    _ => lower_expression(scope, sink, builder, expression, target)
   }
 
 fn finish_prepared_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionLowering = do
@@ -164,7 +175,55 @@ fn finish_prepared_function(
     }
   end
 
+fn type_is_exportable(type_expression: Shared<TypeExpr>) -> bool =
+  match type_expression {
+    TyI32 => true,
+    TyBool => true,
+    _ => false
+  }
+
+fn next_exportable_parameter(parameters: [Shared<Param>], index: i32) -> i32 =
+  if type_is_exportable(parameters[index].type_value) then
+    index + 1
+  else
+    0 - 1
+  end
+
+fn parameters_are_exportable(parameters: [Shared<Param>]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < parameters.length() do
+    index = next_exportable_parameter(parameters, index)
+  end
+  index >= 0
+end
+
+fn export_signature_allowed(parameters: [Shared<Param>], result_type: Shared<TypeExpr>) -> bool =
+  parameters_are_exportable(parameters) && type_is_exportable(result_type)
+
+fn export_signature_code(exported: bool, parameters: [Shared<Param>], result_type: Shared<TypeExpr>) -> string =
+  if exported && !export_signature_allowed(parameters, result_type) then
+    "export_signature"
+  else
+    ""
+  end
+
+fn note_generic_function(sink: ref mut LowerDiagnosticSink, type_parameters: [string], body: Shared<Expr>) -> unit =
+  if type_parameters.length() > 0 then
+    lower_diagnostic_add(sink, "unsupported_generic", "unsupported_generic", expr_span(body))
+  end
+
+fn note_export_signature(sink: ref mut LowerDiagnosticSink, signature_code: string, body: Shared<Expr>) -> unit =
+  if signature_code != "" then
+    lower_diagnostic_add(sink, signature_code, signature_code, expr_span(body))
+  end
+
+fn note_function_limits(sink: ref mut LowerDiagnosticSink, exported: bool, type_parameters: [string], parameters: [Shared<Param>], result_type: Shared<TypeExpr>, body: Shared<Expr>) -> unit = do
+  note_generic_function(sink, type_parameters, body)
+  note_export_signature(sink, export_signature_code(exported, parameters, result_type), body)
+end
+
 fn lower_function_with_signatures(
+  sink: ref mut LowerDiagnosticSink,
   signatures: [LowerCallSignature],
   layouts: [LowerRecordLayout],
   parameters: [Shared<Param>],
@@ -176,23 +235,28 @@ fn lower_function_with_signatures(
   install_record_layouts(scope, layouts)
   bind_call_parameters(scope, builder, parameters)
   let destination = proto_builder_register_allocate(builder)
-  let body_type = lower_prepared_body(scope, builder, expression, destination)
+  let body_type = lower_prepared_body(scope, sink, builder, expression, destination)
   finish_prepared_function(scope, builder, destination, body_type)
 end
 
 fn consider_function(
   walk: LowerWalk,
+  sink: ref mut LowerDiagnosticSink,
   signatures: [LowerCallSignature],
   layouts: [LowerRecordLayout],
   name: string,
+  type_parameters: [string],
   parameters: [Shared<Param>],
+  result_type: Shared<TypeExpr>,
   body: Shared<Expr>,
   exported: bool
-) -> LowerWalk =
-  match lower_function_with_signatures(signatures, layouts, parameters, body) {
+) -> LowerWalk = do
+  note_function_limits(sink, exported, type_parameters, parameters, result_type, body)
+  match lower_function_with_signatures(sink, signatures, layouts, parameters, body) {
     FunctionLowered(proto) => append_proto(walk, name, proto, exported),
     FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
   }
+end
 
 fn consider_unsupported(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk =
   push_diagnostic(walk, LowerDiagnostic {
@@ -211,50 +275,60 @@ fn consider_classified(walk: LowerWalk, code: string, source_span: Span) -> Lowe
 
 fn consider_inner(
   walk: LowerWalk,
+  sink: ref mut LowerDiagnosticSink,
   signatures: [LowerCallSignature],
   layouts: [LowerRecordLayout],
   inner: Shared<Decl>,
   exported: bool
 ) -> LowerWalk =
   match inner {
-    DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, signatures, layouts, name, parameters, body, exported),
+    DeclFn(name, type_parameters, _, parameters, result_type, body, _) =>
+      consider_function(walk, sink, signatures, layouts, name, type_parameters, parameters, result_type, body, exported),
     _ => consider_unsupported(walk, inner)
   }
 
 fn consider_declaration(
   walk: LowerWalk,
+  sink: ref mut LowerDiagnosticSink,
   signatures: [LowerCallSignature],
   layouts: [LowerRecordLayout],
   declaration: Shared<Decl>
 ) -> LowerWalk =
   match declaration {
-    DeclExported(inner) => consider_inner(walk, signatures, layouts, inner, true),
-    DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, signatures, layouts, name, parameters, body, plain_function_is_exported()),
+    DeclExported(inner) => consider_inner(walk, sink, signatures, layouts, inner, true),
+    DeclFn(name, type_parameters, _, parameters, result_type, body, _) =>
+      consider_function(walk, sink, signatures, layouts, name, type_parameters, parameters, result_type, body, plain_function_is_exported()),
     DeclType(_, _, _, _, source_span) =>
       consider_classified(walk, classify_type_declaration(declaration), source_span),
+    DeclTrait(_, _, _, source_span) =>
+      consider_classified(walk, "unsupported_trait", source_span),
     _ => consider_unsupported(walk, declaration)
   }
+
+fn empty_bytes() -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes
+end
+
+fn result_bytes(diagnostics: [LowerDiagnostic], walk: LowerWalk) -> [i32] =
+  if diagnostics.length() > 0 then
+    empty_bytes()
+  else
+    module_encode(walk.exports, walk.protos)
+  end
 
 fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do
   let signatures = collect_call_signatures(declarations)
   let layouts = collect_record_layouts(declarations)
+  let mut sink = lower_diagnostic_sink_new()
   let mut walk = empty_walk()
   let mut index = 0
   while index < declarations.length() do
-    walk = consider_declaration(walk, signatures, layouts, declarations[index])
+    walk = consider_declaration(walk, sink, signatures, layouts, declarations[index])
     index = index + 1
   end
-  if walk.diagnostics.length() > 0 then
-    let mut bytes: [i32] = []
-    LowerResult { diagnostics: walk.diagnostics, bytes: bytes }
-  else
-    LowerResult {
-      diagnostics: walk.diagnostics,
-      bytes: module_encode(walk.exports, walk.protos)
-    }
-  end
+  let diagnostics = lower_diagnostics_merged(walk.diagnostics, sink)
+  LowerResult { diagnostics: diagnostics, bytes: result_bytes(diagnostics, walk) }
 end
 
 export fn lower_source(source: string) -> LowerResult = do

@@ -58,13 +58,10 @@ fn fields_are_plain(fields: [Shared<FieldDef>]) -> bool = do
   index >= 0
 end
 fn classify_fields(fields: [Shared<FieldDef>]) -> string =
-  if fields_are_nested(fields) then
-    "unsupported_nested_record"
-  else if fields_are_plain(fields) then
-    ""
-  else
-    "unsupported_type"
-  end
+  if fields.length() > 255 then "record_too_wide"
+  else if fields_are_nested(fields) then "unsupported_nested_record"
+  else if fields_are_plain(fields) then ""
+  else "unsupported_type" end
 fn classify_variant(variant: Shared<TypeVariant>) -> string =
   match variant {
     VarRecord(_, fields, _) => classify_fields(fields),

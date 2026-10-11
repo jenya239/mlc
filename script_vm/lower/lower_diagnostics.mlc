@@ -1,0 +1,104 @@
+import {
+  Expr,
+  ExprArray,
+  ExprExtern,
+  ExprFloat,
+  ExprFor,
+  ExprLambda,
+  ExprMatch,
+  ExprMethod,
+  ExprQuestion,
+  ExprStr,
+  Span,
+  expr_span
+} from '../../compiler/frontend/ast'
+import { LowerDiagnostic } from './lower_types'
+
+export type LowerDiagnosticSink = {
+  diagnostics: [LowerDiagnostic]
+}
+
+export fn lower_diagnostic_sink_new() -> LowerDiagnosticSink = do
+  let mut diagnostics: [LowerDiagnostic] = []
+  LowerDiagnosticSink { diagnostics: diagnostics }
+end
+
+export fn lower_diagnostic_add(sink: ref mut LowerDiagnosticSink, code: string, message: string, source_span: Span) -> unit = do
+  sink.diagnostics.push(LowerDiagnostic {
+    code: code,
+    message: message,
+    line: source_span.line,
+    column: source_span.column
+  })
+end
+
+fn expression_diagnostic_code(expression: Shared<Expr>) -> string =
+  match expression {
+    ExprStr(_, _) => "unsupported_string",
+    ExprArray(_, _) => "unsupported_array",
+    ExprMatch(_, _, _) => "unsupported_match",
+    ExprFor(_, _, _, _) => "unsupported_for",
+    ExprLambda(_, _, _) => "unsupported_lambda",
+    ExprMethod(_, _, _, _) => "unsupported_method",
+    ExprQuestion(_, _) => "unsupported_question",
+    ExprFloat(_, _) => "unsupported_float",
+    ExprExtern(_, _, _, _) => "unsupported_extern",
+    _ => ""
+  }
+
+fn noted_expression(sink: ref mut LowerDiagnosticSink, expression: Shared<Expr>, code: string) -> bool = do
+  lower_diagnostic_add(sink, code, code, expr_span(expression))
+  true
+end
+
+export fn note_expression_diagnostic(sink: ref mut LowerDiagnosticSink, expression: Shared<Expr>) -> bool = do
+  let code = expression_diagnostic_code(expression)
+  if code != "" then noted_expression(sink, expression, code) else false end
+end
+
+fn diagnostic_is_before(left: LowerDiagnostic, right: LowerDiagnostic) -> bool =
+  if left.line < right.line then
+    true
+  else if left.line == right.line && left.column <= right.column then
+    true
+  else
+    false
+  end
+
+fn insert_diagnostic(sorted: [LowerDiagnostic], diagnostic: LowerDiagnostic) -> [LowerDiagnostic] = do
+  let mut result: [LowerDiagnostic] = []
+  let mut index = 0
+  let mut placed = false
+  while index < sorted.length() do
+    if !placed && diagnostic_is_before(diagnostic, sorted[index]) then
+      result.push(diagnostic)
+      placed = true
+    end
+    result.push(sorted[index])
+    index = index + 1
+  end
+  if !placed then
+    result.push(diagnostic)
+  end
+  result
+end
+
+export fn lower_diagnostic_sort(diagnostics: [LowerDiagnostic]) -> [LowerDiagnostic] = do
+  let mut sorted: [LowerDiagnostic] = []
+  let mut index = 0
+  while index < diagnostics.length() do
+    sorted = insert_diagnostic(sorted, diagnostics[index])
+    index = index + 1
+  end
+  sorted
+end
+
+export fn lower_diagnostics_merged(existing: [LowerDiagnostic], sink: ref mut LowerDiagnosticSink) -> [LowerDiagnostic] = do
+  let mut copied = existing
+  let mut index = 0
+  while index < sink.diagnostics.length() do
+    copied.push(sink.diagnostics[index])
+    index = index + 1
+  end
+  lower_diagnostic_sort(copied)
+end

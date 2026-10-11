@@ -18,6 +18,7 @@ import {
 } from './lower_builder'
 import { LowerDiagnostic, LowerType, LowerInt, LowerBool, LowerRecord } from './lower_types'
 import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
+import { LowerDiagnosticSink, lower_diagnostic_sink_new } from './lower_diagnostics'
 import { lower_expression } from './lower_expression'
 import { lower_block } from './lower_statement'
 
@@ -54,14 +55,15 @@ end
 
 fn lower_body(
   scope: ref mut LowerScope,
+  sink: ref mut LowerDiagnosticSink,
   builder: ref mut ProtoBuilder,
   expression: Shared<Expr>,
   target: i32
 ) -> LowerType =
   match expression {
     ExprBlock(statements, final_expression, _) =>
-      lower_block(scope, builder, statements, final_expression, target),
-    _ => lower_expression(scope, builder, expression, target)
+      lower_block(scope, sink, builder, statements, final_expression, target),
+    _ => lower_expression(scope, sink, builder, expression, target)
   }
 
 fn finish_with_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionLowering = do
@@ -79,9 +81,10 @@ export fn lower_function_body(
 ) -> FunctionLowering = do
   let mut builder = proto_builder_new(0)
   let mut scope = lower_scope_new()
+  let mut sink = lower_diagnostic_sink_new()
   bind_parameters(scope, builder, parameters)
   let destination = proto_builder_register_allocate(builder)
-  let body_type = lower_body(scope, builder, expression, destination)
+  let body_type = lower_body(scope, sink, builder, expression, destination)
   finish_or_reject(scope, builder, destination, body_type)
 end
 
