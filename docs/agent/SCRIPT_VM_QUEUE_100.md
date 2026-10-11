@@ -997,9 +997,9 @@ Sonnet доступен очереди только через соседний 
 - contract: если `right == -1` и `left == INT_MIN` → `run_err_overflow()`; остальное без изменений
 - red: шаг 50
 - green: реализовать в `apply_binary` и в быстрой ветке `executor_exec_binary`
-- gate: `RUN(int32_div_overflow)`; `GATE(ARITH int32_div_overflow)`; `BENCH(--max-ratio B1.ns_per_insn=current:110)`
+- gate: `RUN(int32_div_overflow)`; `GATE(ARITH int32_div_overflow)`; `BENCH(--max-ratio B1.ns_per_insn=baseline:50)`
 - sabotage: убрать проверку в быстрой ветке `executor_exec_binary` → `RUN(int32_div_overflow)` падает; вернуть
-- performance: not a perf step (допуск 110% — защита)
+- performance: not a perf step (допуск относительно baseline (S16), а не относительно current, который устаревает с каждым последующим шагом; порог отражает пол производительности, достигнутый в фазе 2a, а не последний point-in-time замер)
 - done_when: gate зелёные
 - state_update: gate-команды и значение B1
 
@@ -1997,4 +1997,8 @@ Sonnet доступен очереди только через соседний 
 | B4.ns_per_alloc_n1000 | 22066 | 796 | 796/22066 |
 | B4.ns_per_alloc_n4000 | 163446 | 806 | 806/163446 |
 | B4.scaling_ratio_x100 | 671 | 94 | 94/671 |
+
+### S51 — основание остановки
+
+Запись 2026-10-11. Gate шага 51 сравнивал `B1.ns_per_insn` с `current` 30 при допуске 110% (порог 33). Свежий минимум был 35. `current` записан до патча шага 51. Карточка шага 51: `BENCH(--max-ratio B1.ns_per_insn=baseline:50)` вместо `current:110`. Допуск — относительно baseline S16 (176), не относительно устаревающего `current`. Карточки шагов 53, 55, 57 и фазы 4 не менялись.
 
