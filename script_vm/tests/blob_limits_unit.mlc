@@ -1,0 +1,108 @@
+import {
+  emb_ok,
+  emb_format,
+  emb_encode_add1_module,
+  emb_verify_module_bytes,
+  emb_call_export_bytes
+} from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm blob_limits_unit] FAIL: " + label)
+  1
+end
+
+fn export_proto_index_offset() -> i32 = 20
+
+fn register_count_offset() -> i32 = 28
+
+fn copy_bytes(bytes: [i32]) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < bytes.length() do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn write_u32_le(bytes: [i32], offset: i32, value: i32) -> [i32] = do
+  let mut copied = copy_bytes(bytes)
+  copied.set(offset, value & 255)
+  copied.set(offset + 1, (value >> 8) & 255)
+  copied.set(offset + 2, (value >> 16) & 255)
+  copied.set(offset + 3, (value >> 24) & 255)
+  copied
+end
+
+fn empty_raw_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn expect_code(actual: i32, expected: i32, label: string) -> i32 = do
+  if actual == expected then
+    println(label)
+    0
+  else
+    fail(label + " code=" + actual.to_string())
+  end
+end
+
+fn main() -> i32 = do
+  const original = emb_encode_add1_module()
+  const out_of_range = expect_code(
+    emb_verify_module_bytes(write_u32_le(original, export_proto_index_offset(), 1)),
+    emb_format(),
+    "export_proto_out_of_range"
+  )
+  if out_of_range != 0 then
+    return out_of_range
+  end
+  const inside = expect_code(
+    emb_verify_module_bytes(write_u32_le(original, export_proto_index_offset(), 0)),
+    emb_ok(),
+    "export_proto_inside"
+  )
+  if inside != 0 then
+    return inside
+  end
+  const at_limit = expect_code(
+    emb_verify_module_bytes(write_u32_le(original, register_count_offset(), 256)),
+    emb_ok(),
+    "register_count_at_limit"
+  )
+  if at_limit != 0 then
+    return at_limit
+  end
+  const above_limit = expect_code(
+    emb_verify_module_bytes(write_u32_le(original, register_count_offset(), 257)),
+    emb_format(),
+    "register_count_above_limit"
+  )
+  if above_limit != 0 then
+    return above_limit
+  end
+  const negative_count = expect_code(
+    emb_verify_module_bytes(write_u32_le(original, register_count_offset(), 0 - 1)),
+    emb_format(),
+    "register_count_negative"
+  )
+  if negative_count != 0 then
+    return negative_count
+  end
+  const call_out_of_range = expect_code(
+    emb_call_export_bytes(
+      write_u32_le(original, export_proto_index_offset(), 7),
+      "add1",
+      empty_raw_arguments()
+    ).code,
+    emb_format(),
+    "call_export_proto_out_of_range"
+  )
+  if call_out_of_range != 0 then
+    return call_out_of_range
+  end
+  println("blob_limits checks=6")
+  println("[script_vm] blob_limits_unit ok")
+  0
+end
