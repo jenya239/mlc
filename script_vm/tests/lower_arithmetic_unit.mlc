@@ -1,0 +1,260 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_arithmetic_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn one_argument(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn two_arguments(left: i32, right: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(left))
+  arguments.push(integer_raw(right))
+  arguments
+end
+
+fn three_arguments(first: i32, second: i32, third: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(first))
+  arguments.push(integer_raw(second))
+  arguments.push(integer_raw(third))
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn expect_int(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: i32,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != expected then
+    return fail(label + " value=" + decoded_int(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_not_ok(source: string, export_name: string, arguments: [i64], label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.bytes.length() == 0 then
+    println(label)
+    return 0
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code == emb_ok() then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn has_positioned_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    const diagnostic = diagnostics[index]
+    if diagnostic.code == code && diagnostic.line > 0 && diagnostic.column > 0 then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn has_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_diagnostic(source: string, code: string, require_position: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  const found = if require_position then
+    has_positioned_code(lowered.diagnostics, code)
+  else
+    has_code(lowered.diagnostics, code)
+  end
+  if !found then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  const added = expect_int(
+    "export fn add(a: i32, b: i32) -> i32 = a + b",
+    "add",
+    two_arguments(41, 1),
+    42,
+    "add"
+  )
+  if added != 0 then
+    return added
+  end
+  const subtracted = expect_int(
+    "export fn sub(a: i32, b: i32) -> i32 = a - b",
+    "sub",
+    two_arguments(50, 8),
+    42,
+    "sub"
+  )
+  if subtracted != 0 then
+    return subtracted
+  end
+  const multiplied = expect_int(
+    "export fn mul(a: i32, b: i32) -> i32 = a * b",
+    "mul",
+    two_arguments(6, 7),
+    42,
+    "mul"
+  )
+  if multiplied != 0 then
+    return multiplied
+  end
+  const divided = expect_int(
+    "export fn div(a: i32, b: i32) -> i32 = a / b",
+    "div",
+    two_arguments(7, 2),
+    3,
+    "div"
+  )
+  if divided != 0 then
+    return divided
+  end
+  const divided_negative = expect_int(
+    "export fn div(a: i32, b: i32) -> i32 = a / b",
+    "div",
+    two_arguments(0 - 7, 2),
+    0 - 3,
+    "div_negative"
+  )
+  if divided_negative != 0 then
+    return divided_negative
+  end
+  const negated = expect_int(
+    "export fn negate(a: i32) -> i32 = -a",
+    "negate",
+    one_argument(8),
+    0 - 8,
+    "negate"
+  )
+  if negated != 0 then
+    return negated
+  end
+  const precedence = expect_int(
+    "export fn mix(a: i32, b: i32, c: i32) -> i32 = a + b * c",
+    "mix",
+    three_arguments(2, 3, 4),
+    14,
+    "precedence"
+  )
+  if precedence != 0 then
+    return precedence
+  end
+  const associated = expect_int(
+    "export fn associate(a: i32, b: i32, c: i32) -> i32 = a - b - c",
+    "associate",
+    three_arguments(10, 4, 3),
+    3,
+    "associate"
+  )
+  if associated != 0 then
+    return associated
+  end
+  const locals = expect_int(
+    "export fn locals(a: i32) -> i32 = do const x = a * 2 let y = x + 1 y end",
+    "locals",
+    one_argument(20),
+    41,
+    "locals"
+  )
+  if locals != 0 then
+    return locals
+  end
+  const nested = expect_int(
+    "export fn nested(a: i32) -> i32 = do const outer = do const inner = a + 1 inner end outer + 2 end",
+    "nested",
+    one_argument(10),
+    13,
+    "nested"
+  )
+  if nested != 0 then
+    return nested
+  end
+  const overflowed = expect_not_ok(
+    "export fn overflow() -> i32 = 2147483647 + 1",
+    "overflow",
+    no_arguments(),
+    "overflow"
+  )
+  if overflowed != 0 then
+    return overflowed
+  end
+  const divided_by_zero = expect_not_ok(
+    "export fn divide_zero() -> i32 = 1 / 0",
+    "divide_zero",
+    no_arguments(),
+    "div_zero"
+  )
+  if divided_by_zero != 0 then
+    return divided_by_zero
+  end
+  const mismatched = expect_diagnostic(
+    "export fn mixed(a: i32, b: bool) -> i32 = a + b",
+    "type_mismatch",
+    true,
+    "type_mismatch"
+  )
+  if mismatched != 0 then
+    return mismatched
+  end
+  const unknown = expect_diagnostic(
+    "export fn missing() -> i32 = missing_name",
+    "unknown_identifier",
+    false,
+    "unknown_identifier"
+  )
+  if unknown != 0 then
+    return unknown
+  end
+  println("lower_arithmetic checks=14")
+  println("[script_vm] lower_arithmetic_unit ok")
+  0
+end

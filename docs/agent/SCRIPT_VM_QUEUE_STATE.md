@@ -1,8 +1,8 @@
-current_step: 67
+current_step: 68
 status: ready
-last_result: done step 67: lower_source emits literal functions; sabotage exported every function, helper call returned code 0, restored
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_stage1_unit.mlc => checks=5 exit 0; ruby scripts/run_script_vm_gate.rb lower_stage1 frontend_probe module_encode => script_vm_gate ok units=3; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
-next_step: 68
+last_result: done step 68: red lower_arithmetic fails on add
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_arithmetic_unit.mlc => exit 1; [script_vm lower_arithmetic_unit] FAIL: add
+next_step: 69
 consult_count: 0
 consult_response: 
 consult_verdict: 
