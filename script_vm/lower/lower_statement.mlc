@@ -2,6 +2,7 @@ import {
   Expr,
   ExprBin,
   ExprBlock,
+  ExprBool,
   ExprIdent,
   ExprIf,
   ExprUnit,
@@ -11,10 +12,13 @@ import {
   StmtExpr,
   StmtLet,
   StmtLetConst,
+  StmtReturn,
   stmt_span
 } from '../../compiler/frontend/ast'
+import { instruction_words_return } from '../bytecode'
 import {
   ProtoBuilder,
+  proto_builder_emit,
   proto_builder_emit_jump,
   proto_builder_emit_jump_back,
   proto_builder_emit_jump_if_false,
@@ -25,7 +29,7 @@ import {
   proto_builder_register_release_to
 } from './lower_builder'
 import { diagnostic_at, is_lower_bool, types_agree } from './lower_control'
-import { LowerDiagnostic, LowerType, LowerInt } from './lower_types'
+import { LowerType, LowerBool, LowerInt } from './lower_types'
 import {
   LowerScope,
   lower_scope_define,
@@ -36,53 +40,89 @@ import {
 } from './lower_scope'
 import { lower_expression } from './lower_expression'
 
-export fn lower_block(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statements: [Shared<Stmt>],
-  final_expression: Shared<Expr>,
-  target: i32
-) -> LowerType = do
+export type LowerFunctionSignature = { result_type: LowerType }
+
+export fn lower_block(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statements: [Shared<Stmt>], final_expression: Shared<Expr>, target: i32) -> LowerType = do
   lower_scope_push(scope, builder)
   let result_type = block_result(scope, builder, statements, final_expression, target)
   lower_scope_pop(scope, builder)
   result_type
 end
 
-fn block_result(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statements: [Shared<Stmt>],
-  final_expression: Shared<Expr>,
-  target: i32
-) -> LowerType = do
+fn named_result_type(scope: ref mut LowerScope, name: string) -> LowerType = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then LowerInt else scope.names[found].value_type end
+end
+
+fn final_result_type(scope: ref mut LowerScope, expression: Shared<Expr>) -> LowerType =
+  match expression {
+    ExprBool(_, _) => LowerBool,
+    ExprIdent(name, _) => named_result_type(scope, name),
+    _ => LowerInt
+  }
+
+fn remember_result_type(scope: ref mut LowerScope, expression: Shared<Expr>) -> unit = do
+  let result_type = final_result_type(scope, expression)
+  let signature = LowerFunctionSignature { result_type: result_type }
+  lower_scope_define(scope, "*result_type*", 0, signature.result_type, false)
+end
+
+fn stored_result_type(scope: ref mut LowerScope) -> LowerType = do
+  let found = lower_scope_lookup(scope, "*result_type*")
+  if found < 0 then LowerInt else scope.names[found].value_type end
+end
+
+fn return_source_register(temporary: i32) -> i32 = temporary
+
+fn emit_value_return(builder: ref mut ProtoBuilder, temporary: i32) -> unit = do
+  let emitted_index = proto_builder_emit(builder, instruction_words_return(return_source_register(temporary)))
+  if emitted_index < 0 then keep_unit() else keep_unit() end
+end
+
+fn lower_return_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, source_span: Span) -> unit = do
+  let signature = LowerFunctionSignature { result_type: stored_result_type(scope) }
+  let temporary = proto_builder_register_allocate(builder)
+  let value_type = lower_expression(scope, builder, expression, temporary)
+  if !scope.has_diagnostic && !types_agree(value_type, signature.result_type) then
+    fail_at(scope, "type_mismatch", source_span)
+  else if !scope.has_diagnostic then
+    emit_value_return(builder, temporary)
+  end
+end
+
+fn reject_while_result(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition: Shared<Expr>, statements: [Shared<Stmt>], source_span: Span) -> LowerType = do
+  lower_while_statement(scope, builder, condition, statements, source_span)
+  if !scope.has_diagnostic then
+    fail_at(scope, "type_mismatch", source_span)
+  end
+  LowerInt
+end
+
+fn finish_block_value(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
+  match expression {
+    ExprWhile(condition, statements, source_span) =>
+      reject_while_result(scope, builder, condition, statements, source_span),
+    _ => lower_expression(scope, builder, expression, target)
+  }
+
+fn block_result(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statements: [Shared<Stmt>], final_expression: Shared<Expr>, target: i32) -> LowerType = do
+  remember_result_type(scope, final_expression)
   lower_statements(scope, builder, statements)
   if scope.has_diagnostic then
     LowerInt
   else
-    lower_expression(scope, builder, final_expression, target)
+    finish_block_value(scope, builder, final_expression, target)
   end
 end
 
-fn lower_initializer(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  expression: Shared<Expr>,
-  target: i32
-) -> LowerType =
+fn lower_initializer(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
   match expression {
     ExprBlock(statements, final_expression, _) =>
       lower_block(scope, builder, statements, final_expression, target),
     _ => lower_expression(scope, builder, expression, target)
   }
 
-fn lower_initialized_name(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  name: string,
-  is_mutable: bool,
-  expression: Shared<Expr>
-) -> unit = do
+fn lower_initialized_name(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, is_mutable: bool, expression: Shared<Expr>) -> unit = do
   let destination = proto_builder_register_allocate(builder)
   let value_type = lower_initializer(scope, builder, expression, destination)
   lower_scope_define(scope, name, destination, value_type, is_mutable)
@@ -113,11 +153,7 @@ fn accept_discarded_type(value_type: LowerType) -> unit =
     _ => keep_unit()
   }
 
-fn lower_discarded_expression(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  expression: Shared<Expr>
-) -> unit = do
+fn lower_discarded_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit = do
   let mark = proto_builder_register_mark(builder)
   let temporary = proto_builder_register_allocate(builder)
   let value_type = lower_expression(scope, builder, expression, temporary)
@@ -128,14 +164,7 @@ end
 fn fail_at(scope: ref mut LowerScope, code: string, source_span: Span) -> unit =
   lower_scope_fail(scope, diagnostic_at(code, source_span))
 
-fn assign_mutable(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  local_register: i32,
-  expected_type: LowerType,
-  right: Shared<Expr>,
-  source_span: Span
-) -> unit = do
+fn assign_mutable(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, local_register: i32, expected_type: LowerType, right: Shared<Expr>, source_span: Span) -> unit = do
   let destination = assignment_target(builder, local_register)
   let value_type = lower_expression(scope, builder, right, destination)
   if !scope.has_diagnostic && !types_agree(expected_type, value_type) then
@@ -143,38 +172,18 @@ fn assign_mutable(
   end
 end
 
-fn assign_name(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  name: string,
-  name_span: Span,
-  right: Shared<Expr>,
-  source_span: Span
-) -> unit = do
+fn assign_name(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, name_span: Span, right: Shared<Expr>, source_span: Span) -> unit = do
   let found = lower_scope_lookup(scope, name)
   if found < 0 then
     fail_at(scope, "unknown_identifier", name_span)
   else if !scope.names[found].is_mutable then
     fail_at(scope, "assign_immutable", source_span)
   else
-    assign_mutable(
-      scope,
-      builder,
-      scope.names[found].register_index,
-      scope.names[found].value_type,
-      right,
-      source_span
-    )
+    assign_mutable(scope, builder, scope.names[found].register_index, scope.names[found].value_type, right, source_span)
   end
 end
 
-fn lower_assignment(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  left: Shared<Expr>,
-  right: Shared<Expr>,
-  source_span: Span
-) -> unit =
+fn lower_assignment(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, left: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> unit =
   match left {
     ExprIdent(name, name_span) =>
       assign_name(scope, builder, name, name_span, right, source_span),
@@ -188,14 +197,7 @@ fn release_condition(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, m
   proto_builder_register_release_to(builder, mark)
 end
 
-fn lower_while_body(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  condition_register: i32,
-  condition_mark: i32,
-  statements: [Shared<Stmt>],
-  top: i32
-) -> unit = do
+fn lower_while_body(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition_register: i32, condition_mark: i32, statements: [Shared<Stmt>], top: i32) -> unit = do
   let end_site = proto_builder_emit_jump_if_false(builder, condition_register)
   proto_builder_register_release_to(builder, condition_mark)
   lower_scope_push(scope, builder)
@@ -205,13 +207,7 @@ fn lower_while_body(
   proto_builder_patch_to_here(builder, end_site)
 end
 
-fn lower_while_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  condition: Shared<Expr>,
-  statements: [Shared<Stmt>],
-  source_span: Span
-) -> unit = do
+fn lower_while_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition: Shared<Expr>, statements: [Shared<Stmt>], source_span: Span) -> unit = do
   let top = proto_builder_here(builder)
   let condition_mark = proto_builder_register_mark(builder)
   let condition_register = proto_builder_register_allocate(builder)
@@ -223,33 +219,20 @@ fn lower_while_statement(
   end
 end
 
-fn lower_branch_final(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  expression: Shared<Expr>
-) -> unit = do
+fn lower_branch_final(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit = do
   if !scope.has_diagnostic && !expression_is_unit(expression) then
     lower_discarded_expression(scope, builder, expression)
   end
 end
 
-fn lower_block_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statements: [Shared<Stmt>],
-  final_expression: Shared<Expr>
-) -> unit = do
+fn lower_block_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statements: [Shared<Stmt>], final_expression: Shared<Expr>) -> unit = do
   lower_scope_push(scope, builder)
   lower_statements(scope, builder, statements)
   lower_branch_final(scope, builder, final_expression)
   lower_scope_pop(scope, builder)
 end
 
-fn lower_statement_branch(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  expression: Shared<Expr>
-) -> unit =
+fn lower_statement_branch(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit =
   match expression {
     ExprUnit(_) => keep_unit(),
     ExprBlock(statements, final_expression, _) =>
@@ -257,74 +240,39 @@ fn lower_statement_branch(
     _ => lower_discarded_expression(scope, builder, expression)
   }
 
-fn lower_if_statement_else(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  else_expression: Shared<Expr>,
-  else_site: i32
-) -> unit = do
+fn lower_if_statement_else(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, else_expression: Shared<Expr>, else_site: i32) -> unit = do
   let end_site = proto_builder_emit_jump(builder)
   proto_builder_patch_to_here(builder, else_site)
   lower_statement_branch(scope, builder, else_expression)
   proto_builder_patch_to_here(builder, end_site)
 end
 
-fn finish_if_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  else_expression: Shared<Expr>,
-  else_site: i32
-) -> unit =
+fn finish_if_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, else_expression: Shared<Expr>, else_site: i32) -> unit =
   if expression_is_unit(else_expression) then
     proto_builder_patch_to_here(builder, else_site)
   else
     lower_if_statement_else(scope, builder, else_expression, else_site)
   end
 
-fn lower_if_statement_branches(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  condition_register: i32,
-  condition_mark: i32,
-  then_expression: Shared<Expr>,
-  else_expression: Shared<Expr>
-) -> unit = do
+fn lower_if_statement_branches(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition_register: i32, condition_mark: i32, then_expression: Shared<Expr>, else_expression: Shared<Expr>) -> unit = do
   let else_site = proto_builder_emit_jump_if_false(builder, condition_register)
   proto_builder_register_release_to(builder, condition_mark)
   lower_statement_branch(scope, builder, then_expression)
   finish_if_statement(scope, builder, else_expression, else_site)
 end
 
-fn lower_if_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  condition: Shared<Expr>,
-  then_expression: Shared<Expr>,
-  else_expression: Shared<Expr>,
-  source_span: Span
-) -> unit = do
+fn lower_if_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, source_span: Span) -> unit = do
   let condition_mark = proto_builder_register_mark(builder)
   let condition_register = proto_builder_register_allocate(builder)
   let condition_type = lower_expression(scope, builder, condition, condition_register)
   if scope.has_diagnostic || !is_lower_bool(condition_type) then
     release_condition(scope, builder, condition_mark, source_span)
   else
-    lower_if_statement_branches(
-      scope,
-      builder,
-      condition_register,
-      condition_mark,
-      then_expression,
-      else_expression
-    )
+    lower_if_statement_branches(scope, builder, condition_register, condition_mark, then_expression, else_expression)
   end
 end
 
-fn lower_expression_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  expression: Shared<Expr>
-) -> unit =
+fn lower_expression_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit =
   match expression {
     ExprBin(operator, left, right, source_span) =>
       if operator == "=" then
@@ -335,32 +283,17 @@ fn lower_expression_statement(
     ExprWhile(condition, statements, source_span) =>
       lower_while_statement(scope, builder, condition, statements, source_span),
     ExprIf(condition, then_expression, else_expression, source_span) =>
-      lower_if_statement(
-        scope,
-        builder,
-        condition,
-        then_expression,
-        else_expression,
-        source_span
-      ),
+      lower_if_statement(scope, builder, condition, then_expression, else_expression, source_span),
     _ => lower_discarded_expression(scope, builder, expression)
   }
 
-export fn lower_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statement: Shared<Stmt>
-) -> unit = do
+export fn lower_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statement: Shared<Stmt>) -> unit = do
   if !scope.has_diagnostic then
     apply_statement(scope, builder, statement)
   end
 end
 
-fn apply_statement(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statement: Shared<Stmt>
-) -> unit =
+fn apply_statement(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statement: Shared<Stmt>) -> unit =
   match statement {
     StmtLetConst(name, _, expression, _) =>
       lower_initialized_name(scope, builder, name, false, expression),
@@ -368,24 +301,12 @@ fn apply_statement(
       lower_initialized_name(scope, builder, name, is_mutable, expression),
     StmtExpr(expression, _) =>
       lower_expression_statement(scope, builder, expression),
-    _ => lower_scope_fail(scope, diagnostic_code_at_statement(statement))
+    StmtReturn(expression, source_span) =>
+      lower_return_statement(scope, builder, expression, source_span),
+    _ => fail_at(scope, "unsupported_statement", stmt_span(statement))
   }
 
-fn diagnostic_code_at_statement(statement: Shared<Stmt>) -> LowerDiagnostic = do
-  let source_span = stmt_span(statement)
-  LowerDiagnostic {
-    code: "unsupported_statement",
-    message: "unsupported_statement",
-    line: source_span.line,
-    column: source_span.column
-  }
-end
-
-export fn lower_statements(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  statements: [Shared<Stmt>]
-) -> unit = do
+export fn lower_statements(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, statements: [Shared<Stmt>]) -> unit = do
   let mut index = 0
   while index < statements.length() && !scope.has_diagnostic do
     lower_statement(scope, builder, statements[index])
