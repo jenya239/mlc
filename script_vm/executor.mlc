@@ -64,8 +64,6 @@ import {
   executor_fail
 } from './executor_step'
 import {
-  ExecutorHeapStep,
-  executor_heap_step,
   executor_exec_call,
   executor_exec_make_closure,
   executor_exec_get_upval,
@@ -132,13 +130,13 @@ end
 fn frame_step_leave() -> i32 = 3
 
 fn dispatch_instruction(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   protos: [FunctionProto],
   proto: FunctionProto,
   words: [i32],
   program_counter: i32
-) -> ExecutorHeapStep = do
+) -> i32 = do
   let primary = program_counter
   let decoded = instruction_decode(Instruction { word: words[primary] })
   let span = instruction_word_span(words, primary)
@@ -163,17 +161,16 @@ fn dispatch_instruction(
   else if decoded.opcode == instruction_opcode_set_upval() then
     executor_exec_set_upval(heap, state, decoded, primary, span)
   else
-    executor_heap_step(heap, executor_fail(state, run_err_unsupported_opcode(), primary))
+    executor_fail(state, run_err_unsupported_opcode(), primary)
   end
 end
 
-fn execute_current_frame(heap: Heap, state: ref mut VmState, protos: [FunctionProto]) -> ExecutorHeapStep = do
+fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto]) -> i32 = do
   let proto = protos[vm_state_frame_proto(state)]
   let words = proto.words
   let frame_depth = vm_state_frame_depth(state)
   let continue_step = executor_step_continue()
   let mut registers = copy_frame_registers(state, proto.register_count)
-  let mut heap_state = heap
   let mut program_counter = vm_state_program_counter(state)
   let mut step = continue_step
   while step == continue_step && state.error_code == "" do
@@ -227,10 +224,9 @@ fn execute_current_frame(heap: Heap, state: ref mut VmState, protos: [FunctionPr
       else
         write_frame_registers(state, registers)
         vm_state_set_program_counter(state, primary)
-        let outcome = dispatch_instruction(heap_state, state, protos, proto, words, primary)
-        heap_state = outcome.heap
-        if outcome.step != continue_step || state.error_code != "" then
-          step = outcome.step
+        let outcome = dispatch_instruction(heap, state, protos, proto, words, primary)
+        if outcome != continue_step || state.error_code != "" then
+          step = outcome
         else if vm_state_frame_depth(state) != frame_depth then
           step = frame_step_leave()
         else
@@ -241,30 +237,28 @@ fn execute_current_frame(heap: Heap, state: ref mut VmState, protos: [FunctionPr
     end
   end
   if step == frame_step_leave() then
-    executor_heap_step(heap_state, continue_step)
+    continue_step
   else
-    executor_heap_step(heap_state, step)
+    step
   end
 end
 
-fn execute_state(heap: Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value]) -> RunHeapResult = do
-  let mut heap_state = heap
+fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value]) -> RunHeapResult = do
   let mut state = vm_state_new()
   let entry = protos[entry_proto_index]
   vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
   place_arguments(state, entry.register_count, args)
   let mut finished = false
   while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished do
-    let outcome = execute_current_frame(heap_state, state, protos)
-    heap_state = outcome.heap
-    if outcome.step == executor_step_returned() then
+    let outcome = execute_current_frame(heap, state, protos)
+    if outcome == executor_step_returned() then
       finished = true
     end
   end
   if state.error_code != "" then
-    RunHeapResult { heap: heap_state, result: RunErr(state.error_code, state.error_at) }
+    RunHeapResult { heap: heap, result: RunErr(state.error_code, state.error_at) }
   else
-    RunHeapResult { heap: heap_state, result: RunOk(state.return_value) }
+    RunHeapResult { heap: heap, result: RunOk(state.return_value) }
   end
 end
 
@@ -274,13 +268,14 @@ export fn run_state_program(
   entry_proto_index: i32,
   args: [Value]
 ) -> RunHeapResult = do
+  let mut heap_state = heap
   let verification = verify_protos(protos)
   if verification.failed then
-    RunHeapResult { heap: heap, result: RunErr(run_err_verify(), verification.at) }
+    RunHeapResult { heap: heap_state, result: RunErr(run_err_verify(), verification.at) }
   else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
-    RunHeapResult { heap: heap, result: RunErr(run_err_type(), 0) }
+    RunHeapResult { heap: heap_state, result: RunErr(run_err_type(), 0) }
   else
-    execute_state(heap, protos, entry_proto_index, args)
+    execute_state(heap_state, protos, entry_proto_index, args)
   end
 end
 

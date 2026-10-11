@@ -2,13 +2,12 @@ import { Value, ValueInt32, value_decode } from './value'
 import { DecodedAbc } from './bytecode'
 import {
   Heap,
-  HeapAlloc,
-  heap_alloc_array,
-  heap_alloc_record,
-  heap_write_barrier,
-  heap_get_element,
-  heap_element_count,
-  heap_object_type_id,
+  heap_in_place_alloc_array,
+  heap_in_place_alloc_record,
+  heap_in_place_write,
+  heap_in_place_read,
+  heap_in_place_element_count,
+  heap_in_place_type_id,
   heap_type_array,
   heap_type_record
 } from './heap'
@@ -20,129 +19,132 @@ import {
   vm_state_set_program_counter
 } from './vm_state'
 import { executor_step_continue, executor_fail } from './executor_step'
-import { ExecutorHeapStep, executor_heap_step } from './executor_calls'
 
-fn executor_store_alloc(
-  alloc: HeapAlloc,
-  state: ref mut VmState,
-  register_index: i32,
-  primary: i32,
-  span: i32
-) -> ExecutorHeapStep = do
-  vm_state_set_register(state, register_index, alloc.value)
-  vm_state_set_program_counter(state, primary + span)
-  executor_heap_step(alloc.heap, executor_step_continue())
-end
-
-fn executor_store_register(
-  heap: Heap,
+fn executor_store_allocated(
   state: ref mut VmState,
   register_index: i32,
   value: Value,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep = do
+) -> i32 = do
   vm_state_set_register(state, register_index, value)
   vm_state_set_program_counter(state, primary + span)
-  executor_heap_step(heap, executor_step_continue())
+  executor_step_continue()
+end
+
+fn executor_store_register(
+  state: ref mut VmState,
+  register_index: i32,
+  value: Value,
+  primary: i32,
+  span: i32
+) -> i32 = do
+  vm_state_set_register(state, register_index, value)
+  vm_state_set_program_counter(state, primary + span)
+  executor_step_continue()
 end
 
 fn executor_new_array_length(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32,
   length: i32
-) -> ExecutorHeapStep =
+) -> i32 =
   if length < 0 then
-    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+    executor_fail(state, run_err_bounds(), primary)
   else
-    executor_store_alloc(heap_alloc_array(heap, length), state, decoded.a, primary, span)
+    executor_store_allocated(
+      state,
+      decoded.a,
+      heap_in_place_alloc_array(heap, length),
+      primary,
+      span
+    )
   end
 
 export fn executor_exec_new_array(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
+) -> i32 =
   match value_decode(vm_state_register(state, decoded.b)) {
     ValueInt32(length) => executor_new_array_length(heap, state, decoded, primary, span, length),
-    _ => executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    _ => executor_fail(state, run_err_type(), primary)
   }
 
 fn executor_read_array_element(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32,
   index: i32
-) -> ExecutorHeapStep =
-  if index < 0 || index >= heap_element_count(heap, vm_state_register(state, decoded.b)) then
-    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+) -> i32 =
+  if index < 0 || index >= heap_in_place_element_count(heap, vm_state_register(state, decoded.b)) then
+    executor_fail(state, run_err_bounds(), primary)
   else
     executor_store_register(
-      heap,
       state,
       decoded.a,
-      heap_get_element(heap, vm_state_register(state, decoded.b), index),
+      heap_in_place_read(heap, vm_state_register(state, decoded.b), index),
       primary,
       span
     )
   end
 
 fn executor_read_array_index(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
+) -> i32 =
   match value_decode(vm_state_register(state, decoded.c)) {
     ValueInt32(index) => executor_read_array_element(heap, state, decoded, primary, span, index),
-    _ => executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    _ => executor_fail(state, run_err_type(), primary)
   }
 
 export fn executor_exec_get_index(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if heap_object_type_id(heap, vm_state_register(state, decoded.b)) != heap_type_array() then
-    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+) -> i32 =
+  if heap_in_place_type_id(heap, vm_state_register(state, decoded.b)) != heap_type_array() then
+    executor_fail(state, run_err_type(), primary)
   else
     executor_read_array_index(heap, state, decoded, primary, span)
   end
 
 fn executor_write_array_element(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   array_value: Value,
   index: i32,
   stored: Value,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep = do
-  let written = heap_write_barrier(heap, array_value, index, stored)
+) -> i32 = do
+  heap_in_place_write(heap, array_value, index, stored)
   vm_state_set_program_counter(state, primary + span)
-  executor_heap_step(written, executor_step_continue())
+  executor_step_continue()
 end
 
 fn executor_check_array_index(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32,
   index: i32
-) -> ExecutorHeapStep =
-  if index < 0 || index >= heap_element_count(heap, vm_state_register(state, decoded.a)) then
-    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+) -> i32 =
+  if index < 0 || index >= heap_in_place_element_count(heap, vm_state_register(state, decoded.a)) then
+    executor_fail(state, run_err_bounds(), primary)
   else
     executor_write_array_element(
       heap,
@@ -156,111 +158,116 @@ fn executor_check_array_index(
   end
 
 fn executor_decode_array_index(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
+) -> i32 =
   match value_decode(vm_state_register(state, decoded.b)) {
     ValueInt32(index) => executor_check_array_index(heap, state, decoded, primary, span, index),
-    _ => executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+    _ => executor_fail(state, run_err_type(), primary)
   }
 
 export fn executor_exec_set_index(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if heap_object_type_id(heap, vm_state_register(state, decoded.a)) != heap_type_array() then
-    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+) -> i32 =
+  if heap_in_place_type_id(heap, vm_state_register(state, decoded.a)) != heap_type_array() then
+    executor_fail(state, run_err_type(), primary)
   else
     executor_decode_array_index(heap, state, decoded, primary, span)
   end
 
 export fn executor_exec_new_record(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  executor_store_alloc(heap_alloc_record(heap, decoded.b), state, decoded.a, primary, span)
+) -> i32 =
+  executor_store_allocated(
+    state,
+    decoded.a,
+    heap_in_place_alloc_record(heap, decoded.b),
+    primary,
+    span
+  )
 
 fn executor_read_record_field(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if decoded.c < 0 || decoded.c >= heap_element_count(heap, vm_state_register(state, decoded.b)) then
-    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+) -> i32 =
+  if decoded.c < 0 || decoded.c >= heap_in_place_element_count(heap, vm_state_register(state, decoded.b)) then
+    executor_fail(state, run_err_bounds(), primary)
   else
     executor_store_register(
-      heap,
       state,
       decoded.a,
-      heap_get_element(heap, vm_state_register(state, decoded.b), decoded.c),
+      heap_in_place_read(heap, vm_state_register(state, decoded.b), decoded.c),
       primary,
       span
     )
   end
 
 export fn executor_exec_get_prop(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if heap_object_type_id(heap, vm_state_register(state, decoded.b)) != heap_type_record() then
-    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+) -> i32 =
+  if heap_in_place_type_id(heap, vm_state_register(state, decoded.b)) != heap_type_record() then
+    executor_fail(state, run_err_type(), primary)
   else
     executor_read_record_field(heap, state, decoded, primary, span)
   end
 
 fn executor_write_record_field(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep = do
-  let written = heap_write_barrier(
+) -> i32 = do
+  heap_in_place_write(
     heap,
     vm_state_register(state, decoded.a),
     decoded.b,
     vm_state_register(state, decoded.c)
   )
   vm_state_set_program_counter(state, primary + span)
-  executor_heap_step(written, executor_step_continue())
+  executor_step_continue()
 end
 
 fn executor_check_record_field(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if decoded.b < 0 || decoded.b >= heap_element_count(heap, vm_state_register(state, decoded.a)) then
-    executor_heap_step(heap, executor_fail(state, run_err_bounds(), primary))
+) -> i32 =
+  if decoded.b < 0 || decoded.b >= heap_in_place_element_count(heap, vm_state_register(state, decoded.a)) then
+    executor_fail(state, run_err_bounds(), primary)
   else
     executor_write_record_field(heap, state, decoded, primary, span)
   end
 
 export fn executor_exec_set_prop(
-  heap: Heap,
+  heap: ref mut Heap,
   state: ref mut VmState,
   decoded: DecodedAbc,
   primary: i32,
   span: i32
-) -> ExecutorHeapStep =
-  if heap_object_type_id(heap, vm_state_register(state, decoded.a)) != heap_type_record() then
-    executor_heap_step(heap, executor_fail(state, run_err_type(), primary))
+) -> i32 =
+  if heap_in_place_type_id(heap, vm_state_register(state, decoded.a)) != heap_type_record() then
+    executor_fail(state, run_err_type(), primary)
   else
     executor_check_record_field(heap, state, decoded, primary, span)
   end
