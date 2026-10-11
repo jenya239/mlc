@@ -1,0 +1,23 @@
+fn count_inner(limit: i32) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < limit do
+    total = total + 1
+    index = index + 1
+  end
+  total
+end
+
+fn count_pairs(limit: i32) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < limit do
+    total = total + count_inner(limit)
+    index = index + 1
+  end
+  total
+end
+
+export fn run() -> i32 = count_pairs(10)
+
+fn main() -> i32 = run()

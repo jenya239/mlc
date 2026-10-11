@@ -1,0 +1,6 @@
+fn fibonacci(value: i32) -> i32 =
+  if value <= 1 then value else fibonacci(value - 1) + fibonacci(value - 2) end
+
+export fn run() -> i32 = fibonacci(10)
+
+fn main() -> i32 = run()

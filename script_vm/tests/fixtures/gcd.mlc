@@ -1,0 +1,6 @@
+fn greatest_common_divisor(left: i32, right: i32) -> i32 =
+  if right == 0 then left else greatest_common_divisor(right, left - (left / right) * right) end
+
+export fn run() -> i32 = greatest_common_divisor(48, 18)
+
+fn main() -> i32 = run()

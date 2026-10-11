@@ -1,0 +1,13 @@
+fn sum_through(limit: i32) -> i32 = do
+  let mut total = 0
+  let mut index = 1
+  while index <= limit do
+    total = total + index
+    index = index + 1
+  end
+  total
+end
+
+export fn run() -> i32 = sum_through(10)
+
+fn main() -> i32 = run()

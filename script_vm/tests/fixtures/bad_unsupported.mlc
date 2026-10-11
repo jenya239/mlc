@@ -1,0 +1,3 @@
+export fn run() -> i32 = "text"
+
+fn main() -> i32 = run()

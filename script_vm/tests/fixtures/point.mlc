@@ -1,0 +1,9 @@
+type Point = { horizontal: i32, vertical: i32 }
+
+fn make_point(left: i32, right: i32) -> Point = Point { horizontal: left, vertical: right }
+
+fn sum_point(point: Point) -> i32 = point.horizontal + point.vertical
+
+export fn run() -> i32 = sum_point(make_point(3, 4))
+
+fn main() -> i32 = run()
