@@ -1,10 +1,12 @@
-import { Value, ValueInt32, ValueHeapRef, value_encode, value_decode } from '../value'
+import { Value, ValueInt32, ValueBool, ValueHeapRef, value_encode, value_decode } from '../value'
 import {
   instruction_words_load_const,
   instruction_words_new_array,
   instruction_words_set_index,
   instruction_words_binary,
-  instruction_words_return
+  instruction_words_return,
+  instruction_opcode_add,
+  instruction_opcode_eq
 } from '../bytecode'
 import { instruction_opcode_length, instruction_opcode_make_string } from '../bytecode_text'
 import { FunctionProto, RunResult, RunOk, RunErr, run_program, run_err_bounds } from '../interpreter'
@@ -112,11 +114,14 @@ fn bounds_words() -> [i32] = do
   words
 end
 
-fn single_prototype(words: [i32], constants: [Value]) -> [FunctionProto] = do
+fn listed_prototype(words: [i32], constants: [Value], register_count: i32) -> [FunctionProto] = do
   let mut items: [FunctionProto] = []
-  items.push(FunctionProto { words: words, constants: constants, register_count: 5 })
+  items.push(FunctionProto { words: words, constants: constants, register_count: register_count })
   items
 end
+
+fn single_prototype(words: [i32], constants: [Value]) -> [FunctionProto] =
+  listed_prototype(words, constants, 5)
 
 fn object_id_of(value: Value) -> i32 =
   match value_decode(value) {
@@ -173,13 +178,94 @@ fn bounds_holds() -> bool = do
   }
 end
 
+fn letter_constants() -> [Value] =
+  push_constant(push_constant(push_constant(integer_constants(1), 0), 104), 105)
+
+fn concat_words() -> [i32] = do
+  let mut words = instruction_words_load_const(0, 0)
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 4, 1, 0))
+  words = append_words(words, instruction_words_load_const(3, 3))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 5, 1, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 6, 4, 5))
+  words = append_words(words, instruction_words_return(6))
+  words
+end
+
+fn equal_words() -> [i32] = do
+  let mut words = instruction_words_load_const(0, 0)
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 4, 1, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 5, 1, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_eq(), 6, 4, 5))
+  words = append_words(words, instruction_words_return(6))
+  words
+end
+
+fn array_equal_words() -> [i32] = do
+  let mut words = instruction_words_load_const(0, 0)
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_new_array(4, 0))
+  words = append_words(words, instruction_words_set_index(4, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_eq(), 5, 1, 4))
+  words = append_words(words, instruction_words_return(5))
+  words
+end
+
+fn joined_is_hi(heap: Heap, value: Value) -> bool = do
+  let object_id = object_id_of(value)
+  if object_id < 0 then
+    false
+  else
+    heap_object_type_id(heap, value) == heap_type_string() && heap_element_count(heap, value) == 2 && bytes_are_104_and_105(heap, object_id)
+  end
+end
+
+fn result_is_true(result: RunResult) -> bool =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueBool(flag) => flag,
+      _ => false
+    },
+    _ => false
+  }
+
+fn string_add_holds() -> bool = do
+  let outcome = run_program(heap_new(), listed_prototype(concat_words(), letter_constants(), 7), 0)
+  match outcome.result {
+    RunOk(value) => joined_is_hi(outcome.heap, value),
+    _ => false
+  }
+end
+
+fn string_equal_holds() -> bool = do
+  let outcome = run_program(heap_new(), listed_prototype(equal_words(), letter_constants(), 7), 0)
+  result_is_true(outcome.result)
+end
+
+fn arrays_stay_distinct() -> bool = do
+  let outcome = run_program(heap_new(), listed_prototype(array_equal_words(), letter_constants(), 6), 0)
+  !result_is_true(outcome.result)
+end
+
 fn main() -> i32 = do
-  if length_holds() && make_string_holds() && bounds_holds() then
+  if length_holds() && make_string_holds() && bounds_holds() && string_add_holds() && string_equal_holds() && arrays_stay_distinct() then
     println("length=3")
     println("make_string length=2")
     println("[script_vm] string_opcode_unit ok")
     0
   else
+    println("string add or equal failed")
     1
   end
 end
