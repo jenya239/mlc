@@ -1,0 +1,18 @@
+import {
+  instruction_encode,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false
+} from './bytecode'
+
+fn wide_jump_words(opcode: i32, condition_or_zero: i32, offset: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words.push(instruction_encode(opcode, condition_or_zero, 0, 1).word)
+  words.push(offset)
+  words
+end
+
+export fn instruction_words_jump_wide(offset: i32) -> [i32] =
+  wide_jump_words(instruction_opcode_jump(), 0, offset)
+
+export fn instruction_words_jump_if_false_wide(condition: i32, offset: i32) -> [i32] =
+  wide_jump_words(instruction_opcode_jump_if_false(), condition, offset)

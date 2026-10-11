@@ -1,0 +1,149 @@
+import { Value } from '../value'
+import {
+  Instruction,
+  instruction_decode,
+  instruction_word_span,
+  instruction_words_load_const
+} from '../bytecode'
+import {
+  instruction_words_jump_wide,
+  instruction_words_jump_if_false_wide
+} from '../bytecode_wide'
+import { FunctionProto } from '../run_result'
+
+export type ProtoBuilder = {
+  words: [i32],
+  constants: [Value],
+  parameter_count: i32,
+  next_register: i32,
+  high_water: i32
+}
+
+export fn proto_builder_new(parameter_count: i32) -> ProtoBuilder =
+  ProtoBuilder {
+    words: [],
+    constants: [],
+    parameter_count: parameter_count,
+    next_register: parameter_count,
+    high_water: parameter_count
+  }
+
+export fn proto_builder_here(builder: ref mut ProtoBuilder) -> i32 = builder.words.length()
+
+fn emit_words(builder: ref mut ProtoBuilder, words: [i32]) -> unit = do
+  let mut index = 0
+  while index < words.length() do
+    builder.words.push(words[index])
+    index = index + 1
+  end
+end
+
+export fn proto_builder_emit(builder: ref mut ProtoBuilder, words: [i32]) -> i32 = do
+  let start = builder.words.length()
+  emit_words(builder, words)
+  start
+end
+
+fn find_constant(constants: [Value], raw: i64) -> i32 = do
+  let mut index = 0
+  let mut found = 0 - 1
+  while index < constants.length() && found < 0 do
+    if constants[index].raw == raw then
+      found = index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn append_constant(builder: ref mut ProtoBuilder, value: Value) -> i32 = do
+  let index = builder.constants.length()
+  builder.constants.push(value)
+  index
+end
+
+export fn proto_builder_constant(builder: ref mut ProtoBuilder, value: Value) -> i32 = do
+  let found = find_constant(builder.constants, value.raw)
+  if found >= 0 then
+    found
+  else
+    append_constant(builder, value)
+  end
+end
+
+export fn proto_builder_load_constant(builder: ref mut ProtoBuilder, destination: i32, value: Value) -> unit = do
+  let index = proto_builder_constant(builder, value)
+  emit_words(builder, instruction_words_load_const(destination, index))
+end
+
+export fn proto_builder_register_mark(builder: ref mut ProtoBuilder) -> i32 = builder.next_register
+
+fn remember_high_water(builder: ref mut ProtoBuilder, next_register: i32) -> i32 =
+  if next_register > builder.high_water then
+    next_register
+  else
+    builder.high_water
+  end
+
+export fn proto_builder_register_allocate(builder: ref mut ProtoBuilder) -> i32 = do
+  let allocated_register = builder.next_register
+  let next_register = allocated_register + 1
+  builder.high_water = remember_high_water(builder, next_register)
+  builder.next_register = next_register
+  allocated_register
+end
+
+export fn proto_builder_register_release_to(builder: ref mut ProtoBuilder, mark: i32) -> unit = do
+  builder.next_register = mark
+end
+
+export fn proto_builder_emit_jump(builder: ref mut ProtoBuilder) -> i32 =
+  proto_builder_emit(builder, instruction_words_jump_wide(0))
+
+export fn proto_builder_emit_jump_if_false(builder: ref mut ProtoBuilder, condition_register: i32) -> i32 =
+  proto_builder_emit(builder, instruction_words_jump_if_false_wide(condition_register, 0))
+
+export fn proto_builder_patch_to_here(builder: ref mut ProtoBuilder, site: i32) -> unit = do
+  let target = builder.words.length()
+  builder.words.set(site + 1, target - (site + 2))
+end
+
+export fn proto_builder_emit_jump_back(builder: ref mut ProtoBuilder, target_index: i32) -> unit = do
+  let site = builder.words.length()
+  let offset = target_index - (site + 2)
+  emit_words(builder, instruction_words_jump_wide(offset))
+end
+
+fn larger_count(left: i32, right: i32) -> i32 =
+  if left > right then
+    left
+  else
+    right
+  end
+
+fn highest_touched_register(words: [i32]) -> i32 = do
+  let mut index = 0
+  let mut highest = 0
+  while index < words.length() do
+    let decoded = instruction_decode(Instruction { word: words[index] })
+    let needed = decoded.a + 1
+    if needed > highest then
+      highest = needed
+    end
+    index = index + instruction_word_span(words, index)
+  end
+  highest
+end
+
+fn register_count_of(builder: ref mut ProtoBuilder) -> i32 =
+  larger_count(
+    larger_count(builder.high_water, builder.parameter_count),
+    highest_touched_register(builder.words)
+  )
+
+export fn proto_builder_finish(builder: ref mut ProtoBuilder) -> FunctionProto =
+  FunctionProto {
+    words: builder.words,
+    constants: builder.constants,
+    register_count: register_count_of(builder)
+  }

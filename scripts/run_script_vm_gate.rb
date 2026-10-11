@@ -32,6 +32,7 @@ registered_units = [
   ["heap_limit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/heap_limit_unit.mlc"]],
   ["verifier_hardening", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/verifier_hardening_unit.mlc"]],
   ["blob_limits", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/blob_limits_unit.mlc"]],
+  ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)
