@@ -1817,3 +1817,9 @@
 `mlc_repl_submit` на `NULL` сессии или `NULL` ответе возвращает −1 и не вызывает panic. Повторный `mlc_repl_destroy` одной сессии пишет в panic callback текст с `double release` и не вызывает `abort`. `NULL` destroy — пустая операция.
 
 Хост-тест: `script_vm/tests/repl_host.cpp` и `scripts/run_script_vm_repl_host.rb` по образцу `scripts/run_script_vm_lowered_host.rb`.
+
+### S106 — бюджет
+
+В бюджет не входит старт процесса. 101–128 мс команды `script_tool run` — другой замер.
+
+Сценарий: 20 объявлений `export fn function_<n>() -> i32 = <n>` отдельными submit, затем один submit выражения `function_20()`. Время от первого submit до ответа на выражение, внутри одного процесса, минимум из 5. Предел `repl_submit_us` ≤ 500000. Превышение на шаге 128 — `blocked` с числами, самовольная смена предела запрещена.
