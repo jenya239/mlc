@@ -55,6 +55,7 @@ import {
   subtraction_opcode,
   types_agree
 } from './lower_control'
+import { lower_text_named } from './lower_text'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -295,7 +296,7 @@ fn lower_named_call(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink
   if call_signature_found(scope, name) then
     lower_known_call(scope, sink, builder, name, arguments, source_span, target, call_signature_proto_index(scope, name), call_signature_result_type(scope, name))
   else
-    reject_lowered_call(scope, "unknown_function", source_span)
+    lower_text_named(scope, builder, name, arguments, source_span, target)
   end
 fn lower_call_expression(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LowerType =
   match callee {

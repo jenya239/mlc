@@ -1,0 +1,107 @@
+import { Expr, Span } from '../../compiler/frontend/ast'
+import { ValueInt32, value_encode } from '../value'
+import {
+  instruction_words_binary,
+  instruction_words_new_array,
+  instruction_words_set_index
+} from '../bytecode'
+import { instruction_opcode_length, instruction_opcode_make_string } from '../bytecode_text'
+import {
+  ProtoBuilder,
+  proto_builder_load_constant,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+import { emit_instruction, diagnostic_at } from './lower_control'
+import { LowerScope, lower_scope_fail } from './lower_scope'
+import { LowerType, LowerInt } from './lower_types'
+
+extern fn source_byte(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp"
+
+fn store_source_byte(
+  builder: ref mut ProtoBuilder,
+  array_register: i32,
+  index_register: i32,
+  byte_register: i32,
+  index: i32,
+  byte_value: i32
+) -> unit = do
+  proto_builder_load_constant(builder, index_register, value_encode(ValueInt32(index)))
+  proto_builder_load_constant(builder, byte_register, value_encode(ValueInt32(byte_value)))
+  emit_instruction(builder, instruction_words_set_index(array_register, index_register, byte_register))
+end
+
+fn store_source_bytes(
+  builder: ref mut ProtoBuilder,
+  text: string,
+  array_register: i32,
+  index_register: i32,
+  byte_register: i32
+) -> unit = do
+  let mut index = 0
+  while index < text.length() do
+    store_source_byte(builder, array_register, index_register, byte_register, index, source_byte(text, index))
+    index = index + 1
+  end
+end
+
+fn lower_text_literal(builder: ref mut ProtoBuilder, text: string, target: i32) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  let length_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, length_register, value_encode(ValueInt32(text.length())))
+  let array_register = proto_builder_register_allocate(builder)
+  emit_instruction(builder, instruction_words_new_array(array_register, length_register))
+  let index_register = proto_builder_register_allocate(builder)
+  let byte_register = proto_builder_register_allocate(builder)
+  store_source_bytes(builder, text, array_register, index_register, byte_register)
+  emit_instruction(
+    builder,
+    instruction_words_binary(instruction_opcode_make_string(), target, array_register, 0)
+  )
+  proto_builder_register_release_to(builder, mark)
+end
+
+fn lower_length_of_text(builder: ref mut ProtoBuilder, text: string, target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let string_register = proto_builder_register_allocate(builder)
+  lower_text_literal(builder, text, string_register)
+  emit_instruction(
+    builder,
+    instruction_words_binary(instruction_opcode_length(), target, string_register, 0)
+  )
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+
+fn unknown_name(scope: ref mut LowerScope, source_span: Span) -> LowerType = do
+  lower_scope_fail(scope, diagnostic_at("unknown_function", source_span))
+  LowerInt
+end
+
+fn lower_length_argument(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  argument: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  match argument {
+    ExprStr(text, _) => lower_length_of_text(builder, text, target),
+    _ => unknown_name(scope, source_span)
+  }
+
+export fn lower_text_named(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  name: string,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  if name == "len" && arguments.length() == 1 then
+    lower_length_argument(scope, builder, arguments[0], source_span, target)
+  else
+    unknown_name(scope, source_span)
+  end

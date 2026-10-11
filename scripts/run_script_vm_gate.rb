@@ -37,6 +37,7 @@ registered_units = [
   ["module_encode", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_encode_unit.mlc"]],
   ["lower_stage1", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_stage1_unit.mlc"]],
   ["lower_arithmetic", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_arithmetic_unit.mlc"]],
+  ["lower_text", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_text_unit.mlc"]],
   ["lower_control", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_control_unit.mlc"]],
   ["lower_logic", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_logic_unit.mlc"]],
   ["lower_loops", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_loops_unit.mlc"]],
