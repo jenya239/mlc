@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -31,6 +32,14 @@ void maybe_panic(EmbeddingVmState* vm, const char* message) {
   if (vm != nullptr && vm->panic_callback != nullptr) {
     vm->panic_callback(message);
   }
+}
+
+std::int64_t clamped_instruction_limit(std::uint64_t instruction_limit) {
+  const auto maximum = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+  if (instruction_limit > maximum) {
+    return std::numeric_limits<std::int64_t>::max();
+  }
+  return static_cast<std::int64_t>(instruction_limit);
 }
 
 } // namespace
@@ -131,13 +140,15 @@ MlcResult mlc_vm_call(
   const auto data_pointer = reinterpret_cast<std::int64_t>(slot.blob.data());
   const auto args_pointer = reinterpret_cast<std::int64_t>(args);
   const auto result_pointer = reinterpret_cast<std::int64_t>(&result_raw);
-  const auto code = embedding::emb_call_export_ptr(
+  const auto code = embedding::emb_call_export_ptr_limited(
       data_pointer,
       static_cast<std::int32_t>(slot.blob.size()),
       mlc::String(slot.export_name.c_str()),
       args_pointer,
       static_cast<std::int32_t>(argc),
-      result_pointer
+      result_pointer,
+      clamped_instruction_limit(vm->state.instruction_limit),
+      vm->state.heap_limit_objects
   );
   result.code = code;
   if (code == embedding_codes::emb_ok()) {

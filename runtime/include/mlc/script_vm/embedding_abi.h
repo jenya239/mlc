@@ -20,6 +20,22 @@ typedef struct MlcResult {
   int32_t code;
 } MlcResult;
 
+typedef enum MlcResultCode {
+  MLC_OK = 0,
+  MLC_UNSUPPORTED = 1,
+  MLC_VERIFY = 2,
+  MLC_TYPE = 3,
+  MLC_BOUNDS = 4,
+  MLC_STACK = 5,
+  MLC_FORMAT = 6,
+  MLC_NOT_FOUND = 7,
+  MLC_BAD_HANDLE = 8,
+  MLC_INSTRUCTION_LIMIT = 9,
+  MLC_HEAP_LIMIT = 10,
+  MLC_OVERFLOW = 11,
+  MLC_DIV_ZERO = 12
+} MlcResultCode;
+
 typedef void (*MlcVmPanicCallback)(const char* message);
 
 typedef struct MlcVmConfig {
