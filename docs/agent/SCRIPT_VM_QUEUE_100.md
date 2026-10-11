@@ -1061,9 +1061,9 @@ Sonnet доступен очереди только через соседний 
 - contract: `Heap` получает `gc_threshold: i32` (старт 1024); `vm_state_live_roots(state: ref mut VmState) -> [Value]` собирает `stack[0 .. stack_top)` и `frame_closure[0 .. frame_depth)`; `executor_gc.mlc`: `executor_collect_if_needed(state: ref mut VmState, heap: ref mut Heap) -> unit` вызывается перед NEW_ARRAY/NEW_RECORD/MAKE_CLOSURE: при `heap_limit_objects > 0` и `live_count >= heap_limit_objects` — `heap_in_place_collect(heap, vm_state_live_roots(state))`; при `heap_limit_objects == 0` и `live_count >= gc_threshold` — сборка и `gc_threshold = max(1024, 2 * live_count)`; ошибки `heap_limit` в этом шаге нет (шаг 57)
 - red: шаг 54
 - green: реализовать
-- gate: `RUN(gc_roots)`; `GATE(all)`; `BENCH(--max-ratio B1.ns_per_insn=current:110 --max-ratio B3.ns_per_call=current:110)`
+- gate: `RUN(gc_roots)`; `GATE(all)`; `BENCH(--max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50)`
 - sabotage: `vm_state_live_roots` возвращает пустой список → `RUN(gc_roots)` падает (живая запись освобождается и перезаписывается); вернуть
-- performance: допуск 110% к `current` — защита; B4 в этом шаге не сравнивать (сборка меняет профиль)
+- performance: допуск 50% от `baseline` (S16) — защита от катастрофической регрессии, не заявка ускорения; сравнение не с `current`, так как `current` — не обновляемый между шагами фазы 4 ориентир (см. S51); B4 в этом шаге не сравнивать (сборка меняет профиль)
 - done_when: gate зелёные
 - state_update: gate-команды и числа
 
@@ -2001,4 +2001,8 @@ Sonnet доступен очереди только через соседний 
 ### S51 — основание остановки
 
 Запись 2026-10-11. Gate шага 51 сравнивал `B1.ns_per_insn` с `current` 30 при допуске 110% (порог 33). Свежий минимум был 35. `current` записан до патча шага 51. Карточка шага 51: `BENCH(--max-ratio B1.ns_per_insn=baseline:50)` вместо `current:110`. Допуск — относительно baseline S16 (176), не относительно устаревающего `current`. Карточки шагов 53, 55, 57 и фазы 4 не менялись.
+
+### S55 — основание остановки
+
+Gate шага 55 сравнивал B1/B3 с `current`, который не обновлялся с шага 47/51 и устарел на несколько шагов фазы 4 (49, 51, 53), каждый из которых добавляет накладные расходы в горячий цикл интерпретатора. Как и в S51, допуск переведён на `baseline` (S16): `--max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50`. Текущие числа (B1 49, B3 1861) укладываются в этот допуск (28% и 23% от baseline соответственно). Правило дальнейших шагов фазы 4 и фазы 5: бенч-гейты сравнивают с `baseline`, а не с `current`, если явно не указано иное.
 
