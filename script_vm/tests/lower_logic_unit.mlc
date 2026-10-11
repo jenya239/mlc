@@ -1,0 +1,294 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueBool, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_logic_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn bool_raw(flag: bool) -> i64 = value_encode(ValueBool(flag)).raw
+
+fn two_bools(left: bool, right: bool) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(bool_raw(left))
+  arguments.push(bool_raw(right))
+  arguments
+end
+
+fn three_bools(first: bool, second: bool, third: bool) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(bool_raw(first))
+  arguments.push(bool_raw(second))
+  arguments.push(bool_raw(third))
+  arguments
+end
+
+fn one_bool(flag: bool) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(bool_raw(flag))
+  arguments
+end
+
+fn two_integers(left: i32, right: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(left))
+  arguments.push(integer_raw(right))
+  arguments
+end
+
+fn matches_bool(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_bool(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: bool,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if !matches_bool(called.raw, expected) then
+    return fail(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn has_positioned_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    const diagnostic = diagnostics[index]
+    if diagnostic.code == code && diagnostic.line > 0 && diagnostic.column > 0 then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_and(left: bool, right: bool, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn and(left: bool, right: bool) -> bool = left && right",
+    "and",
+    two_bools(left, right),
+    expected,
+    label
+  )
+
+fn expect_or(left: bool, right: bool, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn or(left: bool, right: bool) -> bool = left || right",
+    "or",
+    two_bools(left, right),
+    expected,
+    label
+  )
+
+fn check_and() -> i32 = do
+  let mut status = expect_and(false, false, false, "and_false_false")
+  if status == 0 then
+    status = expect_and(false, true, false, "and_false_true")
+  end
+  if status == 0 then
+    status = expect_and(true, false, false, "and_true_false")
+  end
+  if status == 0 then
+    status = expect_and(true, true, true, "and_true_true")
+  end
+  status
+end
+
+fn check_or() -> i32 = do
+  let mut status = expect_or(false, false, false, "or_false_false")
+  if status == 0 then
+    status = expect_or(false, true, true, "or_false_true")
+  end
+  if status == 0 then
+    status = expect_or(true, false, true, "or_true_false")
+  end
+  if status == 0 then
+    status = expect_or(true, true, true, "or_true_true")
+  end
+  status
+end
+
+fn check_not() -> i32 = do
+  let mut status = expect_bool(
+    "export fn not(value: bool) -> bool = !value",
+    "not",
+    one_bool(false),
+    true,
+    "not_false"
+  )
+  if status == 0 then
+    status = expect_bool(
+      "export fn not(value: bool) -> bool = !value",
+      "not",
+      one_bool(true),
+      false,
+      "not_true"
+    )
+  end
+  status
+end
+
+fn expect_safe(left: i32, right: i32, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn safe(left: i32, right: i32) -> bool = right != 0 && left / right > 1",
+    "safe",
+    two_integers(left, right),
+    expected,
+    label
+  )
+
+fn check_safe() -> i32 = do
+  let mut status = expect_safe(1, 0, false, "safe_divisor_zero")
+  if status == 0 then
+    status = expect_safe(5, 2, true, "safe_quotient_above_one")
+  end
+  if status == 0 then
+    status = expect_safe(2, 2, false, "safe_quotient_one")
+  end
+  status
+end
+
+fn expect_unsafe_or(left: i32, right: i32, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn unsafe_or(left: i32, right: i32) -> bool = right == 0 || left / right > 1",
+    "unsafe_or",
+    two_integers(left, right),
+    expected,
+    label
+  )
+
+fn check_unsafe_or() -> i32 = do
+  let mut status = expect_unsafe_or(1, 0, true, "unsafe_or_divisor_zero")
+  if status == 0 then
+    status = expect_unsafe_or(5, 2, true, "unsafe_or_quotient_above_one")
+  end
+  if status == 0 then
+    status = expect_unsafe_or(2, 4, false, "unsafe_or_quotient_zero")
+  end
+  status
+end
+
+fn expect_chain(first: bool, second: bool, third: bool, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn chain(first: bool, second: bool, third: bool) -> bool = first && second || third",
+    "chain",
+    three_bools(first, second, third),
+    expected,
+    label
+  )
+
+fn check_chain() -> i32 = do
+  let mut status = expect_chain(false, false, false, false, "chain_false_false_false")
+  if status == 0 then
+    status = expect_chain(false, false, true, true, "chain_false_false_true")
+  end
+  if status == 0 then
+    status = expect_chain(false, true, false, false, "chain_false_true_false")
+  end
+  if status == 0 then
+    status = expect_chain(false, true, true, true, "chain_false_true_true")
+  end
+  if status == 0 then
+    status = expect_chain(true, false, false, false, "chain_true_false_false")
+  end
+  if status == 0 then
+    status = expect_chain(true, false, true, true, "chain_true_false_true")
+  end
+  if status == 0 then
+    status = expect_chain(true, true, false, true, "chain_true_true_false")
+  end
+  if status == 0 then
+    status = expect_chain(true, true, true, true, "chain_true_true_true")
+  end
+  status
+end
+
+fn expect_not_group(left: bool, right: bool, expected: bool, label: string) -> i32 =
+  expect_bool(
+    "export fn not_group(left: bool, right: bool) -> bool = !(left && right)",
+    "not_group",
+    two_bools(left, right),
+    expected,
+    label
+  )
+
+fn check_not_group() -> i32 = do
+  let mut status = expect_not_group(false, false, true, "not_group_false_false")
+  if status == 0 then
+    status = expect_not_group(true, false, true, "not_group_true_false")
+  end
+  if status == 0 then
+    status = expect_not_group(false, true, true, "not_group_false_true")
+  end
+  if status == 0 then
+    status = expect_not_group(true, true, false, "not_group_true_true")
+  end
+  status
+end
+
+fn check_type_mismatch() -> i32 = do
+  const lowered = lower_source("export fn mixed(value: i32, flag: bool) -> bool = value && flag")
+  let mut index = 0
+  let mut found = false
+  while index < lowered.diagnostics.length() && !found do
+    const diagnostic = lowered.diagnostics[index]
+    if diagnostic.code == "type_mismatch" && diagnostic.line > 0 && diagnostic.column > 0 then
+      found = true
+    end
+    index = index + 1
+  end
+  if !found then
+    return fail("and_type_mismatch")
+  end
+  println("and_type_mismatch")
+  0
+end
+
+fn main() -> i32 = do
+  let mut status = check_and()
+  if status == 0 then
+    status = check_or()
+  end
+  if status == 0 then
+    status = check_not()
+  end
+  if status == 0 then
+    status = check_safe()
+  end
+  if status == 0 then
+    status = check_unsafe_or()
+  end
+  if status == 0 then
+    status = check_chain()
+  end
+  if status == 0 then
+    status = check_not_group()
+  end
+  if status == 0 then
+    status = check_type_mismatch()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_logic checks=29")
+  println("[script_vm] lower_logic_unit ok")
+  0
+end
