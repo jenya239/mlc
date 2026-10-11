@@ -8,6 +8,8 @@ import {
 } from './repl_answer'
 import { repl_balance_incomplete } from './repl_balance'
 import { lower_source } from './lower/lower_module'
+import { emb_call_export_bytes, emb_ok } from './embedding'
+import { Value, ValueInt32, value_decode } from './value'
 
 export type ReplSession = {
   accepted_source: string,
@@ -53,6 +55,36 @@ fn joined_source(existing: string, addition: string) -> string =
     existing + "\n" + addition
   end
 
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn integer_answer(raw: i64) -> ReplAnswer =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => ReplValueInt32(number),
+    _ => ReplDiagnostic("repl_result_not_integer", 1, 1)
+  }
+
+fn expression_program(accepted_source: string, expression: string) -> string =
+  joined_source(accepted_source, "export fn repl_entry() -> i32 = do " + expression + " end")
+
+fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
+  let lowered = lower_source(expression_program(session.accepted_source, text))
+  if lowered.diagnostics.length() != 0 then
+    let diagnostic = lowered.diagnostics[0]
+    ReplDiagnostic(diagnostic.code, diagnostic.line, diagnostic.column)
+  else
+    let called = emb_call_export_bytes(lowered.bytes, "repl_entry", empty_arguments())
+    if called.code == emb_ok() then
+      session.pending = ""
+      integer_answer(called.raw)
+    else
+      ReplDiagnostic("repl_result_not_integer", 1, 1)
+    end
+  end
+end
+
 fn accept_declaration(session: ref mut ReplSession, text: string) -> ReplAnswer = do
   let candidate = joined_source(session.accepted_source, text)
   let lowered = lower_source(candidate)
@@ -77,6 +109,6 @@ export fn repl_session_submit(session: ref mut ReplSession, chunk: string) -> Re
   else if text_is_declaration(combined) then
     accept_declaration(session, combined)
   else
-    ReplIncomplete
+    evaluate_expression(session, combined)
   end
 end
