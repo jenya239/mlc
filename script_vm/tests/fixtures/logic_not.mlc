@@ -1,0 +1,6 @@
+fn choose(flag: bool) -> i32 =
+  if !flag then 2 else 3 end
+
+export fn run() -> i32 = choose(false)
+
+fn main() -> i32 = run()
