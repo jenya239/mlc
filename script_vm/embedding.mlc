@@ -8,13 +8,20 @@ import {
 import {
   RunOk,
   RunErr,
-  run_program_with_args,
+  run_program_with_args_limited,
   run_err_verify,
   run_err_type,
   run_err_bounds,
   run_err_stack
 } from './interpreter'
 import { heap_new } from './heap'
+import {
+  run_limits_new,
+  run_err_instruction_limit,
+  run_err_heap_limit,
+  run_err_overflow,
+  run_err_div_zero
+} from './run_result'
 import {
   emb_ok,
   emb_unsupported,
@@ -24,7 +31,11 @@ import {
   emb_stack,
   emb_format,
   emb_not_found,
-  emb_bad_handle
+  emb_bad_handle,
+  emb_instruction_limit,
+  emb_heap_limit,
+  emb_overflow,
+  emb_div_zero
 } from './embedding_codes'
 import {
   DecodedModule,
@@ -84,10 +95,20 @@ fn run_err_to_code(code: string) -> i32 = do
     emb_bounds()
   else if code == run_err_stack() then
     emb_stack()
+  else if code == run_err_instruction_limit() then
+    emb_instruction_limit()
+  else if code == run_err_heap_limit() then
+    emb_heap_limit()
+  else if code == run_err_overflow() then
+    emb_overflow()
+  else if code == run_err_div_zero() then
+    emb_div_zero()
   else
     emb_type()
   end
 end
+
+fn zero_instruction_limit() -> i64 = 0
 
 export fn emb_verify_module_bytes(bytes: [i32]) -> i32 = do
   const decoded = decode_module(bytes)
@@ -98,10 +119,12 @@ export fn emb_verify_module_bytes(bytes: [i32]) -> i32 = do
   end
 end
 
-export fn emb_call_export_bytes(
+export fn emb_call_export_bytes_limited(
   bytes: [i32],
   export_name: string,
-  arg_raws: [i64]
+  arg_raws: [i64],
+  instruction_limit: i64,
+  heap_limit_objects: i32
 ) -> EmbCallResult = do
   const decoded = decode_module(bytes)
   if decoded.code != emb_ok() then
@@ -121,11 +144,12 @@ export fn emb_call_export_bytes(
           args.push(Value { raw: arg_raws[arg_index] })
           arg_index = arg_index + 1
         end
-        const ran = run_program_with_args(
+        const ran = run_program_with_args_limited(
           heap_new(),
           decoded.module.protos,
           proto_index,
-          args
+          args,
+          run_limits_new(instruction_limit, heap_limit_objects)
         )
         match ran.result {
           RunOk(value) => EmbCallResult { code: emb_ok(), raw: value.raw },
@@ -136,8 +160,40 @@ export fn emb_call_export_bytes(
   end
 end
 
+export fn emb_call_export_bytes(bytes: [i32], export_name: string, arg_raws: [i64]) -> EmbCallResult =
+  emb_call_export_bytes_limited(bytes, export_name, arg_raws, zero_instruction_limit(), 0)
+
 export fn emb_verify_module_ptr(data_pointer: i64, size: i32) -> i32 =
   emb_verify_module_bytes(bytes_from_pointer(data_pointer, size))
+
+export fn emb_call_export_ptr_limited(
+  data_pointer: i64,
+  size: i32,
+  export_name: string,
+  args_pointer: i64,
+  argc: i32,
+  result_out_pointer: i64,
+  instruction_limit: i64,
+  heap_limit_objects: i32
+) -> i32 = do
+  let mut arg_raws: [i64] = []
+  let mut arg_index = 0
+  while arg_index < argc do
+    arg_raws.push(embedding_i64_at(args_pointer, arg_index))
+    arg_index = arg_index + 1
+  end
+  const result = emb_call_export_bytes_limited(
+    bytes_from_pointer(data_pointer, size),
+    export_name,
+    arg_raws,
+    instruction_limit,
+    heap_limit_objects
+  )
+  if result.code == emb_ok() then
+    const _stored = embedding_i64_store(result_out_pointer, result.raw)
+  end
+  result.code
+end
 
 export fn emb_call_export_ptr(
   data_pointer: i64,
@@ -146,23 +202,8 @@ export fn emb_call_export_ptr(
   args_pointer: i64,
   argc: i32,
   result_out_pointer: i64
-) -> i32 = do
-  let mut arg_raws: [i64] = []
-  let mut arg_index = 0
-  while arg_index < argc do
-    arg_raws.push(embedding_i64_at(args_pointer, arg_index))
-    arg_index = arg_index + 1
-  end
-  const result = emb_call_export_bytes(
-    bytes_from_pointer(data_pointer, size),
-    export_name,
-    arg_raws
-  )
-  if result.code == emb_ok() then
-    const _stored = embedding_i64_store(result_out_pointer, result.raw)
-  end
-  result.code
-end
+) -> i32 =
+  emb_call_export_ptr_limited(data_pointer, size, export_name, args_pointer, argc, result_out_pointer, zero_instruction_limit(), 0)
 
 export fn emb_add1_fixture_byte_at(index: i32) -> i32 = do
   const bytes = emb_encode_add1_module()

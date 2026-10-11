@@ -7,3 +7,7 @@ export fn emb_stack() -> i32 = 5
 export fn emb_format() -> i32 = 6
 export fn emb_not_found() -> i32 = 7
 export fn emb_bad_handle() -> i32 = 8
+export fn emb_instruction_limit() -> i32 = 9
+export fn emb_heap_limit() -> i32 = 10
+export fn emb_overflow() -> i32 = 11
+export fn emb_div_zero() -> i32 = 12
