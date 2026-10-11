@@ -1,0 +1,190 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_loops_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn one_integer(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn two_integers(left: i32, right: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(left))
+  arguments.push(integer_raw(right))
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn expect_int(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: i32,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != expected then
+    return fail(label + " value=" + decoded_int(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn has_positioned_code(source: string, code: string, require_position: bool) -> bool = do
+  const lowered = lower_source(source)
+  let mut index = 0
+  let mut found = false
+  while index < lowered.diagnostics.length() && !found do
+    const diagnostic = lowered.diagnostics[index]
+    if diagnostic.code == code then
+      if !require_position || (diagnostic.line > 0 && diagnostic.column > 0) then
+        found = true
+      end
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_diagnostic(source: string, code: string, require_position: bool, label: string) -> i32 = do
+  if !has_positioned_code(source, code, require_position) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn sum_source() -> string =
+  "export fn sum(limit: i32) -> i32 = do let mut total = 0 let mut index = 1 while index <= limit do total = total + index index = index + 1 end total end"
+
+fn expect_sum(limit: i32, expected: i32, label: string) -> i32 =
+  expect_int(sum_source(), "sum", one_integer(limit), expected, label)
+
+fn check_sum() -> i32 = do
+  let mut status = expect_sum(10, 55, "sum_ten")
+  if status == 0 then
+    status = expect_sum(100, 5050, "sum_hundred")
+  end
+  if status == 0 then
+    status = expect_sum(0, 0, "sum_zero")
+  end
+  if status == 0 then
+    status = expect_sum(1, 1, "sum_one")
+  end
+  status
+end
+
+fn cells_source() -> string =
+  "export fn cells(row_count: i32, column_count: i32) -> i32 = do let mut total = 0 let mut row = 0 while row < row_count do let mut column = 0 while column < column_count do total = total + 1 column = column + 1 end row = row + 1 end total end"
+
+fn check_nested() -> i32 = do
+  let mut status = expect_int(cells_source(), "cells", two_integers(3, 4), 12, "nested_three_four")
+  if status == 0 then
+    status = expect_int(cells_source(), "cells", two_integers(10, 10), 100, "nested_ten_ten")
+  end
+  status
+end
+
+fn floor_source() -> string =
+  "export fn floor_value(value: i32) -> i32 = do let mut result = value if result < 0 then result = 0 end result end"
+
+fn check_floor() -> i32 = do
+  let mut status = expect_int(floor_source(), "floor_value", one_integer(5), 5, "floor_positive")
+  if status == 0 then
+    status = expect_int(floor_source(), "floor_value", one_integer(0 - 1), 0, "floor_negative")
+  end
+  if status == 0 then
+    status = expect_int(floor_source(), "floor_value", one_integer(0), 0, "floor_zero")
+  end
+  status
+end
+
+fn check_diagnostics() -> i32 = do
+  let mut status = expect_diagnostic(
+    "export fn frozen() -> i32 = do const value = 1 value = 2 value end",
+    "assign_immutable",
+    false,
+    "assign_const"
+  )
+  if status == 0 then
+    status = expect_diagnostic(
+      "export fn bump(value: i32) -> i32 = do value = value + 1 value end",
+      "assign_immutable",
+      false,
+      "assign_parameter"
+    )
+  end
+  if status == 0 then
+    status = expect_int(
+      "export fn bump(mut value: i32) -> i32 = do value = value + 1 value end",
+      "bump",
+      one_integer(41),
+      42,
+      "assign_mut_parameter"
+    )
+  end
+  if status == 0 then
+    status = expect_diagnostic(
+      "export fn bad(value: i32) -> i32 = do let mut total = 0 while value do total = 1 end total end",
+      "type_mismatch",
+      true,
+      "while_type_mismatch"
+    )
+  end
+  if status == 0 then
+    status = expect_diagnostic(
+      "export fn missing() -> i32 = do missing_name = 1 0 end",
+      "unknown_identifier",
+      false,
+      "assign_unknown"
+    )
+  end
+  if status == 0 then
+    status = expect_diagnostic(
+      "export fn mixed(flag: bool) -> i32 = do let mut total = 0 total = flag total end",
+      "type_mismatch",
+      true,
+      "assign_type_mismatch"
+    )
+  end
+  status
+end
+
+fn main() -> i32 = do
+  let mut status = check_sum()
+  if status == 0 then
+    status = check_nested()
+  end
+  if status == 0 then
+    status = check_floor()
+  end
+  if status == 0 then
+    status = check_diagnostics()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_loops checks=15")
+  println("[script_vm] lower_loops_unit ok")
+  0
+end
