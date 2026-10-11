@@ -1,0 +1,179 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueBool, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_records_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn matches_bool(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_int(source: string, export_name: string, arguments: [i64], expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != expected then
+    return fail(label + " value=" + decoded_int(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_bool(source: string, export_name: string, arguments: [i64], expected: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if !matches_bool(called.raw, expected) then
+    return fail(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn has_code(source: string, code: string) -> bool = do
+  const lowered = lower_source(source)
+  let mut index = 0
+  let mut found = false
+  while index < lowered.diagnostics.length() && !found do
+    if lowered.diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_diagnostic(source: string, code: string, label: string) -> i32 = do
+  if !has_code(source, code) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn point_type() -> string = "type Point = { x: i32, y: i32 } "
+
+fn sum_source() -> string =
+  point_type() + "export fn main() -> i32 = do let point = Point { x: 3, y: 4 } point.x + point.y end"
+
+fn order_source() -> string =
+  point_type() + "export fn main() -> i32 = do let point = Point { y: 4, x: 3 } point.x end"
+
+fn mutate_source() -> string =
+  point_type() + "export fn main() -> i32 = do let mut point = Point { x: 3, y: 4 } point.x = 10 point.x end"
+
+fn immutable_source() -> string =
+  point_type() + "export fn main() -> i32 = do const point = Point { x: 3, y: 4 } point.x = 10 point.x end"
+
+fn pass_source() -> string =
+  point_type() + "fn make_point(left: i32, right: i32) -> Point = Point { x: left, y: right } fn sum_point(point: Point) -> i32 = point.x + point.y export fn main() -> i32 = sum_point(make_point(3, 4))"
+
+fn flag_type() -> string = "type Flag = { enabled: bool } "
+
+fn bool_source() -> string =
+  flag_type() + "export fn main() -> bool = Flag { enabled: true }.enabled"
+
+fn bool_assigned_source() -> string =
+  flag_type() + "export fn main() -> bool = do let mut flag = Flag { enabled: false } flag.enabled = true flag.enabled end"
+
+fn alias_source() -> string =
+  point_type() + "export fn main() -> i32 = do let mut point = Point { x: 3, y: 4 } let mut alias = point alias.x = 9 point.x end"
+
+fn unknown_field_source() -> string =
+  point_type() + "export fn main() -> i32 = do let point = Point { x: 3, y: 4 } point.missing end"
+
+fn unknown_record_source() -> string =
+  "export fn main() -> i32 = do let point = Missing { value: 1 } point.value end"
+
+fn missing_field_source() -> string =
+  point_type() + "export fn main() -> i32 = do let point = Point { x: 3 } point.x end"
+
+fn mismatch_source() -> string =
+  point_type() + "export fn main() -> i32 = do let point = Point { x: 3, y: true } point.x end"
+
+fn nested_source() -> string =
+  "type Inner = { value: i32 } type Outer = { inner: Inner } export fn main() -> i32 = do let inner_value = Inner { value: 4 } let outer = Outer { inner: inner_value } outer.inner.value end"
+
+fn check_values() -> i32 = do
+  let mut status = expect_int(sum_source(), "main", no_arguments(), 7, "sum_fields")
+  if status == 0 then
+    status = expect_int(order_source(), "main", no_arguments(), 3, "field_order")
+  end
+  if status == 0 then
+    status = expect_int(mutate_source(), "main", no_arguments(), 10, "mutate_field")
+  end
+  if status == 0 then
+    status = expect_int(pass_source(), "main", no_arguments(), 7, "pass_and_return")
+  end
+  if status == 0 then
+    status = expect_bool(bool_source(), "main", no_arguments(), true, "bool_field_true")
+  end
+  if status == 0 then
+    status = expect_bool(bool_assigned_source(), "main", no_arguments(), true, "bool_field_assigned")
+  end
+  if status == 0 then
+    status = expect_int(alias_source(), "main", no_arguments(), 9, "record_alias_shares_object")
+  end
+  status
+end
+
+fn check_diagnostics() -> i32 = do
+  let mut status = expect_diagnostic(immutable_source(), "assign_immutable", "assign_immutable")
+  if status == 0 then
+    status = expect_diagnostic(unknown_field_source(), "unknown_field", "unknown_field")
+  end
+  if status == 0 then
+    status = expect_diagnostic(unknown_record_source(), "unknown_record", "unknown_record")
+  end
+  if status == 0 then
+    status = expect_diagnostic(missing_field_source(), "record_missing_field", "record_missing_field")
+  end
+  if status == 0 then
+    status = expect_diagnostic(mismatch_source(), "type_mismatch", "field_type_mismatch")
+  end
+  if status == 0 then
+    status = expect_diagnostic(nested_source(), "unsupported_nested_record", "nested_record")
+  end
+  status
+end
+
+fn main() -> i32 = do
+  let mut status = check_values()
+  if status == 0 then
+    status = check_diagnostics()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_records checks=13")
+  println("[script_vm] lower_records_unit ok")
+  0
+end
