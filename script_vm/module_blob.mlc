@@ -105,6 +105,70 @@ fn append_name_bytes(bytes: [i32], name: string) -> [i32] = do
   bytes
 end
 
+fn append_export(bytes: [i32], export_entry: ModuleExport) -> [i32] = do
+  let mut encoded = append_u32_le(bytes, export_entry.name.byte_size())
+  encoded = append_name_bytes(encoded, export_entry.name)
+  append_u32_le(encoded, export_entry.proto_index)
+end
+
+fn append_exports(bytes: [i32], exports: [ModuleExport]) -> [i32] = do
+  let mut encoded = bytes
+  let mut index = 0
+  while index < exports.length() do
+    encoded = append_export(encoded, exports[index])
+    index = index + 1
+  end
+  encoded
+end
+
+fn append_proto_words(bytes: [i32], words: [i32]) -> [i32] = do
+  let mut encoded = bytes
+  let mut index = 0
+  while index < words.length() do
+    encoded = append_u32_le(encoded, words[index])
+    index = index + 1
+  end
+  encoded
+end
+
+fn append_proto_constants(bytes: [i32], constants: [Value]) -> [i32] = do
+  let mut encoded = bytes
+  let mut index = 0
+  while index < constants.length() do
+    encoded = append_i64_le(encoded, constants[index].raw)
+    index = index + 1
+  end
+  encoded
+end
+
+fn append_proto(bytes: [i32], proto: FunctionProto) -> [i32] = do
+  let mut encoded = append_u32_le(bytes, proto.register_count)
+  encoded = append_u32_le(encoded, proto.words.length())
+  encoded = append_proto_words(encoded, proto.words)
+  encoded = append_u32_le(encoded, proto.constants.length())
+  append_proto_constants(encoded, proto.constants)
+end
+
+fn append_protos(bytes: [i32], protos: [FunctionProto]) -> [i32] = do
+  let mut encoded = bytes
+  let mut index = 0
+  while index < protos.length() do
+    encoded = append_proto(encoded, protos[index])
+    index = index + 1
+  end
+  encoded
+end
+
+export fn module_encode(exports: [ModuleExport], protos: [FunctionProto]) -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes = append_u32_le(bytes, magic_mlsc())
+  bytes = append_u32_le(bytes, 1)
+  bytes = append_u32_le(bytes, exports.length())
+  bytes = append_exports(bytes, exports)
+  bytes = append_u32_le(bytes, protos.length())
+  append_protos(bytes, protos)
+end
+
 export fn emb_encode_add1_module() -> [i32] = do
   let mut words: [i32] = []
   words = append_words(words, instruction_words_load_const(1, 0))
@@ -112,29 +176,11 @@ export fn emb_encode_add1_module() -> [i32] = do
   words = append_words(words, instruction_words_return(0))
   let mut constants: [Value] = []
   constants.push(value_encode(ValueInt32(1)))
-  const export_name = "add1"
-  let mut bytes: [i32] = []
-  bytes = append_u32_le(bytes, magic_mlsc())
-  bytes = append_u32_le(bytes, 1)
-  bytes = append_u32_le(bytes, 1)
-  bytes = append_u32_le(bytes, export_name.byte_size())
-  bytes = append_name_bytes(bytes, export_name)
-  bytes = append_u32_le(bytes, 0)
-  bytes = append_u32_le(bytes, 1)
-  bytes = append_u32_le(bytes, 2)
-  bytes = append_u32_le(bytes, words.length())
-  let mut word_index = 0
-  while word_index < words.length() do
-    bytes = append_u32_le(bytes, words[word_index])
-    word_index = word_index + 1
-  end
-  bytes = append_u32_le(bytes, constants.length())
-  let mut constant_index = 0
-  while constant_index < constants.length() do
-    bytes = append_i64_le(bytes, constants[constant_index].raw)
-    constant_index = constant_index + 1
-  end
-  bytes
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "add1", proto_index: 0 })
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 2 })
+  module_encode(exports, protos)
 end
 
 fn maximum_register_count() -> i32 = 256
