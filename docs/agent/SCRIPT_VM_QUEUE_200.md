@@ -481,12 +481,12 @@
 - allowed_files: `script_vm/tests/repl_session_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: `1 + 2` → `number=3`. `true` → `repl answer=diagnostic code=repl_result_not_integer` либо уже существующий код лоуэра, но процесс жив и следующая команда `1` даёт `number=1`
-- red: `RED(repl_session)`, поведенческий
-- green: none
-- gate: `RED(repl_session)`
+- red: `RED(repl_session)`, поведенческий. Если текущий unit уже зелёный на новых ассершенах без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green
+- green: none, если unit уже зелёный; иначе — правка `repl_session.mlc` или `repl_answer.mlc`
+- gate: `RUN(repl_session)`
 - sabotage: none
 - performance: not a perf step
-- done_when: отказ на `1 + 2` или на жизнь процесса после `true`
+- done_when: отказ на `1 + 2` или на жизнь процесса после `true`; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 121
 - state_update: фактическая строка
 
 ### Step 122 — Green: выражение
