@@ -1,0 +1,13 @@
+import { repl_balance_incomplete } from '../repl_balance'
+
+fn main() -> i32 = do
+  let open_block_incomplete = repl_balance_incomplete("fn value() -> i32 = do")
+  let closed_block_incomplete = repl_balance_incomplete("fn value() -> i32 = do 1 end")
+  if open_block_incomplete && !closed_block_incomplete then
+    println("[script_vm] repl_balance_unit ok")
+    0
+  else
+    println("[script_vm repl_balance_unit] FAIL")
+    1
+  end
+end
