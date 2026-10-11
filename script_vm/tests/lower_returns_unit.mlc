@@ -1,0 +1,146 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueBool, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_returns_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn bool_raw(flag: bool) -> i64 = value_encode(ValueBool(flag)).raw
+
+fn one_integer(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn one_bool(flag: bool) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(bool_raw(flag))
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn expect_int(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: i32,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != expected then
+    return fail(label + " value=" + decoded_int(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn has_code(source: string, code: string) -> bool = do
+  const lowered = lower_source(source)
+  let mut index = 0
+  let mut found = false
+  while index < lowered.diagnostics.length() && !found do
+    if lowered.diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_diagnostic(source: string, code: string, label: string) -> i32 = do
+  if !has_code(source, code) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn divisor_source() -> string =
+  "export fn first_divisor(number: i32) -> i32 = do let mut index = 2 while index <= number do if number / index * index == number then return index end index = index + 1 end number end"
+
+fn expect_divisor(number: i32, expected: i32, label: string) -> i32 =
+  expect_int(divisor_source(), "first_divisor", one_integer(number), expected, label)
+
+fn nested_source() -> string =
+  "export fn nested_hit(limit: i32) -> i32 = do let mut row = 0 while row < limit do let mut column = 0 while column < limit do if row == 1 then if column == 2 then return row * 10 + column end end column = column + 1 end row = row + 1 end 0 end"
+
+fn choose_source() -> string =
+  "export fn choose(flag: bool) -> i32 = do\nif flag then\nreturn 7\nelse\nreturn 8\nend\n0 end"
+
+fn early_source() -> string =
+  "export fn early(value: i32) -> i32 = do return value + 1 value end"
+
+fn mismatch_source() -> string =
+  "export fn bad(flag: bool) -> i32 = do return flag 0 end"
+
+fn loop_result_source() -> string =
+  "export fn only_loop(limit: i32) -> i32 = do let mut index = 0 while index < limit do index = index + 1 end end"
+
+fn check_divisors() -> i32 = do
+  let mut status = expect_divisor(10, 2, "first_divisor_ten")
+  if status == 0 then
+    status = expect_divisor(9, 3, "first_divisor_nine")
+  end
+  if status == 0 then
+    status = expect_divisor(7, 7, "first_divisor_prime")
+  end
+  if status == 0 then
+    status = expect_divisor(1, 1, "first_divisor_one")
+  end
+  status
+end
+
+fn check_nested_and_branches() -> i32 = do
+  let mut status = expect_int(nested_source(), "nested_hit", one_integer(4), 12, "nested_hit")
+  if status == 0 then
+    status = expect_int(choose_source(), "choose", one_bool(true), 7, "choose_true")
+  end
+  if status == 0 then
+    status = expect_int(choose_source(), "choose", one_bool(false), 8, "choose_false")
+  end
+  if status == 0 then
+    status = expect_int(early_source(), "early", one_integer(10), 11, "early_after_return")
+  end
+  status
+end
+
+fn check_diagnostics() -> i32 = do
+  let mut status = expect_diagnostic(mismatch_source(), "type_mismatch", "return_type_mismatch")
+  if status == 0 then
+    status = expect_diagnostic(loop_result_source(), "type_mismatch", "while_result_type_mismatch")
+  end
+  status
+end
+
+fn main() -> i32 = do
+  let mut status = check_divisors()
+  if status == 0 then
+    status = check_nested_and_branches()
+  end
+  if status == 0 then
+    status = check_diagnostics()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_returns checks=10")
+  println("[script_vm] lower_returns_unit ok")
+  0
+end
