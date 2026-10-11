@@ -72,12 +72,13 @@ fn expression_program(accepted_source: string, expression: string) -> string =
 fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
   let lowered = lower_source(expression_program(session.accepted_source, text))
   if lowered.diagnostics.length() != 0 then
+    session.pending = ""
     let diagnostic = lowered.diagnostics[0]
     ReplDiagnostic(diagnostic.code, diagnostic.line, diagnostic.column)
   else
     let called = emb_call_export_bytes(lowered.bytes, "repl_entry", empty_arguments())
+    session.pending = ""
     if called.code == emb_ok() then
-      session.pending = ""
       integer_answer(called.raw)
     else
       ReplDiagnostic("repl_result_not_integer", 1, 1)
@@ -93,6 +94,7 @@ fn accept_declaration(session: ref mut ReplSession, text: string) -> ReplAnswer 
     session.pending = ""
     ReplAccepted
   else
+    session.pending = ""
     let diagnostic = lowered.diagnostics[0]
     ReplDiagnostic(diagnostic.code, diagnostic.line, diagnostic.column)
   end
