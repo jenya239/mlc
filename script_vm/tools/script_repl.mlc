@@ -1,0 +1,61 @@
+import { ReplSession, repl_session_new, repl_session_submit } from '../repl_session'
+import { ReplAnswer, ReplDiagnostic, repl_answer_print } from '../repl_answer'
+
+fn answer_is_incomplete(answer: ReplAnswer) -> bool =
+  match answer {
+    ReplIncomplete => true,
+    _ => false
+  }
+
+fn publish_answer(answer: ReplAnswer) -> unit = do
+  if !answer_is_incomplete(answer) then
+    repl_answer_print(answer)
+  end
+end
+
+fn line_end_index(text: string, start_index: i32) -> i32 = do
+  let mut index = start_index
+  while index < text.length() && text.substring(index, 1) != "\n" do
+    index = index + 1
+  end
+  index
+end
+
+fn submit_text_line(session: ref mut ReplSession, text: string, start_index: i32, end_index: i32) -> unit =
+  publish_answer(repl_session_submit(session, text.substring(start_index, end_index - start_index)))
+
+fn advance_line(session: ref mut ReplSession, text: string, index: i32) -> i32 = do
+  let end_index = line_end_index(text, index)
+  if end_index < text.length() then
+    submit_text_line(session, text, index, end_index)
+    end_index + 1
+  else if end_index > index then
+    submit_text_line(session, text, index, end_index)
+    text.length()
+  else
+    text.length()
+  end
+end
+
+fn consume_standard_input(session: ref mut ReplSession, text: string) -> unit = do
+  let mut index = 0
+  while index < text.length() do
+    index = advance_line(session, text, index)
+  end
+end
+
+fn finish_repl(session: ref mut ReplSession) -> i32 = do
+  if session.pending.length() != 0 then
+    repl_answer_print(ReplDiagnostic("repl_incomplete_eof", 1, 1))
+    exit(1)
+    1
+  else
+    0
+  end
+end
+
+export fn script_repl_run() -> i32 = do
+  let mut session = repl_session_new()
+  consume_standard_input(session, read_all())
+  finish_repl(session)
+end

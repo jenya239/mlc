@@ -2,6 +2,7 @@ import { lower_source } from '../lower/lower_module'
 import { LowerDiagnostic } from '../lower/lower_types'
 import { Value, ValueInt32, value_decode, value_encode } from '../value'
 import { EmbCallResult, emb_ok, emb_call_export_bytes } from '../embedding'
+import { script_repl_run } from './script_repl'
 
 extern fn write_stderr_line(line: string) -> unit =
   "mlc::log::write_stderr_line" from "mlc/log/log_abi.hpp"
@@ -113,6 +114,8 @@ fn dispatch_command(command_line_arguments: [string]) -> i32 =
     run_command(command_line_arguments)
   else if command_line_arguments[0] == "compile" then
     compile_command(command_line_arguments)
+  else if command_line_arguments[0] == "repl" then
+    script_repl_run()
   else
     finish_usage()
   end
