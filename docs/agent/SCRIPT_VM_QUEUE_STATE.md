@@ -1,8 +1,8 @@
-current_step: 87
-status: consult_ready
-last_result: blocked step 88: BENCH() не печатает B5.total_us и B5.ratio_x100; раннер принимает только B1–B4, scripts/run_script_vm_bench.rb вне allowed_files
-last_verify: ruby scripts/run_script_vm_bench.rb => exit 0; B1.ns_per_insn 35; B2.ns_per_insn 35; B3.ns_per_call 1384; B4.ns_per_alloc_n1000 1055; B4.ns_per_alloc_n4000 985; B4.scaling_ratio_x100 91
-next_step: 88
-consult_count: 1
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261011_202906.md
+current_step: 88
+status: ready
+last_result: done step 88: B5.total_us 22280, B5.ratio_x100 143 (current, min из 5)
+last_verify: ruby scripts/run_script_vm_bench.rb --record current => B1.total_us 15552, B5.total_us 22280, B5.ratio_x100 143; ruby scripts/run_script_vm_bench.rb => exit 0, B5.total_us 16972, B5.ratio_x100 148; sabotage N+1 => binary failed exit 1; restored; ruby scripts/run_script_vm_gate.rb lower_loops => script_vm_gate ok units=1
+next_step: 89
+consult_count: 0
+consult_response:
 consult_verdict:

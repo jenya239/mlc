@@ -26,6 +26,8 @@ import {
   run_with_heap
 } from '../interpreter'
 import { heap_new } from '../heap'
+import { lower_source } from '../lower/lower_module'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
 import {
   fixture_sum_loop,
   fixture_sum_loop_instruction_count,
@@ -35,6 +37,57 @@ import {
 
 extern fn script_vm_perf_now_us() -> i32 =
   "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+type SumTiming = { nanoseconds_per_instruction: i32, total_microseconds: i32 }
+
+fn bench_iteration_limit() -> i32 = 60000
+
+fn lowered_sum_limit() -> i32 = bench_iteration_limit()
+
+fn expected_triangular_sum(iteration_limit: i32) -> i32 =
+  iteration_limit / 2 * (iteration_limit + 1)
+
+fn lowered_sum_source() -> string =
+  "export fn run() -> i32 = do\nlet mut total = 0\nlet mut index = 1\nwhile index <= " + lowered_sum_limit().to_string() + " do\ntotal = total + index\nindex = index + 1\nend\ntotal\nend\n"
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn lowered_sample(code: i32, raw: i64, elapsed: i32) -> i32 =
+  if code != emb_ok() || elapsed < 0 then
+    0 - 1
+  else if decoded_integer(raw) != expected_triangular_sum(bench_iteration_limit()) then
+    0 - 1
+  else
+    elapsed
+  end
+
+fn run_lowered_sum(bytes: [i32]) -> i32 = do
+  let mut arguments: [i64] = []
+  const started = script_vm_perf_now_us()
+  const called = emb_call_export_bytes(bytes, "run", arguments)
+  const elapsed = script_vm_perf_now_us() - started
+  lowered_sample(called.code, called.raw, elapsed)
+end
+
+fn measure_lowered_sum() -> i32 = do
+  const lowered = lower_source(lowered_sum_source())
+  if lowered.diagnostics.length() != 0 then
+    0 - 1
+  else
+    run_lowered_sum(lowered.bytes)
+  end
+end
+
+fn ratio_times_hundred(lowered_microseconds: i32, handwritten_microseconds: i32) -> i32 =
+  if lowered_microseconds < 0 || handwritten_microseconds <= 0 then
+    0 - 1
+  else
+    lowered_microseconds * 100 / handwritten_microseconds
+  end
 
 fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   let mut index = 0
@@ -79,22 +132,28 @@ fn scaling_ratio(larger: i32, smaller: i32) -> i32 = do
   larger * 100 / smaller
 end
 
-fn measure_sum_arithmetic() -> i32 = do
-  const prototype = fixture_sum_loop(60000)
+fn measure_sum_arithmetic() -> SumTiming = do
+  const iteration_limit = bench_iteration_limit()
+  const prototype = fixture_sum_loop(iteration_limit)
   const started = script_vm_perf_now_us()
   const result = run_arithmetic(prototype.words, prototype.constants, prototype.register_count)
   const elapsed = script_vm_perf_now_us() - started
-  nanoseconds_per_item(elapsed, integer_from_result(result) == 1800030000, fixture_sum_loop_instruction_count(60000))
+  const accepted = integer_from_result(result) == expected_triangular_sum(iteration_limit)
+  SumTiming {
+    nanoseconds_per_instruction: nanoseconds_per_item(elapsed, accepted, fixture_sum_loop_instruction_count(iteration_limit)),
+    total_microseconds: if accepted && elapsed >= 0 then elapsed else 0 - 1
+  }
 end
 
 fn measure_sum_program() -> i32 = do
-  const prototype = fixture_sum_loop(60000)
+  const iteration_limit = bench_iteration_limit()
+  const prototype = fixture_sum_loop(iteration_limit)
   let mut prototypes: [FunctionProto] = []
   prototypes.push(prototype)
   const started = script_vm_perf_now_us()
   const result = run_program(heap_new(), prototypes, 0).result
   const elapsed = script_vm_perf_now_us() - started
-  nanoseconds_per_item(elapsed, integer_from_result(result) == 1800030000, fixture_sum_loop_instruction_count(60000))
+  nanoseconds_per_item(elapsed, integer_from_result(result) == expected_triangular_sum(iteration_limit), fixture_sum_loop_instruction_count(iteration_limit))
 end
 
 fn fibonacci_callee_words() -> [i32] = do
@@ -167,29 +226,36 @@ end
 
 fn report(
   arithmetic_nanoseconds: i32,
+  handwritten_microseconds: i32,
   program_nanoseconds: i32,
   call_nanoseconds: i32,
   small_allocation: i32,
-  large_allocation: i32
+  large_allocation: i32,
+  lowered_microseconds: i32
 ) -> i32 = do
   const ratio = scaling_ratio(large_allocation, small_allocation)
-  if arithmetic_nanoseconds < 0 || program_nanoseconds < 0 || call_nanoseconds < 0 || small_allocation < 0 || large_allocation < 0 || ratio < 0 then
+  const lowered_ratio = ratio_times_hundred(lowered_microseconds, handwritten_microseconds)
+  if arithmetic_nanoseconds < 0 || handwritten_microseconds < 0 || program_nanoseconds < 0 || call_nanoseconds < 0 || small_allocation < 0 || large_allocation < 0 || ratio < 0 || lowered_ratio < 0 then
     return 1
   end
   print_bench("B1", "ns_per_insn", arithmetic_nanoseconds)
+  print_bench("B1", "total_us", handwritten_microseconds)
   print_bench("B2", "ns_per_insn", program_nanoseconds)
   print_bench("B3", "ns_per_call", call_nanoseconds)
   print_bench("B4", "ns_per_alloc_n1000", small_allocation)
   print_bench("B4", "ns_per_alloc_n4000", large_allocation)
   print_bench("B4", "scaling_ratio_x100", ratio)
+  print_bench("B5", "total_us", lowered_microseconds)
+  print_bench("B5", "ratio_x100", lowered_ratio)
   0
 end
 
 fn main() -> i32 = do
-  const arithmetic_nanoseconds = measure_sum_arithmetic()
+  const arithmetic = measure_sum_arithmetic()
   const program_nanoseconds = measure_sum_program()
   const call_nanoseconds = measure_fibonacci()
   const small_allocation = measure_record(1000)
   const large_allocation = measure_record(4000)
-  report(arithmetic_nanoseconds, program_nanoseconds, call_nanoseconds, small_allocation, large_allocation)
+  const lowered_microseconds = measure_lowered_sum()
+  report(arithmetic.nanoseconds_per_instruction, arithmetic.total_microseconds, program_nanoseconds, call_nanoseconds, small_allocation, large_allocation, lowered_microseconds)
 end

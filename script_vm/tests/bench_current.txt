@@ -1,6 +1,9 @@
-B1.ns_per_insn 30
-B2.ns_per_insn 28
-B3.ns_per_call 1072
-B4.ns_per_alloc_n1000 796
-B4.ns_per_alloc_n4000 806
-B4.scaling_ratio_x100 94
+B1.ns_per_insn 51
+B1.total_us 15552
+B2.ns_per_insn 51
+B3.ns_per_call 2052
+B4.ns_per_alloc_n1000 1281
+B4.ns_per_alloc_n4000 1370
+B4.scaling_ratio_x100 82
+B5.total_us 22280
+B5.ratio_x100 143

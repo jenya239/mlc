@@ -5,11 +5,14 @@ require "timeout"
 root_directory = File.expand_path("..", __dir__)
 required_metric_keys = [
   "B1.ns_per_insn",
+  "B1.total_us",
   "B2.ns_per_insn",
   "B3.ns_per_call",
   "B4.ns_per_alloc_n1000",
   "B4.ns_per_alloc_n4000",
-  "B4.scaling_ratio_x100"
+  "B4.scaling_ratio_x100",
+  "B5.total_us",
+  "B5.ratio_x100"
 ]
 run_count = 5
 
@@ -57,8 +60,9 @@ end
 
 def parse_bench_values(output_text, required_metric_keys)
   values = {}
+  metric_order = []
   output_text.each_line do |line|
-    match = line.match(/\A\[script_vm\] bench name=(B[1-4]) metric=([a-z0-9_]+) value=(-?\d+)\s*\z/)
+    match = line.match(/\A\[script_vm\] bench name=(B\d+) metric=([a-z0-9_]+) value=(-?\d+)\s*\z/)
     next if match.nil?
     metric_key = "#{match[1]}.#{match[2]}"
     if values.key?(metric_key)
@@ -66,6 +70,7 @@ def parse_bench_values(output_text, required_metric_keys)
       return nil
     end
     values[metric_key] = Integer(match[3])
+    metric_order << metric_key
   end
   required_metric_keys.each do |metric_key|
     unless values.key?(metric_key)
@@ -73,7 +78,7 @@ def parse_bench_values(output_text, required_metric_keys)
       return nil
     end
   end
-  values
+  [values, metric_order]
 end
 
 def read_reference(path)
@@ -192,6 +197,7 @@ if process_failed?(link_status)
 end
 
 minimum_values = {}
+metric_order = nil
 run_index = 0
 while run_index < run_count
   binary_output, binary_error, binary_status = capture_process([binary_path], 30)
@@ -206,17 +212,32 @@ while run_index < run_count
     warn binary_error unless binary_error.empty?
     exit 1
   end
-  required_metric_keys.each do |metric_key|
-    value = parsed[metric_key]
+  parsed_values, parsed_order = parsed
+  if metric_order.nil?
+    metric_order = parsed_order
+  elsif parsed_order.sort != metric_order.sort
+    warn "metric set changed"
+    exit 1
+  end
+  parsed_order.each do |metric_key|
+    value = parsed_values[metric_key]
     current_minimum = minimum_values[metric_key]
     minimum_values[metric_key] = value if current_minimum.nil? || value < current_minimum
   end
   run_index += 1
 end
 
+handwritten_microseconds = minimum_values["B1.total_us"]
+lowered_microseconds = minimum_values["B5.total_us"]
+if handwritten_microseconds.nil? || lowered_microseconds.nil? || handwritten_microseconds <= 0
+  warn "cannot compute B5.ratio_x100"
+  exit 1
+end
+minimum_values["B5.ratio_x100"] = lowered_microseconds * 100 / handwritten_microseconds
+
 if record_kind
   record_path = File.join(root_directory, "script_vm", "tests", "bench_#{record_kind}.txt")
-  File.write(record_path, required_metric_keys.map { |metric_key| "#{metric_key} #{minimum_values[metric_key]}\n" }.join)
+  File.write(record_path, metric_order.map { |metric_key| "#{metric_key} #{minimum_values[metric_key]}\n" }.join)
 end
 
 comparison_failed = false
@@ -251,7 +272,7 @@ maximum_absolute_checks.each do |specification|
   end
 end
 
-required_metric_keys.each do |metric_key|
+metric_order.each do |metric_key|
   puts "#{metric_key} #{minimum_values[metric_key]}"
 end
 
