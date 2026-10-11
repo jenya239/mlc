@@ -37,6 +37,7 @@ registered_units = [
   ["lower_stage1", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_stage1_unit.mlc"]],
   ["lower_arithmetic", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_arithmetic_unit.mlc"]],
   ["lower_control", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_control_unit.mlc"]],
+  ["lower_logic", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_logic_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)

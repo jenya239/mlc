@@ -17,10 +17,12 @@ import {
   binary_opcode,
   branch_expression,
   comparison_opcode,
+  accepted_bool,
   diagnostic_at,
   emit_binary,
   emit_instruction,
   finish_if_type,
+  finish_logic_not,
   identifier_operand,
   is_bool_equality_operator,
   is_comparison_operator,
@@ -226,6 +228,100 @@ fn lower_if(
   result_type
 end
 
+fn finish_logic_and(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let end_site = proto_builder_emit_jump_if_false(builder, target)
+  let right_type = lower_expression(scope, builder, right, target)
+  proto_builder_patch_to_here(builder, end_site)
+  accepted_bool(scope, right_type, source_span)
+end
+
+fn lower_logic_and(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let left_type = lower_expression(scope, builder, left, target)
+  if scope.has_diagnostic then
+    LowerBool
+  else if !is_lower_bool(left_type) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerBool
+    end
+  else
+    finish_logic_and(scope, builder, right, source_span, target)
+  end
+end
+
+fn finish_logic_or(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let right_site = proto_builder_emit_jump_if_false(builder, target)
+  let end_site = proto_builder_emit_jump(builder)
+  proto_builder_patch_to_here(builder, right_site)
+  let right_type = lower_expression(scope, builder, right, target)
+  proto_builder_patch_to_here(builder, end_site)
+  accepted_bool(scope, right_type, source_span)
+end
+
+fn lower_logic_or(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let left_type = lower_expression(scope, builder, left, target)
+  if scope.has_diagnostic then
+    LowerBool
+  else if !is_lower_bool(left_type) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerBool
+    end
+  else
+    finish_logic_or(scope, builder, right, source_span, target)
+  end
+end
+
+fn lower_logic_not(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  inner: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let temporary = proto_builder_register_allocate(builder)
+  let value_type = lower_expression(scope, builder, inner, temporary)
+  let result_type = if scope.has_diagnostic then
+    LowerBool
+  else if !is_lower_bool(value_type) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerBool
+    end
+  else
+    finish_logic_not(builder, temporary, target)
+  end
+  proto_builder_register_release_to(builder, mark)
+  result_type
+end
+
 fn lower_expression_checked(
   scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
@@ -248,7 +344,11 @@ fn lower_expression_checked(
       value_type
     end,
     ExprBin(operator, left, right, source_span) =>
-      if is_comparison_operator(operator) then
+      if operator == "&&" then
+        lower_logic_and(scope, builder, left, right, source_span, target)
+      else if operator == "||" then
+        lower_logic_or(scope, builder, left, right, source_span, target)
+      else if is_comparison_operator(operator) then
         lower_comparison(scope, builder, operator, left, right, source_span, target)
       else
         lower_binary(scope, builder, operator, left, right, source_span, target)
@@ -256,6 +356,8 @@ fn lower_expression_checked(
     ExprUn(operator, inner, source_span) =>
       if operator == "-" then
         lower_negate(scope, builder, inner, source_span, target)
+      else if operator == "!" then
+        lower_logic_not(scope, builder, inner, source_span, target)
       else
         do
           lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
