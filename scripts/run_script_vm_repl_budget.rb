@@ -7,6 +7,23 @@ run_count = 5
 entry_path = File.join(root_directory, "script_vm", "tests", "repl_budget_unit.mlc")
 success_marker = "[script_vm] repl_budget_unit ok"
 
+def parse_maximum_microseconds(arguments)
+  return nil if arguments.empty?
+  unless arguments.length == 2 && arguments[0] == "--max-absolute"
+    warn "unknown argument #{arguments[0]}"
+    exit 1
+  end
+  metric_name, limit_text = arguments[1].to_s.split("=", 2)
+  limit = Integer(limit_text) rescue nil
+  if metric_name != "repl_submit_us" || limit.nil?
+    warn "max-absolute #{arguments[1]}"
+    exit 1
+  end
+  limit
+end
+
+maximum_microseconds = parse_maximum_microseconds(ARGV)
+
 def capture_process(arguments, timeout_seconds)
   output_reader, output_writer = IO.pipe
   error_reader, error_writer = IO.pipe
@@ -113,4 +130,8 @@ end
 
 minimum_microseconds = samples.min
 puts "repl_submit_us=#{minimum_microseconds}"
+if !maximum_microseconds.nil? && minimum_microseconds > maximum_microseconds
+  warn "max-absolute failed repl_submit_us=#{minimum_microseconds} limit=#{maximum_microseconds}"
+  exit 1
+end
 exit 0
