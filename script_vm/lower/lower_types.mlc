@@ -3,6 +3,13 @@ export type LowerType =
   | LowerBool
   | LowerRecord(string)
 
+export type LowerCallSignature = {
+  name: string,
+  proto_index: i32,
+  parameter_types: [LowerType],
+  result_type: LowerType
+}
+
 export type LowerDiagnostic = {
   code: string,
   message: string,

@@ -1,0 +1,203 @@
+import {
+  Decl,
+  DeclExported,
+  DeclFn,
+  Param,
+  TypeExpr,
+  TyBool,
+  TyI32,
+  TyNamed
+} from '../../compiler/frontend/ast'
+import { instruction_words_call, instruction_words_make_closure } from '../bytecode'
+import {
+  ProtoBuilder,
+  proto_builder_register_allocate
+} from './lower_builder'
+import { emit_instruction } from './lower_control'
+import { LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
+import { LowerBool, LowerCallSignature, LowerInt, LowerRecord, LowerType } from './lower_types'
+
+export fn lower_type_of(type_expression: Shared<TypeExpr>) -> LowerType =
+  match type_expression {
+    TyI32 => LowerInt,
+    TyBool => LowerBool,
+    TyNamed(name) => LowerRecord(name),
+    _ => LowerInt
+  }
+
+fn call_binding_name(name: string) -> string = "*call*" + name
+
+fn call_parameter_binding_name(name: string, index: i32) -> string =
+  "*call*" + name + "#" + index.to_string()
+
+fn call_proto_register(proto_index: i32) -> i32 = 0 - 10000 - proto_index
+
+fn call_proto_from_register(encoded: i32) -> i32 = 0 - 10000 - encoded
+
+fn call_parameter_register(index: i32) -> i32 = 0 - 5000 - index
+
+fn parameter_types_of(parameters: [Shared<Param>]) -> [LowerType] = do
+  let mut collected: [LowerType] = []
+  let mut index = 0
+  while index < parameters.length() do
+    collected.push(lower_type_of(parameters[index].type_value))
+    index = index + 1
+  end
+  collected
+end
+
+fn append_call_signature(
+  signatures: [LowerCallSignature],
+  name: string,
+  parameters: [Shared<Param>],
+  result_type: Shared<TypeExpr>
+) -> [LowerCallSignature] = do
+  let mut copied = signatures
+  copied.push(LowerCallSignature {
+    name: name,
+    proto_index: signatures.length(),
+    parameter_types: parameter_types_of(parameters),
+    result_type: lower_type_of(result_type)
+  })
+  copied
+end
+
+fn collect_inner(signatures: [LowerCallSignature], inner: Shared<Decl>) -> [LowerCallSignature] =
+  match inner {
+    DeclFn(name, _, _, parameters, result_type, _, _) =>
+      append_call_signature(signatures, name, parameters, result_type),
+    _ => signatures
+  }
+
+fn collect_one(signatures: [LowerCallSignature], declaration: Shared<Decl>) -> [LowerCallSignature] =
+  match declaration {
+    DeclExported(inner) => collect_inner(signatures, inner),
+    DeclFn(name, _, _, parameters, result_type, _, _) =>
+      append_call_signature(signatures, name, parameters, result_type),
+    _ => signatures
+  }
+
+export fn collect_call_signatures(declarations: [Shared<Decl>]) -> [LowerCallSignature] = do
+  let mut signatures: [LowerCallSignature] = []
+  let mut index = 0
+  while index < declarations.length() do
+    signatures = collect_one(signatures, declarations[index])
+    index = index + 1
+  end
+  signatures
+end
+
+fn install_parameter_types(scope: ref mut LowerScope, name: string, parameter_types: [LowerType]) -> unit = do
+  let mut index = 0
+  while index < parameter_types.length() do
+    lower_scope_define(
+      scope,
+      call_parameter_binding_name(name, index),
+      call_parameter_register(index),
+      parameter_types[index],
+      false
+    )
+    index = index + 1
+  end
+end
+
+fn install_one_signature(scope: ref mut LowerScope, signature: LowerCallSignature) -> unit = do
+  lower_scope_define(
+    scope,
+    call_binding_name(signature.name),
+    call_proto_register(signature.proto_index),
+    signature.result_type,
+    false
+  )
+  install_parameter_types(scope, signature.name, signature.parameter_types)
+end
+
+export fn install_call_signatures(scope: ref mut LowerScope, signatures: [LowerCallSignature]) -> unit = do
+  let mut index = 0
+  while index < signatures.length() do
+    install_one_signature(scope, signatures[index])
+    index = index + 1
+  end
+end
+
+fn signature_slot(scope: ref mut LowerScope, name: string) -> i32 =
+  lower_scope_lookup(scope, call_binding_name(name))
+
+export fn call_signature_found(scope: ref mut LowerScope, name: string) -> bool =
+  signature_slot(scope, name) >= 0
+
+export fn call_signature_proto_index(scope: ref mut LowerScope, name: string) -> i32 = do
+  let slot = signature_slot(scope, name)
+  if slot < 0 then
+    0
+  else
+    call_proto_from_register(scope.names[slot].register_index)
+  end
+end
+
+export fn call_signature_result_type(scope: ref mut LowerScope, name: string) -> LowerType = do
+  let slot = signature_slot(scope, name)
+  if slot < 0 then
+    LowerInt
+  else
+    scope.names[slot].value_type
+  end
+end
+
+export fn call_parameter_count(scope: ref mut LowerScope, name: string) -> i32 = do
+  let mut index = 0
+  while lower_scope_lookup(scope, call_parameter_binding_name(name, index)) >= 0 do
+    index = index + 1
+  end
+  index
+end
+
+export fn call_parameter_type_at(scope: ref mut LowerScope, name: string, index: i32) -> LowerType = do
+  let slot = lower_scope_lookup(scope, call_parameter_binding_name(name, index))
+  if slot < 0 then
+    LowerInt
+  else
+    scope.names[slot].value_type
+  end
+end
+
+export fn call_argument_register(base: i32, index: i32) -> i32 = base + 1 + index
+
+fn empty_upvalue_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn emit_call_closure(builder: ref mut ProtoBuilder, base: i32, proto_index: i32) -> unit =
+  emit_instruction(builder, instruction_words_make_closure(base, proto_index, empty_upvalue_sources()))
+
+fn allocate_one_argument_register(builder: ref mut ProtoBuilder, index: i32) -> i32 = do
+  let allocated_register = proto_builder_register_allocate(builder)
+  if allocated_register < 0 then
+    index
+  else
+    index + 1
+  end
+end
+
+fn allocate_call_argument_registers(builder: ref mut ProtoBuilder, argument_count: i32) -> unit = do
+  let mut index = 0
+  while index < argument_count do
+    index = allocate_one_argument_register(builder, index)
+  end
+end
+
+export fn prepare_call_block(builder: ref mut ProtoBuilder, proto_index: i32, argument_count: i32) -> i32 = do
+  let base = proto_builder_register_allocate(builder)
+  allocate_call_argument_registers(builder, argument_count)
+  emit_call_closure(builder, base, proto_index)
+  base
+end
+
+export fn finish_call_instruction(
+  builder: ref mut ProtoBuilder,
+  target: i32,
+  base: i32,
+  argument_count: i32
+) -> unit =
+  emit_instruction(builder, instruction_words_call(target, base, argument_count))

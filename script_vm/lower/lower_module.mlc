@@ -14,12 +14,29 @@ import {
   DeclAssocType,
   DeclAssocBind,
   Expr,
+  ExprBlock,
   Param
 } from '../../compiler/frontend/ast'
+import { instruction_words_return } from '../bytecode'
 import { FunctionProto } from '../run_result'
 import { ModuleExport, module_encode } from '../module_blob'
-import { LowerDiagnostic, LowerResult } from './lower_types'
-import { FunctionLowered, FunctionRejected, lower_function_body } from './lower_function'
+import {
+  ProtoBuilder,
+  proto_builder_emit,
+  proto_builder_finish,
+  proto_builder_new,
+  proto_builder_register_allocate
+} from './lower_builder'
+import {
+  collect_call_signatures,
+  install_call_signatures,
+  lower_type_of
+} from './lower_call'
+import { lower_expression } from './lower_expression'
+import { FunctionLowered, FunctionLowering, FunctionRejected } from './lower_function'
+import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
+import { lower_block } from './lower_statement'
+import { LowerCallSignature, LowerDiagnostic, LowerResult, LowerType } from './lower_types'
 
 type LowerWalk = {
   diagnostics: [LowerDiagnostic],
@@ -86,14 +103,83 @@ fn append_proto(walk: LowerWalk, name: string, proto: FunctionProto, exported: b
   end
 end
 
+fn bind_call_parameters(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  parameters: [Shared<Param>]
+) -> unit = do
+  let mut index = 0
+  while index < parameters.length() do
+    let parameter = parameters[index]
+    lower_scope_bind(
+      scope,
+      builder,
+      parameter.name,
+      lower_type_of(parameter.type_value),
+      parameter.is_mut
+    )
+    index = index + 1
+  end
+end
+
+fn lower_prepared_body(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType =
+  match expression {
+    ExprBlock(statements, final_expression, _) =>
+      lower_block(scope, builder, statements, final_expression, target),
+    _ => lower_expression(scope, builder, expression, target)
+  }
+
+fn finish_prepared_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionLowering = do
+  let emitted_index = proto_builder_emit(builder, instruction_words_return(source))
+  if emitted_index < 0 then
+    FunctionLowered(proto_builder_finish(builder))
+  else
+    FunctionLowered(proto_builder_finish(builder))
+  end
+end
+
+fn finish_prepared_function(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  destination: i32,
+  body_type: LowerType
+) -> FunctionLowering =
+  if scope.has_diagnostic then
+    FunctionRejected(scope.diagnostic)
+  else
+    match body_type {
+      _ => finish_prepared_return(builder, destination)
+    }
+  end
+
+fn lower_function_with_signatures(
+  signatures: [LowerCallSignature],
+  parameters: [Shared<Param>],
+  expression: Shared<Expr>
+) -> FunctionLowering = do
+  let mut builder = proto_builder_new(0)
+  let mut scope = lower_scope_new()
+  install_call_signatures(scope, signatures)
+  bind_call_parameters(scope, builder, parameters)
+  let destination = proto_builder_register_allocate(builder)
+  let body_type = lower_prepared_body(scope, builder, expression, destination)
+  finish_prepared_function(scope, builder, destination, body_type)
+end
+
 fn consider_function(
   walk: LowerWalk,
+  signatures: [LowerCallSignature],
   name: string,
   parameters: [Shared<Param>],
   body: Shared<Expr>,
   exported: bool
 ) -> LowerWalk =
-  match lower_function_body(parameters, body) {
+  match lower_function_with_signatures(signatures, parameters, body) {
     FunctionLowered(proto) => append_proto(walk, name, proto, exported),
     FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
   }
@@ -106,26 +192,36 @@ fn consider_unsupported(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk
     column: 0
   })
 
-fn consider_inner(walk: LowerWalk, inner: Shared<Decl>, exported: bool) -> LowerWalk =
+fn consider_inner(
+  walk: LowerWalk,
+  signatures: [LowerCallSignature],
+  inner: Shared<Decl>,
+  exported: bool
+) -> LowerWalk =
   match inner {
     DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, name, parameters, body, exported),
+      consider_function(walk, signatures, name, parameters, body, exported),
     _ => consider_unsupported(walk, inner)
   }
 
-fn consider_declaration(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk =
+fn consider_declaration(
+  walk: LowerWalk,
+  signatures: [LowerCallSignature],
+  declaration: Shared<Decl>
+) -> LowerWalk =
   match declaration {
-    DeclExported(inner) => consider_inner(walk, inner, true),
+    DeclExported(inner) => consider_inner(walk, signatures, inner, true),
     DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, name, parameters, body, plain_function_is_exported()),
+      consider_function(walk, signatures, name, parameters, body, plain_function_is_exported()),
     _ => consider_unsupported(walk, declaration)
   }
 
 fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do
+  let signatures = collect_call_signatures(declarations)
   let mut walk = empty_walk()
   let mut index = 0
   while index < declarations.length() do
-    walk = consider_declaration(walk, declarations[index])
+    walk = consider_declaration(walk, signatures, declarations[index])
     index = index + 1
   end
   if walk.diagnostics.length() > 0 then
