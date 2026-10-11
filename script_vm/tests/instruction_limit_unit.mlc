@@ -1,0 +1,200 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump,
+  instruction_opcode_add
+} from '../bytecode'
+import {
+  run_limits_new,
+  run_err_instruction_limit
+} from '../run_result'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_program_with_args_limited
+} from '../interpreter'
+import { heap_new } from '../heap'
+import { fixture_fib_protos } from './bench_fixtures'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn instruction_limit_from_i32(number: i32) -> i64 = number
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm instruction_limit_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn single_prototype(words: [i32], constants: [Value], register_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: constants, register_count: register_count })
+  prototypes
+end
+
+fn run_limited(prototypes: [FunctionProto], instruction_count: i32) -> RunResult = do
+  const limits = run_limits_new(instruction_limit_from_i32(instruction_count), 0)
+  run_program_with_args_limited(
+    heap_new(),
+    prototypes,
+    0,
+    empty_arguments(),
+    limits
+  ).result
+end
+
+fn addition_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn addition_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(2))
+  constants.push(integer_value(3))
+  constants
+end
+
+fn addition_prototypes() -> [FunctionProto] =
+  single_prototype(addition_words(), addition_constants(), 3)
+
+fn jump_back_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_jump(0 - 1))
+  words
+end
+
+fn jump_back_prototypes() -> [FunctionProto] =
+  single_prototype(jump_back_words(), [], 1)
+
+fn wide_load_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 256))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn wide_load_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  let mut index = 0
+  while index < 256 do
+    constants.push(integer_value(0))
+    index = index + 1
+  end
+  constants.push(integer_value(7))
+  constants
+end
+
+fn wide_load_prototypes() -> [FunctionProto] =
+  single_prototype(wide_load_words(), wide_load_constants(), 1)
+
+fn expect_integer(result: RunResult, expected: i32, label: string) -> i32 = do
+  if integer_result(result) == expected then
+    println(label)
+    0
+  else
+    fail(label)
+  end
+end
+
+fn expect_limit_at(result: RunResult, word_index: i32, label: string) -> i32 = do
+  if error_code(result) == run_err_instruction_limit() && error_word_index(result) == word_index then
+    println(label)
+    0
+  else
+    fail(label)
+  end
+end
+
+fn expect_limit_code(result: RunResult, label: string) -> i32 = do
+  if error_code(result) == run_err_instruction_limit() then
+    println(label)
+    0
+  else
+    fail(label)
+  end
+end
+
+fn main() -> i32 = do
+  const four_status = expect_integer(run_limited(addition_prototypes(), 4), 5, "limit_four_returns_sum")
+  if four_status != 0 then
+    return four_status
+  end
+  const three_status = expect_limit_at(run_limited(addition_prototypes(), 3), 3, "limit_three_stops")
+  if three_status != 0 then
+    return three_status
+  end
+  const zero_status = expect_integer(run_limited(addition_prototypes(), 0), 5, "limit_zero_unlimited")
+  if zero_status != 0 then
+    return zero_status
+  end
+  const negative_status = expect_integer(run_limited(addition_prototypes(), 0 - 1), 5, "limit_negative_unlimited")
+  if negative_status != 0 then
+    return negative_status
+  end
+  const jump_status = expect_limit_at(run_limited(jump_back_prototypes(), 1000), 0, "jump_back_hits_limit")
+  if jump_status != 0 then
+    return jump_status
+  end
+  const wide_status = expect_integer(run_limited(wide_load_prototypes(), 2), 7, "wide_load_counts_as_one")
+  if wide_status != 0 then
+    return wide_status
+  end
+  const wide_boundary_status = expect_limit_at(run_limited(wide_load_prototypes(), 1), 2, "wide_load_stops_before_return")
+  if wide_boundary_status != 0 then
+    return wide_boundary_status
+  end
+  const fibonacci_stop_status = expect_limit_code(run_limited(fixture_fib_protos(), 100), "fibonacci_limit_stops")
+  if fibonacci_stop_status != 0 then
+    return fibonacci_stop_status
+  end
+  const fibonacci_status = expect_integer(run_limited(fixture_fib_protos(), 10000000), 55, "fibonacci_limit_returns")
+  if fibonacci_status != 0 then
+    return fibonacci_status
+  end
+  println("instruction_limit checks=9")
+  println("[script_vm] instruction_limit_unit ok")
+  0
+end
