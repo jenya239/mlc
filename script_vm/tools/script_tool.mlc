@@ -1,0 +1,123 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+import { EmbCallResult, emb_ok, emb_call_export_bytes } from '../embedding'
+
+extern fn write_stderr_line(line: string) -> unit =
+  "mlc::log::write_stderr_line" from "mlc/log/log_abi.hpp"
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0
+  }
+
+fn printed_result(number: i32) -> i32 = number
+
+fn finish_usage() -> i32 = do
+  exit(2)
+  2
+end
+
+fn finish_error(code: i32) -> i32 = do
+  println("error=" + code.to_string())
+  exit(3)
+  3
+end
+
+fn finish_result(number: i32) -> i32 = do
+  println("result=" + printed_result(number).to_string())
+  0
+end
+
+fn finish_call(called: EmbCallResult) -> i32 =
+  if called.code == emb_ok() then finish_result(decoded_integer(called.raw)) else finish_error(called.code) end
+
+fn diagnostic_line(source_path: string, diagnostic: LowerDiagnostic) -> string =
+  source_path + ":" + diagnostic.line.to_string() + ":" + diagnostic.column.to_string() + ": " + diagnostic.code + ": " + diagnostic.message
+
+fn report_diagnostics(source_path: string, diagnostics: [LowerDiagnostic]) -> i32 = do
+  let mut index = 0
+  while index < diagnostics.length() do
+    write_stderr_line(diagnostic_line(source_path, diagnostics[index]))
+    index = index + 1
+  end
+  exit(1)
+  1
+end
+
+fn append_word(text: string, word: i32, index: i32) -> string =
+  if index == 0 then word.to_string() else text + " " + word.to_string() end
+
+fn join_bytes(bytes: [i32]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < bytes.length() do
+    text = append_word(text, bytes[index], index)
+    index = index + 1
+  end
+  text
+end
+
+fn write_bytes(output_path: string, bytes: [i32]) -> i32 = do
+  File.write(output_path, join_bytes(bytes))
+  0
+end
+
+fn compile_source(source_path: string, output_path: string) -> i32 = do
+  const lowered = lower_source(File.read(source_path))
+  if lowered.diagnostics.length() > 0 then
+    report_diagnostics(source_path, lowered.diagnostics)
+  else
+    write_bytes(output_path, lowered.bytes)
+  end
+end
+
+fn collect_integer_arguments(command_line_arguments: [string]) -> [i64] = do
+  let mut integer_arguments: [i64] = []
+  let mut index = 3
+  while index < command_line_arguments.length() do
+    integer_arguments.push(integer_raw(command_line_arguments[index].to_i()))
+    index = index + 1
+  end
+  integer_arguments
+end
+
+fn run_export(source_path: string, export_name: string, integer_arguments: [i64]) -> i32 = do
+  const lowered = lower_source(File.read(source_path))
+  if lowered.diagnostics.length() > 0 then
+    report_diagnostics(source_path, lowered.diagnostics)
+  else
+    finish_call(emb_call_export_bytes(lowered.bytes, export_name, integer_arguments))
+  end
+end
+
+fn run_command(command_line_arguments: [string]) -> i32 =
+  if command_line_arguments.length() < 3 then
+    finish_usage()
+  else
+    run_export(command_line_arguments[1], command_line_arguments[2], collect_integer_arguments(command_line_arguments))
+  end
+
+fn compile_command(command_line_arguments: [string]) -> i32 =
+  if command_line_arguments.length() != 3 then
+    finish_usage()
+  else
+    compile_source(command_line_arguments[1], command_line_arguments[2])
+  end
+
+fn dispatch_command(command_line_arguments: [string]) -> i32 =
+  if command_line_arguments[0] == "run" then
+    run_command(command_line_arguments)
+  else if command_line_arguments[0] == "compile" then
+    compile_command(command_line_arguments)
+  else
+    finish_usage()
+  end
+
+fn main() -> i32 = do
+  const command_line_arguments = args()
+  if command_line_arguments.length() == 0 then finish_usage() else dispatch_command(command_line_arguments) end
+end

@@ -1,8 +1,8 @@
-current_step: 84
+current_step: 85
 status: ready
-last_result: done step 84: red lower_tool падает, нет script_tool.mlc
-last_verify: ruby scripts/run_script_vm_lower_tool.rb => exit 1; script_tool missing: script_vm/tools/script_tool.mlc
-next_step: 85
+last_result: done step 85: CLI script_tool, run/compile и диагностики
+last_verify: ruby scripts/run_script_vm_lower_tool.rb => exit 0, lower_tool ok fixtures=5; sabotage printed_result + 1 => sum_loop.mlc result exit 1; restored, gate green
+next_step: 86
 consult_count: 0
 consult_response:
 consult_verdict:
