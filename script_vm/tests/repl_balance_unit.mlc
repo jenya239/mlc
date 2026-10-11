@@ -1,13 +1,35 @@
 import { repl_balance_incomplete } from '../repl_balance'
 
-fn main() -> i32 = do
-  let open_block_incomplete = repl_balance_incomplete("fn value() -> i32 = do")
-  let closed_block_incomplete = repl_balance_incomplete("fn value() -> i32 = do 1 end")
-  if open_block_incomplete && !closed_block_incomplete then
-    println("[script_vm] repl_balance_unit ok")
-    0
+fn fail_check(check_name: string) -> i32 = do
+  println("[script_vm repl_balance_unit] FAIL " + check_name)
+  1
+end
+
+fn expect_incomplete(text: string, expected_incomplete: bool, check_name: string) -> i32 = do
+  let actual_incomplete = repl_balance_incomplete(text)
+  if expected_incomplete then
+    if actual_incomplete then 0 else fail_check(check_name)
   else
-    println("[script_vm repl_balance_unit] FAIL")
-    1
+    if actual_incomplete then fail_check(check_name) else 0
   end
+end
+
+fn main() -> i32 = do
+  let mut status = expect_incomplete("fn value() -> i32 = do", true, "open_do")
+  if status == 0 then
+    status = expect_incomplete("fn value() -> i32 = do 1 end", false, "closed_do")
+  end
+  if status == 0 then
+    status = expect_incomplete("'do'", false, "quoted_do")
+  end
+  if status == 0 then
+    status = expect_incomplete("// do", false, "comment_do")
+  end
+  if status == 0 then
+    status = expect_incomplete("fn value() -> i32 = do // end", true, "comment_hides_end")
+  end
+  if status == 0 then
+    println("[script_vm] repl_balance_unit ok")
+  end
+  status
 end
