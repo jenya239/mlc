@@ -1,0 +1,42 @@
+import {
+  ReplAnswer,
+  ReplIncomplete,
+  ReplAccepted,
+  ReplValueInt32,
+  ReplValueString,
+  ReplDiagnostic
+} from './repl_answer'
+import { repl_balance_incomplete } from './repl_balance'
+
+export type ReplSession = {
+  accepted_source: string,
+  pending: string
+}
+
+fn character_is_blank(character: string) -> bool =
+  character == " " || character == "\n" || character == "\t" || character == "\r"
+
+fn chunk_is_blank(chunk: string) -> bool = do
+  let mut index = 0
+  let mut blank = true
+  while index < chunk.length() && blank do
+    if !character_is_blank(chunk.substring(index, 1)) then
+      blank = false
+    end
+    index = index + 1
+  end
+  blank
+end
+
+export fn repl_session_new() -> ReplSession =
+  ReplSession { accepted_source: "", pending: "" }
+
+export fn repl_session_submit(session: ref mut ReplSession, chunk: string) -> ReplAnswer = do
+  let text_incomplete = repl_balance_incomplete(session.pending + chunk)
+  if chunk_is_blank(chunk) || text_incomplete then
+    session.pending = session.pending + chunk
+    ReplIncomplete
+  else
+    ReplIncomplete
+  end
+end

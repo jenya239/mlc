@@ -1,0 +1,15 @@
+export type ReplAnswer =
+  | ReplIncomplete
+  | ReplAccepted
+  | ReplValueInt32(i32)
+  | ReplValueString(i32)
+  | ReplDiagnostic(string, i32, i32)
+
+export fn repl_answer_print(answer: ReplAnswer) -> unit =
+  match answer {
+    ReplIncomplete => println("repl answer=incomplete"),
+    ReplAccepted => println("repl answer=accepted"),
+    ReplValueInt32(number) => println("repl answer=value kind=int32 number=" + number.to_string()),
+    ReplValueString(string_length) => println("repl answer=value kind=string length=" + string_length.to_string()),
+    ReplDiagnostic(code, line, column) => println("repl answer=diagnostic code=" + code + " line=" + line.to_string() + " column=" + column.to_string())
+  }
