@@ -1769,3 +1769,12 @@
 - `mlc_vm_load_module` есть. Функций `mlc_repl_*` нет. CONFIRMED `runtime/include/mlc/script_vm/embedding_abi.h:56`. Поиск `mlc_repl_` в этом заголовке пуст.
 - `script_tool` умеет `run` и `compile`. Подкоманды `repl` нет. CONFIRMED `script_vm/tools/script_tool.mlc:112-114`.
 - Записи ссылочные, pin `record_alias_shares_object`. CONFIRMED очередь 1–100, S3 пункт 4, и `script_vm/tests/lower_records_unit.mlc:143`.
+
+### S102 — сессия
+
+1. Модуль `script_vm/repl_session.mlc`, функция `repl_session_submit(session, chunk) -> ReplAnswer`. Сессия хранит `accepted_source` и `pending`.
+2. Пустой и пробельный кусок дописывается в `pending` и даёт `incomplete`.
+3. Кусок, у которого первое слово `fn`, `export` или `type`, — объявление. После баланса он дописывается в `accepted_source`, `pending` очищается, текст заново проходит `lower_source`. Успех — `accepted`. Диагностика — объявление не сохраняется.
+4. Иной завершённый кусок — выражение. Программа = `accepted_source` плюс `export fn repl_entry() -> i32 = do` + кусок + `end`. Вызов `repl_entry` без аргументов. Успех i32 — `value kind=int32`. Строка — отдельное правило шагов 143–144, до них строковый результат есть диагностика `repl_result_not_integer`.
+5. Пять печатных строк: `repl answer=incomplete`; `repl answer=accepted`; `repl answer=value kind=int32 number=<целое>`; `repl answer=value kind=string length=<целое>`; `repl answer=diagnostic code=<код> line=<целое> column=<целое>`.
+6. Между вводами куча не хранится.
