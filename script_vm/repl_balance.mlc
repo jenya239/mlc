@@ -27,7 +27,11 @@ fn skip_quoted(text: string, opening_index: i32, quote: string) -> i32 = do
       cursor = cursor + 1
     end
   end
-  cursor
+  if closed then
+    cursor
+  else
+    0 - 1
+  end
 end
 
 fn skip_line_comment(text: string, comment_index: i32) -> i32 = do
@@ -38,16 +42,57 @@ fn skip_line_comment(text: string, comment_index: i32) -> i32 = do
   cursor
 end
 
+fn skip_block_comment(text: string, comment_index: i32) -> i32 = do
+  let mut cursor = comment_index
+  let mut closed = false
+  while cursor + 1 < text.length() && !closed do
+    if text.substring(cursor, 2) == "*/" then
+      closed = true
+      cursor = cursor + 2
+    else
+      cursor = cursor + 1
+    end
+  end
+  if closed then
+    cursor
+  else
+    0 - 1
+  end
+end
+
 export fn repl_balance_incomplete(text: string) -> bool = do
   let mut index = 0
   let mut do_count = 0
   let mut end_count = 0
+  let mut brace_depth = 0
+  let mut quote_unclosed = false
+  let mut comment_unclosed = false
   while index < text.length() do
     let character = text.substring(index, 1)
     if character == "'" || character == "\"" then
-      index = skip_quoted(text, index, character)
+      let quoted_index = skip_quoted(text, index, character)
+      if quoted_index < 0 then
+        quote_unclosed = true
+        index = text.length()
+      else
+        index = quoted_index
+      end
     else if character == "/" && index + 1 < text.length() && text.substring(index + 1, 1) == "/" then
       index = skip_line_comment(text, index + 2)
+    else if character == "/" && index + 1 < text.length() && text.substring(index + 1, 1) == "*" then
+      let comment_index = skip_block_comment(text, index + 2)
+      if comment_index < 0 then
+        comment_unclosed = true
+        index = text.length()
+      else
+        index = comment_index
+      end
+    else if character == "{" then
+      brace_depth = brace_depth + 1
+      index = index + 1
+    else if character == "}" then
+      brace_depth = brace_depth - 1
+      index = index + 1
     else if word_at(text, index, "do") then
       do_count = do_count + 1
       index = index + 2
@@ -58,5 +103,5 @@ export fn repl_balance_incomplete(text: string) -> bool = do
       index = index + 1
     end
   end
-  do_count > end_count
+  do_count > end_count || brace_depth > 0 || quote_unclosed || comment_unclosed
 end
