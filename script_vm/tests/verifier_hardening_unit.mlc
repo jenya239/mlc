@@ -1,0 +1,214 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_upvalue_source_word,
+  instruction_opcode_add
+} from '../bytecode'
+import {
+  VerifyResult,
+  VerifyOk,
+  VerifyErr,
+  verify_function,
+  verify_err_register
+} from '../verifier'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_program,
+  run_err_verify
+} from '../interpreter'
+import { heap_new } from '../heap'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm verifier_hardening_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn one_source(is_local: i32, source_index: i32) -> [i32] = do
+  let mut sources: [i32] = []
+  sources.push(instruction_upvalue_source_word(is_local, source_index))
+  sources
+end
+
+fn error_code(result: VerifyResult) -> string =
+  match result {
+    VerifyErr(code, _word_index) => code,
+    VerifyOk => ""
+  }
+
+fn error_word_index(result: VerifyResult) -> i32 =
+  match result {
+    VerifyErr(_code, word_index) => word_index,
+    VerifyOk => 0 - 1
+  }
+
+fn is_verify_ok(result: VerifyResult) -> bool =
+  match result { VerifyOk => true, _ => false }
+
+fn run_error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn run_error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn single_prototype(words: [i32], register_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: [], register_count: register_count })
+  prototypes
+end
+
+fn expect_register_at(words: [i32], register_count: i32, constant_count: i32, word_index: i32, label: string) -> i32 = do
+  const result = verify_function(words, register_count, constant_count)
+  if error_code(result) == verify_err_register() && error_word_index(result) == word_index then
+    println(label)
+    0
+  else
+    fail(label + " code=" + error_code(result))
+  end
+end
+
+fn expect_verify_ok(words: [i32], register_count: i32, constant_count: i32, label: string) -> i32 = do
+  const result = verify_function(words, register_count, constant_count)
+  if is_verify_ok(result) then
+    println(label)
+    0
+  else
+    fail(label + " code=" + error_code(result))
+  end
+end
+
+fn expect_run_verify(words: [i32], register_count: i32, word_index: i32, label: string) -> i32 = do
+  const result = run_program(heap_new(), single_prototype(words, register_count), 0).result
+  if run_error_code(result) == run_err_verify() && run_error_word_index(result) == word_index then
+    println(label)
+    0
+  else
+    fail(label + " code=" + run_error_code(result))
+  end
+end
+
+fn call_window_words() -> [i32] = instruction_words_call(0, 2, 3)
+
+fn call_inside_words() -> [i32] = instruction_words_call(0, 2, 2)
+
+fn call_zero_words() -> [i32] = instruction_words_call(0, 4, 0)
+
+fn closure_words(is_local: i32, source_index: i32) -> [i32] =
+  instruction_words_make_closure(0, 1, one_source(is_local, source_index))
+
+fn int_constants(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(number))
+  constants
+end
+
+fn prototype(words: [i32], constants: [Value], register_count: i32) -> FunctionProto =
+  FunctionProto { words: words, constants: constants, register_count: register_count }
+
+fn argument_prototypes() -> [FunctionProto] = do
+  let mut callee_words: [i32] = []
+  callee_words = append_words(callee_words, instruction_words_load_const(1, 0))
+  callee_words = append_words(callee_words, instruction_words_binary(instruction_opcode_add(), 2, 0, 1))
+  callee_words = append_words(callee_words, instruction_words_return(2))
+  let mut entry_words: [i32] = []
+  entry_words = append_words(entry_words, instruction_words_make_closure(0, 1, empty_sources()))
+  entry_words = append_words(entry_words, instruction_words_load_const(1, 0))
+  entry_words = append_words(entry_words, instruction_words_call(2, 0, 1))
+  entry_words = append_words(entry_words, instruction_words_return(2))
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(prototype(entry_words, int_constants(41), 3))
+  prototypes.push(prototype(callee_words, int_constants(1), 3))
+  prototypes
+end
+
+fn prototype_verified(proto: FunctionProto) -> bool =
+  is_verify_ok(verify_function(proto.words, proto.register_count, proto.constants.length()))
+
+fn expect_char_frames(label: string) -> i32 = do
+  const prototypes = argument_prototypes()
+  if !prototype_verified(prototypes[0]) || !prototype_verified(prototypes[1]) then
+    return fail(label + " verify")
+  end
+  const result = run_program(heap_new(), prototypes, 0).result
+  if integer_result(result) == 42 then
+    println(label)
+    0
+  else
+    fail(label + " result=" + integer_result(result).to_string())
+  end
+end
+
+fn main() -> i32 = do
+  const window_status = expect_register_at(call_window_words(), 5, 0, 0, "call_window_out_of_range")
+  if window_status != 0 then
+    return window_status
+  end
+  const window_run_status = expect_run_verify(call_window_words(), 5, 0, "call_window_run_verify")
+  if window_run_status != 0 then
+    return window_run_status
+  end
+  const inside_status = expect_verify_ok(call_inside_words(), 5, 0, "call_window_inside")
+  if inside_status != 0 then
+    return inside_status
+  end
+  const zero_status = expect_verify_ok(call_zero_words(), 5, 0, "call_zero_arguments")
+  if zero_status != 0 then
+    return zero_status
+  end
+  const local_status = expect_register_at(closure_words(1, 9), 3, 0, 0, "closure_local_out_of_range")
+  if local_status != 0 then
+    return local_status
+  end
+  const local_ok_status = expect_verify_ok(closure_words(1, 2), 3, 0, "closure_local_inside")
+  if local_ok_status != 0 then
+    return local_ok_status
+  end
+  const parent_status = expect_verify_ok(closure_words(0, 200), 3, 0, "closure_parent_unchecked")
+  if parent_status != 0 then
+    return parent_status
+  end
+  const frames_status = expect_char_frames("char_frames_argument_closures")
+  if frames_status != 0 then
+    return frames_status
+  end
+  println("verifier_hardening checks=8")
+  println("[script_vm] verifier_hardening_unit ok")
+  0
+end
