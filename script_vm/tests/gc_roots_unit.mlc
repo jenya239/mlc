@@ -1,0 +1,261 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_words_jump,
+  instruction_words_jump_if_false,
+  instruction_words_new_record,
+  instruction_words_set_prop,
+  instruction_words_get_prop,
+  instruction_words_make_closure,
+  instruction_opcode_add,
+  instruction_opcode_le
+} from '../bytecode'
+import { run_limits_new, run_limits_unlimited } from '../run_result'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_program_with_args_limited
+} from '../interpreter'
+import {
+  heap_new,
+  heap_alloc_record,
+  heap_write_barrier,
+  heap_get_element,
+  heap_live_object_count,
+  heap_root_push
+} from '../heap'
+import { fixture_record_alloc_loop } from './bench_fixtures'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn limit_from_i32(number: i32) -> i64 = number
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm gc_roots_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn empty_upvalue_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn single_prototype(words: [i32], constants: [Value], register_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: constants, register_count: register_count })
+  prototypes
+end
+
+fn push_constant(constants: [Value], number: i32) -> [Value] = do
+  let mut next = constants
+  next.push(integer_value(number))
+  next
+end
+
+fn live_root_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(6, 0))
+  words = append_words(words, instruction_words_new_record(0, 1))
+  words = append_words(words, instruction_words_set_prop(0, 0, 6))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_load_const(4, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 5, 2, 3))
+  words = append_words(words, instruction_words_jump_if_false(5, 3))
+  words = append_words(words, instruction_words_new_record(1, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 2, 2, 4))
+  words = append_words(words, instruction_words_jump(0 - 5))
+  words = append_words(words, instruction_words_get_prop(7, 0, 0))
+  words = append_words(words, instruction_words_return(7))
+  words
+end
+
+fn live_root_prototypes() -> [FunctionProto] =
+  single_prototype(live_root_words(), push_constant(push_constant(push_constant([], 7), 1), 5000), 8)
+
+fn closure_callee_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn closure_entry_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(2, 0))
+  words = append_words(words, instruction_words_load_const(3, 1))
+  words = append_words(words, instruction_words_load_const(4, 0))
+  words = append_words(words, instruction_words_binary(instruction_opcode_le(), 5, 2, 3))
+  words = append_words(words, instruction_words_jump_if_false(5, 3))
+  words = append_words(words, instruction_words_make_closure(1, 1, empty_upvalue_sources()))
+  words = append_words(words, instruction_words_binary(instruction_opcode_add(), 2, 2, 4))
+  words = append_words(words, instruction_words_jump(0 - 5))
+  words = append_words(words, instruction_words_load_const(0, 2))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn closure_prototypes() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: closure_entry_words(),
+    constants: push_constant(push_constant(push_constant([], 1), 5000), 0),
+    register_count: 6
+  })
+  prototypes.push(FunctionProto {
+    words: closure_callee_words(),
+    constants: push_constant([], 0),
+    register_count: 1
+  })
+  prototypes
+end
+
+fn expect_churn() -> i32 = do
+  let outcome = run_program_with_args_limited(
+    heap_new(),
+    single_prototype(fixture_record_alloc_loop(20000).words, fixture_record_alloc_loop(20000).constants, fixture_record_alloc_loop(20000).register_count),
+    0,
+    empty_arguments(),
+    run_limits_new(limit_from_i32(0), 1000)
+  )
+  if integer_result(outcome.result) != 20000 then
+    return fail("churn_live_count result=" + integer_result(outcome.result).to_string())
+  end
+  let live_count = heap_live_object_count(outcome.heap)
+  if live_count <= 1000 then
+    println("churn_live_count")
+    0
+  else
+    fail("churn_live_count live=" + live_count.to_string())
+  end
+end
+
+fn expect_live_root() -> i32 = do
+  let outcome = run_program_with_args_limited(
+    heap_new(),
+    live_root_prototypes(),
+    0,
+    empty_arguments(),
+    run_limits_new(limit_from_i32(0), 100)
+  )
+  if integer_result(outcome.result) == 7 then
+    println("live_root_keeps_field")
+    0
+  else
+    fail("live_root_keeps_field result=" + integer_result(outcome.result).to_string())
+  end
+end
+
+fn expect_closure_garbage() -> i32 = do
+  let outcome = run_program_with_args_limited(
+    heap_new(),
+    closure_prototypes(),
+    0,
+    empty_arguments(),
+    run_limits_new(limit_from_i32(0), 100)
+  )
+  if integer_result(outcome.result) == 0 then
+    println("closure_garbage_returns")
+    0
+  else
+    fail("closure_garbage_returns result=" + integer_result(outcome.result).to_string())
+  end
+end
+
+fn expect_threshold() -> i32 = do
+  let prototype = fixture_record_alloc_loop(5000)
+  let outcome = run_program_with_args_limited(
+    heap_new(),
+    single_prototype(prototype.words, prototype.constants, prototype.register_count),
+    0,
+    empty_arguments(),
+    run_limits_unlimited()
+  )
+  if integer_result(outcome.result) != 5000 then
+    return fail("threshold_collects result=" + integer_result(outcome.result).to_string())
+  end
+  let live_count = heap_live_object_count(outcome.heap)
+  if live_count < 5000 then
+    println("threshold_collects")
+    0
+  else
+    fail("threshold_collects live=" + live_count.to_string())
+  end
+end
+
+fn expect_host_root() -> i32 = do
+  let allocated = heap_alloc_record(heap_new(), 1)
+  let written = heap_write_barrier(allocated.heap, allocated.value, 0, integer_value(7))
+  let rooted = heap_root_push(written, allocated.value)
+  let prototype = fixture_record_alloc_loop(5000)
+  let outcome = run_program_with_args_limited(
+    rooted,
+    single_prototype(prototype.words, prototype.constants, prototype.register_count),
+    0,
+    empty_arguments(),
+    run_limits_new(limit_from_i32(0), 100)
+  )
+  if integer_result(outcome.result) != 5000 then
+    return fail("host_root_survives result=" + integer_result(outcome.result).to_string())
+  end
+  let field = heap_get_element(outcome.heap, allocated.value, 0)
+  if integer_result(RunOk(field)) == 7 then
+    println("host_root_survives")
+    0
+  else
+    fail("host_root_survives field=" + integer_result(RunOk(field)).to_string())
+  end
+end
+
+fn main() -> i32 = do
+  const churn_status = expect_churn()
+  if churn_status != 0 then
+    return churn_status
+  end
+  const root_status = expect_live_root()
+  if root_status != 0 then
+    return root_status
+  end
+  const closure_status = expect_closure_garbage()
+  if closure_status != 0 then
+    return closure_status
+  end
+  const threshold_status = expect_threshold()
+  if threshold_status != 0 then
+    return threshold_status
+  end
+  const host_status = expect_host_root()
+  if host_status != 0 then
+    return host_status
+  end
+  println("gc_roots checks=5")
+  println("[script_vm] gc_roots_unit ok")
+  0
+end
