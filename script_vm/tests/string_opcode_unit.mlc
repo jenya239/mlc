@@ -1,13 +1,22 @@
-import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import { Value, ValueInt32, ValueHeapRef, value_encode, value_decode } from '../value'
 import {
   instruction_words_load_const,
   instruction_words_new_array,
+  instruction_words_set_index,
   instruction_words_binary,
   instruction_words_return
 } from '../bytecode'
-import { instruction_opcode_length } from '../bytecode_text'
-import { FunctionProto, RunResult, RunOk, run_program } from '../interpreter'
-import { heap_new } from '../heap'
+import { instruction_opcode_length, instruction_opcode_make_string } from '../bytecode_text'
+import { FunctionProto, RunResult, RunOk, RunErr, run_program, run_err_bounds } from '../interpreter'
+import {
+  Heap,
+  heap_new,
+  heap_type_array,
+  heap_object_type_id,
+  heap_element_count,
+  heap_get_element
+} from '../heap'
+import { heap_type_string } from '../heap_types'
 
 fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   let mut words = destination
@@ -63,10 +72,111 @@ fn result_number(result: RunResult) -> i32 =
     _ => 0 - 1
   }
 
+fn length_holds() -> bool =
+  result_number(run_program(heap_new(), prototypes(), 0).result) == 3
+
+fn push_constant(constants: [Value], number: i32) -> [Value] = do
+  let mut next = constants
+  next.push(integer_value(number))
+  next
+end
+
+fn make_string_constants() -> [Value] =
+  push_constant(push_constant(push_constant(push_constant(integer_constants(2), 0), 104), 1), 105)
+
+fn make_string_words() -> [i32] = do
+  let mut words = instruction_words_load_const(0, 0)
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_load_const(2, 3))
+  words = append_words(words, instruction_words_load_const(3, 4))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 4, 1, 0))
+  words = append_words(words, instruction_words_return(4))
+  words
+end
+
+fn bounds_constants() -> [Value] =
+  push_constant(push_constant(integer_constants(1), 0), 256)
+
+fn bounds_words() -> [i32] = do
+  let mut words = instruction_words_load_const(0, 0)
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_load_const(3, 2))
+  words = append_words(words, instruction_words_set_index(1, 2, 3))
+  words = append_words(words, instruction_words_binary(instruction_opcode_make_string(), 4, 1, 0))
+  words = append_words(words, instruction_words_return(4))
+  words
+end
+
+fn single_prototype(words: [i32], constants: [Value]) -> [FunctionProto] = do
+  let mut items: [FunctionProto] = []
+  items.push(FunctionProto { words: words, constants: constants, register_count: 5 })
+  items
+end
+
+fn object_id_of(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => object_id,
+    _ => 0 - 1
+  }
+
+fn bytes_are_104_and_105(heap: Heap, object_id: i32) -> bool = do
+  let reference = value_encode(ValueHeapRef(object_id))
+  decoded_integer(heap_get_element(heap, reference, 0)) == 104 && decoded_integer(heap_get_element(heap, reference, 1)) == 105
+end
+
+fn slot_is_original_array(heap: Heap, index: i32, string_id: i32) -> bool = do
+  let slot = heap.slots[index]
+  if slot.live && slot.header.type_id == heap_type_array() && slot.element_count == 2 && index != string_id then
+    bytes_are_104_and_105(heap, index)
+  else
+    false
+  end
+end
+
+fn array_still_holds(heap: Heap, string_id: i32) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < heap.slots.length() do
+    found = found || slot_is_original_array(heap, index, string_id)
+    index = index + 1
+  end
+  found
+end
+
+fn string_is_length_two(heap: Heap, value: Value) -> bool = do
+  let object_id = object_id_of(value)
+  if object_id < 0 then
+    false
+  else
+    heap_object_type_id(heap, value) == heap_type_string() && heap_element_count(heap, value) == 2 && bytes_are_104_and_105(heap, object_id) && array_still_holds(heap, object_id)
+  end
+end
+
+fn make_string_holds() -> bool = do
+  let outcome = run_program(heap_new(), single_prototype(make_string_words(), make_string_constants()), 0)
+  match outcome.result {
+    RunOk(value) => string_is_length_two(outcome.heap, value),
+    _ => false
+  }
+end
+
+fn bounds_holds() -> bool = do
+  let outcome = run_program(heap_new(), single_prototype(bounds_words(), bounds_constants()), 0)
+  match outcome.result {
+    RunErr(code, _word_index) => code == run_err_bounds(),
+    _ => false
+  }
+end
+
 fn main() -> i32 = do
-  let number = result_number(run_program(heap_new(), prototypes(), 0).result)
-  if number == 3 then
+  if length_holds() && make_string_holds() && bounds_holds() then
     println("length=3")
+    println("make_string length=2")
     println("[script_vm] string_opcode_unit ok")
     0
   else
