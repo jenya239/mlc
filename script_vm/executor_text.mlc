@@ -1,8 +1,15 @@
-import { Value, ValueInt32, value_encode } from './value'
+import { Value, ValueInt32, ValueHeapRef, value_encode, value_decode } from './value'
 import { DecodedAbc } from './bytecode'
-import { Heap, heap_in_place_type_id, heap_in_place_element_count, heap_type_array } from './heap'
-import { heap_type_string } from './heap_types'
-import { run_err_type } from './run_result'
+import {
+  Heap,
+  heap_in_place_type_id,
+  heap_in_place_element_count,
+  heap_in_place_read,
+  heap_in_place_alloc_array,
+  heap_type_array
+} from './heap'
+import { HeapSlot, ObjectHeader, heap_type_string } from './heap_types'
+import { run_err_type, run_err_bounds } from './run_result'
 import {
   VmState,
   vm_state_register,
@@ -10,6 +17,7 @@ import {
   vm_state_set_program_counter
 } from './vm_state'
 import { executor_step_continue, executor_fail } from './executor_step'
+import { executor_collect_if_needed } from './executor_gc'
 
 fn store_length(state: ref mut VmState, register_index: i32, length: i32, primary: i32, span: i32) -> i32 = do
   vm_state_set_register(state, register_index, value_encode(ValueInt32(length)))
@@ -40,5 +48,136 @@ export fn executor_exec_length(
     executor_fail(state, run_err_type(), primary)
   else
     store_length(state, decoded.a, length, primary, span)
+  end
+end
+
+fn object_id_of(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => object_id,
+    _ => 0 - 1
+  }
+
+fn byte_problem_code(number: i32) -> i32 =
+  if number < 0 || number > 255 then
+    1
+  else
+    0
+  end
+
+fn element_status(heap: ref mut Heap, array_value: Value, index: i32) -> i32 =
+  match value_decode(heap_in_place_read(heap, array_value, index)) {
+    ValueInt32(number) => byte_problem_code(number),
+    _ => 2
+  }
+
+fn array_byte_problem(heap: ref mut Heap, array_value: Value, count: i32) -> i32 = do
+  let mut index = 0
+  let mut problem = 0
+  while index < count && problem == 0 do
+    problem = element_status(heap, array_value, index)
+    index = index + 1
+  end
+  problem
+end
+
+fn read_byte(heap: ref mut Heap, array_value: Value, index: i32) -> i32 =
+  match value_decode(heap_in_place_read(heap, array_value, index)) {
+    ValueInt32(number) => number,
+    _ => 0
+  }
+
+fn write_string_byte(heap: ref mut Heap, object_id: i32, index: i32, byte_value: i32) -> unit = do
+  let slot = heap.slots[object_id]
+  heap.element_arena.set(slot.element_start + index, value_encode(ValueInt32(byte_value)))
+end
+
+fn write_string_bytes(heap: ref mut Heap, object_id: i32, array_value: Value, count: i32) -> unit = do
+  let mut index = 0
+  while index < count do
+    write_string_byte(heap, object_id, index, read_byte(heap, array_value, index))
+    index = index + 1
+  end
+end
+
+fn string_slot_from(slot: HeapSlot) -> HeapSlot =
+  HeapSlot {
+    header: ObjectHeader {
+      type_id: heap_type_string(),
+      gc_flags: slot.header.gc_flags,
+      object_flags: slot.header.object_flags,
+      shape_or_meta: slot.header.shape_or_meta
+    },
+    child: slot.child,
+    element_start: slot.element_start,
+    element_count: slot.element_count,
+    size_class: slot.size_class,
+    live: slot.live
+  }
+
+fn install_string(heap: ref mut Heap, array_value: Value, count: i32) -> Value = do
+  let allocated = heap_in_place_alloc_array(heap, count)
+  let object_id = object_id_of(allocated)
+  heap.slots.set(object_id, string_slot_from(heap.slots[object_id]))
+  write_string_bytes(heap, object_id, array_value, count)
+  allocated
+end
+
+fn store_value(state: ref mut VmState, register_index: i32, value: Value, primary: i32, span: i32) -> i32 = do
+  vm_state_set_register(state, register_index, value)
+  vm_state_set_program_counter(state, primary + span)
+  executor_step_continue()
+end
+
+fn fail_problem(state: ref mut VmState, problem: i32, primary: i32) -> i32 =
+  if problem == 1 then
+    executor_fail(state, run_err_bounds(), primary)
+  else
+    executor_fail(state, run_err_type(), primary)
+  end
+
+fn finish_make_string(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32,
+  array_value: Value
+) -> i32 = do
+  let count = heap_in_place_element_count(heap, array_value)
+  let problem = array_byte_problem(heap, array_value, count)
+  if problem != 0 then
+    fail_problem(state, problem, primary)
+  else
+    store_value(state, decoded.a, install_string(heap, array_value, count), primary, span)
+  end
+end
+
+fn make_string_after_collect(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> i32 = do
+  let array_value = vm_state_register(state, decoded.b)
+  if heap_in_place_type_id(heap, array_value) != heap_type_array() then
+    executor_fail(state, run_err_type(), primary)
+  else
+    finish_make_string(heap, state, decoded, primary, span, array_value)
+  end
+end
+
+export fn executor_exec_make_string(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> i32 = do
+  let collected = executor_collect_if_needed(state, heap, primary)
+  if collected != executor_step_continue() then
+    collected
+  else
+    make_string_after_collect(heap, state, decoded, primary, span)
   end
 end

@@ -72,8 +72,8 @@ import {
   executor_exec_get_upval,
   executor_exec_set_upval
 } from './executor_calls'
-import { executor_exec_length } from './executor_text'
-import { instruction_opcode_length } from './bytecode_text'
+import { executor_exec_length, executor_exec_make_string } from './executor_text'
+import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
 import {
   executor_exec_new_array,
   executor_exec_get_index,
@@ -189,6 +189,8 @@ fn dispatch_instruction(
     executor_exec_set_upval(heap, state, decoded, primary, span)
   else if decoded.opcode == instruction_opcode_length() then
     executor_exec_length(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_make_string() then
+    executor_exec_make_string(heap, state, decoded, primary, span)
   else
     executor_fail(state, run_err_unsupported_opcode(), primary)
   end

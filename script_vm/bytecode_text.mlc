@@ -1,1 +1,3 @@
 export fn instruction_opcode_length() -> i32 = 26
+
+export fn instruction_opcode_make_string() -> i32 = 27

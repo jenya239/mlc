@@ -1,8 +1,8 @@
-current_step: 135
-status: consult_ready
-last_result: blocked step 136: опкод 27 не исполняется, диспетчер в executor.mlc вне allowed_files
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/string_opcode_unit.mlc => exit 1, binary failed
-next_step: 136
-consult_count: 1
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261012_014259.md
+current_step: 136
+status: ready
+last_result: done step 136: make_string length=2, bounds на 256
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/string_opcode_unit.mlc => exit 0, length=3, make_string length=2, unit ok string_opcode; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+next_step: 137
+consult_count: 0
+consult_response:
 consult_verdict:

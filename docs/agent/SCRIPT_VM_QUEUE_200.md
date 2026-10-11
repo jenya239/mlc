@@ -718,7 +718,7 @@
 - kind: green
 - depends: 135
 - goal: опкод 27
-- allowed_files: `script_vm/bytecode_text.mlc`, `script_vm/executor_text.mlc`, `script_vm/verifier.mlc`, `STATE`
+- allowed_files: `script_vm/bytecode_text.mlc`, `script_vm/executor_text.mlc`, `script_vm/executor.mlc`, `script_vm/verifier.mlc`, `STATE`
 - forbidden: F0
 - contract: исходный массив остаётся. Новая строка — другой object id
 - red: none
