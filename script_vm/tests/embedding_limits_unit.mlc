@@ -1,0 +1,219 @@
+import { emb_call_export_bytes_limited } from '../embedding'
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueBool, ValueInt32, value_encode, value_decode } from '../value'
+import { decode_module, DecodedModule } from '../module_blob'
+import { emb_ok } from '../embedding_codes'
+import {
+  emb_instruction_limit,
+  emb_heap_limit,
+  emb_overflow,
+  emb_div_zero,
+  emb_type
+} from '../embedding_codes'
+import {
+  run_limits_new,
+  run_err_instruction_limit
+} from '../run_result'
+import {
+  RunOk,
+  RunErr,
+  run_program_with_args_limited
+} from '../interpreter'
+import { heap_new } from '../heap'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm embedding_limits_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn bool_raw(flag: bool) -> i64 = value_encode(ValueBool(flag)).raw
+
+fn limit_from_i32(number: i32) -> i64 = number
+
+fn integer_minimum() -> i32 = 0 - 2147483647 - 1
+
+fn negative_one() -> i32 = 0 - 1
+
+fn no_raw_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn no_values() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn two_integers(left: i32, right: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(left))
+  arguments.push(integer_raw(right))
+  arguments
+end
+
+fn integer_and_bool(number: i32, flag: bool) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments.push(bool_raw(flag))
+  arguments
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn spin_source() -> string =
+  "export fn spin() -> i32 = do\nwhile true do\nend\n0\nend\n"
+
+fn addition_source() -> string =
+  "export fn run() -> i32 = 2 + 3\n"
+
+fn two_records_source() -> string =
+  "type Point = { horizontal: i32, vertical: i32 }\nexport fn run() -> i32 = do\nconst first = Point { horizontal: 1, vertical: 2 }\nconst second = Point { horizontal: 3, vertical: 4 }\nfirst.horizontal + second.vertical\nend\n"
+
+fn garbage_source() -> string =
+  "type Point = { horizontal: i32, vertical: i32 }\nfn discard(index: i32) -> i32 = do\nconst point = Point { horizontal: index, vertical: 1 }\npoint.horizontal\nend\nexport fn run() -> i32 = do\nlet mut index = 0\nlet mut kept = 0\nwhile index < 100000 do\nkept = discard(index)\nindex = index + 1\nend\nkept\nend\n"
+
+fn divide_source() -> string =
+  "export fn divide(left: i32, right: i32) -> i32 = left / right\n"
+
+fn add_source() -> string =
+  "export fn add_values(left: i32, right: i32) -> i32 = left + right\n"
+
+fn export_proto_index(decoded_module: DecodedModule, export_name: string) -> i32 = do
+  let mut index = 0
+  let mut found = 0 - 1
+  while index < decoded_module.exports.length() && found < 0 do
+    if decoded_module.exports[index].name == export_name then
+      found = decoded_module.exports[index].proto_index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn interpreter_hit_instruction_limit(bytes: [i32], export_name: string, instruction_limit: i64) -> bool = do
+  const decoded = decode_module(bytes)
+  const proto_index = export_proto_index(decoded.module, export_name)
+  const result = run_program_with_args_limited(
+    heap_new(),
+    decoded.module.protos,
+    proto_index,
+    no_values(),
+    run_limits_new(instruction_limit, 0)
+  ).result
+  match result {
+    RunErr(code, _word_index) => code == run_err_instruction_limit(),
+    RunOk(_value) => false
+  }
+end
+
+fn limits_agree(source: string, export_name: string, instruction_count: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " diagnostics")
+  end
+  const instruction_limit = limit_from_i32(instruction_count)
+  const interpreter_limited = interpreter_hit_instruction_limit(lowered.bytes, export_name, instruction_limit)
+  const called = emb_call_export_bytes_limited(lowered.bytes, export_name, no_raw_arguments(), instruction_limit, 0)
+  if interpreter_limited != (called.code == emb_instruction_limit()) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn expect_code(source: string, export_name: string, arguments: [i64], instruction_count: i32, heap_limit: i32, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " diagnostics")
+  end
+  const called = emb_call_export_bytes_limited(
+    lowered.bytes,
+    export_name,
+    arguments,
+    limit_from_i32(instruction_count),
+    heap_limit
+  )
+  if called.code != expected then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_value(source: string, export_name: string, arguments: [i64], instruction_count: i32, heap_limit: i32, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " diagnostics")
+  end
+  const called = emb_call_export_bytes_limited(
+    lowered.bytes,
+    export_name,
+    arguments,
+    limit_from_i32(instruction_count),
+    heap_limit
+  )
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_integer(called.raw) != expected then
+    return fail(label + " value=" + decoded_integer(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  const spin_status = expect_code(spin_source(), "spin", no_raw_arguments(), 1000, 0, emb_instruction_limit(), "spin_limit_1000")
+  if spin_status != 0 then
+    return spin_status
+  end
+  const limit_four = limits_agree(addition_source(), "run", 4, "limit_four_agrees")
+  if limit_four != 0 then
+    return limit_four
+  end
+  const limit_three = limits_agree(addition_source(), "run", 3, "limit_three_agrees")
+  if limit_three != 0 then
+    return limit_three
+  end
+  const limit_zero = limits_agree(addition_source(), "run", 0, "limit_zero_agrees")
+  if limit_zero != 0 then
+    return limit_zero
+  end
+  const limit_negative = limits_agree(addition_source(), "run", 0 - 1, "limit_negative_agrees")
+  if limit_negative != 0 then
+    return limit_negative
+  end
+  const heap_one = expect_code(two_records_source(), "run", no_raw_arguments(), 0, 1, emb_heap_limit(), "heap_limit_one")
+  if heap_one != 0 then
+    return heap_one
+  end
+  const heap_two = expect_value(two_records_source(), "run", no_raw_arguments(), 0, 2, 5, "heap_limit_two")
+  if heap_two != 0 then
+    return heap_two
+  end
+  const garbage_status = expect_value(garbage_source(), "run", no_raw_arguments(), 0, 0, 99999, "garbage_unlimited")
+  if garbage_status != 0 then
+    return garbage_status
+  end
+  const divide_status = expect_code(divide_source(), "divide", two_integers(1, 0), 0, 0, emb_div_zero(), "divide_zero")
+  if divide_status != 0 then
+    return divide_status
+  end
+  const overflow_status = expect_code(divide_source(), "divide", two_integers(integer_minimum(), negative_one()), 0, 0, emb_overflow(), "divide_overflow")
+  if overflow_status != 0 then
+    return overflow_status
+  end
+  const type_status = expect_code(add_source(), "add_values", integer_and_bool(1, true), 0, 0, emb_type(), "add_bool")
+  if type_status != 0 then
+    return type_status
+  end
+  println("embedding_limits checks=11")
+  println("[script_vm] embedding_limits_unit ok")
+  0
+end
