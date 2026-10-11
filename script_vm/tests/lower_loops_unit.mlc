@@ -106,7 +106,7 @@ fn check_nested() -> i32 = do
 end
 
 fn floor_source() -> string =
-  "export fn floor_value(value: i32) -> i32 = do let mut result = value if result < 0 then result = 0 end result end"
+  "export fn floor_value(value: i32) -> i32 = do let mut result = value\nif result < 0 then result = 0 end result end"
 
 fn check_floor() -> i32 = do
   let mut status = expect_int(floor_source(), "floor_value", one_integer(5), 5, "floor_positive")
