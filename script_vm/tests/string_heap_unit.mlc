@@ -1,0 +1,21 @@
+import { heap_new } from '../heap'
+import {
+  string_heap_from_bytes,
+  string_heap_length,
+  string_heap_byte_at
+} from '../string_heap'
+
+fn main() -> i32 = do
+  let mut bytes: [i32] = []
+  bytes.push(104)
+  bytes.push(105)
+  let allocated = string_heap_from_bytes(heap_new(), bytes)
+  let length = string_heap_length(allocated.heap, allocated.value)
+  let first_byte = string_heap_byte_at(allocated.heap, allocated.value, 0)
+  if length == 2 && first_byte == 104 then
+    println("[script_vm] string_heap_unit ok")
+    0
+  else
+    1
+  end
+end
