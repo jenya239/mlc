@@ -1,8 +1,8 @@
-current_step: 123
+current_step: 124
 status: ready
-last_result: done step 123: green, missing_name даёт unknown_identifier line=3 column=36
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_session_unit.mlc => exit 0, repl answer=diagnostic code=unknown_identifier line=3 column=36, unit ok repl_session
-next_step: 124
+last_result: done step 124: первая диагностика лоуэра попадает в строку ответа
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_session_unit.mlc => unit ok repl_session; ruby scripts/run_script_vm_gate.rb repl_session => script_vm_gate ok units=1; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+next_step: 125
 consult_count: 0
 consult_response:
 consult_verdict:
