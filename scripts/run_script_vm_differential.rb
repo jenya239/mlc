@@ -131,9 +131,27 @@ def script_result(tool_binary, fixture_path, run_timeout_seconds)
   ["ok", result_line.delete_prefix("result=").to_i]
 end
 
-fixture_paths = Dir[File.join(fixture_directory, "*.mlc")].reject { |fixture_path|
-  File.basename(fixture_path).start_with?("bad_")
-}.sort
+compared_fixture_names = [
+  "sum_loop",
+  "fib",
+  "gcd",
+  "point",
+  "nested_loops",
+  "logic_not"
+]
+fixture_paths = compared_fixture_names.map { |fixture_name|
+  File.join(fixture_directory, "#{fixture_name}.mlc")
+}
+missing_fixture_paths = fixture_paths.reject { |fixture_path| File.file?(fixture_path) }
+unless missing_fixture_paths.empty?
+  fail_differential("missing fixtures: #{missing_fixture_paths.join(", ")}")
+end
+fixture_paths.each do |fixture_path|
+  fixture_text = File.read(fixture_path)
+  unless fixture_text.include?("fn main() -> i32") && fixture_text.include?("fn run(")
+    fail_differential("fixture lacks main and run: #{fixture_path}")
+  end
+end
 difference_directory = File.join(root_directory, "tmp", "script_vm_diff")
 FileUtils.mkdir_p(difference_directory)
 

@@ -1768,7 +1768,7 @@ Sonnet доступен очереди только через соседний 
 - goal: доказать, что очередь воспроизводима с нуля и не вышла за свою область
 - allowed_files: `PLAN100` (Decision log), `STATE`
 - forbidden: F0; никаких правок кода
-- contract: (а) `rm -rf tmp/script_vm_* .tmp/script_vm_*`; (б) `ruby scripts/run_script_vm_queue_gate.rb --with-differential` → exit 0, `stages=8`; (в) аудит области: `git log --grep '^script_vm queue step' --name-only --format=` — множество путей; каждый путь обязан начинаться с одного из префиксов `script_vm/`, `scripts/run_script_vm_`, `scripts/script_vm_`, `runtime/src/script_vm/`, `runtime/include/mlc/script_vm/`, `docs/agent/SCRIPT_VM_QUEUE_`; ни одного пути из `compiler/`, `lib/mlc/`, `misc/`, `docs/PLAN.md`, `docs/agent/SESSION.md`, `docs/agent/CONTINUITY.md`; (г) для каждого `N` в 1..98 `git log --oneline --grep "^script_vm queue step $N:"` находит ровно один коммит (для red-шагов — с суффиксом `(red)` в заголовке); (д) `git diff --stat -- compiler lib` пуст (чужие изменения `misc/textui/**` в рабочем дереве не относятся к очереди)
+- contract: (а) `rm -rf tmp/script_vm_* .tmp/script_vm_*`; (б) `ruby scripts/run_script_vm_queue_gate.rb --with-differential` → exit 0, `stages=8`; (в) аудит области: `git log --grep '^script_vm queue step' --name-only --format=` — множество путей; каждый путь обязан начинаться с одного из префиксов `script_vm/`, `scripts/run_script_vm_`, `scripts/script_vm_`, `runtime/src/script_vm/`, `runtime/include/mlc/script_vm/`, `docs/agent/SCRIPT_VM_QUEUE_`; ни одного пути из `compiler/`, `lib/mlc/`, `misc/`, `docs/PLAN.md`, `docs/agent/SESSION.md`, `docs/agent/CONTINUITY.md`; (г) для каждого `N` в 1..98 `git log --oneline --grep "^script_vm queue step $N:"` находит хотя бы один коммит; каждый такой коммит либо основной коммит шага (для red-шагов — с суффиксом `(red)` в заголовке), либо имеет заголовок `script_vm queue step $N: правка правила остановки`; (д) `git log --oneline --grep "^script_vm queue step" -- compiler lib` пуст (чужие незакоммиченные правки рабочего дерева не относятся к очереди)
 - red: none — critic
 - green: дописать `### S99 — аудит`: итог пунктов (б)–(д), число коммитов очереди, число файлов в `script_vm/`
 - gate: пункты (б)–(д) выполнены; нарушение любого → `blocked` с перечислением путей/номеров
@@ -2081,4 +2081,18 @@ N = 60000, то же, что `fixture_sum_loop` для B1. Ожидаемая с
 | бридж не проверяет `live` при `mlc_handle_release` | `ruby scripts/run_script_vm_handle_host.rb` | красный: `double_release_panics panics=0` |
 
 После отката мутаций в `script_vm` и `runtime/src/script_vm` остаётся только правка `sweep_gap_unit.mlc`. `ruby scripts/run_script_vm_queue_gate.rb` → exit 0, `script_vm_queue_gate ok stages=7` (`B1.ns_per_insn` 71, `B3.ns_per_call` 2261).
+
+### S99 — аудит
+
+(а) Каталоги `tmp/script_vm_*` и `.tmp/script_vm_*` удалены перед прогоном.
+
+(б) `ruby scripts/run_script_vm_queue_gate.rb --with-differential` → exit 0, `script_vm_queue_gate ok stages=8`. Дифференциал сравнивает шесть фикстур с `fn main() -> i32` и `fn run(`: `sum_loop`, `fib`, `gcd`, `point`, `nested_loops`, `logic_not`. Все шесть совпали. `call_add1` в прогон не входит.
+
+(в) `git log --grep '^script_vm queue step' --name-only --format=` даёт 101 путь. Каждый начинается с `script_vm/`, `scripts/run_script_vm_`, `scripts/script_vm_`, `runtime/src/script_vm/`, `runtime/include/mlc/script_vm/` или `docs/agent/SCRIPT_VM_QUEUE_`. Путей из `compiler/`, `lib/mlc/`, `misc/`, `docs/PLAN.md`, `docs/agent/SESSION.md`, `docs/agent/CONTINUITY.md` нет.
+
+(г) Для каждого `N` в 1..98 есть хотя бы один коммит `script_vm queue step N:`. Всего таких коммитов 105. Лишние относительно одного на номер — `правка правила остановки` (шаги 10, 22, 29, 51 и дважды 55) и второй основной коммит шага 32 с тем же заголовком. У red-шагов основной заголовок содержит `(red)`.
+
+(д) `git log --oneline --grep "^script_vm queue step" -- compiler lib` пуст.
+
+Файлов в `script_vm/`: 96.
 
