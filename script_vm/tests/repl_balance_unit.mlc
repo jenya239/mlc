@@ -29,6 +29,24 @@ fn main() -> i32 = do
     status = expect_incomplete("fn value() -> i32 = do // end", true, "comment_hides_end")
   end
   if status == 0 then
+    status = expect_incomplete("'hello", true, "unclosed_quote")
+  end
+  if status == 0 then
+    status = expect_incomplete("/*", true, "unclosed_block_comment")
+  end
+  if status == 0 then
+    status = expect_incomplete("/* do */", false, "block_comment_do")
+  end
+  if status == 0 then
+    status = expect_incomplete("doing", false, "word_doing")
+  end
+  if status == 0 then
+    status = expect_incomplete("{", true, "unclosed_brace")
+  end
+  if status == 0 then
+    status = expect_incomplete("do 1 end (", false, "unclosed_parenthesis")
+  end
+  if status == 0 then
     println("[script_vm] repl_balance_unit ok")
   end
   status
