@@ -1,0 +1,44 @@
+import { Value, ValueInt32, value_encode } from './value'
+import { DecodedAbc } from './bytecode'
+import { Heap, heap_in_place_type_id, heap_in_place_element_count, heap_type_array } from './heap'
+import { heap_type_string } from './heap_types'
+import { run_err_type } from './run_result'
+import {
+  VmState,
+  vm_state_register,
+  vm_state_set_register,
+  vm_state_set_program_counter
+} from './vm_state'
+import { executor_step_continue, executor_fail } from './executor_step'
+
+fn store_length(state: ref mut VmState, register_index: i32, length: i32, primary: i32, span: i32) -> i32 = do
+  vm_state_set_register(state, register_index, value_encode(ValueInt32(length)))
+  vm_state_set_program_counter(state, primary + span)
+  executor_step_continue()
+end
+
+fn length_of_value(heap: ref mut Heap, value: Value) -> i32 = do
+  let type_id = heap_in_place_type_id(heap, value)
+  if type_id == heap_type_array() then
+    heap_in_place_element_count(heap, value)
+  else if type_id == heap_type_string() then
+    heap_in_place_element_count(heap, value)
+  else
+    0 - 1
+  end
+end
+
+export fn executor_exec_length(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> i32 = do
+  let length = length_of_value(heap, vm_state_register(state, decoded.b))
+  if length < 0 then
+    executor_fail(state, run_err_type(), primary)
+  else
+    store_length(state, decoded.a, length, primary, span)
+  end
+end

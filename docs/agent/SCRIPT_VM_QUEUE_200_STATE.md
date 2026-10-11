@@ -1,8 +1,8 @@
-current_step: 133
+current_step: 134
 status: ready
-last_result: done step 133: red, нет символа bytecode_text.mlc
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/string_opcode_unit.mlc => exit 1, error: file not found: script_vm/bytecode_text.mlc
-next_step: 134
+last_result: done step 134: length=3
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/string_opcode_unit.mlc => exit 0, length=3, unit ok string_opcode; ruby scripts/run_script_vm_gate.rb string_opcode arrays_records => script_vm_gate ok units=2; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+next_step: 135
 consult_count: 0
 consult_response:
 consult_verdict:

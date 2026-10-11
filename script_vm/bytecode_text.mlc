@@ -1,0 +1,1 @@
+export fn instruction_opcode_length() -> i32 = 26
