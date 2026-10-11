@@ -83,3 +83,54 @@ export fn string_heap_byte_at(heap: Heap, value: Value, index: i32) -> i32 =
   else
     decoded_byte(heap_get_element(heap, value, index))
   end
+
+fn bytes_match(heap: Heap, left: Value, right: Value, length: i32) -> bool = do
+  let mut index = 0
+  let mut same = true
+  while index < length && same do
+    if string_heap_byte_at(heap, left, index) != string_heap_byte_at(heap, right, index) then
+      same = false
+    end
+    index = index + 1
+  end
+  same
+end
+
+export fn string_heap_equal(heap: Heap, left: Value, right: Value) -> bool = do
+  let left_length = string_heap_length(heap, left)
+  let right_length = string_heap_length(heap, right)
+  if left_length != right_length then
+    false
+  else
+    bytes_match(heap, left, right, left_length)
+  end
+end
+
+fn collected_bytes(heap: Heap, value: Value) -> [i32] = do
+  let mut bytes: [i32] = []
+  let mut index = 0
+  let length = string_heap_length(heap, value)
+  while index < length do
+    bytes.push(string_heap_byte_at(heap, value, index))
+    index = index + 1
+  end
+  bytes
+end
+
+fn joined_bytes(left_bytes: [i32], right_bytes: [i32]) -> [i32] = do
+  let mut bytes: [i32] = []
+  let mut index = 0
+  while index < left_bytes.length() do
+    bytes.push(left_bytes[index])
+    index = index + 1
+  end
+  let mut right_index = 0
+  while right_index < right_bytes.length() do
+    bytes.push(right_bytes[right_index])
+    right_index = right_index + 1
+  end
+  bytes
+end
+
+export fn string_heap_concatenate(heap: Heap, left: Value, right: Value) -> HeapAlloc =
+  string_heap_from_bytes(heap, joined_bytes(collected_bytes(heap, left), collected_bytes(heap, right)))
