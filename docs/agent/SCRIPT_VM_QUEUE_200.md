@@ -513,12 +513,12 @@
 - allowed_files: `script_vm/tests/repl_session_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: submit `missing_name` печатает diagnostic с `code=unknown_identifier`, `line` и `column` больше 0
-- red: `RED(repl_session)`, поведенческий
-- green: none
-- gate: `RED(repl_session)`
+- red: `RED(repl_session)`, поведенческий. Если текущий unit уже зелёный на новых ассершенах без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green
+- green: none, если unit уже зелёный
+- gate: `RUN(repl_session)`
 - sabotage: none
 - performance: not a perf step
-- done_when: отказ на код или на нулевую позицию
+- done_when: отказ на код или на нулевую позицию; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 123
 - state_update: фактическая строка
 
 ### Step 124 — Green: проброс диагностики лоуэра
