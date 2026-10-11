@@ -1,5 +1,5 @@
 import { Value, ValueNil, ValueHeapRef, value_encode, value_decode } from './value'
-import { ObjectHeader, HeapSlot, Heap, slots_with } from './heap_types'
+import { ObjectHeader, HeapSlot, Heap } from './heap_types'
 
 export fn heap_root_push(heap: Heap, value: Value) -> Heap = do
   let mut roots = heap.roots
@@ -26,129 +26,239 @@ export fn heap_root_clear(heap: Heap) -> Heap =
     write_barrier_hits: heap.write_barrier_hits
   }
 
-fn mark_value(heap: Heap, value: Value) -> Heap =
-  match value_decode(value) {
-    ValueHeapRef(object_id) => mark_object(heap, object_id),
-    _ => heap
-  }
+export fn heap_arena_cell_count(heap: Heap) -> i32 = heap.element_arena.length()
 
-fn mark_arena_span(heap: Heap, element_start: i32, element_count: i32) -> Heap = do
-  let mut next = heap
-  let mut index = 0
-  while index < element_count do
-    next = mark_value(next, next.element_arena[element_start + index])
-    index = index + 1
-  end
-  next
+fn empty_values() -> [Value] = do
+  let mut values: [Value] = []
+  values
 end
 
-fn mark_object(heap: Heap, object_id: i32) -> Heap = do
-  if object_id < 0 then
-    return heap
-  end
-  if object_id >= heap.slots.length() then
-    return heap
-  end
-  const slot = heap.slots[object_id]
-  if !slot.live then
-    return heap
-  end
-  if (slot.header.gc_flags & 1) != 0 then
-    return heap
-  end
-  const marked_header = ObjectHeader {
-    type_id: slot.header.type_id,
-    gc_flags: slot.header.gc_flags | 1,
-    object_flags: slot.header.object_flags,
-    shape_or_meta: slot.header.shape_or_meta
-  }
-  const marked_slot = HeapSlot {
-    header: marked_header,
+fn slot_is_marked(slot: HeapSlot) -> bool =
+  (slot.header.gc_flags & 1) != 0
+
+fn marked_slot(slot: HeapSlot) -> HeapSlot =
+  HeapSlot {
+    header: ObjectHeader {
+      type_id: slot.header.type_id,
+      gc_flags: slot.header.gc_flags | 1,
+      object_flags: slot.header.object_flags,
+      shape_or_meta: slot.header.shape_or_meta
+    },
     child: slot.child,
     element_start: slot.element_start,
     element_count: slot.element_count,
     size_class: slot.size_class,
     live: true
   }
-  let mut next = Heap {
-    slots: slots_with(heap.slots, object_id, marked_slot),
-    element_arena: heap.element_arena,
-    free_object_ids: heap.free_object_ids,
-    free_object_count: heap.free_object_count,
-    roots: heap.roots,
-    live_count: heap.live_count,
-    write_barrier_hits: heap.write_barrier_hits
+
+fn unmarked_slot(slot: HeapSlot) -> HeapSlot =
+  HeapSlot {
+    header: ObjectHeader {
+      type_id: slot.header.type_id,
+      gc_flags: slot.header.gc_flags - 1,
+      object_flags: slot.header.object_flags,
+      shape_or_meta: slot.header.shape_or_meta
+    },
+    child: slot.child,
+    element_start: slot.element_start,
+    element_count: slot.element_count,
+    size_class: slot.size_class,
+    live: true
   }
-  next = mark_value(next, slot.child)
-  mark_arena_span(next, slot.element_start, slot.element_count)
+
+fn dead_slot(slot: HeapSlot) -> HeapSlot =
+  HeapSlot {
+    header: ObjectHeader {
+      type_id: 0,
+      gc_flags: 0,
+      object_flags: 0,
+      shape_or_meta: 0
+    },
+    child: value_encode(ValueNil),
+    element_start: 0,
+    element_count: 0,
+    size_class: slot.size_class,
+    live: false
+  }
+
+fn relocated_slot(slot: HeapSlot, element_start: i32) -> HeapSlot =
+  HeapSlot {
+    header: slot.header,
+    child: slot.child,
+    element_start: element_start,
+    element_count: slot.element_count,
+    size_class: slot.size_class,
+    live: true
+  }
+
+fn stored_stack_id(stack_ids: ref mut [i32], stack_count: i32, object_id: i32) -> i32 = do
+  if stack_count < stack_ids.length() then
+    stack_ids.set(stack_count, object_id)
+    return stack_count + 1
+  end
+  stack_ids.push(object_id)
+  stack_count + 1
 end
 
-fn stored_free_object_id(free_object_ids: ref mut [i32], free_object_count: i32, object_id: i32) -> i32 = do
-  if free_object_count < free_object_ids.length() then
-    free_object_ids.set(free_object_count, object_id)
-    return free_object_count + 1
+fn enqueue_live_object(
+  heap: ref mut Heap,
+  work_ids: ref mut [i32],
+  work_count: i32,
+  object_id: i32
+) -> i32 = do
+  const slot = heap.slots[object_id]
+  if !slot.live || slot_is_marked(slot) then
+    return work_count
   end
-  free_object_ids.push(object_id)
-  free_object_count + 1
+  heap.slots.set(object_id, marked_slot(slot))
+  stored_stack_id(work_ids, work_count, object_id)
+end
+
+fn enqueue_object_id(
+  heap: ref mut Heap,
+  work_ids: ref mut [i32],
+  work_count: i32,
+  object_id: i32
+) -> i32 = do
+  if object_id < 0 || object_id >= heap.slots.length() then
+    return work_count
+  end
+  enqueue_live_object(heap, work_ids, work_count, object_id)
+end
+
+fn enqueue_value(
+  heap: ref mut Heap,
+  work_ids: ref mut [i32],
+  work_count: i32,
+  value: Value
+) -> i32 =
+  match value_decode(value) {
+    ValueHeapRef(object_id) => enqueue_object_id(heap, work_ids, work_count, object_id),
+    _ => work_count
+  }
+
+fn enqueue_slot_children(
+  heap: ref mut Heap,
+  work_ids: ref mut [i32],
+  work_count: i32,
+  object_id: i32
+) -> i32 = do
+  const slot = heap.slots[object_id]
+  let mut count = enqueue_value(heap, work_ids, work_count, slot.child)
+  let mut index = 0
+  while index < slot.element_count do
+    const element = heap.element_arena[slot.element_start + index]
+    count = enqueue_value(heap, work_ids, count, element)
+    index = index + 1
+  end
+  count
+end
+
+fn enqueue_values(
+  heap: ref mut Heap,
+  work_ids: ref mut [i32],
+  work_count: i32,
+  values: [Value]
+) -> i32 = do
+  let mut count = work_count
+  let mut index = 0
+  while index < values.length() do
+    count = enqueue_value(heap, work_ids, count, values[index])
+    index = index + 1
+  end
+  count
+end
+
+fn drain_work(heap: ref mut Heap, work_ids: ref mut [i32], work_count: i32) -> unit = do
+  let mut count = work_count
+  while count > 0 do
+    count = count - 1
+    const object_id = work_ids[count]
+    count = enqueue_slot_children(heap, work_ids, count, object_id)
+  end
+end
+
+fn sweep_one(
+  heap: ref mut Heap,
+  free_object_ids: ref mut [i32],
+  free_object_count: i32,
+  object_id: i32
+) -> i32 = do
+  const slot = heap.slots[object_id]
+  if !slot.live then
+    return free_object_count
+  end
+  if slot_is_marked(slot) then
+    heap.slots.set(object_id, unmarked_slot(slot))
+    heap.live_count = heap.live_count + 1
+    return free_object_count
+  end
+  heap.slots.set(object_id, dead_slot(slot))
+  stored_stack_id(free_object_ids, free_object_count, object_id)
+end
+
+fn sweep_heap(heap: ref mut Heap) -> unit = do
+  let mut free_object_ids = heap.free_object_ids
+  let mut free_object_count = heap.free_object_count
+  heap.live_count = 0
+  let mut object_id = 0
+  while object_id < heap.slots.length() do
+    free_object_count = sweep_one(heap, free_object_ids, free_object_count, object_id)
+    object_id = object_id + 1
+  end
+  heap.free_object_ids = free_object_ids
+  heap.free_object_count = free_object_count
+end
+
+fn append_slot_elements(heap: ref mut Heap, new_arena: ref mut [Value], slot: HeapSlot) -> unit = do
+  let mut index = 0
+  while index < slot.element_count do
+    new_arena.push(heap.element_arena[slot.element_start + index])
+    index = index + 1
+  end
+end
+
+fn relocate_occupied_slot(
+  heap: ref mut Heap,
+  new_arena: ref mut [Value],
+  object_id: i32,
+  slot: HeapSlot
+) -> unit = do
+  if slot.element_count > 0 then
+  const element_start = new_arena.length()
+  append_slot_elements(heap, new_arena, slot)
+  heap.slots.set(object_id, relocated_slot(slot, element_start))
+  end
+end
+
+fn relocate_live_slot(heap: ref mut Heap, new_arena: ref mut [Value], object_id: i32) -> unit = do
+  const slot = heap.slots[object_id]
+  if slot.live then
+    relocate_occupied_slot(heap, new_arena, object_id, slot)
+  end
+end
+
+fn compact_arena(heap: ref mut Heap) -> unit = do
+  let mut new_arena: [Value] = []
+  let mut object_id = 0
+  while object_id < heap.slots.length() do
+    relocate_live_slot(heap, new_arena, object_id)
+    object_id = object_id + 1
+  end
+  heap.element_arena = new_arena
+end
+
+export fn heap_in_place_collect(heap: ref mut Heap, extra_roots: [Value]) -> unit = do
+  let mut work_ids: [i32] = []
+  let mut work_count = enqueue_values(heap, work_ids, 0, heap.roots)
+  work_count = enqueue_values(heap, work_ids, work_count, extra_roots)
+  drain_work(heap, work_ids, work_count)
+  sweep_heap(heap)
+  compact_arena(heap)
 end
 
 export fn heap_collect(heap: Heap) -> Heap = do
   let mut next = heap
-  let mut root_index = 0
-  while root_index < next.roots.length() do
-    next = mark_value(next, next.roots[root_index])
-    root_index = root_index + 1
-  end
-  let mut slots = next.slots
-  let mut free_object_ids = next.free_object_ids
-  let mut free_object_count = next.free_object_count
-  let mut live_count = 0
-  let mut object_id = 0
-  while object_id < slots.length() do
-    const slot = slots[object_id]
-    if slot.live then
-      if (slot.header.gc_flags & 1) != 0 then
-        const cleared = ObjectHeader {
-          type_id: slot.header.type_id,
-          gc_flags: slot.header.gc_flags - 1,
-          object_flags: slot.header.object_flags,
-          shape_or_meta: slot.header.shape_or_meta
-        }
-        slots = slots_with(slots, object_id, HeapSlot {
-          header: cleared,
-          child: slot.child,
-          element_start: slot.element_start,
-          element_count: slot.element_count,
-          size_class: slot.size_class,
-          live: true
-        })
-        live_count = live_count + 1
-      else
-        slots = slots_with(slots, object_id, HeapSlot {
-          header: ObjectHeader {
-            type_id: 0,
-            gc_flags: 0,
-            object_flags: 0,
-            shape_or_meta: 0
-          },
-          child: value_encode(ValueNil),
-          element_start: slot.element_start,
-          element_count: slot.element_count,
-          size_class: slot.size_class,
-          live: false
-        })
-        free_object_count = stored_free_object_id(free_object_ids, free_object_count, object_id)
-      end
-    end
-    object_id = object_id + 1
-  end
-  Heap {
-    slots: slots,
-    element_arena: next.element_arena,
-    free_object_ids: free_object_ids,
-    free_object_count: free_object_count,
-    roots: next.roots,
-    live_count: live_count,
-    write_barrier_hits: next.write_barrier_hits
-  }
+  heap_in_place_collect(next, empty_values())
+  next
 end

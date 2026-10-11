@@ -50,7 +50,9 @@ import {
 import {
   heap_root_push,
   heap_root_clear,
-  heap_collect
+  heap_collect,
+  heap_in_place_collect,
+  heap_arena_cell_count
 } from './heap_collect'
 export fn heap_closure_proto_index(heap: Heap, closure: Value) -> i32 = do
   let mut next = heap

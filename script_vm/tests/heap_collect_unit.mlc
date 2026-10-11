@@ -9,10 +9,10 @@ import {
   heap_in_place_alloc_array,
   heap_in_place_alloc_record,
   heap_in_place_write,
-  heap_in_place_read,
   heap_in_place_root_push,
   heap_in_place_collect,
-  heap_arena_cell_count
+  heap_arena_cell_count,
+  heap_get_element
 } from '../heap'
 
 fn fail(message: string) -> i32 = do
@@ -43,6 +43,8 @@ end
 fn chain_length() -> i32 = 100000
 
 fn array_length() -> i32 = 100
+
+fn doomed_length() -> i32 = 8
 
 fn array_count() -> i32 = 10
 
@@ -142,14 +144,18 @@ fn array_matches(heap: ref mut Heap, array: Value, length: i32) -> bool = do
   let mut index = 0
   let mut matched = true
   while index < length && matched do
-    matched = decoded_int32(heap_in_place_read(heap, array, index)) == index + 1
+    matched = decoded_int32(heap_get_element(heap, array, index)) == index + 1
     index = index + 1
   end
   matched
 end
 
 fn compaction_status(heap: ref mut Heap) -> i32 = do
+  const doomed = heap_in_place_alloc_array(heap, doomed_length())
   const arrays = build_arrays(heap)
+  if value_raw_equal(doomed, arrays[0]) then
+    return fail("arena_doomed_distinct")
+  end
   fill_array(heap, arrays[0], array_length())
   heap_in_place_root_push(heap, arrays[0])
   heap_in_place_collect(heap, empty_values())
