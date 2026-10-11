@@ -1,0 +1,175 @@
+import {
+  Value,
+  ValueInt32,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_opcode_div
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_with_heap,
+  run_program,
+  run_err_overflow
+} from '../interpreter'
+import { heap_new } from '../heap'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn int32_minimum() -> i32 = 0 - 2147483647 - 1
+
+fn int32_maximum() -> i32 = 2147483647
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm int32_div_overflow_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn push_value(values: [Value], value: Value) -> [Value] = do
+  let mut next = values
+  next.push(value)
+  next
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn results_match(left_result: RunResult, right_result: RunResult) -> bool =
+  match left_result {
+    RunOk(left_value) => match right_result {
+      RunOk(right_value) => value_raw_equal(left_value, right_value),
+      _ => false
+    },
+    RunErr(left_code, left_word_index) => match right_result {
+      RunErr(right_code, right_word_index) =>
+        left_code == right_code && left_word_index == right_word_index,
+      _ => false
+    }
+  }
+
+fn single_prototype(words: [i32], constants: [Value], register_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: constants, register_count: register_count })
+  prototypes
+end
+
+fn execute_both(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+  const heap_result = run_with_heap(heap_new(), words, constants, register_count).result
+  const program_result = run_program(
+    heap_new(),
+    single_prototype(words, constants, register_count),
+    0
+  ).result
+  if results_match(heap_result, program_result) then
+    heap_result
+  else
+    RunErr("runner_mismatch", 0)
+  end
+end
+
+fn division_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_binary(instruction_opcode_div(), 2, 0, 1))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn division_word_index() -> i32 = 2
+
+fn division_constants(left_value: Value, right_value: Value) -> [Value] =
+  push_value(push_value([], left_value), right_value)
+
+fn check_quotient(left_number: i32, right_number: i32, expected: i32, label: string) -> i32 = do
+  const result = execute_both(
+    division_words(),
+    division_constants(integer_value(left_number), integer_value(right_number)),
+    3
+  )
+  if integer_result(result) == expected then
+    println(label)
+    0
+  else
+    fail(label + " expected " + expected.to_string() + " got " + integer_result(result).to_string())
+  end
+end
+
+fn check_overflow(left_number: i32, right_number: i32, label: string) -> i32 = do
+  println(label)
+  const result = execute_both(
+    division_words(),
+    division_constants(integer_value(left_number), integer_value(right_number)),
+    3
+  )
+  if error_code(result) == run_err_overflow() && error_word_index(result) == division_word_index() then
+    0
+  else
+    fail(label)
+  end
+end
+
+fn main() -> i32 = do
+  const seven_status = check_quotient(7, 0 - 1, 0 - 7, "seven_div_neg_one")
+  if seven_status != 0 then
+    return seven_status
+  end
+  const maximum_status = check_quotient(int32_maximum(), 0 - 1, 0 - 2147483647, "int_max_div_neg_one")
+  if maximum_status != 0 then
+    return maximum_status
+  end
+  const zero_status = check_quotient(0, 0 - 1, 0, "zero_div_neg_one")
+  if zero_status != 0 then
+    return zero_status
+  end
+  const minimum_status = check_quotient(int32_minimum(), 1, int32_minimum(), "int_min_div_one")
+  if minimum_status != 0 then
+    return minimum_status
+  end
+  const negative_status = check_quotient(0 - 7, 2, 0 - 3, "neg_seven_div_two")
+  if negative_status != 0 then
+    return negative_status
+  end
+  const overflow_status = check_overflow(int32_minimum(), 0 - 1, "int_min_div_neg_one")
+  if overflow_status != 0 then
+    return overflow_status
+  end
+  println("int32_div_overflow checks=6")
+  println("[script_vm] int32_div_overflow_unit ok")
+  0
+end
