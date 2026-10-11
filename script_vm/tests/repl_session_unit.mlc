@@ -28,12 +28,36 @@ fn expect_answer(answer: ReplAnswer, expected_line: string) -> i32 = do
   end
 end
 
+fn expect_diagnostic(answer: ReplAnswer) -> i32 = do
+  let line = answer_line(answer)
+  println(line)
+  match answer {
+    ReplDiagnostic(_code, _line, _column) => 0,
+    _ => 1
+  }
+end
+
 fn main() -> i32 = do
   let mut session = repl_session_new()
   let mut status = expect_answer(repl_session_submit(session, ""), "repl answer=incomplete")
   if status == 0 then
     status = expect_answer(
       repl_session_submit(session, "export fn identity(number: i32) -> i32 = number"),
+      "repl answer=accepted"
+    )
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "identity(4)"),
+      "repl answer=value kind=int32 number=4"
+    )
+  end
+  if status == 0 then
+    status = expect_diagnostic(repl_session_submit(session, "export fn broken( -> i32 = 1"))
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "export fn spare() -> i32 = 1"),
       "repl answer=accepted"
     )
   end
