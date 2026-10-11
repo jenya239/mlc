@@ -1,0 +1,57 @@
+import {
+  ReplSession,
+  repl_session_new,
+  repl_session_submit,
+  ReplAnswer,
+  ReplAccepted,
+  ReplValueInt32
+} from '../repl_session'
+
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+fn answer_is_accepted(answer: ReplAnswer) -> bool =
+  match answer {
+    ReplAccepted => true,
+    _ => false
+  }
+
+fn answer_is_twenty(answer: ReplAnswer) -> bool =
+  match answer {
+    ReplValueInt32(number) => number == 20,
+    _ => false
+  }
+
+fn declaration_source(number: i32) -> string =
+  "export fn function_" + number.to_string() + "() -> i32 = " + number.to_string()
+
+fn submit_declarations(session: ref mut ReplSession) -> i32 = do
+  let mut number = 1
+  let mut accepted_count = 0
+  while number <= 20 do
+    let answer = repl_session_submit(session, declaration_source(number))
+    if answer_is_accepted(answer) then
+      accepted_count = accepted_count + 1
+    end
+    number = number + 1
+  end
+  accepted_count
+end
+
+fn measure_scenario() -> i32 = do
+  let mut session = repl_session_new()
+  let started_microseconds = script_vm_perf_now_us()
+  let accepted_count = submit_declarations(session)
+  let answer = repl_session_submit(session, "function_20()")
+  let elapsed_microseconds = script_vm_perf_now_us() - started_microseconds
+  if accepted_count == 20 && answer_is_twenty(answer) && elapsed_microseconds >= 0 then
+    println("repl_submit_us=" + elapsed_microseconds.to_string())
+    println("[script_vm] repl_budget_unit ok")
+    0
+  else
+    1
+  end
+end
+
+fn main() -> i32 =
+  measure_scenario()
