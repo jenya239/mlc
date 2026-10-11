@@ -2,17 +2,45 @@ import { heap_new } from '../heap'
 import {
   string_heap_from_bytes,
   string_heap_length,
-  string_heap_byte_at
+  string_heap_byte_at,
+  string_heap_equal,
+  string_heap_concatenate
 } from '../string_heap'
 
-fn main() -> i32 = do
+fn empty_byte_list() -> [i32] = do
   let mut bytes: [i32] = []
-  bytes.push(104)
-  bytes.push(105)
-  let allocated = string_heap_from_bytes(heap_new(), bytes)
-  let length = string_heap_length(allocated.heap, allocated.value)
-  let first_byte = string_heap_byte_at(allocated.heap, allocated.value, 0)
-  if length == 2 && first_byte == 104 then
+  bytes
+end
+
+fn byte_list_one(byte_value: i32) -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes.push(byte_value)
+  bytes
+end
+
+fn byte_list_two(first_byte: i32, second_byte: i32) -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes.push(first_byte)
+  bytes.push(second_byte)
+  bytes
+end
+
+fn strings_hold() -> bool = do
+  let hi = string_heap_from_bytes(heap_new(), byte_list_two(104, 105))
+  let hi_ok = string_heap_length(hi.heap, hi.value) == 2 && string_heap_byte_at(hi.heap, hi.value, 0) == 104
+  let letter_h = string_heap_from_bytes(hi.heap, byte_list_one(104))
+  let letter_i = string_heap_from_bytes(letter_h.heap, byte_list_one(105))
+  let joined = string_heap_concatenate(letter_i.heap, letter_h.value, letter_i.value)
+  let joined_ok = string_heap_length(joined.heap, joined.value) == 2 && string_heap_byte_at(joined.heap, joined.value, 0) == 104 && string_heap_byte_at(joined.heap, joined.value, 1) == 105
+  let originals_ok = string_heap_length(joined.heap, letter_h.value) == 1 && string_heap_byte_at(joined.heap, letter_h.value, 0) == 104 && string_heap_length(joined.heap, letter_i.value) == 1 && string_heap_byte_at(joined.heap, letter_i.value, 0) == 105
+  let different_ok = !string_heap_equal(joined.heap, letter_h.value, letter_i.value)
+  let empty = string_heap_from_bytes(joined.heap, empty_byte_list())
+  let empty_ok = string_heap_length(empty.heap, empty.value) == 0
+  hi_ok && joined_ok && originals_ok && different_ok && empty_ok
+end
+
+fn main() -> i32 = do
+  if strings_hold() then
     println("[script_vm] string_heap_unit ok")
     0
   else
