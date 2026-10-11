@@ -10,6 +10,12 @@ export type LowerCallSignature = {
   result_type: LowerType
 }
 
+export type LowerRecordLayout = {
+  type_name: string,
+  field_names: [string],
+  field_types: [LowerType]
+}
+
 export type LowerDiagnostic = {
   code: string,
   message: string,

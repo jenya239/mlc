@@ -1,0 +1,398 @@
+import {
+  Decl,
+  DeclType,
+  FieldDef,
+  FieldVal,
+  RecordLitFields,
+  RecordLitPart,
+  Span,
+  TyBool,
+  TyI32,
+  TyNamed,
+  TypeVariant,
+  VarRecord
+} from '../../compiler/frontend/ast'
+import {
+  instruction_words_get_prop,
+  instruction_words_new_record,
+  instruction_words_set_prop
+} from '../bytecode'
+import { ProtoBuilder, proto_builder_register_release_to } from './lower_builder'
+import { diagnostic_at, emit_instruction, types_agree } from './lower_control'
+import { lower_type_of } from './lower_call'
+import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
+import { LowerInt, LowerRecord, LowerRecordLayout, LowerType } from './lower_types'
+fn record_header_name(type_name: string) -> string = "*record*" + type_name
+fn record_field_binding(type_name: string, field_name: string) -> string = "*record*" + type_name + "#" + field_name
+fn encode_field_count(field_count: i32) -> i32 = 0 - 20000 - field_count
+fn decode_field_count(encoded: i32) -> i32 = 0 - 20000 - encoded
+fn encode_field_index(field_index: i32) -> i32 = 0 - 30000 - field_index
+fn decode_field_index(encoded: i32) -> i32 = 0 - 30000 - encoded
+export fn literal_field_index(field_count: i32, declared_index: i32) -> i32 = declared_index + field_count - field_count
+fn field_is_nested(field: Shared<FieldDef>) -> bool = match field.type_value { TyNamed(_) => true, _ => false }
+fn field_is_plain(field: Shared<FieldDef>) -> bool = match field.type_value { TyI32 => true, TyBool => true, _ => false }
+fn next_nested_index(fields: [Shared<FieldDef>], index: i32) -> i32 =
+  if field_is_nested(fields[index]) then
+    0 - 1
+  else
+    index + 1
+  end
+fn fields_are_nested(fields: [Shared<FieldDef>]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < fields.length() do
+    index = next_nested_index(fields, index)
+  end
+  index < 0
+end
+fn next_plain_index(fields: [Shared<FieldDef>], index: i32) -> i32 =
+  if field_is_plain(fields[index]) then
+    index + 1
+  else
+    0 - 1
+  end
+fn fields_are_plain(fields: [Shared<FieldDef>]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < fields.length() do
+    index = next_plain_index(fields, index)
+  end
+  index >= 0
+end
+fn classify_fields(fields: [Shared<FieldDef>]) -> string =
+  if fields_are_nested(fields) then
+    "unsupported_nested_record"
+  else if fields_are_plain(fields) then
+    ""
+  else
+    "unsupported_type"
+  end
+fn classify_variant(variant: Shared<TypeVariant>) -> string =
+  match variant {
+    VarRecord(_, fields, _) => classify_fields(fields),
+    _ => "unsupported_type"
+  }
+export fn classify_type_declaration(declaration: Shared<Decl>) -> string =
+  match declaration {
+    DeclType(_, parameters, variants, _, _) =>
+      if parameters.length() != 0 || variants.length() != 1 then
+        "unsupported_type"
+      else
+        classify_variant(variants[0])
+      end,
+    _ => "unsupported_type"
+  }
+fn layout_field_names(fields: [Shared<FieldDef>]) -> [string] = do
+  let mut names: [string] = []
+  let mut index = 0
+  while index < fields.length() do
+    names.push(fields[index].name)
+    index = index + 1
+  end
+  names
+end
+fn layout_field_types(fields: [Shared<FieldDef>]) -> [LowerType] = do
+  let mut collected: [LowerType] = []
+  let mut index = 0
+  while index < fields.length() do
+    collected.push(lower_type_of(fields[index].type_value))
+    index = index + 1
+  end
+  collected
+end
+fn append_layout(layouts: [LowerRecordLayout], type_name: string, fields: [Shared<FieldDef>]) -> [LowerRecordLayout] = do
+  let mut copied = layouts
+  copied.push(LowerRecordLayout {
+    type_name: type_name,
+    field_names: layout_field_names(fields),
+    field_types: layout_field_types(fields)
+  })
+  copied
+end
+fn collect_variant_layout(layouts: [LowerRecordLayout], type_name: string, variant: Shared<TypeVariant>) -> [LowerRecordLayout] =
+  match variant {
+    VarRecord(_, fields, _) =>
+      if classify_fields(fields) == "" then
+        append_layout(layouts, type_name, fields)
+      else
+        layouts
+      end,
+    _ => layouts
+  }
+fn collect_type_layout(layouts: [LowerRecordLayout], declaration: Shared<Decl>) -> [LowerRecordLayout] =
+  match declaration {
+    DeclType(type_name, parameters, variants, _, _) =>
+      if parameters.length() == 0 && variants.length() == 1 then
+        collect_variant_layout(layouts, type_name, variants[0])
+      else
+        layouts
+      end,
+    _ => layouts
+  }
+export fn collect_record_layouts(declarations: [Shared<Decl>]) -> [LowerRecordLayout] = do
+  let mut layouts: [LowerRecordLayout] = []
+  let mut index = 0
+  while index < declarations.length() do
+    layouts = collect_type_layout(layouts, declarations[index])
+    index = index + 1
+  end
+  layouts
+end
+fn install_layout_fields(scope: ref mut LowerScope, type_name: string, field_names: [string], field_types: [LowerType]) -> unit = do
+  let mut index = 0
+  while index < field_names.length() do
+    lower_scope_define(
+      scope,
+      record_field_binding(type_name, field_names[index]),
+      encode_field_index(index),
+      field_types[index],
+      false
+    )
+    index = index + 1
+  end
+end
+fn install_one_layout(scope: ref mut LowerScope, layout: LowerRecordLayout) -> unit = do
+  lower_scope_define(
+    scope,
+    record_header_name(layout.type_name),
+    encode_field_count(layout.field_names.length()),
+    LowerRecord(layout.type_name),
+    false
+  )
+  install_layout_fields(scope, layout.type_name, layout.field_names, layout.field_types)
+end
+export fn install_record_layouts(scope: ref mut LowerScope, layouts: [LowerRecordLayout]) -> unit = do
+  let mut index = 0
+  while index < layouts.length() do
+    install_one_layout(scope, layouts[index])
+    index = index + 1
+  end
+end
+export fn record_type_name(value_type: LowerType) -> string =
+  match value_type {
+    LowerRecord(name) => name,
+    _ => ""
+  }
+export fn same_record_type(left: LowerType, right: LowerType) -> bool = do
+  let left_name = record_type_name(left)
+  let right_name = record_type_name(right)
+  left_name != "" && left_name == right_name
+end
+export fn record_field_count(scope: ref mut LowerScope, type_name: string) -> i32 = do
+  let slot = lower_scope_lookup(scope, record_header_name(type_name))
+  if slot < 0 then
+    0 - 1
+  else
+    decode_field_count(scope.names[slot].register_index)
+  end
+end
+export fn record_field_index(scope: ref mut LowerScope, type_name: string, field_name: string) -> i32 = do
+  let slot = lower_scope_lookup(scope, record_field_binding(type_name, field_name))
+  if slot < 0 then
+    0 - 1
+  else
+    decode_field_index(scope.names[slot].register_index)
+  end
+end
+fn record_field_type(scope: ref mut LowerScope, type_name: string, field_name: string) -> LowerType = do
+  let slot = lower_scope_lookup(scope, record_field_binding(type_name, field_name))
+  if slot < 0 then
+    LowerInt
+  else
+    scope.names[slot].value_type
+  end
+end
+fn names_include(names: [string], field_name: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < names.length() && !found do
+    if names[index] == field_name then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+fn missing_field_name(binding_name: string, prefix: string, field_names: [string]) -> bool = do
+  let field_name = binding_name.substring(prefix.length(), binding_name.length() - prefix.length())
+  !names_include(field_names, field_name)
+end
+fn binding_is_missing_field(scope: ref mut LowerScope, type_name: string, field_names: [string], index: i32) -> bool = do
+  let prefix = "*record*" + type_name + "#"
+  let binding_name = scope.names[index].name
+  if binding_name.length() >= prefix.length() && binding_name.substring(0, prefix.length()) == prefix then
+    missing_field_name(binding_name, prefix, field_names)
+  else
+    false
+  end
+end
+fn next_missing_index(scope: ref mut LowerScope, type_name: string, field_names: [string], index: i32) -> i32 =
+  if binding_is_missing_field(scope, type_name, field_names, index) then
+    0 - 1
+  else
+    index + 1
+  end
+fn declared_field_missing(scope: ref mut LowerScope, type_name: string, field_names: [string]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < scope.names.length() do
+    index = next_missing_index(scope, type_name, field_names, index)
+  end
+  index < 0
+end
+fn next_unknown_name(scope: ref mut LowerScope, type_name: string, field_names: [string], index: i32) -> i32 =
+  if record_field_index(scope, type_name, field_names[index]) < 0 then
+    0 - 1
+  else
+    index + 1
+  end
+fn literal_name_unknown(scope: ref mut LowerScope, type_name: string, field_names: [string]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < field_names.length() do
+    index = next_unknown_name(scope, type_name, field_names, index)
+  end
+  index < 0
+end
+export fn literal_field_diagnostic(scope: ref mut LowerScope, record_name: string, field_names: [string]) -> string =
+  if record_field_count(scope, record_name) < 0 then
+    "unknown_record"
+  else if literal_name_unknown(scope, record_name, field_names) then
+    "unknown_field"
+  else if declared_field_missing(scope, record_name, field_names) then
+    "record_missing_field"
+  else
+    ""
+  end
+export fn literal_field_type_code(scope: ref mut LowerScope, record_name: string, field_name: string, value_type: LowerType) -> string = do
+  let expected = record_field_type(scope, record_name, field_name)
+  if record_field_index(scope, record_name, field_name) < 0 then
+    "unknown_field"
+  else if types_agree(expected, value_type) || same_record_type(expected, value_type) then
+    ""
+  else
+    "type_mismatch"
+  end
+end
+fn append_field_value_names(names: [string], fields: [Shared<FieldVal>]) -> [string] = do
+  let mut copied = names
+  let mut index = 0
+  while index < fields.length() do
+    copied.push(fields[index].name)
+    index = index + 1
+  end
+  copied
+end
+fn append_part_names(names: [string], part: RecordLitPart) -> [string] =
+  match part {
+    RecordLitFields(fields) => append_field_value_names(names, fields),
+    _ => names
+  }
+export fn literal_field_names(parts: [RecordLitPart]) -> [string] = do
+  let mut names: [string] = []
+  let mut index = 0
+  while index < parts.length() do
+    names = append_part_names(names, parts[index])
+    index = index + 1
+  end
+  names
+end
+fn append_field_values(collected: [Shared<FieldVal>], fields: [Shared<FieldVal>]) -> [Shared<FieldVal>] = do
+  let mut copied = collected
+  let mut index = 0
+  while index < fields.length() do
+    copied.push(fields[index])
+    index = index + 1
+  end
+  copied
+end
+fn append_part_values(collected: [Shared<FieldVal>], part: RecordLitPart) -> [Shared<FieldVal>] =
+  match part {
+    RecordLitFields(fields) => append_field_values(collected, fields),
+    _ => collected
+  }
+export fn literal_field_values(parts: [RecordLitPart]) -> [Shared<FieldVal>] = do
+  let mut values: [Shared<FieldVal>] = []
+  let mut index = 0
+  while index < parts.length() do
+    values = append_part_values(values, parts[index])
+    index = index + 1
+  end
+  values
+end
+fn emit_set_prop(builder: ref mut ProtoBuilder, record_register: i32, field_index: i32, value_register: i32) -> unit =
+  emit_instruction(builder, instruction_words_set_prop(record_register, field_index, value_register))
+export fn emit_new_record(builder: ref mut ProtoBuilder, target: i32, field_count: i32) -> unit =
+  emit_instruction(builder, instruction_words_new_record(target, field_count))
+fn emit_get_prop(builder: ref mut ProtoBuilder, target: i32, record_register: i32, field_index: i32) -> unit =
+  emit_instruction(builder, instruction_words_get_prop(target, record_register, field_index))
+export fn emit_literal_set_prop(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_name: string, field_name: string, record_register: i32, value_register: i32) -> unit = do
+  let declared_index = record_field_index(scope, record_name, field_name)
+  let field_count = record_field_count(scope, record_name)
+  emit_set_prop(builder, record_register, literal_field_index(field_count, declared_index), value_register)
+end
+fn fail_release(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, code: string, source_span: Span, mark: i32) -> unit = do
+  lower_scope_fail(scope, diagnostic_at(code, source_span))
+  proto_builder_register_release_to(builder, mark)
+end
+fn emit_release_literal(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_name: string, field_name: string, record_register: i32, value_register: i32, mark: i32) -> unit = do
+  emit_literal_set_prop(scope, builder, record_name, field_name, record_register, value_register)
+  proto_builder_register_release_to(builder, mark)
+end
+export fn finish_literal_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_code: string, record_name: string, field_name: string, record_register: i32, value_register: i32, mark: i32, source_span: Span) -> unit =
+  if scope.has_diagnostic then
+    proto_builder_register_release_to(builder, mark)
+  else if type_code != "" then
+    fail_release(scope, builder, type_code, source_span, mark)
+  else
+    emit_release_literal(scope, builder, record_name, field_name, record_register, value_register, mark)
+  end
+fn release_read(builder: ref mut ProtoBuilder, mark: i32) -> LowerType = do
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+fn fail_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, code: string, source_span: Span, mark: i32) -> LowerType = do
+  lower_scope_fail(scope, diagnostic_at(code, source_span))
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+fn emit_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_name: string, field_name: string, record_register: i32, target: i32, mark: i32) -> LowerType = do
+  emit_get_prop(builder, target, record_register, record_field_index(scope, type_name, field_name))
+  let field_type = record_field_type(scope, type_name, field_name)
+  proto_builder_register_release_to(builder, mark)
+  field_type
+end
+fn read_named_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_name: string, field_name: string, record_register: i32, target: i32, mark: i32, source_span: Span) -> LowerType =
+  if record_field_index(scope, type_name, field_name) < 0 then
+    fail_field_read(scope, builder, "unknown_field", source_span, mark)
+  else
+    emit_field_read(scope, builder, type_name, field_name, record_register, target, mark)
+  end
+export fn finish_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_type: LowerType, field_name: string, record_register: i32, target: i32, mark: i32, source_span: Span) -> LowerType =
+  if scope.has_diagnostic then
+    release_read(builder, mark)
+  else if record_type_name(record_type) == "" then
+    fail_field_read(scope, builder, "unknown_record", source_span, mark)
+  else
+    read_named_field(scope, builder, record_type_name(record_type), field_name, record_register, target, mark, source_span)
+  end
+fn assignment_field_code(scope: ref mut LowerScope, type_name: string, field_name: string, value_type: LowerType) -> string =
+  if type_name == "" then
+    "type_mismatch"
+  else
+    literal_field_type_code(scope, type_name, field_name, value_type)
+  end
+fn emit_release_assignment(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_name: string, field_name: string, record_register: i32, value_register: i32, mark: i32) -> unit = do
+  emit_set_prop(builder, record_register, record_field_index(scope, type_name, field_name), value_register)
+  proto_builder_register_release_to(builder, mark)
+end
+fn finish_checked_assignment(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_name: string, field_name: string, record_register: i32, value_type: LowerType, value_register: i32, mark: i32, source_span: Span) -> unit = do
+  let type_code = assignment_field_code(scope, type_name, field_name, value_type)
+  if type_code != "" then
+    fail_release(scope, builder, type_code, source_span, mark)
+  else
+    emit_release_assignment(scope, builder, type_name, field_name, record_register, value_register, mark)
+  end
+end
+export fn finish_field_assignment(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_type: LowerType, field_name: string, record_register: i32, value_type: LowerType, value_register: i32, mark: i32, source_span: Span) -> unit =
+  if scope.has_diagnostic then
+    proto_builder_register_release_to(builder, mark)
+  else
+    finish_checked_assignment(scope, builder, record_type_name(record_type), field_name, record_register, value_type, value_register, mark, source_span)
+  end

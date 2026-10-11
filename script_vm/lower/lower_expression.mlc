@@ -1,4 +1,4 @@
-import { Expr, Span, expr_span } from '../../compiler/frontend/ast'
+import { Expr, FieldVal, RecordLitPart, Span, expr_span } from '../../compiler/frontend/ast'
 import { Value, ValueBool, ValueInt32, value_encode } from '../value'
 import { instruction_words_binary } from '../bytecode'
 import {
@@ -11,7 +11,7 @@ import {
   proto_builder_emit_jump_if_false,
   proto_builder_patch_to_here
 } from './lower_builder'
-import { LowerType, LowerInt, LowerBool } from './lower_types'
+import { LowerType, LowerInt, LowerBool, LowerRecord } from './lower_types'
 import { LowerScope, lower_scope_fail } from './lower_scope'
 import {
   call_argument_register,
@@ -23,6 +23,17 @@ import {
   finish_call_instruction,
   prepare_call_block
 } from './lower_call'
+import {
+  emit_new_record,
+  finish_field_read,
+  finish_literal_field,
+  literal_field_diagnostic,
+  literal_field_names,
+  literal_field_type_code,
+  literal_field_values,
+  record_field_count,
+  same_record_type
+} from './lower_records'
 import {
   binary_opcode,
   branch_expression,
@@ -43,19 +54,16 @@ import {
   subtraction_opcode,
   types_agree
 } from './lower_control'
-
 fn temporary_operand(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, builder, expression, temporary)
   temporary
 end
-
 fn use_operand(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 =
   match expression {
     ExprIdent(name, source_span) => identifier_operand(scope, name, source_span),
     _ => temporary_operand(scope, builder, expression)
   }
-
 fn lower_binary(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, operator: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let left_register = use_operand(scope, builder, left)
@@ -82,7 +90,6 @@ fn lower_binary(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, operat
     end
   end
 end
-
 fn lower_comparison(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, operator: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let left_register = use_operand(scope, builder, left)
@@ -115,7 +122,6 @@ fn lower_comparison(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, op
     end
   end
 end
-
 fn lower_negate(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, inner: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let zero_register = proto_builder_register_allocate(builder)
@@ -144,14 +150,12 @@ fn lower_negate(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, inner:
     end
   end
 end
-
 fn lower_if_branch(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType = do
   let branch_mark = proto_builder_register_mark(builder)
   let branch_type = lower_expression(scope, builder, branch_expression(expression), target)
   proto_builder_register_release_to(builder, branch_mark)
   branch_type
 end
-
 fn lower_if_branches(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition_register: i32, then_expression: Shared<Expr>, else_expression: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let else_site = proto_builder_emit_jump_if_false(builder, condition_register)
   let then_type = lower_if_branch(scope, builder, then_expression, target)
@@ -161,7 +165,6 @@ fn lower_if_branches(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, c
   proto_builder_patch_to_here(builder, end_site)
   finish_if_type(scope, then_type, else_type, source_span)
 end
-
 fn lower_if(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition: Shared<Expr>, then_expression: Shared<Expr>, else_expression: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let condition_register = proto_builder_register_allocate(builder)
@@ -187,14 +190,12 @@ fn lower_if(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, condition:
   proto_builder_register_release_to(builder, mark)
   result_type
 end
-
 fn finish_logic_and(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let end_site = proto_builder_emit_jump_if_false(builder, target)
   let right_type = lower_expression(scope, builder, right, target)
   proto_builder_patch_to_here(builder, end_site)
   accepted_bool(scope, right_type, source_span)
 end
-
 fn lower_logic_and(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let left_type = lower_expression(scope, builder, left, target)
   if scope.has_diagnostic then
@@ -208,7 +209,6 @@ fn lower_logic_and(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, lef
     finish_logic_and(scope, builder, right, source_span, target)
   end
 end
-
 fn finish_logic_or(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let right_site = proto_builder_emit_jump_if_false(builder, target)
   let end_site = proto_builder_emit_jump(builder)
@@ -217,7 +217,6 @@ fn finish_logic_or(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, rig
   proto_builder_patch_to_here(builder, end_site)
   accepted_bool(scope, right_type, source_span)
 end
-
 fn lower_logic_or(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, left: Shared<Expr>, right: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let left_type = lower_expression(scope, builder, left, target)
   if scope.has_diagnostic then
@@ -231,7 +230,6 @@ fn lower_logic_or(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, left
     finish_logic_or(scope, builder, right, source_span, target)
   end
 end
-
 fn lower_logic_not(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, inner: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let temporary = proto_builder_register_allocate(builder)
@@ -249,42 +247,35 @@ fn lower_logic_not(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, inn
   proto_builder_register_release_to(builder, mark)
   result_type
 end
-
 fn reject_lowered_call(scope: ref mut LowerScope, code: string, source_span: Span) -> LowerType = do
   lower_scope_fail(scope, diagnostic_at(code, source_span))
   LowerInt
 end
-
 fn note_argument_type(scope: ref mut LowerScope, argument_type: LowerType, expected: LowerType, source_span: Span) -> unit =
-  if !scope.has_diagnostic && !types_agree(argument_type, expected) then
+  if !scope.has_diagnostic && !types_agree(argument_type, expected) && !same_record_type(argument_type, expected) then
     lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
   end
-
 fn lower_one_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, name: string, base: i32, index: i32, source_span: Span) -> i32 = do
   let argument_type = lower_expression(scope, builder, expression, call_argument_register(base, index))
   note_argument_type(scope, argument_type, call_parameter_type_at(scope, name, index), source_span)
   index + 1
 end
-
 fn lower_call_arguments(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, arguments: [Shared<Expr>], name: string, base: i32, argument_count: i32, source_span: Span) -> unit = do
   let mut index = 0
   while index < argument_count && !scope.has_diagnostic do
     index = lower_one_argument(scope, builder, arguments[index], name, base, index, source_span)
   end
 end
-
 fn finish_and_release_call(builder: ref mut ProtoBuilder, target: i32, base: i32, argument_count: i32, mark: i32) -> unit = do
   finish_call_instruction(builder, target, base, argument_count)
   proto_builder_register_release_to(builder, mark)
 end
-
 fn release_finished_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, target: i32, base: i32, argument_count: i32, mark: i32) -> unit =
   if scope.has_diagnostic then
     proto_builder_register_release_to(builder, mark)
   else
     finish_and_release_call(builder, target, base, argument_count, mark)
   end
-
 fn lower_prepared_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, arguments: [Shared<Expr>], source_span: Span, target: i32, proto_index: i32, result_type: LowerType, parameter_count: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let base = prepare_call_block(builder, proto_index, parameter_count)
@@ -292,27 +283,56 @@ fn lower_prepared_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder,
   release_finished_call(scope, builder, target, base, parameter_count, mark)
   result_type
 end
-
 fn lower_known_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, arguments: [Shared<Expr>], source_span: Span, target: i32, proto_index: i32, result_type: LowerType) -> LowerType =
   if arguments.length() != call_parameter_count(scope, name) then
     reject_lowered_call(scope, "call_arity", source_span)
   else
     lower_prepared_call(scope, builder, name, arguments, source_span, target, proto_index, result_type, arguments.length())
   end
-
 fn lower_named_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LowerType =
   if call_signature_found(scope, name) then
     lower_known_call(scope, builder, name, arguments, source_span, target, call_signature_proto_index(scope, name), call_signature_result_type(scope, name))
   else
     reject_lowered_call(scope, "unknown_function", source_span)
   end
-
 fn lower_call_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LowerType =
   match callee {
     ExprIdent(name, _) => lower_named_call(scope, builder, name, arguments, source_span, target),
     _ => reject_lowered_call(scope, "unsupported_expression", source_span)
   }
-
+fn lower_literal_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, field: Shared<FieldVal>, record_name: string, target: i32, source_span: Span) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  let value_register = proto_builder_register_allocate(builder)
+  let value_type = lower_expression(scope, builder, field.value, value_register)
+  let type_code = literal_field_type_code(scope, record_name, field.name, value_type)
+  finish_literal_field(scope, builder, type_code, record_name, field.name, target, value_register, mark, source_span)
+end
+fn lower_literal_values(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, fields: [Shared<FieldVal>], record_name: string, target: i32, source_span: Span) -> unit = do
+  let mut index = 0
+  while index < fields.length() && !scope.has_diagnostic do
+    lower_literal_field(scope, builder, fields[index], record_name, target, source_span)
+    index = index + 1
+  end
+end
+fn write_record_literal(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, parts: [RecordLitPart], record_name: string, source_span: Span, target: i32) -> LowerType = do
+  emit_new_record(builder, target, record_field_count(scope, record_name))
+  lower_literal_values(scope, builder, literal_field_values(parts), record_name, target, source_span)
+  LowerRecord(record_name)
+end
+fn lower_record_literal(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_name: string, parts: [RecordLitPart], source_span: Span, target: i32) -> LowerType = do
+  let diagnostic_code = literal_field_diagnostic(scope, record_name, literal_field_names(parts))
+  if diagnostic_code != "" then
+    reject_lowered_call(scope, diagnostic_code, source_span)
+  else
+    write_record_literal(scope, builder, parts, record_name, source_span, target)
+  end
+end
+fn lower_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, base: Shared<Expr>, field_name: string, source_span: Span, target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let record_register = proto_builder_register_allocate(builder)
+  let record_type = lower_expression(scope, builder, base, record_register)
+  finish_field_read(scope, builder, record_type, field_name, record_register, target, mark, source_span)
+end
 fn lower_expression_checked(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
   match expression {
     ExprInt(number, _) => do
@@ -354,6 +374,10 @@ fn lower_expression_checked(scope: ref mut LowerScope, builder: ref mut ProtoBui
       lower_if(scope, builder, condition, then_expression, else_expression, source_span, target),
     ExprCall(callee, arguments, source_span) =>
       lower_call_expression(scope, builder, callee, arguments, source_span, target),
+    ExprRecord(record_name, parts, source_span) =>
+      lower_record_literal(scope, builder, record_name, parts, source_span, target),
+    ExprField(base, field_name, source_span) =>
+      lower_field_read(scope, builder, base, field_name, source_span, target),
     ExprBlock(_, _, source_span) => do
       lower_scope_fail(scope, diagnostic_at("unsupported_expression_block", source_span))
       LowerInt
@@ -363,7 +387,6 @@ fn lower_expression_checked(scope: ref mut LowerScope, builder: ref mut ProtoBui
       LowerInt
     end
   }
-
 export fn lower_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
   if scope.has_diagnostic then
     LowerInt

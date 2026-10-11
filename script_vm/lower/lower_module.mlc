@@ -15,7 +15,8 @@ import {
   DeclAssocBind,
   Expr,
   ExprBlock,
-  Param
+  Param,
+  Span
 } from '../../compiler/frontend/ast'
 import { instruction_words_return } from '../bytecode'
 import { FunctionProto } from '../run_result'
@@ -32,11 +33,17 @@ import {
   install_call_signatures,
   lower_type_of
 } from './lower_call'
+import { diagnostic_at } from './lower_control'
 import { lower_expression } from './lower_expression'
+import {
+  classify_type_declaration,
+  collect_record_layouts,
+  install_record_layouts
+} from './lower_records'
 import { FunctionLowered, FunctionLowering, FunctionRejected } from './lower_function'
 import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
 import { lower_block } from './lower_statement'
-import { LowerCallSignature, LowerDiagnostic, LowerResult, LowerType } from './lower_types'
+import { LowerCallSignature, LowerDiagnostic, LowerRecordLayout, LowerResult, LowerType } from './lower_types'
 
 type LowerWalk = {
   diagnostics: [LowerDiagnostic],
@@ -159,12 +166,14 @@ fn finish_prepared_function(
 
 fn lower_function_with_signatures(
   signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
   parameters: [Shared<Param>],
   expression: Shared<Expr>
 ) -> FunctionLowering = do
   let mut builder = proto_builder_new(0)
   let mut scope = lower_scope_new()
   install_call_signatures(scope, signatures)
+  install_record_layouts(scope, layouts)
   bind_call_parameters(scope, builder, parameters)
   let destination = proto_builder_register_allocate(builder)
   let body_type = lower_prepared_body(scope, builder, expression, destination)
@@ -174,12 +183,13 @@ end
 fn consider_function(
   walk: LowerWalk,
   signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
   name: string,
   parameters: [Shared<Param>],
   body: Shared<Expr>,
   exported: bool
 ) -> LowerWalk =
-  match lower_function_with_signatures(signatures, parameters, body) {
+  match lower_function_with_signatures(signatures, layouts, parameters, body) {
     FunctionLowered(proto) => append_proto(walk, name, proto, exported),
     FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
   }
@@ -192,36 +202,48 @@ fn consider_unsupported(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk
     column: 0
   })
 
+fn consider_classified(walk: LowerWalk, code: string, source_span: Span) -> LowerWalk =
+  if code == "" then
+    walk
+  else
+    push_diagnostic(walk, diagnostic_at(code, source_span))
+  end
+
 fn consider_inner(
   walk: LowerWalk,
   signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
   inner: Shared<Decl>,
   exported: bool
 ) -> LowerWalk =
   match inner {
     DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, signatures, name, parameters, body, exported),
+      consider_function(walk, signatures, layouts, name, parameters, body, exported),
     _ => consider_unsupported(walk, inner)
   }
 
 fn consider_declaration(
   walk: LowerWalk,
   signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
   declaration: Shared<Decl>
 ) -> LowerWalk =
   match declaration {
-    DeclExported(inner) => consider_inner(walk, signatures, inner, true),
+    DeclExported(inner) => consider_inner(walk, signatures, layouts, inner, true),
     DeclFn(name, _, _, parameters, _, body, _) =>
-      consider_function(walk, signatures, name, parameters, body, plain_function_is_exported()),
+      consider_function(walk, signatures, layouts, name, parameters, body, plain_function_is_exported()),
+    DeclType(_, _, _, _, source_span) =>
+      consider_classified(walk, classify_type_declaration(declaration), source_span),
     _ => consider_unsupported(walk, declaration)
   }
 
 fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do
   let signatures = collect_call_signatures(declarations)
+  let layouts = collect_record_layouts(declarations)
   let mut walk = empty_walk()
   let mut index = 0
   while index < declarations.length() do
-    walk = consider_declaration(walk, signatures, declarations[index])
+    walk = consider_declaration(walk, signatures, layouts, declarations[index])
     index = index + 1
   end
   if walk.diagnostics.length() > 0 then

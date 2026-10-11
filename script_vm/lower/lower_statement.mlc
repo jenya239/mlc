@@ -1,6 +1,7 @@
 import {
   Expr,
   ExprBin,
+  ExprField,
   ExprBlock,
   ExprBool,
   ExprIdent,
@@ -39,6 +40,7 @@ import {
   lower_scope_push
 } from './lower_scope'
 import { lower_expression } from './lower_expression'
+import { finish_field_assignment } from './lower_records'
 
 export type LowerFunctionSignature = { result_type: LowerType }
 
@@ -183,10 +185,37 @@ fn assign_name(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: s
   end
 end
 
+fn write_mutable_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, record_register: i32, record_type: LowerType, field_name: string, right: Shared<Expr>, source_span: Span) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  let value_register = proto_builder_register_allocate(builder)
+  let value_type = lower_expression(scope, builder, right, value_register)
+  finish_field_assignment(scope, builder, record_type, field_name, record_register, value_type, value_register, mark, source_span)
+end
+
+fn assign_named_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, name_span: Span, field_name: string, right: Shared<Expr>, source_span: Span) -> unit = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    fail_at(scope, "unknown_identifier", name_span)
+  else if !scope.names[found].is_mutable then
+    fail_at(scope, "assign_immutable", source_span)
+  else
+    write_mutable_field(scope, builder, scope.names[found].register_index, scope.names[found].value_type, field_name, right, source_span)
+  end
+end
+
+fn assign_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, base: Shared<Expr>, field_name: string, right: Shared<Expr>, source_span: Span) -> unit =
+  match base {
+    ExprIdent(name, name_span) =>
+      assign_named_field(scope, builder, name, name_span, field_name, right, source_span),
+    _ => fail_at(scope, "unsupported_statement", source_span)
+  }
+
 fn lower_assignment(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, left: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> unit =
   match left {
     ExprIdent(name, name_span) =>
       assign_name(scope, builder, name, name_span, right, source_span),
+    ExprField(base, field_name, _) =>
+      assign_field(scope, builder, base, field_name, right, source_span),
     _ => fail_at(scope, "unsupported_statement", source_span)
   }
 
