@@ -7,6 +7,7 @@ import {
   ReplDiagnostic
 } from './repl_answer'
 import { repl_balance_incomplete } from './repl_balance'
+import { lower_source } from './lower/lower_module'
 
 export type ReplSession = {
   accepted_source: string,
@@ -28,14 +29,53 @@ fn chunk_is_blank(chunk: string) -> bool = do
   blank
 end
 
+fn first_word(text: string) -> string = do
+  let mut index = 0
+  while index < text.length() && character_is_blank(text.substring(index, 1)) do
+    index = index + 1
+  end
+  let mut end_index = index
+  while end_index < text.length() && !character_is_blank(text.substring(end_index, 1)) do
+    end_index = end_index + 1
+  end
+  text.substring(index, end_index - index)
+end
+
+fn text_is_declaration(text: string) -> bool = do
+  let word = first_word(text)
+  word == "fn" || word == "export" || word == "type"
+end
+
+fn joined_source(existing: string, addition: string) -> string =
+  if existing.length() == 0 then
+    addition
+  else
+    existing + "\n" + addition
+  end
+
+fn accept_declaration(session: ref mut ReplSession, text: string) -> ReplAnswer = do
+  let candidate = joined_source(session.accepted_source, text)
+  let lowered = lower_source(candidate)
+  if lowered.diagnostics.length() == 0 then
+    session.accepted_source = candidate
+    session.pending = ""
+    ReplAccepted
+  else
+    let diagnostic = lowered.diagnostics[0]
+    ReplDiagnostic(diagnostic.code, diagnostic.line, diagnostic.column)
+  end
+end
+
 export fn repl_session_new() -> ReplSession =
   ReplSession { accepted_source: "", pending: "" }
 
 export fn repl_session_submit(session: ref mut ReplSession, chunk: string) -> ReplAnswer = do
-  let text_incomplete = repl_balance_incomplete(session.pending + chunk)
-  if chunk_is_blank(chunk) || text_incomplete then
-    session.pending = session.pending + chunk
+  let combined = session.pending + chunk
+  if chunk_is_blank(chunk) || repl_balance_incomplete(combined) then
+    session.pending = combined
     ReplIncomplete
+  else if text_is_declaration(combined) then
+    accept_declaration(session, combined)
   else
     ReplIncomplete
   end
