@@ -1,0 +1,209 @@
+import {
+  Value,
+  ValueBool,
+  ValueInt32,
+  ValueFloat64,
+  value_encode,
+  value_decode,
+  value_raw_equal
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_return,
+  instruction_words_jump_if_false,
+  instruction_words_new_array
+} from '../bytecode'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_with_heap,
+  run_program,
+  run_err_type
+} from '../interpreter'
+import { heap_new } from '../heap'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn bool_value(flag: bool) -> Value = value_encode(ValueBool(flag))
+
+fn float_value(number: f64) -> Value = value_encode(ValueFloat64(number))
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm falsy_contract_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn push_value(values: [Value], value: Value) -> [Value] = do
+  let mut next = values
+  next.push(value)
+  next
+end
+
+fn error_code(result: RunResult) -> string =
+  match result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => ""
+  }
+
+fn error_word_index(result: RunResult) -> i32 =
+  match result {
+    RunErr(_code, word_index) => word_index,
+    RunOk(_value) => 0 - 1
+  }
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn results_match(left_result: RunResult, right_result: RunResult) -> bool =
+  match left_result {
+    RunOk(left_value) => match right_result {
+      RunOk(right_value) => value_raw_equal(left_value, right_value),
+      _ => false
+    },
+    RunErr(left_code, left_word_index) => match right_result {
+      RunErr(right_code, right_word_index) =>
+        left_code == right_code && left_word_index == right_word_index,
+      _ => false
+    }
+  }
+
+fn single_prototype(words: [i32], constants: [Value], register_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: constants, register_count: register_count })
+  prototypes
+end
+
+fn execute_both(words: [i32], constants: [Value], register_count: i32) -> RunResult = do
+  const heap_result = run_with_heap(heap_new(), words, constants, register_count).result
+  const program_result = run_program(
+    heap_new(),
+    single_prototype(words, constants, register_count),
+    0
+  ).result
+  if results_match(heap_result, program_result) then
+    heap_result
+  else
+    RunErr("runner_mismatch", 0)
+  end
+end
+
+fn condition_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_load_const(1, 1))
+  words = append_words(words, instruction_words_jump_if_false(1, 1))
+  words = append_words(words, instruction_words_load_const(0, 2))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn condition_constants(condition_value: Value) -> [Value] =
+  push_value(push_value(push_value([], integer_value(0)), condition_value), integer_value(7))
+
+fn expect_jump(result: RunResult, label: string) -> i32 = do
+  if integer_result(result) == 0 then
+    0
+  else
+    fail(label)
+  end
+end
+
+fn expect_fall_through(result: RunResult, label: string) -> i32 = do
+  if integer_result(result) == 7 then
+    0
+  else
+    fail(label)
+  end
+end
+
+fn check_condition(condition_value: Value, jumps: bool, label: string) -> i32 = do
+  const result = execute_both(condition_words(), condition_constants(condition_value), 2)
+  if jumps then
+    expect_jump(result, label)
+  else
+    expect_fall_through(result, label)
+  end
+end
+
+fn heap_reference_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 1))
+  words = append_words(words, instruction_words_jump_if_false(0, 1))
+  words = append_words(words, instruction_words_load_const(2, 2))
+  words = append_words(words, instruction_words_return(2))
+  words
+end
+
+fn heap_reference_constants() -> [Value] =
+  push_value(push_value(push_value([], integer_value(0)), integer_value(0)), integer_value(7))
+
+fn nil_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_jump_if_false(0, 1))
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_return(0))
+  words
+end
+
+fn nil_word_index() -> i32 = 0
+
+fn check_nil() -> i32 = do
+  const result = execute_both(nil_words(), push_value([], integer_value(7)), 1)
+  if error_code(result) == run_err_type() && error_word_index(result) == nil_word_index() then
+    0
+  else
+    fail("nil_type_error")
+  end
+end
+
+fn main() -> i32 = do
+  const false_status = check_condition(bool_value(false), true, "bool_false_jumps")
+  if false_status != 0 then
+    return false_status
+  end
+  const true_status = check_condition(bool_value(true), false, "bool_true_falls_through")
+  if true_status != 0 then
+    return true_status
+  end
+  const integer_zero_status = check_condition(integer_value(0), false, "int_zero_falls_through")
+  if integer_zero_status != 0 then
+    return integer_zero_status
+  end
+  const float_zero_status = check_condition(float_value(0.0), false, "float_zero_falls_through")
+  if float_zero_status != 0 then
+    return float_zero_status
+  end
+  const heap_status = expect_fall_through(
+    execute_both(heap_reference_words(), heap_reference_constants(), 3),
+    "heap_reference_falls_through"
+  )
+  if heap_status != 0 then
+    return heap_status
+  end
+  const nil_status = check_nil()
+  if nil_status != 0 then
+    return nil_status
+  end
+  println("falsy_contract checks=6")
+  println("[script_vm] falsy_contract_unit ok")
+  0
+end
