@@ -1,0 +1,245 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_diagnostics_unit] FAIL: " + label)
+  1
+end
+
+fn quote() -> string = "\""
+
+fn next_position_index(diagnostics: [LowerDiagnostic], index: i32) -> i32 =
+  if diagnostics[index].line < 1 || diagnostics[index].column < 1 then
+    0 - 1
+  else
+    index + 1
+  end
+
+fn positions_hold(diagnostics: [LowerDiagnostic]) -> bool = do
+  let mut index = 0
+  while index >= 0 && index < diagnostics.length() do
+    index = next_position_index(diagnostics, index)
+  end
+  index >= 0
+end
+
+fn next_order_index(diagnostics: [LowerDiagnostic], index: i32) -> i32 = do
+  let previous = diagnostics[index - 1]
+  let current = diagnostics[index]
+  if current.line < previous.line then
+    0 - 1
+  else if current.line == previous.line && current.column < previous.column then
+    0 - 1
+  else
+    index + 1
+  end
+end
+
+fn order_holds(diagnostics: [LowerDiagnostic]) -> bool = do
+  let mut index = 1
+  while index >= 1 && index < diagnostics.length() do
+    index = next_order_index(diagnostics, index)
+  end
+  index >= 1
+end
+
+fn has_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn accept_diagnostics(diagnostics: [LowerDiagnostic], bytes: [i32], label: string) -> i32 = do
+  if bytes.length() != 0 then
+    return fail(label + " bytes")
+  end
+  if !positions_hold(diagnostics) then
+    return fail(label + " position")
+  end
+  if !order_holds(diagnostics) then
+    return fail(label + " order")
+  end
+  println(label)
+  0
+end
+
+fn expect_code(source: string, code: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if !has_code(lowered.diagnostics, code) then
+    return fail(label)
+  end
+  accept_diagnostics(lowered.diagnostics, lowered.bytes, label)
+end
+
+fn expect_pair(source: string, first_code: string, second_code: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() < 2 then
+    return fail(label)
+  end
+  if !has_code(lowered.diagnostics, first_code) || !has_code(lowered.diagnostics, second_code) then
+    return fail(label)
+  end
+  accept_diagnostics(lowered.diagnostics, lowered.bytes, label)
+end
+
+fn string_source() -> string = "export fn main() -> i32 = " + quote() + "hi" + quote()
+
+fn array_source() -> string = "export fn main() -> i32 = [1]"
+
+fn match_source() -> string = "export fn main() -> i32 = match 1 { 1 => 1, _ => 0 }"
+
+fn for_source() -> string = "export fn main() -> i32 = for item in values do 0 end"
+
+fn lambda_source() -> string = "export fn main() -> i32 = (left: i32) => left"
+
+fn method_source() -> string = "export fn main() -> i32 = 1.foo()"
+
+fn question_source() -> string = "export fn main() -> i32 = 1?"
+
+fn float_source() -> string = "export fn main() -> i32 = 1.5"
+
+fn break_source() -> string = "export fn main() -> i32 = do while true do break end 0 end"
+
+fn continue_source() -> string = "export fn main() -> i32 = do while true do continue end 0 end"
+
+fn generic_source() -> string =
+  "fn identity<T>(value: i32) -> i32 = value export fn main() -> i32 = identity(1)"
+
+fn trait_source() -> string = "trait Show { fn show(self: i32) -> i32 = 0 }"
+
+fn extern_source() -> string = "extern fn sleep_milliseconds(milliseconds: i32) -> i32 = extern"
+
+fn export_float_parameter_source() -> string = "export fn take_float(value: f64) -> i32 = 0"
+
+fn export_float_result_source() -> string = "export fn make_float() -> f64 = 0"
+
+fn point_type() -> string = "type Point = { x: i32, y: i32 } "
+
+fn export_record_parameter_source() -> string =
+  point_type() + "export fn read_point(point: Point) -> i32 = point.x"
+
+fn export_record_result_source() -> string =
+  point_type() + "export fn make_point() -> Point = Point { x: 1, y: 2 }"
+
+fn local_binding(index: i32) -> string =
+  "let local_" + index.to_string() + " = " + index.to_string() + " "
+
+fn locals_source() -> string = do
+  let mut source = "export fn main() -> i32 = do "
+  let mut index = 0
+  while index < 300 do
+    source = source + local_binding(index)
+    index = index + 1
+  end
+  source + "local_299 end"
+end
+
+fn field_separator(index: i32) -> string =
+  if index > 0 then ", " else "" end
+
+fn field_piece(index: i32, separator: string, suffix: string) -> string =
+  separator + "field_" + index.to_string() + suffix
+
+fn wide_source() -> string = do
+  let mut type_text = "type Wide = { "
+  let mut literal_text = "Wide { "
+  let mut index = 0
+  while index < 256 do
+    let separator = field_separator(index)
+    type_text = type_text + field_piece(index, separator, ": i32")
+    literal_text = literal_text + field_piece(index, separator, ": 0")
+    index = index + 1
+  end
+  type_text + " } export fn main() -> i32 = do let value = " + literal_text + " } value.field_0 end"
+end
+
+fn paired_source() -> string =
+  "export fn main() -> i32 = do\nlet text = \"hi\"\nlet items = [1]\n0\nend"
+
+fn check_expressions() -> i32 = do
+  let mut status = expect_code(string_source(), "unsupported_string", "unsupported_string")
+  if status == 0 then
+    status = expect_code(array_source(), "unsupported_array", "unsupported_array")
+  end
+  if status == 0 then
+    status = expect_code(match_source(), "unsupported_match", "unsupported_match")
+  end
+  if status == 0 then
+    status = expect_code(for_source(), "unsupported_for", "unsupported_for")
+  end
+  if status == 0 then
+    status = expect_code(lambda_source(), "unsupported_lambda", "unsupported_lambda")
+  end
+  if status == 0 then
+    status = expect_code(method_source(), "unsupported_method", "unsupported_method")
+  end
+  if status == 0 then
+    status = expect_code(question_source(), "unsupported_question", "unsupported_question")
+  end
+  if status == 0 then
+    status = expect_code(float_source(), "unsupported_float", "unsupported_float")
+  end
+  if status == 0 then
+    status = expect_code(break_source(), "unsupported_break", "unsupported_break")
+  end
+  if status == 0 then
+    status = expect_code(continue_source(), "unsupported_continue", "unsupported_continue")
+  end
+  status
+end
+
+fn check_declarations() -> i32 = do
+  let mut status = expect_code(generic_source(), "unsupported_generic", "unsupported_generic")
+  if status == 0 then
+    status = expect_code(trait_source(), "unsupported_trait", "unsupported_trait")
+  end
+  if status == 0 then
+    status = expect_code(extern_source(), "unsupported_extern", "unsupported_extern")
+  end
+  if status == 0 then
+    status = expect_code(export_float_parameter_source(), "export_signature", "export_float_parameter")
+  end
+  if status == 0 then
+    status = expect_code(export_float_result_source(), "export_signature", "export_float_result")
+  end
+  if status == 0 then
+    status = expect_code(export_record_parameter_source(), "export_signature", "export_record_parameter")
+  end
+  if status == 0 then
+    status = expect_code(export_record_result_source(), "export_signature", "export_record_result")
+  end
+  status
+end
+
+fn check_limits() -> i32 = do
+  let mut status = expect_code(locals_source(), "too_many_registers", "too_many_registers")
+  if status == 0 then
+    status = expect_code(wide_source(), "record_too_wide", "record_too_wide")
+  end
+  if status == 0 then
+    status = expect_pair(paired_source(), "unsupported_string", "unsupported_array", "two_diagnostics")
+  end
+  status
+end
+
+fn main() -> i32 = do
+  let mut status = check_expressions()
+  if status == 0 then
+    status = check_declarations()
+  end
+  if status == 0 then
+    status = check_limits()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_diagnostics checks=20")
+  println("[script_vm] lower_diagnostics_unit ok")
+  0
+end
