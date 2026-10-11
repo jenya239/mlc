@@ -13,12 +13,42 @@ fn word_at(text: string, index: i32, word: string) -> bool = do
   end
 end
 
+fn skip_quoted(text: string, opening_index: i32, quote: string) -> i32 = do
+  let mut cursor = opening_index + 1
+  let mut closed = false
+  while cursor < text.length() && !closed do
+    let character = text.substring(cursor, 1)
+    if character == "\\" && cursor + 1 < text.length() then
+      cursor = cursor + 2
+    else if character == quote then
+      closed = true
+      cursor = cursor + 1
+    else
+      cursor = cursor + 1
+    end
+  end
+  cursor
+end
+
+fn skip_line_comment(text: string, comment_index: i32) -> i32 = do
+  let mut cursor = comment_index
+  while cursor < text.length() && text.substring(cursor, 1) != "\n" do
+    cursor = cursor + 1
+  end
+  cursor
+end
+
 export fn repl_balance_incomplete(text: string) -> bool = do
   let mut index = 0
   let mut do_count = 0
   let mut end_count = 0
   while index < text.length() do
-    if word_at(text, index, "do") then
+    let character = text.substring(index, 1)
+    if character == "'" || character == "\"" then
+      index = skip_quoted(text, index, character)
+    else if character == "/" && index + 1 < text.length() && text.substring(index + 1, 1) == "/" then
+      index = skip_line_comment(text, index + 2)
+    else if word_at(text, index, "do") then
       do_count = do_count + 1
       index = index + 2
     else if word_at(text, index, "end") then
