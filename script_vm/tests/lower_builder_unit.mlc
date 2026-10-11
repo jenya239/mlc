@@ -1,0 +1,275 @@
+import { Value, ValueInt32, ValueBool, value_encode, value_decode } from '../value'
+import {
+  Instruction,
+  instruction_decode,
+  instruction_is_wide,
+  instruction_jump_offset,
+  instruction_words_return,
+  instruction_words_binary,
+  instruction_opcode_add,
+  instruction_opcode_le
+} from '../bytecode'
+import {
+  ProtoBuilder,
+  proto_builder_new,
+  proto_builder_here,
+  proto_builder_emit,
+  proto_builder_constant,
+  proto_builder_load_constant,
+  proto_builder_register_allocate,
+  proto_builder_register_release_to,
+  proto_builder_emit_jump,
+  proto_builder_emit_jump_if_false,
+  proto_builder_patch_to_here,
+  proto_builder_emit_jump_back,
+  proto_builder_finish
+} from '../lower/lower_builder'
+import { instruction_words_jump_wide } from '../bytecode_wide'
+import {
+  FunctionProto,
+  RunResult,
+  RunOk,
+  RunErr,
+  run_arithmetic
+} from '../interpreter'
+import { VerifyOk, VerifyErr, verify_function } from '../verifier'
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn false_value() -> Value = value_encode(ValueBool(false))
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_builder_unit] FAIL: " + label)
+  1
+end
+
+fn integer_result(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => match value_decode(value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn is_verified(proto: FunctionProto) -> bool =
+  match verify_function(proto.words, proto.register_count, proto.constants.length()) {
+    VerifyOk => true,
+    VerifyErr(_code, _word_index) => false
+  }
+
+fn emit_return(builder: ref mut ProtoBuilder, source: i32) -> i32 =
+  proto_builder_emit(builder, instruction_words_return(source))
+
+fn expect_constant_dedup() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let first = proto_builder_constant(builder, integer_value(7))
+  let second = proto_builder_constant(builder, integer_value(7))
+  if first != second then
+    return fail("constant_dedup index")
+  end
+  let proto = proto_builder_finish(builder)
+  if proto.constants.length() == 1 && is_verified(proto) then
+    println("constant_dedup")
+    0
+  else
+    fail("constant_dedup length=" + proto.constants.length().to_string())
+  end
+end
+
+fn load_distinct_constants(builder: ref mut ProtoBuilder, destination: i32) -> unit = do
+  let mut number = 0
+  while number < 300 do
+    proto_builder_load_constant(builder, destination, integer_value(number))
+    number = number + 1
+  end
+end
+
+fn last_load_is_wide(words: [i32]) -> bool = do
+  let primary = words.length() - 3
+  let decoded = instruction_decode(Instruction { word: words[primary] })
+  instruction_is_wide(decoded) && words[primary + 1] == 299
+end
+
+fn expect_wide_constant() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let destination = proto_builder_register_allocate(builder)
+  load_distinct_constants(builder, destination)
+  let _returned = emit_return(builder, destination)
+  let proto = proto_builder_finish(builder)
+  if proto.constants.length() != 300 || !last_load_is_wide(proto.words) || !is_verified(proto) then
+    return fail("wide_constant shape")
+  end
+  let result = integer_result(run_arithmetic(proto.words, proto.constants, proto.register_count))
+  if result == 299 then
+    println("wide_constant")
+    0
+  else
+    fail("wide_constant result=" + result.to_string())
+  end
+end
+
+fn expect_wide_jump_plus_one() -> i32 = do
+  let words = instruction_words_jump_wide(1)
+  if words.length() != 2 then
+    return fail("wide_jump_plus_one length")
+  end
+  let decoded = instruction_decode(Instruction { word: words[0] })
+  if instruction_is_wide(decoded) && words[1] == 1 && instruction_jump_offset(words, 0) == 1 then
+    println("wide_jump_plus_one")
+    0
+  else
+    fail("wide_jump_plus_one marker")
+  end
+end
+
+fn expect_patched_jump_plus_one() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let site = proto_builder_emit_jump(builder)
+  let _returned = emit_return(builder, 0)
+  proto_builder_patch_to_here(builder, site)
+  let proto = proto_builder_finish(builder)
+  let expected = instruction_words_jump_wide(1)
+  if proto.words[site] == expected[0] && proto.words[site + 1] == expected[1] && is_verified(proto) then
+    println("patched_jump_plus_one")
+    0
+  else
+    fail("patched_jump_plus_one")
+  end
+end
+
+fn expect_if_without_else() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let result_register = proto_builder_register_allocate(builder)
+  let condition_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, result_register, integer_value(1))
+  proto_builder_load_constant(builder, condition_register, false_value())
+  let site = proto_builder_emit_jump_if_false(builder, condition_register)
+  proto_builder_load_constant(builder, result_register, integer_value(2))
+  proto_builder_patch_to_here(builder, site)
+  let _returned = emit_return(builder, result_register)
+  let proto = proto_builder_finish(builder)
+  if !is_verified(proto) then
+    return fail("if_without_else verify")
+  end
+  let result = integer_result(run_arithmetic(proto.words, proto.constants, proto.register_count))
+  if result == 1 then
+    println("if_without_else")
+    0
+  else
+    fail("if_without_else result=" + result.to_string())
+  end
+end
+
+fn expect_sum_loop() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let sum_register = proto_builder_register_allocate(builder)
+  let index_register = proto_builder_register_allocate(builder)
+  let limit_register = proto_builder_register_allocate(builder)
+  let one_register = proto_builder_register_allocate(builder)
+  let condition_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, sum_register, integer_value(0))
+  proto_builder_load_constant(builder, index_register, integer_value(1))
+  proto_builder_load_constant(builder, limit_register, integer_value(100))
+  proto_builder_load_constant(builder, one_register, integer_value(1))
+  let loop_index = proto_builder_here(builder)
+  let _compared = proto_builder_emit(
+    builder,
+    instruction_words_binary(instruction_opcode_le(), condition_register, index_register, limit_register)
+  )
+  let exit_site = proto_builder_emit_jump_if_false(builder, condition_register)
+  let _added = proto_builder_emit(
+    builder,
+    instruction_words_binary(instruction_opcode_add(), sum_register, sum_register, index_register)
+  )
+  let _incremented = proto_builder_emit(
+    builder,
+    instruction_words_binary(instruction_opcode_add(), index_register, index_register, one_register)
+  )
+  proto_builder_emit_jump_back(builder, loop_index)
+  proto_builder_patch_to_here(builder, exit_site)
+  let _returned = emit_return(builder, sum_register)
+  let proto = proto_builder_finish(builder)
+  if !is_verified(proto) then
+    return fail("sum_loop verify")
+  end
+  let result = integer_result(run_arithmetic(proto.words, proto.constants, proto.register_count))
+  if result == 5050 then
+    println("sum_loop")
+    0
+  else
+    fail("sum_loop result=" + result.to_string())
+  end
+end
+
+fn expect_register_high_water() -> i32 = do
+  let mut builder = proto_builder_new(0)
+  let first = proto_builder_register_allocate(builder)
+  let second = proto_builder_register_allocate(builder)
+  let third = proto_builder_register_allocate(builder)
+  proto_builder_register_release_to(builder, 1)
+  let reused = proto_builder_register_allocate(builder)
+  let again = proto_builder_register_allocate(builder)
+  let proto = proto_builder_finish(builder)
+  if first == 0 && second == 1 && third == 2 && reused == 1 && again == 2 && proto.register_count == 3 && is_verified(proto) then
+    println("register_high_water")
+    0
+  else
+    fail("register_high_water count=" + proto.register_count.to_string())
+  end
+end
+
+fn expect_parameter_registers() -> i32 = do
+  let mut reserved = proto_builder_new(2)
+  let reserved_proto = proto_builder_finish(reserved)
+  if reserved_proto.register_count != 2 then
+    return fail("parameter_registers reserved=" + reserved_proto.register_count.to_string())
+  end
+  let mut builder = proto_builder_new(2)
+  let allocated = proto_builder_register_allocate(builder)
+  let proto = proto_builder_finish(builder)
+  if allocated == 2 && proto.register_count == 3 && is_verified(proto) then
+    println("parameter_registers")
+    0
+  else
+    fail("parameter_registers count=" + proto.register_count.to_string())
+  end
+end
+
+fn main() -> i32 = do
+  let dedup_status = expect_constant_dedup()
+  if dedup_status != 0 then
+    return dedup_status
+  end
+  let wide_constant_status = expect_wide_constant()
+  if wide_constant_status != 0 then
+    return wide_constant_status
+  end
+  let wide_jump_status = expect_wide_jump_plus_one()
+  if wide_jump_status != 0 then
+    return wide_jump_status
+  end
+  let patched_jump_status = expect_patched_jump_plus_one()
+  if patched_jump_status != 0 then
+    return patched_jump_status
+  end
+  let if_status = expect_if_without_else()
+  if if_status != 0 then
+    return if_status
+  end
+  let sum_status = expect_sum_loop()
+  if sum_status != 0 then
+    return sum_status
+  end
+  let register_status = expect_register_high_water()
+  if register_status != 0 then
+    return register_status
+  end
+  let parameter_status = expect_parameter_registers()
+  if parameter_status != 0 then
+    return parameter_status
+  end
+  println("lower_builder checks=8")
+  println("[script_vm] lower_builder_unit ok")
+  0
+end
