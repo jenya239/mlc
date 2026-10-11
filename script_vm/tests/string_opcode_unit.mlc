@@ -1,0 +1,75 @@
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_new_array,
+  instruction_words_binary,
+  instruction_words_return
+} from '../bytecode'
+import { instruction_opcode_length } from '../bytecode_text'
+import { FunctionProto, RunResult, RunOk, run_program } from '../interpreter'
+import { heap_new } from '../heap'
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut words = destination
+  let mut index = 0
+  while index < source.length() do
+    words.push(source[index])
+    index = index + 1
+  end
+  words
+end
+
+fn chain(left: [i32], right: [i32]) -> [i32] = append_words(left, right)
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn integer_constants(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(number))
+  constants
+end
+
+fn length_words() -> [i32] =
+  chain(
+    chain(
+      chain(instruction_words_load_const(0, 0), instruction_words_new_array(1, 0)),
+      instruction_words_binary(instruction_opcode_length(), 2, 1, 0)
+    ),
+    instruction_words_return(2)
+  )
+
+fn length_prototype() -> FunctionProto =
+  FunctionProto {
+    words: length_words(),
+    constants: integer_constants(3),
+    register_count: 3
+  }
+
+fn prototypes() -> [FunctionProto] = do
+  let mut items: [FunctionProto] = []
+  items.push(length_prototype())
+  items
+end
+
+fn decoded_integer(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn result_number(result: RunResult) -> i32 =
+  match result {
+    RunOk(value) => decoded_integer(value),
+    _ => 0 - 1
+  }
+
+fn main() -> i32 = do
+  let number = result_number(run_program(heap_new(), prototypes(), 0).result)
+  if number == 3 then
+    println("length=3")
+    println("[script_vm] string_opcode_unit ok")
+    0
+  else
+    1
+  end
+end
