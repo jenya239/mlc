@@ -137,6 +137,49 @@ export fn emb_encode_add1_module() -> [i32] = do
   bytes
 end
 
+fn maximum_register_count() -> i32 = 256
+
+fn export_proto_in_range(exports: [ModuleExport], proto_count: i32) -> bool = do
+  let mut index = 0
+  let mut accepted = true
+  while index < exports.length() && accepted do
+    accepted = exports[index].proto_index < proto_count
+    index = index + 1
+  end
+  accepted
+end
+
+fn register_count_in_range(register_count: i32) -> bool =
+  register_count >= 0 && register_count <= maximum_register_count()
+
+fn proto_registers_in_range(protos: [FunctionProto]) -> bool = do
+  let mut index = 0
+  let mut accepted = true
+  while index < protos.length() && accepted do
+    accepted = register_count_in_range(protos[index].register_count)
+    index = index + 1
+  end
+  accepted
+end
+
+fn limit_code(exports: [ModuleExport], protos: [FunctionProto]) -> i32 =
+  if !export_proto_in_range(exports, protos.length()) then
+    emb_format()
+  else if !proto_registers_in_range(protos) then
+    emb_format()
+  else
+    emb_ok()
+  end
+
+fn accept_decoded(exports: [ModuleExport], protos: [FunctionProto], empty: DecodedModule) -> DecodeResult = do
+  const code = limit_code(exports, protos)
+  if code != emb_ok() then
+    DecodeResult { code: code, module: empty }
+  else
+    DecodeResult { code: code, module: DecodedModule { exports: exports, protos: protos } }
+  end
+end
+
 export fn decode_module(bytes: [i32]) -> DecodeResult = do
   let mut empty_exports: [ModuleExport] = []
   let mut empty_protos: [FunctionProto] = []
@@ -235,10 +278,7 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
         else if offset != bytes.length() then
           DecodeResult { code: emb_format(), module: empty }
         else
-          DecodeResult {
-            code: emb_ok(),
-            module: DecodedModule { exports: exports, protos: protos }
-          }
+          accept_decoded(exports, protos, empty)
         end
       end
     end
