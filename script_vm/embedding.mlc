@@ -166,6 +166,16 @@ export fn emb_call_export_bytes(bytes: [i32], export_name: string, arg_raws: [i6
 export fn emb_verify_module_ptr(data_pointer: i64, size: i32) -> i32 =
   emb_verify_module_bytes(bytes_from_pointer(data_pointer, size))
 
+export fn emb_has_export_ptr(data_pointer: i64, size: i32, export_name: string) -> i32 = do
+  const decoded = decode_module(bytes_from_pointer(data_pointer, size))
+  if decoded.code != emb_ok() then
+    0
+  else
+    const proto_index = find_export_proto(decoded.module, export_name)
+    if proto_index < 0 then 0 else 1 end
+  end
+end
+
 export fn emb_call_export_ptr_limited(
   data_pointer: i64,
   size: i32,

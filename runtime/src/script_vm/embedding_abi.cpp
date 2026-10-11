@@ -102,6 +102,14 @@ MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* expo
   if (module_it == vm->state.modules.end()) {
     return 0;
   }
+  const auto data_pointer = reinterpret_cast<std::int64_t>(module_it->second.data());
+  const auto export_present = embedding::emb_has_export_ptr(
+      data_pointer,
+      static_cast<std::int32_t>(module_it->second.size()),
+      mlc::String(export_name));
+  if (export_present == 0) {
+    return 0;
+  }
   HandleSlot slot;
   slot.live = true;
   slot.module_name = module_name;
@@ -132,7 +140,7 @@ MlcResult mlc_vm_call(
     result.code = embedding_codes::emb_bad_handle();
     return result;
   }
-  if (argc > static_cast<size_t>(0x7fffffff)) {
+  if (argc > static_cast<size_t>(0x7fffffff) || (argc > 0 && args == nullptr)) {
     result.code = embedding_codes::emb_bounds();
     return result;
   }
