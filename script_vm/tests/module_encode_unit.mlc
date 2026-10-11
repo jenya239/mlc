@@ -1,0 +1,206 @@
+import { ModuleExport, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import {
+  Value,
+  ValueInt32,
+  ValueFloat64,
+  value_encode
+} from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_binary,
+  instruction_words_return,
+  instruction_opcode_add
+} from '../bytecode'
+import {
+  emb_ok,
+  emb_not_found,
+  emb_encode_add1_module,
+  emb_verify_module_bytes,
+  emb_call_export_bytes
+} from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm module_encode_unit] FAIL: " + label)
+  1
+end
+
+fn append_instruction(words: [i32], instruction: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < instruction.length() do
+    words.push(instruction[index])
+    index = index + 1
+  end
+  words
+end
+
+fn add1_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_instruction(words, instruction_words_load_const(1, 0))
+  words = append_instruction(words, instruction_words_binary(instruction_opcode_add(), 0, 0, 1))
+  words = append_instruction(words, instruction_words_return(0))
+  words
+end
+
+fn add1_proto() -> FunctionProto = do
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(1)))
+  FunctionProto { words: add1_words(), constants: constants, register_count: 2 }
+end
+
+fn return_constant_proto(constant: Value) -> FunctionProto = do
+  let mut words: [i32] = []
+  words = append_instruction(words, instruction_words_load_const(0, 0))
+  words = append_instruction(words, instruction_words_return(0))
+  let mut constants: [Value] = []
+  constants.push(constant)
+  FunctionProto { words: words, constants: constants, register_count: 1 }
+end
+
+fn negative_integer_value() -> Value = value_encode(ValueInt32(0 - 7))
+
+fn float_constant_value() -> Value = value_encode(ValueFloat64(1.5))
+
+fn encode_add1() -> [i32] = do
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "add1", proto_index: 0 })
+  let mut protos: [FunctionProto] = []
+  protos.push(add1_proto())
+  module_encode(exports, protos)
+end
+
+fn encode_pair() -> [i32] = do
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "n", proto_index: 0 })
+  exports.push(ModuleExport { name: "float_value", proto_index: 1 })
+  let mut protos: [FunctionProto] = []
+  protos.push(return_constant_proto(negative_integer_value()))
+  protos.push(return_constant_proto(float_constant_value()))
+  module_encode(exports, protos)
+end
+
+fn encode_empty() -> [i32] = do
+  let mut exports: [ModuleExport] = []
+  let mut protos: [FunctionProto] = []
+  module_encode(exports, protos)
+end
+
+fn encode_empty_name() -> [i32] = do
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "", proto_index: 0 })
+  let mut protos: [FunctionProto] = []
+  protos.push(return_constant_proto(value_encode(ValueInt32(5))))
+  module_encode(exports, protos)
+end
+
+fn expected_add1_prefix() -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes.push(77)
+  bytes.push(72)
+  bytes.push(83)
+  bytes.push(67)
+  bytes.push(1)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(1)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(4)
+  bytes.push(0)
+  bytes.push(0)
+  bytes.push(0)
+  bytes
+end
+
+fn bytes_equal(left: [i32], right: [i32]) -> bool = do
+  if left.length() != right.length() then
+    return false
+  end
+  let mut index = 0
+  let mut same = true
+  while index < left.length() && same do
+    if left[index] != right[index] then
+      same = false
+    end
+    index = index + 1
+  end
+  same
+end
+
+fn prefix_matches(bytes: [i32], expected: [i32]) -> bool = do
+  if bytes.length() < expected.length() then
+    return false
+  end
+  let mut index = 0
+  let mut same = true
+  while index < expected.length() && same do
+    if bytes[index] != expected[index] then
+      same = false
+    end
+    index = index + 1
+  end
+  same
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn expect_call_raw(bytes: [i32], export_name: string, expected_raw: i64, label: string) -> i32 = do
+  const called = emb_call_export_bytes(bytes, export_name, empty_arguments())
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if called.raw != expected_raw then
+    return fail(label + " raw")
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  const encoded_add1 = encode_add1()
+  const fixture = emb_encode_add1_module()
+  if !bytes_equal(encoded_add1, fixture) then
+    return fail("add1_bytes length=" + encoded_add1.length().to_string())
+  end
+  println("add1_bytes")
+  if !prefix_matches(encoded_add1, expected_add1_prefix()) then
+    return fail("add1_prefix")
+  end
+  println("add1_prefix")
+  const pair = encode_pair()
+  if emb_verify_module_bytes(pair) != emb_ok() then
+    return fail("pair_verify code=" + emb_verify_module_bytes(pair).to_string())
+  end
+  println("pair_verify")
+  const negative_call = expect_call_raw(pair, "n", negative_integer_value().raw, "negative_int32")
+  if negative_call != 0 then
+    return negative_call
+  end
+  const float_call = expect_call_raw(pair, "float_value", float_constant_value().raw, "float64")
+  if float_call != 0 then
+    return float_call
+  end
+  const empty_module = encode_empty()
+  if emb_verify_module_bytes(empty_module) != emb_ok() then
+    return fail("empty_verify code=" + emb_verify_module_bytes(empty_module).to_string())
+  end
+  println("empty_verify")
+  const missing = emb_call_export_bytes(empty_module, "missing", empty_arguments())
+  if missing.code != emb_not_found() then
+    return fail("empty_call code=" + missing.code.to_string())
+  end
+  println("empty_call")
+  const named = encode_empty_name()
+  const empty_name_call = expect_call_raw(named, "", value_encode(ValueInt32(5)).raw, "empty_name")
+  if empty_name_call != 0 then
+    return empty_name_call
+  end
+  println("module_encode checks=8")
+  println("[script_vm] module_encode_unit ok")
+  0
+end
