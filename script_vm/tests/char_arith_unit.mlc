@@ -12,7 +12,6 @@ import {
   instruction_words_load_const,
   instruction_words_binary,
   instruction_words_return,
-  instruction_words_jump_if_false,
   instruction_opcode_add,
   instruction_opcode_sub,
   instruction_opcode_mul,
@@ -54,8 +53,6 @@ fn int32_minimum() -> i32 = 0 - 2147483647 - 1
 
 fn binary_instruction_word_index() -> i32 = 2
 
-fn legacy_falsy_int_zero_jumps() -> bool = true
-
 fn append_words(destination: [i32], source: [i32]) -> [i32] = do
   let mut index = 0
   while index < source.length() do
@@ -79,24 +76,6 @@ fn binary_words(opcode: i32) -> [i32] = do
   words = append_words(words, instruction_words_binary(opcode, 2, 0, 1))
   words = append_words(words, instruction_words_return(2))
   words
-end
-
-fn falsy_words() -> [i32] = do
-  let mut words: [i32] = []
-  words = append_words(words, instruction_words_load_const(0, 0))
-  words = append_words(words, instruction_words_load_const(1, 1))
-  words = append_words(words, instruction_words_jump_if_false(1, 1))
-  words = append_words(words, instruction_words_load_const(0, 2))
-  words = append_words(words, instruction_words_return(0))
-  words
-end
-
-fn falsy_constants(condition_value: Value) -> [Value] = do
-  let mut constants: [Value] = []
-  constants.push(int_value(0))
-  constants.push(condition_value)
-  constants.push(int_value(7))
-  constants
 end
 
 fn error_code(result: RunResult) -> string =
@@ -368,28 +347,8 @@ fn check_limits(check: Check) -> Check = do
   current
 end
 
-fn check_legacy_falsy(check: Check, condition_value: Value, jumps: bool, label: string, failure_code: i32) -> Check = do
-  const result = run_arithmetic_and_heap(falsy_words(), falsy_constants(condition_value), 2)
-  if jumps then
-    expect_int32(check, result, 0, label, failure_code)
-  else
-    expect_int32(check, result, 7, label, failure_code)
-  end
-end
-
-fn check_falsy(check: Check) -> Check = do
-  let mut current = check
-  current = check_legacy_falsy(current, nil_value(), true, "legacy_falsy_nil", 59)
-  current = check_legacy_falsy(current, bool_value(false), true, "legacy_falsy_false", 60)
-  current = check_legacy_falsy(current, int_value(0), legacy_falsy_int_zero_jumps(), "legacy_falsy_int_zero", 61)
-  current = check_legacy_falsy(current, float_value(0.0), true, "legacy_falsy_float_zero", 62)
-  current = check_legacy_falsy(current, int_value(1), false, "legacy_falsy_int_one", 63)
-  current = check_legacy_falsy(current, bool_value(true), false, "legacy_falsy_true", 64)
-  current
-end
-
 fn main() -> i32 = do
-  const check = check_falsy(check_limits(check_compare(check_arithmetic(Check { count: 0, status: 0 }))))
+  const check = check_limits(check_compare(check_arithmetic(Check { count: 0, status: 0 })))
   if check.status != 0 then
     return check.status
   end

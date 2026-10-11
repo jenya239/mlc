@@ -57,7 +57,7 @@ import {
   vm_state_frame_proto,
   vm_state_frame_return_register
 } from './vm_state'
-import { apply_binary, apply_compare, value_is_falsy } from './arith'
+import { apply_binary, apply_compare, value_jump_decision } from './arith'
 import {
   executor_step_continue,
   executor_step_returned,
@@ -197,7 +197,10 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
           program_counter = primary + span
         end
       else if decoded.opcode == instruction_opcode_jump_if_false() then
-        if value_is_falsy(registers[decoded.a]) then
+        let decision = value_jump_decision(registers[decoded.a])
+        if decision == 2 then
+          step = executor_fail(state, run_err_type(), primary)
+        else if decision == 1 then
           program_counter = primary + span + instruction_jump_offset(words, primary)
         else
           program_counter = primary + span

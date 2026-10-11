@@ -189,13 +189,13 @@ fn apply_binary_general(opcode: i32, left_value: Value, right_value: Value) -> A
   ArithOpResult { err_code: code, value: out }
 end
 
-export fn value_is_falsy(value: Value) -> bool =
+export fn value_jump_decision(value: Value) -> i32 =
   match value_decode(value) {
-    ValueNil => true,
-    ValueBool(flag) => !flag,
-    ValueInt32(number) => number == 0,
-    ValueFloat64(number) => number == 0.0,
-    ValueHeapRef(_object_id) => false
+    ValueNil => 2,
+    ValueBool(flag) => if flag then 0 else 1 end,
+    ValueInt32(_number) => 0,
+    ValueFloat64(_number) => 0,
+    ValueHeapRef(_object_id) => 0
   }
 
 export fn apply_compare(opcode: i32, left_value: Value, right_value: Value) -> ArithOpResult =

@@ -25,6 +25,7 @@ registered_units = [
   ["heap_inplace", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/heap_inplace_unit.mlc"]],
   ["heap_reuse", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/heap_reuse_unit.mlc"]],
   ["heap_collect", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/heap_collect_unit.mlc"]],
+  ["falsy_contract", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/falsy_contract_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)
