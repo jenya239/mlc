@@ -68,6 +68,21 @@ fn main() -> i32 = do
     )
   end
   if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "1 + 2"),
+      "repl answer=value kind=int32 number=3"
+    )
+  end
+  if status == 0 then
+    status = expect_diagnostic(repl_session_submit(session, "true"))
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "1"),
+      "repl answer=value kind=int32 number=1"
+    )
+  end
+  if status == 0 then
     println("[script_vm] repl_session_unit ok")
   end
   status
