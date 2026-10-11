@@ -1,0 +1,249 @@
+import { Expr, Span, expr_span } from '../../compiler/frontend/ast'
+import { Value, ValueBool, ValueInt32, value_encode } from '../value'
+import {
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_words_binary,
+  instruction_words_move
+} from '../bytecode'
+import {
+  ProtoBuilder,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to,
+  proto_builder_load_constant,
+  proto_builder_emit
+} from './lower_builder'
+import { LowerDiagnostic, LowerType, LowerInt, LowerBool } from './lower_types'
+import {
+  LowerScope,
+  lower_scope_fail,
+  lower_scope_lookup
+} from './lower_scope'
+
+fn subtraction_opcode() -> i32 = instruction_opcode_sub()
+
+fn emit_instruction(builder: ref mut ProtoBuilder, words: [i32]) -> unit = do
+  let mut emitted_index = proto_builder_emit(builder, words)
+  while emitted_index < 0 do
+    emitted_index = 0
+  end
+end
+
+fn diagnostic_at(code: string, source_span: Span) -> LowerDiagnostic =
+  LowerDiagnostic {
+    code: code,
+    message: code,
+    line: source_span.line,
+    column: source_span.column
+  }
+
+fn is_lower_int(value_type: LowerType) -> bool =
+  match value_type {
+    LowerInt => true,
+    _ => false
+  }
+
+fn binary_opcode(operator: string) -> i32 =
+  if operator == "+" then
+    instruction_opcode_add()
+  else if operator == "-" then
+    subtraction_opcode()
+  else if operator == "*" then
+    instruction_opcode_mul()
+  else if operator == "/" then
+    instruction_opcode_div()
+  else
+    0
+  end
+
+fn identifier_operand(scope: ref mut LowerScope, name: string, source_span: Span) -> i32 = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    lower_scope_fail(scope, diagnostic_at("unknown_identifier", source_span))
+    0
+  else
+    scope.names[found].register_index
+  end
+end
+
+fn operand_type(scope: ref mut LowerScope, expression: Shared<Expr>, register_index: i32) -> LowerType =
+  match expression {
+    ExprIdent(name, _) => do
+      let found = lower_scope_lookup(scope, name)
+      if found < 0 then
+        LowerInt
+      else
+        scope.names[found].value_type
+      end
+    end,
+    _ => lowered_type_of_register(scope, register_index)
+  }
+
+fn lowered_type_of_register(scope: ref mut LowerScope, register_index: i32) -> LowerType = do
+  let mut index = scope.names.length() - 1
+  let mut found = 0 - 1
+  while index >= 0 && found < 0 do
+    if scope.names[index].register_index == register_index then
+      found = index
+    end
+    index = index - 1
+  end
+  if found < 0 then
+    LowerInt
+  else
+    scope.names[found].value_type
+  end
+end
+
+fn temporary_operand(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>
+) -> i32 = do
+  let temporary = proto_builder_register_allocate(builder)
+  lower_expression(scope, builder, expression, temporary)
+  temporary
+end
+
+fn use_operand(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>
+) -> i32 =
+  match expression {
+    ExprIdent(name, source_span) => identifier_operand(scope, name, source_span),
+    _ => temporary_operand(scope, builder, expression)
+  }
+
+fn lower_binary(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  operator: string,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let left_register = use_operand(scope, builder, left)
+  let right_register = use_operand(scope, builder, right)
+  let left_type = operand_type(scope, left, left_register)
+  let right_type = operand_type(scope, right, right_register)
+  let opcode = binary_opcode(operator)
+  if scope.has_diagnostic then
+    do
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  else if !is_lower_int(left_type) || !is_lower_int(right_type) || opcode == 0 then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  else
+    do
+      emit_instruction(builder, instruction_words_binary(opcode, target, left_register, right_register))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  end
+end
+
+fn lower_negate(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  inner: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let zero_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, zero_register, value_encode(ValueInt32(0)))
+  let inner_register = use_operand(scope, builder, inner)
+  let inner_type = operand_type(scope, inner, inner_register)
+  if scope.has_diagnostic then
+    do
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  else if !is_lower_int(inner_type) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  else
+    do
+      emit_instruction(
+        builder,
+        instruction_words_binary(subtraction_opcode(), target, zero_register, inner_register)
+      )
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end
+  end
+end
+
+fn move_to_target(builder: ref mut ProtoBuilder, target: i32, source: i32) -> unit = do
+  if source != target then
+    emit_instruction(builder, instruction_words_move(target, source))
+  end
+end
+
+fn lower_expression_checked(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType =
+  match expression {
+    ExprInt(number, _) => do
+      proto_builder_load_constant(builder, target, value_encode(ValueInt32(number)))
+      LowerInt
+    end,
+    ExprBool(flag, _) => do
+      proto_builder_load_constant(builder, target, value_encode(ValueBool(flag)))
+      LowerBool
+    end,
+    ExprIdent(name, source_span) => do
+      let source = identifier_operand(scope, name, source_span)
+      let value_type = operand_type(scope, expression, source)
+      move_to_target(builder, target, source)
+      value_type
+    end,
+    ExprBin(operator, left, right, source_span) =>
+      lower_binary(scope, builder, operator, left, right, source_span, target),
+    ExprUn(operator, inner, source_span) =>
+      if operator == "-" then
+        lower_negate(scope, builder, inner, source_span, target)
+      else
+        do
+          lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+          LowerInt
+        end
+      end,
+    ExprBlock(_, _, source_span) => do
+      lower_scope_fail(scope, diagnostic_at("unsupported_expression_block", source_span))
+      LowerInt
+    end,
+    _ => do
+      lower_scope_fail(scope, diagnostic_at("unsupported_expression", expr_span(expression)))
+      LowerInt
+    end
+  }
+
+export fn lower_expression(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType =
+  if scope.has_diagnostic then
+    LowerInt
+  else
+    lower_expression_checked(scope, builder, expression, target)
+  end

@@ -13,12 +13,13 @@ import {
   DeclExported,
   DeclAssocType,
   DeclAssocBind,
-  Expr
+  Expr,
+  Param
 } from '../../compiler/frontend/ast'
 import { FunctionProto } from '../run_result'
 import { ModuleExport, module_encode } from '../module_blob'
 import { LowerDiagnostic, LowerResult } from './lower_types'
-import { FunctionLowered, FunctionRejected, lower_literal_body } from './lower_function'
+import { FunctionLowered, FunctionRejected, lower_function_body } from './lower_function'
 
 type LowerWalk = {
   diagnostics: [LowerDiagnostic],
@@ -85,8 +86,14 @@ fn append_proto(walk: LowerWalk, name: string, proto: FunctionProto, exported: b
   end
 end
 
-fn consider_function(walk: LowerWalk, name: string, body: Shared<Expr>, exported: bool) -> LowerWalk =
-  match lower_literal_body(body) {
+fn consider_function(
+  walk: LowerWalk,
+  name: string,
+  parameters: [Shared<Param>],
+  body: Shared<Expr>,
+  exported: bool
+) -> LowerWalk =
+  match lower_function_body(parameters, body) {
     FunctionLowered(proto) => append_proto(walk, name, proto, exported),
     FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
   }
@@ -101,15 +108,16 @@ fn consider_unsupported(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk
 
 fn consider_inner(walk: LowerWalk, inner: Shared<Decl>, exported: bool) -> LowerWalk =
   match inner {
-    DeclFn(name, _, _, _, _, body, _) => consider_function(walk, name, body, exported),
+    DeclFn(name, _, _, parameters, _, body, _) =>
+      consider_function(walk, name, parameters, body, exported),
     _ => consider_unsupported(walk, inner)
   }
 
 fn consider_declaration(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk =
   match declaration {
     DeclExported(inner) => consider_inner(walk, inner, true),
-    DeclFn(name, _, _, _, _, body, _) =>
-      consider_function(walk, name, body, plain_function_is_exported()),
+    DeclFn(name, _, _, parameters, _, body, _) =>
+      consider_function(walk, name, parameters, body, plain_function_is_exported()),
     _ => consider_unsupported(walk, declaration)
   }
 

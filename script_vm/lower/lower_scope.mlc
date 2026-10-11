@@ -1,0 +1,127 @@
+import { LowerDiagnostic, LowerType } from './lower_types'
+import {
+  ProtoBuilder,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+
+export type LowerName = {
+  name: string,
+  register_index: i32,
+  value_type: LowerType,
+  is_mutable: bool
+}
+
+export type LowerScope = {
+  names: [LowerName],
+  frame_name_counts: [i32],
+  frame_register_marks: [i32],
+  has_diagnostic: bool,
+  diagnostic: LowerDiagnostic
+}
+
+fn empty_diagnostic() -> LowerDiagnostic =
+  LowerDiagnostic { code: "", message: "", line: 0, column: 0 }
+
+export fn lower_scope_new() -> LowerScope = do
+  let mut names: [LowerName] = []
+  let mut frame_name_counts: [i32] = []
+  let mut frame_register_marks: [i32] = []
+  LowerScope {
+    names: names,
+    frame_name_counts: frame_name_counts,
+    frame_register_marks: frame_register_marks,
+    has_diagnostic: false,
+    diagnostic: empty_diagnostic()
+  }
+end
+
+fn names_prefix(names: [LowerName], count: i32) -> [LowerName] = do
+  let mut copied: [LowerName] = []
+  let mut index = 0
+  while index < count do
+    copied.push(names[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn counts_without_last(counts: [i32]) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < counts.length() - 1 do
+    copied.push(counts[index])
+    index = index + 1
+  end
+  copied
+end
+
+export fn lower_scope_fail(scope: ref mut LowerScope, diagnostic: LowerDiagnostic) -> unit = do
+  if !scope.has_diagnostic then
+    scope.has_diagnostic = true
+    scope.diagnostic = diagnostic
+  end
+end
+
+export fn lower_scope_lookup(scope: ref mut LowerScope, name: string) -> i32 = do
+  let mut index = scope.names.length() - 1
+  let mut found = 0 - 1
+  while index >= 0 && found < 0 do
+    if scope.names[index].name == name then
+      found = index
+    end
+    index = index - 1
+  end
+  found
+end
+
+export fn lower_scope_define(
+  scope: ref mut LowerScope,
+  name: string,
+  register_index: i32,
+  value_type: LowerType,
+  is_mutable: bool
+) -> unit = do
+  scope.names.push(LowerName {
+    name: name,
+    register_index: register_index,
+    value_type: value_type,
+    is_mutable: is_mutable
+  })
+end
+
+export fn lower_scope_bind(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  name: string,
+  value_type: LowerType,
+  is_mutable: bool
+) -> i32 = do
+  let allocated_register = proto_builder_register_allocate(builder)
+  lower_scope_define(scope, name, allocated_register, value_type, is_mutable)
+  allocated_register
+end
+
+export fn lower_scope_push(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> unit = do
+  scope.frame_name_counts.push(scope.names.length())
+  scope.frame_register_marks.push(proto_builder_register_mark(builder))
+end
+
+export fn lower_scope_pop(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> unit = do
+  if scope.frame_name_counts.length() > 0 then
+    pop_scope_frame(scope, builder)
+  end
+end
+
+fn pop_scope_frame(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> unit = do
+  let name_count = scope.frame_name_counts[scope.frame_name_counts.length() - 1]
+  let register_mark = scope.frame_register_marks[scope.frame_register_marks.length() - 1]
+  let kept_names = names_prefix(scope.names, name_count)
+  let kept_name_counts = counts_without_last(scope.frame_name_counts)
+  let kept_register_marks = counts_without_last(scope.frame_register_marks)
+  scope.names = kept_names
+  scope.frame_name_counts = kept_name_counts
+  scope.frame_register_marks = kept_register_marks
+  proto_builder_register_release_to(builder, register_mark)
+end

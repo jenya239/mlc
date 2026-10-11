@@ -1,50 +1,100 @@
-import { Expr, expr_span } from '../../compiler/frontend/ast'
-import { Value, ValueBool, ValueInt32, value_encode } from '../value'
+import {
+  Expr,
+  ExprBlock,
+  Param,
+  TypeExpr,
+  TyI32,
+  TyBool,
+  TyNamed
+} from '../../compiler/frontend/ast'
 import { instruction_words_return } from '../bytecode'
 import { FunctionProto } from '../run_result'
 import {
   ProtoBuilder,
   proto_builder_new,
   proto_builder_register_allocate,
-  proto_builder_load_constant,
   proto_builder_emit,
   proto_builder_finish
 } from './lower_builder'
-import { LowerDiagnostic } from './lower_types'
+import { LowerDiagnostic, LowerType, LowerInt, LowerBool, LowerRecord } from './lower_types'
+import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
+import { lower_expression } from './lower_expression'
+import { lower_block } from './lower_statement'
 
 export type FunctionLowering =
   | FunctionLowered(FunctionProto)
   | FunctionRejected(LowerDiagnostic)
 
-fn rejected_expression(expression: Shared<Expr>) -> LowerDiagnostic = do
-  const source_span = expr_span(expression)
-  LowerDiagnostic {
-    code: "unsupported_expression",
-    message: "unsupported_expression",
-    line: source_span.line,
-    column: source_span.column
+fn parameter_value_type(type_expression: Shared<TypeExpr>) -> LowerType =
+  match type_expression {
+    TyI32 => LowerInt,
+    TyBool => LowerBool,
+    TyNamed(name) => LowerRecord(name),
+    _ => LowerInt
   }
-end
 
-fn emit_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionProto = do
-  let emitted_index = proto_builder_emit(builder, instruction_words_return(source))
-  if emitted_index < 0 then
-    proto_builder_finish(builder)
-  else
-    proto_builder_finish(builder)
+fn bind_parameters(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  parameters: [Shared<Param>]
+) -> unit = do
+  let mut index = 0
+  while index < parameters.length() do
+    let parameter = parameters[index]
+    lower_scope_bind(
+      scope,
+      builder,
+      parameter.name,
+      parameter_value_type(parameter.type_value),
+      parameter.is_mut
+    )
+    index = index + 1
   end
 end
 
-fn finish_constant(constant: Value) -> FunctionProto = do
-  let mut builder = proto_builder_new(0)
-  let destination = proto_builder_register_allocate(builder)
-  proto_builder_load_constant(builder, destination, constant)
-  emit_return(builder, destination)
+fn lower_body(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType =
+  match expression {
+    ExprBlock(statements, final_expression, _) =>
+      lower_block(scope, builder, statements, final_expression, target),
+    _ => lower_expression(scope, builder, expression, target)
+  }
+
+fn finish_with_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionLowering = do
+  let emitted_index = proto_builder_emit(builder, instruction_words_return(source))
+  if emitted_index < 0 then
+    FunctionLowered(proto_builder_finish(builder))
+  else
+    FunctionLowered(proto_builder_finish(builder))
+  end
 end
 
-export fn lower_literal_body(expression: Shared<Expr>) -> FunctionLowering =
-  match expression {
-    ExprInt(number, _) => FunctionLowered(finish_constant(value_encode(ValueInt32(number)))),
-    ExprBool(flag, _) => FunctionLowered(finish_constant(value_encode(ValueBool(flag)))),
-    _ => FunctionRejected(rejected_expression(expression))
-  }
+export fn lower_function_body(
+  parameters: [Shared<Param>],
+  expression: Shared<Expr>
+) -> FunctionLowering = do
+  let mut builder = proto_builder_new(0)
+  let mut scope = lower_scope_new()
+  bind_parameters(scope, builder, parameters)
+  let destination = proto_builder_register_allocate(builder)
+  let body_type = lower_body(scope, builder, expression, destination)
+  finish_or_reject(scope, builder, destination, body_type)
+end
+
+fn finish_or_reject(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  destination: i32,
+  body_type: LowerType
+) -> FunctionLowering =
+  if scope.has_diagnostic then
+    FunctionRejected(scope.diagnostic)
+  else
+    match body_type {
+      _ => finish_with_return(builder, destination)
+    }
+  end

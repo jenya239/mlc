@@ -1,8 +1,8 @@
-current_step: 68
-status: consult_ready
-last_result: blocked step 69: DeclFn parameters are discarded in script_vm/lower/lower_module.mlc, which is outside allowed_files
-last_verify: script_vm/lower/lower_module.mlc:104 DeclFn(name, _, _, _, _, body, _) drops the parameter list; lower_literal_body receives only the body; type_mismatch for b: bool and unknown_identifier need that list
-next_step: 69
-consult_count: 1
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261011_165648.md
-consult_verdict: 
+current_step: 69
+status: ready
+last_result: green step 69: параметры, локалы и арифметика; sabotage subtraction_opcode ADD → FAIL sub value=58, затем восстановлен SUB
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_arithmetic_unit.mlc → checks=14 [script_vm] lower_arithmetic_unit ok; ruby scripts/run_script_vm_gate.rb lower_stage1 lower_arithmetic lower_builder → script_vm_gate ok units=3; ruby scripts/run_script_vm_file_size.rb → script_vm file size: ok
+next_step: 70
+consult_count: 0
+consult_response:
+consult_verdict:

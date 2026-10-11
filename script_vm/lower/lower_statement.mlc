@@ -1,0 +1,102 @@
+import { Expr, ExprBlock, Stmt, StmtLet, StmtLetConst, stmt_span } from '../../compiler/frontend/ast'
+import { ProtoBuilder, proto_builder_register_allocate } from './lower_builder'
+import { LowerDiagnostic, LowerType, LowerInt } from './lower_types'
+import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_push, lower_scope_pop } from './lower_scope'
+import { lower_expression } from './lower_expression'
+
+export fn lower_block(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  statements: [Shared<Stmt>],
+  final_expression: Shared<Expr>,
+  target: i32
+) -> LowerType = do
+  lower_scope_push(scope, builder)
+  let result_type = block_result(scope, builder, statements, final_expression, target)
+  lower_scope_pop(scope, builder)
+  result_type
+end
+
+fn block_result(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  statements: [Shared<Stmt>],
+  final_expression: Shared<Expr>,
+  target: i32
+) -> LowerType = do
+  lower_statements(scope, builder, statements)
+  if scope.has_diagnostic then
+    LowerInt
+  else
+    lower_expression(scope, builder, final_expression, target)
+  end
+end
+
+fn lower_initializer(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType =
+  match expression {
+    ExprBlock(statements, final_expression, _) =>
+      lower_block(scope, builder, statements, final_expression, target),
+    _ => lower_expression(scope, builder, expression, target)
+  }
+
+fn lower_initialized_name(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  name: string,
+  is_mutable: bool,
+  expression: Shared<Expr>
+) -> unit = do
+  let destination = proto_builder_register_allocate(builder)
+  let value_type = lower_initializer(scope, builder, expression, destination)
+  lower_scope_define(scope, name, destination, value_type, is_mutable)
+end
+
+export fn lower_statement(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  statement: Shared<Stmt>
+) -> unit = do
+  if !scope.has_diagnostic then
+    apply_statement(scope, builder, statement)
+  end
+end
+
+fn apply_statement(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  statement: Shared<Stmt>
+) -> unit =
+  match statement {
+    StmtLetConst(name, _, expression, _) =>
+      lower_initialized_name(scope, builder, name, false, expression),
+    StmtLet(name, is_mutable, _, expression, _) =>
+      lower_initialized_name(scope, builder, name, is_mutable, expression),
+    _ => lower_scope_fail(scope, diagnostic_code_at_statement(statement))
+  }
+
+fn diagnostic_code_at_statement(statement: Shared<Stmt>) -> LowerDiagnostic = do
+  let source_span = stmt_span(statement)
+  LowerDiagnostic {
+    code: "unsupported_statement",
+    message: "unsupported_statement",
+    line: source_span.line,
+    column: source_span.column
+  }
+end
+
+export fn lower_statements(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  statements: [Shared<Stmt>]
+) -> unit = do
+  let mut index = 0
+  while index < statements.length() && !scope.has_diagnostic do
+    lower_statement(scope, builder, statements[index])
+    index = index + 1
+  end
+end
