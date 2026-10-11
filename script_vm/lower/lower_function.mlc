@@ -1,0 +1,50 @@
+import { Expr, expr_span } from '../../compiler/frontend/ast'
+import { Value, ValueBool, ValueInt32, value_encode } from '../value'
+import { instruction_words_return } from '../bytecode'
+import { FunctionProto } from '../run_result'
+import {
+  ProtoBuilder,
+  proto_builder_new,
+  proto_builder_register_allocate,
+  proto_builder_load_constant,
+  proto_builder_emit,
+  proto_builder_finish
+} from './lower_builder'
+import { LowerDiagnostic } from './lower_types'
+
+export type FunctionLowering =
+  | FunctionLowered(FunctionProto)
+  | FunctionRejected(LowerDiagnostic)
+
+fn rejected_expression(expression: Shared<Expr>) -> LowerDiagnostic = do
+  const source_span = expr_span(expression)
+  LowerDiagnostic {
+    code: "unsupported_expression",
+    message: "unsupported_expression",
+    line: source_span.line,
+    column: source_span.column
+  }
+end
+
+fn emit_return(builder: ref mut ProtoBuilder, source: i32) -> FunctionProto = do
+  let emitted_index = proto_builder_emit(builder, instruction_words_return(source))
+  if emitted_index < 0 then
+    proto_builder_finish(builder)
+  else
+    proto_builder_finish(builder)
+  end
+end
+
+fn finish_constant(constant: Value) -> FunctionProto = do
+  let mut builder = proto_builder_new(0)
+  let destination = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, destination, constant)
+  emit_return(builder, destination)
+end
+
+export fn lower_literal_body(expression: Shared<Expr>) -> FunctionLowering =
+  match expression {
+    ExprInt(number, _) => FunctionLowered(finish_constant(value_encode(ValueInt32(number)))),
+    ExprBool(flag, _) => FunctionLowered(finish_constant(value_encode(ValueBool(flag)))),
+    _ => FunctionRejected(rejected_expression(expression))
+  }

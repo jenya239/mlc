@@ -1,0 +1,11 @@
+export type LowerDiagnostic = {
+  code: string,
+  message: string,
+  line: i32,
+  column: i32
+}
+
+export type LowerResult = {
+  diagnostics: [LowerDiagnostic],
+  bytes: [i32]
+}

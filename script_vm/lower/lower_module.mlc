@@ -1,0 +1,144 @@
+import { tokenize } from '../../compiler/frontend/lexer'
+import { parse_program_with_errors } from '../../compiler/frontend/parser/decls'
+import {
+  Decl,
+  DeclFn,
+  DeclType,
+  DeclTypeAlias,
+  DeclTrait,
+  DeclExtend,
+  DeclImport,
+  DeclExternLib,
+  DeclExternType,
+  DeclExported,
+  DeclAssocType,
+  DeclAssocBind,
+  Expr
+} from '../../compiler/frontend/ast'
+import { FunctionProto } from '../run_result'
+import { ModuleExport, module_encode } from '../module_blob'
+import { LowerDiagnostic, LowerResult } from './lower_types'
+import { FunctionLowered, FunctionRejected, lower_literal_body } from './lower_function'
+
+type LowerWalk = {
+  diagnostics: [LowerDiagnostic],
+  protos: [FunctionProto],
+  exports: [ModuleExport]
+}
+
+fn empty_walk() -> LowerWalk = do
+  let mut diagnostics: [LowerDiagnostic] = []
+  let mut protos: [FunctionProto] = []
+  let mut exports: [ModuleExport] = []
+  LowerWalk { diagnostics: diagnostics, protos: protos, exports: exports }
+end
+
+fn plain_function_is_exported() -> bool = false
+
+fn syntax_result(messages: [string]) -> LowerResult = do
+  let mut diagnostics: [LowerDiagnostic] = []
+  let mut index = 0
+  while index < messages.length() do
+    diagnostics.push(LowerDiagnostic {
+      code: "syntax_error",
+      message: messages[index],
+      line: 0,
+      column: 0
+    })
+    index = index + 1
+  end
+  let mut bytes: [i32] = []
+  LowerResult { diagnostics: diagnostics, bytes: bytes }
+end
+
+fn declaration_code(declaration: Shared<Decl>) -> string =
+  match declaration {
+    DeclFn(_, _, _, _, _, _, _) => "unsupported_function",
+    DeclType(_, _, _, _, _) => "unsupported_type",
+    DeclTypeAlias(_, _, _, _) => "unsupported_type_alias",
+    DeclTrait(_, _, _, _) => "unsupported_trait",
+    DeclExtend(_, _, _, _) => "unsupported_extend",
+    DeclImport(_, _) => "unsupported_import",
+    DeclExternLib(_, _) => "unsupported_extern_lib",
+    DeclExternType(_, _, _, _, _, _) => "unsupported_extern_type",
+    DeclAssocType(_, _) => "unsupported_assoc_type",
+    DeclAssocBind(_, _, _) => "unsupported_assoc_bind",
+    DeclExported(inner) => declaration_code(inner)
+  }
+
+fn push_diagnostic(walk: LowerWalk, diagnostic: LowerDiagnostic) -> LowerWalk = do
+  let mut diagnostics = walk.diagnostics
+  diagnostics.push(diagnostic)
+  LowerWalk { diagnostics: diagnostics, protos: walk.protos, exports: walk.exports }
+end
+
+fn append_proto(walk: LowerWalk, name: string, proto: FunctionProto, exported: bool) -> LowerWalk = do
+  let proto_index = walk.protos.length()
+  let mut protos = walk.protos
+  protos.push(proto)
+  if exported then
+    let mut exports = walk.exports
+    exports.push(ModuleExport { name: name, proto_index: proto_index })
+    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: exports }
+  else
+    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: walk.exports }
+  end
+end
+
+fn consider_function(walk: LowerWalk, name: string, body: Shared<Expr>, exported: bool) -> LowerWalk =
+  match lower_literal_body(body) {
+    FunctionLowered(proto) => append_proto(walk, name, proto, exported),
+    FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
+  }
+
+fn consider_unsupported(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk =
+  push_diagnostic(walk, LowerDiagnostic {
+    code: declaration_code(declaration),
+    message: declaration_code(declaration),
+    line: 0,
+    column: 0
+  })
+
+fn consider_inner(walk: LowerWalk, inner: Shared<Decl>, exported: bool) -> LowerWalk =
+  match inner {
+    DeclFn(name, _, _, _, _, body, _) => consider_function(walk, name, body, exported),
+    _ => consider_unsupported(walk, inner)
+  }
+
+fn consider_declaration(walk: LowerWalk, declaration: Shared<Decl>) -> LowerWalk =
+  match declaration {
+    DeclExported(inner) => consider_inner(walk, inner, true),
+    DeclFn(name, _, _, _, _, body, _) =>
+      consider_function(walk, name, body, plain_function_is_exported()),
+    _ => consider_unsupported(walk, declaration)
+  }
+
+fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do
+  let mut walk = empty_walk()
+  let mut index = 0
+  while index < declarations.length() do
+    walk = consider_declaration(walk, declarations[index])
+    index = index + 1
+  end
+  if walk.diagnostics.length() > 0 then
+    let mut bytes: [i32] = []
+    LowerResult { diagnostics: walk.diagnostics, bytes: bytes }
+  else
+    LowerResult {
+      diagnostics: walk.diagnostics,
+      bytes: module_encode(walk.exports, walk.protos)
+    }
+  end
+end
+
+export fn lower_source(source: string) -> LowerResult = do
+  const lexer_output = tokenize(source)
+  if lexer_output.errors.length() > 0 then
+    return syntax_result(lexer_output.errors)
+  end
+  const parse_value = parse_program_with_errors(lexer_output.tokens, "lower_source.mlc")
+  if parse_value.errors.length() > 0 then
+    return syntax_result(parse_value.errors)
+  end
+  lower_declarations(parse_value.program.decls)
+end
