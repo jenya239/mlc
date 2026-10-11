@@ -1,0 +1,209 @@
+import { lower_source } from '../lower/lower_module'
+import { Value, ValueBool, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { emb_stack } from '../embedding_codes'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_calls_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn one_integer(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn matches_bool(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_int(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: i32,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if decoded_int(called.raw) != expected then
+    return fail(label + " value=" + decoded_int(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_bool(
+  source: string,
+  export_name: string,
+  arguments: [i64],
+  expected: bool,
+  label: string
+) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  if !matches_bool(called.raw, expected) then
+    return fail(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn expect_stack(source: string, export_name: string, arguments: [i64], label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label)
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_stack() then
+    return fail(label + " code=" + called.code.to_string())
+  end
+  println(label)
+  0
+end
+
+fn has_code(source: string, code: string) -> bool = do
+  const lowered = lower_source(source)
+  let mut index = 0
+  let mut found = false
+  while index < lowered.diagnostics.length() && !found do
+    if lowered.diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_diagnostic(source: string, code: string, label: string) -> i32 = do
+  if !has_code(source, code) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn double_source() -> string =
+  "fn double(value: i32) -> i32 = value + value export fn main(value: i32) -> i32 = double(value) + 1"
+
+fn later_source() -> string =
+  "export fn main(value: i32) -> i32 = later(value) + 2 fn later(value: i32) -> i32 = value + 1"
+
+fn three_source() -> string =
+  "fn sum_three(left: i32, middle: i32, right: i32) -> i32 = left + middle + right export fn main() -> i32 = sum_three(2, 3, 4)"
+
+fn positive_source() -> string =
+  "fn is_positive(value: i32) -> bool = value > 0 export fn main(value: i32) -> bool = is_positive(value)"
+
+fn fibonacci_source() -> string =
+  "export fn fibonacci(number: i32) -> i32 = if number <= 1 then number else fibonacci(number - 1) + fibonacci(number - 2) end"
+
+fn parity_source() -> string =
+  "export fn is_even(number: i32) -> bool = if number == 0 then true else is_odd(number - 1) end export fn is_odd(number: i32) -> bool = if number == 0 then false else is_even(number - 1) end"
+
+fn deep_source() -> string =
+  "export fn deep(value: i32) -> i32 = if value <= 0 then 0 else deep(value - 1) + 1 end"
+
+fn unknown_source() -> string =
+  "export fn main() -> i32 = missing(1)"
+
+fn arity_source() -> string =
+  "fn double(value: i32) -> i32 = value + value export fn main() -> i32 = double(1, 2)"
+
+fn mismatch_source() -> string =
+  "fn take_flag(flag: bool) -> i32 = if flag then 1 else 2 end export fn main() -> i32 = take_flag(1)"
+
+fn nested_source() -> string =
+  "fn increment(value: i32) -> i32 = value + 1 fn combine(left: i32, right: i32) -> i32 = left * 10 + right export fn main() -> i32 = combine(increment(1), increment(2))"
+
+fn check_calls() -> i32 = do
+  let mut status = expect_int(double_source(), "main", one_integer(3), 7, "double_plus_one")
+  if status == 0 then
+    status = expect_int(later_source(), "main", one_integer(4), 7, "later_declaration")
+  end
+  if status == 0 then
+    status = expect_int(three_source(), "main", no_arguments(), 9, "three_arguments")
+  end
+  if status == 0 then
+    status = expect_bool(positive_source(), "main", one_integer(3), true, "bool_true")
+  end
+  if status == 0 then
+    status = expect_bool(positive_source(), "main", one_integer(0), false, "bool_false")
+  end
+  status
+end
+
+fn check_recursion() -> i32 = do
+  let mut status = expect_int(fibonacci_source(), "fibonacci", one_integer(10), 55, "fibonacci_ten")
+  if status == 0 then
+    status = expect_bool(parity_source(), "is_even", one_integer(4), true, "even_four")
+  end
+  if status == 0 then
+    status = expect_bool(parity_source(), "is_odd", one_integer(5), true, "odd_five")
+  end
+  if status == 0 then
+    status = expect_int(deep_source(), "deep", one_integer(100), 100, "deep_hundred")
+  end
+  if status == 0 then
+    status = expect_stack(deep_source(), "deep", one_integer(300), "deep_three_hundred")
+  end
+  status
+end
+
+fn check_diagnostics() -> i32 = do
+  let mut status = expect_diagnostic(unknown_source(), "unknown_function", "unknown_function")
+  if status == 0 then
+    status = expect_diagnostic(arity_source(), "call_arity", "call_arity")
+  end
+  if status == 0 then
+    status = expect_diagnostic(mismatch_source(), "type_mismatch", "call_type_mismatch")
+  end
+  if status == 0 then
+    status = expect_int(nested_source(), "main", no_arguments(), 23, "nested_arguments")
+  end
+  status
+end
+
+fn main() -> i32 = do
+  let mut status = check_calls()
+  if status == 0 then
+    status = check_recursion()
+  end
+  if status == 0 then
+    status = check_diagnostics()
+  end
+  if status != 0 then
+    return status
+  end
+  println("lower_calls checks=14")
+  println("[script_vm] lower_calls_unit ok")
+  0
+end
