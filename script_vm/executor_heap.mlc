@@ -65,6 +65,18 @@ fn executor_new_array_length(
     )
   end
 
+fn executor_new_array_after_collect(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  decoded: DecodedAbc,
+  primary: i32,
+  span: i32
+) -> i32 =
+  match value_decode(vm_state_register(state, decoded.b)) {
+    ValueInt32(length) => executor_new_array_length(heap, state, decoded, primary, span, length),
+    _ => executor_fail(state, run_err_type(), primary)
+  }
+
 export fn executor_exec_new_array(
   heap: ref mut Heap,
   state: ref mut VmState,
@@ -72,11 +84,12 @@ export fn executor_exec_new_array(
   primary: i32,
   span: i32
 ) -> i32 = do
-  executor_collect_if_needed(state, heap)
-  match value_decode(vm_state_register(state, decoded.b)) {
-    ValueInt32(length) => executor_new_array_length(heap, state, decoded, primary, span, length),
-    _ => executor_fail(state, run_err_type(), primary)
-  }
+  const collected = executor_collect_if_needed(state, heap, primary)
+  if collected != executor_step_continue() then
+    collected
+  else
+    executor_new_array_after_collect(heap, state, decoded, primary, span)
+  end
 end
 
 fn executor_read_array_element(
@@ -192,14 +205,18 @@ export fn executor_exec_new_record(
   primary: i32,
   span: i32
 ) -> i32 = do
-  executor_collect_if_needed(state, heap)
-  executor_store_allocated(
-    state,
-    decoded.a,
-    heap_in_place_alloc_record(heap, decoded.b),
-    primary,
-    span
-  )
+  const collected = executor_collect_if_needed(state, heap, primary)
+  if collected != executor_step_continue() then
+    collected
+  else
+    executor_store_allocated(
+      state,
+      decoded.a,
+      heap_in_place_alloc_record(heap, decoded.b),
+      primary,
+      span
+    )
+  end
 end
 
 fn executor_read_record_field(

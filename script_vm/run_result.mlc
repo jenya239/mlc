@@ -22,6 +22,7 @@ export fn run_err_unsupported_opcode() -> string = "unsupported_opcode"
 export fn run_err_bounds() -> string = "bounds"
 export fn run_err_stack() -> string = "stack"
 export fn run_err_instruction_limit() -> string = "instruction_limit"
+export fn run_err_heap_limit() -> string = "heap_limit"
 
 export type RunLimits = { instruction_limit: i64, heap_limit_objects: i32 }
 

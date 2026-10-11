@@ -1,6 +1,8 @@
 import { Heap } from './heap_types'
 import { heap_in_place_collect } from './heap_collect'
 import { VmState, vm_state_live_roots } from './vm_state'
+import { run_err_heap_limit } from './run_result'
+import { executor_step_continue, executor_fail } from './executor_step'
 
 fn initial_gc_threshold() -> i32 = 1024
 
@@ -13,10 +15,22 @@ fn next_gc_threshold(live_count: i32) -> i32 = do
   end
 end
 
-fn collect_for_heap_limit(state: ref mut VmState, heap: ref mut Heap) -> unit = do
+fn collect_when_over_heap_limit(state: ref mut VmState, heap: ref mut Heap) -> unit = do
   if heap.live_count >= state.heap_limit_objects then
     heap_in_place_collect(heap, vm_state_live_roots(state))
   end
+end
+
+fn status_after_heap_limit(state: ref mut VmState, heap: ref mut Heap, primary: i32) -> i32 =
+  if heap.live_count >= state.heap_limit_objects then
+    executor_fail(state, run_err_heap_limit(), primary)
+  else
+    executor_step_continue()
+  end
+
+fn collect_for_heap_limit(state: ref mut VmState, heap: ref mut Heap, primary: i32) -> i32 = do
+  collect_when_over_heap_limit(state, heap)
+  status_after_heap_limit(state, heap, primary)
 end
 
 fn raise_after_collect(state: ref mut VmState, heap: ref mut Heap) -> unit = do
@@ -30,10 +44,14 @@ fn collect_for_threshold(state: ref mut VmState, heap: ref mut Heap) -> unit = d
   end
 end
 
-export fn executor_collect_if_needed(state: ref mut VmState, heap: ref mut Heap) -> unit = do
-  if state.heap_limit_objects > 0 then
-    collect_for_heap_limit(state, heap)
-  else
-    collect_for_threshold(state, heap)
-  end
+fn collect_for_threshold_status(state: ref mut VmState, heap: ref mut Heap) -> i32 = do
+  collect_for_threshold(state, heap)
+  executor_step_continue()
 end
+
+export fn executor_collect_if_needed(state: ref mut VmState, heap: ref mut Heap, primary: i32) -> i32 =
+  if state.heap_limit_objects > 0 then
+    collect_for_heap_limit(state, heap, primary)
+  else
+    collect_for_threshold_status(state, heap)
+  end

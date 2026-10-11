@@ -252,7 +252,10 @@ export fn executor_exec_make_closure(
   primary: i32,
   span: i32
 ) -> i32 = do
-  executor_collect_if_needed(state, heap)
+  const collected = executor_collect_if_needed(state, heap, primary)
+  if collected != executor_step_continue() then
+    return collected
+  end
   if decoded.b < 0 || decoded.b >= protos.length() then
     return executor_fail(state, run_err_type(), primary)
   end
