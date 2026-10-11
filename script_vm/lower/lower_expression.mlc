@@ -1,102 +1,35 @@
 import { Expr, Span, expr_span } from '../../compiler/frontend/ast'
 import { Value, ValueBool, ValueInt32, value_encode } from '../value'
-import {
-  instruction_opcode_add,
-  instruction_opcode_sub,
-  instruction_opcode_mul,
-  instruction_opcode_div,
-  instruction_words_binary,
-  instruction_words_move
-} from '../bytecode'
+import { instruction_words_binary } from '../bytecode'
 import {
   ProtoBuilder,
   proto_builder_register_allocate,
   proto_builder_register_mark,
   proto_builder_register_release_to,
   proto_builder_load_constant,
-  proto_builder_emit
+  proto_builder_emit_jump,
+  proto_builder_emit_jump_if_false,
+  proto_builder_patch_to_here
 } from './lower_builder'
-import { LowerDiagnostic, LowerType, LowerInt, LowerBool } from './lower_types'
+import { LowerType, LowerInt, LowerBool } from './lower_types'
+import { LowerScope, lower_scope_fail } from './lower_scope'
 import {
-  LowerScope,
-  lower_scope_fail,
-  lower_scope_lookup
-} from './lower_scope'
-
-fn subtraction_opcode() -> i32 = instruction_opcode_sub()
-
-fn emit_instruction(builder: ref mut ProtoBuilder, words: [i32]) -> unit = do
-  let mut emitted_index = proto_builder_emit(builder, words)
-  while emitted_index < 0 do
-    emitted_index = 0
-  end
-end
-
-fn diagnostic_at(code: string, source_span: Span) -> LowerDiagnostic =
-  LowerDiagnostic {
-    code: code,
-    message: code,
-    line: source_span.line,
-    column: source_span.column
-  }
-
-fn is_lower_int(value_type: LowerType) -> bool =
-  match value_type {
-    LowerInt => true,
-    _ => false
-  }
-
-fn binary_opcode(operator: string) -> i32 =
-  if operator == "+" then
-    instruction_opcode_add()
-  else if operator == "-" then
-    subtraction_opcode()
-  else if operator == "*" then
-    instruction_opcode_mul()
-  else if operator == "/" then
-    instruction_opcode_div()
-  else
-    0
-  end
-
-fn identifier_operand(scope: ref mut LowerScope, name: string, source_span: Span) -> i32 = do
-  let found = lower_scope_lookup(scope, name)
-  if found < 0 then
-    lower_scope_fail(scope, diagnostic_at("unknown_identifier", source_span))
-    0
-  else
-    scope.names[found].register_index
-  end
-end
-
-fn operand_type(scope: ref mut LowerScope, expression: Shared<Expr>, register_index: i32) -> LowerType =
-  match expression {
-    ExprIdent(name, _) => do
-      let found = lower_scope_lookup(scope, name)
-      if found < 0 then
-        LowerInt
-      else
-        scope.names[found].value_type
-      end
-    end,
-    _ => lowered_type_of_register(scope, register_index)
-  }
-
-fn lowered_type_of_register(scope: ref mut LowerScope, register_index: i32) -> LowerType = do
-  let mut index = scope.names.length() - 1
-  let mut found = 0 - 1
-  while index >= 0 && found < 0 do
-    if scope.names[index].register_index == register_index then
-      found = index
-    end
-    index = index - 1
-  end
-  if found < 0 then
-    LowerInt
-  else
-    scope.names[found].value_type
-  end
-end
+  binary_opcode,
+  branch_expression,
+  comparison_opcode,
+  diagnostic_at,
+  emit_binary,
+  emit_instruction,
+  finish_if_type,
+  identifier_operand,
+  is_bool_equality_operator,
+  is_comparison_operator,
+  is_lower_bool,
+  is_lower_int,
+  move_to_target,
+  operand_type,
+  subtraction_opcode
+} from './lower_control'
 
 fn temporary_operand(
   scope: ref mut LowerScope,
@@ -146,9 +79,50 @@ fn lower_binary(
     end
   else
     do
-      emit_instruction(builder, instruction_words_binary(opcode, target, left_register, right_register))
+      emit_binary(builder, opcode, target, left_register, right_register)
       proto_builder_register_release_to(builder, mark)
       LowerInt
+    end
+  end
+end
+
+fn lower_comparison(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  operator: string,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let left_register = use_operand(scope, builder, left)
+  let right_register = use_operand(scope, builder, right)
+  let left_type = operand_type(scope, left, left_register)
+  let right_type = operand_type(scope, right, right_register)
+  let opcode = comparison_opcode(operator)
+  if scope.has_diagnostic then
+    do
+      proto_builder_register_release_to(builder, mark)
+      LowerBool
+    end
+  else if is_lower_bool(left_type) && is_lower_bool(right_type) && is_bool_equality_operator(operator) then
+    do
+      lower_scope_fail(scope, diagnostic_at("bool_equality_unsupported", source_span))
+      proto_builder_register_release_to(builder, mark)
+      LowerBool
+    end
+  else if !is_lower_int(left_type) || !is_lower_int(right_type) || opcode == 0 then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      proto_builder_register_release_to(builder, mark)
+      LowerBool
+    end
+  else
+    do
+      emit_binary(builder, opcode, target, left_register, right_register)
+      proto_builder_register_release_to(builder, mark)
+      LowerBool
     end
   end
 end
@@ -188,10 +162,68 @@ fn lower_negate(
   end
 end
 
-fn move_to_target(builder: ref mut ProtoBuilder, target: i32, source: i32) -> unit = do
-  if source != target then
-    emit_instruction(builder, instruction_words_move(target, source))
+fn lower_if_branch(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  target: i32
+) -> LowerType = do
+  let branch_mark = proto_builder_register_mark(builder)
+  let branch_type = lower_expression(scope, builder, branch_expression(expression), target)
+  proto_builder_register_release_to(builder, branch_mark)
+  branch_type
+end
+
+fn lower_if_branches(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  condition_register: i32,
+  then_expression: Shared<Expr>,
+  else_expression: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let else_site = proto_builder_emit_jump_if_false(builder, condition_register)
+  let then_type = lower_if_branch(scope, builder, then_expression, target)
+  let end_site = proto_builder_emit_jump(builder)
+  proto_builder_patch_to_here(builder, else_site)
+  let else_type = lower_if_branch(scope, builder, else_expression, target)
+  proto_builder_patch_to_here(builder, end_site)
+  finish_if_type(scope, then_type, else_type, source_span)
+end
+
+fn lower_if(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  condition: Shared<Expr>,
+  then_expression: Shared<Expr>,
+  else_expression: Shared<Expr>,
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let condition_register = proto_builder_register_allocate(builder)
+  let condition_type = lower_expression(scope, builder, condition, condition_register)
+  let result_type = if scope.has_diagnostic then
+    LowerInt
+  else if !is_lower_bool(condition_type) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
+  else
+    lower_if_branches(
+      scope,
+      builder,
+      condition_register,
+      then_expression,
+      else_expression,
+      source_span,
+      target
+    )
   end
+  proto_builder_register_release_to(builder, mark)
+  result_type
 end
 
 fn lower_expression_checked(
@@ -216,7 +248,11 @@ fn lower_expression_checked(
       value_type
     end,
     ExprBin(operator, left, right, source_span) =>
-      lower_binary(scope, builder, operator, left, right, source_span, target),
+      if is_comparison_operator(operator) then
+        lower_comparison(scope, builder, operator, left, right, source_span, target)
+      else
+        lower_binary(scope, builder, operator, left, right, source_span, target)
+      end,
     ExprUn(operator, inner, source_span) =>
       if operator == "-" then
         lower_negate(scope, builder, inner, source_span, target)
@@ -226,6 +262,8 @@ fn lower_expression_checked(
           LowerInt
         end
       end,
+    ExprIf(condition, then_expression, else_expression, source_span) =>
+      lower_if(scope, builder, condition, then_expression, else_expression, source_span, target),
     ExprBlock(_, _, source_span) => do
       lower_scope_fail(scope, diagnostic_at("unsupported_expression_block", source_span))
       LowerInt

@@ -1,0 +1,174 @@
+import { Expr, ExprBlock, Span } from '../../compiler/frontend/ast'
+import {
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge,
+  instruction_words_binary,
+  instruction_words_move
+} from '../bytecode'
+import { ProtoBuilder, proto_builder_emit } from './lower_builder'
+import { LowerDiagnostic, LowerType, LowerInt, LowerBool } from './lower_types'
+import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
+
+export fn subtraction_opcode() -> i32 = instruction_opcode_sub()
+
+export fn emit_instruction(builder: ref mut ProtoBuilder, words: [i32]) -> unit = do
+  let mut emitted_index = proto_builder_emit(builder, words)
+  while emitted_index < 0 do
+    emitted_index = 0
+  end
+end
+
+export fn diagnostic_at(code: string, source_span: Span) -> LowerDiagnostic =
+  LowerDiagnostic {
+    code: code,
+    message: code,
+    line: source_span.line,
+    column: source_span.column
+  }
+
+export fn is_lower_int(value_type: LowerType) -> bool =
+  match value_type {
+    LowerInt => true,
+    _ => false
+  }
+
+export fn is_lower_bool(value_type: LowerType) -> bool =
+  match value_type {
+    LowerBool => true,
+    _ => false
+  }
+
+export fn types_agree(left: LowerType, right: LowerType) -> bool =
+  if is_lower_int(left) && is_lower_int(right) then
+    true
+  else if is_lower_bool(left) && is_lower_bool(right) then
+    true
+  else
+    false
+  end
+
+export fn binary_opcode(operator: string) -> i32 =
+  if operator == "+" then
+    instruction_opcode_add()
+  else if operator == "-" then
+    subtraction_opcode()
+  else if operator == "*" then
+    instruction_opcode_mul()
+  else if operator == "/" then
+    instruction_opcode_div()
+  else
+    0
+  end
+
+export fn is_comparison_operator(operator: string) -> bool =
+  operator == "<" || operator == "<=" || operator == ">" || operator == ">=" || operator == "==" || operator == "!="
+
+export fn is_bool_equality_operator(operator: string) -> bool =
+  operator == "==" || operator == "!="
+
+export fn comparison_opcode(operator: string) -> i32 =
+  if operator == "<" then
+    instruction_opcode_lt()
+  else if operator == "<=" then
+    instruction_opcode_le()
+  else if operator == ">" then
+    instruction_opcode_gt()
+  else if operator == ">=" then
+    instruction_opcode_ge()
+  else if operator == "==" then
+    instruction_opcode_eq()
+  else if operator == "!=" then
+    instruction_opcode_ne()
+  else
+    0
+  end
+
+export fn identifier_operand(scope: ref mut LowerScope, name: string, source_span: Span) -> i32 = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    lower_scope_fail(scope, diagnostic_at("unknown_identifier", source_span))
+    0
+  else
+    scope.names[found].register_index
+  end
+end
+
+fn lowered_type_of_register(scope: ref mut LowerScope, register_index: i32) -> LowerType = do
+  let mut index = scope.names.length() - 1
+  let mut found = 0 - 1
+  while index >= 0 && found < 0 do
+    if scope.names[index].register_index == register_index then
+      found = index
+    end
+    index = index - 1
+  end
+  if found < 0 then
+    LowerInt
+  else
+    scope.names[found].value_type
+  end
+end
+
+export fn operand_type(scope: ref mut LowerScope, expression: Shared<Expr>, register_index: i32) -> LowerType =
+  match expression {
+    ExprIdent(name, _) => do
+      let found = lower_scope_lookup(scope, name)
+      if found < 0 then
+        LowerInt
+      else
+        scope.names[found].value_type
+      end
+    end,
+    _ => lowered_type_of_register(scope, register_index)
+  }
+
+export fn move_to_target(builder: ref mut ProtoBuilder, target: i32, source: i32) -> unit = do
+  if source != target then
+    emit_instruction(builder, instruction_words_move(target, source))
+  end
+end
+
+export fn branch_expression(expression: Shared<Expr>) -> Shared<Expr> =
+  match expression {
+    ExprBlock(statements, final_expression, _) =>
+      if statements.length() == 0 then
+        final_expression
+      else
+        expression
+      end,
+    _ => expression
+  }
+
+export fn finish_if_type(
+  scope: ref mut LowerScope,
+  then_type: LowerType,
+  else_type: LowerType,
+  source_span: Span
+) -> LowerType =
+  if scope.has_diagnostic then
+    LowerInt
+  else if types_agree(then_type, else_type) then
+    then_type
+  else
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
+  end
+
+export fn emit_binary(
+  builder: ref mut ProtoBuilder,
+  opcode: i32,
+  target: i32,
+  left_register: i32,
+  right_register: i32
+) -> unit =
+  emit_instruction(builder, instruction_words_binary(opcode, target, left_register, right_register))
