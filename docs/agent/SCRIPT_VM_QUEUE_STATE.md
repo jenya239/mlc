@@ -1,8 +1,8 @@
-current_step: 94
+current_step: 95
 status: ready
-last_result: done step 94: mlc_vm_get_export проверяет emb_has_export_ptr; argc без args даёт MLC_BOUNDS
-last_verify: ruby scripts/run_script_vm_handle_host.rb => exit 0, handle_host ok cases=10; ruby scripts/run_script_vm_lowered_host.rb => exit 0, lowered_host ok cases=6; bash scripts/run_script_vm_embedding_abi_unit.sh => exit 0; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok; sabotage без emb_has_export_ptr => get_export_missing_export got=1 exit 1; restored; повтор gate зелёный
-next_step: 95
+last_result: done step 95: S95.trivial_call_ns 2950, S95.sum_call_ns 11480, S95.fixed_share_x100 25; кэш декодирования не в этой очереди
+last_verify: ruby scripts/run_script_vm_call_overhead.rb => S95.trivial_call_ns=2950, S95.sum_call_ns=11480, S95.fixed_share_x100=25; повтор => 3064, 11646, 26; sabotage missing export => measurement failed: module or export, exit 1; restored; повтор gate зелёный
+next_step: 96
 consult_count: 0
 consult_response:
 consult_verdict:
