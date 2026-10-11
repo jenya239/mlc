@@ -449,12 +449,12 @@
 - allowed_files: `script_vm/tests/repl_session_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: submit `export fn broken( -> i32 = 1` даёт diagnostic. Следующий submit годной функции снова даёт accepted, и вызов прежней `identity(4)` по-прежнему 4
-- red: `RED(repl_session)`, поведенческий
-- green: none
-- gate: `RED(repl_session)`
+- red: `RED(repl_session)`, поведенческий. Если текущий unit уже зелёный на новых ассершенах без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из green шага 118
+- green: none, если unit уже зелёный; иначе — правка `repl_session.mlc`
+- gate: `RUN(repl_session)`
 - sabotage: none
 - performance: not a perf step
-- done_when: отказ показывает, что битый текст сохранился или потерялась старая функция
+- done_when: отказ показывает, что битый текст сохранился или потерялась старая функция; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 119
 - state_update: фактические строки
 
 ### Step 120 — Green: откат битого объявления
