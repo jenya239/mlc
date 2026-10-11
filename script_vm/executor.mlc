@@ -72,7 +72,7 @@ import {
   executor_exec_get_upval,
   executor_exec_set_upval
 } from './executor_calls'
-import { executor_exec_length, executor_exec_make_string } from './executor_text'
+import { executor_exec_length, executor_exec_make_string, executor_both_strings, executor_text_add, executor_text_equal } from './executor_text'
 import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
 import {
   executor_exec_new_array,
@@ -215,20 +215,36 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
       let decoded = instruction_decode(Instruction { word: words[primary] })
       let span = instruction_word_span(words, primary)
       if decoded.opcode == instruction_opcode_add() || decoded.opcode == instruction_opcode_sub() || decoded.opcode == instruction_opcode_mul() || decoded.opcode == instruction_opcode_div() then
-        let outcome = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
-        if outcome.err_code != "" then
-          step = executor_fail(state, outcome.err_code, primary)
+        if decoded.opcode == instruction_opcode_add() && executor_both_strings(heap, registers[decoded.b], registers[decoded.c]) then
+          write_frame_registers(state, registers)
+          let added = executor_text_add(heap, state, registers[decoded.b], registers[decoded.c], primary)
+          if added.step != executor_step_continue() then
+            step = added.step
+          else
+            registers.set(decoded.a, added.value)
+            program_counter = primary + span
+          end
         else
-          registers.set(decoded.a, outcome.value)
-          program_counter = primary + span
+          let outcome = apply_binary(decoded.opcode, registers[decoded.b], registers[decoded.c])
+          if outcome.err_code != "" then
+            step = executor_fail(state, outcome.err_code, primary)
+          else
+            registers.set(decoded.a, outcome.value)
+            program_counter = primary + span
+          end
         end
       else if decoded.opcode == instruction_opcode_le() || decoded.opcode == instruction_opcode_eq() || decoded.opcode == instruction_opcode_ne() || decoded.opcode == instruction_opcode_lt() || decoded.opcode == instruction_opcode_gt() || decoded.opcode == instruction_opcode_ge() then
-        let outcome = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
-        if outcome.err_code != "" then
-          step = executor_fail(state, outcome.err_code, primary)
-        else
-          registers.set(decoded.a, outcome.value)
+        if decoded.opcode == instruction_opcode_eq() && executor_both_strings(heap, registers[decoded.b], registers[decoded.c]) then
+          registers.set(decoded.a, executor_text_equal(heap, registers[decoded.b], registers[decoded.c]))
           program_counter = primary + span
+        else
+          let outcome = apply_compare(decoded.opcode, registers[decoded.b], registers[decoded.c])
+          if outcome.err_code != "" then
+            step = executor_fail(state, outcome.err_code, primary)
+          else
+            registers.set(decoded.a, outcome.value)
+            program_counter = primary + span
+          end
         end
       else if decoded.opcode == instruction_opcode_jump_if_false() then
         let decision = value_jump_decision(registers[decoded.a])

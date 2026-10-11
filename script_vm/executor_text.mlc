@@ -1,4 +1,4 @@
-import { Value, ValueInt32, ValueHeapRef, value_encode, value_decode } from './value'
+import { Value, ValueInt32, ValueBool, ValueNil, ValueHeapRef, value_encode, value_decode } from './value'
 import { DecodedAbc } from './bytecode'
 import {
   Heap,
@@ -181,3 +181,88 @@ export fn executor_exec_make_string(
     make_string_after_collect(heap, state, decoded, primary, span)
   end
 end
+
+export type TextBinary = { step: i32, value: Value }
+
+fn value_is_string(heap: ref mut Heap, value: Value) -> bool =
+  heap_in_place_type_id(heap, value) == heap_type_string()
+
+export fn executor_both_strings(heap: ref mut Heap, left: Value, right: Value) -> bool =
+  value_is_string(heap, left) && value_is_string(heap, right)
+
+fn empty_bytes() -> [i32] = do
+  let mut bytes: [i32] = []
+  bytes
+end
+
+fn append_string_bytes(heap: ref mut Heap, bytes: [i32], value: Value) -> [i32] = do
+  let mut next = bytes
+  let mut index = 0
+  let count = heap_in_place_element_count(heap, value)
+  while index < count do
+    next.push(read_byte(heap, value, index))
+    index = index + 1
+  end
+  next
+end
+
+fn write_listed_bytes(heap: ref mut Heap, object_id: i32, bytes: [i32]) -> unit = do
+  let mut index = 0
+  while index < bytes.length() do
+    write_string_byte(heap, object_id, index, bytes[index])
+    index = index + 1
+  end
+end
+
+fn install_listed_string(heap: ref mut Heap, bytes: [i32]) -> Value = do
+  let allocated = heap_in_place_alloc_array(heap, bytes.length())
+  let object_id = object_id_of(allocated)
+  heap.slots.set(object_id, string_slot_from(heap.slots[object_id]))
+  write_listed_bytes(heap, object_id, bytes)
+  allocated
+end
+
+fn nil_text(step: i32) -> TextBinary =
+  TextBinary { step: step, value: value_encode(ValueNil) }
+
+export fn executor_text_add(
+  heap: ref mut Heap,
+  state: ref mut VmState,
+  left: Value,
+  right: Value,
+  primary: i32
+) -> TextBinary = do
+  let copied = append_string_bytes(heap, append_string_bytes(heap, empty_bytes(), left), right)
+  let collected = executor_collect_if_needed(state, heap, primary)
+  if collected != executor_step_continue() then
+    nil_text(collected)
+  else
+    TextBinary { step: executor_step_continue(), value: install_listed_string(heap, copied) }
+  end
+end
+
+fn bytes_differ_at(heap: ref mut Heap, left: Value, right: Value, index: i32) -> bool =
+  read_byte(heap, left, index) != read_byte(heap, right, index)
+
+fn string_bytes_equal(heap: ref mut Heap, left: Value, right: Value, count: i32) -> bool = do
+  let mut index = 0
+  let mut same = true
+  while index < count && same do
+    same = !bytes_differ_at(heap, left, right, index)
+    index = index + 1
+  end
+  same
+end
+
+fn strings_equal(heap: ref mut Heap, left: Value, right: Value) -> bool = do
+  let count = heap_in_place_element_count(heap, left)
+  if count != heap_in_place_element_count(heap, right) then
+    false
+  else
+    string_bytes_equal(heap, left, right, count)
+  end
+end
+
+export fn executor_text_equal(heap: ref mut Heap, left: Value, right: Value) -> Value =
+  value_encode(ValueBool(strings_equal(heap, left, right)))
+
