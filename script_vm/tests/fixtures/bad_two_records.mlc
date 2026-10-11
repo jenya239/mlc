@@ -1,0 +1,6 @@
+type Point = { horizontal: i32, vertical: i32 }
+export fn run() -> i32 = do
+const first = Point { horizontal: 1, vertical: 2 }
+const second = Point { horizontal: 3, vertical: 4 }
+first.horizontal + second.vertical
+end

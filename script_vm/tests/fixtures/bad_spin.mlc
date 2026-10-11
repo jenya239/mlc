@@ -1,0 +1,5 @@
+export fn spin() -> i32 = do
+while true do
+end
+0
+end
