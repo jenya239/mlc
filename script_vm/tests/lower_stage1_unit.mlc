@@ -1,0 +1,153 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic, LowerResult } from '../lower/lower_types'
+import { Value, ValueBool, ValueInt32, value_decode } from '../value'
+import {
+  emb_ok,
+  emb_not_found,
+  emb_verify_module_bytes,
+  emb_call_export_bytes
+} from '../embedding'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm lower_stage1_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn has_diagnostic_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn call_is_int32(bytes: [i32], export_name: string, expected: i32) -> bool = do
+  const called = emb_call_export_bytes(bytes, export_name, empty_arguments())
+  if called.code != emb_ok() then
+    return false
+  end
+  match value_decode(Value { raw: called.raw }) {
+    ValueInt32(number) => number == expected,
+    _ => false
+  }
+end
+
+fn call_is_bool(bytes: [i32], export_name: string, expected: bool) -> bool = do
+  const called = emb_call_export_bytes(bytes, export_name, empty_arguments())
+  if called.code != emb_ok() then
+    return false
+  end
+  match value_decode(Value { raw: called.raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+end
+
+fn expect_literal_int32(source: string, export_name: string, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " diagnostics=" + lowered.diagnostics.length().to_string())
+  end
+  if emb_verify_module_bytes(lowered.bytes) != emb_ok() then
+    return fail(label + " verify")
+  end
+  if !call_is_int32(lowered.bytes, export_name, expected) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn expect_literal_bool(source: string, export_name: string, expected: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " diagnostics=" + lowered.diagnostics.length().to_string())
+  end
+  if !call_is_bool(lowered.bytes, export_name, expected) then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
+fn expect_syntax_error(source: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() < 1 then
+    return fail(label + " diagnostics=0")
+  end
+  if !has_diagnostic_code(lowered.diagnostics, "syntax_error") then
+    return fail(label + " code")
+  end
+  if lowered.bytes.length() != 0 then
+    return fail(label + " bytes=" + lowered.bytes.length().to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_unsupported(source: string, code: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if !has_diagnostic_code(lowered.diagnostics, code) then
+    return fail(label + " code")
+  end
+  if lowered.bytes.length() != 0 then
+    return fail(label + " bytes=" + lowered.bytes.length().to_string())
+  end
+  println(label)
+  0
+end
+
+fn expect_unexported_helper() -> i32 = do
+  const source = "fn helper() -> i32 = 1 export fn main() -> i32 = 2"
+  const lowered: LowerResult = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail("unexported_helper diagnostics=" + lowered.diagnostics.length().to_string())
+  end
+  if emb_verify_module_bytes(lowered.bytes) != emb_ok() then
+    return fail("unexported_helper verify")
+  end
+  const hidden = emb_call_export_bytes(lowered.bytes, "helper", empty_arguments())
+  if hidden.code != emb_not_found() then
+    return fail("unexported_helper code=" + hidden.code.to_string())
+  end
+  if !call_is_int32(lowered.bytes, "main", 2) then
+    return fail("unexported_helper main")
+  end
+  println("unexported_helper")
+  0
+end
+
+fn main() -> i32 = do
+  const literal_main = expect_literal_int32("export fn main() -> i32 = 42", "main", 42, "literal_main")
+  if literal_main != 0 then
+    return literal_main
+  end
+  const literal_bool = expect_literal_bool("export fn answer() -> bool = true", "answer", true, "literal_bool")
+  if literal_bool != 0 then
+    return literal_bool
+  end
+  const hidden = expect_unexported_helper()
+  if hidden != 0 then
+    return hidden
+  end
+  const syntax = expect_syntax_error("export fn main( -> i32 = 1", "syntax_error")
+  if syntax != 0 then
+    return syntax
+  end
+  const alias = expect_unsupported("type X = i32", "unsupported_type_alias", "type_alias")
+  if alias != 0 then
+    return alias
+  end
+  println("lower_stage1 checks=5")
+  println("[script_vm] lower_stage1_unit ok")
+  0
+end
