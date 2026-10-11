@@ -61,6 +61,8 @@ fn apply_int32_binary(opcode: i32, left_number: i32, right_number: i32) -> Arith
   if opcode == instruction_opcode_div() then
     if right_number == 0 then
       ArithOpResult { err_code: run_err_div_zero(), value: encoded_nil() }
+    else if right_number == (0 - 1) && left_number < (0 - 2147483647) then
+      ArithOpResult { err_code: run_err_overflow(), value: encoded_nil() }
     else
       ArithOpResult { err_code: "", value: encoded_int32(left_number / right_number) }
     end
@@ -126,6 +128,8 @@ fn apply_binary_general(opcode: i32, left_value: Value, right_value: Value) -> A
           if opcode == instruction_opcode_div() then
             if right_number == 0 then
               code = run_err_div_zero()
+            else if right_number == (0 - 1) && left_number < (0 - 2147483647) then
+              code = run_err_overflow()
             else
               out = value_encode(ValueInt32(left_number / right_number))
             end
