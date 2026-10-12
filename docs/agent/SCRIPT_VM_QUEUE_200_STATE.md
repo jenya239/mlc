@@ -1,8 +1,8 @@
 current_step: 166
-status: ready
-last_result: done step 166: unit ok lower_iteration
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_iteration_unit.mlc => exit 0, break_outside_loop, continue_outside_loop, unit ok lower_iteration; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
+status: consult_ready
+last_result: blocked step 167: session already returns number=3
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_session_unit.mlc => exit 0, repl answer=accepted, repl answer=value kind=int32 number=3, unit ok repl_session
 next_step: 167
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261012_114717.md
 consult_verdict:
