@@ -9,6 +9,9 @@ import {
   ReplDiagnostic
 } from '../repl_session'
 
+extern fn script_vm_perf_now_us() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
 fn answer_line(answer: ReplAnswer) -> string =
   match answer {
     ReplIncomplete => "repl answer=incomplete",
@@ -30,6 +33,7 @@ end
 
 fn main() -> i32 = do
   let mut session = repl_session_new()
+  let started_microseconds = script_vm_perf_now_us()
   let mut status = expect_answer(
     repl_session_submit(session, "'hi'"),
     "repl answer=value kind=string length=2"
@@ -55,8 +59,16 @@ fn main() -> i32 = do
       "repl answer=value kind=int32 number=5"
     )
   end
-  if status == 0 then
+  let elapsed_microseconds = script_vm_perf_now_us() - started_microseconds
+  if status == 0 && elapsed_microseconds >= 0 then
+    println("repl_language_us=" + elapsed_microseconds.to_string())
     println("[script_vm] repl_language_unit ok")
+    0
+  else
+    if status == 0 then
+      1
+    else
+      status
+    end
   end
-  status
 end
