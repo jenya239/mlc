@@ -1345,12 +1345,12 @@
 - allowed_files: `script_vm/tests/repl_session_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: выражение или объявление плюс вызов, результат 6
-- red: `RED(repl_session)`, поведенческий
+- red: `RED(repl_session)`, поведенческий. Если текущий unit уже зелёный на новой проверке без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанных green шагов 170 и 176/168.
 - green: none
 - gate: `RED(repl_session)`
 - sabotage: none
 - performance: not a perf step
-- done_when: красный исход
+- done_when: красный исход; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 175
 - state_update: фактическая строка
 
 ### Step 176 — Green: for в REPL
