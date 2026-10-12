@@ -1,0 +1,39 @@
+import { lower_source } from '../lower/lower_module'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { Value, ValueInt32, value_decode } from '../value'
+
+fn break_sum_source() -> string =
+  "export fn run() -> i32 = do let mut total = 0 let mut index = 1 while index <= 10 do if total > 2 then break end total = total + index index = index + 1 end total end"
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn expect_break_sum() -> i32 = do
+  let lowered = lower_source(break_sum_source())
+  if lowered.diagnostics.length() != 0 then
+    println("iteration diagnostic=" + lowered.diagnostics[0].code)
+    1
+  else
+    let called = emb_call_export_bytes(lowered.bytes, "run", no_arguments())
+    if called.code != emb_ok() then
+      println("iteration call code=" + called.code.to_string())
+      1
+    else if decoded_int(called.raw) == 3 then
+      println("iteration value=3")
+      0
+    else
+      println("iteration value=" + decoded_int(called.raw).to_string())
+      1
+    end
+  end
+end
+
+fn main() -> i32 = expect_break_sum()
