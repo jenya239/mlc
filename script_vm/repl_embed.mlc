@@ -48,6 +48,18 @@ fn answer_value(number: i32, accepted_source: string, pending: string) -> ReplEm
     pending: pending
   }
 
+fn answer_string(literal_length: i32, accepted_source: string, pending: string) -> ReplEmbedAnswer =
+  ReplEmbedAnswer {
+    status: status_value(),
+    value: 0,
+    string_length: literal_length,
+    line: 0,
+    column: 0,
+    code: "",
+    accepted_source: accepted_source,
+    pending: pending
+  }
+
 fn answer_diagnostic(
   code: string,
   line: i32,
@@ -179,6 +191,64 @@ fn text_is_declaration(text: string) -> bool = do
   word == "fn" || word == "export" || word == "type"
 end
 
+fn skip_blanks(text: string, start: i32) -> i32 = do
+  let mut index = start
+  while index < text.length() && character_is_blank(text.substring(index, 1)) do
+    index = index + 1
+  end
+  index
+end
+
+fn last_nonblank(text: string) -> i32 = do
+  let mut end_index = text.length()
+  while end_index > 0 && character_is_blank(text.substring(end_index - 1, 1)) do
+    end_index = end_index - 1
+  end
+  end_index
+end
+
+fn measure_quoted_body(text: string, cursor_start: i32, end_index: i32, quote: string) -> i32 = do
+  let mut cursor = cursor_start
+  let mut length = 0
+  let mut closed = false
+  while cursor < end_index && !closed do
+    let character = text.substring(cursor, 1)
+    if character == "\\" && cursor + 1 < end_index then
+      length = length + 1
+      cursor = cursor + 2
+    else if character == quote then
+      closed = true
+      cursor = cursor + 1
+    else
+      length = length + 1
+      cursor = cursor + 1
+    end
+  end
+  if closed && cursor == end_index then
+    length
+  else
+    0 - 1
+  end
+end
+
+fn quote_at(text: string, start: i32, end_index: i32) -> string =
+  if start >= end_index then
+    ""
+  else
+    text.substring(start, 1)
+  end
+
+fn quoted_literal_length(text: string) -> i32 = do
+  let start = skip_blanks(text, 0)
+  let end_index = last_nonblank(text)
+  let quote = quote_at(text, start, end_index)
+  if quote != "'" && quote != "\"" then
+    0 - 1
+  else
+    measure_quoted_body(text, start + 1, end_index, quote)
+  end
+end
+
 fn joined_source(existing: string, addition: string) -> string =
   if existing.length() == 0 then
     addition
@@ -213,6 +283,21 @@ fn submit_expression(
   end
 end
 
+fn submit_text(
+  accepted_source: string,
+  pending: string,
+  text: string,
+  instruction_limit: i64,
+  heap_limit_objects: i32
+) -> ReplEmbedAnswer = do
+  let literal_length = quoted_literal_length(text)
+  if literal_length >= 0 then
+    answer_string(literal_length, accepted_source, pending)
+  else
+    submit_expression(accepted_source, pending, text, instruction_limit, heap_limit_objects)
+  end
+end
+
 export fn repl_embed_submit(
   accepted_source: string,
   pending: string,
@@ -223,5 +308,5 @@ export fn repl_embed_submit(
   if text_is_declaration(text) then
     accept_declaration(accepted_source, pending, text)
   else
-    submit_expression(accepted_source, pending, text, instruction_limit, heap_limit_objects)
+    submit_text(accepted_source, pending, text, instruction_limit, heap_limit_objects)
   end
