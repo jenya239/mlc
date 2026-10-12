@@ -1,6 +1,7 @@
 import { Expr, Span } from '../../compiler/frontend/ast'
 import { ValueInt32, value_encode } from '../value'
 import {
+  instruction_opcode_add,
   instruction_words_binary,
   instruction_words_new_array,
   instruction_words_set_index
@@ -13,8 +14,8 @@ import {
   proto_builder_register_mark,
   proto_builder_register_release_to
 } from './lower_builder'
-import { emit_instruction, diagnostic_at } from './lower_control'
-import { LowerScope, lower_scope_fail } from './lower_scope'
+import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
+import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
 import { LowerType, LowerInt } from './lower_types'
 
 extern fn source_byte(text: string, index: i32) -> i32 =
@@ -63,10 +64,92 @@ fn lower_text_literal(builder: ref mut ProtoBuilder, text: string, target: i32) 
   proto_builder_register_release_to(builder, mark)
 end
 
-fn lower_length_of_text(builder: ref mut ProtoBuilder, text: string, target: i32) -> LowerType = do
+fn text_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprStr(_, _) => true,
+    ExprChar(_, _) => true,
+    ExprBin(operator, left, right, _) =>
+      if operator == "+" then
+        text_expression(left) && text_expression(right)
+      else
+        false
+      end,
+    _ => false
+  }
+
+fn lower_text_skip() -> unit = do
+  let mut skipped = 0
+  skipped = skipped
+end
+
+fn lower_text_addition(
+  builder: ref mut ProtoBuilder,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  target: i32
+) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  let left_register = proto_builder_register_allocate(builder)
+  let right_register = proto_builder_register_allocate(builder)
+  lower_text_into(builder, left, left_register)
+  lower_text_into(builder, right, right_register)
+  emit_instruction(
+    builder,
+    instruction_words_binary(instruction_opcode_add(), target, left_register, right_register)
+  )
+  proto_builder_register_release_to(builder, mark)
+end
+
+fn lower_text_into(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> unit =
+  match expression {
+    ExprStr(text, _) => lower_text_literal(builder, text, target),
+    ExprChar(text, _) => lower_text_literal(builder, text, target),
+    ExprBin(operator, left, right, _) =>
+      if operator == "+" then
+        lower_text_addition(builder, left, right, target)
+      else
+        lower_text_skip()
+      end,
+    _ => lower_text_skip()
+  }
+
+fn integer_name(scope: ref mut LowerScope, name: string) -> bool = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    false
+  else
+    is_lower_int(scope.names[found].value_type)
+  end
+end
+
+fn integer_expression(scope: ref mut LowerScope, expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) => true,
+    ExprIdent(name, _) => integer_name(scope, name),
+    ExprUn(operator, inner, _) =>
+      if operator == "-" then
+        integer_expression(scope, inner)
+      else
+        false
+      end,
+    ExprBin(operator, left, right, _) =>
+      if operator == "+" || operator == "-" || operator == "*" || operator == "/" then
+        integer_expression(scope, left) && integer_expression(scope, right)
+      else
+        false
+      end,
+    _ => false
+  }
+
+fn reject_integer_length(scope: ref mut LowerScope, source_span: Span) -> LowerType = do
+  lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+  LowerInt
+end
+
+fn lower_length_of_expression(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let string_register = proto_builder_register_allocate(builder)
-  lower_text_literal(builder, text, string_register)
+  lower_text_into(builder, expression, string_register)
   emit_instruction(
     builder,
     instruction_words_binary(instruction_opcode_length(), target, string_register, 0)
@@ -87,10 +170,26 @@ fn lower_length_argument(
   source_span: Span,
   target: i32
 ) -> LowerType =
-  match argument {
-    ExprStr(text, _) => lower_length_of_text(builder, text, target),
-    _ => unknown_name(scope, source_span)
-  }
+  if text_expression(argument) then
+    lower_length_of_expression(builder, argument, target)
+  else if integer_expression(scope, argument) then
+    reject_integer_length(scope, source_span)
+  else
+    unknown_name(scope, source_span)
+  end
+
+export fn lower_text_handles_plus(operator: string, left: Shared<Expr>, right: Shared<Expr>) -> bool =
+  operator == "+" && text_expression(left) && text_expression(right)
+
+export fn lower_text_concatenate(
+  builder: ref mut ProtoBuilder,
+  left: Shared<Expr>,
+  right: Shared<Expr>,
+  target: i32
+) -> LowerType = do
+  lower_text_addition(builder, left, right, target)
+  LowerInt
+end
 
 export fn lower_text_named(
   scope: ref mut LowerScope,

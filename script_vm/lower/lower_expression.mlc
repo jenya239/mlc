@@ -55,7 +55,7 @@ import {
   subtraction_opcode,
   types_agree
 } from './lower_control'
-import { lower_text_named } from './lower_text'
+import { lower_text_concatenate, lower_text_handles_plus, lower_text_named } from './lower_text'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -359,6 +359,8 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
         lower_logic_or(scope, sink, builder, left, right, source_span, target)
       else if is_comparison_operator(operator) then
         lower_comparison(scope, sink, builder, operator, left, right, source_span, target)
+      else if lower_text_handles_plus(operator, left, right) then
+        lower_text_concatenate(builder, left, right, target)
       else
         lower_binary(scope, sink, builder, operator, left, right, source_span, target)
       end,
@@ -368,10 +370,7 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
       else if operator == "!" then
         lower_logic_not(scope, sink, builder, inner, source_span, target)
       else
-        do
-          lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
-          LowerInt
-        end
+        reject_lowered_call(scope, "unsupported_expression", source_span)
       end,
     ExprIf(condition, then_expression, else_expression, source_span) =>
       lower_if(scope, sink, builder, condition, then_expression, else_expression, source_span, target),
