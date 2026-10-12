@@ -360,7 +360,7 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
       else if is_comparison_operator(operator) then
         lower_comparison(scope, sink, builder, operator, left, right, source_span, target)
       else if lower_text_handles_plus(operator, left, right) then
-        lower_text_concatenate(builder, left, right, target)
+        lower_text_concatenate(scope, builder, left, right, source_span, target)
       else
         lower_binary(scope, sink, builder, operator, left, right, source_span, target)
       end,

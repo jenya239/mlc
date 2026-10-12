@@ -179,17 +179,34 @@ fn lower_length_argument(
   end
 
 export fn lower_text_handles_plus(operator: string, left: Shared<Expr>, right: Shared<Expr>) -> bool =
-  operator == "+" && text_expression(left) && text_expression(right)
+  operator == "+" && (text_expression(left) || text_expression(right))
+
+export fn lower_text_mixed(left: Shared<Expr>, right: Shared<Expr>) -> bool =
+  if text_expression(left) then
+    !text_expression(right)
+  else
+    text_expression(right)
+  end
 
 export fn lower_text_concatenate(
+  scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
   left: Shared<Expr>,
   right: Shared<Expr>,
+  source_span: Span,
   target: i32
-) -> LowerType = do
-  lower_text_addition(builder, left, right, target)
-  LowerInt
-end
+) -> LowerType =
+  if lower_text_mixed(left, right) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
+  else
+    do
+      lower_text_addition(builder, left, right, target)
+      LowerInt
+    end
+  end
 
 export fn lower_text_named(
   scope: ref mut LowerScope,
