@@ -1217,12 +1217,12 @@
 - allowed_files: `script_vm/tests/repl_session_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: объявление функции с `break`, затем вызов, число 3, как в шаге 161
-- red: `RED(repl_session)`, поведенческий
+- red: `RED(repl_session)`, поведенческий. Если текущий unit уже зелёный на новых ассершенах без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green шага (162, 166, 160)
 - green: none
 - gate: `RED(repl_session)`
 - sabotage: none
 - performance: not a perf step
-- done_when: красный исход
+- done_when: красный исход; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 167
 - state_update: фактическая строка
 
 ### Step 168 — Green: break в REPL
