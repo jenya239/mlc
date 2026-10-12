@@ -1,8 +1,8 @@
 current_step: 147
-status: ready
-last_result: done step 147: B1.ns_per_insn 35, B3.ns_per_call 1242
-last_verify: ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50 => exit 0, B1.ns_per_insn 35, B1.total_us 10681, B3.ns_per_call 1242
+status: consult_ready
+last_result: blocked step 148: сравнение идентификаторов в string_heap_equal не краснит string_opcode
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/string_opcode_unit.mlc => exit 0, unit ok string_opcode; откат string_heap.mlc, diff пуст
 next_step: 148
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261012_102026.md
 consult_verdict:
