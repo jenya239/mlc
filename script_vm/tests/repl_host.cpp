@@ -4,6 +4,15 @@
 #include <cstdint>
 #include <cstring>
 
+bool panic_saw_double_release = false;
+
+extern "C" void record_panic(const char* message) {
+  if (message != nullptr && std::strstr(message, "double release") != nullptr) {
+    panic_saw_double_release = true;
+    std::fprintf(stderr, "panic %s\n", message);
+  }
+}
+
 bool code_starts_with_unknown_identifier(const char* code_text) {
   const char prefix[] = "unknown_identifier";
   return std::strncmp(code_text, prefix, sizeof(prefix) - 1) == 0;
@@ -14,7 +23,7 @@ int main() {
   MlcVmConfig config{};
   config.instruction_limit = 0;
   config.heap_limit_objects = 1000000;
-  config.panic_callback = nullptr;
+  config.panic_callback = record_panic;
 
   MlcRepl* session = mlc_repl_create(&config);
   const char text[] = "1 + 2";
@@ -62,6 +71,14 @@ int main() {
     return 1;
   }
   std::printf("case diagnostic ok\n");
+
+  const int null_submitted = mlc_repl_submit(nullptr, text, sizeof(text) - 1, &answer);
   mlc_repl_destroy(session);
+  mlc_repl_destroy(session);
+  if (null_submitted != -1 || !panic_saw_double_release) {
+    std::fprintf(stderr, "case misuse submit=%d panic=%d\n", null_submitted, panic_saw_double_release ? 1 : 0);
+    return 1;
+  }
+  std::printf("case misuse ok\n");
   return 0;
 }
