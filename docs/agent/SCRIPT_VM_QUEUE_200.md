@@ -67,6 +67,7 @@
 12. В `PLAN200` дописывается только `## Decision log`: заголовок `### S<номер> — тема`.
 13. Файл вне `allowed_files` или из `F0`, который текущий ответ Sonnet не назвал, — `blocked`.
 14. Ответ Sonnet, который прямо называет путь и правку, разрешает менять этот файл, включая `compiler/`, `lib/mlc/`, `runtime/`, тесты. Неназванный файл не трогать.
+15. Шаг, который заменяет код диагностики или начинает принимать конструкцию, которую уже зарегистрированный unit отвергает, добавляет каждый такой unit в `allowed_files` и в свой gate. Перед закрытием найти старый код через `rg` по `script_vm/tests`. Узкий `RUN` только нового unit этого не заменяет. Конечный critic такое не чинит: unit обновляет шаг, который сменил поведение.
 
 ### Протокол состояния
 
@@ -106,7 +107,7 @@
 
 Ответ `consult_step: <N> grounds`:
 
-- `verdict: amend`, либо `stop`/пусто, но совет называет файлы и правку — выполнить правку один раз. Шаг `next_step` не начинать. После правки `consult_count: 0`, поля совета пустые, `status: ready`, `next_step` не менять. Коммит названных файлов и `STATE`. Сообщение `script_vm queue step <N>: правка правила остановки`.
+- `verdict: amend`, либо `stop`/пусто, но совет называет файлы и правку — выполнить правку один раз. Шаг `next_step` не начинать. После правки `consult_count: 0`, поля совета пустые, `status: ready`, `next_step` не менять. Коммит названных файлов и `STATE`. Сообщение `script_vm queue step <N>: правка правила остановки`. Если текст правки уже есть в названном файле и другой ещё не применённой правки нет — второй раз не применять и `ready` не ставить: `consult_verdict: stop`, `status: blocked`.
 - `verdict: stop` или пустой verdict без правки файлов — `consult_verdict: stop`, `status: blocked`, остановиться.
 
 `over_budget` и `stop` без неназванной ещё правки: API не вызывать, шаг не повторять.
@@ -125,7 +126,7 @@
 3. Если current_step больше 0, команда `git log --oneline -1 --grep "^script_vm queue step <current_step>:"` обязана найти коммит. Не нашла — status blocked, consult_count не меняй, last_result «нет коммита шага <current_step>», остановись. Sonnet не вызывай.
 4. Если status равен blocked и consult_verdict равен over_budget — API не вызывай, шаг не повторяй, остановись. Если status равен blocked и consult_verdict равен stop — API не вызывай. Прочитай consult_response. Если совет прямо называет файлы и правку, выполни её один раз и не жди человека. Файл, который совет не назвал, не трогай. Если такой правки нет — остановись. Если status равен blocked и consult_count равен 1, а consult_verdict не stop — код не правь. Выполни «Проверку основания остановки» и остановись. Если status равен blocked и consult_count больше 1, а ответ не называет ещё не применённую правку файлов — API не вызывай, шаг не повторяй, остановись.
 5. Если status равен consulting, или status равен blocked и consult_count равен 0 — код не правь. Если в consult-файле есть `kind: grounds` для этого же next_step, выполни «Проверку основания остановки», иначе «Консультацию при остановке». Sonnet только через `ruby /home/jenya/workspaces/current/mlc-support/review_script_vm_queue_consult.rb`.
-6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: amend` примени один раз. `verdict: stop` или пустой verdict — если совет называет файлы и правку, выполни её как amend; иначе status blocked, consult_verdict stop, остановись. Иначе ищи `verdict:` совета по шагу. human или пустой: status blocked, consult_verdict human, остановись. over_budget: status blocked, consult_verdict over_budget, остановись. retry или patch: один раз выполни шаг next_step по совету. Названные файлы вне allowed_files правь. Неназванные не трогай.
+6. Если status равен consult_ready — прочитай consult_response. Первая строка `consult_step: <N> grounds`: `verdict: amend` примени один раз. Если эта правка уже есть в названном файле и другой правки нет — status blocked, consult_verdict stop, шаг не повторяй. `verdict: stop` или пустой verdict — если совет называет файлы и правку, выполни её как amend; иначе status blocked, consult_verdict stop, остановись. Иначе ищи `verdict:` совета по шагу. human или пустой: status blocked, consult_verdict human, остановись. over_budget: status blocked, consult_verdict over_budget, остановись. retry или patch: один раз выполни шаг next_step по совету. Названные файлы вне allowed_files правь. Неназванные не трогай.
 7. Иначе запиши status: in_progress и выполни ровно шаг next_step.
 8. Правь только allowed_files. Red до green. Gate запусти точно как записано. Sabotage, если он не none: испорти, дождись красного исхода, верни файл (`git checkout -- <файл>` только когда незакоммичена одна эта порча; иначе обратная правка), снова зелёный gate. Не запускай compiler/build.sh и не пересобирай compiler/out/mlcc.
 9. Не редактируй docs/PLAN.md, docs/agent/SESSION.md, docs/agent/CONTINUITY.md, docs/agent/SCRIPT_VM_QUEUE_100.md, docs/agent/SCRIPT_VM_QUEUE_STATE.md, compiler/, lib/mlc/, misc/textui/, misc/editor/, кроме файлов, которые текущий ответ Sonnet прямо назвал. Чужие незакоммиченные правки не трогай.

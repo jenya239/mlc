@@ -77,6 +77,18 @@ fn expect_code(source: string, code: string, label: string) -> i32 = do
   accept_diagnostics(lowered.diagnostics, lowered.bytes, label)
 end
 
+fn expect_no_diagnostic(source: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return fail(label + " " + lowered.diagnostics[0].code)
+  end
+  if lowered.bytes.length() == 0 then
+    return fail(label)
+  end
+  println(label)
+  0
+end
+
 fn expect_pair(source: string, first_code: string, second_code: string, label: string) -> i32 = do
   const lowered = lower_source(source)
   if lowered.diagnostics.length() < 2 then
@@ -160,7 +172,7 @@ fn wide_source() -> string = do
 end
 
 fn paired_source() -> string =
-  "export fn main() -> i32 = do\nlet text = \"hi\"\nlet items = [1]\n0\nend"
+  "export fn main() -> i32 = do\nlet text = \"hi\"\nlet value = 1.5\n0\nend"
 
 fn check_expressions() -> i32 = do
   let mut status = expect_code(string_source(), "unsupported_string", "unsupported_string")
@@ -186,10 +198,10 @@ fn check_expressions() -> i32 = do
     status = expect_code(float_source(), "unsupported_float", "unsupported_float")
   end
   if status == 0 then
-    status = expect_code(break_source(), "unsupported_break", "unsupported_break")
+    status = expect_no_diagnostic(break_source(), "break_inside_loop")
   end
   if status == 0 then
-    status = expect_code(continue_source(), "unsupported_continue", "unsupported_continue")
+    status = expect_no_diagnostic(continue_source(), "continue_inside_loop")
   end
   status
 end
@@ -223,7 +235,7 @@ fn check_limits() -> i32 = do
     status = expect_code(wide_source(), "record_too_wide", "record_too_wide")
   end
   if status == 0 then
-    status = expect_pair(paired_source(), "unsupported_string", "unsupported_array", "two_diagnostics")
+    status = expect_pair(paired_source(), "unsupported_string", "unsupported_float", "two_diagnostics")
   end
   status
 end
