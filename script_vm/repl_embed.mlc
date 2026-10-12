@@ -20,7 +20,21 @@ export type ReplEmbedAnswer = {
 
 fn status_value() -> i32 = 2
 
+fn status_accepted() -> i32 = 1
+
 fn status_diagnostic() -> i32 = 3
+
+fn answer_accepted(accepted_source: string) -> ReplEmbedAnswer =
+  ReplEmbedAnswer {
+    status: status_accepted(),
+    value: 0,
+    string_length: 0 - 1,
+    line: 0,
+    column: 0,
+    code: "",
+    accepted_source: accepted_source,
+    pending: ""
+  }
 
 fn answer_value(number: i32, accepted_source: string, pending: string) -> ReplEmbedAnswer =
   ReplEmbedAnswer {
@@ -145,7 +159,45 @@ fn expression_program(accepted_source: string, text: string) -> string =
     accepted_source + "\nexport fn repl_entry() -> i32 = do " + text + " end"
   end
 
-export fn repl_embed_submit(
+fn character_is_blank(character: string) -> bool =
+  character == " " || character == "\n" || character == "\t" || character == "\r"
+
+fn first_word(text: string) -> string = do
+  let mut index = 0
+  while index < text.length() && character_is_blank(text.substring(index, 1)) do
+    index = index + 1
+  end
+  let mut end_index = index
+  while end_index < text.length() && !character_is_blank(text.substring(end_index, 1)) do
+    end_index = end_index + 1
+  end
+  text.substring(index, end_index - index)
+end
+
+fn text_is_declaration(text: string) -> bool = do
+  let word = first_word(text)
+  word == "fn" || word == "export" || word == "type"
+end
+
+fn joined_source(existing: string, addition: string) -> string =
+  if existing.length() == 0 then
+    addition
+  else
+    existing + "\n" + addition
+  end
+
+fn accept_declaration(accepted_source: string, pending: string, text: string) -> ReplEmbedAnswer = do
+  let candidate = joined_source(accepted_source, text)
+  let lowered = lower_source(candidate)
+  if lowered.diagnostics.length() != 0 then
+    let diagnostic = lowered.diagnostics[0]
+    answer_diagnostic(diagnostic.code, diagnostic.line, diagnostic.column, accepted_source, pending)
+  else
+    answer_accepted(candidate)
+  end
+end
+
+fn submit_expression(
   accepted_source: string,
   pending: string,
   text: string,
@@ -160,3 +212,16 @@ export fn repl_embed_submit(
     execute_lowered(lowered.bytes, instruction_limit, heap_limit_objects, accepted_source, pending)
   end
 end
+
+export fn repl_embed_submit(
+  accepted_source: string,
+  pending: string,
+  text: string,
+  instruction_limit: i64,
+  heap_limit_objects: i32
+) -> ReplEmbedAnswer =
+  if text_is_declaration(text) then
+    accept_declaration(accepted_source, pending, text)
+  else
+    submit_expression(accepted_source, pending, text, instruction_limit, heap_limit_objects)
+  end
