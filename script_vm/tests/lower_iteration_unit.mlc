@@ -27,8 +27,11 @@ fn expect_break_sum() -> i32 = do
       println("iteration call code=" + called.code.to_string())
       1
     else if decoded_int(called.raw) == 3 then
-      println("iteration value=3")
-      0
+      do
+        println("iteration value=3")
+        println("[script_vm] lower_iteration_unit ok")
+        0
+      end
     else
       println("iteration value=" + decoded_int(called.raw).to_string())
       1

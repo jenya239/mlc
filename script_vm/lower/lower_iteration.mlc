@@ -1,0 +1,109 @@
+import { Span } from '../../compiler/frontend/ast'
+import { ProtoBuilder, proto_builder_emit_jump, proto_builder_patch_to_here } from './lower_builder'
+import { LowerDiagnosticSink, lower_diagnostic_add } from './lower_diagnostics'
+import { LowerName, LowerScope, lower_scope_define } from './lower_scope'
+import { LowerInt } from './lower_types'
+
+fn while_frame_name() -> string = "*while_frame*"
+
+fn break_site_name() -> string = "*break_site*"
+
+fn break_site_binding(site: i32) -> LowerName =
+  LowerName {
+    name: break_site_name(),
+    register_index: site,
+    value_type: LowerInt,
+    is_mutable: false
+  }
+
+fn latest_while_marker(scope: ref mut LowerScope) -> i32 = do
+  let mut index = scope.names.length() - 1
+  let mut found = 0 - 1
+  while index >= 0 && found < 0 do
+    if scope.names[index].name == while_frame_name() then
+      found = index
+    end
+    index = index - 1
+  end
+  found
+end
+
+fn names_with_break_site(names: [LowerName], insert_at: i32, site: i32) -> [LowerName] = do
+  let mut copied: [LowerName] = []
+  let mut index = 0
+  while index < names.length() do
+    if index == insert_at then
+      copied.push(break_site_binding(site))
+    end
+    copied.push(names[index])
+    index = index + 1
+  end
+  if insert_at == names.length() then
+    copied.push(break_site_binding(site))
+    copied
+  else
+    copied
+  end
+end
+
+fn bumped_frame_counts(counts: [i32], threshold: i32) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < counts.length() do
+    let count = counts[index]
+    if count >= threshold then
+      copied.push(count + 1)
+    else
+      copied.push(count)
+    end
+    index = index + 1
+  end
+  copied
+end
+
+fn record_break_site(scope: ref mut LowerScope, site: i32) -> unit = do
+  let insert_at = latest_while_marker(scope) + 1
+  scope.names = names_with_break_site(scope.names, insert_at, site)
+  scope.frame_name_counts = bumped_frame_counts(scope.frame_name_counts, insert_at)
+end
+
+fn names_before_marker(names: [LowerName], marker: i32) -> [LowerName] = do
+  let mut copied: [LowerName] = []
+  let mut index = 0
+  while index < marker do
+    copied.push(names[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn patch_break_sites(builder: ref mut ProtoBuilder, names: [LowerName], marker: i32) -> unit = do
+  let mut index = marker + 1
+  while index < names.length() do
+    if names[index].name == break_site_name() then
+      proto_builder_patch_to_here(builder, names[index].register_index)
+    end
+    index = index + 1
+  end
+end
+
+export fn begin_while_frame(scope: ref mut LowerScope) -> unit =
+  lower_scope_define(scope, while_frame_name(), 0, LowerInt, false)
+
+export fn finish_while_frame(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> unit = do
+  let marker = latest_while_marker(scope)
+  if marker >= 0 then
+    patch_break_sites(builder, scope.names, marker)
+    scope.names = names_before_marker(scope.names, marker)
+  end
+end
+
+export fn lower_break(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, source_span: Span) -> unit = do
+  let marker = latest_while_marker(scope)
+  if marker < 0 then
+    lower_diagnostic_add(sink, "unsupported_break", "unsupported_break", source_span)
+  else
+    let site = proto_builder_emit_jump(builder)
+    record_break_site(scope, site)
+  end
+end
