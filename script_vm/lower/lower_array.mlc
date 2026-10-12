@@ -144,6 +144,25 @@ fn emit_length_of_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr
   LowerInt
 end
 
+fn contains_nested_array(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < elements.length() && !found do
+    found = match elements[index] {
+      ExprArray(_, _) => true,
+      _ => false
+    }
+    index = index + 1
+  end
+  found
+end
+
+fn nested_array_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => contains_nested_array(elements),
+    _ => false
+  }
+
 fn lower_length_of_integer_array(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
   match expression {
     ExprArray(elements, _) => emit_length_of_elements(builder, elements, target),
@@ -159,6 +178,11 @@ fn lower_length_or_text(
 ) -> LowerType =
   if integer_array_expression(arguments[0]) then
     lower_length_of_integer_array(builder, arguments[0], target)
+  else if nested_array_expression(arguments[0]) then
+    do
+      lower_scope_fail(scope, diagnostic_at("unsupported_nested_array", source_span))
+      LowerInt
+    end
   else if mixed_scalar_array(arguments[0]) then
     do
       lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
@@ -223,18 +247,12 @@ fn place_bool_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], 
   proto_builder_register_release_to(builder, mark)
 end
 
-fn element_type_name() -> string = "*array_element*"
-
 fn remember_element_type(scope: ref mut LowerScope, value_type: LowerType) -> unit =
-  lower_scope_define(scope, element_type_name(), 0, value_type, false)
+  lower_scope_define(scope, "*array_element*", 0, value_type, false)
 
 fn remembered_element_type(scope: ref mut LowerScope) -> LowerType = do
-  let found = lower_scope_lookup(scope, element_type_name())
-  if found < 0 then
-    LowerInt
-  else
-    scope.names[found].value_type
-  end
+  let found = lower_scope_lookup(scope, "*array_element*")
+  if found < 0 then LowerInt else scope.names[found].value_type end
 end
 
 fn place_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
@@ -262,6 +280,8 @@ fn place_array_literal(
     end
   else if mixed_scalar_elements(elements) then
     lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+  else if contains_nested_array(elements) then
+    lower_scope_fail(scope, diagnostic_at("unsupported_nested_array", source_span))
   else
     lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
   end
