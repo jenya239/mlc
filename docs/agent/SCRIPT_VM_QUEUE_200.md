@@ -1441,12 +1441,12 @@
 - allowed_files: `script_vm/tests/repl_host.cpp`, `STATE`
 - forbidden: F0
 - contract: submit `missing_name`. status diagnostic, `code_text` начинается с `unknown_identifier`, line и column > 0. Строка `case diagnostic ok`
-- red: раннер exit ≠ 0
+- red: раннер exit ≠ 0. Если `script_vm/tests/repl_host.cpp` и раннер уже зелёные на этой проверке без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green шага (178, 180).
 - green: none
 - gate: `ruby scripts/run_script_vm_repl_host.rb`
 - sabotage: none
 - performance: not a perf step
-- done_when: отказ diagnostic
+- done_when: отказ diagnostic; либо раннер зелёный сразу на случае `case diagnostic ok` — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 181
 - state_update: фактические поля, которые напечатал хост
 
 ### Step 182 — Green: поля диагностики
