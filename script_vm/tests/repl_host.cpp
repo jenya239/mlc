@@ -72,6 +72,21 @@ int main() {
   }
   std::printf("case diagnostic ok\n");
 
+  const char string_text[] = "'hi'";
+  MlcReplAnswer string_answer{};
+  const int string_submitted = mlc_repl_submit(session, string_text, sizeof(string_text) - 1, &string_answer);
+  std::printf(
+      "case string status=%d value=%d string_length=%d\n",
+      string_answer.status,
+      string_answer.value,
+      string_answer.string_length);
+  if (string_submitted != 0 || string_answer.status != MLC_REPL_VALUE ||
+      string_answer.string_length != 2 || string_answer.value != 0) {
+    mlc_repl_destroy(session);
+    return 1;
+  }
+  std::printf("case string ok\n");
+
   const int null_submitted = mlc_repl_submit(nullptr, text, sizeof(text) - 1, &answer);
   mlc_repl_destroy(session);
   mlc_repl_destroy(session);
