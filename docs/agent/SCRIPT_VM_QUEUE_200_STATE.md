@@ -1,8 +1,8 @@
 current_step: 197
-status: consult_ready
-last_result: blocked step 198: lower_diagnostics FAIL unsupported_break
-last_verify: ruby scripts/run_script_vm_queue200_gate.rb => exit 1, [script_vm lower_diagnostics_unit] FAIL: unsupported_break, script_vm_gate FAIL lower_diagnostics, script_vm_queue200_gate FAIL queue
+status: ready
+last_result: amend step 198: contract adds lower_statement.mlc to the diff list
+last_verify: docs/agent/SCRIPT_VM_QUEUE_200.md step 198 contract lists script_vm/lower/lower_statement.mlc
 next_step: 198
-consult_count: 2
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261012_174444.md
+consult_count: 0
+consult_response:
 consult_verdict:

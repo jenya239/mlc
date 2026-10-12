@@ -1712,7 +1712,7 @@
 - goal: убедиться, что шаги 192–197 ничего не оставили
 - allowed_files: `STATE`
 - forbidden: не чинить найденный diff этим шагом молча. Если diff не пуст — `blocked`
-- contract: `git diff -- script_vm/repl_balance.mlc script_vm/repl_session.mlc script_vm/executor_heap.mlc script_vm/lower/lower_iteration.mlc runtime/src/script_vm/embedding_abi.cpp` пуст. Затем `ruby scripts/run_script_vm_queue200_gate.rb` зелёный
+- contract: `git diff -- script_vm/repl_balance.mlc script_vm/repl_session.mlc script_vm/executor_heap.mlc script_vm/lower/lower_iteration.mlc script_vm/lower/lower_statement.mlc runtime/src/script_vm/embedding_abi.cpp` пуст. Если diff не пуст — вывести конкретные строки diff в `last_result` вместо общего `blocked`, чтобы было видно, какая порча не откатилась. Затем `ruby scripts/run_script_vm_queue200_gate.rb` зелёный
 - red: none
 - green: none
 - gate: пустой diff и `script_vm_queue200_gate ok`
