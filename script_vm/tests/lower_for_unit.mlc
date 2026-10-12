@@ -1,0 +1,37 @@
+import { lower_source } from '../lower/lower_module'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { Value, ValueInt32, value_decode } from '../value'
+
+fn for_sum_source() -> string =
+  "export fn run() -> i32 = do let mut total = 0 for item in [1, 2, 3] do total = total + item end total end"
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn decoded_int(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn main() -> i32 = do
+  let lowered = lower_source(for_sum_source())
+  if lowered.diagnostics.length() != 0 then
+    println("for diagnostic=" + lowered.diagnostics[0].code)
+    1
+  else
+    let called = emb_call_export_bytes(lowered.bytes, "run", no_arguments())
+    if called.code != emb_ok() then
+      println("for call code=" + called.code.to_string())
+      1
+    else if decoded_int(called.raw) == 6 then
+      println("for value=6")
+      0
+    else
+      println("for value=" + decoded_int(called.raw).to_string())
+      1
+    end
+  end
+end
