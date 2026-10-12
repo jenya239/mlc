@@ -1313,12 +1313,12 @@
 - allowed_files: `script_vm/tests/lower_for_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: сумма останавливается на 3
-- red: `RED(lower_for)`, поведенческий
-- green: none
+- red: `RED(lower_for)`, поведенческий. Если текущий unit уже зелёный на новой проверке без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green шага 170 (`for` снижается к `while`, и `break` уже обработан шагом 162 для `while`)
+- green: none, если unit уже зелёный
 - gate: `RED(lower_for)`
 - sabotage: none
 - performance: not a perf step
-- done_when: красный исход
+- done_when: красный исход; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 173
 - state_update: фактическое значение
 
 ### Step 174 — Green: break внутри for
