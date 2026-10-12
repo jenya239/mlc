@@ -8,6 +8,9 @@ fn for_sum_source() -> string =
 fn empty_for_source() -> string =
   "export fn run() -> i32 = do let mut total = 0 for item in [] do total = total + 1 end total end"
 
+fn break_for_source() -> string =
+  "export fn run() -> i32 = do let mut total = 0 for item in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] do if total > 2 then break end total = total + item end total end"
+
 fn no_arguments() -> [i64] = do
   let mut arguments: [i64] = []
   arguments
@@ -48,8 +51,13 @@ fn main() -> i32 = do
     if empty_status != 0 then
       empty_status
     else
-      println("[script_vm] lower_for_unit ok")
-      0
+      let break_status = expect_sum(break_for_source(), 3)
+      if break_status != 0 then
+        break_status
+      else
+        println("[script_vm] lower_for_unit ok")
+        0
+      end
     end
   end
 end
