@@ -1,8 +1,8 @@
-current_step: 194
+current_step: 195
 status: ready
-last_result: done step 194: char_heap_ops FAIL set_index_negative
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/char_heap_ops_unit.mlc => exit 1, [script_vm char_heap_ops_unit] FAIL: set_index_negative expected error; after restore ruby scripts/run_script_vm_gate.rb char_heap_ops lower_array => exit 0, script_vm_gate ok units=2
-next_step: 195
+last_result: done step 195: iteration value=55
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_iteration_unit.mlc => exit 1, iteration value=55; after restore exit 0, unit ok lower_iteration, iteration value=3
+next_step: 196
 consult_count: 0
 consult_response:
 consult_verdict:
