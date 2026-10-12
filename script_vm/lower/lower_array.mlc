@@ -14,8 +14,8 @@ import {
   proto_builder_register_mark,
   proto_builder_register_release_to
 } from './lower_builder'
-import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
-import { LowerScope, lower_scope_fail } from './lower_scope'
+import { diagnostic_at, emit_instruction, is_lower_int, move_to_target } from './lower_control'
+import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
 import { LowerType, LowerInt } from './lower_types'
 import {
   lower_text_concatenate,
@@ -131,6 +131,21 @@ fn place_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array
   proto_builder_register_release_to(builder, mark)
 end
 
+fn move_named_array(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  name: string,
+  name_span: Span,
+  array_register: i32
+) -> unit = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    lower_scope_fail(scope, diagnostic_at("unknown_identifier", name_span))
+  else
+    move_to_target(builder, array_register, scope.names[found].register_index)
+  end
+end
+
 export fn place_integer_array(
   scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
@@ -145,6 +160,8 @@ export fn place_integer_array(
       else
         lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
       end,
+    ExprIdent(name, name_span) =>
+      move_named_array(scope, builder, name, name_span, array_register),
     _ => lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
   }
 
@@ -169,6 +186,51 @@ export fn finish_array_index(
       lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
       LowerInt
     end
+  end
+
+fn rejected_store(scope: ref mut LowerScope, code: string, source_span: Span) -> i32 = do
+  lower_scope_fail(scope, diagnostic_at(code, source_span))
+  0 - 1
+end
+
+fn named_array_register(scope: ref mut LowerScope, name: string, name_span: Span, source_span: Span) -> i32 = do
+  let found = lower_scope_lookup(scope, name)
+  if found < 0 then
+    rejected_store(scope, "unknown_identifier", name_span)
+  else if !scope.names[found].is_mutable then
+    rejected_store(scope, "assign_immutable", source_span)
+  else
+    scope.names[found].register_index
+  end
+end
+
+export fn array_store_register(scope: ref mut LowerScope, base: Shared<Expr>, source_span: Span) -> i32 =
+  match base {
+    ExprIdent(name, name_span) => named_array_register(scope, name, name_span, source_span),
+    _ => rejected_store(scope, "unsupported_statement", source_span)
+  }
+
+fn skip_array_store() -> unit = do
+  let mut skipped = 0
+  skipped = skipped
+end
+
+export fn emit_array_element_store(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  index_type: LowerType,
+  value_type: LowerType,
+  array_register: i32,
+  index_register: i32,
+  value_register: i32,
+  source_span: Span
+) -> unit =
+  if scope.has_diagnostic then
+    skip_array_store()
+  else if !is_lower_int(index_type) || !is_lower_int(value_type) then
+    lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+  else
+    emit_instruction(builder, instruction_words_set_index(array_register, index_register, value_register))
   end
 
 export fn lower_array_named(

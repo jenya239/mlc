@@ -1,11 +1,13 @@
 import {
   Expr,
+  ExprArray,
   ExprBin,
   ExprField,
   ExprBlock,
   ExprBool,
   ExprIdent,
   ExprIf,
+  ExprIndex,
   ExprUnit,
   ExprWhile,
   Span,
@@ -43,6 +45,7 @@ import {
   lower_scope_push
 } from './lower_scope'
 import { lower_expression } from './lower_expression'
+import { array_store_register, emit_array_element_store, place_integer_array } from './lower_array'
 import { finish_field_assignment } from './lower_records'
 
 export type LowerFunctionSignature = { result_type: LowerType }
@@ -124,6 +127,10 @@ fn lower_initializer(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSin
   match expression {
     ExprBlock(statements, final_expression, _) =>
       lower_block(scope, sink, builder, statements, final_expression, target),
+    ExprArray(_, source_span) => do
+      place_integer_array(scope, builder, expression, source_span, target)
+      LowerInt
+    end,
     _ => lower_expression(scope, sink, builder, expression, target)
   }
 
@@ -230,12 +237,29 @@ fn assign_field(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, bu
     _ => fail_at(scope, "unsupported_statement", source_span)
   }
 
+fn assign_array_index(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, base: Shared<Expr>, index: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> unit = do
+  let array_register = array_store_register(scope, base, source_span)
+  if !scope.has_diagnostic then
+    do
+      let mark = proto_builder_register_mark(builder)
+      let index_register = proto_builder_register_allocate(builder)
+      let index_type = lower_expression(scope, sink, builder, index, index_register)
+      let value_register = proto_builder_register_allocate(builder)
+      let value_type = lower_expression(scope, sink, builder, right, value_register)
+      emit_array_element_store(scope, builder, index_type, value_type, array_register, index_register, value_register, source_span)
+      proto_builder_register_release_to(builder, mark)
+    end
+  end
+end
+
 fn lower_assignment(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, left: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> unit =
   match left {
     ExprIdent(name, name_span) =>
       assign_name(scope, sink, builder, name, name_span, right, source_span),
     ExprField(base, field_name, _) =>
       assign_field(scope, sink, builder, base, field_name, right, source_span),
+    ExprIndex(base, index, _) =>
+      assign_array_index(scope, sink, builder, base, index, right, source_span),
     _ => fail_at(scope, "unsupported_statement", source_span)
   }
 
