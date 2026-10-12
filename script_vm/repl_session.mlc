@@ -66,10 +66,73 @@ fn integer_answer(raw: i64) -> ReplAnswer =
     _ => ReplDiagnostic("repl_result_not_integer", 1, 1)
   }
 
+fn skip_blanks(text: string, start: i32) -> i32 = do
+  let mut index = start
+  while index < text.length() && character_is_blank(text.substring(index, 1)) do
+    index = index + 1
+  end
+  index
+end
+
+fn last_nonblank(text: string) -> i32 = do
+  let mut end_index = text.length()
+  while end_index > 0 && character_is_blank(text.substring(end_index - 1, 1)) do
+    end_index = end_index - 1
+  end
+  end_index
+end
+
+fn measure_quoted_body(text: string, cursor_start: i32, end_index: i32, quote: string) -> i32 = do
+  let mut cursor = cursor_start
+  let mut length = 0
+  let mut closed = false
+  while cursor < end_index && !closed do
+    let character = text.substring(cursor, 1)
+    if character == "\\" && cursor + 1 < end_index then
+      length = length + 1
+      cursor = cursor + 2
+    else if character == quote then
+      closed = true
+      cursor = cursor + 1
+    else
+      length = length + 1
+      cursor = cursor + 1
+    end
+  end
+  if closed && cursor == end_index then
+    length
+  else
+    0 - 1
+  end
+end
+
+fn quote_at(text: string, start: i32, end_index: i32) -> string =
+  if start >= end_index then
+    ""
+  else
+    text.substring(start, 1)
+  end
+
+fn quoted_literal_length(text: string) -> i32 = do
+  let start = skip_blanks(text, 0)
+  let end_index = last_nonblank(text)
+  let quote = quote_at(text, start, end_index)
+  if quote != "'" && quote != "\"" then
+    0 - 1
+  else
+    measure_quoted_body(text, start + 1, end_index, quote)
+  end
+end
+
+fn finish_string_literal(session: ref mut ReplSession, literal_length: i32) -> ReplAnswer = do
+  session.pending = ""
+  ReplValueString(literal_length)
+end
+
 fn expression_program(accepted_source: string, expression: string) -> string =
   joined_source(accepted_source, "export fn repl_entry() -> i32 = do " + expression + " end")
 
-fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
+fn evaluate_lowered_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
   let lowered = lower_source(expression_program(session.accepted_source, text))
   if lowered.diagnostics.length() != 0 then
     session.pending = ""
@@ -83,6 +146,15 @@ fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer
     else
       ReplDiagnostic("repl_result_not_integer", 1, 1)
     end
+  end
+end
+
+fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
+  let literal_length = quoted_literal_length(text)
+  if literal_length >= 0 then
+    finish_string_literal(session, literal_length)
+  else
+    evaluate_lowered_expression(session, text)
   end
 end
 
