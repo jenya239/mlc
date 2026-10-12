@@ -1,0 +1,139 @@
+import { Expr, Span } from '../../compiler/frontend/ast'
+import { ValueInt32, value_encode } from '../value'
+import {
+  instruction_words_binary,
+  instruction_words_new_array,
+  instruction_words_set_index
+} from '../bytecode'
+import { instruction_opcode_length } from '../bytecode_text'
+import {
+  ProtoBuilder,
+  proto_builder_load_constant,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+import { emit_instruction } from './lower_control'
+import { LowerScope } from './lower_scope'
+import { LowerType, LowerInt } from './lower_types'
+import {
+  lower_text_concatenate,
+  lower_text_handles_plus,
+  lower_text_named
+} from './lower_text'
+
+fn integer_element(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) => true,
+    _ => false
+  }
+
+fn nonempty_integer_elements(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut accepted = elements.length() > 0
+  while index < elements.length() && accepted do
+    accepted = integer_element(elements[index])
+    index = index + 1
+  end
+  accepted
+end
+
+fn integer_array_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => nonempty_integer_elements(elements),
+    _ => false
+  }
+
+fn element_number(expression: Shared<Expr>) -> i32 =
+  match expression {
+    ExprInt(number, _) => number,
+    _ => 0
+  }
+
+fn store_one_integer(
+  builder: ref mut ProtoBuilder,
+  array_register: i32,
+  index_register: i32,
+  value_register: i32,
+  index: i32,
+  number: i32
+) -> unit = do
+  proto_builder_load_constant(builder, index_register, value_encode(ValueInt32(index)))
+  proto_builder_load_constant(builder, value_register, value_encode(ValueInt32(number)))
+  emit_instruction(builder, instruction_words_set_index(array_register, index_register, value_register))
+end
+
+fn store_integer_elements(
+  builder: ref mut ProtoBuilder,
+  elements: [Shared<Expr>],
+  array_register: i32,
+  index_register: i32,
+  value_register: i32
+) -> unit = do
+  let mut index = 0
+  while index < elements.length() do
+    store_one_integer(
+      builder,
+      array_register,
+      index_register,
+      value_register,
+      index,
+      element_number(elements[index])
+    )
+    index = index + 1
+  end
+end
+
+fn emit_integer_array(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let length_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, length_register, value_encode(ValueInt32(elements.length())))
+  emit_instruction(builder, instruction_words_new_array(array_register, length_register))
+  let index_register = proto_builder_register_allocate(builder)
+  let value_register = proto_builder_register_allocate(builder)
+  store_integer_elements(builder, elements, array_register, index_register, value_register)
+end
+
+fn emit_length_of_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let array_register = proto_builder_register_allocate(builder)
+  emit_integer_array(builder, elements, array_register)
+  emit_instruction(
+    builder,
+    instruction_words_binary(instruction_opcode_length(), target, array_register, 0)
+  )
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+
+fn lower_length_of_integer_array(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
+  match expression {
+    ExprArray(elements, _) => emit_length_of_elements(builder, elements, target),
+    _ => LowerInt
+  }
+
+fn lower_length_or_text(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  if integer_array_expression(arguments[0]) then
+    lower_length_of_integer_array(builder, arguments[0], target)
+  else
+    lower_text_named(scope, builder, "len", arguments, source_span, target)
+  end
+
+export fn lower_array_named(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  name: string,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  if name == "len" && arguments.length() == 1 then
+    lower_length_or_text(scope, builder, arguments, source_span, target)
+  else
+    lower_text_named(scope, builder, name, arguments, source_span, target)
+  end
