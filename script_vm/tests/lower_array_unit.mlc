@@ -18,6 +18,11 @@ fn bool_head_source() -> string = "export fn run() -> i32 = if [true, false][0] 
 
 fn bool_tail_source() -> string = "export fn run() -> i32 = if [true, false][1] then 1 else 0 end"
 
+fn nested_source() -> string = "export fn run() -> i32 = len([[1]])"
+
+fn alias_source() -> string =
+  "export fn run() -> i32 = do let mut left = [1] let mut right = left right[0] = 9 left[0] end"
+
 fn no_arguments() -> [i64] = do
   let mut arguments: [i64] = []
   arguments
@@ -96,33 +101,57 @@ fn expect_bool_elements() -> i32 = do
   end
 end
 
-fn main() -> i32 = do
-  let empty_status = expect_named("empty", empty_source(), 0, "array empty=0")
-  if empty_status != 0 then
-    empty_status
+fn expect_nested() -> i32 = do
+  let lowered = lower_source(nested_source())
+  if lowered.diagnostics.length() == 0 then
+    println("array nested executed")
+    1
+  else if lowered.diagnostics[0].code == "unsupported_nested_array" then
+    println("array diagnostic=unsupported_nested_array")
+    0
   else
-    let bool_status = expect_bool_elements()
-    if bool_status != 0 then
-      bool_status
+    println("array diagnostic=" + lowered.diagnostics[0].code)
+    1
+  end
+end
+
+fn main() -> i32 = do
+  let nested_status = expect_nested()
+  if nested_status != 0 then
+    nested_status
+  else
+    let alias_status = expect_program(alias_source(), 9, "array_alias_shares_object")
+    if alias_status != 0 then
+      alias_status
     else
-      let store_status = expect_program(store_source(), 9, "array value=9")
-      if store_status != 0 then
-        store_status
+      let empty_status = expect_named("empty", empty_source(), 0, "array empty=0")
+      if empty_status != 0 then
+        empty_status
       else
-        let immutable_status = expect_immutable()
-        if immutable_status != 0 then
-          immutable_status
+        let bool_status = expect_bool_elements()
+        if bool_status != 0 then
+          bool_status
         else
-          let index_status = expect_program(index_source(), 20, "array value=20")
-          if index_status != 0 then
-            index_status
+          let store_status = expect_program(store_source(), 9, "array value=9")
+          if store_status != 0 then
+            store_status
           else
-            let length_status = expect_program(length_source(), 3, "array_length=3")
-            if length_status != 0 then
-              length_status
+            let immutable_status = expect_immutable()
+            if immutable_status != 0 then
+              immutable_status
             else
-              println("[script_vm] lower_array_unit ok")
-              0
+              let index_status = expect_program(index_source(), 20, "array value=20")
+              if index_status != 0 then
+                index_status
+              else
+                let length_status = expect_program(length_source(), 3, "array_length=3")
+                if length_status != 0 then
+                  length_status
+                else
+                  println("[script_vm] lower_array_unit ok")
+                  0
+                end
+              end
             end
           end
         end
