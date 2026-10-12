@@ -101,7 +101,7 @@ end
 export fn lower_continue(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, source_span: Span) -> unit = do
   let marker = latest_while_marker(scope)
   if marker < 0 then
-    lower_diagnostic_add(sink, "unsupported_continue", "unsupported_continue", source_span)
+    lower_diagnostic_add(sink, "continue_outside_loop", "continue_outside_loop", source_span)
   else
     proto_builder_emit_jump_back(builder, scope.names[marker].register_index)
   end
@@ -110,7 +110,7 @@ end
 export fn lower_break(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, source_span: Span) -> unit = do
   let marker = latest_while_marker(scope)
   if marker < 0 then
-    lower_diagnostic_add(sink, "unsupported_break", "unsupported_break", source_span)
+    lower_diagnostic_add(sink, "break_outside_loop", "break_outside_loop", source_span)
   else
     let site = proto_builder_emit_jump(builder)
     record_break_site(scope, site)
