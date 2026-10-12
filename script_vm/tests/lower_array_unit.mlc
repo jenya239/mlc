@@ -6,6 +6,12 @@ fn length_source() -> string = "export fn run() -> i32 = len([1, 2, 3])"
 
 fn index_source() -> string = "export fn run() -> i32 = [10, 20, 30][0 + 1]"
 
+fn store_source() -> string =
+  "export fn run() -> i32 = do let mut values = [1, 2] values[0] = 9 values[0] end"
+
+fn immutable_source() -> string =
+  "export fn run() -> i32 = do let values = [1, 2] values[0] = 9 values[0] end"
+
 fn no_arguments() -> [i64] = do
   let mut arguments: [i64] = []
   arguments
@@ -41,17 +47,41 @@ fn expect_program(source: string, expected: i32, success_line: string) -> i32 = 
   end
 end
 
-fn main() -> i32 = do
-  let index_status = expect_program(index_source(), 20, "array value=20")
-  if index_status != 0 then
-    index_status
+fn expect_immutable() -> i32 = do
+  let lowered = lower_source(immutable_source())
+  if lowered.diagnostics.length() == 0 then
+    println("array executed immutable")
+    1
+  else if lowered.diagnostics[0].code == "assign_immutable" then
+    println("array diagnostic=assign_immutable")
+    0
   else
-    let length_status = expect_program(length_source(), 3, "array_length=3")
-    if length_status != 0 then
-      length_status
+    println("array diagnostic=" + lowered.diagnostics[0].code)
+    1
+  end
+end
+
+fn main() -> i32 = do
+  let store_status = expect_program(store_source(), 9, "array value=9")
+  if store_status != 0 then
+    store_status
+  else
+    let immutable_status = expect_immutable()
+    if immutable_status != 0 then
+      immutable_status
     else
-      println("[script_vm] lower_array_unit ok")
-      0
+      let index_status = expect_program(index_source(), 20, "array value=20")
+      if index_status != 0 then
+        index_status
+      else
+        let length_status = expect_program(length_source(), 3, "array_length=3")
+        if length_status != 0 then
+          length_status
+        else
+          println("[script_vm] lower_array_unit ok")
+          0
+        end
+      end
     end
   end
 end
