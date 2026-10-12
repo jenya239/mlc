@@ -1,8 +1,8 @@
-current_step: 146
+current_step: 147
 status: ready
-last_result: done step 146: type_mismatch, text_length=3, unit ok lower_text
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_text_unit.mlc => exit 0, text diagnostic=type_mismatch, text_length=3; ruby scripts/run_script_vm_gate.rb lower_text => script_vm_gate ok units=1; ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok
-next_step: 147
+last_result: done step 147: B1.ns_per_insn 35, B3.ns_per_call 1242
+last_verify: ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50 => exit 0, B1.ns_per_insn 35, B1.total_us 10681, B3.ns_per_call 1242
+next_step: 148
 consult_count: 0
 consult_response:
 consult_verdict:
