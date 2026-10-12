@@ -72,6 +72,28 @@ void mlc_handle_release(MlcVm* vm, MlcHandle handle);
 /* Test helper: fill buffer with frozen add1 module blob; returns byte size. */
 size_t mlc_script_vm_fixture_add1(uint8_t* out, size_t capacity);
 
+typedef struct MlcRepl MlcRepl;
+
+typedef enum MlcReplStatus {
+  MLC_REPL_INCOMPLETE = 0,
+  MLC_REPL_ACCEPTED = 1,
+  MLC_REPL_VALUE = 2,
+  MLC_REPL_DIAGNOSTIC = 3
+} MlcReplStatus;
+
+typedef struct MlcReplAnswer {
+  int32_t status;
+  int32_t value;
+  int32_t string_length;
+  int32_t line;
+  int32_t column;
+  char code_text[64];
+} MlcReplAnswer;
+
+MlcRepl* mlc_repl_create(const MlcVmConfig* config);
+void mlc_repl_destroy(MlcRepl* session);
+int mlc_repl_submit(MlcRepl* session, const char* text, size_t size, MlcReplAnswer* answer);
+
 #ifdef __cplusplus
 }
 #endif

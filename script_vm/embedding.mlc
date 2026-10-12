@@ -43,6 +43,7 @@ import {
   bytes_from_pointer,
   emb_encode_add1_module
 } from './module_blob'
+import { repl_embed_submit, ReplEmbedAnswer } from './repl_embed'
 
 extern fn embedding_u8_to_i64(byte_value: i32) -> i64 =
   "mlc::script_vm::embedding_u8_to_i64" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
@@ -225,3 +226,12 @@ export fn emb_add1_fixture_byte_at(index: i32) -> i32 = do
 end
 
 export fn emb_add1_fixture_size() -> i32 = emb_encode_add1_module().length()
+
+export fn emb_repl_submit(
+  accepted_source: string,
+  pending: string,
+  text: string,
+  instruction_limit: i64,
+  heap_limit_objects: i32
+) -> ReplEmbedAnswer =
+  repl_embed_submit(accepted_source, pending, text, instruction_limit, heap_limit_objects)

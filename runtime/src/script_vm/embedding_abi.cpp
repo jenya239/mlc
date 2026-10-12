@@ -197,3 +197,82 @@ size_t mlc_script_vm_fixture_add1(uint8_t* out, size_t capacity) {
 }
 
 } // extern "C"
+
+struct MlcRepl {
+  bool released = false;
+  std::uint64_t instruction_limit = 0;
+  std::int32_t heap_limit_objects = 1000000;
+  MlcVmPanicCallback panic_callback = nullptr;
+  std::string accepted_source;
+  std::string pending;
+};
+
+static void repl_panic(MlcRepl* session, const char* message) {
+  if (session != nullptr && session->panic_callback != nullptr) {
+    session->panic_callback(message);
+  }
+}
+
+static void copy_code_text(char* destination, const mlc::String& code) {
+  const auto code_view = code.view();
+  std::size_t code_length = code_view.size();
+  if (code_length > 63) {
+    code_length = 63;
+  }
+  if (code_length > 0) {
+    std::memcpy(destination, code_view.data(), code_length);
+  }
+  destination[code_length] = '\0';
+}
+
+extern "C" {
+
+MlcRepl* mlc_repl_create(const MlcVmConfig* config) {
+  auto* session = new MlcRepl();
+  if (config != nullptr) {
+    session->instruction_limit = config->instruction_limit;
+    if (config->heap_limit_objects > 0) {
+      session->heap_limit_objects = config->heap_limit_objects;
+    }
+    session->panic_callback = config->panic_callback;
+  }
+  return session;
+}
+
+void mlc_repl_destroy(MlcRepl* session) {
+  if (session == nullptr) {
+    return;
+  }
+  if (session->released) {
+    repl_panic(session, "mlc_repl_destroy: double release");
+    return;
+  }
+  session->released = true;
+}
+
+int mlc_repl_submit(MlcRepl* session, const char* text, size_t size, MlcReplAnswer* answer) {
+  if (session == nullptr || answer == nullptr || session->released) {
+    return -1;
+  }
+  const char* chunk_text = text == nullptr ? "" : text;
+  const std::size_t chunk_size = text == nullptr ? 0 : size;
+  const std::string chunk(chunk_text, chunk_size);
+  const auto result = embedding::emb_repl_submit(
+      mlc::String(session->accepted_source),
+      mlc::String(session->pending),
+      mlc::String(chunk),
+      clamped_instruction_limit(session->instruction_limit),
+      session->heap_limit_objects);
+  session->accepted_source.assign(result.accepted_source.view());
+  session->pending.assign(result.pending.view());
+  *answer = MlcReplAnswer{};
+  answer->status = result.status;
+  answer->value = result.value;
+  answer->string_length = result.string_length;
+  answer->line = result.line;
+  answer->column = result.column;
+  copy_code_text(answer->code_text, result.code);
+  return 0;
+}
+
+} // extern "C"

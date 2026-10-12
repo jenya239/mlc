@@ -1,0 +1,162 @@
+import { Value, ValueInt32, value_decode } from './value'
+import { heap_new } from './heap'
+import { RunOk, RunErr, run_program_with_args_limited } from './interpreter'
+import { run_limits_new } from './run_result'
+import { verify_function, VerifyOk, VerifyErr } from './verifier'
+import { DecodedModule, decode_module } from './module_blob'
+import { emb_ok, emb_verify } from './embedding_codes'
+import { lower_source } from './lower/lower_module'
+
+export type ReplEmbedAnswer = {
+  status: i32,
+  value: i32,
+  string_length: i32,
+  line: i32,
+  column: i32,
+  code: string,
+  accepted_source: string,
+  pending: string
+}
+
+fn status_value() -> i32 = 2
+
+fn status_diagnostic() -> i32 = 3
+
+fn answer_value(number: i32, accepted_source: string, pending: string) -> ReplEmbedAnswer =
+  ReplEmbedAnswer {
+    status: status_value(),
+    value: number,
+    string_length: 0 - 1,
+    line: 0,
+    column: 0,
+    code: "",
+    accepted_source: accepted_source,
+    pending: pending
+  }
+
+fn answer_diagnostic(
+  code: string,
+  line: i32,
+  column: i32,
+  accepted_source: string,
+  pending: string
+) -> ReplEmbedAnswer =
+  ReplEmbedAnswer {
+    status: status_diagnostic(),
+    value: 0,
+    string_length: 0 - 1,
+    line: line,
+    column: column,
+    code: code,
+    accepted_source: accepted_source,
+    pending: pending
+  }
+
+fn find_export_prototype(module: DecodedModule, export_name: string) -> i32 = do
+  let mut index = 0
+  while index < module.exports.length() do
+    if module.exports[index].name == export_name then
+      return module.exports[index].proto_index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn verify_module(module: DecodedModule) -> i32 = do
+  let mut prototype_index = 0
+  let mut failed = false
+  while prototype_index < module.protos.length() && !failed do
+    const prototype = module.protos[prototype_index]
+    const verified = verify_function(prototype.words, prototype.register_count, prototype.constants.length())
+    const is_error = match verified {
+      VerifyErr(_code, _at) => true,
+      VerifyOk => false
+    }
+    if is_error then
+      failed = true
+    end
+    prototype_index = prototype_index + 1
+  end
+  if failed then
+    emb_verify()
+  else
+    emb_ok()
+  end
+end
+
+fn integer_or_diagnostic(raw: i64, accepted_source: string, pending: string) -> ReplEmbedAnswer =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => answer_value(number, accepted_source, pending),
+    _ => answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
+  }
+
+fn run_entry(
+  module: DecodedModule,
+  prototype_index: i32,
+  instruction_limit: i64,
+  heap_limit_objects: i32,
+  accepted_source: string,
+  pending: string
+) -> ReplEmbedAnswer = do
+  let mut arguments: [Value] = []
+  let ran = run_program_with_args_limited(
+    heap_new(),
+    module.protos,
+    prototype_index,
+    arguments,
+    run_limits_new(instruction_limit, heap_limit_objects)
+  )
+  match ran.result {
+    RunOk(value) => integer_or_diagnostic(value.raw, accepted_source, pending),
+    RunErr(_code, _at) => answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
+  }
+end
+
+fn execute_lowered(
+  bytes: [i32],
+  instruction_limit: i64,
+  heap_limit_objects: i32,
+  accepted_source: string,
+  pending: string
+) -> ReplEmbedAnswer = do
+  const decoded = decode_module(bytes)
+  if decoded.code != emb_ok() then
+    answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
+  else
+    const verify_code = verify_module(decoded.module)
+    if verify_code != emb_ok() then
+      answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
+    else
+      const prototype_index = find_export_prototype(decoded.module, "repl_entry")
+      if prototype_index < 0 then
+        answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
+      else
+        run_entry(decoded.module, prototype_index, instruction_limit, heap_limit_objects, accepted_source, pending)
+      end
+    end
+  end
+end
+
+fn expression_program(accepted_source: string, text: string) -> string =
+  if accepted_source.length() == 0 then
+    "export fn repl_entry() -> i32 = do " + text + " end"
+  else
+    accepted_source + "\nexport fn repl_entry() -> i32 = do " + text + " end"
+  end
+
+export fn repl_embed_submit(
+  accepted_source: string,
+  pending: string,
+  text: string,
+  instruction_limit: i64,
+  heap_limit_objects: i32
+) -> ReplEmbedAnswer = do
+  let lowered = lower_source(expression_program(accepted_source, text))
+  if lowered.diagnostics.length() != 0 then
+    let diagnostic = lowered.diagnostics[0]
+    answer_diagnostic(diagnostic.code, diagnostic.line, diagnostic.column, accepted_source, pending)
+  else
+    execute_lowered(lowered.bytes, instruction_limit, heap_limit_objects, accepted_source, pending)
+  end
+end
