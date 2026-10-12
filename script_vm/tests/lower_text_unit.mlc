@@ -2,7 +2,9 @@ import { lower_source } from '../lower/lower_module'
 import { emb_ok, emb_call_export_bytes } from '../embedding'
 import { Value, ValueInt32, value_decode } from '../value'
 
-fn source_text() -> string = "export fn run() -> i32 = len('ab' + 'c')"
+fn mixed_source() -> string = "export fn run() -> i32 = 'a' + 1"
+
+fn concat_source() -> string = "export fn run() -> i32 = len('ab' + 'c')"
 
 fn no_arguments() -> [i64] = do
   let mut arguments: [i64] = []
@@ -30,12 +32,44 @@ fn report_call(bytes: [i32]) -> i32 = do
   end
 end
 
-fn main() -> i32 = do
-  let lowered = lower_source(source_text())
+fn reject_executed(bytes: [i32]) -> i32 = do
+  let called = emb_call_export_bytes(bytes, "run", no_arguments())
+  println("text executed code=" + called.code.to_string())
+  1
+end
+
+fn expect_type_mismatch(code: string, diagnostic_count: i32, bytes: [i32]) -> i32 =
+  if diagnostic_count == 0 then
+    reject_executed(bytes)
+  else if code == "type_mismatch" then
+    println("text diagnostic=type_mismatch")
+    0
+  else
+    println("text diagnostic=" + code)
+    1
+  end
+
+fn expect_concat() -> i32 = do
+  let lowered = lower_source(concat_source())
   if lowered.diagnostics.length() != 0 then
     println("text diagnostic=" + lowered.diagnostics[0].code)
     1
   else
     report_call(lowered.bytes)
+  end
+end
+
+fn main() -> i32 = do
+  let lowered = lower_source(mixed_source())
+  let diagnostic_code = if lowered.diagnostics.length() == 0 then
+    ""
+  else
+    lowered.diagnostics[0].code
+  end
+  let status = expect_type_mismatch(diagnostic_code, lowered.diagnostics.length(), lowered.bytes)
+  if status == 0 then
+    expect_concat()
+  else
+    status
   end
 end
