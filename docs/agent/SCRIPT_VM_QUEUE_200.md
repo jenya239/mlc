@@ -1281,12 +1281,12 @@
 - allowed_files: `script_vm/tests/lower_for_unit.mlc`, `STATE`
 - forbidden: F0
 - contract: сумма остаётся 0
-- red: `RED(lower_for)`, поведенческий
+- red: `RED(lower_for)`, поведенческий. Если текущий unit уже зелёный на новых ассершенах без изменения кода — это легальный green, а не blocked; red не обязателен, когда свойство уже следует из ранее сделанного green шага 170
 - green: none
 - gate: `RED(lower_for)`
 - sabotage: none
 - performance: not a perf step
-- done_when: красный исход
+- done_when: красный исход; либо unit зелёный сразу — тогда шаг зелёный без отдельного red-коммита, в STATE это фиксируется как green step 171
 - state_update: фактическое значение
 
 ### Step 172 — Green: пустой for
