@@ -1,5 +1,5 @@
 import { Expr, Span } from '../../compiler/frontend/ast'
-import { ValueInt32, value_encode } from '../value'
+import { ValueBool, ValueInt32, value_encode } from '../value'
 import {
   instruction_words_binary,
   instruction_words_get_index,
@@ -15,8 +15,8 @@ import {
   proto_builder_register_release_to
 } from './lower_builder'
 import { diagnostic_at, emit_instruction, is_lower_int, move_to_target } from './lower_control'
-import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
-import { LowerType, LowerInt } from './lower_types'
+import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
+import { LowerType, LowerBool, LowerInt } from './lower_types'
 import {
   lower_text_concatenate,
   lower_text_handles_plus,
@@ -29,9 +29,9 @@ fn integer_element(expression: Shared<Expr>) -> bool =
     _ => false
   }
 
-fn nonempty_integer_elements(elements: [Shared<Expr>]) -> bool = do
+fn elements_are_integers(elements: [Shared<Expr>]) -> bool = do
   let mut index = 0
-  let mut accepted = elements.length() > 0
+  let mut accepted = true
   while index < elements.length() && accepted do
     accepted = integer_element(elements[index])
     index = index + 1
@@ -39,9 +39,47 @@ fn nonempty_integer_elements(elements: [Shared<Expr>]) -> bool = do
   accepted
 end
 
+fn bool_element(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBool(_, _) => true,
+    _ => false
+  }
+
+fn elements_are_bools(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut accepted = elements.length() > 0
+  while index < elements.length() && accepted do
+    accepted = bool_element(elements[index])
+    index = index + 1
+  end
+  accepted
+end
+
+fn scalar_element(expression: Shared<Expr>) -> bool =
+  integer_element(expression) || bool_element(expression)
+
+fn elements_are_scalars(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut accepted = true
+  while index < elements.length() && accepted do
+    accepted = scalar_element(elements[index])
+    index = index + 1
+  end
+  accepted
+end
+
+fn mixed_scalar_elements(elements: [Shared<Expr>]) -> bool =
+  elements.length() > 0 && elements_are_scalars(elements) && !elements_are_integers(elements) && !elements_are_bools(elements)
+
 fn integer_array_expression(expression: Shared<Expr>) -> bool =
   match expression {
-    ExprArray(elements, _) => nonempty_integer_elements(elements),
+    ExprArray(elements, _) => elements_are_integers(elements),
+    _ => false
+  }
+
+fn mixed_scalar_array(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => mixed_scalar_elements(elements),
     _ => false
   }
 
@@ -121,15 +159,112 @@ fn lower_length_or_text(
 ) -> LowerType =
   if integer_array_expression(arguments[0]) then
     lower_length_of_integer_array(builder, arguments[0], target)
+  else if mixed_scalar_array(arguments[0]) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
   else
     lower_text_named(scope, builder, "len", arguments, source_span, target)
   end
+
+fn element_flag(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBool(flag, _) => flag,
+    _ => false
+  }
+
+fn store_one_bool(
+  builder: ref mut ProtoBuilder,
+  array_register: i32,
+  index_register: i32,
+  value_register: i32,
+  index: i32,
+  flag: bool
+) -> unit = do
+  proto_builder_load_constant(builder, index_register, value_encode(ValueInt32(index)))
+  proto_builder_load_constant(builder, value_register, value_encode(ValueBool(flag)))
+  emit_instruction(builder, instruction_words_set_index(array_register, index_register, value_register))
+end
+
+fn store_bool_elements(
+  builder: ref mut ProtoBuilder,
+  elements: [Shared<Expr>],
+  array_register: i32,
+  index_register: i32,
+  value_register: i32
+) -> unit = do
+  let mut index = 0
+  while index < elements.length() do
+    store_one_bool(
+      builder,
+      array_register,
+      index_register,
+      value_register,
+      index,
+      element_flag(elements[index])
+    )
+    index = index + 1
+  end
+end
+
+fn emit_bool_array(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let length_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, length_register, value_encode(ValueInt32(elements.length())))
+  emit_instruction(builder, instruction_words_new_array(array_register, length_register))
+  let index_register = proto_builder_register_allocate(builder)
+  let value_register = proto_builder_register_allocate(builder)
+  store_bool_elements(builder, elements, array_register, index_register, value_register)
+end
+
+fn place_bool_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  emit_bool_array(builder, elements, array_register)
+  proto_builder_register_release_to(builder, mark)
+end
+
+fn element_type_name() -> string = "*array_element*"
+
+fn remember_element_type(scope: ref mut LowerScope, value_type: LowerType) -> unit =
+  lower_scope_define(scope, element_type_name(), 0, value_type, false)
+
+fn remembered_element_type(scope: ref mut LowerScope) -> LowerType = do
+  let found = lower_scope_lookup(scope, element_type_name())
+  if found < 0 then
+    LowerInt
+  else
+    scope.names[found].value_type
+  end
+end
 
 fn place_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
   let mark = proto_builder_register_mark(builder)
   emit_integer_array(builder, elements, array_register)
   proto_builder_register_release_to(builder, mark)
 end
+
+fn place_array_literal(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  elements: [Shared<Expr>],
+  source_span: Span,
+  array_register: i32
+) -> unit =
+  if elements_are_integers(elements) then
+    do
+      place_elements(builder, elements, array_register)
+      remember_element_type(scope, LowerInt)
+    end
+  else if elements_are_bools(elements) then
+    do
+      place_bool_elements(builder, elements, array_register)
+      remember_element_type(scope, LowerBool)
+    end
+  else if mixed_scalar_elements(elements) then
+    lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+  else
+    lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+  end
 
 fn move_named_array(
   scope: ref mut LowerScope,
@@ -155,11 +290,7 @@ export fn place_integer_array(
 ) -> unit =
   match expression {
     ExprArray(elements, _) =>
-      if nonempty_integer_elements(elements) then
-        place_elements(builder, elements, array_register)
-      else
-        lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
-      end,
+      place_array_literal(scope, builder, elements, source_span, array_register),
     ExprIdent(name, name_span) =>
       move_named_array(scope, builder, name, name_span, array_register),
     _ => lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
@@ -179,7 +310,7 @@ export fn finish_array_index(
   else if is_lower_int(index_type) then
     do
       emit_instruction(builder, instruction_words_get_index(target, array_register, index_register))
-      LowerInt
+      remembered_element_type(scope)
     end
   else
     do
