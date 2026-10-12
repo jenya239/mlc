@@ -1,8 +1,10 @@
 #include "mlc/script_vm/embedding_abi.h"
 
+#include <chrono>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 bool panic_saw_double_release = false;
 
@@ -18,7 +20,43 @@ bool code_starts_with_unknown_identifier(const char* code_text) {
   return std::strncmp(code_text, prefix, sizeof(prefix) - 1) == 0;
 }
 
-int main() {
+int run_submit_budget() {
+  MlcVmConfig config{};
+  config.instruction_limit = 0;
+  config.heap_limit_objects = 1000000;
+  MlcRepl* session = mlc_repl_create(&config);
+  const auto started = std::chrono::steady_clock::now();
+  for (int number = 1; number <= 20; ++number) {
+    const std::string declaration =
+        "export fn function_" + std::to_string(number) + "() -> i32 = " + std::to_string(number);
+    MlcReplAnswer accepted{};
+    const int submitted = mlc_repl_submit(session, declaration.data(), declaration.size(), &accepted);
+    if (submitted != 0 || accepted.status != MLC_REPL_ACCEPTED) {
+      mlc_repl_destroy(session);
+      return 1;
+    }
+  }
+  const char call_text[] = "function_20()";
+  MlcReplAnswer called{};
+  const int invoked = mlc_repl_submit(session, call_text, sizeof(call_text) - 1, &called);
+  const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now() - started);
+  mlc_repl_destroy(session);
+  if (invoked != 0 || called.status != MLC_REPL_VALUE || called.value != 20) {
+    return 1;
+  }
+  const long long elapsed_microseconds = static_cast<long long>(elapsed.count());
+  if (elapsed_microseconds < 0) {
+    return 1;
+  }
+  std::printf("repl_host_submit_us=%lld\n", elapsed_microseconds);
+  return 0;
+}
+
+int main(int argument_count, char** argument_values) {
+  if (argument_count > 1 && std::strcmp(argument_values[1], "budget") == 0) {
+    return run_submit_budget();
+  }
   (void)mlc_repl_submit;
   MlcVmConfig config{};
   config.instruction_limit = 0;
