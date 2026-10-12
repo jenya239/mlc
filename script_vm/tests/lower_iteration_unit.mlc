@@ -59,6 +59,33 @@ fn expect_continue_sum() -> i32 = do
   end
 end
 
+fn outside_break_source() -> string = "export fn run() -> i32 = do break 0 end"
+
+fn outside_continue_source() -> string = "export fn run() -> i32 = do continue 0 end"
+
+fn expect_outside_code(source: string, expected_code: string) -> i32 = do
+  let lowered = lower_source(source)
+  if lowered.diagnostics.length() == 0 then
+    println("iteration outside executed")
+    1
+  else if lowered.diagnostics[0].code == expected_code then
+    println("iteration diagnostic=" + expected_code)
+    0
+  else
+    println("iteration diagnostic=" + lowered.diagnostics[0].code)
+    1
+  end
+end
+
+fn expect_outside_loop() -> i32 = do
+  let break_status = expect_outside_code(outside_break_source(), "break_outside_loop")
+  if break_status != 0 then
+    break_status
+  else
+    expect_outside_code(outside_continue_source(), "continue_outside_loop")
+  end
+end
+
 fn main() -> i32 = do
   let break_status = expect_break_sum()
   if break_status != 0 then
@@ -68,8 +95,13 @@ fn main() -> i32 = do
     if continue_status != 0 then
       continue_status
     else
-      println("[script_vm] lower_iteration_unit ok")
-      0
+      let outside_status = expect_outside_loop()
+      if outside_status != 0 then
+        outside_status
+      else
+        println("[script_vm] lower_iteration_unit ok")
+        0
+      end
     end
   end
 end
