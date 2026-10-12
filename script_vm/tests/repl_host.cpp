@@ -2,6 +2,12 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
+
+bool code_starts_with_unknown_identifier(const char* code_text) {
+  const char prefix[] = "unknown_identifier";
+  return std::strncmp(code_text, prefix, sizeof(prefix) - 1) == 0;
+}
 
 int main() {
   (void)mlc_repl_submit;
@@ -39,6 +45,23 @@ int main() {
     return 1;
   }
   std::printf("case accumulate ok\n");
+
+  const char missing_name[] = "missing_name";
+  MlcReplAnswer diagnostic{};
+  const int diagnosed = mlc_repl_submit(session, missing_name, sizeof(missing_name) - 1, &diagnostic);
+  std::printf(
+      "case diagnostic status=%d code=%s line=%d column=%d\n",
+      diagnostic.status,
+      diagnostic.code_text,
+      diagnostic.line,
+      diagnostic.column);
+  if (diagnosed != 0 || diagnostic.status != MLC_REPL_DIAGNOSTIC ||
+      diagnostic.line <= 0 || diagnostic.column <= 0 ||
+      !code_starts_with_unknown_identifier(diagnostic.code_text)) {
+    mlc_repl_destroy(session);
+    return 1;
+  }
+  std::printf("case diagnostic ok\n");
   mlc_repl_destroy(session);
   return 0;
 }
