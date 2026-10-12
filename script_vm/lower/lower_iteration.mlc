@@ -1,5 +1,5 @@
 import { Span } from '../../compiler/frontend/ast'
-import { ProtoBuilder, proto_builder_emit_jump, proto_builder_patch_to_here } from './lower_builder'
+import { ProtoBuilder, proto_builder_emit_jump, proto_builder_emit_jump_back, proto_builder_patch_to_here } from './lower_builder'
 import { LowerDiagnosticSink, lower_diagnostic_add } from './lower_diagnostics'
 import { LowerName, LowerScope, lower_scope_define } from './lower_scope'
 import { LowerInt } from './lower_types'
@@ -87,14 +87,23 @@ fn patch_break_sites(builder: ref mut ProtoBuilder, names: [LowerName], marker: 
   end
 end
 
-export fn begin_while_frame(scope: ref mut LowerScope) -> unit =
-  lower_scope_define(scope, while_frame_name(), 0, LowerInt, false)
+export fn begin_while_frame(scope: ref mut LowerScope, loop_head: i32) -> unit =
+  lower_scope_define(scope, while_frame_name(), loop_head, LowerInt, false)
 
 export fn finish_while_frame(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> unit = do
   let marker = latest_while_marker(scope)
   if marker >= 0 then
     patch_break_sites(builder, scope.names, marker)
     scope.names = names_before_marker(scope.names, marker)
+  end
+end
+
+export fn lower_continue(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, source_span: Span) -> unit = do
+  let marker = latest_while_marker(scope)
+  if marker < 0 then
+    lower_diagnostic_add(sink, "unsupported_continue", "unsupported_continue", source_span)
+  else
+    proto_builder_emit_jump_back(builder, scope.names[marker].register_index)
   end
 end
 

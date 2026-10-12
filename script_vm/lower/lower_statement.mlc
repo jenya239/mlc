@@ -47,7 +47,7 @@ import {
 import { lower_expression } from './lower_expression'
 import { array_store_register, emit_array_element_store, place_integer_array } from './lower_array'
 import { finish_field_assignment } from './lower_records'
-import { begin_while_frame, finish_while_frame, lower_break } from './lower_iteration'
+import { begin_while_frame, finish_while_frame, lower_break, lower_continue } from './lower_iteration'
 
 export type LowerFunctionSignature = { result_type: LowerType }
 
@@ -272,7 +272,7 @@ fn release_condition(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSin
 end
 
 fn lower_while_body(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, condition_register: i32, condition_mark: i32, statements: [Shared<Stmt>], top: i32) -> unit = do
-  begin_while_frame(scope)
+  begin_while_frame(scope, top)
   let end_site = proto_builder_emit_jump_if_false(builder, condition_register)
   proto_builder_register_release_to(builder, condition_mark)
   lower_scope_push(scope, builder)
@@ -382,7 +382,7 @@ fn apply_statement(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink,
     StmtBreak(source_span) =>
       lower_break(scope, sink, builder, source_span),
     StmtContinue(source_span) =>
-      lower_diagnostic_add(sink, "unsupported_continue", "unsupported_continue", source_span),
+      lower_continue(scope, sink, builder, source_span),
     _ => fail_at(scope, "unsupported_statement", stmt_span(statement))
   }
 
