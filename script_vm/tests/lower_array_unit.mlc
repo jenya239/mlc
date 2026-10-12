@@ -12,6 +12,12 @@ fn store_source() -> string =
 fn immutable_source() -> string =
   "export fn run() -> i32 = do let values = [1, 2] values[0] = 9 values[0] end"
 
+fn empty_source() -> string = "export fn run() -> i32 = len([])"
+
+fn bool_head_source() -> string = "export fn run() -> i32 = if [true, false][0] then 1 else 0 end"
+
+fn bool_tail_source() -> string = "export fn run() -> i32 = if [true, false][1] then 1 else 0 end"
+
 fn no_arguments() -> [i64] = do
   let mut arguments: [i64] = []
   arguments
@@ -61,25 +67,64 @@ fn expect_immutable() -> i32 = do
   end
 end
 
-fn main() -> i32 = do
-  let store_status = expect_program(store_source(), 9, "array value=9")
-  if store_status != 0 then
-    store_status
+fn expect_named(check_name: string, source: string, expected: i32, success_line: string) -> i32 = do
+  let lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    println("array check=" + check_name + " diagnostic=" + lowered.diagnostics[0].code)
+    1
   else
-    let immutable_status = expect_immutable()
-    if immutable_status != 0 then
-      immutable_status
+    let called = emb_call_export_bytes(lowered.bytes, "run", no_arguments())
+    if called.code != emb_ok() then
+      println("array check=" + check_name + " call code=" + called.code.to_string())
+      1
+    else if decoded_int(called.raw) == expected then
+      println(success_line)
+      0
     else
-      let index_status = expect_program(index_source(), 20, "array value=20")
-      if index_status != 0 then
-        index_status
+      println("array check=" + check_name + " value=" + decoded_int(called.raw).to_string())
+      1
+    end
+  end
+end
+
+fn expect_bool_elements() -> i32 = do
+  let head_status = expect_named("bool", bool_head_source(), 1, "array bool head=1")
+  if head_status != 0 then
+    head_status
+  else
+    expect_named("bool", bool_tail_source(), 0, "array bool tail=0")
+  end
+end
+
+fn main() -> i32 = do
+  let empty_status = expect_named("empty", empty_source(), 0, "array empty=0")
+  if empty_status != 0 then
+    empty_status
+  else
+    let bool_status = expect_bool_elements()
+    if bool_status != 0 then
+      bool_status
+    else
+      let store_status = expect_program(store_source(), 9, "array value=9")
+      if store_status != 0 then
+        store_status
       else
-        let length_status = expect_program(length_source(), 3, "array_length=3")
-        if length_status != 0 then
-          length_status
+        let immutable_status = expect_immutable()
+        if immutable_status != 0 then
+          immutable_status
         else
-          println("[script_vm] lower_array_unit ok")
-          0
+          let index_status = expect_program(index_source(), 20, "array value=20")
+          if index_status != 0 then
+            index_status
+          else
+            let length_status = expect_program(length_source(), 3, "array_length=3")
+            if length_status != 0 then
+              length_status
+            else
+              println("[script_vm] lower_array_unit ok")
+              0
+            end
+          end
         end
       end
     end
