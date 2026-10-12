@@ -1,6 +1,5 @@
 import { Expr, FieldVal, RecordLitPart, Span, expr_span } from '../../compiler/frontend/ast'
 import { Value, ValueBool, ValueInt32, value_encode } from '../value'
-import { instruction_words_binary } from '../bytecode'
 import {
   ProtoBuilder,
   proto_builder_register_allocate,
@@ -42,7 +41,6 @@ import {
   accepted_bool,
   diagnostic_at,
   emit_binary,
-  emit_instruction,
   finish_if_type,
   finish_logic_not,
   identifier_operand,
@@ -55,7 +53,7 @@ import {
   subtraction_opcode,
   types_agree
 } from './lower_control'
-import { lower_text_concatenate, lower_text_handles_plus, lower_array_named } from './lower_array'
+import { lower_text_concatenate, lower_text_handles_plus, lower_array_named, place_integer_array, finish_array_index } from './lower_array'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -143,10 +141,7 @@ fn lower_negate(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, bu
     end
   else
     do
-      emit_instruction(
-        builder,
-        instruction_words_binary(subtraction_opcode(), target, zero_register, inner_register)
-      )
+      emit_binary(builder, subtraction_opcode(), target, zero_register, inner_register)
       proto_builder_register_release_to(builder, mark)
       LowerInt
     end
@@ -179,16 +174,7 @@ fn lower_if(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builde
       LowerInt
     end
   else
-    lower_if_branches(
-      scope,
-      sink,
-      builder,
-      condition_register,
-      then_expression,
-      else_expression,
-      source_span,
-      target
-    )
+    lower_if_branches(scope, sink, builder, condition_register, then_expression, else_expression, source_span, target)
   end
   proto_builder_register_release_to(builder, mark)
   result_type
@@ -336,6 +322,13 @@ fn lower_field_read(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink
   let record_type = lower_expression(scope, sink, builder, base, record_register)
   finish_field_read(scope, builder, record_type, field_name, record_register, target, mark, source_span)
 end
+fn lower_index_read(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, base: Shared<Expr>, index: Shared<Expr>, source_span: Span, target: i32) -> LowerType = do
+  let array_register = proto_builder_register_allocate(builder)
+  place_integer_array(scope, builder, base, source_span, array_register)
+  let index_register = proto_builder_register_allocate(builder)
+  let index_type = lower_expression(scope, sink, builder, index, index_register)
+  finish_array_index(scope, builder, index_type, array_register, index_register, target, source_span)
+end
 fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
   match expression {
     ExprInt(number, _) => do
@@ -380,6 +373,8 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
       lower_record_literal(scope, sink, builder, record_name, parts, source_span, target),
     ExprField(base, field_name, source_span) =>
       lower_field_read(scope, sink, builder, base, field_name, source_span, target),
+    ExprIndex(base, index, source_span) =>
+      lower_index_read(scope, sink, builder, base, index, source_span, target),
     ExprBlock(_, _, source_span) => do
       lower_scope_fail(scope, diagnostic_at("unsupported_expression_block", source_span))
       LowerInt

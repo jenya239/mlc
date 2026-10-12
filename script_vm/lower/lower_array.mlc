@@ -2,6 +2,7 @@ import { Expr, Span } from '../../compiler/frontend/ast'
 import { ValueInt32, value_encode } from '../value'
 import {
   instruction_words_binary,
+  instruction_words_get_index,
   instruction_words_new_array,
   instruction_words_set_index
 } from '../bytecode'
@@ -13,8 +14,8 @@ import {
   proto_builder_register_mark,
   proto_builder_register_release_to
 } from './lower_builder'
-import { emit_instruction } from './lower_control'
-import { LowerScope } from './lower_scope'
+import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
+import { LowerScope, lower_scope_fail } from './lower_scope'
 import { LowerType, LowerInt } from './lower_types'
 import {
   lower_text_concatenate,
@@ -122,6 +123,52 @@ fn lower_length_or_text(
     lower_length_of_integer_array(builder, arguments[0], target)
   else
     lower_text_named(scope, builder, "len", arguments, source_span, target)
+  end
+
+fn place_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  emit_integer_array(builder, elements, array_register)
+  proto_builder_register_release_to(builder, mark)
+end
+
+export fn place_integer_array(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  expression: Shared<Expr>,
+  source_span: Span,
+  array_register: i32
+) -> unit =
+  match expression {
+    ExprArray(elements, _) =>
+      if nonempty_integer_elements(elements) then
+        place_elements(builder, elements, array_register)
+      else
+        lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+      end,
+    _ => lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+  }
+
+export fn finish_array_index(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  index_type: LowerType,
+  array_register: i32,
+  index_register: i32,
+  target: i32,
+  source_span: Span
+) -> LowerType =
+  if scope.has_diagnostic then
+    LowerInt
+  else if is_lower_int(index_type) then
+    do
+      emit_instruction(builder, instruction_words_get_index(target, array_register, index_register))
+      LowerInt
+    end
+  else
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
   end
 
 export fn lower_array_named(
