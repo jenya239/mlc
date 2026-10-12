@@ -103,6 +103,18 @@ fn main() -> i32 = do
     status = expect_unknown_identifier(repl_session_submit(session, "missing_name"))
   end
   if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "len('hi')"),
+      "repl answer=value kind=int32 number=2"
+    )
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "'hi'"),
+      "repl answer=value kind=string length=2"
+    )
+  end
+  if status == 0 then
     println("[script_vm] repl_session_unit ok")
   end
   status
