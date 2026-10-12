@@ -1,0 +1,62 @@
+import {
+  repl_session_new,
+  repl_session_submit,
+  ReplAnswer,
+  ReplIncomplete,
+  ReplAccepted,
+  ReplValueInt32,
+  ReplValueString,
+  ReplDiagnostic
+} from '../repl_session'
+
+fn answer_line(answer: ReplAnswer) -> string =
+  match answer {
+    ReplIncomplete => "repl answer=incomplete",
+    ReplAccepted => "repl answer=accepted",
+    ReplValueInt32(number) => "repl answer=value kind=int32 number=" + number.to_string(),
+    ReplValueString(string_length) => "repl answer=value kind=string length=" + string_length.to_string(),
+    ReplDiagnostic(code, line, column) => "repl answer=diagnostic code=" + code + " line=" + line.to_string() + " column=" + column.to_string()
+  }
+
+fn expect_answer(answer: ReplAnswer, expected_line: string) -> i32 = do
+  let line = answer_line(answer)
+  println(line)
+  if line == expected_line then
+    0
+  else
+    1
+  end
+end
+
+fn main() -> i32 = do
+  let mut session = repl_session_new()
+  let mut status = expect_answer(
+    repl_session_submit(session, "'hi'"),
+    "repl answer=value kind=string length=2"
+  )
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "len([1, 2, 3])"),
+      "repl answer=value kind=int32 number=3"
+    )
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(session, "export fn increase(number: i32) -> i32 = number + 1"),
+      "repl answer=accepted"
+    )
+  end
+  if status == 0 then
+    status = expect_answer(
+      repl_session_submit(
+        session,
+        "let mut total = 0 for item in [1, 2, 3, 4] do if total > 2 then break end total = total + increase(item) end total"
+      ),
+      "repl answer=value kind=int32 number=5"
+    )
+  end
+  if status == 0 then
+    println("[script_vm] repl_language_unit ok")
+  end
+  status
+end
