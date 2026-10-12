@@ -1,8 +1,21 @@
-import { Span } from '../../compiler/frontend/ast'
-import { ProtoBuilder, proto_builder_emit_jump, proto_builder_emit_jump_back, proto_builder_patch_to_here } from './lower_builder'
+import { Expr, ExprUnit, Span } from '../../compiler/frontend/ast'
+import { instruction_opcode_add, instruction_opcode_lt, instruction_words_binary, instruction_words_get_index, instruction_words_return } from '../bytecode'
+import { instruction_opcode_length } from '../bytecode_text'
+import { Value, ValueInt32, value_encode } from '../value'
+import {
+  ProtoBuilder,
+  proto_builder_emit,
+  proto_builder_emit_jump,
+  proto_builder_emit_jump_back,
+  proto_builder_load_constant,
+  proto_builder_patch_to_here,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
 import { LowerDiagnosticSink, lower_diagnostic_add } from './lower_diagnostics'
-import { LowerName, LowerScope, lower_scope_define } from './lower_scope'
-import { LowerInt } from './lower_types'
+import { LowerName, LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
+import { LowerInt, LowerType } from './lower_types'
 
 fn while_frame_name() -> string = "*while_frame*"
 
@@ -115,4 +128,84 @@ export fn lower_break(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSi
     let site = proto_builder_emit_jump(builder)
     record_break_site(scope, site)
   end
+end
+
+export fn keep_unit() -> unit = do
+  let mut once = 0
+  while once < 0 do
+    once = 1
+  end
+end
+
+export fn assignment_target(builder: ref mut ProtoBuilder, local_register: i32) -> i32 = do
+  let mark = proto_builder_register_mark(builder)
+  proto_builder_register_release_to(builder, mark)
+  local_register
+end
+
+export fn expression_is_unit(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprUnit(_) => true,
+    _ => false
+  }
+
+fn return_source_register(temporary: i32) -> i32 = temporary
+
+export fn emit_value_return(builder: ref mut ProtoBuilder, temporary: i32) -> unit = do
+  let emitted_index = proto_builder_emit(builder, instruction_words_return(return_source_register(temporary)))
+  if emitted_index < 0 then keep_unit() else keep_unit() end
+end
+
+export fn accept_discarded_type(value_type: LowerType) -> unit =
+  match value_type {
+    LowerInt => keep_unit(),
+    _ => keep_unit()
+  }
+
+fn emit_cursor_words(builder: ref mut ProtoBuilder, words: [i32]) -> unit = do
+  let emitted_index = proto_builder_emit(builder, words)
+  if emitted_index < 0 then keep_unit() else keep_unit() end
+end
+
+export type ForCursor = {
+  array_register: i32,
+  index_register: i32,
+  length_register: i32,
+  step_register: i32
+}
+
+export fn prepare_for_cursor(builder: ref mut ProtoBuilder, array_register: i32) -> ForCursor = do
+  let index_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, index_register, value_encode(ValueInt32(0)))
+  let length_register = proto_builder_register_allocate(builder)
+  emit_cursor_words(builder, instruction_words_binary(instruction_opcode_length(), length_register, array_register, 0))
+  let step_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, step_register, value_encode(ValueInt32(1)))
+  ForCursor {
+    array_register: array_register,
+    index_register: index_register,
+    length_register: length_register,
+    step_register: step_register
+  }
+end
+
+export fn advance_for_index(builder: ref mut ProtoBuilder, cursor: ForCursor) -> unit =
+  emit_cursor_words(builder, instruction_words_binary(instruction_opcode_add(), cursor.index_register, cursor.index_register, cursor.step_register))
+
+export fn emit_for_condition(builder: ref mut ProtoBuilder, cursor: ForCursor, condition_register: i32) -> unit =
+  emit_cursor_words(builder, instruction_words_binary(instruction_opcode_lt(), condition_register, cursor.index_register, cursor.length_register))
+
+fn for_element_type(scope: ref mut LowerScope) -> LowerType = do
+  let found = lower_scope_lookup(scope, "*array_element*")
+  if found < 0 then
+    LowerInt
+  else
+    scope.names[found].value_type
+  end
+end
+
+export fn define_for_element(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, cursor: ForCursor, name: string) -> unit = do
+  let element_register = proto_builder_register_allocate(builder)
+  emit_cursor_words(builder, instruction_words_get_index(element_register, cursor.array_register, cursor.index_register))
+  lower_scope_define(scope, name, element_register, for_element_type(scope), true)
 end

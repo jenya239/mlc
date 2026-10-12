@@ -5,6 +5,7 @@ import {
   ExprField,
   ExprBlock,
   ExprBool,
+  ExprFor,
   ExprIdent,
   ExprIf,
   ExprIndex,
@@ -20,10 +21,8 @@ import {
   StmtReturn,
   stmt_span
 } from '../../compiler/frontend/ast'
-import { instruction_words_return } from '../bytecode'
 import {
   ProtoBuilder,
-  proto_builder_emit,
   proto_builder_emit_jump,
   proto_builder_emit_jump_back,
   proto_builder_emit_jump_if_false,
@@ -47,7 +46,7 @@ import {
 import { lower_expression } from './lower_expression'
 import { array_store_register, emit_array_element_store, place_integer_array } from './lower_array'
 import { finish_field_assignment } from './lower_records'
-import { begin_while_frame, finish_while_frame, lower_break, lower_continue } from './lower_iteration'
+import { accept_discarded_type, advance_for_index, assignment_target, begin_while_frame, define_for_element, emit_for_condition, emit_value_return, expression_is_unit, finish_while_frame, keep_unit, lower_break, lower_continue, prepare_for_cursor } from './lower_iteration'
 
 export type LowerFunctionSignature = { result_type: LowerType }
 
@@ -79,13 +78,6 @@ end
 fn stored_result_type(scope: ref mut LowerScope) -> LowerType = do
   let found = lower_scope_lookup(scope, "*result_type*")
   if found < 0 then LowerInt else scope.names[found].value_type end
-end
-
-fn return_source_register(temporary: i32) -> i32 = temporary
-
-fn emit_value_return(builder: ref mut ProtoBuilder, temporary: i32) -> unit = do
-  let emitted_index = proto_builder_emit(builder, instruction_words_return(return_source_register(temporary)))
-  if emitted_index < 0 then keep_unit() else keep_unit() end
 end
 
 fn lower_return_statement(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, source_span: Span) -> unit = do
@@ -157,31 +149,6 @@ fn define_initialized_name(scope: ref mut LowerScope, sink: ref mut LowerDiagnos
   let value_type = lower_initializer(scope, sink, builder, expression, destination)
   lower_scope_define(scope, name, destination, value_type, is_mutable)
 end
-
-fn assignment_target(builder: ref mut ProtoBuilder, local_register: i32) -> i32 = do
-  let mark = proto_builder_register_mark(builder)
-  proto_builder_register_release_to(builder, mark)
-  local_register
-end
-
-fn expression_is_unit(expression: Shared<Expr>) -> bool =
-  match expression {
-    ExprUnit(_) => true,
-    _ => false
-  }
-
-fn keep_unit() -> unit = do
-  let mut once = 0
-  while once < 0 do
-    once = 1
-  end
-end
-
-fn accept_discarded_type(value_type: LowerType) -> unit =
-  match value_type {
-    LowerInt => keep_unit(),
-    _ => keep_unit()
-  }
 
 fn lower_discarded_expression(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit = do
   let mark = proto_builder_register_mark(builder)
@@ -348,6 +315,35 @@ fn lower_if_statement(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSi
   end
 end
 
+fn lower_for_statement(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, name: string, collection: Shared<Expr>, statements: [Shared<Stmt>], source_span: Span) -> unit = do
+  let array_register = proto_builder_register_allocate(builder)
+  place_integer_array(scope, builder, collection, source_span, array_register)
+  if scope.has_diagnostic then
+    keep_unit()
+  else
+    do
+      let cursor = prepare_for_cursor(builder, array_register)
+      let entry_site = proto_builder_emit_jump(builder)
+      let head = proto_builder_here(builder)
+      advance_for_index(builder, cursor)
+      proto_builder_patch_to_here(builder, entry_site)
+      begin_while_frame(scope, head)
+      let condition_mark = proto_builder_register_mark(builder)
+      let condition_register = proto_builder_register_allocate(builder)
+      emit_for_condition(builder, cursor, condition_register)
+      let end_site = proto_builder_emit_jump_if_false(builder, condition_register)
+      proto_builder_register_release_to(builder, condition_mark)
+      lower_scope_push(scope, builder)
+      define_for_element(scope, builder, cursor, name)
+      lower_statements(scope, sink, builder, statements)
+      lower_scope_pop(scope, builder)
+      proto_builder_emit_jump_back(builder, head)
+      proto_builder_patch_to_here(builder, end_site)
+      finish_while_frame(scope, builder)
+    end
+  end
+end
+
 fn lower_expression_statement(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> unit =
   match expression {
     ExprBin(operator, left, right, source_span) =>
@@ -358,6 +354,8 @@ fn lower_expression_statement(scope: ref mut LowerScope, sink: ref mut LowerDiag
       end,
     ExprWhile(condition, statements, source_span) =>
       lower_while_statement(scope, sink, builder, condition, statements, source_span),
+    ExprFor(name, collection, statements, source_span) =>
+      lower_for_statement(scope, sink, builder, name, collection, statements, source_span),
     ExprIf(condition, then_expression, else_expression, source_span) =>
       lower_if_statement(scope, sink, builder, condition, then_expression, else_expression, source_span),
     _ => lower_discarded_expression(scope, sink, builder, expression)

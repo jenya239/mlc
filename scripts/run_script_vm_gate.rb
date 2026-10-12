@@ -43,6 +43,7 @@ registered_units = [
   ["lower_logic", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_logic_unit.mlc"]],
   ["lower_loops", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_loops_unit.mlc"]],
   ["lower_iteration", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_iteration_unit.mlc"]],
+  ["lower_for", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_for_unit.mlc"]],
   ["lower_returns", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_returns_unit.mlc"]],
   ["lower_calls", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_calls_unit.mlc"]],
   ["lower_records", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_records_unit.mlc"]],
