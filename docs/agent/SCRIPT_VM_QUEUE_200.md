@@ -1836,3 +1836,11 @@
 ### S191 — сквозная сессия
 
 Минимум `repl_language_us=1152`.
+
+### S200 — граница
+
+Копией, без нового прогона. S128: минимум `repl_submit_us=4727`, вердикт `within_budget`. S188: минимум `repl_host_submit_us=14163`, вердикт `within_budget`, предел `500000`. S191: минимум `repl_language_us=1152`. Шаг 147: `B1.ns_per_insn` 35, `B3.ns_per_call` 1242.
+
+Ещё не готово: float в лоуэре, match, лямбды и замыкания из исходника, методы и generics, имена полей в рантайме, живая память между вводами REPL, fibers, дамп VM, инкрементальный GC, лимит памяти элементов, shapes, inline caches, baseline JIT, tier-2 JIT, opcode DSL, textui, mlcc --emit-script, BigInt, eval.
+
+Открытых блокеров нет.
