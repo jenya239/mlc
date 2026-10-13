@@ -1,8 +1,8 @@
-current_step: 198
+current_step: 199
 status: ready
-last_result: clean
-last_verify: git diff six files empty; ruby scripts/run_script_vm_queue200_gate.rb => exit 0, script_vm_queue200_gate ok, case sum_loop ok
-next_step: 199
+last_result: units=51
+last_verify: ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=51; nine names present in scripts/run_script_vm_gate.rb
+next_step: 200
 consult_count: 0
 consult_response:
 consult_verdict:
