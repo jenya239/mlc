@@ -1,8 +1,8 @@
 current_step: 213
-status: ready
-last_result: done step 213: float compares missing FCMP
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_float_compare_unit.mlc => exit 1, float_less missing FCMP; ruby scripts/run_script_vm_gate.rb => exit 0, script_vm_gate ok units=53
+status: consult_ready
+last_result: blocked step 214: FCMP opcode is chosen in lower_expression.mlc lower_comparison, bool result dispatch is executor.mlc; both outside allowed_files
+last_verify: ruby scripts/run_script_vm_gate.rb not run
 next_step: 214
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261014_180736.md
 consult_verdict:
