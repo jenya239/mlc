@@ -1,8 +1,8 @@
 current_step: 227
-status: ready
-last_result: done step 227: lower_float unchanged; while already accepts LowerBool; JUMP_IF_FALSE opcode 9 diff empty; unit green
-last_verify: ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=54 exit 0
+status: consult_ready
+last_result: blocked step 228: B1 71 then 81 (limit 42), B3 2739 then 2904 (limit 1490); both runs past 20% of S200 35 and 1242
+last_verify: ruby scripts/run_script_vm_float_bench.rb => GATE_EXIT:1 B1.ns_per_insn=81 baseline=35 limit=42 B3.ns_per_call=2904 baseline=1242 limit=1490
 next_step: 228
-consult_count: 0
-consult_response:
+consult_count: 1
+consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261015_010045.md
 consult_verdict:
