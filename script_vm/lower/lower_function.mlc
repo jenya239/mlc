@@ -2,10 +2,7 @@ import {
   Expr,
   ExprBlock,
   Param,
-  TypeExpr,
-  TyI32,
-  TyBool,
-  TyNamed
+  TypeExpr
 } from '../../compiler/frontend/ast'
 import { instruction_words_return } from '../bytecode'
 import { FunctionProto } from '../run_result'
@@ -16,7 +13,8 @@ import {
   proto_builder_emit,
   proto_builder_finish
 } from './lower_builder'
-import { LowerDiagnostic, LowerType, LowerInt, LowerBool, LowerRecord } from './lower_types'
+import { LowerDiagnostic, LowerType } from './lower_types'
+import { lower_type_of } from './lower_call'
 import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
 import { LowerDiagnosticSink, lower_diagnostic_sink_new } from './lower_diagnostics'
 import { lower_expression } from './lower_expression'
@@ -27,12 +25,7 @@ export type FunctionLowering =
   | FunctionRejected(LowerDiagnostic)
 
 fn parameter_value_type(type_expression: Shared<TypeExpr>) -> LowerType =
-  match type_expression {
-    TyI32 => LowerInt,
-    TyBool => LowerBool,
-    TyNamed(name) => LowerRecord(name),
-    _ => LowerInt
-  }
+  lower_type_of(type_expression)
 
 fn bind_parameters(
   scope: ref mut LowerScope,

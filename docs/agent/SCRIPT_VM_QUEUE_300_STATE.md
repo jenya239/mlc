@@ -1,8 +1,8 @@
-current_step: 221
+current_step: 222
 status: ready
-last_result: blocked step 222: test 221 fails type_mismatch in the lowerer before verifier.mlc; step 203 shows the CALL window does not read value tags
-last_verify: ruby scripts/run_script_vm_gate.rb not run
-next_step: 222
+last_result: done step 222: f32/f64 parameters and results lower as LowerInt; sabotage restored type_mismatch before verify
+last_verify: ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=54 exit 0
+next_step: 223
 consult_count: 0
 consult_response:
 consult_verdict:

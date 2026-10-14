@@ -17,11 +17,27 @@ import { emit_instruction } from './lower_control'
 import { LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
 import { LowerBool, LowerCallSignature, LowerInt, LowerRecord, LowerType } from './lower_types'
 
+fn named_type_is_float(name: string) -> bool =
+  if name == "f32" then
+    true
+  else if name == "f64" then
+    true
+  else
+    false
+  end
+
+fn lower_named_type(name: string) -> LowerType =
+  if named_type_is_float(name) then
+    LowerInt
+  else
+    LowerRecord(name)
+  end
+
 export fn lower_type_of(type_expression: Shared<TypeExpr>) -> LowerType =
   match type_expression {
     TyI32 => LowerInt,
     TyBool => LowerBool,
-    TyNamed(name) => LowerRecord(name),
+    TyNamed(name) => lower_named_type(name),
     _ => LowerInt
   }
 
