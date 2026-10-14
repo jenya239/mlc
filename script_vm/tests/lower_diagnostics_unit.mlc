@@ -195,7 +195,7 @@ fn check_expressions() -> i32 = do
     status = expect_code(question_source(), "unsupported_question", "unsupported_question")
   end
   if status == 0 then
-    status = expect_code(float_source(), "unsupported_float", "unsupported_float")
+    status = expect_no_diagnostic(float_source(), "float_literal")
   end
   if status == 0 then
     status = expect_no_diagnostic(break_source(), "break_inside_loop")
@@ -235,7 +235,7 @@ fn check_limits() -> i32 = do
     status = expect_code(wide_source(), "record_too_wide", "record_too_wide")
   end
   if status == 0 then
-    status = expect_pair(paired_source(), "unsupported_string", "unsupported_float", "two_diagnostics")
+    status = expect_code(paired_source(), "unsupported_string", "string_beside_float")
   end
   status
 end

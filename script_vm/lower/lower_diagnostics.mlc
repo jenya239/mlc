@@ -2,7 +2,6 @@ import {
   Expr,
   ExprArray,
   ExprExtern,
-  ExprFloat,
   ExprFor,
   ExprLambda,
   ExprMatch,
@@ -41,7 +40,6 @@ fn expression_diagnostic_code(expression: Shared<Expr>) -> string =
     ExprLambda(_, _, _) => "unsupported_lambda",
     ExprMethod(_, _, _, _) => "unsupported_method",
     ExprQuestion(_, _) => "unsupported_question",
-    ExprFloat(_, _) => "unsupported_float",
     ExprExtern(_, _, _, _) => "unsupported_extern",
     _ => ""
   }

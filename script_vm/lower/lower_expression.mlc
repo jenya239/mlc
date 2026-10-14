@@ -54,6 +54,7 @@ import {
   types_agree
 } from './lower_control'
 import { lower_text_concatenate, lower_text_handles_plus, lower_array_named, place_integer_array, finish_array_index } from './lower_array'
+import { lower_float_literal } from './lower_float'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -339,6 +340,7 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
       proto_builder_load_constant(builder, target, value_encode(ValueBool(flag)))
       LowerBool
     end,
+    ExprFloat(text, _) => lower_float_literal(builder, target, text),
     ExprIdent(name, source_span) => do
       let source = identifier_operand(scope, name, source_span)
       let value_type = operand_type(scope, expression, source)

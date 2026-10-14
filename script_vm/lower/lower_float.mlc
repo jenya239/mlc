@@ -1,0 +1,44 @@
+import { Value, ValueFloat64, value_encode } from '../value'
+import { LowerType, LowerInt } from './lower_types'
+import { ProtoBuilder, proto_builder_load_constant } from './lower_builder'
+
+extern fn integer_to_float64(value: i32) -> f64 =
+  "mlc::math::i32_to_f64" from "mlc/math/math.hpp" thread_safe
+
+fn digit_number(character: string) -> i32 =
+  if character == "0" then 0
+  else if character == "1" then 1
+  else if character == "2" then 2
+  else if character == "3" then 3
+  else if character == "4" then 4
+  else if character == "5" then 5
+  else if character == "6" then 6
+  else if character == "7" then 7
+  else if character == "8" then 8
+  else if character == "9" then 9
+  else 0
+  end
+
+fn decimal_from_text(text: string) -> f64 = do
+  let mut index = 0
+  let mut combined = 0
+  let mut divisor = 1
+  while index < text.length() && text.substring(index, 1) != "." do
+    combined = combined * 10 + digit_number(text.substring(index, 1))
+    index = index + 1
+  end
+  if index < text.length() && text.substring(index, 1) == "." then
+    index = index + 1
+    while index < text.length() do
+      combined = combined * 10 + digit_number(text.substring(index, 1))
+      divisor = divisor * 10
+      index = index + 1
+    end
+  end
+  integer_to_float64(combined) / integer_to_float64(divisor)
+end
+
+export fn lower_float_literal(builder: ref mut ProtoBuilder, target: i32, text: string) -> LowerType = do
+  proto_builder_load_constant(builder, target, value_encode(ValueFloat64(decimal_from_text(text))))
+  LowerInt
+end
