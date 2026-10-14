@@ -1,5 +1,5 @@
-import { Value, ValueNil, ValueFloat64, value_encode } from './value'
-import { is_float_binary_opcode, float_value, float_number, exec_float_binary } from './exec_float'
+import { Value, ValueNil, ValueFloat64, ValueBool, value_encode } from './value'
+import { is_float_binary_opcode, is_float_compare_opcode, float_value, float_number, exec_float_binary, exec_float_compare } from './exec_float'
 import {
   Instruction,
   DecodedAbc,
@@ -237,6 +237,13 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
       else if is_float_binary_opcode(decoded.opcode) then
         if float_value(registers[decoded.b]) && float_value(registers[decoded.c]) then
           registers.set(decoded.a, value_encode(ValueFloat64(exec_float_binary(decoded.opcode, float_number(registers[decoded.b]), float_number(registers[decoded.c])))))
+          program_counter = primary + span
+        else
+          step = executor_fail(state, run_err_type(), primary)
+        end
+      else if is_float_compare_opcode(decoded.opcode) then
+        if float_value(registers[decoded.b]) && float_value(registers[decoded.c]) then
+          registers.set(decoded.a, value_encode(ValueBool(exec_float_compare(decoded.opcode, float_number(registers[decoded.b]), float_number(registers[decoded.c])))))
           program_counter = primary + span
         else
           step = executor_fail(state, run_err_type(), primary)

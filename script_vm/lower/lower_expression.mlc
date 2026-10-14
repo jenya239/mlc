@@ -36,7 +36,6 @@ import {
 } from './lower_records'
 import {
   branch_expression,
-  comparison_opcode,
   accepted_bool,
   diagnostic_at,
   emit_binary,
@@ -53,7 +52,7 @@ import {
   types_agree
 } from './lower_control'
 import { lower_text_concatenate, lower_text_handles_plus, lower_array_named, place_integer_array, finish_array_index } from './lower_array'
-import { lower_float_literal, binary_opcode_for } from './lower_float'
+import { lower_float_literal, binary_opcode_for, comparison_opcode_for } from './lower_float'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -96,7 +95,7 @@ fn lower_comparison(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink
   let right_register = use_operand(scope, sink, builder, right)
   let left_type = operand_type(scope, left, left_register)
   let right_type = operand_type(scope, right, right_register)
-  let opcode = comparison_opcode(operator)
+  let opcode = comparison_opcode_for(operator, left, right)
   if scope.has_diagnostic then
     do
       proto_builder_register_release_to(builder, mark)

@@ -8,6 +8,18 @@ export fn float_multiply_opcode() -> i32 = 30
 
 export fn float_divide_opcode() -> i32 = 31
 
+export fn float_compare_equal_opcode() -> i32 = 32
+
+export fn float_compare_not_equal_opcode() -> i32 = 33
+
+export fn float_compare_less_opcode() -> i32 = 34
+
+export fn float_compare_less_equal_opcode() -> i32 = 35
+
+export fn float_compare_greater_opcode() -> i32 = 36
+
+export fn float_compare_greater_equal_opcode() -> i32 = 37
+
 export fn is_float_binary_opcode(opcode: i32) -> bool =
   if opcode == float_add_opcode() then
     true
@@ -32,6 +44,40 @@ export fn float_number(value: Value) -> f64 =
     ValueFloat64(number) => number,
     _ => 0.0
   }
+
+export fn is_float_compare_opcode(opcode: i32) -> bool =
+  if opcode == float_compare_equal_opcode() then
+    true
+  else if opcode == float_compare_not_equal_opcode() then
+    true
+  else if opcode == float_compare_less_opcode() then
+    true
+  else if opcode == float_compare_less_equal_opcode() then
+    true
+  else if opcode == float_compare_greater_opcode() then
+    true
+  else if opcode == float_compare_greater_equal_opcode() then
+    true
+  else
+    false
+  end
+
+export fn exec_float_compare(opcode: i32, left: f64, right: f64) -> bool =
+  if opcode == float_compare_equal_opcode() then
+    left == right
+  else if opcode == float_compare_not_equal_opcode() then
+    left != right
+  else if opcode == float_compare_less_opcode() then
+    left < right
+  else if opcode == float_compare_less_equal_opcode() then
+    left <= right
+  else if opcode == float_compare_greater_opcode() then
+    left > right
+  else if opcode == float_compare_greater_equal_opcode() then
+    left >= right
+  else
+    false
+  end
 
 export fn exec_float_binary(opcode: i32, left: f64, right: f64) -> f64 =
   if opcode == float_add_opcode() then
