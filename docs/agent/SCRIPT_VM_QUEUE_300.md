@@ -26,7 +26,7 @@
 ### Дисциплина
 
 1. Один шаг — один ход. Шаг `N` выполняется, только если каждый `depends` имеет коммит `script_vm queue step <d>:`.
-2. Red перед green. Red коммитит падающий тест. Провал компиляции годится как red только там, где карточка прямо говорит «нет символа». Иначе первая диагностика теста — поведенческая.
+2. Red перед green. Red коммитит падающий тест. Провал компиляции годится как red только там, где карточка прямо говорит «нет символа». Иначе первая диагностика теста — поведенческая. Если red для заявленной формулировки объективно недостижим прогоном гейта, шаг переквалифицируется в green с подтверждающим тестом, а не блокируется.
 3. Self-host diff и `compiler/build.sh` не запускать. `compiler/out/mlcc` не пересобирать. Нет бинаря — `blocked`.
 4. Идентификаторы без сокращений. Комментариев в новом коде нет, кроме списка инвариантов.
 5. Скрипты — Ruby `scripts/run_script_vm_*.rb`. Не Python и не новый bash.
@@ -422,22 +422,24 @@
 - sabotage: Удаление одной строки регистрации должно провалить gate
 - done_when: Gate зелёный, число зарегистрированных unit выросло ровно на число float-тестов
 
-### Step 226 — Red: float в `if`-условии через сравнение
-- kind: red
+### Step 226 — Green: float в `if`-условии через сравнение
+- kind: green
 - depends: 214
 - goal: `if 1.5 < 2.5 do ... end` работает как условие (результат FCMP — bool, уже подаётся в JUMP_IF_FALSE)
 - allowed_files: `script_vm/test/test_lower_float_if_condition.mlc` (новый)
 - contract: none
-- red: Падает, если лоуэр `if` не знает, что FCMP возвращает валидный bool-регистр
-- green: none
+- red: none
+- green: Тест подтверждает, что `if`/`while` с условием float-сравнения дают верный результат по обеим веткам (`true` и `false`), без правок кода — текущая реализация уже корректна
 - gate: `ruby scripts/run_script_vm_gate.rb`
 - sabotage: none
-- done_when: Красный тест воспроизводим
+- done_when: Тест зарегистрирован и зелёный с первой попытки; в теле шага явно зафиксировано, что это регрессионный тест на уже реализованное поведение, не red-driven green
 
-### Step 227 — Green: float-условие в `if`/`while`
-- kind: green
+Это регрессионный тест на уже реализованное поведение, не red-driven green.
+
+### Step 227 — Refactor: float-условие в `if`/`while`
+- kind: refactor
 - depends: 226
-- goal: Условие float-сравнения работает в `if` и `while` без изменения семантики `JUMP_IF_FALSE` (он по-прежнему прыгает только на `Bool(false)`)
+- goal: Удостовериться, что lower_float.mlc не требует правок для while-условия; если требуется — обычный red/green
 - allowed_files: `script_vm/lower_float.mlc`, `script_vm/test/test_lower_float_if_condition.mlc`
 - contract: `JUMP_IF_FALSE` не меняется — float-сравнение уже даёт `Bool`, интеграция только на уровне лоуэра
 - red: none
@@ -445,6 +447,8 @@
 - gate: `ruby scripts/run_script_vm_gate.rb`
 - sabotage: none
 - done_when: Тест зелёный, `JUMP_IF_FALSE` opcode не тронут (diff пустой на файле opcode)
+
+Разрешено пометить шаг `kind: refactor` вместо слияния в 226, чтобы не повторять тупик недостижимого red.
 
 ### Step 228 — Measure: полный float-срез против queue200 gate
 - kind: measure
