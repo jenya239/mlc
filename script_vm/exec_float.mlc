@@ -1,0 +1,47 @@
+import { Value, ValueFloat64, value_decode } from './value'
+
+export fn float_add_opcode() -> i32 = 28
+
+export fn float_subtract_opcode() -> i32 = 29
+
+export fn float_multiply_opcode() -> i32 = 30
+
+export fn float_divide_opcode() -> i32 = 31
+
+export fn is_float_binary_opcode(opcode: i32) -> bool =
+  if opcode == float_add_opcode() then
+    true
+  else if opcode == float_subtract_opcode() then
+    true
+  else if opcode == float_multiply_opcode() then
+    true
+  else if opcode == float_divide_opcode() then
+    true
+  else
+    false
+  end
+
+export fn float_value(value: Value) -> bool =
+  match value_decode(value) {
+    ValueFloat64(_) => true,
+    _ => false
+  }
+
+export fn float_number(value: Value) -> f64 =
+  match value_decode(value) {
+    ValueFloat64(number) => number,
+    _ => 0.0
+  }
+
+export fn exec_float_binary(opcode: i32, left: f64, right: f64) -> f64 =
+  if opcode == float_add_opcode() then
+    left + right
+  else if opcode == float_subtract_opcode() then
+    left - right
+  else if opcode == float_multiply_opcode() then
+    left * right
+  else if opcode == float_divide_opcode() then
+    left / right
+  else
+    left + right
+  end

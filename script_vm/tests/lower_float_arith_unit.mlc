@@ -1,6 +1,6 @@
 import { lower_source } from '../lower/lower_module'
 import { LowerDiagnostic } from '../lower/lower_types'
-import { Value, ValueFloat64, value_decode } from '../value'
+import { Value, ValueFloat64, value_decode, value_encode, value_raw_equal } from '../value'
 import { emb_ok, emb_call_export_bytes } from '../embedding'
 import { DecodedModule, decode_module } from '../module_blob'
 import { Instruction, instruction_decode, instruction_word_span } from '../bytecode'
@@ -13,6 +13,12 @@ end
 fn float_add_source() -> string = "export fn f() -> i32 = 1.5 + 2.5"
 
 fn float_add_opcode() -> i32 = 28
+
+fn float_subtract_opcode() -> i32 = 29
+
+fn float_multiply_opcode() -> i32 = 30
+
+fn float_divide_opcode() -> i32 = 31
 
 fn empty_arguments() -> [i64] = do
   let mut arguments: [i64] = []
@@ -89,8 +95,78 @@ fn expect_float_add() -> i32 = do
   0
 end
 
+fn returned_float_equals(raw: i64, expected: f64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueFloat64(number) => number == expected,
+    _ => false
+  }
+
+fn returned_float_bits(raw: i64, expected: f64) -> bool =
+  value_raw_equal(Value { raw: raw }, value_encode(ValueFloat64(expected)))
+
+fn returned_float_is_nan(raw: i64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueFloat64(number) => !(number == number),
+    _ => false
+  }
+
+fn expect_float_checked(source: string, opcode: i32, expected: f64, check_kind: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return report_failure(label + " decode")
+  end
+  if !module_contains_opcode(decoded.module, opcode) then
+    return report_failure(label + " missing opcode")
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if check_kind == 2 then
+    if returned_float_is_nan(called.raw) then
+      println(label)
+      0
+    else
+      report_failure(label + " value")
+    end
+  else if check_kind == 1 then
+    if returned_float_bits(called.raw, expected) then
+      println(label)
+      0
+    else
+      report_failure(label + " value")
+    end
+  else
+    if returned_float_equals(called.raw, expected) then
+      println(label)
+      0
+    else
+      report_failure(label + " value")
+    end
+  end
+end
+
 fn main() -> i32 = do
   if expect_float_add() != 0 then
+    return 1
+  end
+  if expect_float_checked("export fn f() -> i32 = 5.5 - 1.5", float_subtract_opcode(), 4.0, 0, "float_subtract") != 0 then
+    return 1
+  end
+  if expect_float_checked("export fn f() -> i32 = 2.0 * 2.0", float_multiply_opcode(), 4.0, 0, "float_multiply") != 0 then
+    return 1
+  end
+  if expect_float_checked("export fn f() -> i32 = 8.0 / 2.0", float_divide_opcode(), 4.0, 0, "float_divide") != 0 then
+    return 1
+  end
+  if expect_float_checked("export fn f() -> i32 = 1.0 / 0.0", float_divide_opcode(), 1.0 / 0.0, 1, "float_divide_infinity") != 0 then
+    return 1
+  end
+  if expect_float_checked("export fn f() -> i32 = 0.0 / 0.0", float_divide_opcode(), 0.0, 2, "float_divide_nan") != 0 then
     return 1
   end
   println("[script_vm] lower_float_arith_unit ok")

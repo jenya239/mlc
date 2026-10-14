@@ -1,6 +1,14 @@
+import { Expr } from '../../compiler/frontend/ast'
 import { Value, ValueFloat64, value_encode } from '../value'
+import {
+  float_add_opcode,
+  float_subtract_opcode,
+  float_multiply_opcode,
+  float_divide_opcode
+} from '../exec_float'
 import { LowerType, LowerInt } from './lower_types'
 import { ProtoBuilder, proto_builder_load_constant } from './lower_builder'
+import { binary_opcode } from './lower_control'
 
 extern fn integer_to_float64(value: i32) -> f64 =
   "mlc::math::i32_to_f64" from "mlc/math/math.hpp" thread_safe
@@ -42,3 +50,48 @@ export fn lower_float_literal(builder: ref mut ProtoBuilder, target: i32, text: 
   proto_builder_load_constant(builder, target, value_encode(ValueFloat64(decimal_from_text(text))))
   LowerInt
 end
+
+fn float_operator(operator: string) -> bool =
+  if operator == "+" then
+    true
+  else if operator == "-" then
+    true
+  else if operator == "*" then
+    true
+  else if operator == "/" then
+    true
+  else
+    false
+  end
+
+fn float_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprFloat(_, _) => true,
+    ExprBin(operator, left, right, _) =>
+      if float_operator(operator) then
+        float_expression(left) && float_expression(right)
+      else
+        false
+      end,
+    _ => false
+  }
+
+fn float_arithmetic_opcode(operator: string) -> i32 =
+  if operator == "+" then
+    float_add_opcode()
+  else if operator == "-" then
+    float_subtract_opcode()
+  else if operator == "*" then
+    float_multiply_opcode()
+  else if operator == "/" then
+    float_divide_opcode()
+  else
+    0
+  end
+
+export fn binary_opcode_for(operator: string, left: Shared<Expr>, right: Shared<Expr>) -> i32 =
+  if float_expression(left) && float_expression(right) then
+    float_arithmetic_opcode(operator)
+  else
+    binary_opcode(operator)
+  end

@@ -38,6 +38,7 @@ import {
   instruction_upvalue_source_index
 } from './bytecode'
 import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
+import { is_float_binary_opcode } from './exec_float'
 
 export type VerifyResult =
   | VerifyOk
@@ -67,6 +68,8 @@ fn is_known_opcode(opcode: i32) -> bool = do
   else if opcode == instruction_opcode_mul() then
     true
   else if opcode == instruction_opcode_div() then
+    true
+  else if is_float_binary_opcode(opcode) then
     true
   else if opcode == instruction_opcode_return() then
     true
