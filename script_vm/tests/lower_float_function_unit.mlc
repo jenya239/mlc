@@ -1,0 +1,74 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueBool, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes, emb_verify_module_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_function_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn returned_bool_is(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_call(source: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const verified = emb_verify_module_bytes(lowered.bytes)
+  if verified != emb_ok() then
+    return report_failure(label + " verify=" + verified.to_string())
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_bool_is(called.raw, true) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn multiply_source() -> string =
+  "fn scale(value: f32) -> f32 = value * 2.0 export fn main() -> bool = scale(1.5) == 3.0"
+
+fn argument_source() -> string =
+  "fn scale(value: f32) -> f32 = value export fn main() -> bool = scale(1.5) == 1.5"
+
+fn main() -> i32 = do
+  let multiply_status = expect_call(multiply_source(), "float_call_multiply")
+  let argument_status = expect_call(argument_source(), "float_call_argument")
+  if multiply_status != 0 then
+    multiply_status
+  else if argument_status != 0 then
+    argument_status
+  else
+    do
+      println("[script_vm] lower_float_function_unit ok")
+      0
+    end
+  end
+end
