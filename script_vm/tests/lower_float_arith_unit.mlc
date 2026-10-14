@@ -1,0 +1,98 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueFloat64, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { DecodedModule, decode_module } from '../module_blob'
+import { Instruction, instruction_decode, instruction_word_span } from '../bytecode'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_arith_unit] FAIL: " + label)
+  1
+end
+
+fn float_add_source() -> string = "export fn f() -> i32 = 1.5 + 2.5"
+
+fn float_add_opcode() -> i32 = 28
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn words_contain_opcode(words: [i32], opcode: i32) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < words.length() && !found do
+    let decoded = instruction_decode(Instruction { word: words[index] })
+    let span = instruction_word_span(words, index)
+    if decoded.opcode == opcode then
+      found = true
+    end
+    if span > 0 then
+      index = index + span
+    else
+      index = index + 1
+    end
+  end
+  found
+end
+
+fn module_contains_opcode(decoded_module: DecodedModule, opcode: i32) -> bool = do
+  let mut proto_index = 0
+  let mut found = false
+  while proto_index < decoded_module.protos.length() && !found do
+    found = words_contain_opcode(decoded_module.protos[proto_index].words, opcode)
+    proto_index = proto_index + 1
+  end
+  found
+end
+
+fn returned_float_is_four(raw: i64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueFloat64(number) => number == 4.0,
+    _ => false
+  }
+
+fn expect_float_add() -> i32 = do
+  const lowered = lower_source(float_add_source())
+  if lowered.diagnostics.length() != 0 then
+    return report_failure("float_add diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return report_failure("float_add decode")
+  end
+  if !module_contains_opcode(decoded.module, float_add_opcode()) then
+    return report_failure("float_add missing FADD")
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure("float_add code=" + called.code.to_string())
+  end
+  if !returned_float_is_four(called.raw) then
+    return report_failure("float_add value")
+  end
+  println("float_add")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_float_add() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_float_arith_unit ok")
+  0
+end
