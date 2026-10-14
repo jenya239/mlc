@@ -1,0 +1,70 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueBool, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_record_field_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn returned_bool_is(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_field(source: string, expected: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_bool_is(called.raw, expected) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn read_source() -> string =
+  "type Measure = { amount: f32 } export fn main() -> bool = do let measure = Measure { amount: 1.5 } measure.amount == 1.5 end"
+
+fn write_source() -> string =
+  "type Measure = { amount: f32 } export fn main() -> bool = do let mut measure = Measure { amount: 1.5 } measure.amount = 2.5 measure.amount == 2.5 end"
+
+fn main() -> i32 = do
+  let read_status = expect_field(read_source(), true, "float_field_read")
+  let write_status = expect_field(write_source(), true, "float_field_write")
+  if read_status != 0 then
+    read_status
+  else if write_status != 0 then
+    write_status
+  else
+    do
+      println("[script_vm] lower_float_record_field_unit ok")
+      0
+    end
+  end
+end
