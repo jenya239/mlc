@@ -33,6 +33,24 @@ def fail_gate(message)
   exit 1
 end
 
+def script_vm_gate_registers_float_unit(unit_name)
+  unit_name == "lower_float_literal" || unit_name == "lower_float_arith" || unit_name == "lower_float_array"
+end
+
+float_unit_names = [
+  "lower_float_literal",
+  "lower_float_arith",
+  "lower_float_mixed_reject",
+  "lower_float_compare",
+  "lower_float_record_field",
+  "lower_float_array",
+  "lower_float_function",
+  "lower_float_critic"
+]
+unless float_unit_names.length == 8
+  fail_gate("script_vm_queue200_gate FAIL float unit count")
+end
+
 queue_lines, queue_status = run_command(["ruby", "scripts/run_script_vm_queue_gate.rb"])
 unless queue_status&.success? && last_line(queue_lines) == "script_vm_queue_gate ok stages=7"
   fail_gate("script_vm_queue200_gate FAIL queue")
@@ -48,10 +66,18 @@ unit_names = [
   "lower_iteration",
   "lower_for",
   "repl_language"
-]
+] + float_unit_names.select { |unit_name| script_vm_gate_registers_float_unit(unit_name) }
 unit_lines, unit_status = run_command(["ruby", "scripts/run_script_vm_gate.rb", *unit_names])
 unless unit_status&.success? && last_line(unit_lines) == "script_vm_gate ok units=#{unit_names.length}"
   fail_gate("script_vm_queue200_gate FAIL units")
+end
+
+float_unit_names.each do |unit_name|
+  next if script_vm_gate_registers_float_unit(unit_name)
+  direct_lines, direct_status = run_command(["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/#{unit_name}_unit.mlc"])
+  unless direct_status&.success? && direct_lines.any? { |line| line.include?("[script_vm] #{unit_name}_unit ok") }
+    fail_gate("script_vm_queue200_gate FAIL #{unit_name}")
+  end
 end
 
 _cli_lines, cli_status = run_command(["ruby", "scripts/run_script_vm_repl_cli.rb"])
