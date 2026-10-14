@@ -1,0 +1,59 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueFloat64, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_literal_unit] FAIL: " + label)
+  1
+end
+
+fn float_function_source() -> string = "export fn f() -> i32 = do return 1.5 1.5 end"
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn returned_float_is_one_point_five(raw: i64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueFloat64(number) => number == 1.5,
+    _ => false
+  }
+
+fn expect_float_result() -> i32 = do
+  const lowered = lower_source(float_function_source())
+  if lowered.diagnostics.length() != 0 then
+    return report_failure("float_literal diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure("float_literal code=" + called.code.to_string())
+  end
+  if !returned_float_is_one_point_five(called.raw) then
+    return report_failure("float_literal value")
+  end
+  println("float_literal")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_float_result() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_float_literal_unit ok")
+  0
+end
