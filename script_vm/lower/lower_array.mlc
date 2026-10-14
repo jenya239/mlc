@@ -22,6 +22,7 @@ import {
   lower_text_handles_plus,
   lower_text_named
 } from './lower_text'
+import { lower_float_array_length_or_text, place_other_array_literal } from './lower_array_float'
 
 fn integer_element(expression: Shared<Expr>) -> bool =
   match expression {
@@ -189,7 +190,7 @@ fn lower_length_or_text(
       LowerInt
     end
   else
-    lower_text_named(scope, builder, "len", arguments, source_span, target)
+    lower_float_array_length_or_text(scope, builder, arguments, source_span, target)
   end
 
 fn element_flag(expression: Shared<Expr>) -> bool =
@@ -283,7 +284,7 @@ fn place_array_literal(
   else if contains_nested_array(elements) then
     lower_scope_fail(scope, diagnostic_at("unsupported_nested_array", source_span))
   else
-    lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+    place_other_array_literal(scope, builder, elements, source_span, array_register)
   end
 
 fn move_named_array(

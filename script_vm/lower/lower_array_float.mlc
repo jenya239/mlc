@@ -1,0 +1,217 @@
+import { Expr, Span } from '../../compiler/frontend/ast'
+import { ValueInt32, value_encode } from '../value'
+import {
+  instruction_words_binary,
+  instruction_words_new_array,
+  instruction_words_set_index
+} from '../bytecode'
+import { instruction_opcode_length } from '../bytecode_text'
+import {
+  ProtoBuilder,
+  proto_builder_load_constant,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+import { diagnostic_at, emit_instruction } from './lower_control'
+import { LowerScope, lower_scope_define, lower_scope_fail } from './lower_scope'
+import { LowerInt, LowerType } from './lower_types'
+import { lower_text_named } from './lower_text'
+import { lower_float_literal } from './lower_float'
+
+fn float_element(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprFloat(_, _) => true,
+    _ => false
+  }
+
+fn elements_are_floats(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut accepted = elements.length() > 0
+  while index < elements.length() && accepted do
+    accepted = float_element(elements[index])
+    index = index + 1
+  end
+  accepted
+end
+
+fn element_text(expression: Shared<Expr>) -> string =
+  match expression {
+    ExprFloat(text, _) => text,
+    _ => ""
+  }
+
+fn other_scalar_element(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) => true,
+    ExprBool(_, _) => true,
+    _ => false
+  }
+
+fn scalar_or_float(expression: Shared<Expr>) -> bool =
+  float_element(expression) || other_scalar_element(expression)
+
+fn elements_stay_scalars(elements: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut accepted = elements.length() > 0
+  while index < elements.length() && accepted do
+    accepted = scalar_or_float(elements[index])
+    index = index + 1
+  end
+  accepted
+end
+
+fn float_count_step(elements: [Shared<Expr>], index: i32) -> i32 =
+  if float_element(elements[index]) then
+    1
+  else
+    0
+  end
+
+fn count_float_elements(elements: [Shared<Expr>]) -> i32 = do
+  let mut index = 0
+  let mut count = 0
+  while index < elements.length() do
+    count = count + float_count_step(elements, index)
+    index = index + 1
+  end
+  count
+end
+
+fn other_scalar_count_step(elements: [Shared<Expr>], index: i32) -> i32 =
+  if other_scalar_element(elements[index]) then
+    1
+  else
+    0
+  end
+
+fn count_other_scalar_elements(elements: [Shared<Expr>]) -> i32 = do
+  let mut index = 0
+  let mut count = 0
+  while index < elements.length() do
+    count = count + other_scalar_count_step(elements, index)
+    index = index + 1
+  end
+  count
+end
+
+fn float_mixed_with_other_scalar(elements: [Shared<Expr>]) -> bool =
+  elements_stay_scalars(elements) && count_float_elements(elements) > 0 && count_other_scalar_elements(elements) > 0
+
+fn store_loaded_float(
+  builder: ref mut ProtoBuilder,
+  array_register: i32,
+  index_register: i32,
+  value_register: i32,
+  expression: Shared<Expr>
+) -> unit =
+  match lower_float_literal(builder, value_register, element_text(expression)) {
+    _ => emit_instruction(builder, instruction_words_set_index(array_register, index_register, value_register))
+  }
+
+fn store_one_float(
+  builder: ref mut ProtoBuilder,
+  array_register: i32,
+  index_register: i32,
+  value_register: i32,
+  index: i32,
+  expression: Shared<Expr>
+) -> unit = do
+  proto_builder_load_constant(builder, index_register, value_encode(ValueInt32(index)))
+  store_loaded_float(builder, array_register, index_register, value_register, expression)
+end
+
+fn store_float_elements(
+  builder: ref mut ProtoBuilder,
+  elements: [Shared<Expr>],
+  array_register: i32,
+  index_register: i32,
+  value_register: i32
+) -> unit = do
+  let mut index = 0
+  while index < elements.length() do
+    store_one_float(builder, array_register, index_register, value_register, index, elements[index])
+    index = index + 1
+  end
+end
+
+fn emit_float_array(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let length_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, length_register, value_encode(ValueInt32(elements.length())))
+  emit_instruction(builder, instruction_words_new_array(array_register, length_register))
+  let index_register = proto_builder_register_allocate(builder)
+  let value_register = proto_builder_register_allocate(builder)
+  store_float_elements(builder, elements, array_register, index_register, value_register)
+end
+
+fn place_float_elements(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], array_register: i32) -> unit = do
+  let mark = proto_builder_register_mark(builder)
+  emit_float_array(builder, elements, array_register)
+  proto_builder_register_release_to(builder, mark)
+end
+
+fn remember_float_element(scope: ref mut LowerScope) -> unit =
+  lower_scope_define(scope, "*array_element*", 0, LowerInt, false)
+
+export fn place_other_array_literal(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  elements: [Shared<Expr>],
+  source_span: Span,
+  array_register: i32
+) -> unit =
+  if elements_are_floats(elements) then
+    do
+      place_float_elements(builder, elements, array_register)
+      remember_float_element(scope)
+    end
+  else if float_mixed_with_other_scalar(elements) then
+    lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+  else
+    lower_scope_fail(scope, diagnostic_at("unsupported_expression", source_span))
+  end
+
+fn float_array_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => elements_are_floats(elements),
+    _ => false
+  }
+
+fn float_mixed_array(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprArray(elements, _) => float_mixed_with_other_scalar(elements),
+    _ => false
+  }
+
+fn emit_float_array_length(builder: ref mut ProtoBuilder, elements: [Shared<Expr>], target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let array_register = proto_builder_register_allocate(builder)
+  emit_float_array(builder, elements, array_register)
+  emit_instruction(builder, instruction_words_binary(instruction_opcode_length(), target, array_register, 0))
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+
+fn lower_float_array_length(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LowerType =
+  match expression {
+    ExprArray(elements, _) => emit_float_array_length(builder, elements, target),
+    _ => LowerInt
+  }
+
+export fn lower_float_array_length_or_text(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  if float_array_expression(arguments[0]) then
+    lower_float_array_length(builder, arguments[0], target)
+  else if float_mixed_array(arguments[0]) then
+    do
+      lower_scope_fail(scope, diagnostic_at("type_mismatch", source_span))
+      LowerInt
+    end
+  else
+    lower_text_named(scope, builder, "len", arguments, source_span, target)
+  end

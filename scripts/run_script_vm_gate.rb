@@ -56,6 +56,7 @@ registered_units = [
   ["string_opcode", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/string_opcode_unit.mlc"]],
   ["lower_float_literal", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_float_literal_unit.mlc"]],
   ["lower_float_arith", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_float_arith_unit.mlc"]],
+  ["lower_float_array", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_float_array_unit.mlc"]],
 ]
 
 def command_for_unit(registered_units, unit_name)
