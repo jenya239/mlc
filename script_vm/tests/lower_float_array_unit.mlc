@@ -1,0 +1,103 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueBool, ValueInt32, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_array_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn returned_bool_is(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn returned_int_is(raw: i64, expected: i32) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number == expected,
+    _ => false
+  }
+
+fn expect_bool(source: string, expected: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "run", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_bool_is(called.raw, expected) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn expect_int(source: string, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "run", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_int_is(called.raw, expected) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn literal_source() -> string =
+  "export fn run() -> bool = do let values = [1.5, 2.5] true end"
+
+fn read_source() -> string =
+  "export fn run() -> bool = do let values = [1.5, 2.5] values[0] == 1.5 end"
+
+fn write_source() -> string =
+  "export fn run() -> bool = do let mut values = [1.5, 2.5] values[0] = 3.5 values[0] == 3.5 end"
+
+fn length_source() -> string = "export fn run() -> i32 = len([1.5, 2.5])"
+
+fn main() -> i32 = do
+  let literal_status = expect_bool(literal_source(), true, "float_array_literal")
+  let read_status = expect_bool(read_source(), true, "float_array_read")
+  let write_status = expect_bool(write_source(), true, "float_array_write")
+  let length_status = expect_int(length_source(), 2, "float_array_length")
+  if literal_status != 0 then
+    literal_status
+  else if read_status != 0 then
+    read_status
+  else if write_status != 0 then
+    write_status
+  else if length_status != 0 then
+    length_status
+  else
+    do
+      println("[script_vm] lower_float_array_unit ok")
+      0
+    end
+  end
+end
