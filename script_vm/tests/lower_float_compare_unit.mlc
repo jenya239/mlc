@@ -1,0 +1,127 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueBool, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { DecodedModule, decode_module } from '../module_blob'
+import { Instruction, instruction_decode, instruction_word_span } from '../bytecode'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_compare_unit] FAIL: " + label)
+  1
+end
+
+fn float_compare_equal_opcode() -> i32 = 32
+
+fn float_compare_not_equal_opcode() -> i32 = 33
+
+fn float_compare_less_opcode() -> i32 = 34
+
+fn float_compare_less_equal_opcode() -> i32 = 35
+
+fn float_compare_greater_opcode() -> i32 = 36
+
+fn float_compare_greater_equal_opcode() -> i32 = 37
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn words_contain_opcode(words: [i32], opcode: i32) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < words.length() && !found do
+    let decoded = instruction_decode(Instruction { word: words[index] })
+    let span = instruction_word_span(words, index)
+    if decoded.opcode == opcode then
+      found = true
+    end
+    if span > 0 then
+      index = index + span
+    else
+      index = index + 1
+    end
+  end
+  found
+end
+
+fn module_contains_opcode(decoded_module: DecodedModule, opcode: i32) -> bool = do
+  let mut proto_index = 0
+  let mut found = false
+  while proto_index < decoded_module.protos.length() && !found do
+    found = words_contain_opcode(decoded_module.protos[proto_index].words, opcode)
+    proto_index = proto_index + 1
+  end
+  found
+end
+
+fn returned_bool_is(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_float_compare(source: string, opcode: i32, expected: bool, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return report_failure(label + " decode")
+  end
+  if !module_contains_opcode(decoded.module, opcode) then
+    return report_failure(label + " missing FCMP")
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_bool_is(called.raw, expected) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  if expect_float_compare("export fn f() -> bool = 1.5 < 2.5", float_compare_less_opcode(), true, "float_less") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 1.5 <= 1.5", float_compare_less_equal_opcode(), true, "float_less_equal") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 2.5 > 1.5", float_compare_greater_opcode(), true, "float_greater") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 1.5 >= 1.5", float_compare_greater_equal_opcode(), true, "float_greater_equal") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 1.5 == 1.5", float_compare_equal_opcode(), true, "float_equal") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 1.5 != 1.5", float_compare_not_equal_opcode(), false, "float_not_equal") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 0.0 / 0.0 == 0.0 / 0.0", float_compare_equal_opcode(), false, "float_equal_nan") != 0 then
+    return 1
+  end
+  if expect_float_compare("export fn f() -> bool = 0.0 / 0.0 != 0.0 / 0.0", float_compare_not_equal_opcode(), true, "float_not_equal_nan") != 0 then
+    return 1
+  end
+  println("[script_vm] lower_float_compare_unit ok")
+  0
+end
