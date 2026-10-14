@@ -377,9 +377,9 @@
 ### Step 222 — Green: float в CALL-окне верификатора
 - kind: green
 - depends: 221
-- goal: Верификатор принимает float-тег в параметрах и возврате CALL
-- allowed_files: `script_vm/verify_call.mlc` (или существующий модуль верификации CALL — указать точно по результатам 203), `script_vm/test/test_lower_float_function.mlc`
-- contract: Окно CALL для int/bool не меняет поведения — только добавление ветки
+- goal: Верификатор принимает float-тег в параметрах и возврате CALL (включая лоуэр, если отказ возникает до верификатора)
+- allowed_files: `script_vm/verify_call.mlc` (или существующий модуль верификации CALL — указать точно по результатам 203), `script_vm/test/test_lower_float_function.mlc`, `script_vm/lower_function.mlc`, `script_vm/lower_call.mlc`, `script_vm/lower/lower_expression.mlc`
+- contract: Окно CALL для int/bool не меняет поведения — только добавление ветки. Если тег значения float отвергается раньше верификатора — в лоуэре функций/вызова, добавить ветку принятия float-тега там же, без роста общей логики за пределы точки вызова; верификатор правится только если проверка типов CALL-окна реализована именно в нём.
 - red: none
 - green: Тест 221 проходит
 - gate: `ruby scripts/run_script_vm_gate.rb`
