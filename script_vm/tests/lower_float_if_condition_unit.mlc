@@ -1,0 +1,118 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { DecodedModule, decode_module } from '../module_blob'
+import { Instruction, instruction_decode, instruction_word_span } from '../bytecode'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_if_condition_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn words_contain_opcode(words: [i32], opcode: i32) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < words.length() && !found do
+    let decoded = instruction_decode(Instruction { word: words[index] })
+    let span = instruction_word_span(words, index)
+    if decoded.opcode == opcode then
+      found = true
+    end
+    if span > 0 then
+      index = index + span
+    else
+      index = index + 1
+    end
+  end
+  found
+end
+
+fn module_contains_opcode(decoded_module: DecodedModule, opcode: i32) -> bool = do
+  let mut proto_index = 0
+  let mut found = false
+  while proto_index < decoded_module.protos.length() && !found do
+    found = words_contain_opcode(decoded_module.protos[proto_index].words, opcode)
+    proto_index = proto_index + 1
+  end
+  found
+end
+
+fn returned_integer_is(raw: i64, expected: i32) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number == expected,
+    _ => false
+  }
+
+fn expect_if(source: string, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return report_failure(label + " decode")
+  end
+  if !module_contains_opcode(decoded.module, 34) then
+    return report_failure(label + " missing FCMP")
+  end
+  if !module_contains_opcode(decoded.module, 9) then
+    return report_failure(label + " missing JUMP_IF_FALSE")
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_integer_is(called.raw, expected) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn taken_source() -> string =
+  "export fn f() -> i32 = if 1.5 < 2.5 do 1 else 0 end"
+
+fn skipped_source() -> string =
+  "export fn f() -> i32 = if 2.5 < 1.5 do 1 else 0 end"
+
+fn while_taken_source() -> string =
+  "export fn f() -> i32 = do let mut value = 0 while 1.5 < 2.5 do value = 1 break end value end"
+
+fn while_skipped_source() -> string =
+  "export fn f() -> i32 = do let mut value = 0 while 2.5 < 1.5 do value = 1 end value end"
+
+fn main() -> i32 = do
+  if expect_if(taken_source(), 1, "float_if_taken") != 0 then
+    return 1
+  end
+  if expect_if(skipped_source(), 0, "float_if_skipped") != 0 then
+    return 1
+  end
+  if expect_if(while_taken_source(), 1, "float_while_taken") != 0 then
+    return 1
+  end
+  if expect_if(while_skipped_source(), 0, "float_while_skipped") != 0 then
+    return 1
+  end
+  println("[script_vm] lower_float_if_condition_unit ok")
+  0
+end
