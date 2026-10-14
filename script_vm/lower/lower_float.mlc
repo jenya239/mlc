@@ -1,4 +1,4 @@
-import { Expr } from '../../compiler/frontend/ast'
+import { Expr, Span } from '../../compiler/frontend/ast'
 import { Value, ValueFloat64, value_encode } from '../value'
 import {
   float_add_opcode,
@@ -8,7 +8,8 @@ import {
 } from '../exec_float'
 import { LowerType, LowerInt } from './lower_types'
 import { ProtoBuilder, proto_builder_load_constant } from './lower_builder'
-import { binary_opcode } from './lower_control'
+import { LowerScope, lower_scope_fail } from './lower_scope'
+import { binary_opcode, diagnostic_at } from './lower_control'
 
 extern fn integer_to_float64(value: i32) -> f64 =
   "mlc::math::i32_to_f64" from "mlc/math/math.hpp" thread_safe
@@ -89,8 +90,40 @@ fn float_arithmetic_opcode(operator: string) -> i32 =
     0
   end
 
-export fn binary_opcode_for(operator: string, left: Shared<Expr>, right: Shared<Expr>) -> i32 =
-  if float_expression(left) && float_expression(right) then
+fn integer_expression(expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprInt(_, _) => true,
+    ExprUn(operator, inner, _) =>
+      if operator == "-" then
+        integer_expression(inner)
+      else
+        false
+      end,
+    ExprBin(operator, left, right, _) =>
+      if float_operator(operator) then
+        integer_expression(left) && integer_expression(right)
+      else
+        false
+      end,
+    _ => false
+  }
+
+fn int_float_mix(left: Shared<Expr>, right: Shared<Expr>) -> bool =
+  if float_expression(left) && integer_expression(right) then
+    true
+  else if integer_expression(left) && float_expression(right) then
+    true
+  else
+    false
+  end
+
+export fn binary_opcode_for(scope: ref mut LowerScope, operator: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> i32 =
+  if int_float_mix(left, right) then
+    do
+      lower_scope_fail(scope, diagnostic_at("int_float_mix", source_span))
+      0
+    end
+  else if float_expression(left) && float_expression(right) then
     float_arithmetic_opcode(operator)
   else
     binary_opcode(operator)

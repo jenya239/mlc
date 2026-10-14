@@ -70,7 +70,7 @@ fn lower_binary(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, bu
   let right_register = use_operand(scope, sink, builder, right)
   let left_type = operand_type(scope, left, left_register)
   let right_type = operand_type(scope, right, right_register)
-  let opcode = binary_opcode_for(operator, left, right)
+  let opcode = binary_opcode_for(scope, operator, left, right, source_span)
   if scope.has_diagnostic then
     do
       proto_builder_register_release_to(builder, mark)
