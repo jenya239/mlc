@@ -1,0 +1,102 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueBool, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_float_critic_unit] FAIL: " + label)
+  1
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn has_rejection(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn returned_bool_is(raw: i64, expected: bool) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueBool(flag) => flag == expected,
+    _ => false
+  }
+
+fn expect_bool(source: string, export_name: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if !returned_bool_is(called.raw, true) then
+    return report_failure(label + " value")
+  end
+  println(label)
+  0
+end
+
+fn expect_mixed_compare() -> i32 = do
+  const lowered = lower_source("export fn f() -> bool = 1 < 1.5")
+  if !has_rejection(lowered.diagnostics, "int_float_mix") then
+    return report_failure("float_mixed_compare diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  if lowered.bytes.length() != 0 then
+    return report_failure("float_mixed_compare bytes")
+  end
+  println("float_mixed_compare")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_bool("export fn f() -> bool = -1.5 == 0.0 - 1.5", "f", "float_negate") != 0 then
+    return 1
+  end
+  if expect_bool("export fn f() -> bool = -1.0 / 0.0 < 0.0", "f", "float_negative_infinity") != 0 then
+    return 1
+  end
+  if expect_mixed_compare() != 0 then
+    return 1
+  end
+  if expect_bool("export fn f() -> bool = 0.0 / 0.0 != 0.0 / 0.0", "f", "float_nan_not_equal") != 0 then
+    return 1
+  end
+  if expect_bool("export fn f() -> bool = 1.0 / 0.0 > 0.0", "f", "float_positive_infinity") != 0 then
+    return 1
+  end
+  if expect_bool("type Measure = { amount: f32 } export fn main() -> bool = do let measure = Measure { amount: 1.5 } measure.amount == 1.5 end", "main", "float_record_field") != 0 then
+    return 1
+  end
+  if expect_bool("export fn f() -> bool = len([1.5, 2.5]) == 2", "f", "float_array_length") != 0 then
+    return 1
+  end
+  if expect_bool("fn scale(value: f32) -> f32 = value * 2.0 export fn main() -> bool = scale(1.5) == 3.0", "main", "float_function_call") != 0 then
+    return 1
+  end
+  println("[script_vm] lower_float_critic_unit ok")
+  0
+end

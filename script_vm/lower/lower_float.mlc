@@ -1,5 +1,5 @@
 import { Expr, Span } from '../../compiler/frontend/ast'
-import { Value, ValueFloat64, value_encode } from '../value'
+import { ValueFloat64, ValueInt32, value_encode } from '../value'
 import {
   float_add_opcode,
   float_subtract_opcode,
@@ -74,6 +74,12 @@ fn float_operator(operator: string) -> bool =
 fn float_expression(expression: Shared<Expr>) -> bool =
   match expression {
     ExprFloat(_, _) => true,
+    ExprUn(operator, inner, _) =>
+      if operator == "-" then
+        float_expression(inner)
+      else
+        false
+      end,
     ExprBin(operator, left, right, _) =>
       if float_operator(operator) then
         float_expression(left) && float_expression(right)
@@ -140,8 +146,27 @@ fn float_compare_opcode(operator: string) -> i32 =
     0
   end
 
-export fn comparison_opcode_for(operator: string, left: Shared<Expr>, right: Shared<Expr>) -> i32 =
-  if float_expression(left) && float_expression(right) then
+export fn load_negation_zero(builder: ref mut ProtoBuilder, target: i32, inner: Shared<Expr>) -> unit =
+  if float_expression(inner) then
+    proto_builder_load_constant(builder, target, value_encode(ValueFloat64(0.0)))
+  else
+    proto_builder_load_constant(builder, target, value_encode(ValueInt32(0)))
+  end
+
+export fn negation_opcode(inner: Shared<Expr>) -> i32 =
+  if float_expression(inner) then
+    float_subtract_opcode()
+  else
+    subtraction_opcode()
+  end
+
+export fn comparison_opcode_for(scope: ref mut LowerScope, operator: string, left: Shared<Expr>, right: Shared<Expr>, source_span: Span) -> i32 =
+  if int_float_mix(left, right) then
+    do
+      lower_scope_fail(scope, diagnostic_at("int_float_mix", source_span))
+      0
+    end
+  else if float_expression(left) && float_expression(right) then
     float_compare_opcode(operator)
   else
     comparison_opcode(operator)
