@@ -1,0 +1,39 @@
+import { FieldDef, TyBool, TyI32, TyNamed, TypeExpr } from '../../compiler/frontend/ast'
+import { lower_type_of } from './lower_call'
+import { LowerInt, LowerType } from './lower_types'
+
+fn type_name_is_float(name: string) -> bool =
+  if name == "f32" then
+    true
+  else if name == "f64" then
+    true
+  else
+    false
+  end
+
+fn type_is_float(type_value: Shared<TypeExpr>) -> bool =
+  match type_value {
+    TyNamed(name) => type_name_is_float(name),
+    _ => false
+  }
+
+export fn record_field_counts_as_nested(field: Shared<FieldDef>) -> bool =
+  match field.type_value {
+    TyNamed(name) => !type_name_is_float(name),
+    _ => false
+  }
+
+export fn record_field_counts_as_plain(field: Shared<FieldDef>) -> bool =
+  match field.type_value {
+    TyI32 => true,
+    TyBool => true,
+    TyNamed(name) => type_name_is_float(name),
+    _ => false
+  }
+
+export fn lower_type_for_record_field(type_value: Shared<TypeExpr>) -> LowerType =
+  if type_is_float(type_value) then
+    LowerInt
+  else
+    lower_type_of(type_value)
+  end

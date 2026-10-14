@@ -6,9 +6,6 @@ import {
   RecordLitFields,
   RecordLitPart,
   Span,
-  TyBool,
-  TyI32,
-  TyNamed,
   TypeVariant,
   VarRecord
 } from '../../compiler/frontend/ast'
@@ -19,7 +16,7 @@ import {
 } from '../bytecode'
 import { ProtoBuilder, proto_builder_register_release_to } from './lower_builder'
 import { diagnostic_at, emit_instruction, types_agree } from './lower_control'
-import { lower_type_of } from './lower_call'
+import { lower_type_for_record_field, record_field_counts_as_nested, record_field_counts_as_plain } from './lower_float_records'
 import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
 import { LowerInt, LowerRecord, LowerRecordLayout, LowerType } from './lower_types'
 fn record_header_name(type_name: string) -> string = "*record*" + type_name
@@ -29,8 +26,8 @@ fn decode_field_count(encoded: i32) -> i32 = 0 - 20000 - encoded
 fn encode_field_index(field_index: i32) -> i32 = 0 - 30000 - field_index
 fn decode_field_index(encoded: i32) -> i32 = 0 - 30000 - encoded
 export fn literal_field_index(field_count: i32, declared_index: i32) -> i32 = declared_index + field_count - field_count
-fn field_is_nested(field: Shared<FieldDef>) -> bool = match field.type_value { TyNamed(_) => true, _ => false }
-fn field_is_plain(field: Shared<FieldDef>) -> bool = match field.type_value { TyI32 => true, TyBool => true, _ => false }
+fn field_is_nested(field: Shared<FieldDef>) -> bool = record_field_counts_as_nested(field)
+fn field_is_plain(field: Shared<FieldDef>) -> bool = record_field_counts_as_plain(field)
 fn next_nested_index(fields: [Shared<FieldDef>], index: i32) -> i32 =
   if field_is_nested(fields[index]) then
     0 - 1
@@ -90,7 +87,7 @@ fn layout_field_types(fields: [Shared<FieldDef>]) -> [LowerType] = do
   let mut collected: [LowerType] = []
   let mut index = 0
   while index < fields.length() do
-    collected.push(lower_type_of(fields[index].type_value))
+    collected.push(lower_type_for_record_field(fields[index].type_value))
     index = index + 1
   end
   collected

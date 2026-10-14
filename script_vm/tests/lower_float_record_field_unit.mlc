@@ -54,13 +54,19 @@ fn read_source() -> string =
 fn write_source() -> string =
   "type Measure = { amount: f32 } export fn main() -> bool = do let mut measure = Measure { amount: 1.5 } measure.amount = 2.5 measure.amount == 2.5 end"
 
+fn alias_source() -> string =
+  "type Measure = { amount: f32 } export fn main() -> bool = do let mut measure = Measure { amount: 1.5 } let mut alias = measure alias.amount = 2.5 measure.amount == 2.5 end"
+
 fn main() -> i32 = do
   let read_status = expect_field(read_source(), true, "float_field_read")
   let write_status = expect_field(write_source(), true, "float_field_write")
+  let alias_status = expect_field(alias_source(), true, "record_alias_shares_object")
   if read_status != 0 then
     read_status
   else if write_status != 0 then
     write_status
+  else if alias_status != 0 then
+    alias_status
   else
     do
       println("[script_vm] lower_float_record_field_unit ok")
