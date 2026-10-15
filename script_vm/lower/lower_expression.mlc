@@ -53,6 +53,7 @@ import {
 import { lower_text_concatenate, lower_text_handles_plus, lower_array_named, place_integer_array, finish_array_index } from './lower_array'
 import { lower_float_literal, binary_opcode_for, comparison_opcode_for, load_negation_zero, negation_opcode } from './lower_float'
 import { lower_match_expression } from './lower_match'
+import { LambdaHandled, LambdaIgnored, lower_lambda_try } from './lower_lambda'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -392,5 +393,8 @@ export fn lower_expression(scope: ref mut LowerScope, sink: ref mut LowerDiagnos
   if scope.has_diagnostic then
     LowerInt
   else
-    lower_expression_checked(scope, sink, builder, expression, target)
+    match lower_lambda_try(scope, sink, builder, expression, target) {
+      LambdaHandled(value_type) => value_type,
+      LambdaIgnored => lower_expression_checked(scope, sink, builder, expression, target)
+    }
   end

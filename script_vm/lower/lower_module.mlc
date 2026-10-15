@@ -51,21 +51,28 @@ import {
   install_record_layouts
 } from './lower_records'
 import { FunctionLowered, FunctionLowering, FunctionRejected } from './lower_function'
-import { LowerScope, lower_scope_bind, lower_scope_new } from './lower_scope'
+import { LowerScope, lower_scope_bind, lower_scope_closure_prototypes, lower_scope_new, lower_scope_prepare_closure_index } from './lower_scope'
 import { lower_block } from './lower_statement'
 import { LowerCallSignature, LowerDiagnostic, LowerRecordLayout, LowerResult, LowerType } from './lower_types'
 
 type LowerWalk = {
   diagnostics: [LowerDiagnostic],
   protos: [FunctionProto],
-  exports: [ModuleExport]
+  exports: [ModuleExport],
+  closure_prototypes: [FunctionProto]
+}
+
+type PreparedFunction = {
+  lowering: FunctionLowering,
+  closure_prototypes: [FunctionProto]
 }
 
 fn empty_walk() -> LowerWalk = do
   let mut diagnostics: [LowerDiagnostic] = []
   let mut protos: [FunctionProto] = []
   let mut exports: [ModuleExport] = []
-  LowerWalk { diagnostics: diagnostics, protos: protos, exports: exports }
+  let mut closure_prototypes: [FunctionProto] = []
+  LowerWalk { diagnostics: diagnostics, protos: protos, exports: exports, closure_prototypes: closure_prototypes }
 end
 
 fn plain_function_is_exported() -> bool = false
@@ -104,7 +111,7 @@ fn declaration_code(declaration: Shared<Decl>) -> string =
 fn push_diagnostic(walk: LowerWalk, diagnostic: LowerDiagnostic) -> LowerWalk = do
   let mut diagnostics = walk.diagnostics
   diagnostics.push(diagnostic)
-  LowerWalk { diagnostics: diagnostics, protos: walk.protos, exports: walk.exports }
+  LowerWalk { diagnostics: diagnostics, protos: walk.protos, exports: walk.exports, closure_prototypes: walk.closure_prototypes }
 end
 
 fn append_proto(walk: LowerWalk, name: string, proto: FunctionProto, exported: bool) -> LowerWalk = do
@@ -114,10 +121,20 @@ fn append_proto(walk: LowerWalk, name: string, proto: FunctionProto, exported: b
   if exported then
     let mut exports = walk.exports
     exports.push(ModuleExport { name: name, proto_index: proto_index })
-    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: exports }
+    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: exports, closure_prototypes: walk.closure_prototypes }
   else
-    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: walk.exports }
+    LowerWalk { diagnostics: walk.diagnostics, protos: protos, exports: walk.exports, closure_prototypes: walk.closure_prototypes }
   end
+end
+
+fn append_closure_prototypes(walk: LowerWalk, prototypes: [FunctionProto]) -> LowerWalk = do
+  let mut collected = walk.closure_prototypes
+  let mut index = 0
+  while index < prototypes.length() do
+    collected.push(prototypes[index])
+    index = index + 1
+  end
+  LowerWalk { diagnostics: walk.diagnostics, protos: walk.protos, exports: walk.exports, closure_prototypes: collected }
 end
 
 fn bind_call_parameters(
@@ -227,16 +244,19 @@ fn lower_function_with_signatures(
   signatures: [LowerCallSignature],
   layouts: [LowerRecordLayout],
   parameters: [Shared<Param>],
-  expression: Shared<Expr>
-) -> FunctionLowering = do
+  expression: Shared<Expr>,
+  closure_index: i32
+) -> PreparedFunction = do
   let mut builder = proto_builder_new(0)
   let mut scope = lower_scope_new()
+  lower_scope_prepare_closure_index(scope, closure_index)
   install_call_signatures(scope, signatures)
   install_record_layouts(scope, layouts)
   bind_call_parameters(scope, builder, parameters)
   let destination = proto_builder_register_allocate(builder)
   let body_type = lower_prepared_body(scope, sink, builder, expression, destination)
-  finish_prepared_function(scope, builder, destination, body_type)
+  let lowering = finish_prepared_function(scope, builder, destination, body_type)
+  PreparedFunction { lowering: lowering, closure_prototypes: lower_scope_closure_prototypes(scope) }
 end
 
 fn consider_function(
@@ -252,8 +272,9 @@ fn consider_function(
   exported: bool
 ) -> LowerWalk = do
   note_function_limits(sink, exported, type_parameters, parameters, result_type, body)
-  match lower_function_with_signatures(sink, signatures, layouts, parameters, body) {
-    FunctionLowered(proto) => append_proto(walk, name, proto, exported),
+  let prepared = lower_function_with_signatures(sink, signatures, layouts, parameters, body, signatures.length() + walk.closure_prototypes.length())
+  match prepared.lowering {
+    FunctionLowered(proto) => append_closure_prototypes(append_proto(walk, name, proto, exported), prepared.closure_prototypes),
     FunctionRejected(diagnostic) => push_diagnostic(walk, diagnostic)
   }
 end
@@ -314,7 +335,7 @@ fn result_bytes(diagnostics: [LowerDiagnostic], walk: LowerWalk) -> [i32] =
   if diagnostics.length() > 0 then
     empty_bytes()
   else
-    module_encode(walk.exports, walk.protos)
+    module_encode(walk.exports, walk.protos.concat(walk.closure_prototypes))
   end
 
 fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do

@@ -1,3 +1,4 @@
+import { FunctionProto } from '../run_result'
 import { LowerDiagnostic, LowerType } from './lower_types'
 import {
   ProtoBuilder,
@@ -18,7 +19,9 @@ export type LowerScope = {
   frame_name_counts: [i32],
   frame_register_marks: [i32],
   has_diagnostic: bool,
-  diagnostic: LowerDiagnostic
+  diagnostic: LowerDiagnostic,
+  closure_prototypes: [FunctionProto],
+  next_closure_index: i32
 }
 
 fn empty_diagnostic() -> LowerDiagnostic =
@@ -28,12 +31,15 @@ export fn lower_scope_new() -> LowerScope = do
   let mut names: [LowerName] = []
   let mut frame_name_counts: [i32] = []
   let mut frame_register_marks: [i32] = []
+  let mut closure_prototypes: [FunctionProto] = []
   LowerScope {
     names: names,
     frame_name_counts: frame_name_counts,
     frame_register_marks: frame_register_marks,
     has_diagnostic: false,
-    diagnostic: empty_diagnostic()
+    diagnostic: empty_diagnostic(),
+    closure_prototypes: closure_prototypes,
+    next_closure_index: 0
   }
 end
 
@@ -125,3 +131,19 @@ fn pop_scope_frame(scope: ref mut LowerScope, builder: ref mut ProtoBuilder) -> 
   scope.frame_register_marks = kept_register_marks
   proto_builder_register_release_to(builder, register_mark)
 end
+
+export fn lower_scope_prepare_closure_index(scope: ref mut LowerScope, next_index: i32) -> unit = do
+  scope.next_closure_index = next_index
+end
+
+export fn lower_scope_allocate_closure_index(scope: ref mut LowerScope) -> i32 = do
+  let prototype_index = scope.next_closure_index
+  scope.next_closure_index = prototype_index + 1
+  prototype_index
+end
+
+export fn lower_scope_push_closure_prototype(scope: ref mut LowerScope, prototype: FunctionProto) -> unit = do
+  scope.closure_prototypes.push(prototype)
+end
+
+export fn lower_scope_closure_prototypes(scope: ref mut LowerScope) -> [FunctionProto] = scope.closure_prototypes

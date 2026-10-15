@@ -186,7 +186,7 @@ fn check_expressions() -> i32 = do
     status = expect_code(for_source(), "unsupported_for", "unsupported_for")
   end
   if status == 0 then
-    status = expect_code(lambda_source(), "unsupported_lambda", "unsupported_lambda")
+    status = expect_no_diagnostic(lambda_source(), "lambda_value")
   end
   if status == 0 then
     status = expect_code(method_source(), "unsupported_method", "unsupported_method")
