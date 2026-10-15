@@ -4,6 +4,21 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 
 ## Entries
 
+### Turn 2026-10-15 (Planner — Script VM GUI documentation)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | documentation-audit |
+| track   | Script VM GUI design reference; independent of existing queues |
+| started | 2026-10-15 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Copied `docs/MLC_VM_GUI_Architecture_RU.md`; authored `docs/MLC_SCRIPT_VM_GUI_IMPLEMENTATION_RU.md` against HEAD 71b473c9 plus existing WIP, with source evidence, gaps and 30 proposed SVGUI steps; registered both in specs index |
+| verify  | Parent copy byte-identical; Markdown links/anchors/fences valid; Script VM and TextUI file-size checks pass; gate registry lists successfully. No functional/performance rebuild for this docs-only task |
+| result  | Documentation delivered; no runtime/compiler/UI source changes and no implementation track marked done |
+| issues  | Existing queue300 step 228 remains blocked per its own state file; prior WIP preserved. This entry does not resume or reprioritize queues |
+| next    | ROLE=Planner STEP=3 TRACK=TRACK_TEXTUI_FILE_MANAGER (02-selection); preserved prior SESSION routing, subject to current explicit user request and dedicated queue state |
+
 ### Turn 2026-08-09 (Driver TRACK_COMPILER_ARCHITECTURE_HYGIENE STEP=0, §104-6 s20)
 
 | field   | value |

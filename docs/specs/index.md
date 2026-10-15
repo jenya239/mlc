@@ -26,6 +26,15 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../GUI_UX_TESTING.md](../GUI_UX_TESTING.md) | gui, editor, ux, headless, harness, inject, golden | Headless UX scenarios / probes; TRACK_UX_HEADLESS |
 | [../MLC_SCRIPT_VM.md](../MLC_SCRIPT_VM.md) | vm, script, dyn, embed, bytecode, jit, design-only | Script-profile VM. **Not** MIR VM / `mlcc --run` — see doc §0 |
 
+## Script VM + GUI implementation reference (2026-10-15)
+
+Документы текущего архитектурного аудита; не меняют приоритет или статус очередей.
+
+| Document | Tags | Load when |
+|----------|------|-----------|
+| [../MLC_VM_GUI_Architecture_RU.md](../MLC_VM_GUI_Architecture_RU.md) | vm, script, gui, security, architecture | Полная целевая архитектура embedding; импортированный общий документ |
+| [../MLC_SCRIPT_VM_GUI_IMPLEMENTATION_RU.md](../MLC_SCRIPT_VM_GUI_IMPLEMENTATION_RU.md) | vm, script, gui, implementation, sandbox, persistence | Текущее состояние кода, разрывы, файлы изменений и proposed SVGUI steps |
+
 ## Verification
 
 | Document | Tags | Load when |
