@@ -52,6 +52,7 @@ import {
 } from './lower_control'
 import { lower_text_concatenate, lower_text_handles_plus, lower_array_named, place_integer_array, finish_array_index } from './lower_array'
 import { lower_float_literal, binary_opcode_for, comparison_opcode_for, load_negation_zero, negation_opcode } from './lower_float'
+import { lower_match_expression } from './lower_match'
 fn temporary_operand(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> i32 = do
   let temporary = proto_builder_register_allocate(builder)
   lower_expression(scope, sink, builder, expression, temporary)
@@ -374,6 +375,8 @@ fn lower_expression_checked(scope: ref mut LowerScope, sink: ref mut LowerDiagno
       lower_field_read(scope, sink, builder, base, field_name, source_span, target),
     ExprIndex(base, index, source_span) =>
       lower_index_read(scope, sink, builder, base, index, source_span, target),
+    ExprMatch(subject, arms, source_span) =>
+      lower_match_expression(scope, sink, builder, subject, arms, source_span, target),
     ExprBlock(_, _, source_span) => do
       lower_scope_fail(scope, diagnostic_at("unsupported_expression_block", source_span))
       LowerInt

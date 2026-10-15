@@ -1,0 +1,160 @@
+import { Expr, MatchArm, Span, expr_span } from '../../compiler/frontend/ast'
+import { ValueInt32, value_encode } from '../value'
+import { instruction_opcode_eq } from '../bytecode'
+import {
+  ProtoBuilder,
+  proto_builder_emit_jump,
+  proto_builder_emit_jump_if_false,
+  proto_builder_load_constant,
+  proto_builder_patch_to_here,
+  proto_builder_register_allocate,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+import { LowerDiagnosticSink } from './lower_diagnostics'
+import { LowerType, LowerInt } from './lower_types'
+import { LowerScope, lower_scope_fail } from './lower_scope'
+import {
+  diagnostic_at,
+  emit_binary,
+  identifier_operand,
+  is_lower_int,
+  operand_type
+} from './lower_control'
+
+fn reject_match(scope: ref mut LowerScope, code: string, source_span: Span) -> unit =
+  lower_scope_fail(scope, diagnostic_at(code, source_span))
+
+fn load_integer_body(builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> bool =
+  match expression {
+    ExprInt(number, _) => do
+      proto_builder_load_constant(builder, target, value_encode(ValueInt32(number)))
+      true
+    end,
+    _ => false
+  }
+
+fn remember_jump(sites: [i32], site: i32) -> [i32] = do
+  let mut remembered = sites
+  remembered.push(site)
+  remembered
+end
+
+fn patch_end_jumps(builder: ref mut ProtoBuilder, sites: [i32]) -> unit = do
+  let mut index = 0
+  while index < sites.length() do
+    proto_builder_patch_to_here(builder, sites[index])
+    index = index + 1
+  end
+end
+
+fn emit_equality_jump(builder: ref mut ProtoBuilder, subject_register: i32, literal: i32) -> i32 = do
+  let mark = proto_builder_register_mark(builder)
+  let literal_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, literal_register, value_encode(ValueInt32(literal)))
+  let condition_register = proto_builder_register_allocate(builder)
+  emit_binary(builder, instruction_opcode_eq(), condition_register, subject_register, literal_register)
+  let jump_site = proto_builder_emit_jump_if_false(builder, condition_register)
+  proto_builder_register_release_to(builder, mark)
+  jump_site
+end
+
+fn close_taken_arm(
+  builder: ref mut ProtoBuilder,
+  jump_site: i32,
+  arm_is_last: bool,
+  end_sites: [i32]
+) -> [i32] = do
+  let sites = if arm_is_last then
+    end_sites
+  else
+    remember_jump(end_sites, proto_builder_emit_jump(builder))
+  end
+  proto_builder_patch_to_here(builder, jump_site)
+  sites
+end
+
+fn lower_pattern_arm(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  subject_register: i32,
+  arm: Shared<MatchArm>,
+  arm_is_last: bool,
+  target: i32,
+  end_sites: [i32]
+) -> [i32] =
+  match arm.pattern {
+    PatternInt(literal, pattern_source_span) => do
+      let jump_site = emit_equality_jump(builder, subject_register, literal)
+      if !load_integer_body(builder, arm.body, target) then do
+        reject_match(scope, "unsupported_expression", pattern_source_span)
+        end_sites
+      end else
+        close_taken_arm(builder, jump_site, arm_is_last, end_sites)
+      end
+    end,
+    PatternWild(pattern_source_span) => do
+      if !load_integer_body(builder, arm.body, target) then do
+        reject_match(scope, "unsupported_expression", pattern_source_span)
+        end_sites
+      end else if arm_is_last then
+        end_sites
+      else
+        remember_jump(end_sites, proto_builder_emit_jump(builder))
+      end
+    end,
+    _ => do
+      reject_match(scope, "unsupported_match", expr_span(arm.body))
+      end_sites
+    end
+  }
+
+fn lower_match_arms(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  subject_register: i32,
+  arms: [Shared<MatchArm>],
+  target: i32
+) -> LowerType = do
+  let mut end_sites: [i32] = []
+  let mut index = 0
+  while index < arms.length() && !scope.has_diagnostic do
+    let arm_is_last = index + 1 == arms.length()
+    end_sites = lower_pattern_arm(scope, builder, subject_register, arms[index], arm_is_last, target, end_sites)
+    index = index + 1
+  end
+  patch_end_jumps(builder, end_sites)
+  LowerInt
+end
+
+fn subject_register(scope: ref mut LowerScope, subject: Shared<Expr>) -> i32 =
+  match subject {
+    ExprIdent(name, source_span) => identifier_operand(scope, name, source_span),
+    _ => do
+      reject_match(scope, "unsupported_match", expr_span(subject))
+      0
+    end
+  }
+
+export fn lower_match_expression(
+  scope: ref mut LowerScope,
+  sink: ref mut LowerDiagnosticSink,
+  builder: ref mut ProtoBuilder,
+  subject: Shared<Expr>,
+  arms: [Shared<MatchArm>],
+  source_span: Span,
+  target: i32
+) -> LowerType = do
+  let subject_register_index = subject_register(scope, subject)
+  if scope.has_diagnostic then
+    LowerInt
+  else if !is_lower_int(operand_type(scope, subject, subject_register_index)) then do
+    reject_match(scope, "type_mismatch", source_span)
+    LowerInt
+  end else if arms.length() == 0 then do
+    reject_match(scope, "unsupported_match", source_span)
+    LowerInt
+  end else
+    lower_match_arms(scope, builder, subject_register_index, arms, target)
+  end
+end
