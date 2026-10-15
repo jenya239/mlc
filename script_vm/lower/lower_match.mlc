@@ -15,6 +15,14 @@ import { LowerDiagnosticSink } from './lower_diagnostics'
 import { LowerType, LowerInt } from './lower_types'
 import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_pop, lower_scope_push } from './lower_scope'
 import {
+  call_argument_register,
+  call_parameter_count,
+  call_signature_found,
+  call_signature_proto_index,
+  finish_call_instruction,
+  prepare_call_block
+} from './lower_call'
+import {
   diagnostic_at,
   emit_binary,
   identifier_operand,
@@ -22,6 +30,10 @@ import {
   is_lower_int,
   operand_type
 } from './lower_control'
+
+// Invariants:
+// - an i32 expression match requires a wildcard or a binding
+// - a match whose target register was allocated inside the current block is a statement: the result is discarded, so a missing wildcard is allowed
 
 fn reject_match(scope: ref mut LowerScope, code: string, source_span: Span) -> unit =
   lower_scope_fail(scope, diagnostic_at(code, source_span))
@@ -60,12 +72,7 @@ fn emit_equality_jump(builder: ref mut ProtoBuilder, subject_register: i32, lite
   jump_site
 end
 
-fn close_taken_arm(
-  builder: ref mut ProtoBuilder,
-  jump_site: i32,
-  arm_is_last: bool,
-  end_sites: [i32]
-) -> [i32] = do
+fn close_taken_arm(builder: ref mut ProtoBuilder, jump_site: i32, arm_is_last: bool, end_sites: [i32]) -> [i32] = do
   let sites = if arm_is_last then
     end_sites
   else
@@ -75,16 +82,7 @@ fn close_taken_arm(
   sites
 end
 
-fn lower_true_pattern_arm(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register: i32,
-  body: Shared<Expr>,
-  pattern_source_span: Span,
-  arm_is_last: bool,
-  target: i32,
-  end_sites: [i32]
-) -> [i32] = do
+fn lower_true_pattern_arm(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, subject_register: i32, body: Shared<Expr>, pattern_source_span: Span, arm_is_last: bool, target: i32, end_sites: [i32]) -> [i32] = do
   let jump_site = proto_builder_emit_jump_if_false(builder, subject_register)
   if !load_integer_body(builder, body, target) then do
     reject_match(scope, "unsupported_expression", pattern_source_span)
@@ -94,16 +92,7 @@ fn lower_true_pattern_arm(
   end
 end
 
-fn lower_false_pattern_arm(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register: i32,
-  body: Shared<Expr>,
-  pattern_source_span: Span,
-  arm_is_last: bool,
-  target: i32,
-  end_sites: [i32]
-) -> [i32] = do
+fn lower_false_pattern_arm(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, subject_register: i32, body: Shared<Expr>, pattern_source_span: Span, arm_is_last: bool, target: i32, end_sites: [i32]) -> [i32] = do
   let take_site = proto_builder_emit_jump_if_false(builder, subject_register)
   let skip_site = proto_builder_emit_jump(builder)
   proto_builder_patch_to_here(builder, take_site)
@@ -125,14 +114,7 @@ fn lower_false_pattern_arm(
   end
 end
 
-fn lower_identifier_plus_integer(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  name: string,
-  name_span: Span,
-  number: i32,
-  target: i32
-) -> bool = do
+fn lower_identifier_plus_integer(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, name_span: Span, number: i32, target: i32) -> bool = do
   let left_register = identifier_operand(scope, name, name_span)
   if scope.has_diagnostic then
     false
@@ -184,24 +166,12 @@ fn lower_binding_body(
     end
   }
 
-fn lower_binding_pattern_arm(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register: i32,
-  binding_name: string,
-  body: Shared<Expr>,
-  target: i32,
-  end_sites: [i32]
-) -> [i32] = do
+fn lower_binding_pattern_arm(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, subject_register: i32, binding_name: string, body: Shared<Expr>, target: i32, end_sites: [i32]) -> [i32] = do
   lower_scope_push(scope, builder)
   lower_scope_define(scope, binding_name, subject_register, LowerInt, false)
-  let accepted = lower_binding_body(scope, builder, body, target)
+  lower_binding_body(scope, builder, body, target)
   lower_scope_pop(scope, builder)
-  if accepted then
-    end_sites
-  else
-    end_sites
-  end
+  end_sites
 end
 
 fn lower_pattern_arm(
@@ -216,7 +186,7 @@ fn lower_pattern_arm(
   match arm.pattern {
     PatternInt(literal, pattern_source_span) => do
       let jump_site = emit_equality_jump(builder, subject_register, literal)
-      if !load_integer_body(builder, arm.body, target) then do
+      if !lower_arm_body(scope, builder, arm.body, target) then do
         reject_match(scope, "unsupported_expression", pattern_source_span)
         end_sites
       end else
@@ -273,38 +243,64 @@ fn arm_is_wildcard(arm: Shared<MatchArm>) -> bool =
     _ => false
   }
 
-fn match_has_wildcard(arms: [Shared<MatchArm>]) -> bool = do
-  let mut index = 0
-  let mut found = false
-  while index < arms.length() && !found do
-    found = arm_is_wildcard(arms[index])
-    index = index + 1
-  end
-  found
-end
-
 fn arm_is_binding(arm: Shared<MatchArm>) -> bool =
   match arm.pattern {
     PatternIdent(_, _) => true,
     _ => false
   }
 
-fn match_has_binding(arms: [Shared<MatchArm>]) -> bool = do
+fn match_result_is_discarded(scope: ref mut LowerScope, target: i32) -> bool =
+  if scope.frame_register_marks.length() == 0 then
+    false
+  else
+    target >= scope.frame_register_marks[scope.frame_register_marks.length() - 1]
+  end
+
+fn lower_integer_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, number: i32, target: i32) -> bool = do
+  let mark = proto_builder_register_mark(builder)
+  let base = prepare_call_block(builder, call_signature_proto_index(scope, name), 1)
+  proto_builder_load_constant(builder, call_argument_register(base, 0), value_encode(ValueInt32(number)))
+  finish_call_instruction(builder, target, base, 1)
+  proto_builder_register_release_to(builder, mark)
+  true
+end
+
+fn lower_call_body(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> bool =
+  match expression {
+    ExprCall(callee, arguments, _) =>
+      match callee {
+        ExprIdent(name, _) =>
+          if arguments.length() == 1 && call_signature_found(scope, name) && call_parameter_count(scope, name) == 1 then
+            match arguments[0] {
+              ExprInt(number, _) => lower_integer_call(scope, builder, name, number, target),
+              _ => false
+            }
+          else
+            false
+          end,
+        _ => false
+      },
+    _ => false
+  }
+
+fn lower_arm_body(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> bool =
+  if load_integer_body(builder, expression, target) then
+    true
+  else
+    lower_call_body(scope, builder, expression, target)
+  end
+
+fn integer_match_is_covered(arms: [Shared<MatchArm>]) -> bool = do
   let mut index = 0
   let mut found = false
   while index < arms.length() && !found do
-    found = arm_is_binding(arms[index])
+    if arm_is_wildcard(arms[index]) || arm_is_binding(arms[index]) then
+      found = true
+    end
     index = index + 1
   end
   found
 end
-
-fn integer_match_is_covered(arms: [Shared<MatchArm>]) -> bool =
-  if match_has_wildcard(arms) then
-    true
-  else
-    match_has_binding(arms)
-  end
 
 fn arm_is_true_pattern(arm: Shared<MatchArm>) -> bool =
   match arm.pattern {
@@ -381,7 +377,7 @@ export fn lower_match_expression(
   end else if arms.length() == 0 then do
     reject_match(scope, "unsupported_match", source_span)
     LowerInt
-  end else if !integer_match_is_covered(arms) then do
+  end else if !integer_match_is_covered(arms) && !match_result_is_discarded(scope, target) then do
     reject_match(scope, "incomplete_match", source_span)
     LowerInt
   end else
