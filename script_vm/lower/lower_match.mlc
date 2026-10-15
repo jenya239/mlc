@@ -127,6 +127,22 @@ fn lower_match_arms(
   LowerInt
 end
 
+fn arm_is_wildcard(arm: Shared<MatchArm>) -> bool =
+  match arm.pattern {
+    PatternWild(_) => true,
+    _ => false
+  }
+
+fn match_has_wildcard(arms: [Shared<MatchArm>]) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < arms.length() && !found do
+    found = arm_is_wildcard(arms[index])
+    index = index + 1
+  end
+  found
+end
+
 fn subject_register(scope: ref mut LowerScope, subject: Shared<Expr>) -> i32 =
   match subject {
     ExprIdent(name, source_span) => identifier_operand(scope, name, source_span),
@@ -153,6 +169,9 @@ export fn lower_match_expression(
     LowerInt
   end else if arms.length() == 0 then do
     reject_match(scope, "unsupported_match", source_span)
+    LowerInt
+  end else if !match_has_wildcard(arms) then do
+    reject_match(scope, "incomplete_match", source_span)
     LowerInt
   end else
     lower_match_arms(scope, builder, subject_register_index, arms, target)
