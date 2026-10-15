@@ -1,0 +1,57 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_match_no_wildcard_reject_unit] FAIL: " + label)
+  1
+end
+
+fn match_source() -> string =
+  "export fn f(scrutinee: i32) -> i32 = match scrutinee do 1 -> 10 2 -> 20 end"
+
+fn rejection_code() -> string = "incomplete_match"
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn has_rejection(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_incomplete_match() -> i32 = do
+  const lowered = lower_source(match_source())
+  if !has_rejection(lowered.diagnostics, rejection_code()) then
+    return report_failure("incomplete_match diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  if lowered.bytes.length() != 0 then
+    return report_failure("incomplete_match bytes")
+  end
+  println("incomplete_match")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_incomplete_match() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_match_no_wildcard_reject_unit ok")
+  0
+end
