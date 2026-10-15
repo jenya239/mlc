@@ -1,6 +1,18 @@
 import { ReplSession, repl_session_new, repl_session_submit } from '../repl_session'
 import { ReplAnswer, ReplDiagnostic, repl_answer_print } from '../repl_answer'
 
+extern fn standard_input_is_terminal() -> i32 =
+  "mlc::io::standard_input_is_terminal" from "mlc/io/stdin_line.hpp" blocking
+
+extern fn read_standard_input_line() -> i32 =
+  "mlc::io::read_standard_input_line" from "mlc/io/stdin_line.hpp" blocking
+
+extern fn take_standard_input_line() -> string =
+  "mlc::io::take_standard_input_line" from "mlc/io/stdin_line.hpp" blocking
+
+extern fn write_standard_error_text(text: string) -> unit =
+  "mlc::io::write_standard_error_text" from "mlc/io/stdin_line.hpp" blocking
+
 fn answer_is_incomplete(answer: ReplAnswer) -> bool =
   match answer {
     ReplIncomplete => true,
@@ -54,8 +66,32 @@ fn finish_repl(session: ref mut ReplSession) -> i32 = do
   end
 end
 
-export fn script_repl_run() -> i32 = do
-  let mut session = repl_session_new()
+fn terminal_prompt(session: ref mut ReplSession) -> string =
+  if session.pending.length() != 0 then "... " else "> " end
+
+fn run_terminal_repl(session: ref mut ReplSession) -> i32 = do
+  let mut reading = true
+  while reading do
+    write_standard_error_text(terminal_prompt(session))
+    if read_standard_input_line() == 0 then
+      reading = false
+    else
+      publish_answer(repl_session_submit(session, take_standard_input_line()))
+    end
+  end
+  finish_repl(session)
+end
+
+fn run_batch_repl(session: ref mut ReplSession) -> i32 = do
   consume_standard_input(session, read_all())
   finish_repl(session)
+end
+
+export fn script_repl_run() -> i32 = do
+  let mut session = repl_session_new()
+  if standard_input_is_terminal() != 0 then
+    run_terminal_repl(session)
+  else
+    run_batch_repl(session)
+  end
 end

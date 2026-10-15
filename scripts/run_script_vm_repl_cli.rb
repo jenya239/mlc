@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 require "fileutils"
+require "io/wait"
+require "pty"
 require "timeout"
 
 root_directory = File.expand_path("..", __dir__)
@@ -68,6 +70,136 @@ def fail_tool(message)
   exit 1
 end
 
+TERMINAL_PROMPT = "> "
+CONTINUATION_PROMPT = "... "
+END_OF_TRANSMISSION = "\x04"
+INCOMPLETE_END_MARKER = "repl answer=diagnostic code=repl_incomplete_eof"
+ADD_VALUE_LINE = "repl answer=value kind=int32 number=42"
+
+def stop_terminal(process_identifier)
+  Process.kill("KILL", process_identifier)
+  begin
+    Process.wait(process_identifier)
+  rescue Errno::ECHILD
+    nil
+  end
+rescue Errno::ESRCH
+  nil
+end
+
+def fail_terminal(process_identifier, message)
+  stop_terminal(process_identifier)
+  fail_tool(message)
+end
+
+def wait_for_terminal_marker(output, accumulated, start_index, marker, process_identifier)
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 20
+  found_index = accumulated.index(marker, start_index)
+  while found_index.nil?
+    remaining_seconds = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    if remaining_seconds <= 0
+      fail_terminal(process_identifier, "terminal timed out waiting for #{marker.inspect}\n#{accumulated}")
+    end
+    unless output.wait_readable(remaining_seconds)
+      fail_terminal(process_identifier, "terminal timed out waiting for #{marker.inspect}\n#{accumulated}")
+    end
+    begin
+      accumulated << output.readpartial(4096)
+    rescue EOFError, Errno::EIO
+      fail_terminal(process_identifier, "terminal closed waiting for #{marker.inspect}\n#{accumulated}")
+    end
+    found_index = accumulated.index(marker, start_index)
+  end
+  found_index + marker.length
+end
+
+def write_terminal_text(input, text)
+  input.write(text)
+  input.flush
+end
+
+def read_terminal_rest(output, process_identifier)
+  remainder = +""
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 20
+  loop do
+    remaining_seconds = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    break if remaining_seconds <= 0
+    break unless output.wait_readable(remaining_seconds)
+    begin
+      remainder << output.readpartial(4096)
+    rescue EOFError, Errno::EIO
+      break
+    end
+  end
+  process_status = nil
+  begin
+    Timeout.timeout(20) do
+      _, process_status = Process.wait2(process_identifier)
+    end
+  rescue Timeout::Error
+    fail_terminal(process_identifier, "terminal repl did not exit\n#{remainder}")
+  end
+  [remainder, process_status]
+end
+
+def reject_answer_before_prompt(accumulated, start_index, prompt_index, process_identifier)
+  return if prompt_index <= start_index
+  segment = accumulated[start_index...prompt_index]
+  return unless segment.include?("repl answer=")
+  fail_terminal(process_identifier, "incomplete line printed an answer\n#{accumulated}")
+end
+
+def check_terminal_session(tool_binary)
+  PTY.spawn(tool_binary, "repl") do |output, input, process_identifier|
+    output.binmode
+    input.binmode
+    input.sync = true
+    accumulated = +""
+    cursor = wait_for_terminal_marker(output, accumulated, 0, TERMINAL_PROMPT, process_identifier)
+    write_terminal_text(input, "export fn identity(number: i32) -> i32 = number\n")
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, "repl answer=accepted", process_identifier)
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, TERMINAL_PROMPT, process_identifier)
+    write_terminal_text(input, "export fn add(left: i32, right: i32) -> i32 = do\n")
+    continuation_cursor = wait_for_terminal_marker(output, accumulated, cursor, CONTINUATION_PROMPT, process_identifier)
+    reject_answer_before_prompt(accumulated, cursor, continuation_cursor, process_identifier)
+    cursor = continuation_cursor
+    write_terminal_text(input, "left + right\n")
+    continuation_cursor = wait_for_terminal_marker(output, accumulated, cursor, CONTINUATION_PROMPT, process_identifier)
+    reject_answer_before_prompt(accumulated, cursor, continuation_cursor, process_identifier)
+    cursor = continuation_cursor
+    write_terminal_text(input, "end\n")
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, "repl answer=accepted", process_identifier)
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, TERMINAL_PROMPT, process_identifier)
+    write_terminal_text(input, "add(20, 22)\n")
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, ADD_VALUE_LINE, process_identifier)
+    wait_for_terminal_marker(output, accumulated, cursor, TERMINAL_PROMPT, process_identifier)
+    write_terminal_text(input, END_OF_TRANSMISSION)
+    remainder, process_status = read_terminal_rest(output, process_identifier)
+    accumulated << remainder
+    exit_code = status_code(process_status)
+    fail_tool("terminal repl exit #{exit_code.inspect}\n#{accumulated}") unless exit_code == 0
+    fail_tool("terminal repl reported incomplete at end\n#{accumulated}") if accumulated.include?(INCOMPLETE_END_MARKER)
+  end
+end
+
+def check_terminal_incomplete_end(tool_binary)
+  PTY.spawn(tool_binary, "repl") do |output, input, process_identifier|
+    output.binmode
+    input.binmode
+    input.sync = true
+    accumulated = +""
+    cursor = wait_for_terminal_marker(output, accumulated, 0, TERMINAL_PROMPT, process_identifier)
+    write_terminal_text(input, "export fn add(left: i32, right: i32) -> i32 = do\n")
+    cursor = wait_for_terminal_marker(output, accumulated, cursor, CONTINUATION_PROMPT, process_identifier)
+    write_terminal_text(input, END_OF_TRANSMISSION)
+    wait_for_terminal_marker(output, accumulated, cursor, INCOMPLETE_END_MARKER, process_identifier)
+    remainder, process_status = read_terminal_rest(output, process_identifier)
+    accumulated << remainder
+    exit_code = status_code(process_status)
+    fail_tool("terminal incomplete exit #{exit_code.inspect}\n#{accumulated}") unless exit_code == 1
+  end
+end
+
 unless File.file?(tool_source_path)
   fail_tool("script_tool missing: script_vm/tools/script_tool.mlc")
 end
@@ -114,8 +246,9 @@ warn repl_error unless repl_error.empty?
 print repl_output
 repl_exit_code = status_code(repl_status)
 output_lines = repl_output.lines.map(&:strip)
-if repl_exit_code == 0 && output_lines.include?(accepted_line) && output_lines.include?(value_line)
-  puts "repl_cli ok"
-  exit 0
+unless repl_exit_code == 0 && output_lines.include?(accepted_line) && output_lines.include?(value_line)
+  fail_tool("repl cli exit #{repl_exit_code.inspect}")
 end
-fail_tool("repl cli exit #{repl_exit_code.inspect}")
+check_terminal_session(tool_binary)
+check_terminal_incomplete_end(tool_binary)
+puts "repl_cli ok"
