@@ -18,6 +18,7 @@ import {
   diagnostic_at,
   emit_binary,
   identifier_operand,
+  is_lower_bool,
   is_lower_int,
   operand_type
 } from './lower_control'
@@ -74,6 +75,56 @@ fn close_taken_arm(
   sites
 end
 
+fn lower_true_pattern_arm(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  subject_register: i32,
+  body: Shared<Expr>,
+  pattern_source_span: Span,
+  arm_is_last: bool,
+  target: i32,
+  end_sites: [i32]
+) -> [i32] = do
+  let jump_site = proto_builder_emit_jump_if_false(builder, subject_register)
+  if !load_integer_body(builder, body, target) then do
+    reject_match(scope, "unsupported_expression", pattern_source_span)
+    end_sites
+  end else
+    close_taken_arm(builder, jump_site, arm_is_last, end_sites)
+  end
+end
+
+fn lower_false_pattern_arm(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  subject_register: i32,
+  body: Shared<Expr>,
+  pattern_source_span: Span,
+  arm_is_last: bool,
+  target: i32,
+  end_sites: [i32]
+) -> [i32] = do
+  let take_site = proto_builder_emit_jump_if_false(builder, subject_register)
+  let skip_site = proto_builder_emit_jump(builder)
+  proto_builder_patch_to_here(builder, take_site)
+  if !load_integer_body(builder, body, target) then
+    do
+      reject_match(scope, "unsupported_expression", pattern_source_span)
+      end_sites
+    end
+  else
+    do
+      let sites = if arm_is_last then
+        end_sites
+      else
+        remember_jump(end_sites, proto_builder_emit_jump(builder))
+      end
+      proto_builder_patch_to_here(builder, skip_site)
+      sites
+    end
+  end
+end
+
 fn lower_pattern_arm(
   scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
@@ -93,6 +144,12 @@ fn lower_pattern_arm(
         close_taken_arm(builder, jump_site, arm_is_last, end_sites)
       end
     end,
+    PatternBool(flag, pattern_source_span) =>
+      if flag then
+        lower_true_pattern_arm(scope, builder, subject_register, arm.body, pattern_source_span, arm_is_last, target, end_sites)
+      else
+        lower_false_pattern_arm(scope, builder, subject_register, arm.body, pattern_source_span, arm_is_last, target, end_sites)
+      end,
     PatternWild(pattern_source_span) => do
       if !load_integer_body(builder, arm.body, target) then do
         reject_match(scope, "unsupported_expression", pattern_source_span)
@@ -143,6 +200,51 @@ fn match_has_wildcard(arms: [Shared<MatchArm>]) -> bool = do
   found
 end
 
+fn arm_is_true_pattern(arm: Shared<MatchArm>) -> bool =
+  match arm.pattern {
+    PatternBool(flag, _) => flag,
+    _ => false
+  }
+
+fn arm_is_false_pattern(arm: Shared<MatchArm>) -> bool =
+  match arm.pattern {
+    PatternBool(flag, _) => !flag,
+    _ => false
+  }
+
+fn bool_match_covers_both(arms: [Shared<MatchArm>]) -> bool = do
+  let mut index = 0
+  let mut seen_true = false
+  let mut seen_false = false
+  while index < arms.length() do
+    if arm_is_true_pattern(arms[index]) then
+      seen_true = true
+    end
+    if arm_is_false_pattern(arms[index]) then
+      seen_false = true
+    end
+    index = index + 1
+  end
+  seen_true && seen_false
+end
+
+fn lower_bool_match(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  subject_register_index: i32,
+  arms: [Shared<MatchArm>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  if bool_match_covers_both(arms) then
+    lower_match_arms(scope, builder, subject_register_index, arms, target)
+  else
+    do
+      reject_match(scope, "incomplete_bool_match", source_span)
+      LowerInt
+    end
+  end
+
 fn subject_register(scope: ref mut LowerScope, subject: Shared<Expr>) -> i32 =
   match subject {
     ExprIdent(name, source_span) => identifier_operand(scope, name, source_span),
@@ -162,9 +264,12 @@ export fn lower_match_expression(
   target: i32
 ) -> LowerType = do
   let subject_register_index = subject_register(scope, subject)
+  let subject_type = operand_type(scope, subject, subject_register_index)
   if scope.has_diagnostic then
     LowerInt
-  else if !is_lower_int(operand_type(scope, subject, subject_register_index)) then do
+  else if is_lower_bool(subject_type) then
+    lower_bool_match(scope, builder, subject_register_index, arms, source_span, target)
+  else if !is_lower_int(subject_type) then do
     reject_match(scope, "type_mismatch", source_span)
     LowerInt
   end else if arms.length() == 0 then do
