@@ -1,0 +1,72 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode } from '../value'
+import { emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_match_record_reject_unit] FAIL: " + label)
+  1
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn record_match_source() -> string =
+  "type Point = { x: i32, y: i32 } fn pick(point: Point) -> i32 = match point do Point { x, y } -> 1 _ -> 0 end export fn main() -> i32 = pick(Point { x: 1, y: 2 })"
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn no_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn has_rejection(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_named_rejection() -> i32 = do
+  const lowered = lower_source(record_match_source())
+  if !has_rejection(lowered.diagnostics, "type_mismatch") then
+    if lowered.diagnostics.length() == 0 then
+      const called = emb_call_export_bytes(lowered.bytes, "main", no_arguments())
+      return report_failure("no_rejection code=" + called.code.to_string() + " value=" + decoded_integer(called.raw).to_string() + " bytes=" + lowered.bytes.length().to_string())
+    end
+    return report_failure("diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  if lowered.bytes.length() != 0 then
+    return report_failure("bytes=" + lowered.bytes.length().to_string() + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  println(diagnostic_codes(lowered.diagnostics))
+  0
+end
+
+fn main() -> i32 = do
+  if expect_named_rejection() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_match_record_reject_unit ok")
+  0
+end
