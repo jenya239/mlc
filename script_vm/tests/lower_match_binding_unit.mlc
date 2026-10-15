@@ -38,8 +38,14 @@ end
 fn match_source() -> string =
   "export fn f(scrutinee: i32) -> i32 = match scrutinee do n -> n + 1 end"
 
-fn expect_binding(argument: i32, expected: i32, label: string) -> i32 = do
-  const lowered = lower_source(match_source())
+fn catch_all_source() -> string =
+  "export fn f(scrutinee: i32) -> i32 = match scrutinee do n -> n + 1 1 -> 0 end"
+
+fn scope_source() -> string =
+  "export fn f(scrutinee: i32) -> i32 = do\nlet value = match scrutinee do bound -> bound + 1 end\nbound\nend"
+
+fn expect_program(source: string, argument: i32, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
   if lowered.diagnostics.length() != 0 then
     return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
   end
@@ -54,10 +60,33 @@ fn expect_binding(argument: i32, expected: i32, label: string) -> i32 = do
   0
 end
 
+fn has_code(diagnostics: [LowerDiagnostic], code: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < diagnostics.length() && !found do
+    if diagnostics[index].code == code then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn expect_binding_stays_in_arm() -> i32 = do
+  const lowered = lower_source(scope_source())
+  if !has_code(lowered.diagnostics, "unknown_identifier") then
+    return report_failure("binding_scope diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  println("binding_scope")
+  0
+end
+
 fn main() -> i32 = do
   let mut failure_count = 0
-  failure_count = failure_count + expect_binding(4, 5, "match_binding_four")
-  failure_count = failure_count + expect_binding(0, 1, "match_binding_zero")
+  failure_count = failure_count + expect_program(match_source(), 4, 5, "match_binding_four")
+  failure_count = failure_count + expect_program(match_source(), 0, 1, "match_binding_zero")
+  failure_count = failure_count + expect_program(catch_all_source(), 1, 2, "match_binding_catch_all")
+  failure_count = failure_count + expect_binding_stays_in_arm()
   if failure_count != 0 then
     return 1
   end
