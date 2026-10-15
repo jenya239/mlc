@@ -35,24 +35,30 @@ end
 fn capture_source() -> string =
   "export fn main() -> i32 = do\nlet y = 10\nlet f = (x: i32) => x + y\nf(5)\nend"
 
-fn expect_captured_call() -> i32 = do
-  const lowered = lower_source(capture_source())
+fn capture_then_assign_source() -> string =
+  "export fn main() -> i32 = do\nlet mut y = 10\nlet f = (x: i32) => x + y\ny = 1\nf(5)\nend"
+
+fn expect_result(source: string, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
   if lowered.diagnostics.length() != 0 then
-    return report_failure("diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
   end
   const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
   if called.code != emb_ok() then
-    return report_failure("code=" + called.code.to_string())
+    return report_failure(label + " code=" + called.code.to_string())
   end
-  if decoded_integer(called.raw) != 15 then
-    return report_failure("value=" + decoded_integer(called.raw).to_string())
+  if decoded_integer(called.raw) != expected then
+    return report_failure(label + " value=" + decoded_integer(called.raw).to_string())
   end
-  println("lambda_capture")
+  println(label)
   0
 end
 
 fn main() -> i32 = do
-  if expect_captured_call() != 0 then
+  let mut failure_count = 0
+  failure_count = failure_count + expect_result(capture_source(), 15, "lambda_capture")
+  failure_count = failure_count + expect_result(capture_then_assign_source(), 15, "lambda_capture_by_value")
+  if failure_count != 0 then
     return 1
   end
   println("[script_vm] lower_lambda_capture_unit ok")
