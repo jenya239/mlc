@@ -49,12 +49,15 @@ end
 
 fn expect_named_rejection() -> i32 = do
   const lowered = lower_source(record_match_source())
-  if !has_rejection(lowered.diagnostics, "type_mismatch") then
+  if !has_rejection(lowered.diagnostics, "unsupported_record_pattern") then
     if lowered.diagnostics.length() == 0 then
       const called = emb_call_export_bytes(lowered.bytes, "main", no_arguments())
       return report_failure("no_rejection code=" + called.code.to_string() + " value=" + decoded_integer(called.raw).to_string() + " bytes=" + lowered.bytes.length().to_string())
     end
     return report_failure("diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  if has_rejection(lowered.diagnostics, "incomplete_match") || has_rejection(lowered.diagnostics, "unsupported_match") then
+    return report_failure("diagnostics=" + diagnostic_codes(lowered.diagnostics))
   end
   if lowered.bytes.length() != 0 then
     return report_failure("bytes=" + lowered.bytes.length().to_string() + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
