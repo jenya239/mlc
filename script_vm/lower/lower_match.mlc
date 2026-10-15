@@ -1,4 +1,4 @@
-import { Expr, MatchArm, Span, expr_span } from '../../compiler/frontend/ast'
+import { Expr, ExprBlock, MatchArm, Span, StmtBreak, StmtContinue, expr_span } from '../../compiler/frontend/ast'
 import { ValueInt32, value_encode } from '../value'
 import { instruction_opcode_add, instruction_opcode_eq } from '../bytecode'
 import {
@@ -22,6 +22,7 @@ import {
   finish_call_instruction,
   prepare_call_block
 } from './lower_call'
+import { lower_break, lower_continue } from './lower_iteration'
 import {
   diagnostic_at,
   emit_binary,
@@ -34,6 +35,7 @@ import {
 // Invariants:
 // - an i32 expression match requires a wildcard or a binding
 // - a match whose target register was allocated inside the current block is a statement: the result is discarded, so a missing wildcard is allowed
+// - a break or continue block in an arm uses the enclosing while frame
 
 fn reject_match(scope: ref mut LowerScope, code: string, source_span: Span) -> unit =
   lower_scope_fail(scope, diagnostic_at(code, source_span))
@@ -174,19 +176,11 @@ fn lower_binding_pattern_arm(scope: ref mut LowerScope, builder: ref mut ProtoBu
   end_sites
 end
 
-fn lower_pattern_arm(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register: i32,
-  arm: Shared<MatchArm>,
-  arm_is_last: bool,
-  target: i32,
-  end_sites: [i32]
-) -> [i32] =
+fn lower_pattern_arm(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, subject_register: i32, arm: Shared<MatchArm>, arm_is_last: bool, target: i32, end_sites: [i32]) -> [i32] =
   match arm.pattern {
     PatternInt(literal, pattern_source_span) => do
       let jump_site = emit_equality_jump(builder, subject_register, literal)
-      if !lower_arm_body(scope, builder, arm.body, target) then do
+      if !lower_arm_body(scope, sink, builder, arm.body, target) then do
         reject_match(scope, "unsupported_expression", pattern_source_span)
         end_sites
       end else
@@ -217,19 +211,13 @@ fn lower_pattern_arm(
     end
   }
 
-fn lower_match_arms(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register: i32,
-  arms: [Shared<MatchArm>],
-  target: i32
-) -> LowerType = do
+fn lower_match_arms(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, subject_register: i32, arms: [Shared<MatchArm>], target: i32) -> LowerType = do
   let mut end_sites: [i32] = []
   let mut index = 0
   let mut reached_binding = false
   while index < arms.length() && !scope.has_diagnostic && !reached_binding do
     let arm_is_last = index + 1 == arms.length()
-    end_sites = lower_pattern_arm(scope, builder, subject_register, arms[index], arm_is_last, target, end_sites)
+    end_sites = lower_pattern_arm(scope, sink, builder, subject_register, arms[index], arm_is_last, target, end_sites)
     reached_binding = arm_is_binding(arms[index])
     index = index + 1
   end
@@ -283,11 +271,34 @@ fn lower_call_body(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, exp
     _ => false
   }
 
-fn lower_arm_body(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> bool =
+fn lower_loop_jump_body(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>) -> bool =
+  match expression {
+    ExprBlock(statements, _, _) =>
+      if statements.length() == 1 then
+        match statements[0] {
+          StmtBreak(source_span) => do
+            lower_break(scope, sink, builder, source_span)
+            true
+          end,
+          StmtContinue(source_span) => do
+            lower_continue(scope, sink, builder, source_span)
+            true
+          end,
+          _ => false
+        }
+      else
+        false
+      end,
+    _ => false
+  }
+
+fn lower_arm_body(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> bool =
   if load_integer_body(builder, expression, target) then
     true
+  else if lower_call_body(scope, builder, expression, target) then
+    true
   else
-    lower_call_body(scope, builder, expression, target)
+    lower_loop_jump_body(scope, sink, builder, expression)
   end
 
 fn integer_match_is_covered(arms: [Shared<MatchArm>]) -> bool = do
@@ -330,16 +341,9 @@ fn bool_match_covers_both(arms: [Shared<MatchArm>]) -> bool = do
   seen_true && seen_false
 end
 
-fn lower_bool_match(
-  scope: ref mut LowerScope,
-  builder: ref mut ProtoBuilder,
-  subject_register_index: i32,
-  arms: [Shared<MatchArm>],
-  source_span: Span,
-  target: i32
-) -> LowerType =
+fn lower_bool_match(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, subject_register_index: i32, arms: [Shared<MatchArm>], source_span: Span, target: i32) -> LowerType =
   if bool_match_covers_both(arms) then
-    lower_match_arms(scope, builder, subject_register_index, arms, target)
+    lower_match_arms(scope, sink, builder, subject_register_index, arms, target)
   else
     do
       reject_match(scope, "incomplete_bool_match", source_span)
@@ -370,7 +374,7 @@ export fn lower_match_expression(
   if scope.has_diagnostic then
     LowerInt
   else if is_lower_bool(subject_type) then
-    lower_bool_match(scope, builder, subject_register_index, arms, source_span, target)
+    lower_bool_match(scope, sink, builder, subject_register_index, arms, source_span, target)
   else if !is_lower_int(subject_type) then do
     reject_match(scope, "type_mismatch", source_span)
     LowerInt
@@ -381,6 +385,6 @@ export fn lower_match_expression(
     reject_match(scope, "incomplete_match", source_span)
     LowerInt
   end else
-    lower_match_arms(scope, builder, subject_register_index, arms, target)
+    lower_match_arms(scope, sink, builder, subject_register_index, arms, target)
   end
 end
