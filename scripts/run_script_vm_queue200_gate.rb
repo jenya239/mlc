@@ -51,6 +51,20 @@ unless float_unit_names.length == 8
   fail_gate("script_vm_queue200_gate FAIL float unit count")
 end
 
+match_unit_names = [
+  "lower_match_int",
+  "lower_match_no_wildcard_reject",
+  "lower_match_bool",
+  "lower_match_binding",
+  "lower_match_statement",
+  "lower_match_in_loop",
+  "lower_match_critic",
+  "lower_match_record_reject"
+]
+unless match_unit_names.length == 8
+  fail_gate("script_vm_queue200_gate FAIL match unit count")
+end
+
 queue_lines, queue_status = run_command(["ruby", "scripts/run_script_vm_queue_gate.rb"])
 unless queue_status&.success? && last_line(queue_lines) == "script_vm_queue_gate ok stages=7"
   fail_gate("script_vm_queue200_gate FAIL queue")
@@ -74,6 +88,13 @@ end
 
 float_unit_names.each do |unit_name|
   next if script_vm_gate_registers_float_unit(unit_name)
+  direct_lines, direct_status = run_command(["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/#{unit_name}_unit.mlc"])
+  unless direct_status&.success? && direct_lines.any? { |line| line.include?("[script_vm] #{unit_name}_unit ok") }
+    fail_gate("script_vm_queue200_gate FAIL #{unit_name}")
+  end
+end
+
+match_unit_names.each do |unit_name|
   direct_lines, direct_status = run_command(["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/#{unit_name}_unit.mlc"])
   unless direct_status&.success? && direct_lines.any? { |line| line.include?("[script_vm] #{unit_name}_unit ok") }
     fail_gate("script_vm_queue200_gate FAIL #{unit_name}")
