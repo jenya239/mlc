@@ -229,3 +229,72 @@ if minimum_nanoseconds > limit
   warn "float_ns_per_insn #{minimum_nanoseconds} exceeds B1 #{baseline_nanoseconds_per_instruction} by more than #{maximum_ratio}x (limit #{limit})"
   exit 1
 end
+
+baseline_ratio_percent = 50
+
+def read_baseline_metric(root_directory, metric_name)
+  path = File.join(root_directory, "script_vm", "tests", "bench_baseline.txt")
+  unless File.file?(path)
+    warn "missing baseline #{path}"
+    return nil
+  end
+  found = nil
+  prefix = "#{metric_name} "
+  File.readlines(path).each do |line|
+    stripped = line.strip
+    next unless stripped.start_with?(prefix)
+    return nil unless found.nil?
+    found = Integer(stripped.delete_prefix(prefix))
+  end
+  found
+end
+
+def metric_from_bench(output_text, metric_name)
+  values = []
+  prefix = "#{metric_name} "
+  output_text.each_line do |line|
+    stripped = line.strip
+    next unless stripped.start_with?(prefix)
+    values.push(Integer(stripped.delete_prefix(prefix)))
+  end
+  return nil unless values.length == 1
+  values[0]
+end
+
+def ratio_limit(baseline, percent)
+  baseline * percent / 100
+end
+
+def ratio_exceeded?(value, baseline, percent)
+  value * 100 > baseline * percent
+end
+
+instruction_baseline = read_baseline_metric(root_directory, "B1.ns_per_insn")
+call_baseline = read_baseline_metric(root_directory, "B3.ns_per_call")
+if instruction_baseline.nil? || call_baseline.nil?
+  warn "baseline metrics missing"
+  exit 1
+end
+
+bench_script = File.join(root_directory, "scripts", "run_script_vm_bench.rb")
+bench_output, bench_error, bench_status = capture_process(
+  [
+    "ruby", bench_script,
+    "--max-ratio", "B1.ns_per_insn=baseline:#{baseline_ratio_percent}",
+    "--max-ratio", "B3.ns_per_call=baseline:#{baseline_ratio_percent}"
+  ],
+  2400
+)
+print bench_output
+warn bench_error unless bench_error.empty?
+
+instruction_nanoseconds = metric_from_bench(bench_output, "B1.ns_per_insn")
+call_nanoseconds = metric_from_bench(bench_output, "B3.ns_per_call")
+instruction_limit = ratio_limit(instruction_baseline, baseline_ratio_percent)
+call_limit = ratio_limit(call_baseline, baseline_ratio_percent)
+puts "B1.ns_per_insn=#{instruction_nanoseconds} baseline=#{instruction_baseline} ratio=baseline:#{baseline_ratio_percent} limit=#{instruction_limit}"
+puts "B3.ns_per_call=#{call_nanoseconds} baseline=#{call_baseline} ratio=baseline:#{baseline_ratio_percent} limit=#{call_limit}"
+if instruction_nanoseconds.nil? || call_nanoseconds.nil? || process_failed?(bench_status) || ratio_exceeded?(instruction_nanoseconds, instruction_baseline, baseline_ratio_percent) || ratio_exceeded?(call_nanoseconds, call_baseline, baseline_ratio_percent)
+  warn bench_status == :timeout ? "queue bench timeout" : "queue bench failed baseline:#{baseline_ratio_percent}"
+  exit 1
+end
