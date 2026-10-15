@@ -1,0 +1,54 @@
+import {
+  glfw_gl_context_begin,
+  glfw_gl_context_end,
+  glfw_gl_clipboard_get,
+  glfw_gl_clipboard_set,
+  glfw_gl_clipboard_set_files,
+  glfw_gl_clipboard_files,
+  glfw_gl_clipboard_files_served
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn fail(code: i32) -> i32 = do
+  glfw_gl_context_end()
+  code
+end
+
+fn main() -> i32 = do
+  if glfw_gl_context_begin(200, 100) != 0 then
+    return 1
+  end
+  const paths = "/tmp/mlc-clip/a file.txt\n/tmp/mlc-clip/b.txt"
+  glfw_gl_clipboard_set_files(paths, 0)
+  const served = glfw_gl_clipboard_files_served()
+  const expected = "copy\nfile:///tmp/mlc-clip/a%20file.txt\nfile:///tmp/mlc-clip/b.txt\n"
+  if served != expected then
+    println(served)
+    return fail(2)
+  end
+  if glfw_gl_clipboard_files() != "mlc-file-copy\n" + paths then
+    return fail(3)
+  end
+  if glfw_gl_clipboard_get() != paths then
+    return fail(4)
+  end
+  glfw_gl_clipboard_set_files("/tmp/mlc-clip/b.txt", 1)
+  const cut_served = glfw_gl_clipboard_files_served()
+  if cut_served != "cut\nfile:///tmp/mlc-clip/b.txt\n" then
+    println(cut_served)
+    return fail(5)
+  end
+  if glfw_gl_clipboard_files() != "mlc-file-cut\n/tmp/mlc-clip/b.txt" then
+    return fail(6)
+  end
+  glfw_gl_clipboard_set("plain-text")
+  if glfw_gl_clipboard_get() != "plain-text" then
+    return fail(7)
+  end
+  if glfw_gl_clipboard_files() != "" then
+    println(glfw_gl_clipboard_files())
+    return fail(8)
+  end
+  glfw_gl_context_end()
+  println("file_clipboard_x11_ok")
+  0
+end

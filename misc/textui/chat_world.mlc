@@ -78,6 +78,7 @@ export fn chat_view_at_bottom(view: TranscriptView, view_height: i32) -> Transcr
     measured_count: view.measured_count,
     scroll_y: block_scroll_bottom(view.index.total, view_height),
     stick_to_bottom: view.stick_to_bottom,
+    edge_clock_ms: view.edge_clock_ms,
     index: view.index
   }
 end

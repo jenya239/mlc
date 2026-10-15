@@ -116,14 +116,67 @@ fn stick_flag(total: i32, view_height: i32, y: i32) -> i32 = do
   0
 end
 
-fn with_scroll(view: TranscriptView, scroll_y: i32, view_height: i32) -> TranscriptView =
+fn with_scroll(
+  view: TranscriptView,
+  scroll_y: i32,
+  view_height: i32,
+  edge_clock_ms: i32
+) -> TranscriptView =
   TranscriptView {
     width: view.width,
     measured_count: view.measured_count,
     scroll_y: scroll_y,
     stick_to_bottom: stick_flag(view.index.total, view_height, scroll_y),
+    edge_clock_ms: edge_clock_ms,
     index: view.index
   }
+
+fn edge_direction(rect: Rect, mouse_y: i32, band: i32) -> i32 = do
+  if mouse_y <= rect.y + band then
+    return 0 - 1
+  end
+  if mouse_y >= rect.y + rect.height - band then
+    return 1
+  end
+  0
+end
+
+fn edge_scroll_pixels(theme: Theme, previous_ms: i32, now_ms: i32) -> i32 = do
+  let mut elapsed = 16
+  if previous_ms >= 0 && now_ms >= previous_ms then
+    elapsed = now_ms - previous_ms
+  end
+  if elapsed > 64 then
+    elapsed = 64
+  end
+  if elapsed < 1 then
+    return 0
+  end
+  elapsed * theme.font_size_pixels / 40
+end
+
+fn scroll_with_edge(
+  theme: Theme,
+  view: TranscriptView,
+  rect: Rect,
+  scroll: i32,
+  mouse_y: i32,
+  now_ms: i32
+) -> TranscriptView = do
+  const direction = edge_direction(rect, mouse_y, theme.font_size_pixels)
+  if direction == 0 then
+    return with_scroll(view, scroll, rect.height, 0 - 1)
+  end
+  const pixels = edge_scroll_pixels(theme, view.edge_clock_ms, now_ms)
+  if pixels <= 0 then
+    return with_scroll(view, scroll, rect.height, view.edge_clock_ms)
+  end
+  const shifted = block_scroll_clamp(view.index.total, rect.height, scroll + direction * pixels)
+  if shifted == scroll then
+    return with_scroll(view, scroll, rect.height, view.edge_clock_ms)
+  end
+  with_scroll(view, shifted, rect.height, now_ms)
+end
 
 fn pointer_on_bar(theme: Theme, view: TranscriptView, rect: Rect, x: i32, y: i32) -> bool = do
   if view.index.total <= rect.height then
@@ -245,7 +298,11 @@ export fn transcript_input_shown(
     end
     selection_handled = true
   end
+  let mut edge_clock = 0 - 1
   if selection_handled == false && selection.dragging != 0 && input.left_down && selection.anchor_block >= 0 then
+    const followed = scroll_with_edge(theme, view, rect, scroll, input.mouse_y, input.now_ms)
+    scroll = followed.scroll_y
+    edge_clock = followed.edge_clock_ms
     const dragged = transcript_caret_at(
       model, view, shaping, cache, theme, rect, scroll, input.mouse_x, input.mouse_y, highlight
     )
@@ -258,7 +315,7 @@ export fn transcript_input_shown(
     next_selection = selection_settled(selection)
   end
   TranscriptInputResult {
-    view: with_scroll(view, scroll, rect.height),
+    view: with_scroll(view, scroll, rect.height, edge_clock),
     selection: next_selection,
     shaping: shaping,
     cache: cache,

@@ -31,10 +31,10 @@ import { UiEvent, ui_event_is_activate_on, ui_event_is_click_on } from './ui_eve
 import {
   UiState,
   ui_state_with_field,
-  ui_state_with_field_revision,
   ui_state_with_list_selected,
   ui_state_with_listing_revision
 } from './ui_state'
+import { ui_state_with_field_revision } from './ui_state_field'
 import { field_caption } from './widget_field'
 import { list_selected_at, list_selected_put } from './widget_list'
 import {

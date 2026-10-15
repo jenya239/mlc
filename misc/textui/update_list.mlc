@@ -8,11 +8,11 @@ import {
   GrabList,
   PointerList,
   PointerListSession,
-  ui_state_with,
-  ui_state_with_list_selected
+  ui_state_with
 } from './ui_state'
 import { UiInput } from './ui_input'
-import { list_index_at, list_index_clamped, list_selected_put } from './widget_list'
+import { list_index_at, list_index_clamped } from './widget_list'
+import { list_drag_selection, list_press_selection } from './list_marks'
 import { pointer_double_click_ms } from './pointer_slop'
 
 fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
@@ -98,10 +98,7 @@ export fn begin_list_press(
   if index < 0 then
     return pressed
   end
-  return ui_state_with_list_selected(
-    pressed,
-    list_selected_put(state.list_selected, owner.index, index)
-  )
+  return list_press_selection(pressed, owner.index, index, input.control_down, input.shift_down)
 end
 
 export fn list_hover_row_at(
@@ -134,8 +131,5 @@ export fn handle_list_drag(
   if index < 0 then
     return state
   end
-  return ui_state_with_list_selected(
-    state,
-    list_selected_put(state.list_selected, owner.index, index)
-  )
+  return list_drag_selection(state, owner.index, index, input.control_down, input.shift_down)
 end

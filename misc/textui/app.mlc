@@ -11,8 +11,7 @@ import {
   glfw_gl_window_y,
   glfw_gl_window_request_position,
   glfw_gl_key_escape_down,
-  glfw_gl_mouse_right_down,
-  glfw_gl_clipboard_set
+  glfw_gl_mouse_right_down
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { theme_default } from './theme'
 import { WidgetId, WidgetStore, widget_id_is_none } from './store'
@@ -53,6 +52,8 @@ import { apply_path_click_jailed } from './path_travel'
 import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
 import { attach_file_menu, menu_apply, menu_host_step } from './menu'
 import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
+import { file_commands } from './file_commands'
+import { file_clipboard_publish } from './file_clipboard_os'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { music_host, music_playing, music_release } from './music_host'
 import { chat_frames } from './chat_host'
@@ -199,6 +200,16 @@ fn main() -> i32 = do
     )
     store = prompted.store
     state = prompted.state
+    const commanded = file_commands(
+      store,
+      state,
+      input,
+      updated.events,
+      DialogTarget { list_index: target_list, row: target_row },
+      jail_root
+    )
+    store = commanded.store
+    state = commanded.state
     let mut activation_index = 0
     while activation_index < updated.events.length() do
       if updated.events[activation_index].activated then
@@ -303,16 +314,16 @@ fn main() -> i32 = do
         reload_requested = true
       end
       if acted.copied then
-        glfw_gl_clipboard_set(state.clipboard.clipboard)
+        file_clipboard_publish(state.clipboard.clipboard)
       end
       event_index = event_index + 1
     end
     if polled.input.copy_pressed && polled.input.control_down then
-      glfw_gl_clipboard_set(state.clipboard.clipboard)
+      file_clipboard_publish(state.clipboard.clipboard)
     end
     const cut_pressed = (polled.input.binding_key == "x" && polled.input.control_down) || (polled.input.binding_key == "delete" && polled.input.shift_down)
     if cut_pressed && state.clipboard.clipboard != clipboard_before then
-      glfw_gl_clipboard_set(state.clipboard.clipboard)
+      file_clipboard_publish(state.clipboard.clipboard)
     end
     let mut paints = frame_request_paints(request)
     if frame_index == 0 then

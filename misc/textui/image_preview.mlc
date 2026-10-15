@@ -1,5 +1,6 @@
 import { join_path, strip_trailing_slash } from './directory_rows'
 import { path_inside_jail } from './directory_jail'
+import { open_as_image_path } from './open_as_pin'
 import { path_bar_current } from './path_bar'
 import { WidgetId, WidgetKind, WidgetStore, kind_is_box, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
 import { music_playing } from './music_host'
@@ -186,14 +187,21 @@ export fn hovered_image_path(store: WidgetStore, state: UiState, root: string) -
     return ""
   end
   const name = hovered_row_name(store, state)
-  if image_file_name(name) == false then
+  if name != "" then
+    if image_file_name(name) == false then
+      return ""
+    end
+    const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+    if path_inside_jail(root, path) == false then
+      return ""
+    end
+    return path
+  end
+  const pinned = open_as_image_path(state.clipboard.primary)
+  if pinned == "" || path_inside_jail(root, pinned) == false then
     return ""
   end
-  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
-  if path_inside_jail(root, path) == false then
-    return ""
-  end
-  return path
+  return pinned
 end
 
 export fn image_preview_file_pane(store: WidgetStore) -> WidgetId = do

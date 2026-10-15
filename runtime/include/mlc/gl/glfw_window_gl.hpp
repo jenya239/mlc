@@ -55,6 +55,9 @@ int32_t glfw_gl_cursor_shape_get();
 // TRACK_EDITOR_LIVE_POLISH STEP=4
 String glfw_gl_clipboard_get();
 void glfw_gl_clipboard_set(String text);
+void glfw_gl_clipboard_set_files(String paths, int32_t cutting);
+String glfw_gl_clipboard_files();
+String glfw_gl_clipboard_files_served();
 void glfw_gl_clipboard_test_set(String text);
 
 // TRACK_EDITOR_LIVE_POLISH STEP=5 — command-bus chords

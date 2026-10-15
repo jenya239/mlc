@@ -15,9 +15,11 @@ import { paint_transcript_styled } from '../chat_transcript'
 import {
   TranscriptSelection,
   transcript_copy_shown,
+  transcript_input,
   transcript_selection_new
 } from '../chat_transcript_input'
 import { transcript_caret_at } from '../chat_transcript_hit'
+import { UiInput } from '../ui_input'
 
 fn user_message(text: string) -> ChatMessage =
   ChatMessage { role: RoleUser, text: text, failed: false, provider: "", model_name: "" }
@@ -37,6 +39,35 @@ fn selection_between(
     focus_block: focus_block,
     focus_byte: focus_byte,
     dragging: 0
+  }
+
+fn drag_input(mouse_x: i32, mouse_y: i32, left_pressed: bool, left_down: bool, now_ms: i32) -> UiInput =
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn parked(view: TranscriptView, scroll_y: i32) -> TranscriptView =
+  TranscriptView {
+    width: view.width,
+    measured_count: view.measured_count,
+    scroll_y: scroll_y,
+    stick_to_bottom: 0,
+    edge_clock_ms: 0 - 1,
+    index: view.index
   }
 
 fn selection_fills(operations: [DrawOp]) -> i32 = do
@@ -146,6 +177,7 @@ fn main() -> i32 = do
     measured_count: 2,
     scroll_y: 0,
     stick_to_bottom: 0,
+    edge_clock_ms: 0 - 1,
     index: block_index_build([40, 40], 20)
   }
   const upper_gap = transcript_caret_at(
@@ -208,6 +240,91 @@ fn main() -> i32 = do
   )
   if selection_fills(painted) < 2 then
     return -13
+  end
+
+  let mut tall_messages: [ChatMessage] = []
+  let mut tall_index = 0
+  while tall_index < 24 do
+    tall_messages.push(user_message("line"))
+    tall_index = tall_index + 1
+  end
+  const tall = model_of(tall_messages, false)
+  const short = rect_new(0, 0, 220, 90)
+  const tall_measured = transcript_measure(tall, transcript_view_new(), shaping, cache, theme, short.width)
+  if tall_measured.view.index.total <= short.height then
+    return -14
+  end
+  const pressed = transcript_input(
+    theme,
+    parked(tall_measured.view, 0),
+    transcript_selection_new(),
+    tall,
+    tall_measured.shaping,
+    tall_measured.cache,
+    short,
+    drag_input(8, 30, true, true, 0),
+    0
+  )
+  if pressed.view.scroll_y != 0 || pressed.selection.dragging == 0 then
+    return -15
+  end
+  const held = transcript_input(
+    theme,
+    pressed.view,
+    pressed.selection,
+    tall,
+    pressed.shaping,
+    pressed.cache,
+    short,
+    drag_input(8, 45, false, true, 40),
+    pressed.bar_drag
+  )
+  if held.view.scroll_y != 0 then
+    return -16
+  end
+  let mut followed = held
+  let mut stamp = 40
+  let mut step = 0
+  while step < 10 do
+    stamp = stamp + 40
+    followed = transcript_input(
+      theme,
+      followed.view,
+      followed.selection,
+      tall,
+      followed.shaping,
+      followed.cache,
+      short,
+      drag_input(8, short.height - 1, false, true, stamp),
+      followed.bar_drag
+    )
+    step = step + 1
+  end
+  if followed.view.scroll_y < 40 || followed.selection.anchor_block != 0 then
+    return -17
+  end
+  if followed.selection.focus_block <= pressed.selection.focus_block then
+    return -18
+  end
+  let mut raised = followed
+  step = 0
+  while step < 10 do
+    stamp = stamp + 40
+    raised = transcript_input(
+      theme,
+      raised.view,
+      raised.selection,
+      tall,
+      raised.shaping,
+      raised.cache,
+      short,
+      drag_input(8, 0 - 2, false, true, stamp),
+      raised.bar_drag
+    )
+    step = step + 1
+  end
+  if raised.view.scroll_y >= followed.view.scroll_y then
+    return -19
   end
   0
 end

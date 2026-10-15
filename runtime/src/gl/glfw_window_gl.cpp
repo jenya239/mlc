@@ -1,4 +1,5 @@
 #include "mlc/gl/glfw_window_gl.hpp"
+#include "mlc/gl/clipboard_files.hpp"
 
 #if __has_include(<GLFW/glfw3.h>)
 #ifndef GLFW_INCLUDE_NONE
@@ -452,6 +453,7 @@ void glfw_gl_context_swap_poll() {
   }
   glfwSwapBuffers(window);
   glfwPollEvents();
+  clipboard_files_pump();
 }
 
 void glfw_gl_context_wait_events_timeout(double timeout_seconds) {
@@ -460,14 +462,21 @@ void glfw_gl_context_wait_events_timeout(double timeout_seconds) {
     return;
   }
   // Negative timeout waits until a GLFW event. Zero polls already-queued events.
-  if (timeout_seconds < 0.0) {
-    glfwWaitEvents();
-    return;
+  // While this process owns the file clipboard, wake often enough to answer SelectionRequest.
+  double seconds = timeout_seconds;
+  if (clipboard_files_owns() && (seconds < 0.0 || seconds > 0.05)) {
+    seconds = 0.05;
   }
-  glfwWaitEventsTimeout(timeout_seconds);
+  if (seconds < 0.0) {
+    glfwWaitEvents();
+  } else {
+    glfwWaitEventsTimeout(seconds);
+  }
+  clipboard_files_pump();
 }
 
 void glfw_gl_context_end() {
+  clipboard_files_shutdown();
   GLFWwindow* window = context_window();
   if (window == nullptr) {
     return;
@@ -743,6 +752,10 @@ String glfw_gl_clipboard_get() {
   if (override_state.active) {
     return String(override_state.text);
   }
+  clipboard_files_pump();
+  if (clipboard_files_owns()) {
+    return clipboard_files_plain();
+  }
   GLFWwindow* window = context_window();
   if (window == nullptr) {
     return String();
@@ -761,11 +774,34 @@ void glfw_gl_clipboard_set(String text) {
     override_state.text = payload;
     return;
   }
+  clipboard_files_release();
   GLFWwindow* window = context_window();
   if (window == nullptr) {
     return;
   }
   glfwSetClipboardString(window, payload.c_str());
+}
+
+void glfw_gl_clipboard_set_files(String paths, int32_t cutting) {
+  const ClipboardTestOverride& override_state = clipboard_test_override();
+  if (override_state.active) {
+    return;
+  }
+  clipboard_files_claim(paths, cutting);
+}
+
+String glfw_gl_clipboard_files() {
+  if (clipboard_test_override().active) {
+    return String();
+  }
+  return clipboard_files_read();
+}
+
+String glfw_gl_clipboard_files_served() {
+  if (clipboard_test_override().active) {
+    return String();
+  }
+  return clipboard_files_served();
 }
 
 void glfw_gl_clipboard_test_set(String text) {
@@ -985,6 +1021,9 @@ void glfw_gl_cursor_set(int32_t) {}
 int32_t glfw_gl_cursor_shape_get() { return 0; }
 String glfw_gl_clipboard_get() { return String(); }
 void glfw_gl_clipboard_set(String) {}
+void glfw_gl_clipboard_set_files(String, int32_t) {}
+String glfw_gl_clipboard_files() { return String(); }
+String glfw_gl_clipboard_files_served() { return String(); }
 void glfw_gl_clipboard_test_set(String) {}
 int32_t glfw_gl_mod_ctrl_down() { return 0; }
 int32_t glfw_gl_mod_shift_down() { return 0; }

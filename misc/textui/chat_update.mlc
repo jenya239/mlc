@@ -8,9 +8,9 @@ import {
   UiState,
   ui_state_new,
   ui_state_with_field,
-  ui_state_with_field_revision,
   ui_state_with_listing_revision
 } from './ui_state'
+import { ui_state_with_field_revision } from './ui_state_field'
 
 export type ChatEventsResult = {
   model: ChatModel,

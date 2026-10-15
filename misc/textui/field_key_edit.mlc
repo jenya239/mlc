@@ -6,7 +6,8 @@ import { selection_publish_primary } from './selection_text'
 import { clipboard_set_clipboard } from './clipboard'
 import { field_scroll_to_caret, widget_store_set_field_text } from './widget_field'
 import { text_layout_boundary_before, text_layout_boundary_after } from './text_layout_hit'
-import { UiState, ui_state_with, ui_state_with_field, ui_state_with_field_revision } from './ui_state'
+import { UiState, ui_state_with, ui_state_with_field } from './ui_state'
+import { ui_state_with_field_revision } from './ui_state_field'
 import { FieldKeyResult, field_push_undo } from './field_history'
 
 export fn field_key_keep(store: WidgetStore, state: UiState) -> FieldKeyResult =

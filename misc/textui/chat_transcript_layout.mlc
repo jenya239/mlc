@@ -16,6 +16,7 @@ export type TranscriptView = {
   measured_count: i32,
   scroll_y: i32,
   stick_to_bottom: i32,
+  edge_clock_ms: i32,
   index: BlockIndex
 }
 
@@ -37,6 +38,7 @@ export fn transcript_view_new() -> TranscriptView =
     measured_count: 0,
     scroll_y: 0,
     stick_to_bottom: 1,
+    edge_clock_ms: 0 - 1,
     index: block_index_empty(0)
   }
 
@@ -213,6 +215,7 @@ export fn transcript_measure_shown(
       measured_count: message_count,
       scroll_y: scroll_y,
       stick_to_bottom: view.stick_to_bottom,
+      edge_clock_ms: view.edge_clock_ms,
       index: built
     },
     shaping: current_shaping,

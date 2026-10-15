@@ -1,0 +1,44 @@
+fn pin_prefix() -> string = "open-as-image\n"
+
+export fn open_as_image_mark(path: string) -> string =
+  pin_prefix() + path
+
+export fn open_as_image_path(primary: string) -> string = do
+  const prefix = pin_prefix()
+  if primary.byte_size() <= prefix.byte_size() then
+    return ""
+  end
+  if primary.byte_substring(0, prefix.byte_size()) != prefix then
+    return ""
+  end
+  return primary.byte_substring(prefix.byte_size(), primary.byte_size() - prefix.byte_size())
+end
+
+fn ends_with(text: string, suffix: string) -> bool = do
+  if text.byte_size() < suffix.byte_size() then
+    return false
+  end
+  return text.byte_substring(text.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+export fn open_as_image_name(name: string) -> bool = do
+  if ends_with(name, ".png") || ends_with(name, ".PNG") then
+    return true
+  end
+  if ends_with(name, ".jpg") || ends_with(name, ".JPG") || ends_with(name, ".jpeg") || ends_with(name, ".JPEG") then
+    return true
+  end
+  if ends_with(name, ".webp") || ends_with(name, ".WEBP") then
+    return true
+  end
+  if ends_with(name, ".mp4") || ends_with(name, ".MP4") || ends_with(name, ".m4v") || ends_with(name, ".M4V") then
+    return true
+  end
+  if ends_with(name, ".mov") || ends_with(name, ".MOV") || ends_with(name, ".mkv") || ends_with(name, ".MKV") then
+    return true
+  end
+  if ends_with(name, ".webm") || ends_with(name, ".WEBM") || ends_with(name, ".avi") || ends_with(name, ".AVI") then
+    return true
+  end
+  return ends_with(name, ".ogv") || ends_with(name, ".OGV")
+end

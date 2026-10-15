@@ -69,6 +69,10 @@ GLAD_HEADLESS=0
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window.cpp")
   RT_SRC+=("$ROOT_DIR/runtime/src/gl/glfw_window_gl.cpp")
+  RT_SRC+=("$ROOT_DIR/runtime/src/gl/clipboard_files.cpp")
+  if [ -f /usr/include/X11/Xlib.h ]; then
+    TEXT_LIBS+=(-lX11)
+  fi
   RT_SRC+=("$ROOT_DIR/runtime/third_party/glad/gl/src/gl.c")
   GLAD_DESKTOP=1
   # shellcheck disable=SC2207

@@ -13,6 +13,7 @@ export type FrameSignature = {
   scroll_offsets: [i32],
   splitter_ratios: [i32],
   list_selected: [i32],
+  list_marks: [i32],
   list_hover_row: i32,
   hover_index: i32,
   selection_owner: i32,
@@ -82,6 +83,7 @@ export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: 
     scroll_offsets: copy_integers(state.scroll_offsets),
     splitter_ratios: copy_integers(state.splitter_ratios),
     list_selected: copy_integers(state.list_selected),
+    list_marks: copy_integers(state.list_marks),
     list_hover_row: state.list_hover_row,
     hover_index: state.hover.index,
     selection_owner: state.selection.owner.index,
@@ -137,6 +139,9 @@ fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
   if integers_equal(previous.list_selected, next.list_selected) == false then
     return true
   end
+  if integers_equal(previous.list_marks, next.list_marks) == false then
+    return true
+  end
   if previous.selection_owner != next.selection_owner then
     return true
   end
@@ -168,6 +173,31 @@ fn paint_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
     return true
   end
   previous.field_scroll_x != next.field_scroll_x
+end
+
+fn marks_follow_cursor(signature: FrameSignature) -> bool = do
+  const marks = signature.list_marks
+  if marks.length() == 0 then
+    return true
+  end
+  if marks.length() != 3 then
+    return false
+  end
+  const owner = marks[0]
+  if owner < 0 || owner >= signature.list_selected.length() then
+    return false
+  end
+  return marks[2] == signature.list_selected[owner]
+end
+
+fn marks_need_full_paint(previous: FrameSignature, next: FrameSignature) -> bool = do
+  if integers_equal(previous.list_marks, next.list_marks) then
+    return false
+  end
+  if marks_follow_cursor(previous) && marks_follow_cursor(next) then
+    return false
+  end
+  return true
 end
 
 export fn frame_signature_hover_only(previous: FrameSignature, next: FrameSignature) -> bool = do
@@ -208,6 +238,9 @@ export fn frame_signature_hover_only(previous: FrameSignature, next: FrameSignat
     return false
   end
   if previous.field_scroll_x != next.field_scroll_x then
+    return false
+  end
+  if marks_need_full_paint(previous, next) then
     return false
   end
   if previous.hover_index != next.hover_index then

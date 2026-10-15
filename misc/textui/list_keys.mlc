@@ -2,19 +2,18 @@ import { Theme } from './theme'
 import {
   WidgetStore,
   WidgetId,
-  kind_is_list_view,
   kind_is_scroll_view,
   widget_id_is_none,
   widget_id_none
 } from './store'
 import { LayoutResult } from './layout_result'
-import { UiState, ui_state_with_list_selected, ui_state_with_scroll_offsets } from './ui_state'
+import { UiState, ui_state_with_field, ui_state_with_scroll_offsets } from './ui_state'
+import { list_cover_names, list_extend_marks, list_marks_target, list_replace_marks } from './list_marks'
 import { UiInput } from './ui_input'
 import {
   list_content_height,
   list_row_height,
-  list_selected_at,
-  list_selected_put
+  list_selected_at
 } from './widget_list'
 import {
   scroll_clamp_offset,
@@ -45,17 +44,18 @@ fn list_count(store: WidgetStore, id: WidgetId) -> i32 = do
   count
 end
 
-fn focused_list(store: WidgetStore, state: UiState) -> WidgetId = do
-  if widget_id_is_none(state.focus) then
-    return widget_id_none()
-  end
-  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
-    return widget_id_none()
-  end
-  if kind_is_list_view(store.nodes[state.focus.index].kind) == false then
-    return widget_id_none()
-  end
-  state.focus
+fn list_names(store: WidgetStore, id: WidgetId) -> [string] = do
+  const names = match store.nodes[id.index].kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindIcon(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+  names
 end
 
 fn scroll_parent(store: WidgetStore, list_id: WidgetId) -> WidgetId = do
@@ -123,11 +123,12 @@ fn reveal_row(
   )
 end
 
-fn place_row(state: UiState, list_id: WidgetId, index: i32) -> UiState =
-  ui_state_with_list_selected(
-    state,
-    list_selected_put(state.list_selected, list_id.index, index)
-  )
+fn place_row(state: UiState, list_id: WidgetId, index: i32, extending: bool) -> UiState = do
+  if extending then
+    return list_extend_marks(state, list_id.index, index)
+  end
+  return list_replace_marks(state, list_id.index, index)
+end
 
 fn moved(
   store: WidgetStore,
@@ -135,17 +136,35 @@ fn moved(
   theme: Theme,
   state: UiState,
   list_id: WidgetId,
-  index: i32
+  index: i32,
+  extending: bool
 ) -> ListKeyResult = do
   if index < 0 then
     return kept(state)
   end
-  const placed = place_row(state, list_id, index)
+  const placed = place_row(state, list_id, index, extending)
   ListKeyResult {
     state: reveal_row(store, layout, theme, placed, list_id, index),
     activate: false,
     back: false
   }
+end
+
+fn list_command(input: UiInput) -> bool = do
+  if input.enter_pressed || input.backspace_pressed then
+    return true
+  end
+  if input.control_down && input.binding_key == "a" then
+    return true
+  end
+  const key = input.binding_key
+  if key == "down" || key == "up" || key == "page_down" || key == "page_up" then
+    return true
+  end
+  if key == "home" || key == "end" || key == "left" || key == "right" then
+    return true
+  end
+  false
 end
 
 fn clamp_move(current: i32, delta: i32, count: i32) -> i32 = do
@@ -175,47 +194,66 @@ export fn update_list_keys(
   state: UiState,
   input: UiInput
 ) -> ListKeyResult = do
-  const list_id = focused_list(store, state)
+  const list_id = list_marks_target(store, state)
   if widget_id_is_none(list_id) then
     return kept(state)
   end
+  if input.control_down && input.binding_key != "a" then
+    return kept(state)
+  end
+  if list_command(input) == false then
+    return kept(state)
+  end
+  let mut keyed = state
+  if keyed.focus.index != list_id.index then
+    keyed = ui_state_with_field(keyed, list_id, 0, 0)
+  end
   if input.control_down then
+    if input.binding_key == "a" then
+      return ListKeyResult {
+        state: list_cover_names(keyed, list_id.index, list_names(store, list_id)),
+        activate: false,
+        back: false
+      }
+    end
     return kept(state)
   end
   const count = list_count(store, list_id)
-  const current = list_selected_at(state.list_selected, list_id.index)
+  const current = list_selected_at(keyed.list_selected, list_id.index)
   if input.binding_key == "down" then
-    return moved(store, layout, theme, state, list_id, clamp_move(current, 1, count))
+    return moved(store, layout, theme, keyed, list_id, clamp_move(current, 1, count), input.shift_down)
   end
   if input.binding_key == "up" then
-    return moved(store, layout, theme, state, list_id, clamp_move(current, 0 - 1, count))
+    return moved(store, layout, theme, keyed, list_id, clamp_move(current, 0 - 1, count), input.shift_down)
   end
   if input.binding_key == "page_down" then
     return moved(
-      store, layout, theme, state, list_id,
-      clamp_move(current, page_rows(store, layout, theme, list_id), count)
+      store, layout, theme, keyed, list_id,
+      clamp_move(current, page_rows(store, layout, theme, list_id), count),
+      input.shift_down
     )
   end
   if input.binding_key == "page_up" then
     return moved(
-      store, layout, theme, state, list_id,
-      clamp_move(current, 0 - page_rows(store, layout, theme, list_id), count)
+      store, layout, theme, keyed, list_id,
+      clamp_move(current, 0 - page_rows(store, layout, theme, list_id), count),
+      input.shift_down
     )
   end
   if input.binding_key == "home" then
-    return moved(store, layout, theme, state, list_id, clamp_move(0 - 1, 1, count))
+    return moved(store, layout, theme, keyed, list_id, clamp_move(0 - 1, 1, count), input.shift_down)
   end
   if input.binding_key == "end" then
-    return moved(store, layout, theme, state, list_id, clamp_move(0 - 1, 0 - 1, count))
+    return moved(store, layout, theme, keyed, list_id, clamp_move(0 - 1, 0 - 1, count), input.shift_down)
   end
   if input.enter_pressed || input.binding_key == "right" then
     if current < 0 || current >= count then
-      return kept(state)
+      return kept(keyed)
     end
-    return ListKeyResult { state: state, activate: true, back: false }
+    return ListKeyResult { state: keyed, activate: true, back: false }
   end
   if input.backspace_pressed || input.binding_key == "left" then
-    return ListKeyResult { state: state, activate: false, back: true }
+    return ListKeyResult { state: keyed, activate: false, back: true }
   end
-  kept(state)
+  kept(keyed)
 end

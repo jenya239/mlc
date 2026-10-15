@@ -68,6 +68,12 @@ export extern fn glfw_gl_clipboard_get() -> string
   = "mlc::gl::glfw_gl_clipboard_get" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_clipboard_set(text: string) -> unit
   = "mlc::gl::glfw_gl_clipboard_set" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_set_files(paths: string, cutting: i32) -> unit
+  = "mlc::gl::glfw_gl_clipboard_set_files" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_files() -> string
+  = "mlc::gl::glfw_gl_clipboard_files" from "mlc/gl/glfw_window_gl.hpp"
+export extern fn glfw_gl_clipboard_files_served() -> string
+  = "mlc::gl::glfw_gl_clipboard_files_served" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_clipboard_test_set(text: string) -> unit
   = "mlc::gl::glfw_gl_clipboard_test_set" from "mlc/gl/glfw_window_gl.hpp"
 export extern fn glfw_gl_mod_ctrl_down() -> i32

@@ -1,0 +1,104 @@
+import { WidgetStore } from './store'
+import { ClipboardBuffer, clipboard_set_clipboard } from './clipboard'
+import { UiState, ui_state_with } from './ui_state'
+import { DirectoryView, open_directory_jailed } from './directory_browse'
+import { file_clipboard_public, file_clipboard_transfer } from './file_clipboard'
+import { path_bar_current } from './path_bar'
+import { focus_is_text_field } from './list_marks'
+import { glfw_gl_clipboard_files, glfw_gl_clipboard_set, glfw_gl_clipboard_set_files } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+
+fn with_clipboard(state: UiState, clipboard: ClipboardBuffer) -> UiState =
+  ui_state_with(
+    state,
+    state.selection,
+    state.grab,
+    state.pointer,
+    state.last_press,
+    clipboard,
+    state.hover
+  )
+
+fn view_of(store: WidgetStore, state: UiState) -> DirectoryView =
+  DirectoryView { store: store, state: state }
+
+fn file_marked(text: string) -> bool =
+  file_clipboard_public(text) != text
+
+fn file_cutting(text: string) -> bool = do
+  if text.byte_size() >= 12 && text.byte_substring(0, 12) == "mlc-file-cut" then
+    return true
+  end
+  false
+end
+
+fn paste_text_resolved(clipboard_text: string, paste_text: string) -> string = do
+  if paste_text == "" then
+    return ""
+  end
+  if file_marked(paste_text) then
+    return paste_text
+  end
+  const offered = glfw_gl_clipboard_files()
+  if offered != "" then
+    return offered
+  end
+  if file_marked(clipboard_text) then
+    if file_clipboard_public(clipboard_text) == paste_text then
+      return clipboard_text
+    end
+  end
+  return paste_text
+end
+
+fn paste_cutting(clipboard_text: string, resolved: string) -> bool = do
+  if file_cutting(resolved) then
+    return true
+  end
+  if file_cutting(clipboard_text) then
+    if file_clipboard_public(clipboard_text) == resolved then
+      return true
+    end
+  end
+  false
+end
+
+export fn file_clipboard_publish(text: string) -> unit = do
+  const paths = file_clipboard_public(text)
+  if paths != text then
+    let mut cutting = 0
+    if file_cutting(text) then
+      cutting = 1
+    end
+    glfw_gl_clipboard_set_files(paths, cutting)
+  else
+    glfw_gl_clipboard_set(text)
+  end
+end
+
+export fn file_clipboard_paste(
+  store: WidgetStore,
+  state: UiState,
+  root: string,
+  paste_text: string
+) -> DirectoryView = do
+  if root == "" || focus_is_text_field(store, state) || state.overlay_open then
+    return view_of(store, state)
+  end
+  const resolved = paste_text_resolved(state.clipboard.clipboard, paste_text)
+  const sources = file_clipboard_public(resolved)
+  if sources == "" then
+    return view_of(store, state)
+  end
+  const cutting = paste_cutting(state.clipboard.clipboard, resolved)
+  const directory = path_bar_current(store)
+  const count = file_clipboard_transfer(root, directory, sources, cutting)
+  if count == 0 then
+    return view_of(store, state)
+  end
+  let mut next = state
+  if cutting then
+    next = with_clipboard(state, clipboard_set_clipboard(state.clipboard, ""))
+    glfw_gl_clipboard_set("")
+  end
+  open_directory_jailed(store, next, directory, root)
+end

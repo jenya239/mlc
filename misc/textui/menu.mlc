@@ -24,6 +24,7 @@ import { UiEvent, ui_event_button_clicked, ui_event_row_activated } from './ui_e
 import { UiInput } from './ui_input'
 import { UiState, PointerSession, ui_state_with_list_selected } from './ui_state'
 import { list_index_at, list_selected_at, list_selected_put } from './widget_list'
+import { list_marks_arm } from './list_marks'
 import {
   OverlayView,
   overlay_dismiss,
@@ -99,6 +100,7 @@ export fn attach_file_menu(store: WidgetStore) -> WidgetStore = do
   rows.push("Rename")
   rows.push("Delete")
   rows.push("New folder")
+  rows.push("Open as")
   return widget_store_add_list_view(next, layer, ListData { texts: rows }, 0, true)
 end
 
@@ -312,7 +314,14 @@ export fn menu_apply(store: WidgetStore, state: UiState, events: [UiEvent]) -> O
   while index < events.length() do
     const event = events[index]
     if event.activated && widget_id_equals(event.widget, menu_list_id(view.store)) then
-      view = overlay_dismiss(view.store, view.state)
+      const list_id = menu_list_id(view.store)
+      const choice = list_row_text(
+        view.store.nodes[list_id.index].kind,
+        list_selected_at(view.state.list_selected, list_id.index)
+      )
+      if choice != "Open as" then
+        view = overlay_dismiss(view.store, view.state)
+      end
     end
     index = index + 1
   end
@@ -373,7 +382,8 @@ export fn menu_host_step(
   if file_row(list_row_text(store.nodes[hit.index].kind, row)) == false then
     return host_unchanged(store, state, right_down, target_list, target_row)
   end
-  const opened = menu_open(store, state, x, y)
+  const armed = list_marks_arm(state, hit.index, row)
+  const opened = menu_open(store, armed, x, y)
   return MenuHost {
     store: opened.store,
     state: opened.state,

@@ -1,0 +1,22 @@
+import { WidgetStore } from './store'
+import { UiEvent } from './ui_event'
+import { UiInput } from './ui_input'
+import { UiState } from './ui_state'
+import { OverlayView } from './overlay'
+import { DialogTarget } from './dialog'
+import { file_clipboard_offer } from './file_clipboard'
+import { file_clipboard_paste } from './file_clipboard_os'
+import { open_as_host } from './open_as'
+
+export fn file_commands(
+  store: WidgetStore,
+  state: UiState,
+  input: UiInput,
+  events: [UiEvent],
+  target: DialogTarget,
+  root: string
+) -> OverlayView = do
+  const offered = file_clipboard_offer(store, state, input)
+  const pasted = file_clipboard_paste(store, offered, root, input.paste_text)
+  return open_as_host(pasted.store, pasted.state, events, target, root)
+end

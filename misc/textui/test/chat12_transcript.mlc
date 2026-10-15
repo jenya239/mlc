@@ -40,6 +40,7 @@ fn unstick(view: TranscriptView, scroll_y: i32) -> TranscriptView =
     measured_count: view.measured_count,
     scroll_y: scroll_y,
     stick_to_bottom: 0,
+    edge_clock_ms: view.edge_clock_ms,
     index: view.index
   }
 

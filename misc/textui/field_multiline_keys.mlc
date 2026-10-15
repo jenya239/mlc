@@ -18,7 +18,20 @@ fn single_line_text(text: string) -> string = do
   return text
 end
 
+fn file_clipboard_mark(text: string) -> bool = do
+  if text.byte_size() >= 14 && text.byte_substring(0, 14) == "mlc-file-copy\n" then
+    return true
+  end
+  if text.byte_size() >= 13 && text.byte_substring(0, 13) == "mlc-file-cut\n" then
+    return true
+  end
+  false
+end
+
 export fn paste_text_for_field(multiline: bool, text: string) -> string = do
+  if file_clipboard_mark(text) then
+    return ""
+  end
   if multiline == false then
     return single_line_text(text)
   end

@@ -15,6 +15,7 @@ import { TextShapingState, text_shaping_new } from '../gui/text_shaping'
 import { SubmitResources, submit_create, submit_destroy } from './submit'
 import { submit_painted_layers } from './submit_layers'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
+import { ChatModel } from './chat_model'
 import { chat_wait_seconds } from './chat_session'
 import { ChatWorld, chat_world_open } from './chat_world'
 import { pane_conversations } from './chat_roster'
@@ -75,6 +76,16 @@ fn world_dismiss_picker(world: ChatWorld) -> ChatWorld =
     dismiss_picker: 1
   }
 
+fn chat_frame_wait_seconds(model: ChatModel, dragging: i32) -> f64 = do
+  let mut wait = chat_wait_seconds(model)
+  if dragging != 0 then
+    if wait < 0.0 || wait > 0.016 then
+      wait = 0.016
+    end
+  end
+  wait
+end
+
 export fn chat_frames(
   resources: SubmitResources,
   shaping: TextShapingState,
@@ -99,7 +110,7 @@ export fn chat_frames(
   let mut running = true
   while running && glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
-      host_wait_for_input(chat_wait_seconds(world.model))
+      host_wait_for_input(chat_frame_wait_seconds(world.model, world.selection.dragging))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0

@@ -14,9 +14,9 @@ import { field_scroll_to_caret, widget_store_set_field_data } from './widget_fie
 import {
   UiState,
   ui_state_with,
-  ui_state_with_field,
-  ui_state_with_field_revision
+  ui_state_with_field
 } from './ui_state'
+import { ui_state_with_field_revision } from './ui_state_field'
 
 export type FieldKeyResult = {
   store: WidgetStore,

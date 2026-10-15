@@ -1,0 +1,221 @@
+import {
+  WidgetId,
+  WidgetStore,
+  kind_is_list_view,
+  kind_is_text_field,
+  widget_id_is_none,
+  widget_id_none
+} from './store'
+import { UiState } from './ui_state'
+import { list_row_marked, list_selected_at, list_selected_put } from './widget_list'
+
+fn with_selection(state: UiState, owner: i32, cursor: i32, marks: [i32]) -> UiState =
+  UiState {
+    selection: state.selection,
+    grab: state.grab,
+    pointer: state.pointer,
+    last_press: state.last_press,
+    clipboard: state.clipboard,
+    hover: state.hover,
+    scroll_offsets: state.scroll_offsets,
+    pick_enabled: state.pick_enabled,
+    inspected: state.inspected,
+    list_selected: list_selected_put(state.list_selected, owner, cursor),
+    list_marks: marks,
+    list_hover_row: state.list_hover_row,
+    splitter_ratios: state.splitter_ratios,
+    focus: state.focus,
+    field_caret: state.field_caret,
+    field_scroll_x: state.field_scroll_x,
+    field_revision: state.field_revision,
+    listing_revision: state.listing_revision,
+    overlay_open: state.overlay_open,
+    overlay_revision: state.overlay_revision
+  }
+
+fn only_marks(owner: i32, row: i32) -> [i32] = do
+  let mut marks: [i32] = []
+  marks.push(owner)
+  marks.push(row)
+  marks.push(row)
+  return marks
+end
+
+fn anchor_of(state: UiState, owner: i32) -> i32 = do
+  if state.list_marks.length() >= 2 && state.list_marks[0] == owner then
+    return state.list_marks[1]
+  end
+  return list_selected_at(state.list_selected, owner)
+end
+
+export fn list_replace_marks(state: UiState, owner: i32, row: i32) -> UiState =
+  with_selection(state, owner, row, only_marks(owner, row))
+
+export fn list_extend_marks(state: UiState, owner: i32, row: i32) -> UiState = do
+  let mut anchor = anchor_of(state, owner)
+  if anchor < 0 then
+    anchor = row
+  end
+  let mut low = anchor
+  let mut high = row
+  if anchor > row then
+    low = row
+    high = anchor
+  end
+  let mut marks: [i32] = []
+  marks.push(owner)
+  marks.push(anchor)
+  let mut cursor = low
+  while cursor <= high do
+    marks.push(cursor)
+    cursor = cursor + 1
+  end
+  return with_selection(state, owner, row, marks)
+end
+
+export fn list_toggle_marks(state: UiState, owner: i32, row: i32) -> UiState = do
+  if state.list_marks.length() < 3 || state.list_marks[0] != owner then
+    return list_replace_marks(state, owner, row)
+  end
+  let mut marks: [i32] = []
+  marks.push(owner)
+  marks.push(state.list_marks[1])
+  let mut found = false
+  let mut index = 2
+  while index < state.list_marks.length() do
+    if state.list_marks[index] == row then
+      found = true
+    else
+      marks.push(state.list_marks[index])
+    end
+    index = index + 1
+  end
+  if found == false then
+    marks.push(row)
+  end
+  if marks.length() < 3 then
+    let mut empty: [i32] = []
+    return with_selection(state, owner, 0 - 1, empty)
+  end
+  return with_selection(state, owner, row, marks)
+end
+
+export fn list_cover_names(state: UiState, owner: i32, texts: [string]) -> UiState = do
+  let mut marks: [i32] = []
+  marks.push(owner)
+  marks.push(0)
+  let mut index = 0
+  while index < texts.length() do
+    const name = texts[index]
+    if name != "" && name != ".." then
+      marks.push(index)
+    end
+    index = index + 1
+  end
+  if marks.length() < 3 then
+    return state
+  end
+  marks.set(1, marks[2])
+  return with_selection(state, owner, marks[marks.length() - 1], marks)
+end
+
+export fn list_press_selection(
+  state: UiState,
+  owner: i32,
+  row: i32,
+  control_down: bool,
+  shift_down: bool
+) -> UiState = do
+  if shift_down then
+    return list_extend_marks(state, owner, row)
+  end
+  if control_down then
+    return list_toggle_marks(state, owner, row)
+  end
+  return list_replace_marks(state, owner, row)
+end
+
+export fn list_drag_selection(
+  state: UiState,
+  owner: i32,
+  row: i32,
+  control_down: bool,
+  shift_down: bool
+) -> UiState = do
+  if control_down && shift_down == false then
+    return state
+  end
+  if shift_down then
+    return list_extend_marks(state, owner, row)
+  end
+  return list_replace_marks(state, owner, row)
+end
+
+export fn list_marks_arm(state: UiState, owner: i32, row: i32) -> UiState = do
+  if row < 0 then
+    return state
+  end
+  if state.list_marks.length() >= 3 && state.list_marks[0] == owner then
+    if list_row_marked(state.list_marks, owner, row, 0 - 1) then
+      return state
+    end
+  end
+  return list_replace_marks(state, owner, row)
+end
+
+fn focus_is_list(store: WidgetStore, state: UiState) -> bool = do
+  if widget_id_is_none(state.focus) then
+    return false
+  end
+  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
+    return false
+  end
+  return kind_is_list_view(store.nodes[state.focus.index].kind)
+end
+
+export fn focus_is_text_field(store: WidgetStore, state: UiState) -> bool = do
+  if widget_id_is_none(state.focus) then
+    return false
+  end
+  if state.focus.index < 0 || state.focus.index >= store.nodes.length() then
+    return false
+  end
+  return kind_is_text_field(store.nodes[state.focus.index].kind)
+end
+
+export fn list_marks_target(store: WidgetStore, state: UiState) -> WidgetId = do
+  if focus_is_list(store, state) then
+    return state.focus
+  end
+  if widget_id_is_none(state.focus) == false then
+    return widget_id_none()
+  end
+  if state.list_marks.length() < 1 then
+    return widget_id_none()
+  end
+  const owner = state.list_marks[0]
+  if owner < 0 || owner >= store.nodes.length() then
+    return widget_id_none()
+  end
+  if kind_is_list_view(store.nodes[owner].kind) == false then
+    return widget_id_none()
+  end
+  return store.nodes[owner].id
+end
+
+export fn list_marked_rows(state: UiState, owner: i32) -> [i32] = do
+  let mut rows: [i32] = []
+  if state.list_marks.length() >= 3 && state.list_marks[0] == owner then
+    let mut index = 2
+    while index < state.list_marks.length() do
+      rows.push(state.list_marks[index])
+      index = index + 1
+    end
+    return rows
+  end
+  const cursor = list_selected_at(state.list_selected, owner)
+  if cursor >= 0 then
+    rows.push(cursor)
+  end
+  return rows
+end

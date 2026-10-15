@@ -67,6 +67,20 @@ export fn list_selected_put(selected: [i32], index: i32, value: i32) -> [i32] = 
   return next
 end
 
+export fn list_row_marked(marks: [i32], owner: i32, row: i32, cursor: i32) -> bool = do
+  if marks.length() < 3 || marks[0] != owner then
+    return row == cursor
+  end
+  let mut index = 2
+  while index < marks.length() do
+    if marks[index] == row then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
 export fn list_index_at(rect: Rect, theme: Theme, row_count: i32, y: i32) -> i32 = do
   if row_count <= 0 then
     return 0 - 1
@@ -168,7 +182,7 @@ export fn paint_list_rows(
       if state.hover.index == node_index then
         ink = readable_color(theme.foreground)
       end
-      if index == selected then
+      if list_row_marked(state.list_marks, node_index, index, selected) then
         let mut fill = theme.list_inactive
         if state.focus.index == node_index then
           fill = theme.list_selected

@@ -88,6 +88,7 @@ fn state_without_field_selection(state: UiState) -> UiState =
     pick_enabled: state.pick_enabled,
     inspected: state.inspected,
     list_selected: state.list_selected,
+    list_marks: state.list_marks,
     list_hover_row: state.list_hover_row,
     splitter_ratios: state.splitter_ratios,
     focus: state.focus,
@@ -259,6 +260,7 @@ export fn chat_frame_run(
       measured_count: 0,
       scroll_y: view.scroll_y,
       stick_to_bottom: view.stick_to_bottom,
+      edge_clock_ms: view.edge_clock_ms,
       index: view.index
     }
   end

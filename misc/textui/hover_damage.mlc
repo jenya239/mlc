@@ -12,7 +12,7 @@ import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp, TextOp } from './draw_op'
 import { FrameSignature, frame_signature_hover_only } from './frame_request'
 import { UiState } from './ui_state'
-import { list_row_height, list_row_inset, list_selected_at, list_text_dx } from './widget_list'
+import { list_row_height, list_row_inset, list_row_marked, list_selected_at, list_text_dx } from './widget_list'
 import { list_icon_name, paint_named_icon } from './icon'
 import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
 import { menu_list_id } from './menu'
@@ -219,9 +219,11 @@ fn row_fill_color(
   rest: ColorRgba,
   row: i32,
   hover_row: i32,
-  selected_row: i32
+  selected_row: i32,
+  list_index: i32,
+  marks: [i32]
 ) -> ColorRgba = do
-  if row == selected_row then
+  if list_row_marked(marks, list_index, row, selected_row) then
     return theme.list_selected
   end
   if row == hover_row then
@@ -284,7 +286,7 @@ fn paint_list_change(
     if rect_is_empty(fill) == false then
       patched.push(OpFillRect(FillRectOp {
         rect: fill,
-        color: row_fill_color(theme, rest, row, new_hover, new_selected)
+        color: row_fill_color(theme, rest, row, new_hover, new_selected, list_index, next.list_marks)
       }))
     end
     index = index + 1

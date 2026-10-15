@@ -10,7 +10,8 @@ import {
   glfw_gl_take_text,
   glfw_gl_key_backspace_down,
   glfw_gl_key_enter_down,
-  glfw_gl_clipboard_get
+  glfw_gl_clipboard_get,
+  glfw_gl_clipboard_files
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { UiInput } from './ui_input'
 
@@ -82,6 +83,9 @@ export fn host_poll_input(buttons: HostButtons, now_ms: i32) -> HostPoll = do
   let mut paste_text = ""
   if key == "v" && control_down then
     paste_text = glfw_gl_clipboard_get()
+    if paste_text == "" then
+      paste_text = glfw_gl_clipboard_files()
+    end
   end
   const wheel = wheel_sample(buttons.scroll_remainder, glfw_gl_take_scroll_y())
   return HostPoll {
