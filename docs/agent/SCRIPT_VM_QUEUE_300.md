@@ -470,7 +470,7 @@
 - depends: 225, 227
 - goal: Подтвердить, что добавление float не ухудшило `B1.ns_per_insn` и `B3.ns_per_call` сверх допуска queue200
 - allowed_files: `scripts/run_script_vm_float_bench.rb`
-- contract: Порог — `script_vm/tests/bench_baseline.txt` и `baseline:50`, как в `scripts/run_script_vm_queue_gate.rb`: `B1.ns_per_insn` не выше 176×50, `B3.ns_per_call` не выше 8023×50. Числа 35 и 1242 — снимок шага 147 от 2026-10-12. 2026-10-15 то же дерево до float-диспетча (`7065c2e1`, тот же `compiler/out/mlcc`) дало B1 85 и B3 3312, дерево с float — B1 71–81 и B3 2739–2904. Порог +20% от 35 и 1242 не использовать.
+- contract: Порог — `script_vm/tests/bench_baseline.txt` и `baseline:50`, как в `scripts/run_script_vm_queue_gate.rb`: `B1.ns_per_insn` и `B3.ns_per_call` не выше `baseline * 50 / 100`, то есть B1 не выше 88, B3 не выше 4011, как считает `scripts/run_script_vm_bench.rb --max-ratio ...=baseline:50`. Числа 35 и 1242 — снимок шага 147 от 2026-10-12. 2026-10-15 то же дерево до float-диспетча (`7065c2e1`, тот же `compiler/out/mlcc`) дало B1 85 и B3 3312, дерево с float — B1 71–81 и B3 2739–2904. Порог +20% от 35 и 1242 не использовать.
 - red: none
 - green: none
 - gate: `ruby scripts/run_script_vm_float_bench.rb`
