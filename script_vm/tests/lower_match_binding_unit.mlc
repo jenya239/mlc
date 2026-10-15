@@ -1,0 +1,66 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_match_binding_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn one_argument(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn match_source() -> string =
+  "export fn f(scrutinee: i32) -> i32 = match scrutinee do n -> n + 1 end"
+
+fn expect_binding(argument: i32, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(match_source())
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "f", one_argument(argument))
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if decoded_integer(called.raw) != expected then
+    return report_failure(label + " value=" + decoded_integer(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  let mut failure_count = 0
+  failure_count = failure_count + expect_binding(4, 5, "match_binding_four")
+  failure_count = failure_count + expect_binding(0, 1, "match_binding_zero")
+  if failure_count != 0 then
+    return 1
+  end
+  println("[script_vm] lower_match_binding_unit ok")
+  0
+end
