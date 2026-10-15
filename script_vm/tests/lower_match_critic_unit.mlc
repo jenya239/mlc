@@ -1,0 +1,79 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_match_critic_unit] FAIL: " + label)
+  1
+end
+
+fn integer_raw(number: i32) -> i64 = value_encode(ValueInt32(number)).raw
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn nested_source() -> string =
+  "export fn nested(outer: i32, inner: i32) -> i32 = match outer do 1 -> match inner do 2 -> 20 _ -> 0 end _ -> 5 end"
+
+fn early_source() -> string =
+  "export fn early(scrutinee: i32) -> i32 = do\nmatch scrutinee do\n1 -> return 7\n_ -> 0\nend\n3\nend"
+
+fn two_arguments(first: i32, second: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(first))
+  arguments.push(integer_raw(second))
+  arguments
+end
+
+fn one_argument(number: i32) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(integer_raw(number))
+  arguments
+end
+
+fn expect_export(source: string, export_name: string, arguments: [i64], expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
+  end
+  const called = emb_call_export_bytes(lowered.bytes, export_name, arguments)
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if decoded_integer(called.raw) != expected then
+    return report_failure(label + " value=" + decoded_integer(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  let mut failure_count = 0
+  failure_count = failure_count + expect_export(nested_source(), "nested", two_arguments(1, 2), 20, "nested_match_taken")
+  failure_count = failure_count + expect_export(nested_source(), "nested", two_arguments(1, 0), 0, "nested_match_inner_wild")
+  failure_count = failure_count + expect_export(nested_source(), "nested", two_arguments(0, 2), 5, "nested_match_outer_wild")
+  failure_count = failure_count + expect_export(early_source(), "early", one_argument(1), 7, "match_return_taken")
+  failure_count = failure_count + expect_export(early_source(), "early", one_argument(0), 3, "match_return_skipped")
+  if failure_count != 0 then
+    return 1
+  end
+  println("[script_vm] lower_match_critic_unit ok")
+  0
+end
