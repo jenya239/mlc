@@ -1,8 +1,8 @@
-current_step: 249
+current_step: 250
 status: ready
-last_result: done step 249: MAKE_CLOSURE 23, GET_UPVAL 24, SET_UPVAL 25 exist; lowerer emits only empty MAKE_CLOSURE
-last_verify: test -f docs/agent/notes/closure_bytecode_survey.md => GATE_EXIT:0
-next_step: 250
+last_result: done step 250: lambda form is (x: i32) => x + 1 as ExprLambda; value is ValueHeapRef closure
+last_verify: gate none => docs/agent/notes/lambda_syntax_decision.md
+next_step: 251
 consult_count: 0
 consult_response:
 consult_verdict:
