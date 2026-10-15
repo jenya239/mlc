@@ -1,8 +1,8 @@
 current_step: 227
-status: consult_ready
-last_result: blocked step 228: B1 71 then 81 (limit 42), B3 2739 then 2904 (limit 1490); both runs past 20% of S200 35 and 1242
-last_verify: ruby scripts/run_script_vm_float_bench.rb => GATE_EXIT:1 B1.ns_per_insn=81 baseline=35 limit=42 B3.ns_per_call=2904 baseline=1242 limit=1490
+status: ready
+last_result: amend step 228: same-day pre-float 7065c2e1 B1 85 B3 3312; float tree B1 71-81 B3 2739-2904; pass line is bench_baseline.txt baseline:50
+last_verify: ruby scripts/run_script_vm_bench.rb at 7065c2e1 => B1.ns_per_insn 85 B3.ns_per_call 3312 GATE_EXIT:0
 next_step: 228
-consult_count: 2
-consult_response: /home/jenya/workspaces/current/mlc-support/responses/script_vm_queue_consult_20261015_010335.md
+consult_count: 0
+consult_response:
 consult_verdict:

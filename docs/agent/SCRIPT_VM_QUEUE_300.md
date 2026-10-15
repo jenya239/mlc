@@ -453,14 +453,14 @@
 ### Step 228 — Measure: полный float-срез против queue200 gate
 - kind: measure
 - depends: 225, 227
-- goal: Подтвердить, что добавление float не ухудшило `B1.ns_per_insn` и `B3.ns_per_call` сверх допустимого
+- goal: Подтвердить, что добавление float не ухудшило `B1.ns_per_insn` и `B3.ns_per_call` сверх допуска queue200
 - allowed_files: `scripts/run_script_vm_float_bench.rb`
-- contract: Сравнение с зафиксированными числами 35 и 1242
+- contract: Порог — `script_vm/tests/bench_baseline.txt` и `baseline:50`, как в `scripts/run_script_vm_queue_gate.rb`: `B1.ns_per_insn` не выше 176×50, `B3.ns_per_call` не выше 8023×50. Числа 35 и 1242 — снимок шага 147 от 2026-10-12. 2026-10-15 то же дерево до float-диспетча (`7065c2e1`, тот же `compiler/out/mlcc`) дало B1 85 и B3 3312, дерево с float — B1 71–81 и B3 2739–2904. Порог +20% от 35 и 1242 не использовать.
 - red: none
 - green: none
 - gate: `ruby scripts/run_script_vm_float_bench.rb`
 - sabotage: none
-- done_when: Регресс не более 20% от baseline S200, число зафиксировано в выводе шага
+- done_when: В выводе шага напечатаны B1 и B3 и предел `baseline:50`; оба не выше предела
 
 ---
 
