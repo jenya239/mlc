@@ -707,6 +707,18 @@
 - sabotage: none
 - done_when: Тест зелёный
 
+### Step 247a — Measure: бисекция регрессии match-среза
+- kind: measure
+- depends: 247
+- goal: Перебором коммитов 229–247 найти шаг, на котором `B1.ns_per_insn` или `B3.ns_per_call` впервые превысили порог `baseline:50` (B1 88, B3 4011). Коммит `506dad60` на этом `compiler/out/mlcc` даёт B1 65 и B3 2212. Текущее дерево даёт B1 111 и B3 3756. Процент не поднимать. Код диспетча не менять до результата бисекции
+- allowed_files: `docs/agent/SCRIPT_VM_QUEUE_300.md`
+- contract: Тот же `compiler/out/mlcc` и `ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50`. `compiler/build.sh` не запускать. Карточка правки после бисекции называет файл: точка входа `script_vm/lower/lower_match.mlc`; `script_vm/executor.mlc` или `script_vm/verifier.mlc` только если бисекция укажет на цепочку сравнений
+- red: none
+- green: none
+- gate: `ruby scripts/run_script_vm_bench.rb --max-ratio B1.ns_per_insn=baseline:50 --max-ratio B3.ns_per_call=baseline:50`
+- sabotage: none
+- done_when: В `last_verify` назван первый коммит диапазона 229–247, где B1 выше 88 или B3 выше 4011, и предыдущий коммит ещё держит оба числа не выше предела
+
 ### Step 248 — Green: включение match-тестов в общий gate
 - kind: green
 - depends: 245, 247
