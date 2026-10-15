@@ -1,8 +1,8 @@
-current_step: 230
+current_step: 231
 status: ready
-last_result: done step 230: match slice is PatternInt, PatternBool, PatternWild, PatternIdent; record destructure and nested patterns excluded
-last_verify: gate none => docs/agent/notes/match_scope_decision.md
-next_step: 231
+last_result: done step 231: match lowers to EQ + JUMP_IF_FALSE + JUMP, no new opcode
+last_verify: gate none => docs/agent/notes/match_lowering_strategy.md
+next_step: 232
 consult_count: 0
 consult_response:
 consult_verdict:
