@@ -17,6 +17,7 @@ import {
 import { ProtoBuilder, proto_builder_register_release_to } from './lower_builder'
 import { diagnostic_at, emit_instruction, types_agree } from './lower_control'
 import { lower_type_for_record_field, record_field_counts_as_nested, record_field_counts_as_plain } from './lower_float_records'
+import { bind_record_methods } from './lower_method'
 import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
 import { LowerInt, LowerRecord, LowerRecordLayout, LowerType } from './lower_types'
 fn record_header_name(type_name: string) -> string = "*record*" + type_name
@@ -152,6 +153,7 @@ fn install_one_layout(scope: ref mut LowerScope, layout: LowerRecordLayout) -> u
     false
   )
   install_layout_fields(scope, layout.type_name, layout.field_names, layout.field_types)
+  bind_record_methods(scope, layout.type_name)
 end
 export fn install_record_layouts(scope: ref mut LowerScope, layouts: [LowerRecordLayout]) -> unit = do
   let mut index = 0
@@ -160,11 +162,7 @@ export fn install_record_layouts(scope: ref mut LowerScope, layouts: [LowerRecor
     index = index + 1
   end
 end
-export fn record_type_name(value_type: LowerType) -> string =
-  match value_type {
-    LowerRecord(name) => name,
-    _ => ""
-  }
+export fn record_type_name(value_type: LowerType) -> string = match value_type { LowerRecord(name) => name, _ => "" }
 export fn same_record_type(left: LowerType, right: LowerType) -> bool = do
   let left_name = record_type_name(left)
   let right_name = record_type_name(right)

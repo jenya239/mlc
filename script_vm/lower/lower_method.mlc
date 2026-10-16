@@ -1,0 +1,181 @@
+import {
+  Decl,
+  DeclExported,
+  DeclExtend,
+  DeclFn,
+  Expr,
+  ExprIdent,
+  ExprMethod,
+  Param,
+  TypeExpr
+} from '../../compiler/frontend/ast'
+import {
+  ProtoBuilder,
+  proto_builder_register_mark,
+  proto_builder_register_release_to
+} from './lower_builder'
+import {
+  call_argument_register,
+  call_parameter_count,
+  call_signature_proto_index,
+  call_signature_result_type,
+  finish_call_instruction,
+  lower_type_of,
+  prepare_call_block
+} from './lower_call'
+import { move_to_target } from './lower_control'
+import { LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
+import { LowerCallSignature, LowerRecord, LowerType } from './lower_types'
+// Invariants:
+// - a method is a top-level function whose first parameter is self
+// - the call passes the receiver as the first CALL argument
+// - a method binding exists only after the record layout pass
+export type MethodAttempt =
+  | MethodHandled(LowerType)
+  | MethodIgnored
+fn empty_declarations() -> [Shared<Decl>] = do
+  let mut declarations: [Shared<Decl>] = []
+  declarations
+end
+fn empty_signatures() -> [LowerCallSignature] = do
+  let mut signatures: [LowerCallSignature] = []
+  signatures
+end
+fn parameter_types(parameters: [Shared<Param>]) -> [LowerType] = do
+  let mut collected: [LowerType] = []
+  let mut index = 0
+  while index < parameters.length() do
+    collected.push(lower_type_of(parameters[index].type_value))
+    index = index + 1
+  end
+  collected
+end
+fn append_function_signature(signatures: [LowerCallSignature], name: string, parameters: [Shared<Param>], result_type: Shared<TypeExpr>) -> [LowerCallSignature] = do
+  let mut copied = signatures
+  copied.push(LowerCallSignature {
+    name: name,
+    proto_index: signatures.length(),
+    parameter_types: parameter_types(parameters),
+    result_type: lower_type_of(result_type)
+  })
+  copied
+end
+fn append_method_signatures(signatures: [LowerCallSignature], methods: [Shared<Decl>]) -> [LowerCallSignature] = do
+  let mut collected = signatures
+  let mut index = 0
+  while index < methods.length() do
+    collected = append_one_signature(collected, methods[index])
+    index = index + 1
+  end
+  collected
+end
+fn append_one_signature(signatures: [LowerCallSignature], declaration: Shared<Decl>) -> [LowerCallSignature] =
+  match declaration {
+    DeclExported(inner) => append_one_signature(signatures, inner),
+    DeclFn(name, _, _, parameters, result_type, _, _) =>
+      append_function_signature(signatures, name, parameters, result_type),
+    DeclExtend(_, _, methods, _) => append_method_signatures(signatures, methods),
+    _ => signatures
+  }
+export fn collect_program_signatures(declarations: [Shared<Decl>]) -> [LowerCallSignature] = do
+  let mut signatures = empty_signatures()
+  let mut index = 0
+  while index < declarations.length() do
+    signatures = append_one_signature(signatures, declarations[index])
+    index = index + 1
+  end
+  signatures
+end
+export fn extend_methods(declaration: Shared<Decl>) -> [Shared<Decl>] =
+  match declaration {
+    DeclExtend(_, _, methods, _) => methods,
+    _ => empty_declarations()
+  }
+fn call_prefix(type_name: string) -> string = "*call*" + type_name + "_"
+fn name_starts_with(name: string, prefix: string) -> bool =
+  name.length() >= prefix.length() && name.substring(0, prefix.length()) == prefix
+fn contains_hash(text: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < text.length() && !found do
+    if text.substring(index, 1) == "#" then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+fn bind_one_method(scope: ref mut LowerScope, type_name: string, binding_name: string, encoded_slot: i32) -> unit = do
+  let prefix = call_prefix(type_name)
+  if name_starts_with(binding_name, prefix) then
+    let suffix = binding_name.substring(prefix.length(), binding_name.length() - prefix.length())
+    if suffix.length() > 0 && !contains_hash(suffix) then
+      lower_scope_define(scope, "*method*" + type_name + "#" + suffix, scope.names[encoded_slot].register_index, scope.names[encoded_slot].value_type, false)
+    end
+  end
+end
+export fn bind_record_methods(scope: ref mut LowerScope, type_name: string) -> unit = do
+  let mut index = 0
+  let limit = scope.names.length()
+  while index < limit do
+    bind_one_method(scope, type_name, scope.names[index].name, index)
+    index = index + 1
+  end
+end
+fn receiver_register(scope: ref mut LowerScope, receiver_name: string) -> i32 = do
+  let slot = lower_scope_lookup(scope, receiver_name)
+  if slot < 0 then
+    0 - 1
+  else
+    scope.names[slot].register_index
+  end
+end
+fn local_record_name(scope: ref mut LowerScope, receiver_name: string) -> string = do
+  let slot = lower_scope_lookup(scope, receiver_name)
+  if slot < 0 then
+    ""
+  else if scope.names[slot].register_index < 0 then
+    ""
+  else
+    match scope.names[slot].value_type {
+      LowerRecord(type_name) => type_name,
+      _ => ""
+    }
+  end
+end
+fn emit_self_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, function_name: string, source_register: i32, target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let base = prepare_call_block(builder, call_signature_proto_index(scope, function_name), 1)
+  move_to_target(builder, call_argument_register(base, 0), source_register)
+  finish_call_instruction(builder, target, base, 1)
+  proto_builder_register_release_to(builder, mark)
+  call_signature_result_type(scope, function_name)
+end
+fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver_name: string, method_name: string, target: i32) -> MethodAttempt = do
+  let type_name = local_record_name(scope, receiver_name)
+  let function_name = type_name + "_" + method_name
+  if type_name == "" then
+    MethodIgnored
+  else if lower_scope_lookup(scope, "*method*" + type_name + "#" + method_name) < 0 then
+    MethodIgnored
+  else if call_parameter_count(scope, function_name) != 1 then
+    MethodIgnored
+  else
+    MethodHandled(emit_self_call(scope, builder, function_name, receiver_register(scope, receiver_name), target))
+  end
+end
+fn lower_method_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver: Shared<Expr>, method_name: string, arguments: [Shared<Expr>], target: i32) -> MethodAttempt =
+  if arguments.length() != 0 then
+    MethodIgnored
+  else
+    match receiver {
+      ExprIdent(receiver_name, _) => lower_bound_method(scope, builder, receiver_name, method_name, target),
+      _ => MethodIgnored
+    }
+  end
+export fn lower_method_try(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> MethodAttempt =
+  match expression {
+    ExprMethod(receiver, method_name, arguments, _) =>
+      lower_method_expression(scope, builder, receiver, method_name, arguments, target),
+    _ => MethodIgnored
+  }

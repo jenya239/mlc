@@ -33,10 +33,10 @@ import {
   proto_builder_register_allocate
 } from './lower_builder'
 import {
-  collect_call_signatures,
   install_call_signatures,
   lower_type_of
 } from './lower_call'
+import { collect_program_signatures, extend_methods } from './lower_method'
 import { diagnostic_at } from './lower_control'
 import {
   LowerDiagnosticSink,
@@ -308,6 +308,36 @@ fn consider_inner(
     _ => consider_unsupported(walk, inner)
   }
 
+fn consider_method_declaration(
+  walk: LowerWalk,
+  sink: ref mut LowerDiagnosticSink,
+  signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
+  declaration: Shared<Decl>
+) -> LowerWalk =
+  match declaration {
+    DeclFn(name, type_parameters, _, parameters, result_type, body, _) =>
+      consider_function(walk, sink, signatures, layouts, name, type_parameters, parameters, result_type, body, plain_function_is_exported()),
+    _ => walk
+  }
+
+fn consider_extend_methods(
+  walk: LowerWalk,
+  sink: ref mut LowerDiagnosticSink,
+  signatures: [LowerCallSignature],
+  layouts: [LowerRecordLayout],
+  declaration: Shared<Decl>
+) -> LowerWalk = do
+  let methods = extend_methods(declaration)
+  let mut current = walk
+  let mut index = 0
+  while index < methods.length() do
+    current = consider_method_declaration(current, sink, signatures, layouts, methods[index])
+    index = index + 1
+  end
+  current
+end
+
 fn consider_declaration(
   walk: LowerWalk,
   sink: ref mut LowerDiagnosticSink,
@@ -323,6 +353,8 @@ fn consider_declaration(
       consider_classified(walk, classify_type_declaration(declaration), source_span),
     DeclTrait(_, _, _, source_span) =>
       consider_classified(walk, "unsupported_trait", source_span),
+    DeclExtend(_, _, _, _) =>
+      consider_extend_methods(walk, sink, signatures, layouts, declaration),
     _ => consider_unsupported(walk, declaration)
   }
 
@@ -339,7 +371,7 @@ fn result_bytes(diagnostics: [LowerDiagnostic], walk: LowerWalk) -> [i32] =
   end
 
 fn lower_declarations(declarations: [Shared<Decl>]) -> LowerResult = do
-  let signatures = collect_call_signatures(declarations)
+  let signatures = collect_program_signatures(declarations)
   let layouts = collect_record_layouts(declarations)
   let mut sink = lower_diagnostic_sink_new()
   let mut walk = empty_walk()
