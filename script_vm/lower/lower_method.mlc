@@ -35,6 +35,7 @@ import { ValueInt32, value_encode } from '../value'
 // - the call passes the receiver as the first CALL argument
 // - explicit arguments follow self in the CALL window, in source order
 // - a method binding exists only after the record layout pass
+// - self is a ref mut receiver: field stores use the mutable binding path, replacing the binding is rejected
 export type MethodAttempt =
   | MethodHandled(LowerType)
   | MethodIgnored
@@ -91,11 +92,54 @@ export fn collect_program_signatures(declarations: [Shared<Decl>]) -> [LowerCall
   end
   signatures
 end
+fn receiver_parameter(parameter: Shared<Param>) -> Shared<Param> =
+  if parameter.name == "self" then
+    Shared.new(Param {
+      name: parameter.name,
+      is_mut: true,
+      type_value: parameter.type_value,
+      has_default: parameter.has_default,
+      default: parameter.default,
+      param_pattern: parameter.param_pattern
+    })
+  else
+    parameter
+  end
+fn receiver_parameters(parameters: [Shared<Param>]) -> [Shared<Param>] = do
+  let mut copied: [Shared<Param>] = []
+  let mut index = 0
+  while index < parameters.length() do
+    copied.push(receiver_parameter(parameters[index]))
+    index = index + 1
+  end
+  copied
+end
+fn receiver_method(declaration: Shared<Decl>) -> Shared<Decl> =
+  match declaration {
+    DeclFn(name, type_parameters, bounds, parameters, result_type, body, where_bounds) =>
+      Shared.new(DeclFn(name, type_parameters, bounds, receiver_parameters(parameters), result_type, body, where_bounds)),
+    _ => declaration
+  }
+fn receiver_methods(methods: [Shared<Decl>]) -> [Shared<Decl>] = do
+  let mut copied: [Shared<Decl>] = []
+  let mut index = 0
+  while index < methods.length() do
+    copied.push(receiver_method(methods[index]))
+    index = index + 1
+  end
+  copied
+end
 export fn extend_methods(declaration: Shared<Decl>) -> [Shared<Decl>] =
   match declaration {
-    DeclExtend(_, _, methods, _) => methods,
+    DeclExtend(_, _, methods, _) => receiver_methods(methods),
     _ => empty_declarations()
   }
+export fn reference_whole_assignment_rejected(name: string, is_mutable: bool) -> bool =
+  if name == "self" then
+    true
+  else
+    !is_mutable
+  end
 fn call_prefix(type_name: string) -> string = "*call*" + type_name + "_"
 fn name_starts_with(name: string, prefix: string) -> bool =
   name.length() >= prefix.length() && name.substring(0, prefix.length()) == prefix

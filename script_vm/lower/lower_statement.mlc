@@ -46,6 +46,7 @@ import {
 import { lower_expression } from './lower_expression'
 import { array_store_register, emit_array_element_store, place_integer_array } from './lower_array'
 import { finish_field_assignment } from './lower_records'
+import { reference_whole_assignment_rejected } from './lower_method'
 import { accept_discarded_type, advance_for_index, assignment_target, begin_while_frame, define_for_element, emit_for_condition, emit_value_return, expression_is_unit, finish_while_frame, keep_unit, lower_break, lower_continue, prepare_for_cursor } from './lower_iteration'
 
 export type LowerFunctionSignature = { result_type: LowerType }
@@ -173,7 +174,7 @@ fn assign_name(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, bui
   let found = lower_scope_lookup(scope, name)
   if found < 0 then
     fail_at(scope, "unknown_identifier", name_span)
-  else if !scope.names[found].is_mutable then
+  else if reference_whole_assignment_rejected(name, scope.names[found].is_mutable) then
     fail_at(scope, "assign_immutable", source_span)
   else
     assign_mutable(scope, sink, builder, scope.names[found].register_index, scope.names[found].value_type, right, source_span)

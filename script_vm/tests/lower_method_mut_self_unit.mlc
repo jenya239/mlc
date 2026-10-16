@@ -35,6 +35,9 @@ end
 fn method_source() -> string =
   "type Point = { x: i32 }\nextend Point {\nfn set_x(self: ref mut Point, v: i32) -> i32 = do self.x = v self.x end\n}\nexport fn main() -> i32 = do\nlet mut point = Point { x: 1 }\npoint.set_x(10)\npoint.x\nend"
 
+fn whole_assignment_source() -> string =
+  "type Point = { x: i32 }\nextend Point {\nfn replace(self: ref mut Point) -> i32 = do self = Point { x: 9 } self.x end\n}\nexport fn main() -> i32 = 0"
+
 fn expect_outer_field() -> i32 = do
   const lowered = lower_source(method_source())
   if lowered.diagnostics.length() != 0 then
@@ -51,8 +54,23 @@ fn expect_outer_field() -> i32 = do
   0
 end
 
+fn expect_whole_assignment_rejected() -> i32 = do
+  const lowered = lower_source(whole_assignment_source())
+  if lowered.diagnostics.length() == 0 then
+    return report_failure("whole_assignment accepted")
+  end
+  if lowered.diagnostics[0].code != "assign_immutable" then
+    return report_failure("whole_assignment=" + diagnostic_codes(lowered.diagnostics))
+  end
+  println("method_mut_self_whole")
+  0
+end
+
 fn main() -> i32 = do
   if expect_outer_field() != 0 then
+    return 1
+  end
+  if expect_whole_assignment_rejected() != 0 then
     return 1
   end
   println("[script_vm] lower_method_mut_self_unit ok")
