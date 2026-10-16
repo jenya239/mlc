@@ -2,6 +2,7 @@ import { lower_source } from '../lower/lower_module'
 import { LowerDiagnostic } from '../lower/lower_types'
 import { Value, ValueInt32, value_decode } from '../value'
 import { emb_ok, emb_call_export_bytes } from '../embedding'
+import { decode_module } from '../module_blob'
 
 fn report_failure(label: string) -> i32 = do
   println("[script_vm lower_function_as_value_unit] FAIL: " + label)
@@ -35,6 +36,36 @@ end
 fn function_value_source() -> string =
   "fn successor(input: i32) -> i32 = input + 1\nexport fn main() -> i32 = do\nlet wrapped = successor\nwrapped(5)\nend"
 
+fn direct_call_source() -> string =
+  "fn successor(input: i32) -> i32 = input + 1\nexport fn main() -> i32 = successor(5)"
+
+fn exported_word_count(bytes: [i32]) -> i32 = do
+  const decoded = decode_module(bytes)
+  if decoded.code != emb_ok() || decoded.module.exports.length() == 0 then
+    0 - 1
+  else
+    decoded.module.protos[decoded.module.exports[0].proto_index].words.length()
+  end
+end
+
+fn expect_direct_is_shorter() -> i32 = do
+  const direct = lower_source(direct_call_source())
+  const indirect = lower_source(function_value_source())
+  if direct.diagnostics.length() != 0 then
+    return report_failure("direct_call diagnostics=" + diagnostic_codes(direct.diagnostics) + " bytes=" + direct.bytes.length().to_string())
+  end
+  if indirect.diagnostics.length() != 0 then
+    return report_failure("function_as_value diagnostics=" + diagnostic_codes(indirect.diagnostics))
+  end
+  const direct_words = exported_word_count(direct.bytes)
+  const indirect_words = exported_word_count(indirect.bytes)
+  if direct_words < 0 || indirect_words < 0 || direct_words >= indirect_words then
+    return report_failure("direct_call words=" + direct_words.to_string() + " indirect_words=" + indirect_words.to_string())
+  end
+  println("direct_call_shorter")
+  0
+end
+
 fn expect_result(source: string, expected: i32, label: string) -> i32 = do
   const lowered = lower_source(source)
   if lowered.diagnostics.length() != 0 then
@@ -54,6 +85,8 @@ end
 fn main() -> i32 = do
   let mut failure_count = 0
   failure_count = failure_count + expect_result(function_value_source(), 6, "function_as_value")
+  failure_count = failure_count + expect_result(direct_call_source(), 6, "direct_call")
+  failure_count = failure_count + expect_direct_is_shorter()
   if failure_count != 0 then
     return 1
   end

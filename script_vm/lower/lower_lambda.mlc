@@ -49,6 +49,7 @@ import { LowerInt, LowerRecord, LowerType } from './lower_types'
 // - a later write of that local register does not change the cell
 // - the lambda reads the cell with GET_UPVAL
 // - a later call through the bound name loads that closure value and uses CALL
+// - a top-level function name used as a value is MAKE_CLOSURE of that prototype with no upvalues
 // - a parameter whose value is a closure is called with that same CALL
 // - a direct call may pass that closure in an argument register
 
@@ -367,11 +368,27 @@ fn call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee
     _ => LambdaIgnored
   }
 
+fn emit_function_value(builder: ref mut ProtoBuilder, proto_index: i32, parameter_count: i32, target: i32) -> LowerType = do
+  let mut sources: [i32] = []
+  proto_builder_emit(builder, instruction_words_make_closure(target, proto_index, sources))
+  LowerRecord(closure_type_name(parameter_count))
+end
+
+fn ident_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, target: i32) -> LambdaAttempt =
+  if local_operand(scope, name) >= 0 then
+    LambdaIgnored
+  else if call_signature_found(scope, name) then
+    LambdaHandled(emit_function_value(builder, call_signature_proto_index(scope, name), call_parameter_count(scope, name), target))
+  else
+    LambdaIgnored
+  end
+
 export fn lower_lambda_try(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LambdaAttempt =
   match expression {
     ExprLambda(parameters, body, _) =>
       LambdaHandled(lower_lambda_expression(scope, builder, parameters, body, target)),
     ExprCall(callee, arguments, source_span) =>
       call_attempt(scope, builder, callee, arguments, source_span, target),
+    ExprIdent(name, _) => ident_attempt(scope, builder, name, target),
     _ => LambdaIgnored
   }
