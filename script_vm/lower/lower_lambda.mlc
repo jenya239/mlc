@@ -43,7 +43,6 @@ import {
   lower_scope_push_closure_prototype
 } from './lower_scope'
 import { LowerInt, LowerRecord, LowerType } from './lower_types'
-
 // Invariants:
 // - a lambda without free names is a prototype placed after every top-level prototype
 // - a free local is copied into a new upvalue cell when MAKE_CLOSURE runs
@@ -52,8 +51,8 @@ import { LowerInt, LowerRecord, LowerType } from './lower_types'
 // - a later call through the bound name loads that closure value and uses CALL
 // - a top-level function name used as a value is MAKE_CLOSURE of that prototype with no upvalues
 // - a parameter whose value is a closure is called with that same CALL
-// - a direct call may pass that closure in an argument register
-// - a free name bound by an enclosing lambda is an upvalue of the inner prototype
+// - a direct call may pass that closure in an argument register; a free name of an enclosing lambda is an upvalue of the inner prototype
+// - a local upvalue source outside the frame that executes MAKE_CLOSURE is upvalue_window
 type LambdaCaptures = {
   names: [string],
   sources: [i32]
@@ -163,7 +162,6 @@ fn load_free_name(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope
     end
   end
 end
-
 fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, captures: ref mut LambdaCaptures, lambda_scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> unit =
   match expression {
     ExprInt(number, _) =>
@@ -194,7 +192,6 @@ fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerSc
       emit_lambda_at(scope, lambda_scope, captures, builder, parameters, body, target),
     _ => fail_lambda(scope, expr_span(expression), "unsupported_expression")
   }
-
 fn build_lambda_prototype(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, parameters: [string], body: Shared<Expr>) -> LambdaBuilt = do
   let mut builder = proto_builder_new(parameters.length())
   let mut lambda_scope = lower_scope_new()
@@ -209,8 +206,22 @@ fn build_lambda_prototype(scope: ref mut LowerScope, enclosing_scope: ref mut Lo
 end
 fn emit_closure_value(builder: ref mut ProtoBuilder, target: i32, prototype_index: i32, sources: [i32]) -> i32 =
   proto_builder_emit(builder, instruction_words_make_closure(target, prototype_index, sources))
+fn upvalue_window_rejected(builder: ref mut ProtoBuilder, sources: [i32]) -> bool = do
+  let frame_limit = proto_builder_register_mark(builder)
+  let mut index = 0
+  let mut rejected = false
+  while index < sources.length() && !rejected do
+    let source_word = sources[index]
+    rejected = ((source_word >> 8) & 255) != 0 && (source_word & 255) >= frame_limit
+    index = index + 1
+  end
+  rejected
+end
 fn emit_lambda_at(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, builder: ref mut ProtoBuilder, parameters: [string], body: Shared<Expr>, target: i32) -> unit = do
   let built = build_lambda_prototype(scope, enclosing_scope, enclosing_captures, parameters, body)
+  if !scope.has_diagnostic && upvalue_window_rejected(builder, built.sources) then
+    fail_lambda(scope, expr_span(body), "upvalue_window")
+  end
   if !scope.has_diagnostic then
     let prototype_index = lower_scope_allocate_closure_index(scope)
     lower_scope_push_closure_prototype(scope, built.prototype)
@@ -266,7 +277,6 @@ fn local_integer_register(scope: ref mut LowerScope, name: string) -> i32 = do
 end
 fn record_is_closure(record_name: string) -> bool =
   record_name.length() >= 9 && record_name.substring(0, 9) == "*closure*"
-
 fn argument_carries_closure(scope: ref mut LowerScope, argument: Shared<Expr>) -> bool =
   match argument {
     ExprLambda(_, _, _) => true,
@@ -283,7 +293,6 @@ fn argument_carries_closure(scope: ref mut LowerScope, argument: Shared<Expr>) -
     end,
     _ => false
   }
-
 fn arguments_carry_closure(scope: ref mut LowerScope, arguments: [Shared<Expr>]) -> bool = do
   let mut index = 0
   let mut found = false
@@ -293,7 +302,6 @@ fn arguments_carry_closure(scope: ref mut LowerScope, arguments: [Shared<Expr>])
   end
   found
 end
-
 fn store_call_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, argument: Shared<Expr>, argument_register: i32) -> bool =
   match argument {
     ExprInt(number, _) => do
@@ -317,7 +325,6 @@ fn store_call_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder,
     end,
     _ => false
   }
-
 fn emit_closure_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, closure_register_index: i32, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let base = proto_builder_register_allocate(builder)
@@ -336,7 +343,6 @@ fn emit_closure_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, c
   proto_builder_register_release_to(builder, mark)
   LowerInt
 end
-
 fn emit_direct_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, proto_index: i32, arguments: [Shared<Expr>], source_span: Span, target: i32, result_type: LowerType) -> LowerType = do
   let mark = proto_builder_register_mark(builder)
   let base = prepare_call_block(builder, proto_index, arguments.length())
@@ -353,10 +359,8 @@ fn emit_direct_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, pr
   proto_builder_register_release_to(builder, mark)
   result_type
 end
-
 fn direct_closure_call_ready(scope: ref mut LowerScope, name: string, arguments: [Shared<Expr>]) -> bool =
   call_signature_found(scope, name) && arguments.length() == call_parameter_count(scope, name) && arguments_carry_closure(scope, arguments)
-
 fn named_call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =
   if closure_register(scope, name, arguments.length()) >= 0 then
     LambdaHandled(emit_closure_call(scope, builder, closure_register(scope, name, arguments.length()), arguments, source_span, target))
@@ -367,19 +371,16 @@ fn named_call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, 
   else
     LambdaIgnored
   end
-
 fn call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =
   match callee {
     ExprIdent(name, _) => named_call_attempt(scope, builder, name, arguments, source_span, target),
     _ => LambdaIgnored
   }
-
 fn emit_function_value(builder: ref mut ProtoBuilder, proto_index: i32, parameter_count: i32, target: i32) -> LowerType = do
   let mut sources: [i32] = []
   proto_builder_emit(builder, instruction_words_make_closure(target, proto_index, sources))
   LowerRecord(closure_type_name(parameter_count))
 end
-
 fn ident_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, target: i32) -> LambdaAttempt =
   if local_operand(scope, name) >= 0 then
     LambdaIgnored
@@ -388,7 +389,6 @@ fn ident_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name:
   else
     LambdaIgnored
   end
-
 export fn lower_lambda_try(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LambdaAttempt =
   match expression {
     ExprLambda(parameters, body, _) =>

@@ -28,14 +28,24 @@ end
 fn window_source() -> string =
   "export fn main() -> i32 = do\nlet pad_one = 1\nlet pad_two = 2\nlet outside = 7\nlet outer = (added: i32) => (input: i32) => input + outside\nlet called = outer(10)\ncalled(5)\nend"
 
+fn refusal_is_window(diagnostics: [LowerDiagnostic]) -> bool =
+  diagnostics.length() > 0 && diagnostics[0].code == "upvalue_window"
+
 fn expect_named_refusal(source: string, label: string) -> i32 = do
   const lowered = lower_source(source)
-  if lowered.diagnostics.length() == 0 then
-    const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
-    return report_failure(label + " diagnostics= bytes=" + lowered.bytes.length().to_string() + " code=" + called.code.to_string())
+  if refusal_is_window(lowered.diagnostics) then
+    do
+      println(label)
+      0
+    end
+  else if lowered.diagnostics.length() == 0 then
+    do
+      const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+      report_failure(label + " diagnostics= bytes=" + lowered.bytes.length().to_string() + " code=" + called.code.to_string())
+    end
+  else
+    report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
   end
-  println(label + " " + diagnostic_codes(lowered.diagnostics))
-  0
 end
 
 fn main() -> i32 = do
