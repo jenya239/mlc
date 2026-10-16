@@ -1,0 +1,49 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_lambda_verifier_reject_unit] FAIL: " + label)
+  1
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn window_source() -> string =
+  "export fn main() -> i32 = do\nlet pad_one = 1\nlet pad_two = 2\nlet outside = 7\nlet outer = (added: i32) => (input: i32) => input + outside\nlet called = outer(10)\ncalled(5)\nend"
+
+fn expect_named_refusal(source: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() == 0 then
+    const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+    return report_failure(label + " diagnostics= bytes=" + lowered.bytes.length().to_string() + " code=" + called.code.to_string())
+  end
+  println(label + " " + diagnostic_codes(lowered.diagnostics))
+  0
+end
+
+fn main() -> i32 = do
+  let mut failure_count = 0
+  failure_count = failure_count + expect_named_refusal(window_source(), "lambda_verifier_reject")
+  if failure_count != 0 then
+    return 1
+  end
+  println("[script_vm] lower_lambda_verifier_reject_unit ok")
+  0
+end
