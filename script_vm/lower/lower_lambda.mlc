@@ -16,6 +16,7 @@ import {
   ProtoBuilder,
   proto_builder_emit,
   proto_builder_load_constant,
+  proto_builder_finish,
   proto_builder_new,
   proto_builder_register_allocate,
   proto_builder_register_mark,
@@ -52,23 +53,19 @@ import { LowerInt, LowerRecord, LowerType } from './lower_types'
 // - a top-level function name used as a value is MAKE_CLOSURE of that prototype with no upvalues
 // - a parameter whose value is a closure is called with that same CALL
 // - a direct call may pass that closure in an argument register
-
+// - a free name bound by an enclosing lambda is an upvalue of the inner prototype
 type LambdaCaptures = {
   names: [string],
   sources: [i32]
 }
-
 type LambdaBuilt = {
   prototype: FunctionProto,
   sources: [i32]
 }
-
 export type LambdaAttempt =
   | LambdaHandled(LowerType)
   | LambdaIgnored
-
 fn closure_type_name(parameter_count: i32) -> string = "*closure*" + parameter_count.to_string()
-
 fn integer_opcode(operator: string) -> i32 =
   if operator == "+" then
     instruction_opcode_add()
@@ -81,10 +78,8 @@ fn integer_opcode(operator: string) -> i32 =
   else
     0
   end
-
 fn fail_lambda(scope: ref mut LowerScope, source_span: Span, code: string) -> unit =
   lower_scope_fail(scope, diagnostic_at(code, source_span))
-
 fn bind_lambda_parameters(lambda_scope: ref mut LowerScope, parameters: [string]) -> unit = do
   let mut index = 0
   while index < parameters.length() do
@@ -92,13 +87,11 @@ fn bind_lambda_parameters(lambda_scope: ref mut LowerScope, parameters: [string]
     index = index + 1
   end
 end
-
 fn empty_captures() -> LambdaCaptures = do
   let mut names: [string] = []
   let mut sources: [i32] = []
   LambdaCaptures { names: names, sources: sources }
 end
-
 fn find_capture(captures: ref mut LambdaCaptures, name: string) -> i32 = do
   let mut index = 0
   let mut found = 0 - 1
@@ -110,14 +103,12 @@ fn find_capture(captures: ref mut LambdaCaptures, name: string) -> i32 = do
   end
   found
 end
-
 fn usable_parent_register(register_index: i32) -> i32 =
   if register_index < 0 then
     0 - 1
   else
     register_index
   end
-
 fn parent_local_register(scope: ref mut LowerScope, name: string) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
   if slot < 0 then
@@ -126,30 +117,45 @@ fn parent_local_register(scope: ref mut LowerScope, name: string) -> i32 = do
     usable_parent_register(scope.names[slot].register_index)
   end
 end
-
-fn append_capture(captures: ref mut LambdaCaptures, name: string, register_index: i32) -> i32 = do
-  let upvalue_index = captures.names.length()
-  captures.names.push(name)
-  captures.sources.push(instruction_upvalue_source_word(1, register_index))
-  upvalue_index
-end
-
-fn remember_capture(captures: ref mut LambdaCaptures, name: string, register_index: i32) -> i32 = do
+fn remember_source(captures: ref mut LambdaCaptures, name: string, source_word: i32) -> i32 = do
   let found = find_capture(captures, name)
   if found >= 0 then
     found
   else
-    append_capture(captures, name, register_index)
+    do
+      let upvalue_index = captures.names.length()
+      captures.names.push(name)
+      captures.sources.push(source_word)
+      upvalue_index
+    end
   end
 end
-
-fn load_free_name(scope: ref mut LowerScope, captures: ref mut LambdaCaptures, builder: ref mut ProtoBuilder, name: string, source_span: Span, target: i32) -> unit = do
+fn capture_transitive(enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, name: string) -> i32 = do
+  let local_register = parent_local_register(enclosing_scope, name)
+  let found = find_capture(enclosing_captures, name)
+  if local_register >= 0 then
+    instruction_upvalue_source_word(1, local_register)
+  else if found >= 0 then
+    instruction_upvalue_source_word(0, found)
+  else
+    0 - 1
+  end
+end
+fn load_free_name(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, captures: ref mut LambdaCaptures, builder: ref mut ProtoBuilder, name: string, source_span: Span, target: i32) -> unit = do
+  let transitive = capture_transitive(enclosing_scope, enclosing_captures, name)
   let parent_register = parent_local_register(scope, name)
-  if parent_register < 0 then
+  let source_word = if transitive >= 0 then
+    transitive
+  else if parent_register >= 0 then
+    instruction_upvalue_source_word(1, parent_register)
+  else
+    0 - 1
+  end
+  if source_word < 0 then
     fail_lambda(scope, source_span, "unknown_identifier")
   else
     do
-      let upvalue_index = remember_capture(captures, name, parent_register)
+      let upvalue_index = remember_source(captures, name, source_word)
       let emitted = proto_builder_emit(builder, instruction_words_get_upval(target, upvalue_index))
       if emitted < 0 then
         fail_lambda(scope, source_span, "unsupported_expression")
@@ -158,14 +164,14 @@ fn load_free_name(scope: ref mut LowerScope, captures: ref mut LambdaCaptures, b
   end
 end
 
-fn lower_lambda_into(scope: ref mut LowerScope, captures: ref mut LambdaCaptures, lambda_scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> unit =
+fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, captures: ref mut LambdaCaptures, lambda_scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> unit =
   match expression {
     ExprInt(number, _) =>
       proto_builder_load_constant(builder, target, value_encode(ValueInt32(number))),
     ExprIdent(name, source_span) => do
       let slot = lower_scope_lookup(lambda_scope, name)
       if slot < 0 then
-        load_free_name(scope, captures, builder, name, source_span, target)
+        load_free_name(scope, enclosing_scope, enclosing_captures, captures, builder, name, source_span, target)
       else
         move_to_target(builder, target, lambda_scope.names[slot].register_index)
       end
@@ -177,46 +183,50 @@ fn lower_lambda_into(scope: ref mut LowerScope, captures: ref mut LambdaCaptures
       else
         let left_register = proto_builder_register_allocate(builder)
         let right_register = proto_builder_register_allocate(builder)
-        lower_lambda_into(scope, captures, lambda_scope, builder, left, left_register)
-        lower_lambda_into(scope, captures, lambda_scope, builder, right, right_register)
+        lower_lambda_into(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, left, left_register)
+        lower_lambda_into(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, right, right_register)
         if !scope.has_diagnostic then
           emit_binary(builder, opcode, target, left_register, right_register)
         end
       end
     end,
+    ExprLambda(parameters, body, _) =>
+      emit_lambda_at(scope, lambda_scope, captures, builder, parameters, body, target),
     _ => fail_lambda(scope, expr_span(expression), "unsupported_expression")
   }
 
-fn build_lambda_prototype(scope: ref mut LowerScope, parameters: [string], body: Shared<Expr>) -> LambdaBuilt = do
+fn build_lambda_prototype(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, parameters: [string], body: Shared<Expr>) -> LambdaBuilt = do
   let mut builder = proto_builder_new(parameters.length())
   let mut lambda_scope = lower_scope_new()
   let mut captures = empty_captures()
   bind_lambda_parameters(lambda_scope, parameters)
   let destination = proto_builder_register_allocate(builder)
-  lower_lambda_into(scope, captures, lambda_scope, builder, body, destination)
+  lower_lambda_into(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, body, destination)
   if !scope.has_diagnostic then
     proto_builder_emit(builder, instruction_words_return(destination))
   end
   LambdaBuilt { prototype: proto_builder_finish(builder), sources: captures.sources }
 end
-
 fn emit_closure_value(builder: ref mut ProtoBuilder, target: i32, prototype_index: i32, sources: [i32]) -> i32 =
   proto_builder_emit(builder, instruction_words_make_closure(target, prototype_index, sources))
-
+fn emit_lambda_at(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, builder: ref mut ProtoBuilder, parameters: [string], body: Shared<Expr>, target: i32) -> unit = do
+  let built = build_lambda_prototype(scope, enclosing_scope, enclosing_captures, parameters, body)
+  if !scope.has_diagnostic then
+    let prototype_index = lower_scope_allocate_closure_index(scope)
+    lower_scope_push_closure_prototype(scope, built.prototype)
+    emit_closure_value(builder, target, prototype_index, built.sources)
+  end
+end
 fn lower_lambda_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, parameters: [string], body: Shared<Expr>, target: i32) -> LowerType = do
-  let built = build_lambda_prototype(scope, parameters, body)
+  let mut enclosing_scope = lower_scope_new()
+  let mut enclosing_captures = empty_captures()
+  emit_lambda_at(scope, enclosing_scope, enclosing_captures, builder, parameters, body, target)
   if scope.has_diagnostic then
     LowerInt
   else
-    do
-      let prototype_index = lower_scope_allocate_closure_index(scope)
-      lower_scope_push_closure_prototype(scope, built.prototype)
-      emit_closure_value(builder, target, prototype_index, built.sources)
-      LowerRecord(closure_type_name(parameters.length()))
-    end
+    LowerRecord(closure_type_name(parameters.length()))
   end
 end
-
 fn closure_register(scope: ref mut LowerScope, name: string, argument_count: i32) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
   if slot < 0 then
@@ -225,7 +235,6 @@ fn closure_register(scope: ref mut LowerScope, name: string, argument_count: i32
     closure_register_at(scope, slot, argument_count)
   end
 end
-
 fn closure_register_at(scope: ref mut LowerScope, slot: i32, argument_count: i32) -> i32 =
   match scope.names[slot].value_type {
     LowerRecord(record_name) =>
@@ -236,7 +245,6 @@ fn closure_register_at(scope: ref mut LowerScope, slot: i32, argument_count: i32
       end,
     _ => 0 - 1
   }
-
 fn local_operand(scope: ref mut LowerScope, name: string) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
   if slot < 0 then
@@ -245,7 +253,6 @@ fn local_operand(scope: ref mut LowerScope, name: string) -> i32 = do
     usable_parent_register(scope.names[slot].register_index)
   end
 end
-
 fn local_integer_register(scope: ref mut LowerScope, name: string) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
   if slot < 0 then
@@ -257,7 +264,6 @@ fn local_integer_register(scope: ref mut LowerScope, name: string) -> i32 = do
     }
   end
 end
-
 fn record_is_closure(record_name: string) -> bool =
   record_name.length() >= 9 && record_name.substring(0, 9) == "*closure*"
 
