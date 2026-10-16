@@ -280,14 +280,10 @@ fn argument_carries_closure(scope: ref mut LowerScope, argument: Shared<Expr>) -
     ExprLambda(_, _, _) => true,
     ExprIdent(name, _) => do
       let slot = lower_scope_lookup(scope, name)
-      if slot < 0 then
-        false
-      else
-        match scope.names[slot].value_type {
-          LowerRecord(record_name) => record_is_closure(record_name),
-          _ => false
-        }
-      end
+      if slot < 0 then false else match scope.names[slot].value_type {
+        LowerRecord(record_name) => record_is_closure(record_name),
+        _ => false
+      } end
     end,
     _ => false
   }
@@ -308,14 +304,10 @@ fn store_call_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder,
     end,
     ExprIdent(name, _) => do
       let source = parent_local_register(scope, name)
-      if source < 0 then
-        false
-      else
-        do
-          move_to_target(builder, argument_register, source)
-          true
-        end
-      end
+      if source < 0 then false else do
+        move_to_target(builder, argument_register, source)
+        true
+      end end
     end,
     ExprLambda(parameters, body, _) => do
       lower_lambda_expression(scope, builder, parameters, body, argument_register)
@@ -369,9 +361,19 @@ fn named_call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, 
   else
     LambdaIgnored
   end
+fn emit_direct_lambda_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, parameters: [string], body: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let closure_register_index = proto_builder_register_allocate(builder)
+  lower_lambda_expression(scope, builder, parameters, body, closure_register_index)
+  let result_type = emit_closure_call(scope, builder, closure_register_index, arguments, source_span, target)
+  proto_builder_register_release_to(builder, mark)
+  result_type
+end
 fn call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =
   match callee {
     ExprIdent(name, _) => named_call_attempt(scope, builder, name, arguments, source_span, target),
+    ExprLambda(parameters, body, _) =>
+      LambdaHandled(emit_direct_lambda_call(scope, builder, parameters, body, arguments, source_span, target)),
     _ => LambdaIgnored
   }
 fn emit_function_value(builder: ref mut ProtoBuilder, proto_index: i32, parameter_count: i32, target: i32) -> LowerType = do
