@@ -1,0 +1,60 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_method_with_args_unit] FAIL: " + label)
+  1
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn method_source() -> string =
+  "type Point = { x: i32 }\nextend Point {\nfn add(self, n: i32) -> i32 = self.x + n\n}\nexport fn main() -> i32 = do\nlet point = Point { x: 7 }\npoint.add(5)\nend"
+
+fn expect_added_argument() -> i32 = do
+  const lowered = lower_source(method_source())
+  if lowered.diagnostics.length() != 0 then
+    return report_failure("diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure("code=" + called.code.to_string())
+  end
+  if decoded_integer(called.raw) != 12 then
+    return report_failure("value=" + decoded_integer(called.raw).to_string())
+  end
+  println("method_add_argument")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_added_argument() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_method_with_args_unit ok")
+  0
+end
