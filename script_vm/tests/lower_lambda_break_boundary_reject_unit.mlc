@@ -1,0 +1,74 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_lambda_break_boundary_reject_unit] FAIL: " + label)
+  1
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn break_source() -> string =
+  "export fn main() -> i32 = do\nlet mut total = 0\nlet mut index = 0\nwhile index < 5 do\nlet stopper = (ignored: i32) => do\nbreak\nend\nstopper(0)\ntotal = total + 1\nindex = index + 1\nend\ntotal\nend"
+
+fn continue_source() -> string =
+  "export fn main() -> i32 = do\nlet mut total = 0\nlet mut index = 0\nwhile index < 4 do\nlet skipper = (ignored: i32) => do\ncontinue\nend\nskipper(0)\ntotal = total + index\nindex = index + 1\nend\ntotal\nend"
+
+fn refusal_matches(diagnostics: [LowerDiagnostic], expected_code: string) -> bool =
+  diagnostics.length() > 0 && diagnostics[0].code == expected_code
+
+fn expect_boundary(source: string, expected_code: string, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if refusal_matches(lowered.diagnostics, expected_code) then
+    do
+      println(label)
+      0
+    end
+  else if lowered.diagnostics.length() != 0 then
+    report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  else
+    do
+      const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+      if called.code != emb_ok() then
+        report_failure(label + " code=" + called.code.to_string())
+      else
+        report_failure(label + " value=" + decoded_integer(called.raw).to_string())
+      end
+    end
+  end
+end
+
+fn main() -> i32 = do
+  let mut failure_count = 0
+  failure_count = failure_count + expect_boundary(break_source(), "break_outside_loop", "lambda_break_boundary")
+  failure_count = failure_count + expect_boundary(continue_source(), "continue_outside_loop", "lambda_continue_boundary")
+  if failure_count != 0 then
+    return 1
+  end
+  println("[script_vm] lower_lambda_break_boundary_reject_unit ok")
+  0
+end
