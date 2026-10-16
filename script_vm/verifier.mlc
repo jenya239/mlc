@@ -39,6 +39,7 @@ import {
 } from './bytecode'
 import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
 import { is_float_binary_opcode, is_float_compare_opcode } from './exec_float'
+import { value_call_window_accepted } from './verify_call'
 
 export type VerifyResult =
   | VerifyOk
@@ -174,7 +175,7 @@ fn registers_ok(decoded: DecodedAbc, register_count: i32) -> bool = do
   else if decoded.opcode == instruction_opcode_set_prop() then
     register_in_range(decoded.a, register_count) && register_in_range(decoded.c, register_count)
   else if decoded.opcode == instruction_opcode_call() then
-    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && decoded.b + decoded.c < register_count
+    register_in_range(decoded.a, register_count) && register_in_range(decoded.b, register_count) && decoded.b + decoded.c < register_count && value_call_window_accepted(decoded.c)
   else if decoded.opcode == instruction_opcode_make_closure() then
     register_in_range(decoded.a, register_count)
   else if decoded.opcode == instruction_opcode_get_upval() then

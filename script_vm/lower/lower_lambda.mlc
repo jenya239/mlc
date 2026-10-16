@@ -21,6 +21,15 @@ import {
   proto_builder_register_mark,
   proto_builder_register_release_to
 } from './lower_builder'
+import {
+  call_argument_register,
+  call_parameter_count,
+  call_signature_found,
+  call_signature_proto_index,
+  call_signature_result_type,
+  finish_call_instruction,
+  prepare_call_block
+} from './lower_call'
 import { diagnostic_at, emit_binary, move_to_target } from './lower_control'
 import { LowerDiagnosticSink } from './lower_diagnostics'
 import {
@@ -40,6 +49,8 @@ import { LowerInt, LowerRecord, LowerType } from './lower_types'
 // - a later write of that local register does not change the cell
 // - the lambda reads the cell with GET_UPVAL
 // - a later call through the bound name loads that closure value and uses CALL
+// - a parameter whose value is a closure is called with that same CALL
+// - a direct call may pass that closure in an argument register
 
 type LambdaCaptures = {
   names: [string],
@@ -225,11 +236,77 @@ fn closure_register_at(scope: ref mut LowerScope, slot: i32, argument_count: i32
     _ => 0 - 1
   }
 
-fn store_call_argument(builder: ref mut ProtoBuilder, argument: Shared<Expr>, argument_register: i32) -> bool =
+fn local_operand(scope: ref mut LowerScope, name: string) -> i32 = do
+  let slot = lower_scope_lookup(scope, name)
+  if slot < 0 then
+    0 - 1
+  else
+    usable_parent_register(scope.names[slot].register_index)
+  end
+end
+
+fn local_integer_register(scope: ref mut LowerScope, name: string) -> i32 = do
+  let slot = lower_scope_lookup(scope, name)
+  if slot < 0 then
+    0 - 1
+  else
+    match scope.names[slot].value_type {
+      LowerInt => usable_parent_register(scope.names[slot].register_index),
+      _ => 0 - 1
+    }
+  end
+end
+
+fn record_is_closure(record_name: string) -> bool =
+  record_name.length() >= 9 && record_name.substring(0, 9) == "*closure*"
+
+fn argument_carries_closure(scope: ref mut LowerScope, argument: Shared<Expr>) -> bool =
+  match argument {
+    ExprLambda(_, _, _) => true,
+    ExprIdent(name, _) => do
+      let slot = lower_scope_lookup(scope, name)
+      if slot < 0 then
+        false
+      else
+        match scope.names[slot].value_type {
+          LowerRecord(record_name) => record_is_closure(record_name),
+          _ => false
+        }
+      end
+    end,
+    _ => false
+  }
+
+fn arguments_carry_closure(scope: ref mut LowerScope, arguments: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < arguments.length() && !found do
+    found = argument_carries_closure(scope, arguments[index])
+    index = index + 1
+  end
+  found
+end
+
+fn store_call_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, argument: Shared<Expr>, argument_register: i32) -> bool =
   match argument {
     ExprInt(number, _) => do
       proto_builder_load_constant(builder, argument_register, value_encode(ValueInt32(number)))
       true
+    end,
+    ExprIdent(name, _) => do
+      let source = local_operand(scope, name)
+      if source < 0 then
+        false
+      else
+        do
+          move_to_target(builder, argument_register, source)
+          true
+        end
+      end
+    end,
+    ExprLambda(parameters, body, _) => do
+      lower_lambda_expression(scope, builder, parameters, body, argument_register)
+      !scope.has_diagnostic
     end,
     _ => false
   }
@@ -241,7 +318,7 @@ fn emit_closure_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, c
   let mut index = 0
   while index < arguments.length() && !scope.has_diagnostic do
     let argument_register = proto_builder_register_allocate(builder)
-    if !store_call_argument(builder, arguments[index], argument_register) then
+    if !store_call_argument(scope, builder, arguments[index], argument_register) then
       fail_lambda(scope, source_span, "unsupported_expression")
     end
     index = index + 1
@@ -253,11 +330,35 @@ fn emit_closure_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, c
   LowerInt
 end
 
+fn emit_direct_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, proto_index: i32, arguments: [Shared<Expr>], source_span: Span, target: i32, result_type: LowerType) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let base = prepare_call_block(builder, proto_index, arguments.length())
+  let mut index = 0
+  while index < arguments.length() && !scope.has_diagnostic do
+    if !store_call_argument(scope, builder, arguments[index], call_argument_register(base, index)) then
+      fail_lambda(scope, source_span, "unsupported_expression")
+    end
+    index = index + 1
+  end
+  if !scope.has_diagnostic then
+    finish_call_instruction(builder, target, base, arguments.length())
+  end
+  proto_builder_register_release_to(builder, mark)
+  result_type
+end
+
+fn direct_closure_call_ready(scope: ref mut LowerScope, name: string, arguments: [Shared<Expr>]) -> bool =
+  call_signature_found(scope, name) && arguments.length() == call_parameter_count(scope, name) && arguments_carry_closure(scope, arguments)
+
 fn named_call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name: string, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =
-  if closure_register(scope, name, arguments.length()) < 0 then
-    LambdaIgnored
-  else
+  if closure_register(scope, name, arguments.length()) >= 0 then
     LambdaHandled(emit_closure_call(scope, builder, closure_register(scope, name, arguments.length()), arguments, source_span, target))
+  else if local_integer_register(scope, name) >= 0 then
+    LambdaHandled(emit_closure_call(scope, builder, local_integer_register(scope, name), arguments, source_span, target))
+  else if direct_closure_call_ready(scope, name, arguments) then
+    LambdaHandled(emit_direct_call(scope, builder, call_signature_proto_index(scope, name), arguments, source_span, target, call_signature_result_type(scope, name)))
+  else
+    LambdaIgnored
   end
 
 fn call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =

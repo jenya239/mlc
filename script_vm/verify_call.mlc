@@ -1,0 +1,2 @@
+export fn value_call_window_accepted(argument_count: i32) -> bool =
+  argument_count >= 0
