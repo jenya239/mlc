@@ -7,6 +7,7 @@ run_count = 5
 baseline_direct_nanoseconds_per_call = 1242
 direct_sample_prefix = "direct_sample_ns_per_call="
 value_sample_prefix = "value_sample_ns_per_call="
+capture_sample_prefix = "capture_sample_ns_per_call="
 
 entry_source = <<'MLC'
 import { Value, ValueInt32, value_decode } from '../script_vm/value'
@@ -26,6 +27,11 @@ fn direct_source() -> string =
 
 fn value_source() -> string =
   "fn successor(input: i32) -> i32 = input + 1\nexport fn main() -> i32 = do\nlet wrapped = successor\nlet mut index = 0\nlet mut total = 0\nwhile index < " + call_count().to_string() + " do\ntotal = total + wrapped(1)\nindex = index + 1\nend\ntotal\nend"
+
+fn capture_source() -> string =
+  "export fn main() -> i32 = do\nlet left = 10\nlet middle = 20\nlet right = 30\nlet mut index = 0\nlet mut total = 0\nwhile index < " + call_count().to_string() + " do\nlet closure = (input: i32) => input + left + middle + right\ntotal = total + closure(1)\nindex = index + 1\nend\ntotal\nend"
+
+fn capture_expected_total() -> i32 = call_count() * 61
 
 fn decoded_integer(raw: i64) -> i32 =
   match value_decode(Value { raw: raw }) {
@@ -58,7 +64,7 @@ fn nanoseconds_per_call(elapsed_microseconds: i32, accepted: bool) -> i32 =
     elapsed_microseconds * 1000 / call_count()
   end
 
-fn measure_source(source: string, label: string) -> i32 = do
+fn measure_source(source: string, label: string, expected: i32) -> i32 = do
   const lowered = lower_source(source)
   if lowered.diagnostics.length() != 0 then
     println(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics))
@@ -67,16 +73,18 @@ fn measure_source(source: string, label: string) -> i32 = do
   const started = script_vm_perf_now_us()
   const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
   const elapsed = script_vm_perf_now_us() - started
-  const accepted = called.code == emb_ok() && decoded_integer(called.raw) == expected_total()
+  const accepted = called.code == emb_ok() && decoded_integer(called.raw) == expected
   nanoseconds_per_call(elapsed, accepted)
 end
 
 fn main() -> i32 = do
-  const direct_nanoseconds = measure_source(direct_source(), "direct")
-  const value_nanoseconds = measure_source(value_source(), "value")
+  const direct_nanoseconds = measure_source(direct_source(), "direct", expected_total())
+  const value_nanoseconds = measure_source(value_source(), "value", expected_total())
+  const capture_nanoseconds = measure_source(capture_source(), "capture", capture_expected_total())
   println("direct_sample_ns_per_call=" + direct_nanoseconds.to_string())
   println("value_sample_ns_per_call=" + value_nanoseconds.to_string())
-  if direct_nanoseconds < 0 || value_nanoseconds < 0 then
+  println("capture_sample_ns_per_call=" + capture_nanoseconds.to_string())
+  if direct_nanoseconds < 0 || value_nanoseconds < 0 || capture_nanoseconds < 0 then
     1
   else
     0
@@ -179,6 +187,7 @@ end
 
 minimum_direct_nanoseconds = nil
 minimum_value_nanoseconds = nil
+minimum_capture_nanoseconds = nil
 run_index = 0
 while run_index < run_count
   binary_output, binary_error, binary_status = capture_process([binary_path], 20)
@@ -190,7 +199,8 @@ while run_index < run_count
   end
   direct_sample = sample_nanoseconds(binary_output, direct_sample_prefix)
   value_sample = sample_nanoseconds(binary_output, value_sample_prefix)
-  if direct_sample.nil? || value_sample.nil? || direct_sample < 0 || value_sample < 0
+  capture_sample = sample_nanoseconds(binary_output, capture_sample_prefix)
+  if direct_sample.nil? || value_sample.nil? || capture_sample.nil? || direct_sample < 0 || value_sample < 0 || capture_sample < 0
     print binary_output
     warn binary_error unless binary_error.empty?
     warn "lambda bench sample missing"
@@ -198,6 +208,7 @@ while run_index < run_count
   end
   minimum_direct_nanoseconds = direct_sample if minimum_direct_nanoseconds.nil? || direct_sample < minimum_direct_nanoseconds
   minimum_value_nanoseconds = value_sample if minimum_value_nanoseconds.nil? || value_sample < minimum_value_nanoseconds
+  minimum_capture_nanoseconds = capture_sample if minimum_capture_nanoseconds.nil? || capture_sample < minimum_capture_nanoseconds
   run_index += 1
 end
 
@@ -205,5 +216,7 @@ indirect_overhead_nanoseconds = minimum_value_nanoseconds - minimum_direct_nanos
 puts "direct_ns_per_call=#{minimum_direct_nanoseconds}"
 puts "value_ns_per_call=#{minimum_value_nanoseconds}"
 puts "indirect_overhead_ns=#{indirect_overhead_nanoseconds}"
+puts "closure_make_3up_ns_per_call=#{minimum_capture_nanoseconds}"
+puts "lambda_layer_baseline_ns=#{minimum_capture_nanoseconds}"
 puts "baseline_b3_ns_per_call=#{baseline_direct_nanoseconds_per_call}"
 puts "indirect_overhead_is_expected=true"
