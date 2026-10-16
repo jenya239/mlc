@@ -1,4 +1,4 @@
-import { Expr, Span, expr_span } from '../../compiler/frontend/ast'
+import { Expr, ExprBlock, Span, Stmt, StmtBreak, StmtContinue, expr_span } from '../../compiler/frontend/ast'
 import {
   instruction_opcode_add,
   instruction_opcode_div,
@@ -34,6 +34,7 @@ import {
 import { diagnostic_at, emit_binary, move_to_target } from './lower_control'
 import { LowerDiagnosticSink } from './lower_diagnostics'
 import {
+  LowerName,
   LowerScope,
   lower_scope_allocate_closure_index,
   lower_scope_define,
@@ -46,6 +47,7 @@ import { LowerInt, LowerRecord, LowerType } from './lower_types'
 import { finish_field_read, record_type_name } from './lower_records'
 // Invariants:
 // - a captured record upvalue is the heap reference, so a later field write is visible through the closure
+// - lambda entry copies the enclosing loop frame and then drops it, so break and continue do not target that loop
 type LambdaCaptures = {
   names: [string],
   sources: [i32]
@@ -59,17 +61,7 @@ export type LambdaAttempt =
   | LambdaIgnored
 fn closure_type_name(parameter_count: i32) -> string = "*closure*" + parameter_count.to_string()
 fn integer_opcode(operator: string) -> i32 =
-  if operator == "+" then
-    instruction_opcode_add()
-  else if operator == "-" then
-    instruction_opcode_sub()
-  else if operator == "*" then
-    instruction_opcode_mul()
-  else if operator == "/" then
-    instruction_opcode_div()
-  else
-    0
-  end
+  if operator == "+" then instruction_opcode_add() else if operator == "-" then instruction_opcode_sub() else if operator == "*" then instruction_opcode_mul() else if operator == "/" then instruction_opcode_div() else 0 end
 fn fail_lambda(scope: ref mut LowerScope, source_span: Span, code: string) -> unit =
   lower_scope_fail(scope, diagnostic_at(code, source_span))
 fn bind_lambda_parameters(lambda_scope: ref mut LowerScope, parameters: [string]) -> unit = do
@@ -88,26 +80,16 @@ fn find_capture(captures: ref mut LambdaCaptures, name: string) -> i32 = do
   let mut index = 0
   let mut found = 0 - 1
   while index < captures.names.length() && found < 0 do
-    if captures.names[index] == name then
-      found = index
-    end
+    if captures.names[index] == name then found = index end
     index = index + 1
   end
   found
 end
 fn usable_parent_register(register_index: i32) -> i32 =
-  if register_index < 0 then
-    0 - 1
-  else
-    register_index
-  end
+  if register_index < 0 then 0 - 1 else register_index end
 fn parent_local_register(scope: ref mut LowerScope, name: string) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
-  if slot < 0 then
-    0 - 1
-  else
-    usable_parent_register(scope.names[slot].register_index)
-  end
+  if slot < 0 then 0 - 1 else usable_parent_register(scope.names[slot].register_index) end
 end
 fn remember_source(captures: ref mut LambdaCaptures, name: string, source_word: i32) -> i32 = do
   let found = find_capture(captures, name)
@@ -149,9 +131,7 @@ fn load_free_name(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope
     do
       let upvalue_index = remember_source(captures, name, source_word)
       let emitted = proto_builder_emit(builder, instruction_words_get_upval(target, upvalue_index))
-      if emitted < 0 then
-        fail_lambda(scope, source_span, "unsupported_expression")
-      end
+      if emitted < 0 then fail_lambda(scope, source_span, "unsupported_expression") end
     end
   end
 end
@@ -166,12 +146,39 @@ fn lower_lambda_field(scope: ref mut LowerScope, enclosing_scope: ref mut LowerS
       let record_register = proto_builder_register_allocate(builder)
       lower_lambda_into(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, base, record_register)
       let field_type = finish_field_read(scope, builder, LowerRecord(field_type_name(scope, name)), field_name, record_register, target, mark, source_span)
-      match field_type {
-        _ => do end
-      }
+      match field_type { _ => do end }
     end,
     _ => fail_lambda(scope, source_span, "unsupported_expression")
   }
+fn loop_context_name(name: string) -> bool =
+  name == "*while_frame*" || name == "*break_site*"
+fn copy_loop_context(parent: ref mut LowerScope, lambda_scope: ref mut LowerScope) -> unit = do
+  let mut index = 0
+  while index < parent.names.length() do
+    if loop_context_name(parent.names[index].name) then lambda_scope.names.push(parent.names[index]) end
+    index = index + 1
+  end
+end
+fn reset_loop_context(lambda_scope: ref mut LowerScope) -> unit = do
+  let mut kept: [LowerName] = []
+  let mut index = 0
+  while index < lambda_scope.names.length() do
+    if !loop_context_name(lambda_scope.names[index].name) then kept.push(lambda_scope.names[index]) end
+    index = index + 1
+  end
+  lambda_scope.names = kept
+end
+fn lower_lambda_boundary(parent: ref mut LowerScope, lambda_scope: ref mut LowerScope, statements: [Shared<Stmt>], source_span: Span) -> unit = do
+  if statements.length() == 1 && lower_scope_lookup(lambda_scope, "*while_frame*") < 0 then
+    match statements[0] {
+      StmtBreak(break_span) => fail_lambda(parent, break_span, "break_outside_loop"),
+      StmtContinue(continue_span) => fail_lambda(parent, continue_span, "continue_outside_loop"),
+      _ => fail_lambda(parent, source_span, "unsupported_expression")
+    }
+  else
+    fail_lambda(parent, source_span, "unsupported_expression")
+  end
+end
 fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, captures: ref mut LambdaCaptures, lambda_scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> unit =
   match expression {
     ExprInt(number, _) =>
@@ -202,6 +209,8 @@ fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerSc
       emit_lambda_at(scope, lambda_scope, captures, builder, parameters, body, target),
     ExprField(base, field_name, source_span) =>
       lower_lambda_field(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, base, field_name, source_span, target),
+    ExprBlock(statements, _, source_span) =>
+      lower_lambda_boundary(scope, lambda_scope, statements, source_span),
     _ => fail_lambda(scope, expr_span(expression), "unsupported_expression")
   }
 fn build_lambda_prototype(scope: ref mut LowerScope, enclosing_scope: ref mut LowerScope, enclosing_captures: ref mut LambdaCaptures, parameters: [string], body: Shared<Expr>) -> LambdaBuilt = do
@@ -209,6 +218,8 @@ fn build_lambda_prototype(scope: ref mut LowerScope, enclosing_scope: ref mut Lo
   let mut lambda_scope = lower_scope_new()
   let mut captures = empty_captures()
   bind_lambda_parameters(lambda_scope, parameters)
+  copy_loop_context(scope, lambda_scope)
+  reset_loop_context(lambda_scope)
   let destination = proto_builder_register_allocate(builder)
   lower_lambda_into(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, body, destination)
   if !scope.has_diagnostic then
@@ -250,30 +261,17 @@ fn lower_lambda_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuil
 end
 fn closure_register(scope: ref mut LowerScope, name: string, argument_count: i32) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
-  if slot < 0 then
-    0 - 1
-  else
-    match scope.names[slot].value_type {
-      LowerRecord(record_name) =>
-        if record_name == closure_type_name(argument_count) then
-          scope.names[slot].register_index
-        else
-          0 - 1
-        end,
-      _ => 0 - 1
-    }
-  end
+  if slot < 0 then 0 - 1 else match scope.names[slot].value_type {
+    LowerRecord(record_name) => if record_name == closure_type_name(argument_count) then scope.names[slot].register_index else 0 - 1 end,
+    _ => 0 - 1
+  } end
 end
 fn local_integer_register(scope: ref mut LowerScope, name: string) -> i32 = do
   let slot = lower_scope_lookup(scope, name)
-  if slot < 0 then
-    0 - 1
-  else
-    match scope.names[slot].value_type {
-      LowerInt => usable_parent_register(scope.names[slot].register_index),
-      _ => 0 - 1
-    }
-  end
+  if slot < 0 then 0 - 1 else match scope.names[slot].value_type {
+    LowerInt => usable_parent_register(scope.names[slot].register_index),
+    _ => 0 - 1
+  } end
 end
 fn record_is_closure(record_name: string) -> bool =
   record_name.length() >= 9 && record_name.substring(0, 9) == "*closure*"
