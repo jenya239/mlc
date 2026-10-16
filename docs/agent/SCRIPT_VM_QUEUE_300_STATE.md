@@ -1,8 +1,8 @@
-current_step: 273
+current_step: 274
 status: ready
-last_result: done step 273: repeat returns 9, record-field lambda call returns 5, match arm stays unsupported_expression
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_lambda_critic_unit.mlc => lambda_repeat_call lambda_match_arm lambda_record_field UNIT_EXIT:0; sabotage direct lambda call => unsupported_expression@3:52 UNIT_EXIT:1; lambda units LAMBDA_SUITE_EXIT:0; ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=54 GATE_EXIT:0
-next_step: 274
+last_result: done step 274: 11 lambda units registered in queue200 gate; removing one name fails the count check
+last_verify: sabotage without lower_lambda_critic => script_vm_queue200_gate FAIL lambda unit count GATE_EXIT:1; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate ok GATE_EXIT:0
+next_step: 275
 consult_count: 0
 consult_response:
 consult_verdict:

@@ -65,6 +65,23 @@ unless match_unit_names.length == 8
   fail_gate("script_vm_queue200_gate FAIL match unit count")
 end
 
+lambda_unit_names = [
+  "lower_lambda_basic",
+  "lower_lambda_capture",
+  "lower_lambda_multi_capture",
+  "lower_lambda_as_argument",
+  "lower_function_as_value",
+  "lower_lambda_nested",
+  "lower_lambda_verifier_reject",
+  "lower_lambda_capture_record",
+  "lower_lambda_near_loop",
+  "lower_lambda_break_boundary_reject",
+  "lower_lambda_critic"
+]
+unless lambda_unit_names.length == 11
+  fail_gate("script_vm_queue200_gate FAIL lambda unit count")
+end
+
 queue_lines, queue_status = run_command(["ruby", "scripts/run_script_vm_queue_gate.rb"])
 unless queue_status&.success? && last_line(queue_lines) == "script_vm_queue_gate ok stages=7"
   fail_gate("script_vm_queue200_gate FAIL queue")
@@ -95,6 +112,13 @@ float_unit_names.each do |unit_name|
 end
 
 match_unit_names.each do |unit_name|
+  direct_lines, direct_status = run_command(["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/#{unit_name}_unit.mlc"])
+  unless direct_status&.success? && direct_lines.any? { |line| line.include?("[script_vm] #{unit_name}_unit ok") }
+    fail_gate("script_vm_queue200_gate FAIL #{unit_name}")
+  end
+end
+
+lambda_unit_names.each do |unit_name|
   direct_lines, direct_status = run_command(["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/#{unit_name}_unit.mlc"])
   unless direct_status&.success? && direct_lines.any? { |line| line.include?("[script_vm] #{unit_name}_unit ok") }
     fail_gate("script_vm_queue200_gate FAIL #{unit_name}")
