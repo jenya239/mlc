@@ -1,8 +1,8 @@
-current_step: 274
+current_step: 275
 status: ready
-last_result: done step 274: 11 lambda units registered in queue200 gate; removing one name fails the count check
-last_verify: sabotage without lower_lambda_critic => script_vm_queue200_gate FAIL lambda unit count GATE_EXIT:1; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate ok GATE_EXIT:0
-next_step: 275
+last_result: done step 275: extend is DeclExtend; method with self is DeclFn with empty type-parameter lists
+last_verify: test -f docs/agent/notes/methods_frontend_survey.md => GATE_EXIT:0
+next_step: 276
 consult_count: 0
 consult_response:
 consult_verdict:
