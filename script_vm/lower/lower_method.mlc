@@ -5,30 +5,35 @@ import {
   DeclFn,
   Expr,
   ExprIdent,
+  ExprInt,
   ExprMethod,
   Param,
   TypeExpr
 } from '../../compiler/frontend/ast'
 import {
   ProtoBuilder,
+  proto_builder_load_constant,
   proto_builder_register_mark,
   proto_builder_register_release_to
 } from './lower_builder'
 import {
   call_argument_register,
   call_parameter_count,
+  call_parameter_type_at,
   call_signature_proto_index,
   call_signature_result_type,
   finish_call_instruction,
   lower_type_of,
   prepare_call_block
 } from './lower_call'
-import { move_to_target } from './lower_control'
+import { move_to_target, types_agree } from './lower_control'
 import { LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
-import { LowerCallSignature, LowerRecord, LowerType } from './lower_types'
+import { LowerCallSignature, LowerInt, LowerRecord, LowerType } from './lower_types'
+import { ValueInt32, value_encode } from '../value'
 // Invariants:
 // - a method is a top-level function whose first parameter is self
 // - the call passes the receiver as the first CALL argument
+// - explicit arguments follow self in the CALL window, in source order
 // - a method binding exists only after the record layout pass
 export type MethodAttempt =
   | MethodHandled(LowerType)
@@ -143,36 +148,62 @@ fn local_record_name(scope: ref mut LowerScope, receiver_name: string) -> string
     }
   end
 end
-fn emit_self_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, function_name: string, source_register: i32, target: i32) -> LowerType = do
+fn argument_is_matching_integer(scope: ref mut LowerScope, function_name: string, argument: Shared<Expr>, parameter_index: i32) -> bool =
+  match argument {
+    ExprInt(_, _) => types_agree(LowerInt, call_parameter_type_at(scope, function_name, parameter_index)),
+    _ => false
+  }
+fn explicit_arguments_fit(scope: ref mut LowerScope, function_name: string, arguments: [Shared<Expr>]) -> bool = do
+  let mut index = 0
+  let mut fits = true
+  while index < arguments.length() && fits do
+    fits = argument_is_matching_integer(scope, function_name, arguments[index], index + 1)
+    index = index + 1
+  end
+  fits
+end
+fn place_integer_argument(builder: ref mut ProtoBuilder, base: i32, argument_index: i32, number: i32) -> unit =
+  proto_builder_load_constant(builder, call_argument_register(base, argument_index + 1), value_encode(ValueInt32(number)))
+fn place_explicit_arguments(builder: ref mut ProtoBuilder, base: i32, arguments: [Shared<Expr>]) -> unit = do
+  let mut index = 0
+  while index < arguments.length() do
+    match arguments[index] {
+      ExprInt(number, _) => place_integer_argument(builder, base, index, number),
+      _ => do end
+    }
+    index = index + 1
+  end
+end
+fn emit_method_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, function_name: string, source_register: i32, arguments: [Shared<Expr>], target: i32) -> LowerType = do
+  let parameter_count = arguments.length() + 1
   let mark = proto_builder_register_mark(builder)
-  let base = prepare_call_block(builder, call_signature_proto_index(scope, function_name), 1)
+  let base = prepare_call_block(builder, call_signature_proto_index(scope, function_name), parameter_count)
   move_to_target(builder, call_argument_register(base, 0), source_register)
-  finish_call_instruction(builder, target, base, 1)
+  place_explicit_arguments(builder, base, arguments)
+  finish_call_instruction(builder, target, base, parameter_count)
   proto_builder_register_release_to(builder, mark)
   call_signature_result_type(scope, function_name)
 end
-fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver_name: string, method_name: string, target: i32) -> MethodAttempt = do
+fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver_name: string, method_name: string, arguments: [Shared<Expr>], target: i32) -> MethodAttempt = do
   let type_name = local_record_name(scope, receiver_name)
   let function_name = type_name + "_" + method_name
   if type_name == "" then
     MethodIgnored
   else if lower_scope_lookup(scope, "*method*" + type_name + "#" + method_name) < 0 then
     MethodIgnored
-  else if call_parameter_count(scope, function_name) != 1 then
+  else if call_parameter_count(scope, function_name) != arguments.length() + 1 then
+    MethodIgnored
+  else if !explicit_arguments_fit(scope, function_name, arguments) then
     MethodIgnored
   else
-    MethodHandled(emit_self_call(scope, builder, function_name, receiver_register(scope, receiver_name), target))
+    MethodHandled(emit_method_call(scope, builder, function_name, receiver_register(scope, receiver_name), arguments, target))
   end
 end
 fn lower_method_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver: Shared<Expr>, method_name: string, arguments: [Shared<Expr>], target: i32) -> MethodAttempt =
-  if arguments.length() != 0 then
-    MethodIgnored
-  else
-    match receiver {
-      ExprIdent(receiver_name, _) => lower_bound_method(scope, builder, receiver_name, method_name, target),
-      _ => MethodIgnored
-    }
-  end
+  match receiver {
+    ExprIdent(receiver_name, _) => lower_bound_method(scope, builder, receiver_name, method_name, arguments, target),
+    _ => MethodIgnored
+  }
 export fn lower_method_try(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> MethodAttempt =
   match expression {
     ExprMethod(receiver, method_name, arguments, _) =>
