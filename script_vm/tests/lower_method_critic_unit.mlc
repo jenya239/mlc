@@ -1,0 +1,66 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+import { Value, ValueInt32, value_decode } from '../value'
+import { emb_ok, emb_call_export_bytes } from '../embedding'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_method_critic_unit] FAIL: " + label)
+  1
+end
+
+fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < diagnostics.length() do
+    if index > 0 then
+      text = text + ","
+    end
+    text = text + diagnostics[index].code + "@" + diagnostics[index].line.to_string() + ":" + diagnostics[index].column.to_string()
+    index = index + 1
+  end
+  text
+end
+
+fn decoded_integer(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn lambda_source() -> string =
+  "type Point = { x: i32 }\nextend Point {\nfn make(self) -> i32 = do\nlet shift = (delta: i32) => self.x + delta\nshift\nend\n}\nexport fn main() -> i32 = do\nlet point = Point { x: 5 }\nlet shift = point.make()\nshift(2)\nend"
+
+fn match_source() -> string =
+  "type Point = { x: i32 }\nextend Point {\nfn classify(self) -> i32 = do\nlet value = self.x\nmatch value do\n1 -> 10\n_ -> 0\nend\nend\n}\nexport fn main() -> i32 = do\nlet point = Point { x: 1 }\npoint.classify()\nend"
+
+fn expect_result(source: string, expected: i32, label: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return report_failure(label + " diagnostics=" + diagnostic_codes(lowered.diagnostics) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  const called = emb_call_export_bytes(lowered.bytes, "main", empty_arguments())
+  if called.code != emb_ok() then
+    return report_failure(label + " code=" + called.code.to_string())
+  end
+  if decoded_integer(called.raw) != expected then
+    return report_failure(label + " value=" + decoded_integer(called.raw).to_string())
+  end
+  println(label)
+  0
+end
+
+fn main() -> i32 = do
+  if expect_result(lambda_source(), 7, "method_returns_lambda_capturing_self") != 0 then
+    return 1
+  end
+  if expect_result(match_source(), 10, "method_match_body") != 0 then
+    return 1
+  end
+  println("[script_vm] lower_method_critic_unit ok")
+  0
+end
