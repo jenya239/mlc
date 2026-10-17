@@ -18,8 +18,9 @@ import { ProtoBuilder, proto_builder_register_release_to } from './lower_builder
 import { diagnostic_at, emit_instruction, types_agree } from './lower_control'
 import { lower_type_for_record_field, record_field_counts_as_nested, record_field_counts_as_plain } from './lower_float_records'
 import { bind_record_methods } from './lower_method'
+import { bind_field_diagnostic_names, field_access_diagnostic_message } from './lower_field_diagnostics'
 import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
-import { LowerInt, LowerRecord, LowerRecordLayout, LowerType } from './lower_types'
+import { LowerDiagnostic, LowerInt, LowerRecord, LowerRecordLayout, LowerType } from './lower_types'
 fn record_header_name(type_name: string) -> string = "*record*" + type_name
 fn record_field_binding(type_name: string, field_name: string) -> string = "*record*" + type_name + "#" + field_name
 fn encode_field_count(field_count: i32) -> i32 = 0 - 20000 - field_count
@@ -153,6 +154,7 @@ fn install_one_layout(scope: ref mut LowerScope, layout: LowerRecordLayout) -> u
     false
   )
   install_layout_fields(scope, layout.type_name, layout.field_names, layout.field_types)
+  bind_field_diagnostic_names(scope, layout.type_name, layout.field_names)
   bind_record_methods(scope, layout.type_name)
 end
 export fn install_record_layouts(scope: ref mut LowerScope, layouts: [LowerRecordLayout]) -> unit = do
@@ -339,8 +341,8 @@ fn release_read(builder: ref mut ProtoBuilder, mark: i32) -> LowerType = do
   proto_builder_register_release_to(builder, mark)
   LowerInt
 end
-fn fail_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, code: string, source_span: Span, mark: i32) -> LowerType = do
-  lower_scope_fail(scope, diagnostic_at(code, source_span))
+fn fail_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, code: string, message: string, source_span: Span, mark: i32) -> LowerType = do
+  lower_scope_fail(scope, LowerDiagnostic { code: code, message: message, line: source_span.line, column: source_span.column })
   proto_builder_register_release_to(builder, mark)
   LowerInt
 end
@@ -352,7 +354,7 @@ fn emit_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, typ
 end
 fn read_named_field(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, type_name: string, field_name: string, record_register: i32, target: i32, mark: i32, source_span: Span) -> LowerType =
   if record_field_index(scope, type_name, field_name) < 0 then
-    fail_field_read(scope, builder, "unknown_field", source_span, mark)
+    fail_field_read(scope, builder, "unknown_field", field_access_diagnostic_message(scope, type_name, field_name), source_span, mark)
   else
     emit_field_read(scope, builder, type_name, field_name, record_register, target, mark)
   end
@@ -360,7 +362,7 @@ export fn finish_field_read(scope: ref mut LowerScope, builder: ref mut ProtoBui
   if scope.has_diagnostic then
     release_read(builder, mark)
   else if record_type_name(record_type) == "" then
-    fail_field_read(scope, builder, "unknown_record", source_span, mark)
+    fail_field_read(scope, builder, "unknown_record", "unknown_record", source_span, mark)
   else
     read_named_field(scope, builder, record_type_name(record_type), field_name, record_register, target, mark, source_span)
   end

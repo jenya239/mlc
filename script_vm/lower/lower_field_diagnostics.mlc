@@ -1,0 +1,38 @@
+import { LowerScope, lower_scope_define } from './lower_scope'
+import { LowerInt } from './lower_types'
+// Invariants:
+// - a diagnostic entry is (record type name, field index) -> declared field name
+// - the heap slot and the GET_PROP/SET_PROP operand stay the field index
+// - an unknown-field message is the source name when index 0 is in the table, otherwise the index text
+fn diagnostic_prefix(type_name: string) -> string = "*fielddiagnostic*" + type_name + "#"
+fn diagnostic_key(type_name: string, field_index: i32, field_name: string) -> string =
+  diagnostic_prefix(type_name) + field_index.to_string() + "#" + field_name
+fn name_starts_with(name: string, prefix: string) -> bool =
+  name.length() >= prefix.length() && name.substring(0, prefix.length()) == prefix
+fn suffix_after(name: string, prefix: string) -> string =
+  name.substring(prefix.length(), name.length() - prefix.length())
+export fn bind_field_diagnostic_names(scope: ref mut LowerScope, type_name: string, field_names: [string]) -> unit = do
+  let mut index = 0
+  while index < field_names.length() do
+    lower_scope_define(scope, diagnostic_key(type_name, index, field_names[index]), index, LowerInt, false)
+    index = index + 1
+  end
+end
+fn field_diagnostic_name(scope: ref mut LowerScope, type_name: string, field_index: i32) -> string = do
+  let prefix = diagnostic_prefix(type_name) + field_index.to_string() + "#"
+  let mut index = 0
+  let mut found = ""
+  while index < scope.names.length() && found == "" do
+    if name_starts_with(scope.names[index].name, prefix) then
+      found = suffix_after(scope.names[index].name, prefix)
+    end
+    index = index + 1
+  end
+  found
+end
+export fn field_access_diagnostic_message(scope: ref mut LowerScope, type_name: string, field_name: string) -> string =
+  if field_diagnostic_name(scope, type_name, 0) == "" then
+    "0"
+  else
+    field_name
+  end
