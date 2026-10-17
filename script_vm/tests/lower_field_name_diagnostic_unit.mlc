@@ -1,0 +1,44 @@
+import { lower_source } from '../lower/lower_module'
+import { LowerDiagnostic } from '../lower/lower_types'
+
+fn report_failure(label: string) -> i32 = do
+  println("[script_vm lower_field_name_diagnostic_unit] FAIL: " + label)
+  1
+end
+
+fn diagnostic_text(diagnostic: LowerDiagnostic) -> string =
+  "code=" + diagnostic.code + " message=" + diagnostic.message + " line=" + diagnostic.line.to_string() + " column=" + diagnostic.column.to_string()
+
+fn field_source() -> string =
+  "type Point = { x: i32 }\nexport fn main() -> i32 = do\nlet point = Point { x: 1 }\npoint.unknown_field\nend"
+
+fn expect_field_name() -> i32 = do
+  const lowered = lower_source(field_source())
+  if lowered.diagnostics.length() == 0 then
+    return report_failure("no_diagnostic bytes=" + lowered.bytes.length().to_string())
+  end
+  const diagnostic = lowered.diagnostics[0]
+  if diagnostic.code != "unknown_field" then
+    return report_failure(diagnostic_text(diagnostic) + " bytes=" + lowered.bytes.length().to_string())
+  end
+  if diagnostic.message != "unknown_field" then
+    return report_failure(diagnostic_text(diagnostic))
+  end
+  if diagnostic.line <= 0 || diagnostic.column <= 0 then
+    return report_failure(diagnostic_text(diagnostic))
+  end
+  if lowered.bytes.length() != 0 then
+    return report_failure("bytes=" + lowered.bytes.length().to_string() + " " + diagnostic_text(diagnostic))
+  end
+  println(diagnostic_text(diagnostic))
+  println("field_name_diagnostic")
+  0
+end
+
+fn main() -> i32 = do
+  if expect_field_name() != 0 then
+    return 1
+  end
+  println("[script_vm] lower_field_name_diagnostic_unit ok")
+  0
+end
