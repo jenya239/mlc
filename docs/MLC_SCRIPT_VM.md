@@ -193,7 +193,11 @@ safepoint. Guard fail → slow path или возврат в интерпрет�
 
 1. VM без JIT: register bytecode, verifier, closures, arrays/records, tagged
    `Value`, non-moving GC, embedding ABI, native type descriptors, fibers,
-   bytecode dump/trace.
+   bytecode dump/trace. Срез 201–298, сделано: float в лоуэре, `match`,
+   лямбды и замыкания из исходника, простые методы без generics и без
+   наследования, имя поля в диагностике лоуэра. Ещё не сделано: generics,
+   embedding (живая куча между вводами REPL), fibers, дамп VM,
+   инкрементальный GC, лимит памяти элементов.
 2. Адаптивный интерпретатор: counters, quickening, shapes, inline caches,
    specialized arithmetic/native calls — **уже практически полезный продукт**.
 3. Baseline JIT x86-64: whole-function compile, guards+slow stubs,
