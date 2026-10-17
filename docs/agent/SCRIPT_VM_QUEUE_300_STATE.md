@@ -1,8 +1,8 @@
-current_step: 289
+current_step: 290
 status: ready
-last_result: done step 289: имя из таблицы, без неё message=0
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/lower_field_name_diagnostic_unit.mlc => code=unknown_field message=unknown_field line=4 column=6 UNIT_EXIT:0; sabotage without bind_field_diagnostic_names => message=0 UNIT_EXIT:1; ruby scripts/run_script_vm_gate.rb => script_vm_gate ok units=54 GATE_EXIT:0
-next_step: 290
+last_result: done step 290: method 2122, прямой CALL 1986, разрыв 136 — статический CALL плюс аргумент-получатель; 1242 это снимок другого workload
+last_verify: ruby scripts/run_script_vm_method_bench.rb => direct_ns_per_call=1986 method_ns_per_call=2122 method_minus_direct_ns=136 baseline_direct_ns_per_call=1242 BENCH_EXIT:0
+next_step: 291
 consult_count: 0
 consult_response:
 consult_verdict:
