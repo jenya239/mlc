@@ -45,9 +45,10 @@ float_unit_names = [
   "lower_float_record_field",
   "lower_float_array",
   "lower_float_function",
-  "lower_float_critic"
+  "lower_float_critic",
+  "lower_float_if_condition"
 ]
-unless float_unit_names.length == 8
+unless float_unit_names.length == 9
   fail_gate("script_vm_queue200_gate FAIL float unit count")
 end
 
@@ -154,5 +155,8 @@ unless host_status&.success?
   fail_gate("script_vm_queue200_gate FAIL repl_host")
 end
 
+s200_unit_count = 51
+slice_unit_count = float_unit_names.length + match_unit_names.length + lambda_unit_names.length + method_unit_names.length
+puts "script_vm_queue200_gate units=#{s200_unit_count + slice_unit_count} s200=#{s200_unit_count} slice=#{slice_unit_count}"
 puts "script_vm_queue200_gate ok"
 exit 0
