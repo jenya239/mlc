@@ -8,6 +8,7 @@ import {
   ExprInt,
   ExprMethod,
   Param,
+  Span,
   TypeExpr
 } from '../../compiler/frontend/ast'
 import {
@@ -26,8 +27,8 @@ import {
   lower_type_of,
   prepare_call_block
 } from './lower_call'
-import { move_to_target, types_agree } from './lower_control'
-import { LowerScope, lower_scope_define, lower_scope_lookup } from './lower_scope'
+import { diagnostic_at, move_to_target, types_agree } from './lower_control'
+import { LowerScope, lower_scope_define, lower_scope_fail, lower_scope_lookup } from './lower_scope'
 import { LowerCallSignature, LowerInt, LowerRecord, LowerType } from './lower_types'
 import { ValueInt32, value_encode } from '../value'
 // Invariants:
@@ -36,6 +37,7 @@ import { ValueInt32, value_encode } from '../value'
 // - explicit arguments follow self in the CALL window, in source order
 // - a method binding exists only after the record layout pass
 // - self is a ref mut receiver: field stores use the mutable binding path, replacing the binding is rejected
+// - a method missing on the receiver record is unknown_method at the call span
 export type MethodAttempt =
   | MethodHandled(LowerType)
   | MethodIgnored
@@ -228,13 +230,17 @@ fn emit_method_call(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, fu
   proto_builder_register_release_to(builder, mark)
   call_signature_result_type(scope, function_name)
 end
-fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver_name: string, method_name: string, arguments: [Shared<Expr>], target: i32) -> MethodAttempt = do
+fn reject_unknown_method(scope: ref mut LowerScope, source_span: Span) -> MethodAttempt = do
+  lower_scope_fail(scope, diagnostic_at("unknown_method", source_span))
+  MethodHandled(LowerInt)
+end
+fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver_name: string, method_name: string, arguments: [Shared<Expr>], target: i32, source_span: Span) -> MethodAttempt = do
   let type_name = local_record_name(scope, receiver_name)
   let function_name = type_name + "_" + method_name
   if type_name == "" then
     MethodIgnored
   else if lower_scope_lookup(scope, "*method*" + type_name + "#" + method_name) < 0 then
-    MethodIgnored
+    reject_unknown_method(scope, source_span)
   else if call_parameter_count(scope, function_name) != arguments.length() + 1 then
     MethodIgnored
   else if !explicit_arguments_fit(scope, function_name, arguments) then
@@ -243,14 +249,14 @@ fn lower_bound_method(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, 
     MethodHandled(emit_method_call(scope, builder, function_name, receiver_register(scope, receiver_name), arguments, target))
   end
 end
-fn lower_method_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver: Shared<Expr>, method_name: string, arguments: [Shared<Expr>], target: i32) -> MethodAttempt =
+fn lower_method_expression(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, receiver: Shared<Expr>, method_name: string, arguments: [Shared<Expr>], target: i32, source_span: Span) -> MethodAttempt =
   match receiver {
-    ExprIdent(receiver_name, _) => lower_bound_method(scope, builder, receiver_name, method_name, arguments, target),
+    ExprIdent(receiver_name, _) => lower_bound_method(scope, builder, receiver_name, method_name, arguments, target, source_span),
     _ => MethodIgnored
   }
 export fn lower_method_try(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> MethodAttempt =
   match expression {
-    ExprMethod(receiver, method_name, arguments, _) =>
-      lower_method_expression(scope, builder, receiver, method_name, arguments, target),
+    ExprMethod(receiver, method_name, arguments, source_span) =>
+      lower_method_expression(scope, builder, receiver, method_name, arguments, target, source_span),
     _ => MethodIgnored
   }
