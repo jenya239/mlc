@@ -117,7 +117,7 @@ module MLC
                 capture: capture,
                 parameters: parameters,
                 specifiers: specifiers,
-                body: body,
+                body: isolate_preprocessor_lines(body),
                 capture_suffix: capture_suffix,
                 params_suffix: params_suffix,
                 return_type: return_type
@@ -218,7 +218,16 @@ module MLC
 
             # Raw statement (for custom C++ code)
             def raw_statement(code:, leading_trivia: "")
-              CppAst::Nodes::RawStatement.new(code: code, leading_trivia: leading_trivia)
+              CppAst::Nodes::RawStatement.new(
+                code: isolate_preprocessor_lines(code),
+                leading_trivia: leading_trivia
+              )
+            end
+
+            # `#line` is a preprocessing directive. Callers that join statement text
+            # with a space leave it mid-line, where `#` is not a directive.
+            def isolate_preprocessor_lines(code)
+              code.to_s.gsub(/([^\n])(#line )/, "\\1\n\\2")
             end
 
             # Break statement

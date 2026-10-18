@@ -68,7 +68,8 @@ module MLC
               ast_fields.zip(ir_fields).each do |ast_field, ir_field|
                 next unless ast_field[:default]
 
-                ir_expression = @expression_visitor.visit(ast_field[:default], {})
+                ir_expression = @expression_visitor.visit(ast_field[:default], { expected_type: ir_field[:type] })
+                @type_checker.adopt_empty_container_type(ir_expression, ir_field[:type])
                 @type_checker.ensure_type!(
                   ir_expression.type,
                   "default value expression for field '#{ast_field[:name]}' of '#{decl.name}' has unknown type",

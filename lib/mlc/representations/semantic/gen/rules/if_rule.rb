@@ -28,6 +28,8 @@ module MLC
               # Auto-call zero-arity constructors so branch types match
               then_ir = maybe_autocall(then_ir, else_ir&.type, svc.ir_builder, node)
               else_ir = maybe_autocall(else_ir, then_ir.type, svc.ir_builder, node) if else_ir
+              unify_empty_array_branches(then_ir, else_ir, svc.type_checker, context[:expected_type]) if else_ir
+              unify_empty_map_branches(then_ir, else_ir, svc.type_checker, context[:expected_type]) if else_ir
 
               result_type = determine_type(
                 type_checker: svc.type_checker,
@@ -61,6 +63,50 @@ module MLC
 
               ret_type = ir.type.ret_type
               ir_builder.call(func: ir, args: [], type: ret_type, origin: node)
+            end
+
+            def empty_array?(expression)
+              case expression
+              when MLC::SemanticIR::ArrayLiteralExpr
+                expression.elements.empty?
+              when MLC::SemanticIR::BlockExpr
+                expression.statements.empty? && empty_array?(expression.result)
+              else
+                false
+              end
+            end
+
+            # `[]` is an array of i32 until a sibling branch or an expected array type says which element type it copies.
+            def unify_empty_array_branches(then_ir, else_ir, type_checker, expected_type)
+              then_empty = empty_array?(then_ir)
+              else_empty = empty_array?(else_ir)
+              concrete = if then_empty && else_empty && type_checker.concrete_array_type?(expected_type)
+                           expected_type
+                         elsif then_empty && else_ir.type.is_a?(SemanticIR::ArrayType)
+                           else_ir.type
+                         elsif else_empty && then_ir.type.is_a?(SemanticIR::ArrayType)
+                           then_ir.type
+                         end
+              return unless concrete
+
+              type_checker.adopt_empty_array_type(then_ir, concrete) if then_empty
+              type_checker.adopt_empty_array_type(else_ir, concrete) if else_empty
+            end
+
+            def unify_empty_map_branches(then_ir, else_ir, type_checker, expected_type)
+              then_empty = type_checker.unspecified_empty_map?(then_ir)
+              else_empty = type_checker.unspecified_empty_map?(else_ir)
+              concrete = if then_empty && else_empty && type_checker.concrete_map_type?(expected_type)
+                           expected_type
+                         elsif then_empty && else_ir.type.is_a?(SemanticIR::MapType) && type_checker.concrete_map_type?(else_ir.type)
+                           else_ir.type
+                         elsif else_empty && then_ir.type.is_a?(SemanticIR::MapType) && type_checker.concrete_map_type?(then_ir.type)
+                           then_ir.type
+                         end
+              return unless concrete
+
+              type_checker.adopt_empty_map_type(then_ir, concrete) if then_empty
+              type_checker.adopt_empty_map_type(else_ir, concrete) if else_empty
             end
 
             def determine_type(type_checker:, ir_builder:, type_registry:, then_ir:, else_ir:, node:)

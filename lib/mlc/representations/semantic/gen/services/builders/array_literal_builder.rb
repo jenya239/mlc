@@ -39,18 +39,27 @@ module MLC
             end
 
             def infer_element_type(elements_ir, node)
-              if elements_ir.empty?
+              concrete = elements_ir.find { |element| !empty_array?(element) }
+              if concrete
+                ensure_element_type!(concrete, elements_ir.index(concrete), node)
+                concrete.type
+              elsif elements_ir.empty?
                 @ir_builder.prim_type(name: 'i32', origin: node)
               else
-                first = elements_ir.first
-                ensure_element_type!(first, 0, node)
-                first.type
+                elements_ir.first.type
               end
+            end
+
+            def empty_array?(element)
+              element.is_a?(SemanticIR::ArrayLiteralExpr) && element.elements.empty?
             end
 
             def validate_elements(elements_ir, element_type, node)
               elements_ir.each_with_index do |element, index|
                 ensure_element_type!(element, index, node)
+                if element_type.is_a?(SemanticIR::ArrayType) || element_type.is_a?(SemanticIR::MapType)
+                  @type_checker.adopt_empty_container_type(element, element_type)
+                end
                 next if index.zero?
 
                 @type_checker.ensure_compatible_type(

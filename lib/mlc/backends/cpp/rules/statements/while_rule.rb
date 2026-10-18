@@ -30,6 +30,15 @@ module MLC
             private
 
             def lower_body_as_block(body_ir)
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
+              block = lower_body_block(body_ir)
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
+              block
+            end
+
+            def lower_body_block(body_ir)
               if context.checker.block_expr?(body_ir)
                 # Lower block statements without return
                 statements = body_ir.statements.map { |stmt| context.lower_statement(stmt) }

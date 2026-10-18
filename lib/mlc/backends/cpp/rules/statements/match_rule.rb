@@ -16,7 +16,7 @@ module MLC
               scrutinee_type = node.scrutinee&.type
               visit_value = build_visit_value(scrutinee, scrutinee_type, scrutinee_node: node.scrutinee)
 
-              arms = node.arms.map { |arm| lower_match_arm(arm) }
+              arms = node.arms.map { |arm| lower_match_arm(arm, scrutinee_type) }
 
               CppAst::Nodes::MatchStatement.new(
                 value: visit_value,
@@ -27,7 +27,7 @@ module MLC
 
             private
 
-            def lower_match_arm(arm)
+            def lower_match_arm(arm, scrutinee_type)
               pattern = arm[:pattern]
 
               if pattern[:kind] == :wildcard
@@ -39,11 +39,11 @@ module MLC
                 )
               else
                 # Constructor pattern
-                lower_constructor_arm(arm)
+                lower_constructor_arm(arm, scrutinee_type)
               end
             end
 
-            def lower_constructor_arm(arm)
+            def lower_constructor_arm(arm, scrutinee_type)
               pattern = arm[:pattern]
               case_name = pattern[:name]
               var_name = context.sanitize_identifier(case_name.downcase)
@@ -61,10 +61,16 @@ module MLC
                                    end
 
               CppAst::Nodes::MatchArmStatement.new(
-                case_name: case_name,
+                case_name: qualified_variant_type(case_name, scrutinee_type),
                 var_name: var_name,
                 body: block_with_binding
               )
+            end
+
+            def qualified_variant_type(variant_name, scrutinee_type)
+              expression_rule = MLC::Backends::Cpp::Rules::Expressions::MatchRule.new(context)
+              resolved = expression_rule.send(:resolve_variant_cpp_type, variant_name, scrutinee_type)
+              resolved || variant_name
             end
 
             MATCH_SCRUTINEE_SHARED_CALLS = MLC::Backends::Cpp::Rules::Expressions::MatchRule::MATCH_SCRUTINEE_SHARED_CALLS
@@ -126,6 +132,15 @@ module MLC
             end
 
             def lower_statement_block(body_ir)
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
+              block = lower_statement_block_body(body_ir)
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
+              block
+            end
+
+            def lower_statement_block_body(body_ir)
               if context.checker.block_expr?(body_ir)
                 statements = body_ir.statements.map { |stmt| context.lower_statement(stmt) }
                 context.factory.block_statement(

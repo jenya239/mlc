@@ -282,6 +282,7 @@ module MLC
 
             def pass_lower_declarations(context)
               program = context[:program]
+              @function_reducer.prepare_function_value_names(program)
 
               program.declarations.each do |decl|
                 case decl

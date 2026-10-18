@@ -493,7 +493,7 @@ export fn expand_declarations_with_trait_context(declarations: [Shared<Decl>], p
   expand_declarations_with_trait_nominal_maps(declarations, build_trait_nominal_maps(program_for_maps))
 
 export fn expand_trait_as_param_entry_using_full(entry: Program, full_program: Program) -> Program =
-  Program { decls: expand_declarations_with_trait_context(entry.decls, full_program) }
+  Program { decls: expand_declarations_with_trait_context(entry.decls, full_program), module_name: entry.module_name }
 
 export fn expand_trait_as_param_program(program: Program) -> Program =
-  Program { decls: expand_declarations_with_trait_context(program.decls, program) }
+  Program { decls: expand_declarations_with_trait_context(program.decls, program), module_name: program.module_name }

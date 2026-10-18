@@ -72,7 +72,7 @@ export fn mir_bootstrap_report_tests() -> [TestResult] = do
     span_unknown()))
   const sign_decl = fn_decl('sign', [iparam('value')], ti32(), if_body)
   const sign_report = build_mir_bootstrap_report_from_semantic_items([
-    SemanticLoadItem { path: 'sign.mlc', decls: [sign_decl], imports: [], namespace_import_aliases: [] }
+    SemanticLoadItem { path: 'sign.mlc', decls: [sign_decl], imports: [], namespace_import_aliases: [], module_name: '' }
   ])
   results.push(assert_eq_int('bootstrap sign mir_functions', sign_report.mir_function_count, 1))
   results.push(assert_eq_int('bootstrap sign cpp_ok', sign_report.cpp_ok_count, 1))

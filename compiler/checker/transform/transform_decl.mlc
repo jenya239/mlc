@@ -120,16 +120,17 @@ export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_
     do let empty_items: [SemanticLoadItem] = []; empty_items end,
     (result, item) => do
       const destructured_entry_declarations =
-        expand_parameter_destructuring_in_program(Program { decls: item.decls }).decls
+        expand_parameter_destructuring_in_program(Program { decls: item.decls, module_name: item.module_name }).decls
       const expanded_declarations =
         expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
       const functions_used_as_values =
-        function_names_used_as_values(Program { decls: expanded_declarations })
+        function_names_used_as_values(Program { decls: expanded_declarations, module_name: item.module_name })
       const typed_declarations = transform_decls(expanded_declarations, registry, functions_used_as_values, true)
       result.concat([SemanticLoadItem {
         path: item.path,
         decls: typed_declarations,
         imports: item.imports,
-        namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases)
+        namespace_import_aliases: to_semantic_namespace_aliases(item.namespace_import_aliases),
+        module_name: item.module_name
       }])
     end)

@@ -81,7 +81,7 @@ fn parse_module_output_from_merge(database: ref mut CompilerDb, entry_path: stri
   const parse_module_output = ParseModuleOutput {
     load_items: merged.items,
     full_program: merged.program,
-    entry_program: Program { decls: entry_load_item.decls }
+    entry_program: Program { decls: entry_load_item.decls, module_name: entry_load_item.module_name }
   }
   database.parse_cache.set(normalized_path, parse_module_output)
   Ok(parse_module_output)

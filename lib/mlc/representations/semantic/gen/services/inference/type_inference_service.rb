@@ -100,6 +100,7 @@ module MLC
                 type_error("Lambda expects #{expected.length} argument(s), got #{args.length}") if expected.length != args.length
 
                 expected.each_with_index do |param, index|
+                  @type_checker.adopt_empty_container_type(args[index], param[:type])
                   @type_checker.ensure_compatible_type(args[index].type, param[:type], "lambda argument #{index + 1}")
                 end
 

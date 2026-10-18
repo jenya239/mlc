@@ -212,4 +212,4 @@ export fn load_cpp_header_decls(path: string) -> HeaderImportResult = do
 end
 
 export fn registry_from_cpp_header_source(source_text: string) -> TypeRegistry =
-  build_registry(Program { decls: parse_cpp_header_source(source_text).declarations })
+  build_registry(Program { decls: parse_cpp_header_source(source_text).declarations, module_name: '' })

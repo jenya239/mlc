@@ -36,6 +36,7 @@ module MLC
                   svc.type_checker.type_error("cannot rebind 'const #{target_name}'", node: node)
                 end
 
+                svc.type_checker.adopt_empty_container_type(value_ir, existing_type)
                 svc.type_checker.ensure_compatible_type(
                   value_ir.type,
                   existing_type,

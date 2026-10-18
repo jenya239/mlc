@@ -6,10 +6,11 @@ module MLC
       class MatchAnalyzer
         Analysis = Struct.new(:arms, :result_type)
 
-        def initialize(ensure_compatible_type:, type_registry: nil, check_exhaustiveness: true)
+        def initialize(ensure_compatible_type:, type_registry: nil, check_exhaustiveness: true, prepare_arm_bodies: nil)
           @ensure_compatible_type = ensure_compatible_type
           @type_registry = type_registry
           @check_exhaustiveness = check_exhaustiveness
+          @prepare_arm_bodies = prepare_arm_bodies
         end
 
         def analyze(scrutinee_type:, arms:, transform_arm:)
@@ -18,6 +19,8 @@ module MLC
           end
 
           raise ArgumentError, "match expression requires at least one arm" if transformed_arms.empty?
+
+          @prepare_arm_bodies&.call(transformed_arms)
 
           first_body = transformed_arms.first[:body]
           result_type = first_body&.type

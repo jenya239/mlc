@@ -11,13 +11,15 @@ import { tokenize } from '../lexer'
 // --- Statement parsers (merged to break exprs<->stmts cycle) --------------
 
 export fn parse_statements_until_end(parser: Parser) -> StmtsResult = do
+  const outer_depth = parser.inside_block_depth
   const stmts: [Shared<Stmt>] = []
-  let mut state = parser
+  let mut state = parser.with_inside_block_depth(outer_depth + 1)
   while !state.kind().is_end() && !state.at_eof() do
     const parsed = parse_statement(state)
     stmts.push(parsed.value)
     state = parsed.parser.skip_semi()
   end
+  state = state.with_inside_block_depth(outer_depth)
   if state.kind().is_end() then return statements_parse_result(stmts, state.advance()) end
   if state.at_eof() then return statements_parse_result(stmts, state.record_parse_error('parse: expected end in block')) end
   statements_parse_result(stmts, state)
@@ -37,7 +39,7 @@ end
 
 fn parser_at_toplevel_declaration_start(parser: Parser) -> bool = do
   const kind = parser.kind()
-  if kind.is_fn() || kind.is_type() || kind.is_extend() || kind.is_import() then return true end
+  if kind.is_fn() || kind.is_type() || kind.is_extend() || kind.is_import() || kind.is_module() then return true end
   if kind.is_extern() && parser.advance().kind().is_fn() then return true end
   if kind.is_ident() && (kind.ident() == 'export' || kind.ident() == 'trait') then return true end
   false
@@ -61,7 +63,7 @@ export fn parse_statements_until_else_end(parser: Parser) -> StmtsResult = do
   while !state.kind().is_end() && !state.kind().is_else() && !state.at_eof() do
     const parsed = parse_statement(state)
     stmts.push(parsed.value)
-    state = parsed.parser
+    state = parsed.parser.skip_semi()
   end
   statements_parse_result(stmts, state)
 end
@@ -859,7 +861,8 @@ end
 
 fn parse_primary_unit_fallback(parser: Parser) -> ExprResult = do
   const source_span = parser.span_at_cursor()
-  const error_parser = parser.record_parse_error('parse: unexpected token in expression')
+  const error_parser = parser.record_parse_error(
+    'parse: unexpected token in expression at line ' + source_span.line.to_string() + ' column ' + source_span.column.to_string())
   expression_parse_result(Shared.new(ExprUnit(source_span)), error_parser.advance())
 end
 
@@ -996,21 +999,68 @@ fn if_expression_condition(is_negated: bool, expression: Shared<Expr>) -> Shared
 fn parser_after_optional_end(parser: Parser) -> Parser =
   if parser.kind().is_end() then parser.advance() else parser end
 
+fn parser_following_starts_declaration(parser: Parser) -> bool = do
+  const kind = parser.kind()
+  if kind.is_fn() || kind.is_type() || kind.is_extend() || kind.is_import() || kind.is_extern() || kind.is_module() then return true end
+  if kind.is_ident() && (kind.ident() == 'export' || kind.ident() == 'trait' || kind.ident() == 'enum') then
+    return true
+  end
+  false
+end
+
+// `branch_closed_itself` means the last branch was `do ... end`. That `end`
+// already closed the branch. The next `end` still closes this if when another
+// `end` remains after it, when a statement of the enclosing block follows it,
+// or when both closers share a line. It closes the enclosing block when what
+// follows it is EOF or a declaration.
+fn parser_trailing_end_closes_if(parser: Parser, branch_closed_itself: bool) -> bool = do
+  if !parser.kind().is_end() then return false end
+  if !branch_closed_itself || parser.inside_block_depth == 0 then return true end
+  if parser.span_at_cursor().line == parser.prev_line() then return true end
+  const following = parser.advance()
+  if following.at_eof() then return false end
+  if parser_following_starts_declaration(following) then return false end
+  true
+end
+
+fn parser_after_if_closer(parser: Parser, branch_closed_itself: bool) -> Parser =
+  if parser_trailing_end_closes_if(parser, branch_closed_itself) then parser.advance() else parser end
+
+fn parse_one_statement_result(parser: Parser) -> StmtsResult = do
+  const parsed = parse_statement(parser)
+  const statements: [Shared<Stmt>] = []
+  statements.push(parsed.value)
+  statements_parse_result(statements, parsed.parser)
+end
+
+fn parse_if_then_branch(parser: Parser, then_keyword_line: i32) -> StmtsResult =
+  if parser.span_at_cursor().line > then_keyword_line then
+    parse_statements_until_else_end(parser)
+  else
+    parse_one_statement_result(parser)
+  end
+
+fn parser_at_same_line_chained_if(parser: Parser) -> bool = do
+  if !(parser.kind().is_if() || parser.kind().is_unless()) then return false end
+  parser.span_at_cursor().line == parser.prev_line()
+end
+
 export fn parse_if_expr(parser: Parser) -> ExprResult = do
   const header_span = parser.span_at_cursor()
   const is_negated = parser.kind().is_unless()
   const cond_parsed = parse_expr(parser.advance())
   const expression = cond_parsed.value
   const condition = if_expression_condition(is_negated, expression)
-  const then_parsed = parse_statements_until_else_end(cond_parsed.parser.advance())
+  const then_keyword_line = cond_parsed.parser.span_at_cursor().line
+  const then_parsed = parse_if_then_branch(cond_parsed.parser.advance(), then_keyword_line)
   const then_expr = statements_result_to_block_expr(then_parsed, header_span)
   if !then_parsed.parser.kind().is_else() then
     return expression_parse_result(
       Shared.new(ExprIf(condition, then_expr, Shared.new(ExprUnit(span_unknown())), header_span)),
-      then_parsed.parser.advance())
+      parser_after_if_closer(then_parsed.parser, false))
   end
   const after_else = then_parsed.parser.advance()
-  if after_else.kind().is_if() || after_else.kind().is_unless() then
+  if parser_at_same_line_chained_if(after_else) then
     const else_parsed = parse_if_expr(after_else)
     return expression_parse_result(
       Shared.new(ExprIf(condition, then_expr, else_parsed.value, header_span)),
@@ -1020,7 +1070,7 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
     const else_block_parsed = parse_block(after_else.advance(), header_span)
     return expression_parse_result(
       Shared.new(ExprIf(condition, then_expr, else_block_parsed.value, header_span)),
-      parser_after_optional_end(else_block_parsed.parser))
+      parser_after_if_closer(else_block_parsed.parser, true))
   end
   const else_keyword_line = after_else.prev_line()
   const else_body_start_line = after_else.span_at_cursor().line
@@ -1031,10 +1081,10 @@ export fn parse_if_expr(parser: Parser) -> ExprResult = do
       Shared.new(ExprIf(condition, then_expr, statements_result_to_block_expr(else_stmts_parsed, else_span), header_span)),
       else_stmts_parsed.parser)
   end
-  const else_parsed = parse_expr(after_else)
+  const else_parsed = parse_one_statement_result(after_else)
   return expression_parse_result(
-    Shared.new(ExprIf(condition, then_expr, else_parsed.value, header_span)),
-    parser_after_optional_end(else_parsed.parser))
+    Shared.new(ExprIf(condition, then_expr, statements_result_to_block_expr(else_parsed, after_else.span_at_cursor()), header_span)),
+    parser_after_if_closer(else_parsed.parser, false))
 end
 
 fn parse_block(parser: Parser, header_span: Span) -> ExprResult = do

@@ -399,10 +399,11 @@ module MLC
                 m,
                 trait_self_name: trait_self_name,
                 trait_self_keyword: trait_self_keyword,
-                associated_type_names: associated_type_names
+                associated_type_names: associated_type_names,
+                type_registry: @context.type_registry
               )
               ret_syntax = m[:ret_type]
-              ret_type = ret_syntax ? TraitCppTypes.ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names) : "void"
+              ret_type = ret_syntax ? TraitCppTypes.ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, type_registry: @context.type_registry) : "void"
               "  std::function<#{ret_type}(#{param_types})> #{m[:name]};"
             end.join("\n")
             struct_body = if uses_associated_types
@@ -438,15 +439,15 @@ module MLC
                 trait_has_self_receiver = first_trait_type.is_a?(MLC::Source::AST::Type) && first_trait_type.name == "Self"
                 implementation_parameters = implementation_parameters.drop(1) if trait_has_self_receiver
                 param_decls = implementation_parameters.each_with_index.map do |parameter, index|
-                  TraitCppTypes.ast_type_to_cpp(parameter.type) + " _p#{index}"
+                  TraitCppTypes.ast_type_to_cpp(parameter.type, type_registry: @context.type_registry) + " _p#{index}"
                 end.join(", ")
                 param_names = implementation_parameters.each_with_index.map { |_, index| "_p#{index}" }.join(", ")
-                ret_cpp = TraitCppTypes.ast_type_to_cpp(impl_method.ret_type)
+                ret_cpp = TraitCppTypes.ast_type_to_cpp(impl_method.ret_type, type_registry: @context.type_registry)
                 statement_prefix = ret_cpp == "void" ? "" : "return "
                 if trait_has_self_receiver && uses_associated_types
                   receiver_declaration = "#{cpp_type} receiver"
                   extra_declarations = implementation_parameters.each_with_index.map do |parameter, index|
-                    "#{TraitCppTypes.ast_type_to_cpp(parameter.type)} _p#{index}"
+                    "#{TraitCppTypes.ast_type_to_cpp(parameter.type, type_registry: @context.type_registry)} _p#{index}"
                   end
                   lambda_parameter_list = ([receiver_declaration] + extra_declarations).join(", ")
                   call_arguments = (["receiver"] + implementation_parameters.each_with_index.map { |_, index| "_p#{index}" }).join(", ")
@@ -1540,7 +1541,7 @@ end
             @trait_registry.implementations_for(name).each do |impl|
               next if impl.associated_type_bindings.nil? || impl.associated_type_bindings.empty?
               impl.associated_type_bindings.each do |assoc_name, ast_type|
-                cpp_type = TraitCppTypes.ast_type_to_cpp(ast_type)
+                cpp_type = TraitCppTypes.ast_type_to_cpp(ast_type, type_registry: @context.type_registry)
                 next unless cpp_type
                 members << @context.factory.raw_statement(code: "using #{assoc_name} = #{cpp_type};")
               end

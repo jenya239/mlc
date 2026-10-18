@@ -42,7 +42,7 @@ class MLCStringLenAliasTest < Minitest::Test
     MLC
 
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "arr.size()", ".len() on array should map to .size() in C++"
+    assert_includes cpp, "arr.length()", ".len() on array should map to .length() in C++"
   end
 
   def test_array_type_prefix_syntax_parsing

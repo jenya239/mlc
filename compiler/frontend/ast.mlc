@@ -265,7 +265,7 @@ export type Decl =
   | DeclAssocType(string, Span)
   | DeclAssocBind(string, Shared<TypeExpr>, Span)
 
-export type Program = Program { decls: [Shared<Decl>] }
+export type Program = Program { decls: [Shared<Decl>], module_name: string }
 
 export fn param_name(p: Shared<Param>) -> string = p.name
 export fn param_type_value(parameter: Shared<Param>) -> Shared<TypeExpr> = parameter.type_value

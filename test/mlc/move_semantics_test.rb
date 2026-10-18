@@ -2,6 +2,7 @@
 
 require "minitest/autorun"
 require_relative "../../lib/mlc/common/index"
+require_relative "../../lib/mlc/representations/semantic/gen/services/scope/var_type_registry"
 
 class MoveSemanticsTest < Minitest::Test
   # ===========================================
@@ -159,6 +160,38 @@ class MoveSemanticsTest < Minitest::Test
     assert_includes cpp, "len"
   end
 
+  def test_record_used_after_bind
+    source = <<~MLC
+      type Point = { x: i32, y: i32 }
+
+      fn foo() -> i32 = do
+        let a = Point { x: 1, y: 2 }
+        let b = a
+        a.x + b.y
+      end
+    MLC
+
+    cpp = MLC.to_cpp(source)
+    refute_includes cpp, "std::move"
+  end
+
+  def test_sum_used_after_bind
+    source = <<~MLC
+      type Shape = Circle(i32) | Point
+
+      fn identify(shape: Shape) -> i32 = 1
+
+      fn foo() -> i32 = do
+        let a = Circle(4)
+        let b = a
+        identify(a) + identify(b)
+      end
+    MLC
+
+    cpp = MLC.to_cpp(source)
+    refute_includes cpp, "std::move(a)"
+  end
+
   def test_owned_arg_moved_on_pass
     source = <<~MLC
       fn consume(x: Owned<i32>) -> i32 = 0
@@ -255,7 +288,9 @@ class MoveSemanticsTest < Minitest::Test
     assert vtr.copy_type?(prim("string"))
     assert vtr.copy_type?(prim("str"))
     assert vtr.copy_type?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
-    refute vtr.copy_type?(MLC::SemanticIR::RecordType.new(name: "Point", fields: []))
+    assert vtr.copy_type?(MLC::SemanticIR::RecordType.new(name: "Point", fields: []))
+    assert vtr.copy_type?(MLC::SemanticIR::SumType.new(name: "Shape", variants: []))
+    refute vtr.copy_type?(owned_type("i32"))
   end
 
   def test_move_on_bind_predicate
@@ -266,6 +301,8 @@ class MoveSemanticsTest < Minitest::Test
 
     refute vtr.move_on_bind?(prim("string"))
     refute vtr.move_on_bind?(MLC::SemanticIR::ArrayType.new(element_type: prim("i32")))
+    refute vtr.move_on_bind?(MLC::SemanticIR::RecordType.new(name: "Point", fields: []))
+    refute vtr.move_on_bind?(MLC::SemanticIR::SumType.new(name: "Shape", variants: []))
     assert vtr.move_on_bind?(owned_type("i32"))
   end
 

@@ -107,7 +107,7 @@ class ArrayMutationTest < Minitest::Test
       end
     MLC
     cpp = MLC.to_cpp(source)
-    assert_includes cpp, "arr.size()"
+    assert_includes cpp, "arr.length()"
   end
 
   def test_contains_on_const_array
@@ -178,6 +178,6 @@ class ArrayMutationTest < Minitest::Test
     cpp = MLC.to_cpp(source)
     assert_includes cpp, "items.push_back(30)"
     assert_includes cpp, "items.push_back(40)"
-    assert_includes cpp, "items.size()"
+    assert_includes cpp, "items.length()"
   end
 end

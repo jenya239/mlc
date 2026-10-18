@@ -1,5 +1,29 @@
 // Pure string utilities for C++ name mapping and code emission (no context dependency).
 
+export fn namespace_from_module_name(module_name: string) -> string = do
+  let mut lowered = ''
+  let mut index = 0
+  while index < module_name.length() do
+    const character = module_name.char_at(index)
+    if character == "/" then lowered = lowered + "::"
+    else lowered = lowered + character.to_lower()
+    end
+    index = index + 1
+  end
+  if lowered == "main" || lowered == "stdin" || lowered == "stdout" || lowered == "stderr" || lowered == "errno" then
+    "mlc_" + lowered
+  else lowered
+  end
+end
+
+export fn namespace_from_path(path: string) -> string = do
+  const base = path_to_module_base(path)
+  if base == "main" then "mlc_main" else base end
+end
+
+export fn module_namespace(module_name: string, path: string) -> string =
+  if module_name != "" then namespace_from_module_name(module_name) else namespace_from_path(path) end
+
 export fn path_to_module_base(path: string) -> string = do
   let mut last_slash = -1
   let mut last_dot = path.length()
@@ -116,7 +140,7 @@ export fn template_prefix(type_params: [string]) -> string =
 export fn include_lines(import_paths: [string]) -> string =
   import_paths.map(path => `#include ` + `"` + path_to_module_base(path) + '.hpp' + `"` + `\n`).join('')
 
-fn is_stdlib_import_path(path: string) -> bool = do
+export fn is_stdlib_import_path(path: string) -> bool = do
   if path.length() >= 4 && path.substring(0, 4) == 'std/' then true
   else do
     const base = path_to_module_base(path)

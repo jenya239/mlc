@@ -11,7 +11,8 @@ fn hybrid_pipeline_input(source: string, output_directory: string) -> ModularCom
     path: 'layout_probe.mlc',
     decls: program.decls,
     imports: [],
-    namespace_import_aliases: []
+    namespace_import_aliases: [],
+    module_name: program.module_name
   }
   ModularCompileInput {
     load_items: [load_item],

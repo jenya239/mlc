@@ -24,7 +24,9 @@ module MLC
               end
 
               if svc.variable_decl_statement?(node)
-                value_ir = @expression_visitor.visit(node.value)
+                expected_type = node.type ? @services.type_builder.transform(node.type) : nil
+                visitor_context = expected_type ? { expected_type: expected_type } : {}
+                value_ir = @expression_visitor.visit(node.value, visitor_context)
                 return apply_rule(node, value_ir: value_ir)
               end
 
@@ -34,7 +36,9 @@ module MLC
               end
 
               if svc.return_statement?(node)
-                value_ir = node.expr ? @expression_visitor.visit(node.expr) : nil
+                expected_type = @services.scope_context.current_function_return
+                visitor_context = expected_type ? { expected_type: expected_type } : {}
+                value_ir = node.expr ? @expression_visitor.visit(node.expr, visitor_context) : nil
                 return apply_rule(node, value_ir: value_ir)
               end
 

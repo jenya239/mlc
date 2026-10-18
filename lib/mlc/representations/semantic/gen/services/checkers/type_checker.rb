@@ -127,6 +127,16 @@ module MLC
               return if generic_type_name?(expected_name)
               return if actual_name == "auto"
               return if expected.is_a?(SemanticIR::TypeVariable)
+              if actual.is_a?(SemanticIR::ArrayType) && expected.is_a?(SemanticIR::ArrayType)
+                ensure_compatible_type(actual.element_type, expected.element_type, context, node: node)
+                return
+              end
+              if actual.is_a?(SemanticIR::MapType) && expected.is_a?(SemanticIR::MapType)
+                ensure_compatible_type(actual.key_type, expected.key_type, context, node: node)
+                ensure_compatible_type(actual.value_type, expected.value_type, context, node: node)
+                return
+              end
+
               return if actual_name == expected_name
               return if unit_like?(actual_name, actual) && unit_like?(expected_name, expected)
               # Allow char <-> i32 comparison (char literals are parsed as i32)
@@ -146,6 +156,152 @@ module MLC
               )
 
               type_error("#{context} expected #{expected_name}, got #{actual_name}", node: node)
+            end
+
+            def concrete_array_type?(type)
+              return false unless type.is_a?(SemanticIR::ArrayType)
+
+              element = type.element_type
+              return false if element.nil? || element.is_a?(SemanticIR::TypeVariable)
+              return false if normalized_type_name(type_name(element)) == "auto"
+              return concrete_array_type?(element) if element.is_a?(SemanticIR::ArrayType)
+
+              true
+            end
+
+            # An empty array literal is i32[] until a concrete array type is known.
+            # Retype the literal and any if/block that only exists to carry it.
+            def adopt_empty_array_type(expr, expected_type)
+              return unless expr && concrete_array_type?(expected_type)
+
+              case expr
+              when SemanticIR::ArrayLiteralExpr
+                if expr.elements.empty?
+                  assign_expression_type(expr, expected_type, update_registry: false)
+                  return
+                end
+                expr.elements.each { |element| adopt_empty_array_type(element, expected_type.element_type) }
+                return unless expr.elements.all? { |element| types_match?(element.type, expected_type.element_type) }
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+              when SemanticIR::IfExpr
+                adopt_empty_array_type(expr.then_branch, expected_type)
+                adopt_empty_array_type(expr.else_branch, expected_type)
+                return unless types_match?(expr.then_branch&.type, expected_type)
+                return if expr.else_branch && !types_match?(expr.else_branch.type, expected_type)
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+              when SemanticIR::BlockExpr
+                adopt_empty_array_type(expr.result, expected_type)
+                assign_expression_type(expr, expected_type, update_registry: false) if types_match?(expr.result&.type, expected_type)
+              when SemanticIR::UnsafeBlockExpr
+                adopt_empty_array_type(expr.body, expected_type)
+                assign_expression_type(expr, expected_type, update_registry: false) if types_match?(expr.body&.type, expected_type)
+              when SemanticIR::MatchExpr
+                expr.arms.each { |arm| adopt_empty_array_type(arm[:body], expected_type) }
+                return unless expr.arms.all? { |arm| types_match?(arm[:body]&.type, expected_type) }
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+              end
+            end
+
+            def empty_array_expression?(expression)
+              case expression
+              when SemanticIR::ArrayLiteralExpr
+                expression.elements.empty?
+              when SemanticIR::BlockExpr
+                expression.statements.empty? && empty_array_expression?(expression.result)
+              else
+                false
+              end
+            end
+
+            def unify_match_arm_bodies(arms)
+              bodies = arms.map { |arm| arm[:body] }.compact
+              array_type = bodies.find { |body| body.type.is_a?(SemanticIR::ArrayType) && !empty_array_expression?(body) }&.type
+              map_type = bodies.find { |body| body.type.is_a?(SemanticIR::MapType) && !unspecified_empty_map?(body) }&.type
+              bodies.each do |body|
+                adopt_empty_array_type(body, array_type) if array_type
+                adopt_empty_map_type(body, map_type) if map_type
+              end
+            end
+
+            def types_match?(actual, expected)
+              return false unless actual && expected
+              if actual.is_a?(SemanticIR::ArrayType) || expected.is_a?(SemanticIR::ArrayType)
+                return false unless actual.is_a?(SemanticIR::ArrayType) && expected.is_a?(SemanticIR::ArrayType)
+
+                return types_match?(actual.element_type, expected.element_type)
+              end
+              if actual.is_a?(SemanticIR::MapType) || expected.is_a?(SemanticIR::MapType)
+                return false unless actual.is_a?(SemanticIR::MapType) && expected.is_a?(SemanticIR::MapType)
+
+                return types_match?(actual.key_type, expected.key_type) &&
+                       types_match?(actual.value_type, expected.value_type)
+              end
+
+              normalized_type_name(type_name(actual)) == normalized_type_name(type_name(expected))
+            end
+
+            def concrete_map_type?(type)
+              return false unless type.is_a?(SemanticIR::MapType)
+
+              concrete_container_part?(type.key_type) && concrete_container_part?(type.value_type)
+            end
+
+            def concrete_container_part?(type)
+              return false if type.nil? || type.is_a?(SemanticIR::TypeVariable)
+              return false if normalized_type_name(type_name(type)) == "auto"
+              return concrete_array_type?(type) if type.is_a?(SemanticIR::ArrayType)
+              return concrete_map_type?(type) if type.is_a?(SemanticIR::MapType)
+
+              true
+            end
+
+            # Map.new() with no expected type is Map<string, string>. A later concrete map type replaces that default.
+            def unspecified_empty_map?(expr)
+              node = expr
+              node = node.result while node.is_a?(SemanticIR::BlockExpr) && node.statements.empty?
+              return false unless node.is_a?(SemanticIR::CallExpr)
+              return false unless node.callee.is_a?(SemanticIR::VarExpr)
+              return false unless %w[Map_new HashMap_new].include?(node.callee.name)
+              return false unless node.args.nil? || node.args.empty?
+
+              map_type = node.type
+              return true unless map_type.is_a?(SemanticIR::MapType)
+
+              key_name = normalized_type_name(type_name(map_type.key_type))
+              value_name = normalized_type_name(type_name(map_type.value_type))
+              (key_name == "string" && value_name == "string") || key_name == "auto" || value_name == "auto"
+            end
+
+            def adopt_empty_map_type(expr, expected_type)
+              return unless expr && concrete_map_type?(expected_type)
+
+              case expr
+              when SemanticIR::CallExpr, SemanticIR::BlockExpr
+                return unless unspecified_empty_map?(expr)
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+                adopt_empty_map_type(expr.result, expected_type) if expr.is_a?(SemanticIR::BlockExpr)
+              when SemanticIR::IfExpr
+                adopt_empty_map_type(expr.then_branch, expected_type)
+                adopt_empty_map_type(expr.else_branch, expected_type)
+                return unless types_match?(expr.then_branch&.type, expected_type)
+                return if expr.else_branch && !types_match?(expr.else_branch.type, expected_type)
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+              when SemanticIR::MatchExpr
+                expr.arms.each { |arm| adopt_empty_map_type(arm[:body], expected_type) }
+                return unless expr.arms.all? { |arm| types_match?(arm[:body]&.type, expected_type) }
+
+                assign_expression_type(expr, expected_type, update_registry: false)
+              end
+            end
+
+            def adopt_empty_container_type(expr, expected_type)
+              adopt_empty_array_type(expr, expected_type)
+              adopt_empty_map_type(expr, expected_type)
             end
 
             def ensure_boolean_type(type, context, node: nil)
@@ -224,9 +380,9 @@ module MLC
               args.length.times do |index|
                 type = expected[index]
                 arg_expr = args[index]
-                ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'", node: arg_expr)
-                # Don't propagate ref types back to the argument expression
                 effective_type = (type.is_a?(SemanticIR::MutRefType) || type.is_a?(SemanticIR::RefType)) ? type.inner_type : type
+                adopt_empty_container_type(arg_expr, effective_type)
+                ensure_compatible_type(arg_expr.type, type, "argument #{index + 1} of '#{name}'", node: arg_expr)
                 assign_expression_type(arg_expr, effective_type)
               end
             end

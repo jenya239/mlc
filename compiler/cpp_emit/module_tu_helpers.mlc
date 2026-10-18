@@ -1,6 +1,5 @@
 // Native C++ decl builders for module translation unit scaffolding (Phase 2).
 
-import { using_namespace_names } from '../codegen/cpp_naming'
 import { CppDeclaration, CppInclude, CppIfndef, CppDefineMacro, CppEndif, CppNamespaceBegin, CppNamespaceEnd, CppBlankLine, CppUsingNamespace, CppHostEntryMain } from '../cpp_ir/cpp_ast'
 
 fn push_parsed_include_line(declarations: [Shared<CppDeclaration>], line: string) -> [Shared<CppDeclaration>] = do
@@ -71,10 +70,9 @@ export fn make_using_namespace_cpp_declaration(namespace_identifier: string) -> 
 
 export fn append_using_namespace_declarations(
   declarations: [Shared<CppDeclaration>],
-  import_paths: [string]
+  namespace_names: [string]
 ) -> [Shared<CppDeclaration>] = do
   let mut result = declarations
-  const namespace_names = using_namespace_names(import_paths)
   let mut index = 0
   while index < namespace_names.length() do
     result.push(make_using_namespace_cpp_declaration(namespace_names[index]))

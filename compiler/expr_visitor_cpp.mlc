@@ -667,6 +667,8 @@ fn if_branch_type_matches_result(
 // `LStr(x)` both report the owner sum type, yet each lowers to its own distinct
 // concrete C++ struct literal (`LChar{x}`/`LStr{x}`) - unrelated types with no
 // common ternary type unless they happen to be the exact same constructor.
+// An if branch is a block; an empty block lowers to its result expression, so
+// the constructor call is that result, not the branch node.
 fn if_branch_constructor_name(branch_expression: Shared<SemanticExpression>) -> string =
   match branch_expression {
     SemanticExpressionCall(function_expression, _, _, _, _) =>
@@ -674,6 +676,8 @@ fn if_branch_constructor_name(branch_expression: Shared<SemanticExpression>) -> 
         SemanticExpressionIdent(name, _, _) => if is_constructor_call(function_expression) then name else '' end,
         _ => ''
       },
+    SemanticExpressionBlock(_, result_expression, _, _) =>
+      if_branch_constructor_name(result_expression),
     _ => ''
   }
 

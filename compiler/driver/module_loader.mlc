@@ -27,7 +27,8 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
         path: norm_path,
         decls: header_loaded.declarations,
         imports: [],
-        namespace_import_aliases: []
+        namespace_import_aliases: [],
+        module_name: ''
       }]
       const load_parsed = LoadResult { items: header_items, errors: [] }
       cache.set(norm_path, load_parsed)
@@ -60,6 +61,11 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
     let my_imports: [string] = []
     let my_namespace_import_aliases: [NamespaceImportAlias] = []
     let mut all_errors: [string] = []
+    let mut parse_error_index = 0
+    while parse_error_index < parse_parsed.errors.length() do
+      all_errors.push('parse ' + norm_path + ': ' + parse_parsed.errors[parse_error_index])
+      parse_error_index = parse_error_index + 1
+    end
     let mut index = 0
     while index < program.decls.length() do
       match program.decls[index] {
@@ -90,7 +96,8 @@ fn load_module_impl(path: string, loaded: ref mut Map<string, bool>, cache: ref 
       path: norm_path,
       decls: module_declarations,
       imports: my_imports,
-      namespace_import_aliases: my_namespace_import_aliases
+      namespace_import_aliases: my_namespace_import_aliases,
+      module_name: program.module_name
     })
     const load_parsed = LoadResult { items: items, errors: all_errors }
     cache.set(norm_path, load_parsed)

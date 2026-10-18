@@ -25,6 +25,7 @@ module MLC
                 final_type = value_ir.type
 
                 if expected_type
+                  type_checker.adopt_empty_container_type(value_ir, expected_type)
                   type_checker.ensure_compatible_type(
                     value_ir.type,
                     expected_type,

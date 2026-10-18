@@ -17,7 +17,7 @@ fn si(v: i32) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionInt(v
 
 export fn pipe_and_record_update_tests() -> [TestResult] = do
   let results: [TestResult] = []
-  const empty_program = Program { decls: [] }
+  const empty_program = Program { decls: [], module_name: '' }
   const context = create_codegen_context(empty_program)
   const transform_context = empty_transform_context()
 
@@ -60,7 +60,7 @@ export fn pipe_and_record_update_tests() -> [TestResult] = do
       default_expression: Shared.new(ExprUnit(span_unknown()))
     })
   ], false))], [], span_unknown()))
-  const point_program  = Program { decls: [point_decl] }
+  const point_program  = Program { decls: [point_decl], module_name: '' }
   const point_context   = create_codegen_context(point_program)
 
   const point_type = Shared.new(TNamed('Point'))

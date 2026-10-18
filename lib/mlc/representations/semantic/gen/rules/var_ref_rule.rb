@@ -30,10 +30,34 @@ module MLC
               end
 
               type = svc.type_inference_service.infer_variable_type(name)
+              constructed = nullary_variant_value_type(svc, name, type)
+              type = constructed if constructed
               svc.ir_builder.var(name: name, type: type, origin: node)
             end
 
             private
+
+            def nullary_variant_value_type(svc, name, type)
+              return nil unless type.is_a?(SemanticIR::FunctionType)
+              return nil unless Array(type.params).empty?
+
+              info = svc.function_registry.fetch(name)
+              return nil if info.nil? || Array(info.type_params).any?
+
+              return_type = type.ret_type
+              sum_type = if return_type.is_a?(SemanticIR::SumType)
+                           return_type
+                         elsif return_type.is_a?(SemanticIR::GenericType) &&
+                               return_type.base_type.is_a?(SemanticIR::SumType)
+                           return_type.base_type
+                         end
+              return nil unless sum_type
+
+              variant = Array(sum_type.variants).find { |entry| entry[:name] == name }
+              return nil unless variant && Array(variant[:fields]).empty?
+
+              return_type
+            end
 
             def check_use_after_move!(svc, name, _node)
               return unless svc.var_type_registry.moved?(name)

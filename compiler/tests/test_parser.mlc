@@ -780,14 +780,50 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_true('parse program: inline if-then-else without end parses',
     parse_source_errors('fn f() -> i32 = if true then 1 else 2').length() == 0))
 
+  results.push(assert_eq_int('parse program: same-line else assignment inside do — 0 parse errors',
+    parse_source_errors("fn f() -> string = do\n  let mut lowered = ''\n  if true then lowered = lowered + \"a\"\n  else lowered = lowered + \"b\"\n  end\n  lowered\nend").length(), 0))
+
+  results.push(assert_eq_int('parse program: same-line else if — 0 parse errors',
+    parse_source_errors('fn f() -> i32 = if true then 1 else if false then 2 else 3').length(), 0))
+
+  results.push(assert_eq_int('parse program: newline else if inside do — 0 parse errors',
+    parse_source_errors("fn f() -> i32 = do\n  if true then\n    1\n  else\n    if true then\n      2\n    else\n      3\n    end\n  end\nend\n\nfn g() -> i32 = 4").length(), 0))
+
+  results.push(assert_eq_int('parse program: newline else if inside do — 2 decls',
+    decl_count("fn f() -> i32 = do\n  if true then\n    1\n  else\n    if true then\n      2\n    else\n      3\n    end\n  end\nend\n\nfn g() -> i32 = 4"), 2))
+
+  results.push(assert_eq_int('parse program: trailing end after function — 0 parse errors',
+    parse_source_errors("fn f() -> i32 = do\n  1\nend\nend").length(), 0))
+
+  results.push(assert_eq_int('parse program: trailing end after function — 1 decl',
+    decl_count("fn f() -> i32 = do\n  1\nend\nend"), 1))
+
+  results.push(assert_eq_int('parse program: hash comment and module — 0 parse errors',
+    parse_source_errors("# note\nmodule Env\nexport fn get(key: string) -> i32 = 1").length(), 0))
+
+  results.push(assert_eq_int('parse program: hash comment and module — 1 decl',
+    decl_count("# note\nmodule Env\nexport fn get(key: string) -> i32 = 1"), 1))
+
+  results.push(assert_true('parse program: module name is kept',
+    parse_source("# note\nmodule Env\nfn get() -> i32 = 1").module_name == 'Env'))
+
+  results.push(assert_true('parse program: module path keeps colon segments',
+    parse_source("module Math::Vector\nfn f() -> i32 = 1").module_name == 'Math::Vector'))
+
   results.push(assert_true('parse program: invalid let pattern yields parse error',
     parse_source_errors('fn f() -> i32 = do let @@@ = 1 end').length() >= 1))
 
   results.push(assert_true('parse program: invalid function name noise yields parse error',
     parse_source_errors('fn @@@').length() >= 1))
 
-  results.push(assert_true('parse program: orphan end yields parse error',
-    parse_source_errors('end').length() >= 1))
+  results.push(assert_eq_int('parse program: trailing end at eof is not a parse error',
+    parse_source_errors('end').length(), 0))
+
+  results.push(assert_true('parse program: end before a following function yields parse error',
+    parse_source_errors("end\nfn f() -> i32 = 1").length() >= 1))
+
+  results.push(assert_eq_int('parse program: end before a following function keeps the function',
+    decl_count("end\nfn f() -> i32 = 1"), 1))
 
   results.push(assert_true('parser smoke: deep nesting completes',
     parser_garbage_smoke(parser_deep_nesting_source(16))))

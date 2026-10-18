@@ -87,7 +87,7 @@ export fn hmac_sha256(key: string, data: string) -> string = do
     return ""
   end
   let state_pointer = hmac_state_alloc()
-  if state_pointer == 0 then
+  if state_pointer == 0i64 then
     table_set_error("Crypto.hmac_sha256: malloc failed")
     return ""
   end

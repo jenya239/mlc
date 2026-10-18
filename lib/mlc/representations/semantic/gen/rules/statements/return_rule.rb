@@ -23,6 +23,7 @@ module MLC
                   svc.type_checker.type_error('return statement requires a value', node: node) unless value_ir
 
                   svc.type_checker.ensure_type!(value_ir.type, 'return expression', node: node)
+                  svc.type_checker.adopt_empty_container_type(value_ir, expected_type)
                   svc.type_checker.ensure_compatible_type(
                     value_ir.type,
                     expected_type,

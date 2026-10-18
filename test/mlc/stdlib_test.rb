@@ -31,7 +31,7 @@ class MLCStdlibTest < Minitest::Test
 
     assert_includes cpp, "map"
     assert_includes cpp, "filter"
-    assert_includes cpp, "size" # MLC uses .size() instead of .length()
+    assert_includes cpp, ".length()"
   end
 
   def test_string_operations

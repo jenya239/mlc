@@ -153,7 +153,7 @@ class LoweringStrategyIntegrationTest < Minitest::Test
 
     # Should compile and use mlc::Array
     assert_includes cpp, "mlc::Array"
-    assert_includes cpp, "size"
+    assert_includes cpp, ".length()"
   end
 
   def test_io_functions_use_runtime

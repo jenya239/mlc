@@ -498,6 +498,8 @@ module MLC
               declarations << parse_extend_decl
             when :RECORD
               declarations << parse_record_decl
+            when :IMPORT
+              imports << parse_import_decl
             else
               break
             end

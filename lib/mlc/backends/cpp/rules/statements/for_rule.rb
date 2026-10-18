@@ -47,6 +47,15 @@ module MLC
             end
 
             def lower_for_body(body_ir, prefix_statement = nil)
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
+              block = lower_for_body_block(body_ir, prefix_statement)
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
+              block
+            end
+
+            def lower_for_body_block(body_ir, prefix_statement)
               statements = if context.checker.block_expr?(body_ir)
                 body_ir.statements.map { |stmt| context.lower_statement(stmt) }
               else

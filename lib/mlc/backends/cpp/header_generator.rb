@@ -17,22 +17,32 @@ module MLC
           header_guard = generate_header_guard(module_node.name)
           dependencies = collect_required_import_paths(module_node)
 
-          # Separate: header = exported only (step 23), impl = all non-external
+          # Same-module calls stay unqualified. Foreign calls use the registry namespace.
+          # Set this before the header, which is emitted before the implementation pass.
+          @lowering.container.user_functions =
+            module_node.items.grep(SemanticIR::Func).map(&:name).to_set
+
+          # Separate: header keeps source order. A non-exported type moves into
+          # the header when a header declaration or body names it.
           header_items = []
           impl_items = []
-          impl_types = []  # non-exported types for .cpp
+          impl_types = []
+          header_type_names = type_names_referenced_by_header_functions(module_node)
 
           module_node.items.each do |item|
             case item
             when SemanticIR::TypeDecl
-              if item.exported
+              if item.exported || header_type_names.include?(item.name)
                 header_items << item
               else
                 impl_types << item
               end
             when SemanticIR::Func
               header_items << item if item.exported
-              next if item.external
+              if item.external
+                impl_items << item if item.respond_to?(:extern_c_name) && item.extern_c_name
+                next
+              end
               impl_items << item
             end
           end
@@ -125,20 +135,29 @@ module MLC
             lines << ""
           end
 
-          # Generate type definitions and functions
-          header_generation_items(items).each do |item|
-            case item
-            when SemanticIR::TypeDecl
-              # Full type definition goes in header
-              cpp_ast = @lowering.lower(item)
-              lines << cpp_ast.to_source
+          ordered_items = header_generation_items(items)
+          append_sum_preambles(lines, ordered_items)
+
+          type_items = ordered_items.select { |item| item.is_a?(SemanticIR::TypeDecl) }
+          function_items = ordered_items.select { |item| item.is_a?(SemanticIR::Func) }
+          append_type_bodies(lines, type_items)
+
+          declared_names = []
+          module_node.items.each do |item|
+            next unless item.is_a?(SemanticIR::Func)
+            next if generic_function_in_header?(item, module_node)
+
+            lines << generate_function_declaration(item)
+            lines << ""
+            declared_names << item.name
+          end
+
+          function_items.each do |item|
+            if generic_function_in_header?(item, module_node)
+              lines << generate_function_implementation(item)
               lines << ""
-            when SemanticIR::Func
-              if generic_function_in_header?(item, module_node)
-                lines << generate_function_implementation(item)
-              else
-                lines << generate_function_declaration(item)
-              end
+            elsif !declared_names.include?(item.name)
+              lines << generate_function_declaration(item)
               lines << ""
             end
           end
@@ -154,6 +173,8 @@ module MLC
             next if item.external
             next if item.exported
             next unless exported_type_names.any? { |type_name| item.name.start_with?("#{type_name}_") }
+            next if generic_function_in_header?(item, module_node)
+            next if declared_names.include?(item.name)
 
             lines << generate_function_declaration(item)
             lines << ""
@@ -238,12 +259,10 @@ module MLC
             lines << ""
           end
 
-          # Non-exported type definitions in implementation
-          type_items.each do |item|
-            cpp_ast = @lowering.lower(item)
-            lines << cpp_ast.to_source
-            lines << ""
-          end
+          # Non-exported type definitions in implementation.
+          # Sum aliases are emitted before record bodies, same as the header.
+          append_sum_preambles(lines, type_items)
+          append_type_bodies(lines, type_items)
 
           # Forward declarations for internal functions (used before definition)
           items.each do |item|
@@ -251,7 +270,7 @@ module MLC
             next if (item.respond_to?(:generic?) ? (item.respond_to?(:generic?) ? item.generic? : item.type_params&.any?) : item.type_params.any?)
             next if item.body.nil?
 
-            lines << generate_function_declaration(item)
+            lines << generate_function_declaration(item, include_default_values: false)
             lines << ""
           end
 
@@ -315,11 +334,11 @@ module MLC
           stdlib_aliases.include?(path)
         end
 
-        def generate_function_declaration(func)
+        def generate_function_declaration(func, include_default_values: true)
           ret_type = @lowering.send(:map_type, func.ret_type)
           name = @lowering.send(:sanitize_identifier, func.name)
           params = if @lowering.respond_to?(:build_function_parameters_cpp)
-                     @lowering.build_function_parameters_cpp(func, include_default_values: true)
+                     @lowering.build_function_parameters_cpp(func, include_default_values: include_default_values)
                    else
                      func.params.map do |param|
                        type = @lowering.send(:map_type, param.type)
@@ -375,7 +394,13 @@ module MLC
         end
 
         def ast_type_to_cpp(ast_type, trait_self: nil, associated_type_names: nil, trait_type_param_names: nil)
-          TraitCppTypes.ast_type_to_cpp(ast_type, trait_self: trait_self, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names)
+          TraitCppTypes.ast_type_to_cpp(
+            ast_type,
+            trait_self: trait_self,
+            associated_type_names: associated_type_names,
+            trait_type_param_names: trait_type_param_names,
+            type_registry: @lowering.container.type_registry
+          )
         end
 
         def generate_trait_concept_header_for_module(module_node)
@@ -452,7 +477,8 @@ module MLC
                 trait_self_name: trait_self_name,
                 trait_self_keyword: trait_self_keyword,
                 associated_type_names: associated_type_names,
-                trait_type_param_names: trait_type_param_names
+                trait_type_param_names: trait_type_param_names,
+                type_registry: @lowering.container.type_registry
               )
               ret_syntax = method_entry[:ret_type]
               ret_type = ret_syntax ? ast_type_to_cpp(ret_syntax, trait_self: trait_self_keyword, associated_type_names: associated_type_names, trait_type_param_names: trait_type_param_names) : "void"
@@ -548,6 +574,89 @@ module MLC
           return false unless (func.respond_to?(:generic?) ? func.generic? : func.type_params.any?) && func.body
 
           func.exported || module_has_exported_generic_function?(module_node)
+        end
+
+        def type_names_referenced_by_header_functions(module_node)
+          names = Set.new
+          module_node.items.each do |item|
+            next unless item.is_a?(SemanticIR::Func)
+
+            collect_semantic_type_names(item, names, Set.new)
+          end
+          names
+        end
+
+        def collect_semantic_type_names(node, names, seen)
+          return if node.nil? || seen.include?(node.object_id)
+
+          case node
+          when String, Symbol, Numeric, TrueClass, FalseClass, NilClass
+            nil
+          when Array
+            seen.add(node.object_id)
+            node.each { |item| collect_semantic_type_names(item, names, seen) }
+          when Hash
+            seen.add(node.object_id)
+            node.each_value { |item| collect_semantic_type_names(item, names, seen) }
+          else
+            return unless node.class.name.start_with?("MLC::SemanticIR")
+
+            seen.add(node.object_id)
+            names << node.name if node.is_a?(MLC::SemanticIR::Type)
+            names << node.type_name if node.respond_to?(:type_name) && node.type_name.is_a?(String)
+            node.instance_variables.each do |variable|
+              collect_semantic_type_names(node.instance_variable_get(variable), names, seen)
+            end
+          end
+        end
+
+        def non_generic_sum?(type_decl)
+          type_decl.type.is_a?(SemanticIR::SumType) && type_decl.type_params.empty?
+        end
+
+        def append_cpp_statements(lines, statements)
+          statements.each do |statement|
+            lines << statement.to_source
+            lines << ""
+          end
+        end
+
+        # A using-alias cannot be forward-declared. Every non-generic sum alias
+        # is emitted before any record or variant body in the same file, so a
+        # record declared earlier in the source can name a later sum.
+        def append_sum_preambles(lines, items)
+          items.each do |item|
+            next unless item.is_a?(SemanticIR::TypeDecl) && non_generic_sum?(item)
+
+            append_cpp_statements(lines, @lowering.send(:sum_type_preamble_stmts, item.name, item.type))
+          end
+        end
+
+        # Preambles already introduced every sum name. Bodies stay in source order:
+        # a later variant struct can store an earlier alias, and a later record can
+        # store an earlier sum once that sum's alternatives are complete.
+        def append_type_bodies(lines, type_items)
+          type_items.each do |item|
+            if non_generic_sum?(item)
+              append_sum_bodies(lines, item)
+            else
+              cpp_ast = @lowering.lower(item)
+              lines << cpp_ast.to_source
+              lines << ""
+            end
+          end
+        end
+
+        def append_sum_bodies(lines, type_decl)
+          statements = @lowering.send(:sum_type_body_stmts, type_decl.name, type_decl.type)
+          if @lowering.send(:cyclic_sum_type?, type_decl.name)
+            statements << @lowering.send(:cyclic_sum_wrapper_statement, type_decl.name, type_decl.type)
+          end
+          derive_traits = Array(type_decl.derive_traits)
+          unless derive_traits.empty?
+            statements.concat(@lowering.send(:generate_derive_methods, type_decl.name, type_decl.type, derive_traits))
+          end
+          append_cpp_statements(lines, statements)
         end
 
         def header_generation_items(items)

@@ -11,7 +11,8 @@ export type Parser = Parser {
   source_path: string,
   suppress_lambda_shorthand: bool,
   errors: [string],
-  has_unget_angle_close: bool
+  has_unget_angle_close: bool,
+  inside_block_depth: i32
 }
 
 export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> Parser =
@@ -21,7 +22,8 @@ export fn parser_new_with_source_path(tokens: [Token], source_path: string) -> P
     source_path: source_path,
     suppress_lambda_shorthand: false,
     errors: [],
-    has_unget_angle_close: false
+    has_unget_angle_close: false,
+    inside_block_depth: 0
   }
 
 export fn parser_new(tokens: [Token]) -> Parser =
@@ -152,6 +154,7 @@ export extend TokenKind {
   fn is_extend(self)   -> bool = match self { KExtend   => true, _ => false }
   fn is_where(self)    -> bool = match self { KWhere    => true, _ => false }
   fn is_import(self)   -> bool = match self { KImport   => true, _ => false }
+  fn is_module(self)   -> bool = match self { KModule   => true, _ => false }
   fn is_as(self)       -> bool = match self { KAs       => true, _ => false }
   fn is_from(self)     -> bool = match self { KFrom     => true, _ => false }
   fn is_eof(self)      -> bool = match self { Eof       => true, _ => false }
@@ -211,7 +214,8 @@ export extend Parser {
       source_path: self.source_path,
       suppress_lambda_shorthand: value,
       errors: self.errors,
-      has_unget_angle_close: self.has_unget_angle_close
+      has_unget_angle_close: self.has_unget_angle_close,
+      inside_block_depth: self.inside_block_depth
     }
   fn record_parse_error(self, message: string) -> Parser = do
     let updated_errors = self.errors
@@ -222,7 +226,8 @@ export extend Parser {
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: updated_errors,
-      has_unget_angle_close: self.has_unget_angle_close
+      has_unget_angle_close: self.has_unget_angle_close,
+      inside_block_depth: self.inside_block_depth
     }
   end
   fn has_parse_errors(self) -> bool = self.errors.length() > 0
@@ -234,7 +239,8 @@ export extend Parser {
         source_path: self.source_path,
         suppress_lambda_shorthand: self.suppress_lambda_shorthand,
         errors: self.errors,
-        has_unget_angle_close: false
+        has_unget_angle_close: false,
+        inside_block_depth: self.inside_block_depth
       }
     else
       Parser {
@@ -243,7 +249,8 @@ export extend Parser {
         source_path: self.source_path,
         suppress_lambda_shorthand: self.suppress_lambda_shorthand,
         errors: self.errors,
-        has_unget_angle_close: false
+        has_unget_angle_close: false,
+        inside_block_depth: self.inside_block_depth
       }
     end
   fn advance_shift_right_as_angle_close(self) -> Parser =
@@ -253,7 +260,8 @@ export extend Parser {
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: self.errors,
-      has_unget_angle_close: true
+      has_unget_angle_close: true,
+      inside_block_depth: self.inside_block_depth
     }
   fn advance_by(self, count: i32) -> Parser =
     Parser {
@@ -262,7 +270,18 @@ export extend Parser {
       source_path: self.source_path,
       suppress_lambda_shorthand: self.suppress_lambda_shorthand,
       errors: self.errors,
-      has_unget_angle_close: self.has_unget_angle_close
+      has_unget_angle_close: self.has_unget_angle_close,
+      inside_block_depth: self.inside_block_depth
+    }
+  fn with_inside_block_depth(self, depth: i32) -> Parser =
+    Parser {
+      tokens: self.tokens,
+      position: self.position,
+      source_path: self.source_path,
+      suppress_lambda_shorthand: self.suppress_lambda_shorthand,
+      errors: self.errors,
+      has_unget_angle_close: self.has_unget_angle_close,
+      inside_block_depth: depth
     }
   fn at_eof(self) -> bool =
     if self.position >= self.tokens.length() then true

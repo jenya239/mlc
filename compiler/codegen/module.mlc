@@ -4,7 +4,7 @@ import { Program, errs_append } from '../frontend/ast'
 import { SemanticDeclaration, SemanticLoadItem, SemanticNamespaceImportAlias, SemanticDeclarationAssocBind, SemanticDeclarationExternLib, SemanticDeclarationExported, sdecl_inner } from '../ir/semantic_ir'
 import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
-import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path } from './decl/decl_index'
+import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path, using_namespaces_for_imports } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
 import { build_sum_type_parameter_names_from_decls, build_variant_used_type_parameter_names_from_decls, build_cyclic_sum_type_names } from './decl/type_index'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
@@ -14,7 +14,7 @@ import { CodegenContext, PrecomputedCtx, GenModuleOut,
          struct_using_line_from_entry } from './context'
 import { SemanticDeclaration } from '../ir/semantic_ir'
 import { sem_type_to_cpp } from './decl/type_gen'
-import { cpp_safe, include_lines, path_to_module_base, using_namespace_names } from './cpp_naming'
+import { cpp_safe, include_lines, path_to_module_base, module_namespace } from './cpp_naming'
 import { decls_have_main } from './decl/decl'
 import { collect_all_decl_parts_cpp, DeclPartsBundleCpp, collect_ffi_include_lines } from './decl_cpp'
 import { CppDeclaration, CppFile } from '../cpp_ir/cpp_ast'
@@ -33,7 +33,8 @@ type ModuleGenerationContext = ModuleGenerationContext {
   is_entry: bool,
   decl_parts: DeclPartsBundleCpp,
   implementation_import_includes: string,
-  implementation_import_paths: [string]
+  implementation_import_paths: [string],
+  using_namespaces: [string]
 }
 
 fn namespace_aliases_mapped(items: [SemanticNamespaceImportAlias]) -> [NamespaceImportAlias] = do
@@ -157,7 +158,7 @@ fn prepare_module_generation(
   const namespace_aliases = load_item.namespace_import_aliases
   const module_decls = ast_decls_for_path(load_item.path, all_items)
   const qualified = extend_qualified_map(build_qualified(load_item.imports, all_items), all_items, load_item.path)
-  const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
+  const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases), all_items)
   const base_context = CodegenContext {
     field_orders: precomputed_context.field_orders,
     field_order_index: precomputed_context.field_order_index,
@@ -190,7 +191,7 @@ fn prepare_module_generation(
     cpp_mode: precomputed_context.cpp_mode
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
-  const module_namespace = if base == 'main' then 'mlc_main' else base end
+  const module_namespace_name = module_namespace(load_item.module_name, load_item.path)
   const is_entry = decls_have_main(load_item.decls)
   const std_includes = standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + `\n`
   const ffi_includes = collect_ffi_include_lines(load_item.decls)
@@ -200,11 +201,12 @@ fn prepare_module_generation(
     base: base,
     guard: guard,
     std_includes: std_includes,
-    module_namespace: module_namespace,
+    module_namespace: module_namespace_name,
     is_entry: is_entry,
     decl_parts: decl_parts,
     implementation_import_includes: include_lines(load_item.imports) + ffi_includes,
-    implementation_import_paths: load_item.imports
+    implementation_import_paths: load_item.imports,
+    using_namespaces: using_namespaces_for_imports(load_item.imports, all_items)
   }
 end
 
@@ -240,9 +242,9 @@ fn assemble_source_cpp_declarations(parts: ModuleGenerationContext) -> [Shared<C
   end
   declarations.push(module_tu_helpers.make_namespace_open_cpp_declaration(parts.module_namespace))
   declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
-  if using_namespace_names(parts.implementation_import_paths).length() > 0 then
+  if parts.using_namespaces.length() > 0 then
     declarations = module_tu_helpers.append_using_namespace_declarations(
-      declarations, parts.implementation_import_paths)
+      declarations, parts.using_namespaces)
     declarations.push(module_tu_helpers.make_blank_line_cpp_declaration())
   end
   let epilogue = [

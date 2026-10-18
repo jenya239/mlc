@@ -94,10 +94,89 @@ class ModularCompilationHeaderTest < Minitest::Test
     result = MLC::Backends::Cpp::HeaderGenerator.new(lowerer).generate(core_ir)
 
     assert_includes result[:header], "Point"
-    refute_includes result[:header], "Internal"
+    refute_includes result[:header], "struct Internal"
     assert_includes result[:header], "f("
-    refute_includes result[:header], "internal_fn"
-    assert_includes result[:implementation], "Internal"
+    assert_includes result[:header], "internal_fn("
+    refute_includes result[:header], "return 0"
+    assert_includes result[:implementation], "struct Internal"
     assert_includes result[:implementation], "internal_fn"
+  end
+
+  def test_sum_alias_precedes_record_that_names_it
+    path = File.join(@tmpdir, "ast_order.mlc")
+    File.write(path, <<~MLC)
+      export type MatchArm = { body: Shared<Expr> }
+      export type Expr = Int(i32) | Add(Shared<Expr>, Shared<Expr>)
+    MLC
+
+    ast = MLC.parse(File.read(path), filename: path)
+    pipeline = MLC::Representations::Semantic::Gen::Pipeline.new(source_file_dir: @tmpdir, module_name: "ast_order")
+    core_ir = pipeline.transform(ast)
+    lowerer = MLC::Backends::Cpp::Codegen.new(
+      type_registry: pipeline.type_registry,
+      function_registry: pipeline.function_registry,
+      stdlib_scanner: MLC::Common::Stdlib::Scanner.new
+    )
+    header = MLC::Backends::Cpp::HeaderGenerator.new(lowerer).generate(core_ir)[:header]
+    alias_at = header.index("using Expr =")
+    record_at = header.index("struct MatchArm")
+    refute_nil alias_at
+    refute_nil record_at
+    assert_operator alias_at, :<, record_at
+  end
+
+  def test_header_template_qualifies_imported_call_and_declares_local_helper
+    helper_path = File.join(@tmpdir, "helper.mlc")
+    user_path = File.join(@tmpdir, "user.mlc")
+    File.write(helper_path, <<~MLC)
+      export fn helper_value() -> i32 = 1
+    MLC
+    File.write(user_path, <<~MLC)
+      import { helper_value } from "./helper"
+
+      fn local_secret() -> i32 = 3
+
+      export fn use_local(callback: () -> i32) -> i32 = local_secret() + helper_value() + callback()
+    MLC
+
+    pipeline = MLC::Representations::Semantic::Gen::Pipeline.new(source_file_dir: @tmpdir)
+    pipeline.transform(MLC.parse(File.read(helper_path), filename: helper_path), module_name: "helper")
+    user_ir = pipeline.transform(MLC.parse(File.read(user_path), filename: user_path), module_name: "user")
+    lowerer = MLC::Backends::Cpp::Codegen.new(
+      type_registry: pipeline.type_registry,
+      function_registry: pipeline.function_registry,
+      stdlib_scanner: MLC::Common::Stdlib::Scanner.new
+    )
+    header = MLC::Backends::Cpp::HeaderGenerator.new(lowerer).generate(user_ir)[:header]
+
+    assert_includes header, "helper::helper_value("
+    assert_includes header, "local_secret("
+    assert_match(/[^\w:]local_secret\(/, header)
+  end
+
+  def test_extern_binding_wrapper_is_defined_in_cpp
+    path = File.join(@tmpdir, "native.mlc")
+    File.write(path, <<~MLC)
+      extern fn mir_host_file_exists(path: string) -> bool =
+        "mlc::file::exists_value" from "mlc/io/file_abi.hpp" blocking
+
+      export fn use_it(path: string) -> bool = mir_host_file_exists(path)
+    MLC
+
+    pipeline = MLC::Representations::Semantic::Gen::Pipeline.new(
+      source_file_dir: @tmpdir,
+      module_name: "native"
+    )
+    core_ir = pipeline.transform(MLC.parse(File.read(path), filename: path))
+    lowerer = MLC::Backends::Cpp::Codegen.new(
+      type_registry: pipeline.type_registry,
+      function_registry: pipeline.function_registry,
+      stdlib_scanner: MLC::Common::Stdlib::Scanner.new
+    )
+    result = MLC::Backends::Cpp::HeaderGenerator.new(lowerer).generate(core_ir)
+
+    assert_includes result[:header], "mir_host_file_exists("
+    assert_includes result[:implementation], "mlc_ffi_bind_mir_host_file_exists"
+    assert_includes result[:implementation], "mlc::file::exists_value"
   end
 end

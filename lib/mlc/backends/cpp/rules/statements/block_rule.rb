@@ -12,7 +12,17 @@ module MLC
             end
 
             def apply(node)
-              # Lower all statements, skipping unit literal expression statements
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
+              block = lower_block(node)
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
+              block
+            end
+
+            private
+
+            def lower_block(node)
               lowered = []
               node.stmts.each do |stmt|
                 # Skip ExprStatement containing only UnitLiteral

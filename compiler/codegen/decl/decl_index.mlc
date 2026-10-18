@@ -2,7 +2,7 @@
 
 import { Program, Decl, DeclFn, DeclExtend, TypeVariant, FieldDef, decl_inner, decl_name } from '../../frontend/ast'
 import { LoadItem, NamespaceImportAlias } from '../../ir/load_item'
-import { path_to_module_base } from '../cpp_naming'
+import { path_to_module_base, module_namespace, is_stdlib_import_path } from '../cpp_naming'
 
 export type FieldOrder = FieldOrder { type_name: string, fields: [string] }
 
@@ -169,7 +169,7 @@ export fn extend_qualified_map(
   while item_index < all_items.length() do
     const current_item = all_items[item_index]
     if current_item.path != exclude_module_path then
-      const module_prefix = path_to_module_base(current_item.path) + '::'
+      const module_prefix = module_namespace(current_item.module_name, current_item.path) + '::'
       let mut declaration_index = 0
       while declaration_index < current_item.decls.length() do
         const type_name = extend_type_name_from_declaration(current_item.decls[declaration_index])
@@ -196,8 +196,20 @@ end
 export fn build_extend_method_qualified_map(all_items: [LoadItem]) -> Map<string, string> =
   extend_qualified_map(Map.new(), all_items, '')
 
+fn module_name_for_path(path: string, all_items: [LoadItem]) -> string = do
+  let mut item_index = 0
+  while item_index < all_items.length() do
+    if all_items[item_index].path == path then return all_items[item_index].module_name end
+    item_index = item_index + 1
+  end
+  ''
+end
+
+fn namespace_prefix_for_path(path: string, all_items: [LoadItem]) -> string =
+  module_namespace(module_name_for_path(path, all_items), path) + '::'
+
 fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, all_items: [LoadItem]) -> Map<string, string> = do
-  const prefix = path_to_module_base(imp_path) + '::'
+  const prefix = namespace_prefix_for_path(imp_path, all_items)
   let mut item_index = 0
   while item_index < all_items.length() do
     const current_item = all_items[item_index]
@@ -218,15 +230,32 @@ fn add_exports_to_qualified(qualified: Map<string, string>, imp_path: string, al
   qualified
 end
 
-export fn build_namespace_alias_prefixes(aliases: [NamespaceImportAlias]) -> Map<string, string> = do
+export fn build_namespace_alias_prefixes(aliases: [NamespaceImportAlias], all_items: [LoadItem]) -> Map<string, string> = do
   let mut prefixes: Map<string, string> = Map.new()
   let mut index = 0
   while index < aliases.length() do
     const entry = aliases[index]
-    prefixes.set(entry.alias, path_to_module_base(entry.module_path) + '::')
+    prefixes.set(entry.alias, namespace_prefix_for_path(entry.module_path, all_items))
     index = index + 1
   end
   prefixes
+end
+
+export fn using_namespaces_for_imports(import_paths: [string], all_items: [LoadItem]) -> [string] = do
+  let mut names: [string] = []
+  let mut has_ast = false
+  let mut index = 0
+  while index < import_paths.length() do
+    const path = import_paths[index]
+    const base = path_to_module_base(path)
+    if !is_stdlib_import_path(path) && base.length() > 0 then
+      names.push(module_namespace(module_name_for_path(path, all_items), path))
+      if base == 'ast' then has_ast = true end
+    end
+    index = index + 1
+  end
+  if has_ast then names.push('ast_tokens') end
+  names
 end
 
 export fn build_qualified(import_paths: [string], all_items: [LoadItem]) -> Map<string, string> = do

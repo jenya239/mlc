@@ -93,6 +93,7 @@ module MLC
                   literal_expression = fields_ir[field_name]
                   ensure_expr_type!(literal_expression, field_name, node)
                   field_metadata = Array(type_info.fields).find { |field_row_entry| field_row_entry[:name].to_s == field_name }
+                  @type_checker.adopt_empty_container_type(literal_expression, field_metadata[:type])
                   @type_checker.ensure_compatible_type(
                     literal_expression.type,
                     field_metadata[:type],

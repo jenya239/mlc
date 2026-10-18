@@ -143,7 +143,8 @@ module MLC
               @match_analyzer = MLC::Common::Typing::MatchAnalyzer.new(
                 ensure_compatible_type: @type_checker.method(:ensure_compatible_type),
                 type_registry: @type_registry,
-                check_exhaustiveness: true
+                check_exhaustiveness: true,
+                prepare_arm_bodies: @type_checker.method(:unify_match_arm_bodies)
               )
               @match_service = MatchService.new(
                 ir_builder: @ir_builder,

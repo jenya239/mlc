@@ -48,7 +48,8 @@ export fn program_to_semantic_load_item(program: Program, module_path: string) -
     path: module_path,
     decls: program.decls,
     imports: [],
-    namespace_import_aliases: []
+    namespace_import_aliases: [],
+    module_name: program.module_name
   }
   const trait_maps = build_trait_nominal_maps(program)
   const semantic_items = transform_load_items([load_item], registry, trait_maps)

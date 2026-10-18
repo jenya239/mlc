@@ -60,6 +60,10 @@ module MLC
               end
             end
 
+            def prepare_function_value_names(program)
+              @function_value_names = collect_function_value_names(program)
+            end
+
             private
 
             def build_params(func_decl, param_types)
@@ -82,6 +86,8 @@ module MLC
               end
 
               non_escaping_names = non_escaping_function_typed_param_names(func_decl, param_types)
+              # A template has no single address, so it cannot be passed to std::function.
+              non_escaping_names = Set.new if @function_value_names&.include?(func_decl.name)
 
               synthetic_type_params = []
               params = func_decl.params.each_with_index.map do |param, index|
@@ -90,6 +96,7 @@ module MLC
                 if param.default
                   validate_default_param_ast!(param.default, param.name)
                   default_ir = @engine.run_expression(param.default)
+                  @type_checker.adopt_empty_container_type(default_ir, type)
                   @type_checker.ensure_compatible_type(
                     default_ir.type, type, "default value for parameter '#{param.name}'",
                     node: default_ir
@@ -107,6 +114,32 @@ module MLC
               end
 
               [params, synthetic_type_params]
+            end
+
+            def collect_function_value_names(node, names = Set.new, seen = Set.new)
+              return names if node.nil? || seen.include?(node.object_id)
+
+              case node
+              when Array
+                node.each { |child| collect_function_value_names(child, names, seen) }
+              when Hash
+                node.each_value { |child| collect_function_value_names(child, names, seen) }
+              when MLC::Source::AST::Call
+                seen.add(node.object_id)
+                collect_function_value_names(node.args, names, seen)
+                callee = node.callee
+                collect_function_value_names(callee, names, seen) unless callee.is_a?(MLC::Source::AST::VarRef)
+              when MLC::Source::AST::VarRef
+                names << node.name
+              when MLC::Source::AST::Node
+                seen.add(node.object_id)
+                node.instance_variables.each do |variable|
+                  next if variable == :@origin
+
+                  collect_function_value_names(node.instance_variable_get(variable), names, seen)
+                end
+              end
+              names
             end
 
             def non_escaping_function_typed_param_names(func_decl, param_types)
@@ -219,8 +252,15 @@ module MLC
                 return
               end
 
+              # `()` is an empty tuple. A `unit` result is a statement, not a returned tuple.
+              if %w[unit void].include?(expected_name) && @type_checker.unit_like?(actual_name, actual_type)
+                @type_checker.set_expression_type(body_ir, MLC::SemanticIR::UnitType.new(origin: func_decl.origin))
+                return
+              end
+
+              @type_checker.adopt_empty_container_type(body_ir, expected_type)
               @type_checker.ensure_compatible_type(
-                actual_type,
+                body_ir.type,
                 expected_type,
                 "function '#{func_decl.name}' result",
                 node: func_decl

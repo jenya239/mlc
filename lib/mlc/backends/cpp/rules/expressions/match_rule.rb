@@ -92,6 +92,8 @@ module MLC
 
             # Value arms: `return expr;`. Unit if / void arms: C++ statement (no return).
             def lower_match_arm_body_return(body)
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
               code = if context.checker.block_expr?(body) && void_match_arm_block?(body)
                        lower_unit_block_expr_as_statement(body)
                      elsif context.should_lower_as_statement?(body)
@@ -102,6 +104,8 @@ module MLC
                        src = ";" if src.nil? || src.empty?
                        "return #{src};"
                      end
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
               normalize_match_arm_body_code(code)
             end
 
@@ -276,7 +280,34 @@ module MLC
             # For GenericType scrutinee (e.g. Result<i32, string>), returns
             # namespace-qualified template type (e.g. "mlc::result::Ok<int>").
             # Returns nil for non-generic or non-namespaced types.
+            def qualify_sum_variant(variant_name, scrutinee_type)
+              sum_type = unwrap_shared_type(scrutinee_type)
+              return nil unless sum_type.respond_to?(:name) && sum_type.name
+
+              type_info = context.type_registry&.lookup(sum_type.name)
+              namespace = type_info&.namespace
+              return nil if namespace.nil? || namespace.empty?
+
+              "#{namespace}::#{variant_name}"
+            end
+
+            def unwrap_shared_type(type)
+              return type unless type.is_a?(MLC::SemanticIR::GenericType)
+
+              base_name = extract_type_name(type.base_type)
+              return type unless %w[Shared Owned Weak].include?(base_name.to_s)
+
+              unwrap_shared_type(type.type_args&.first)
+            end
+
             def resolve_variant_cpp_type(variant_name, scrutinee_type)
+              generic_qualified = generic_variant_cpp_type(variant_name, unwrap_shared_type(scrutinee_type))
+              return generic_qualified if generic_qualified
+
+              qualify_sum_variant(variant_name, scrutinee_type)
+            end
+
+            def generic_variant_cpp_type(variant_name, scrutinee_type)
               return nil unless scrutinee_type.is_a?(MLC::SemanticIR::GenericType)
 
               base_name = extract_type_name(scrutinee_type.base_type)

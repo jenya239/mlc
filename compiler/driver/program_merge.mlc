@@ -51,9 +51,10 @@ export fn merge_program_with_cache(entry_path: string, program: Program, load_ca
     path: norm_entry,
     decls: entry_decls,
     imports: entry_imports,
-    namespace_import_aliases: entry_namespace_import_aliases
+    namespace_import_aliases: entry_namespace_import_aliases,
+    module_name: program.module_name
   })
-  MergeResult { program: Program { decls: merged_declarations }, errors: all_errors, items: items_ordered }
+  MergeResult { program: Program { decls: merged_declarations, module_name: program.module_name }, errors: all_errors, items: items_ordered }
 end
 
 export fn merge_program(entry_path: string, program: Program, profile_enabled: bool) -> MergeResult = do

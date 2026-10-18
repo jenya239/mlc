@@ -66,7 +66,7 @@ fn type_decl_has_type_parameters(program: Program) -> bool =
 export fn codegen_tests() -> [TestResult] = do
   let results: [TestResult] = []
 
-  const empty_codegen_program = Program { decls: [] }
+  const empty_codegen_program = Program { decls: [], module_name: '' }
   const context = create_codegen_context(empty_codegen_program)
   results.push(assert_eq_str('create_codegen_context: gen_expr with ctx',
     print_expr(gen_expr(si(42), context)), '42'))
@@ -527,7 +527,7 @@ export fn codegen_tests() -> [TestResult] = do
   const fn_param: [Shared<Param>] = [Shared.new(Param { name: "n", is_mut: false, type_value: Shared.new(TyI32), has_default: false, default: Shared.new(ExprUnit(span_unknown())), param_pattern: Shared.new(PatternUnit(span_unknown())) })]
   const fn_body = Shared.new(ExprBin("*", Shared.new(ExprIdent("n", span_unknown())), Shared.new(ExprInt(2, span_unknown())), span_unknown()))
   const fn_decl = DeclFn('double_it', [], [], fn_param, Shared.new(TyI32), fn_body, [])
-  const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))] }
+  const fn_prog = Program { decls: [Shared.new(DeclExported(Shared.new(fn_decl)))], module_name: '' }
   const fn_prog_out = gen_program(fn_prog)
   results.push(assert_eq_str('DeclFn: signature in output',
     if fn_prog_out.contains('double_it') then 'yes' else 'no' end,

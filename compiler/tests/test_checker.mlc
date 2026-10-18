@@ -64,7 +64,7 @@ fn concat_programs(first: Program, second: Program) -> Program = do
     declarations.push(second.decls[index])
     index = index + 1
   end
-  Program { decls: declarations }
+  Program { decls: declarations, module_name: '' }
 end
 
 fn first_checker_error_for_program(program: Program) -> string =
@@ -199,7 +199,8 @@ export fn checker_tests() -> [TestResult] = do
         path: 'wcycle_probe.mlc',
         decls: cycle_program.decls,
         imports: [],
-        namespace_import_aliases: []
+        namespace_import_aliases: [],
+        module_name: cycle_program.module_name
       }
       ModularCompileInput {
         load_items: [cycle_load_item],

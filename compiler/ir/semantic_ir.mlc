@@ -98,7 +98,8 @@ export type SemanticLoadItem = SemanticLoadItem {
   path: string,
   decls: [Shared<SemanticDeclaration>],
   imports: [string],
-  namespace_import_aliases: [SemanticNamespaceImportAlias]
+  namespace_import_aliases: [SemanticNamespaceImportAlias],
+  module_name: string
 }
 
 // --- Helpers ----------------------------------------------------------------

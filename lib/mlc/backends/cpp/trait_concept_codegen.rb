@@ -10,8 +10,8 @@ module MLC
           !(trait_info.associated_types&.any?) && Array(trait_info.type_params).map(&:to_s).empty?
         end
 
-        def ast_type_to_cpp(ast_type)
-          TraitCppTypes.ast_type_to_cpp(ast_type)
+        def ast_type_to_cpp(ast_type, type_registry: nil)
+          TraitCppTypes.ast_type_to_cpp(ast_type, type_registry: type_registry)
         end
 
         def trait_dispatch_name(trait_name, method_name)

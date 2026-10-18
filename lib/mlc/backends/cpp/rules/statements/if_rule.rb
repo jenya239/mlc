@@ -37,9 +37,11 @@ module MLC
               # Each branch is a C++ {} block with its own scope.
               # Save and restore declared_variables so that let-bindings in one
               # branch do not shadow or suppress declarations in sibling branches.
-              snapshot = context.snapshot_declared_variables
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
               result = lower_statement_block_inner(body_ir)
-              context.restore_declared_variables(snapshot)
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
               result
             end
 

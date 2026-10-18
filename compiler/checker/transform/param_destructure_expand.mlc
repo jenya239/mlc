@@ -145,6 +145,7 @@ export fn expand_parameter_destructuring_in_program(program: Program) -> Program
       do let empty_declarations: [Shared<Decl>] = []; empty_declarations end,
       (output_declarations, declaration) =>
         output_declarations.concat([expand_parameter_destructuring_decl_shared(declaration)])),
+    module_name: program.module_name
   }
 
 fn concatenate_diagnostic_arrays(existing: [Diagnostic], extra: [Diagnostic]) -> [Diagnostic] =

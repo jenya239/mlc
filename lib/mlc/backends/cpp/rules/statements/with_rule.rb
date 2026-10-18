@@ -14,7 +14,11 @@ module MLC
               resource_code = context.lower_expression(node.resource).to_source
               binder = context.sanitize_identifier(node.binder)
 
+              declared_snapshot = context.snapshot_declared_variables
+              type_snapshot = context.snapshot_var_type_map
               body_stmts = node.body.statements.map { |s| context.lower_statement(s) }
+              context.restore_declared_variables(declared_snapshot)
+              context.restore_var_type_map(type_snapshot)
 
               inner_block = context.factory.block_statement(
                 statements: body_stmts,

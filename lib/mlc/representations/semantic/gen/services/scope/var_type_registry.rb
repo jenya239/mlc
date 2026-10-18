@@ -162,6 +162,11 @@ module MLC
               return true if type.is_a?(MLC::SemanticIR::ArrayType)
               return true if type.is_a?(MLC::SemanticIR::MapType)
 
+              # Records and sums are values. `let copy = original` copies; both names stay usable.
+              # Only Owned<T> moves on bind. Self-hosted checking tracks explicit `move`, not record binds.
+              return true if type.is_a?(MLC::SemanticIR::RecordType)
+              return true if type.is_a?(MLC::SemanticIR::SumType)
+
               # Reference-counted smart pointers are not Copy, but they are Clone (no move)
               if type.is_a?(MLC::SemanticIR::GenericType)
                 base_name = type.base_type&.name
@@ -177,8 +182,8 @@ module MLC
               false
             end
 
-            # Check if type requires move on variable binding (let b = a)
-            # All non-Copy types are moved on binding.
+            # Check if type requires move on variable binding (let b = a).
+            # Owned<T> moves. Records, sums, primitives, strings, arrays, maps, and Shared/Weak do not.
             # @param type [SemanticIR::Type] the type to check
             # @return [Boolean] true if binding moves ownership
             def self.move_on_bind?(type)

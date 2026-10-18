@@ -11,7 +11,8 @@ fn compile_commands_pipeline_input(source: string, output_directory: string) -> 
     path: 'compile_commands_probe.mlc',
     decls: program.decls,
     imports: [],
-    namespace_import_aliases: []
+    namespace_import_aliases: [],
+    module_name: program.module_name
   }
   ModularCompileInput {
     load_items: [load_item],

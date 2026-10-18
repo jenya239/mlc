@@ -526,6 +526,30 @@ module MLC
           with_origin(origin_token) { MLC::Source::AST::BlockExpr.new(statements: statements, result_expr: result_expr) }
         end
 
+        def declaration_keyword?(token)
+          return false unless token
+
+          %i[FN TYPE IMPORT EXTERN EXPORT TRAIT EXTEND ENUM MODULE].include?(token.type)
+        end
+
+        # `branch_closed_itself` is true when the last branch was `do ... end`.
+        # That `end` already closed the branch. The next `end` still closes this
+        # if when another `end` remains after it, when a statement of the
+        # enclosing block follows it, or when both closers share a line.
+        # The next `end` closes the enclosing block when what follows it is
+        # EOF or a declaration: there is no separate closer left for that block.
+        def trailing_end_closes_if?(inside_block, branch_closed_itself)
+          return false unless current.type == :END
+          return true unless inside_block && branch_closed_itself
+          return true if @pos > 0 && @tokens[@pos - 1].line == current.line
+
+          following = peek
+          return false if following.nil? || following.type == :EOF
+          return false if declaration_keyword?(following)
+
+          true
+        end
+
         # Parse if/unless with then/else/end.
         # Returns [ir, end_consumed] where end_consumed indicates whether this call
         # consumed a trailing 'end' token.
@@ -541,12 +565,14 @@ module MLC
 
           # Parse then branch
           then_braced = current.type == :LBRACE
+          then_was_do = current.type == :DO
           then_branch, then_end_consumed = parse_if_branch_expression(then_line: then_line)
 
           # Parse else branch — only if then-branch didn't consume its own 'end'
           else_branch = nil
           else_end_consumed = false
           else_braced = false
+          else_was_do = false
           if !then_end_consumed && current.type == :ELSE
             else_token = consume(:ELSE)
             else_line = else_token.line
@@ -557,12 +583,19 @@ module MLC
                                                [wrap_block_like_expr(nested), nested_end]
                                              else
                                                else_braced = current.type == :LBRACE
+                                               else_was_do = current.type == :DO
                                                parse_if_branch_expression(then_line: else_line)
                                              end
           end
 
           # A brace body is already closed. The following `end` belongs to an outer `do`.
-          did_consume = !then_braced && !else_braced && !then_end_consumed && !else_end_consumed && current.type == :END
+          last_branch_closed_itself = if else_branch.nil?
+                                       then_was_do
+                                     else
+                                       else_was_do
+                                     end
+          did_consume = !then_braced && !else_braced && !then_end_consumed && !else_end_consumed &&
+                        trailing_end_closes_if?(inside_block, last_branch_closed_itself)
           consume(:END) if did_consume
 
           # For unless, invert condition: unless x = if !x

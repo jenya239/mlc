@@ -8,5 +8,6 @@ export type LoadItem = LoadItem {
   path: string,
   decls: [Shared<Decl>],
   imports: [string],
-  namespace_import_aliases: [NamespaceImportAlias]
+  namespace_import_aliases: [NamespaceImportAlias],
+  module_name: string
 }

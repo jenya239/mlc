@@ -5,7 +5,7 @@ import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, P
 
 // --- Program ------------------------------------------------------------------
 
-export fn empty_program() -> Program = Program { decls: [] }
+export fn empty_program() -> Program = Program { decls: [], module_name: '' }
 
 // --- Type expression builders ------------------------------------------------
 

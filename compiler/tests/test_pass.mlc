@@ -23,7 +23,8 @@ fn pipeline_input_for_source(source: string, check_only: bool, verify_each_pass:
     path: 'check_only_probe.mlc',
     decls: program.decls,
     imports: [],
-    namespace_import_aliases: []
+    namespace_import_aliases: [],
+    module_name: program.module_name
   }
   ModularCompileInput {
     load_items: [load_item],

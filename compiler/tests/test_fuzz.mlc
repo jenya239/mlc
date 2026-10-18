@@ -11,7 +11,8 @@ fn fuzz_pipeline_input_for_source(source: string) -> ModularCompileInput = do
     path: 'fuzz_probe.mlc',
     decls: program.decls,
     imports: [],
-    namespace_import_aliases: []
+    namespace_import_aliases: [],
+    module_name: program.module_name
   }
   ModularCompileInput {
     load_items: [load_item],

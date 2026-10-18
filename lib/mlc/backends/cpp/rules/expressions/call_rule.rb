@@ -750,11 +750,12 @@ module MLC
 
               case method_name
               when "length", "len"
-                # arr.length() / arr.len() -> arr.size()
+                # mlc::Array::length() returns int. size() returns size_t and
+                # cannot be passed to checked_sub together with an i32 literal.
                 member = context.factory.member_access(
                   object: array_obj,
                   operator: ".",
-                  member: context.factory.identifier(name: "size")
+                  member: context.factory.identifier(name: "length")
                 )
                 context.factory.function_call(
                   callee: member,

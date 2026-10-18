@@ -47,6 +47,6 @@ class FileIoTest < Minitest::Test
       fn main() -> i32 = count_lines("/tmp/test.txt")
     MLC
     assert_includes cpp, "mlc::file::read_lines"
-    assert_includes cpp, ".size()"
+    assert_includes cpp, ".length()"
   end
 end

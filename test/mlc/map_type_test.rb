@@ -162,6 +162,17 @@ class MapTypeTest < Minitest::Test
     assert result
   end
 
+  def test_map_new_takes_annotated_key_and_value
+    cpp = MLC.to_cpp(<<~MLC)
+      fn flags() -> Map<string, bool> = do
+        let environment: Map<string, bool> = Map.new()
+        environment
+      end
+    MLC
+
+    assert_includes cpp, "mlc::HashMap<mlc::String, bool>"
+  end
+
   private
 
   def parse_mlc(code)

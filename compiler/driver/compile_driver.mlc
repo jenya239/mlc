@@ -55,7 +55,7 @@ export fn compile_modular(entry_path: string, out_dir: string, profile_enabled: 
       else do
         const merged_item_count = merged.items.length()
         const entry_load_item = merged.items[merged_item_count - 1]
-        const entry_only_program = Program { decls: entry_load_item.decls }
+        const entry_only_program = Program { decls: entry_load_item.decls, module_name: entry_load_item.module_name }
         if dump_ast then emit_dump_ast(merged.program, entry_path) end
         const pipeline_input = ModularCompileInput {
           load_items: merged.items,
