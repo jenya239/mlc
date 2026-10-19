@@ -1,0 +1,56 @@
+import {
+  instruction_words_call,
+  instruction_words_make_closure,
+  instruction_words_return
+} from '../bytecode'
+import { VerifyOk, VerifyResult, verify_function } from '../verifier'
+import { FunctionProto } from '../run_result'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm module_verify_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_sources() -> [i32] = do
+  let mut sources: [i32] = []
+  sources
+end
+
+fn is_verify_ok(result: VerifyResult) -> bool =
+  match result { VerifyOk => true, _ => false }
+
+fn callee_words() -> [i32] = instruction_words_return(0)
+
+fn caller_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_make_closure(0, 1, empty_sources()))
+  words = append_words(words, instruction_words_call(3, 0, 2))
+  words = append_words(words, instruction_words_return(3))
+  words
+end
+
+fn mismatched_prototypes() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: caller_words(), constants: [], register_count: 4 })
+  prototypes.push(FunctionProto { words: callee_words(), constants: [], register_count: 1 })
+  prototypes
+end
+
+fn main() -> i32 = do
+  const prototypes = mismatched_prototypes()
+  const caller_accepted = is_verify_ok(verify_function(prototypes[0].words, prototypes[0].register_count, prototypes[0].constants.length()))
+  const callee_accepted = is_verify_ok(verify_function(prototypes[1].words, prototypes[1].register_count, prototypes[1].constants.length()))
+  if caller_accepted && callee_accepted then
+    return fail("cross-proto arity accepted argument_count=2 callee_register_count=1")
+  end
+  fail("per-proto verify rejected caller_accepted=" + caller_accepted.to_string() + " callee_accepted=" + callee_accepted.to_string())
+end
