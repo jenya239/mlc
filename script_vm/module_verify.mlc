@@ -28,7 +28,20 @@ import {
 } from './bytecode'
 import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
 import { is_float_binary_opcode, is_float_compare_opcode } from './exec_float'
-import { default_module_limits } from './module_limits'
+import { default_module_limits, cursor_count_fits } from './module_limits'
+
+type PrimaryCursor = { included: bool, next_index: i32 }
+
+fn primary_cursor(words: [i32], word_index: i32) -> PrimaryCursor = do
+  const span = instruction_word_span(words, word_index)
+  if span <= 0 then
+    PrimaryCursor { included: false, next_index: words.length() }
+  else if cursor_count_fits(word_index, 1, span, 0, words.length()) then
+    PrimaryCursor { included: true, next_index: word_index + span }
+  else
+    PrimaryCursor { included: true, next_index: words.length() }
+  end
+end
 
 export fn verify_err_arity() -> string = "arity"
 
@@ -127,10 +140,8 @@ fn cross_prototype(prototypes: [FunctionProto], prototype: FunctionProto) -> Ver
   let mut code = ""
   let mut at = 0
   while word_index < prototype.words.length() && code == "" do
-    const span = instruction_word_span(prototype.words, word_index)
-    if span <= 0 then
-      word_index = prototype.words.length()
-    else
+    const cursor = primary_cursor(prototype.words, word_index)
+    if cursor.included then
       const decoded = instruction_decode(Instruction { word: prototype.words[word_index] })
       if decoded.opcode == instruction_opcode_make_closure() then
         if decoded.b >= prototypes.length() then
@@ -152,8 +163,8 @@ fn cross_prototype(prototypes: [FunctionProto], prototype: FunctionProto) -> Ver
       else if instruction_writes_register(decoded.opcode) then
         slots = remember_slot(slots, decoded.a, unknown_prototype())
       end
-      word_index = word_index + span
     end
+    word_index = cursor.next_index
   end
   if code == "" then
     VerifyOk
@@ -176,13 +187,11 @@ fn primary_indexes(words: [i32]) -> [i32] = do
   let mut primaries: [i32] = []
   let mut word_index = 0
   while word_index < words.length() do
-    const span = instruction_word_span(words, word_index)
-    if span <= 0 then
-      word_index = words.length()
-    else
+    const cursor = primary_cursor(words, word_index)
+    if cursor.included then
       primaries.push(word_index)
-      word_index = word_index + span
     end
+    word_index = cursor.next_index
   end
   primaries
 end

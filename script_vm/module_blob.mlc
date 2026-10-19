@@ -14,7 +14,8 @@ import {
 import {
   ModuleLimits,
   default_module_limits,
-  module_blob_exceeds_limit
+  module_blob_exceeds_limit,
+  cursor_count_fits
 } from './module_limits'
 
 extern fn embedding_u8_at(data_pointer: i64, index: i32) -> i32 =
@@ -246,19 +247,6 @@ fn constant_is_canonical_scalar(raw: i64) -> bool =
     ValueHeapRef(_) => false,
     _ => true
   }
-
-fn cursor_count_fits(offset: i32, count: i32, width: i32, extra: i32, length: i32) -> bool = do
-  if count < 0 || width <= 0 || extra < 0 || offset < 0 || offset > length then
-    false
-  else
-    const remaining = length - offset
-    if extra > remaining then
-      false
-    else
-      count <= (remaining - extra) / width
-    end
-  end
-end
 
 fn accept_decoded(exports: [ModuleExport], protos: [FunctionProto], empty: DecodedModule) -> DecodeResult = do
   const code = limit_code(exports, protos)

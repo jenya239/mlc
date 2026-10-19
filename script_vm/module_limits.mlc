@@ -21,3 +21,16 @@ export fn default_module_limits() -> ModuleLimits =
 
 export fn module_blob_exceeds_limit(byte_count: i32, limits: ModuleLimits) -> bool =
   byte_count > limits.maximum_blob_bytes
+
+export fn cursor_count_fits(offset: i32, count: i32, width: i32, extra: i32, length: i32) -> bool = do
+  if count < 0 || width <= 0 || extra < 0 || offset < 0 || offset > length then
+    false
+  else
+    const remaining = length - offset
+    if extra > remaining then
+      false
+    else
+      count <= (remaining - extra) / width
+    end
+  end
+end
