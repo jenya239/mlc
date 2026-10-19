@@ -3,7 +3,8 @@ import {
   instruction_words_make_closure,
   instruction_words_return
 } from '../bytecode'
-import { VerifyOk, VerifyResult, verify_function } from '../verifier'
+import { VerifyOk, VerifyErr, VerifyResult } from '../verifier'
+import { verify_module, verify_err_arity } from '../module_verify'
 import { FunctionProto } from '../run_result'
 
 fn fail(label: string) -> i32 = do
@@ -25,8 +26,11 @@ fn empty_sources() -> [i32] = do
   sources
 end
 
-fn is_verify_ok(result: VerifyResult) -> bool =
-  match result { VerifyOk => true, _ => false }
+fn error_code(result: VerifyResult) -> string =
+  match result {
+    VerifyErr(code, _word_index) => code,
+    VerifyOk => ""
+  }
 
 fn callee_words() -> [i32] = instruction_words_return(0)
 
@@ -46,11 +50,12 @@ fn mismatched_prototypes() -> [FunctionProto] = do
 end
 
 fn main() -> i32 = do
-  const prototypes = mismatched_prototypes()
-  const caller_accepted = is_verify_ok(verify_function(prototypes[0].words, prototypes[0].register_count, prototypes[0].constants.length()))
-  const callee_accepted = is_verify_ok(verify_function(prototypes[1].words, prototypes[1].register_count, prototypes[1].constants.length()))
-  if caller_accepted && callee_accepted then
-    return fail("cross-proto arity accepted argument_count=2 callee_register_count=1")
+  const result = verify_module(mismatched_prototypes())
+  if error_code(result) == verify_err_arity() then
+    println("cross_proto_arity")
+    println("[script_vm] module_verify_unit ok")
+    0
+  else
+    fail("cross-proto arity code=" + error_code(result))
   end
-  fail("per-proto verify rejected caller_accepted=" + caller_accepted.to_string() + " callee_accepted=" + callee_accepted.to_string())
 end

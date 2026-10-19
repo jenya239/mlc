@@ -1,0 +1,177 @@
+import { FunctionProto } from './run_result'
+import { VerifyResult, VerifyOk, VerifyErr, verify_function } from './verifier'
+import {
+  Instruction,
+  instruction_decode,
+  instruction_word_span,
+  instruction_opcode_load_const,
+  instruction_opcode_move,
+  instruction_opcode_add,
+  instruction_opcode_sub,
+  instruction_opcode_mul,
+  instruction_opcode_div,
+  instruction_opcode_eq,
+  instruction_opcode_ne,
+  instruction_opcode_lt,
+  instruction_opcode_le,
+  instruction_opcode_gt,
+  instruction_opcode_ge,
+  instruction_opcode_new_array,
+  instruction_opcode_get_index,
+  instruction_opcode_new_record,
+  instruction_opcode_get_prop,
+  instruction_opcode_call,
+  instruction_opcode_make_closure,
+  instruction_opcode_get_upval
+} from './bytecode'
+import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
+import { is_float_binary_opcode, is_float_compare_opcode } from './exec_float'
+
+export fn verify_err_arity() -> string = "arity"
+
+export fn verify_err_proto_index() -> string = "proto_index"
+
+fn unknown_prototype() -> i32 = 0 - 1
+
+fn is_verify_ok(result: VerifyResult) -> bool =
+  match result { VerifyOk => true, _ => false }
+
+fn register_slots(register_count: i32) -> [i32] = do
+  let mut slots: [i32] = []
+  let mut index = 0
+  while index < register_count do
+    slots.push(unknown_prototype())
+    index = index + 1
+  end
+  slots
+end
+
+fn slot_at(slots: [i32], register_index: i32) -> i32 =
+  if register_index >= 0 && register_index < slots.length() then
+    slots[register_index]
+  else
+    unknown_prototype()
+  end
+
+fn remember_slot(slots: [i32], register_index: i32, prototype_index: i32) -> [i32] = do
+  if register_index >= 0 && register_index < slots.length() then
+    slots.set(register_index, prototype_index)
+  end
+  slots
+end
+
+fn instruction_writes_register(opcode: i32) -> bool =
+  if opcode == instruction_opcode_load_const() then
+    true
+  else if opcode == instruction_opcode_add() then
+    true
+  else if opcode == instruction_opcode_sub() then
+    true
+  else if opcode == instruction_opcode_mul() then
+    true
+  else if opcode == instruction_opcode_div() then
+    true
+  else if opcode == instruction_opcode_eq() then
+    true
+  else if opcode == instruction_opcode_ne() then
+    true
+  else if opcode == instruction_opcode_lt() then
+    true
+  else if opcode == instruction_opcode_le() then
+    true
+  else if opcode == instruction_opcode_gt() then
+    true
+  else if opcode == instruction_opcode_ge() then
+    true
+  else if opcode == instruction_opcode_new_array() then
+    true
+  else if opcode == instruction_opcode_get_index() then
+    true
+  else if opcode == instruction_opcode_new_record() then
+    true
+  else if opcode == instruction_opcode_get_prop() then
+    true
+  else if opcode == instruction_opcode_get_upval() then
+    true
+  else if opcode == instruction_opcode_length() then
+    true
+  else if opcode == instruction_opcode_make_string() then
+    true
+  else if is_float_binary_opcode(opcode) then
+    true
+  else if is_float_compare_opcode(opcode) then
+    true
+  else
+    false
+  end
+
+fn functions_accepted(prototypes: [FunctionProto]) -> VerifyResult = do
+  let mut index = 0
+  let mut result = VerifyOk
+  while index < prototypes.length() && is_verify_ok(result) do
+    const prototype = prototypes[index]
+    result = verify_function(prototype.words, prototype.register_count, prototype.constants.length())
+    index = index + 1
+  end
+  result
+end
+
+fn cross_prototype(prototypes: [FunctionProto], prototype: FunctionProto) -> VerifyResult = do
+  let mut slots = register_slots(prototype.register_count)
+  let mut word_index = 0
+  let mut code = ""
+  let mut at = 0
+  while word_index < prototype.words.length() && code == "" do
+    const span = instruction_word_span(prototype.words, word_index)
+    if span <= 0 then
+      word_index = prototype.words.length()
+    else
+      const decoded = instruction_decode(Instruction { word: prototype.words[word_index] })
+      if decoded.opcode == instruction_opcode_make_closure() then
+        if decoded.b >= prototypes.length() then
+          code = verify_err_proto_index()
+          at = word_index
+        else
+          slots = remember_slot(slots, decoded.a, decoded.b)
+        end
+      else if decoded.opcode == instruction_opcode_call() then
+        const target = slot_at(slots, decoded.b)
+        if target >= 0 && decoded.c > prototypes[target].register_count then
+          code = verify_err_arity()
+          at = word_index
+        else
+          slots = remember_slot(slots, decoded.a, unknown_prototype())
+        end
+      else if decoded.opcode == instruction_opcode_move() then
+        slots = remember_slot(slots, decoded.a, slot_at(slots, decoded.b))
+      else if instruction_writes_register(decoded.opcode) then
+        slots = remember_slot(slots, decoded.a, unknown_prototype())
+      end
+      word_index = word_index + span
+    end
+  end
+  if code == "" then
+    VerifyOk
+  else
+    VerifyErr(code, at)
+  end
+end
+
+fn prototypes_consistent(prototypes: [FunctionProto]) -> VerifyResult = do
+  let mut index = 0
+  let mut result = VerifyOk
+  while index < prototypes.length() && is_verify_ok(result) do
+    result = cross_prototype(prototypes, prototypes[index])
+    index = index + 1
+  end
+  result
+end
+
+export fn verify_module(prototypes: [FunctionProto]) -> VerifyResult = do
+  const accepted = functions_accepted(prototypes)
+  if is_verify_ok(accepted) then
+    prototypes_consistent(prototypes)
+  else
+    accepted
+  end
+end
