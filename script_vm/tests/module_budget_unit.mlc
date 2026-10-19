@@ -2,6 +2,7 @@ import { ModuleExport, decode_module, decode_module_with_limits, module_encode }
 import { FunctionProto } from '../run_result'
 import { emb_format, emb_ok } from '../embedding_codes'
 import { ModuleLimits, default_module_limits } from '../module_limits'
+import { Value } from '../value'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm module_budget_unit] FAIL: " + label)
@@ -65,6 +66,17 @@ fn limits_with_blob_bytes(byte_limit: i32) -> ModuleLimits = do
   }
 end
 
+fn duplicate_export_bytes() -> [i32] = do
+  let mut words: [i32] = []
+  let mut constants: [Value] = []
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 0 })
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "same", proto_index: 0 })
+  exports.push(ModuleExport { name: "same", proto_index: 0 })
+  module_encode(exports, protos)
+end
+
 fn main() -> i32 = do
   let mut failed = false
   const negative = decode_module(negative_export_count_bytes())
@@ -102,6 +114,13 @@ fn main() -> i32 = do
     println("blob_over_maximum_blob_bytes")
   else
     println("[script_vm module_budget_unit] FAIL: blob_over_maximum_blob_bytes code=" + over_limit.code.to_string())
+    failed = true
+  end
+  const duplicate = decode_module(duplicate_export_bytes())
+  if duplicate.code == emb_format() then
+    println("duplicate_export")
+  else
+    println("[script_vm module_budget_unit] FAIL: duplicate export accepted code=" + duplicate.code.to_string() + " count=" + duplicate.decoded_module.exports.length().to_string() + " name=" + duplicate.decoded_module.exports[0].name)
     failed = true
   end
   if failed then
