@@ -33,6 +33,7 @@ registered_units = [
   ["verifier_hardening", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/verifier_hardening_unit.mlc"]],
   ["blob_limits", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/blob_limits_unit.mlc"]],
   ["module_budget_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_budget_unit.mlc"]],
+  ["module_constant_policy_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_constant_policy_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],
   ["module_encode", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_encode_unit.mlc"]],

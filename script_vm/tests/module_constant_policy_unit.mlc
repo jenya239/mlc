@@ -1,9 +1,9 @@
 import { ModuleExport, decode_module, module_encode } from '../module_blob'
 import { FunctionProto } from '../run_result'
-import { emb_format } from '../embedding_codes'
+import { emb_format, emb_ok } from '../embedding_codes'
 import {
   Value,
-  ValueHeapRef,
+  ValueInt32,
   value_encode,
   value_decode
 } from '../value'
@@ -27,20 +27,38 @@ fn forged_module_bytes() -> [i32] = do
   module_encode(exports, protos)
 end
 
+fn scalar_int32_module_bytes() -> [i32] = do
+  let mut words: [i32] = []
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(1)))
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 1 })
+  let mut exports: [ModuleExport] = []
+  module_encode(exports, protos)
+end
+
 fn main() -> i32 = do
   const decoded = decode_module(forged_module_bytes())
-  if decoded.code == emb_format() then
-    println("forged_heap_reference_rejected")
-    println("[script_vm] module_constant_policy_unit ok")
-    0
-  else if decoded.decoded_module.protos.length() < 1 then
-    fail("forged heap reference accepted code=" + decoded.code.to_string() + " protos=0")
-  else if decoded.decoded_module.protos[0].constants.length() < 1 then
-    fail("forged heap reference accepted code=" + decoded.code.to_string() + " constants=0")
-  else
-    match value_decode(decoded.decoded_module.protos[0].constants[0]) {
-      ValueHeapRef(object_id) => fail("forged heap reference accepted code=" + decoded.code.to_string() + " object_id=" + object_id.to_string()),
-      _ => fail("forged heap reference accepted code=" + decoded.code.to_string())
-    }
+  if decoded.code != emb_format() then
+    return fail("forged heap reference accepted code=" + decoded.code.to_string())
   end
+  println("forged_heap_reference_rejected")
+  const scalar = decode_module(scalar_int32_module_bytes())
+  if scalar.code != emb_ok() then
+    return fail("scalar int32 code=" + scalar.code.to_string())
+  end
+  if scalar.decoded_module.protos.length() != 1 || scalar.decoded_module.protos[0].constants.length() != 1 then
+    return fail("scalar int32 shape")
+  end
+  match value_decode(scalar.decoded_module.protos[0].constants[0]) {
+    ValueInt32(number) =>
+      if number != 1 then
+        fail("scalar int32 value=" + number.to_string())
+      else
+        println("scalar_int32")
+        println("[script_vm] module_constant_policy_unit ok")
+        0
+      end,
+    _ => fail("scalar int32 kind")
+  }
 end

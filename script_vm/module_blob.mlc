@@ -1,4 +1,4 @@
-import { Value, ValueInt32, value_encode } from './value'
+import { Value, ValueInt32, ValueHeapRef, value_encode, value_decode } from './value'
 import { FunctionProto } from './interpreter'
 import {
   instruction_words_load_const,
@@ -222,6 +222,12 @@ fn limit_code(exports: [ModuleExport], protos: [FunctionProto]) -> i32 =
     emb_ok()
   end
 
+fn constant_is_canonical_scalar(raw: i64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueHeapRef(_) => false,
+    _ => true
+  }
+
 fn cursor_count_fits(offset: i32, count: i32, width: i32, extra: i32, length: i32) -> bool = do
   if count < 0 || width <= 0 || extra < 0 || offset < 0 || offset > length then
     false
@@ -332,17 +338,25 @@ export fn decode_module_with_limits(bytes: [i32], limits: ModuleLimits) -> Decod
               else
                 let mut constants: [Value] = []
                 let mut constant_index = 0
-                while constant_index < constant_count do
-                  constants.push(Value { raw: read_i64_le(bytes, offset) })
+                while constant_index < constant_count && !decode_failed do
+                  const raw = read_i64_le(bytes, offset)
                   offset = offset + 8
-                  constant_index = constant_index + 1
+                  if constant_is_canonical_scalar(raw) then
+                    constants.push(Value { raw: raw })
+                    constant_index = constant_index + 1
+                  else
+                    decode_failed = true
+                    fail_code = emb_format()
+                  end
                 end
-                protos.push(FunctionProto {
-                  words: words,
-                  constants: constants,
-                  register_count: register_count
-                })
-                proto_index = proto_index + 1
+                if !decode_failed then
+                  protos.push(FunctionProto {
+                    words: words,
+                    constants: constants,
+                    register_count: register_count
+                  })
+                  proto_index = proto_index + 1
+                end
               end
             end
           end
