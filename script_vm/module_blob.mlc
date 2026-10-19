@@ -11,6 +11,11 @@ import {
   emb_unsupported,
   emb_format
 } from './embedding_codes'
+import {
+  ModuleLimits,
+  default_module_limits,
+  module_blob_exceeds_limit
+} from './module_limits'
 
 extern fn embedding_u8_at(data_pointer: i64, index: i32) -> i32 =
   "mlc::script_vm::embedding_u8_at" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
@@ -239,11 +244,13 @@ fn accept_decoded(exports: [ModuleExport], protos: [FunctionProto], empty: Decod
   end
 end
 
-export fn decode_module(bytes: [i32]) -> DecodeResult = do
+export fn decode_module_with_limits(bytes: [i32], limits: ModuleLimits) -> DecodeResult = do
   let mut empty_exports: [ModuleExport] = []
   let mut empty_protos: [FunctionProto] = []
   const empty = DecodedModule { exports: empty_exports, protos: empty_protos }
-  if bytes.length() < 8 then
+  if module_blob_exceeds_limit(bytes.length(), limits) then
+    DecodeResult { code: emb_format(), decoded_module: empty }
+  else if bytes.length() < 8 then
     DecodeResult { code: emb_format(), decoded_module: empty }
   else if read_u32_le(bytes, 0) != magic_mlsc() then
     DecodeResult { code: emb_unsupported(), decoded_module: empty }
@@ -351,3 +358,6 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
     end
   end
 end
+
+export fn decode_module(bytes: [i32]) -> DecodeResult =
+  decode_module_with_limits(bytes, default_module_limits())

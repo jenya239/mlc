@@ -1,0 +1,23 @@
+export type ModuleLimits = {
+  maximum_blob_bytes: i32,
+  maximum_exports: i32,
+  maximum_protos: i32,
+  maximum_words: i32,
+  maximum_constants: i32,
+  maximum_name_bytes: i32,
+  maximum_verification_work: i32
+}
+
+export fn default_module_limits() -> ModuleLimits =
+  ModuleLimits {
+    maximum_blob_bytes: 1048576,
+    maximum_exports: 1024,
+    maximum_protos: 1024,
+    maximum_words: 65536,
+    maximum_constants: 65536,
+    maximum_name_bytes: 4096,
+    maximum_verification_work: 1048576
+  }
+
+export fn module_blob_exceeds_limit(byte_count: i32, limits: ModuleLimits) -> bool =
+  byte_count > limits.maximum_blob_bytes

@@ -1,6 +1,7 @@
-import { ModuleExport, decode_module, module_encode } from '../module_blob'
+import { ModuleExport, decode_module, decode_module_with_limits, module_encode } from '../module_blob'
 import { FunctionProto } from '../run_result'
-import { emb_format } from '../embedding_codes'
+import { emb_format, emb_ok } from '../embedding_codes'
+import { ModuleLimits, default_module_limits } from '../module_limits'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm module_budget_unit] FAIL: " + label)
@@ -51,6 +52,19 @@ fn overflowing_word_count_bytes() -> [i32] = do
   append_u32_le(bytes, overflowing_word_count())
 end
 
+fn limits_with_blob_bytes(byte_limit: i32) -> ModuleLimits = do
+  const limits = default_module_limits()
+  ModuleLimits {
+    maximum_blob_bytes: byte_limit,
+    maximum_exports: limits.maximum_exports,
+    maximum_protos: limits.maximum_protos,
+    maximum_words: limits.maximum_words,
+    maximum_constants: limits.maximum_constants,
+    maximum_name_bytes: limits.maximum_name_bytes,
+    maximum_verification_work: limits.maximum_verification_work
+  }
+end
+
 fn main() -> i32 = do
   let mut failed = false
   const negative = decode_module(negative_export_count_bytes())
@@ -66,6 +80,28 @@ fn main() -> i32 = do
     println("word_count_overflow")
   else
     println("[script_vm module_budget_unit] FAIL: word_count_overflow code=" + overflow.code.to_string())
+    failed = true
+  end
+  const empty_bytes = empty_module_bytes()
+  const within_default = decode_module_with_limits(empty_bytes, default_module_limits())
+  if within_default.code == emb_ok() then
+    println("blob_within_default_limit")
+  else
+    println("[script_vm module_budget_unit] FAIL: blob_within_default_limit code=" + within_default.code.to_string())
+    failed = true
+  end
+  const exact = decode_module_with_limits(empty_bytes, limits_with_blob_bytes(empty_bytes.length()))
+  if exact.code == emb_ok() then
+    println("blob_at_maximum_blob_bytes")
+  else
+    println("[script_vm module_budget_unit] FAIL: blob_at_maximum_blob_bytes code=" + exact.code.to_string())
+    failed = true
+  end
+  const over_limit = decode_module_with_limits(empty_bytes, limits_with_blob_bytes(empty_bytes.length() - 1))
+  if over_limit.code == emb_format() then
+    println("blob_over_maximum_blob_bytes")
+  else
+    println("[script_vm module_budget_unit] FAIL: blob_over_maximum_blob_bytes code=" + over_limit.code.to_string())
     failed = true
   end
   if failed then
