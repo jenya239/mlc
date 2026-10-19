@@ -1,8 +1,8 @@
-current_step: 307
+current_step: 308
 status: ready
-last_result: done step 307: decode принимает отрицательный export count (code=0) и паникует на word_count * 4
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/module_budget_unit.mlc => exit 1; FAIL negative_export_count code=0 exports=0; PANIC integer overflow при word_count=536870912; в общий gate не регистрировался
-next_step: 308
+last_result: done step 308: фаза 0 без нарушений; 303 пропущен по исходу (b); module_budget в общем gate нет
+last_verify: allowed_files шагов 301–307 и отсутствие module_budget в scripts/run_script_vm_gate.rb и scripts/run_script_vm_queue200_gate.rb => docs/agent/notes/s308_phase0_critic.md; gate none
+next_step: 309
 consult_count: 0
 consult_response:
 consult_verdict:
