@@ -217,6 +217,19 @@ fn limit_code(exports: [ModuleExport], protos: [FunctionProto]) -> i32 =
     emb_ok()
   end
 
+fn cursor_count_fits(offset: i32, count: i32, width: i32, extra: i32, length: i32) -> bool = do
+  if count < 0 || width <= 0 || extra < 0 || offset < 0 || offset > length then
+    false
+  else
+    const remaining = length - offset
+    if extra > remaining then
+      false
+    else
+      count <= (remaining - extra) / width
+    end
+  end
+end
+
 fn accept_decoded(exports: [ModuleExport], protos: [FunctionProto], empty: DecodedModule) -> DecodeResult = do
   const code = limit_code(exports, protos)
   if code != emb_ok() then
@@ -247,6 +260,10 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
       let mut export_index = 0
       let mut decode_failed = false
       let mut fail_code = emb_ok()
+      if export_count < 0 then
+        decode_failed = true
+        fail_code = emb_format()
+      end
       while export_index < export_count && !decode_failed do
         if offset + 4 > bytes.length() then
           decode_failed = true
@@ -254,7 +271,7 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
         else
           const name_length = read_u32_le(bytes, offset)
           offset = offset + 4
-          if name_length < 0 || offset + name_length + 4 > bytes.length() then
+          if !cursor_count_fits(offset, name_length, 1, 4, bytes.length()) then
             decode_failed = true
             fail_code = emb_format()
           else
@@ -274,6 +291,10 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
       else
         const proto_count = read_u32_le(bytes, offset)
         offset = offset + 4
+        if proto_count < 0 then
+          decode_failed = true
+          fail_code = emb_format()
+        end
         let mut protos: [FunctionProto] = []
         let mut proto_index = 0
         while proto_index < proto_count && !decode_failed do
@@ -285,7 +306,7 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
             offset = offset + 4
             const word_count = read_u32_le(bytes, offset)
             offset = offset + 4
-            if word_count < 0 || offset + word_count * 4 + 4 > bytes.length() then
+            if !cursor_count_fits(offset, word_count, 4, 4, bytes.length()) then
               decode_failed = true
               fail_code = emb_format()
             else
@@ -298,7 +319,7 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
               end
               const constant_count = read_u32_le(bytes, offset)
               offset = offset + 4
-              if constant_count < 0 || offset + constant_count * 8 > bytes.length() then
+              if !cursor_count_fits(offset, constant_count, 8, 0, bytes.length()) then
                 decode_failed = true
                 fail_code = emb_format()
               else
