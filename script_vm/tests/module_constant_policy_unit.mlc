@@ -1,0 +1,46 @@
+import { ModuleExport, decode_module, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import { emb_format } from '../embedding_codes'
+import {
+  Value,
+  ValueHeapRef,
+  value_encode,
+  value_decode
+} from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm module_constant_policy_unit] FAIL: " + label)
+  1
+end
+
+fn forged_object_id() -> i32 = 77
+
+fn forged_heap_constant() -> Value = value_encode(ValueHeapRef(forged_object_id()))
+
+fn forged_module_bytes() -> [i32] = do
+  let mut words: [i32] = []
+  let mut constants: [Value] = []
+  constants.push(forged_heap_constant())
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 1 })
+  let mut exports: [ModuleExport] = []
+  module_encode(exports, protos)
+end
+
+fn main() -> i32 = do
+  const decoded = decode_module(forged_module_bytes())
+  if decoded.code == emb_format() then
+    println("forged_heap_reference_rejected")
+    println("[script_vm] module_constant_policy_unit ok")
+    0
+  else if decoded.decoded_module.protos.length() < 1 then
+    fail("forged heap reference accepted code=" + decoded.code.to_string() + " protos=0")
+  else if decoded.decoded_module.protos[0].constants.length() < 1 then
+    fail("forged heap reference accepted code=" + decoded.code.to_string() + " constants=0")
+  else
+    match value_decode(decoded.decoded_module.protos[0].constants[0]) {
+      ValueHeapRef(object_id) => fail("forged heap reference accepted code=" + decoded.code.to_string() + " object_id=" + object_id.to_string()),
+      _ => fail("forged heap reference accepted code=" + decoded.code.to_string())
+    }
+  end
+end
