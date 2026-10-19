@@ -825,6 +825,18 @@ export fn parser_tests() -> [TestResult] = do
   results.push(assert_eq_int('parse program: end before a following function keeps the function',
     decl_count("end\nfn f() -> i32 = 1"), 1))
 
+  results.push(assert_eq_int('parse program: array trailing comma — 0 parse errors',
+    parse_source_errors("fn main() -> i32 = do\n  let values = [1,]\n  values[0]\nend").length(), 0))
+
+  results.push(assert_eq_int('parse program: forward declaration then definition — 0 parse errors',
+    parse_source_errors("fn later(value: i32) -> i32\nfn later(value: i32) -> i32 = value").length(), 0))
+
+  results.push(assert_eq_int('parse program: forward declaration then definition — 1 decl',
+    decl_count("fn later(value: i32) -> i32\nfn later(value: i32) -> i32 = value"), 1))
+
+  results.push(assert_true('parse program: bodyless function without definition is a parse error',
+    parse_source_errors("fn later(value: i32) -> i32").length() >= 1))
+
   results.push(assert_true('parser smoke: deep nesting completes',
     parser_garbage_smoke(parser_deep_nesting_source(16))))
 

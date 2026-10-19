@@ -1,0 +1,485 @@
+import { Pattern, PatternWild, PatternCtor, PatternIdent, PatternArray, PatternOr } from '../../frontend/ast'
+import { SemanticMatchArm } from '../../ir/semantic_ir'
+import { CodegenContext, lookup_ctor_type_info_for_context, lookup_fields_for_context } from '../context'
+import { cpp_safe, lower_first } from '../cpp_naming'
+import { CppStatement } from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { NestedMatchResume, RecordFieldBindCppResult } from './match_guarded_support'
+
+export fn cyclic_option_field_sum_name_at(
+  constructor_name: string,
+  field_index: i32,
+  context: CodegenContext
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if field_index < constructor_info.cyclic_option_field_names.length() then
+    constructor_info.cyclic_option_field_names[field_index]
+  else ''
+  end
+end
+
+export fn subpattern_is_constructor(sub_pattern: Shared<Pattern>) -> bool =
+  match sub_pattern {
+    PatternCtor(_, _, _) => true,
+    _ => false
+  }
+
+export fn constructor_subpatterns_use_cyclic_option(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < sub_patterns.length() do
+    if subpattern_is_constructor(sub_patterns[index]) &&
+        cyclic_option_field_sum_name_at(constructor_name, index, context) != '' then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn pattern_is_cyclic_option_nested_constructor(pattern: Shared<Pattern>, context: CodegenContext) -> bool =
+  match pattern {
+    PatternCtor(constructor_name, sub_patterns, _) =>
+      constructor_subpatterns_use_cyclic_option(constructor_name, sub_patterns, context),
+    _ => false
+  }
+
+export fn arms_have_cyclic_option_nested_constructor(
+  arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext
+) -> bool =
+  arms.any(arm => pattern_is_cyclic_option_nested_constructor(arm.pattern, context))
+
+export fn cyclic_array_field_sum_name_at(
+  constructor_name: string,
+  field_index: i32,
+  context: CodegenContext
+) -> string = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if field_index < constructor_info.cyclic_array_field_names.length() then
+    constructor_info.cyclic_array_field_names[field_index]
+  else ''
+  end
+end
+
+fn pattern_is_name_binding(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternIdent(_, _) => true,
+    PatternWild(_) => true,
+    _ => false
+  }
+
+export fn constructor_subpatterns_are_name_bindings(sub_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut names_only = true
+  while index < sub_patterns.length() do
+    if pattern_is_name_binding(sub_patterns[index]) then do end
+    else do
+      names_only = false
+    end
+    end
+    index = index + 1
+  end
+  names_only
+end
+
+fn or_alternatives_are_simple_array_elements(alternatives: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut simple = true
+  while index < alternatives.length() do
+    match alternatives[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if constructor_subpatterns_are_supported_fields(sub_patterns) then do end
+        else do
+          simple = false
+        end
+        end
+      end,
+      _ => do simple = false end
+    }
+    index = index + 1
+  end
+  simple
+end
+
+export fn array_pattern_elements_are_simple(element_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut simple = true
+  while index < element_patterns.length() do
+    match element_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if constructor_subpatterns_are_supported_fields(sub_patterns) then do end
+        else do
+          simple = false
+        end
+        end
+      end,
+      PatternOr(alternatives, _) => do
+        if or_alternatives_are_simple_array_elements(alternatives) then do end
+        else do
+          simple = false
+        end
+        end
+      end,
+      _ => do simple = false end
+    }
+    index = index + 1
+  end
+  simple
+end
+
+export fn constructor_subpatterns_are_supported_fields(sub_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut supported = true
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, inner_patterns, _) => do
+        if constructor_subpatterns_are_supported_fields(inner_patterns) then do end
+        else do
+          supported = false
+        end
+        end
+      end,
+      PatternArray(element_patterns, _, _) => do
+        if array_pattern_elements_are_simple(element_patterns) then do end
+        else do
+          supported = false
+        end
+        end
+      end,
+      _ => do supported = false end
+    }
+    index = index + 1
+  end
+  supported
+end
+
+fn array_elements_are_bindings(element_patterns: [Shared<Pattern>]) -> bool = do
+  let mut index = 0
+  let mut bindings_only = true
+  while index < element_patterns.length() do
+    match element_patterns[index] {
+      PatternIdent(_, _) => do end,
+      PatternWild(_) => do end,
+      PatternCtor(_, sub_patterns, _) => do
+        if sub_patterns.length() != 0 && constructor_subpatterns_are_supported_fields(sub_patterns) == false then do
+          bindings_only = false
+        end
+        end
+      end,
+      PatternOr(alternatives, _) => do
+        if or_alternatives_are_simple_array_elements(alternatives) then do end
+        else do
+          bindings_only = false
+        end
+        end
+      end,
+      _ => do bindings_only = false end
+    }
+    index = index + 1
+  end
+  bindings_only
+end
+
+export fn array_pattern_is_element_binding(pattern: Shared<Pattern>) -> bool =
+  match pattern {
+    PatternArray(element_patterns, _, _) =>
+      array_elements_are_bindings(element_patterns),
+    _ => false
+  }
+
+export fn constructor_subpatterns_use_cyclic_array(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < sub_patterns.length() do
+    if array_pattern_is_element_binding(sub_patterns[index]) &&
+        cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn pattern_is_cyclic_array_nested(pattern: Shared<Pattern>, context: CodegenContext) -> bool =
+  match pattern {
+    PatternCtor(constructor_name, sub_patterns, _) =>
+      constructor_contains_cyclic_array(constructor_name, sub_patterns, context),
+    _ => false
+  }
+
+fn constructor_contains_cyclic_array(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> bool = do
+  if constructor_subpatterns_use_cyclic_array(constructor_name, sub_patterns, context) then
+    true
+  else do
+    let mut index = 0
+    let mut found = false
+    while index < sub_patterns.length() do
+      if pattern_is_cyclic_array_nested(sub_patterns[index], context) then
+        found = true
+      end
+      index = index + 1
+    end
+    found
+  end
+  end
+end
+
+export fn arms_have_cyclic_array_nested_pattern(
+  arms: [Shared<SemanticMatchArm>],
+  context: CodegenContext
+) -> bool =
+  arms.any(arm => pattern_is_cyclic_array_nested(arm.pattern, context))
+
+export fn constructor_field_member_name(context: CodegenContext, constructor_name: string, field_index: i32) -> string = do
+  const field_names = lookup_fields_for_context(context, constructor_name)
+  if field_index < field_names.length() && field_names[field_index] != '' then
+    cpp_safe(field_names[field_index])
+  else
+    'field' + field_index.to_string()
+  end
+end
+
+export fn boxed_nested_constructor_indexes(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> [i32] = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut indexes: [i32] = []
+  let mut index = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatternCtor(_, inner_patterns, _) => do
+        if constructor_subpatterns_are_supported_fields(inner_patterns) &&
+            constructor_info.boxed_positions.contains(index) then do
+          indexes.push(index)
+        end
+        end
+      end,
+      _ => do end
+    }
+    index = index + 1
+  end
+  indexes
+end
+
+export fn constructor_field_ident_statements(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  nested_indexes: [i32],
+  arm_context: CodegenContext,
+  context: CodegenContext
+) -> RecordFieldBindCppResult = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  let mut field_binding_statements: [Shared<CppStatement>] = []
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if nested_indexes.contains(index) == false then
+      match sub_patterns[index] {
+        PatternIdent(binding_name, _) => do
+          bound_context = bound_context.add_value(binding_name)
+          const member_name = constructor_field_member_name(context, constructor_name, index)
+          if constructor_info.boxed_positions.contains(index) then do
+            field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = (*' + lower_name + "." + member_name + "); "))
+          end
+          end
+          if constructor_info.boxed_positions.contains(index) == false then do
+            field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+              'const auto& ' + cpp_safe(binding_name) + ' = ' + lower_name + "." + member_name + "; "))
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  RecordFieldBindCppResult {
+    field_binding_statements: field_binding_statements,
+    arm_context: bound_context
+  }
+end
+
+export fn resume_stack_without_last(resume_stack: [NestedMatchResume]) -> [NestedMatchResume] = do
+  let mut kept: [NestedMatchResume] = []
+  let mut index = 0
+  while index + 1 < resume_stack.length() do
+    kept.push(resume_stack[index])
+    index = index + 1
+  end
+  kept
+end
+
+export fn cyclic_array_pattern_field_indexes(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> [i32] = do
+  let mut indexes: [i32] = []
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      match sub_patterns[index] {
+        PatternArray(element_patterns, _, _) => do
+          if array_pattern_elements_are_simple(element_patterns) then do
+            indexes.push(index)
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  indexes
+end
+
+export fn context_with_cyclic_array_pattern_bindings(
+  arm_context: CodegenContext,
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  context: CodegenContext
+) -> CodegenContext = do
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < sub_patterns.length() do
+    if cyclic_array_field_sum_name_at(constructor_name, index, context) != '' then
+      match sub_patterns[index] {
+        PatternArray(element_patterns, rest_name, _) => do
+          if array_pattern_elements_are_simple(element_patterns) then do
+            let mut element_index = 0
+            while element_index < element_patterns.length() do
+              match element_patterns[element_index] {
+                PatternIdent(binding_name, _) => do
+                  bound_context = bound_context.add_value(binding_name)
+                end,
+                PatternCtor(_, constructor_fields, _) => do
+                  if constructor_subpatterns_are_supported_fields(constructor_fields) then
+                    bound_context = context_with_constructor_field_bindings(bound_context, constructor_fields)
+                  end
+                end,
+                PatternOr(alternatives, _) => do
+                  if alternatives.length() > 0 then
+                    bound_context = context_with_pattern_bindings(bound_context, alternatives[0])
+                  end
+                end,
+                _ => do end
+              }
+              element_index = element_index + 1
+            end
+            if rest_name != '' then
+              bound_context = bound_context.add_value(rest_name)
+            end
+          end
+          end
+        end,
+        _ => do end
+      }
+    end
+    index = index + 1
+  end
+  bound_context
+end
+
+fn context_with_pattern_list_bindings(
+  arm_context: CodegenContext,
+  patterns: [Shared<Pattern>]
+) -> CodegenContext = do
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < patterns.length() do
+    bound_context = context_with_pattern_bindings(bound_context, patterns[index])
+    index = index + 1
+  end
+  bound_context
+end
+
+export fn context_with_pattern_bindings(arm_context: CodegenContext, pattern: Shared<Pattern>) -> CodegenContext = do
+  match pattern {
+    PatternIdent(binding_name, _) => arm_context.add_value(binding_name),
+    PatternCtor(_, constructor_fields, _) =>
+      context_with_pattern_list_bindings(arm_context, constructor_fields),
+    PatternArray(element_patterns, rest_name, _) => do
+      let mut bound_context = context_with_pattern_list_bindings(arm_context, element_patterns)
+      if rest_name != '' then
+        bound_context = bound_context.add_value(rest_name)
+      end
+      bound_context
+    end,
+    PatternOr(alternatives, _) =>
+      if alternatives.length() > 0 then context_with_pattern_bindings(arm_context, alternatives[0])
+      else arm_context end,
+    _ => arm_context
+  }
+end
+
+fn context_with_constructor_field_bindings(
+  arm_context: CodegenContext,
+  sub_patterns: [Shared<Pattern>]
+) -> CodegenContext = do
+  let mut bound_context = arm_context
+  let mut index = 0
+  while index < sub_patterns.length() do
+    match sub_patterns[index] {
+      PatternIdent(binding_name, _) => do
+        bound_context = bound_context.add_value(binding_name)
+      end,
+      PatternCtor(_, constructor_fields, _) => do
+        if constructor_subpatterns_are_supported_fields(constructor_fields) then
+          bound_context = context_with_constructor_field_bindings(bound_context, constructor_fields)
+        end
+      end,
+      _ => do end
+    }
+    index = index + 1
+  end
+  bound_context
+end
+
+export fn no_finish_statements() -> [Shared<CppStatement>] = do
+  let mut statements: [Shared<CppStatement>] = []
+  statements
+end
+
+fn cyclic_array_access_suffix(array_access: string) -> string = do
+  let mut suffix = ''
+  let mut index = 0
+  while index < array_access.length() do
+    const character = array_access.substring(index, 1)
+    if character == "." then do
+      suffix = suffix + "_"
+    end else do
+      suffix = suffix + character
+    end
+    end
+    index = index + 1
+  end
+  suffix
+end
+
+export fn cyclic_array_element_lower_name(array_access: string, constructor_name: string, element_index: i32) -> string = do
+  "__cyclic_element_" + cyclic_array_access_suffix(array_access) + "_" + cpp_safe(lower_first(constructor_name)) + "_" + element_index.to_string()
+end
+

@@ -1,0 +1,28 @@
+---
+description: textui hover must stay under 1 ms and must not repaint the whole window
+globs: misc/textui/**/*.mlc
+alwaysApply: false
+---
+
+# textui hover latency
+
+A pointer move repaints only the rows that changed and presents without waiting for vblank. That is the file-manager contract.
+
+After any change to paint, submit, hit, or the frame loop under `misc/textui/`:
+
+```bash
+bash scripts/run_textui_hover_bench.sh
+```
+
+Exit 0 required. Scene: 2560×1440, 80 rows, 10 samples, swap interval 0. The log’s `hover_damage_*` times `submit_ui_frame` (the gallery path).
+
+- `hover_damage_min_us` ≤ 1000
+- `hover_damage_min_us * 3 < hover_full_min_us`
+
+Do not raise the budget to make a slower path pass. If the gate fails, revert the cut.
+
+What holds the number:
+
+- `submit_ui_frame` stays on `frame_signature_hover_only` → `paint_hover_damage`. A full `paint_tree_frame` for a hover diff is a regression.
+- `misc/textui/app.mlc` calls `glfw_gl_swap_interval(0)` after the window is created. Do not put SwapInterval 1 back on this window.
+- Idle, and a pointer that stays on the same row, must not paint.

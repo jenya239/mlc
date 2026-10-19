@@ -14,7 +14,8 @@ import { gen_derive_display_cpp, gen_derive_eq_cpp, gen_derive_ord_cpp, gen_deri
 import { trait_method_field_cpp, gen_trait_struct_cpp } from '../codegen/decl/trait_struct_cpp'
 import { CppDeclaration, CppStruct, CppDeclarationSequence, CppDeclarationEmpty, CppUsing, CppStdHashSpecialization, CppDeclarationFragment, CppStatement, CppStatementFragment, CppStatementSequence, CppBlock, CppIf, CppWhile, CppFor } from '../cpp_ir/cpp_ast'
 import { gen_fn_proto_cpp, gen_fn_decl_cpp, gen_decl_cpp, gen_proto_cpp, print_cpp_declaration, print_cpp_declarations, extend_method_forward_segments_cpp, gen_extend_wrapper_protos_cpp, extend_cpp_forward_segment_cpp, collect_fn_defs_cpp, collect_decl_parts_cpp, collect_all_decl_parts_cpp, extend_helper_protos_for_exported_types_cpp, main_program_parameter_items_cpp, main_set_args_preamble_cpp, gen_type_decl_fwd_cpp, gen_type_decl_body_cpp, gen_trait_decl_cpp, decl_segment_cpp, gen_decl_extend_cpp, gen_decl_extend_trait_suffix_cpp, gen_extend_extern_method_cpp } from '../codegen/decl_cpp'
-import { gen_type_decl_fwd_only, gen_type_decl_body_only, gen_derive_methods } from '../codegen/decl/type_gen'
+import { gen_type_decl_fwd_only, gen_type_decl_body_only } from '../codegen/decl/type_gen'
+import { gen_derive_methods } from '../codegen/decl/type_gen_derive'
 import { empty_program, record_variant, tuple_variant, unit_variant, field_definition } from './ast_builders'
 import { assert_code_contains, assert_code_not_contains, empty_codegen_context } from './codegen_test_helpers'
 import { SemanticDeclaration, SemanticExpression, SemanticExpressionUnit, SemanticExpressionIdent, SemanticExpressionStr, SemanticExpressionBin, SemanticExpressionInt, SemanticExpressionBool, SemanticExpressionQuestion, SemanticExpressionBlock, SemanticExpressionIf, SemanticExpressionMatch, SemanticExpressionWhile, SemanticExpressionExtern, SemanticMatchArm, SemanticStatementLet, SemanticStatementExpr, SemanticDeclarationFn, SemanticDeclarationType, SemanticDeclarationTrait, SemanticDeclarationExported, SemanticDeclarationExtend, SemanticDeclarationAssocBind, SemanticDeclarationImport, sdecl_span, empty_fn_escape_info } from '../ir/semantic_ir'
@@ -29,6 +30,7 @@ fn tbool() -> Shared<Type> = Shared.new(TBool)
 fn unk()   -> Shared<Type> = Shared.new(TUnknown)
 
 fn make_ident(name: string) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionIdent(name, unk(), span_unknown()))
+fn make_i32_ident(name: string) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionIdent(name, ti32(), span_unknown()))
 fn make_bin(op: string, left: Shared<SemanticExpression>, right: Shared<SemanticExpression>) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionBin(op, left, right, unk(), span_unknown()))
 fn make_unit_expr() -> Shared<SemanticExpression> = Shared.new(SemanticExpressionUnit(tunit(), span_unknown()))
 fn make_int(value: i32) -> Shared<SemanticExpression> = Shared.new(SemanticExpressionInt(value, ti32(), span_unknown()))
@@ -239,7 +241,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('gen_fn_decl: addition',
     gen_fn_decl('add', [], [], [iparam('left'), iparam('right')], ti32(),
-      make_bin("+", make_ident('left'), make_ident('right')), context),
+      make_bin("+", make_i32_ident('left'), make_i32_ident('right')), context),
     'int add(int left, int right) noexcept{\nreturn mlc::arith::checked_add(left, right);\n}\n'))
 
   results.push(assert_eq_str('gen_fn_decl: unit return',
@@ -249,7 +251,7 @@ export fn decl_gen_tests() -> [TestResult] = do
   // --- gen_decl with SemanticDeclarationFn ---------------------------------------------------
 
   const add_decl = fn_decl('add', [iparam('left'), iparam('right')], ti32(),
-    make_bin("+", make_ident('left'), make_ident('right')))
+    make_bin("+", make_i32_ident('left'), make_i32_ident('right')))
 
   results.push(assert_code_contains('gen_decl DeclFn: contains return type',
     gen_decl(add_decl, context), 'int add'))
@@ -965,7 +967,7 @@ export fn decl_gen_tests() -> [TestResult] = do
 
   results.push(assert_eq_str('gen_decl_cpp DeclFn native return',
     print_cpp_declaration(gen_decl_cpp(fn_decl('add', [iparam('left'), iparam('right')], ti32(),
-      make_bin("+", make_ident('left'), make_ident('right'))), context)),
+      make_bin("+", make_i32_ident('left'), make_i32_ident('right'))), context)),
     'int add(int left, int right) noexcept{\n  return mlc::arith::checked_add(left, right);\n}\n'))
 
   results.push(assert_eq_str('gen_proto_cpp DeclFn matches string',

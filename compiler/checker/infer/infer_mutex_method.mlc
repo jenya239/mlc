@@ -49,7 +49,7 @@ fn infer_expr_maybe_lambda(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult =
   match expression {
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       infer_lambda_with_param_types(parameter_names, expected_param_types, body, inference_context, infer_expr_fn),
     _ => infer_expr_fn(expression, inference_context)
   }
@@ -59,7 +59,7 @@ fn mutex_lock_lambda_errors(
   method_span: Span
 ) -> [Diagnostic] =
   match callback_expression {
-    ExprLambda(parameter_names, _, _) =>
+    ExprLambda(parameter_names, _, _, _) =>
       if parameter_names.length() != 1 then
         [diagnostic_error_with_code(
           'mutex.lock expects a callback with one parameter',

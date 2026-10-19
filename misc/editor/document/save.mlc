@@ -248,7 +248,6 @@ export fn open_buffer_set_document(
     line_ending: buffer.line_ending,
     had_bom: buffer.had_bom
   }
-end
 
 export fn open_buffer_mark_dirty(buffer: OpenBuffer) -> OpenBuffer =
   OpenBuffer {
@@ -259,7 +258,6 @@ export fn open_buffer_mark_dirty(buffer: OpenBuffer) -> OpenBuffer =
     line_ending: buffer.line_ending,
     had_bom: buffer.had_bom
   }
-end
 
 export fn open_buffer_is_dirty(buffer: OpenBuffer) -> bool =
   buffer.dirty != 0

@@ -91,7 +91,7 @@ bundle exec rake test_mlc                            # test/mlc/** (быстро
 bundle exec rake test_unit                           # весь test/ кроме integration
 
 # Self-hosted: тесты
-bundle exec rake test_compiler_mlc                  # compiler/tests/ → 447 тестов (run_tests, не mlcc)
+bundle exec rake test_compiler_mlc                  # build_tests.sh → compiler/out/tests/run_tests
 bundle exec rake test_self_hosted_stack             # test_mlc + test_compiler_mlc
 compiler/tests/e2e/run_e2e.sh [mlcc_binary]         # E2E: 4 программы
 compiler/tests/build_tests_self.sh [mlcc_binary]    # unit-тесты через self-hosted бинарь
@@ -103,9 +103,16 @@ MLCC_BOOTSTRAP=1 compiler/build.sh                 # Ruby → mlcc → mlcc_boot
 
 ### Self-hosted mlcc — проверка (не пропускать)
 
-- `rake test_compiler_mlc` обновляет **run_tests** через Ruby; **`compiler/out/mlcc` от этого не пересобирается**. После правок в `compiler/**` нужен **`compiler/build.sh`** для актуального mlcc.
+- `rake test_compiler_mlc` запускает `compiler/tests/build_tests.sh`. Скрипт пересобирает `compiler/out/tests/run_tests` через `mlcc`, если бинаря нет или `compiler/**/*.mlc` новее. Если сам `mlcc` отсутствует или старше этих исходников, сначала выполняется `compiler/build.sh`.
 - Не считать работу завершённой без проверки self-host: свежий `mlcc` → трансляция **`compiler/main.mlc`** (`mlcc -o <dir> …`); при сомнениях — **`clang++`** по выходу. При нехватке места в `/tmp` задать **`TMPDIR`** в дереве репозитория.
 - Правило в репозитории: `.cursor/rules/mlcc-self-host-verification.mdc`.
+- `compiler/build.sh` без `MLCC_FORCE_RUBY=1` — инкрементальная сборка уже существующим `mlcc`. Она не показывает, что Ruby bootstrap всё ещё разбирает и компилирует `compiler/**`. Если менялись парсер, checker, codegen или `lib/mlc/source/parser/**`, `lib/mlc/representations/semantic/gen/**`, холодный путь — это:
+
+```bash
+MLCC_FORCE_RUBY=1 compiler/build.sh
+```
+
+Код возврата 0 и новый `compiler/out/mlcc`. Флаг не пропускается, когда бинарник уже совпадает со штампом исходников.
 
 ### Важные соглашения
 

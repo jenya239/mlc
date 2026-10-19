@@ -148,7 +148,7 @@ fn collect_expression_definition_spans(expression: Shared<Expr>, source_file: st
       collect_statements_definition_spans(statements, source_file, table)
       collect_expression_definition_spans(result_expression, source_file, table)
     end,
-    ExprLambda(parameter_names, body_expression, lambda_span) => do
+    ExprLambda(parameter_names, _, body_expression, lambda_span) => do
       let mut index = 0
       while index < parameter_names.length() do
         symbol_table_set(table, parameter_names[index], source_file, lambda_span)

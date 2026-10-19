@@ -1,7 +1,7 @@
 // Builder functions for constructing AST nodes in tests.
 // Eliminates Shared.new(...) verbosity and makes test intent clear.
 
-import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pattern, Param, FieldDef, span_unknown, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatternUnit } from '../frontend/ast'
+import { Program, Decl, TypeVariant, TypeExpr, Stmt, Expr, FieldVal, MatchArm, Pattern, Param, FieldDef, span_unknown, empty_type_expr_list, ExprUnit, ExprBool, ExprRecord, RecordLitPart, RecordLitFields, PatternUnit } from '../frontend/ast'
 
 // --- Program ------------------------------------------------------------------
 
@@ -86,7 +86,7 @@ export fn question_expr(inner_expr: Shared<Expr>) -> Shared<Expr> =
   Shared.new(ExprQuestion(inner_expr, span_unknown()))
 
 export fn lambda_expr(parameters: [string], body_expr: Shared<Expr>) -> Shared<Expr> =
-  Shared.new(ExprLambda(parameters, body_expr, span_unknown()))
+  Shared.new(ExprLambda(parameters, empty_type_expr_list(), body_expr, span_unknown()))
 
 // --- FieldVal builder --------------------------------------------------------
 

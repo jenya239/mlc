@@ -24,6 +24,32 @@ class MLCMatchGuardCppTest < Minitest::Test
     assert_includes cpp, "if (std::holds_alternative"
   end
 
+  def test_empty_void_match_arm_does_not_fall_through
+    source = <<~SRC
+      type Pattern = PatternIdent(i32) | PatternWild
+
+      fn classify(pattern: Pattern) -> i32 = do
+        let mut supported = 1
+        match pattern {
+          PatternIdent(_) => do end,
+          PatternWild if true => do
+            supported = 0
+          end,
+          _ => do
+            supported = 0
+          end
+        }
+        supported
+      end
+    SRC
+
+    cpp = MLC.to_cpp(source)
+    ident_arm = cpp[/if \(std::holds_alternative<PatternIdent>\(pattern\)\) \{.*?\}/m]
+    assert ident_arm, cpp
+    assert_includes ident_arm, "return;"
+    refute_includes ident_arm, "supported = 0"
+  end
+
   def test_void_nested_match_iife_arms_do_not_fall_through
     source = <<~SRC
       type Term = Ret(i32) | Halt

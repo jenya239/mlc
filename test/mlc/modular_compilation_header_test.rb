@@ -96,7 +96,7 @@ class ModularCompilationHeaderTest < Minitest::Test
     assert_includes result[:header], "Point"
     refute_includes result[:header], "struct Internal"
     assert_includes result[:header], "f("
-    assert_includes result[:header], "internal_fn("
+    refute_includes result[:header], "internal_fn("
     refute_includes result[:header], "return 0"
     assert_includes result[:implementation], "struct Internal"
     assert_includes result[:implementation], "internal_fn"
@@ -175,7 +175,7 @@ class ModularCompilationHeaderTest < Minitest::Test
     )
     result = MLC::Backends::Cpp::HeaderGenerator.new(lowerer).generate(core_ir)
 
-    assert_includes result[:header], "mir_host_file_exists("
+    assert_includes result[:implementation], "mir_host_file_exists("
     assert_includes result[:implementation], "mlc_ffi_bind_mir_host_file_exists"
     assert_includes result[:implementation], "mlc::file::exists_value"
   end

@@ -13,17 +13,22 @@ TESTS_MAIN="$COMPILER_DIR/tests/tests_main.mlc"
 echo "[compiler tests] phase 1/6: compile tests_main.mlc → ${OUT_DIR}/run_tests" >&2
 
 RUN_TESTS="$OUT_DIR/run_tests"
-# Same Decision as build_tests_fast.sh / TRACK_CODEGEN_CPPAST_ONLY test-fix:
-# Ruby ModularCompiler cannot rebuild the tests_main graph (cross-module
-# namespaces). Keep existing run_tests; warn if stale. Full mlcc rebuild:
-# compiler/tests/build_tests_self.sh (import-path WIP).
-if [ ! -x "$RUN_TESTS" ]; then
-  echo "[compiler tests] FAIL: missing $RUN_TESTS" >&2
-  echo "[compiler tests] build with: compiler/tests/build_tests_self.sh" >&2
-  exit 1
-fi
-if find "$COMPILER_DIR/tests" \( -name '*.mlc' -o -name '*.rb' \) -newer "$RUN_TESTS" -print -quit 2>/dev/null | grep -q .; then
-  echo "[compiler tests] WARNING: tests newer than run_tests — running stale binary (Ruby rebuild disabled)" >&2
+
+# Ruby ModularCompiler cannot emit the tests_main graph. mlcc can.
+compiler_mlc_newer_than() {
+  find "$COMPILER_DIR" -name '*.mlc' -type f -not -path '*/out/*' -newer "$1" -print -quit 2>/dev/null | grep -q .
+}
+
+if [ ! -x "$RUN_TESTS" ] || compiler_mlc_newer_than "$RUN_TESTS"; then
+  if [ ! -x "$MLCC_BIN" ] || compiler_mlc_newer_than "$MLCC_BIN"; then
+    echo "[compiler tests] mlcc missing or older than compiler sources — rebuild via build.sh" >&2
+    bash "$COMPILER_DIR/build.sh" "$MLCC_OUT"
+  fi
+  echo "[compiler tests] rebuilding run_tests with mlcc" >&2
+  "$MLCC_BIN" -o "$OUT_DIR" "$TESTS_MAIN"
+  MLCC_ENTRY_BASENAME=tests_main bash "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$RUN_TESTS"
+else
+  echo "[compiler tests] run_tests matches compiler sources — skip rebuild" >&2
 fi
 
 echo "[compiler tests] phase 2/6: execute run_tests" >&2

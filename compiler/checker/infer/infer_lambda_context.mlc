@@ -5,6 +5,28 @@ import { Type, TUnknown, TFn } from '../registry'
 import { CheckContext, check_context_new, check_context_child } from '../check/check_context'
 import { InferResult } from './infer_result'
 
+type LambdaParameterBindState = LambdaParameterBindState {
+  type_environment: Map<string, Shared<Type>>,
+  parameter_types: [Shared<Type>]
+}
+
+fn bind_lambda_parameter(
+  state: LambdaParameterBindState,
+  parameter_name: string,
+  explicit_parameter_types: [Shared<Type>]
+) -> LambdaParameterBindState = do
+  const parameter_index = state.parameter_types.length()
+  const parameter_type =
+    if parameter_index < explicit_parameter_types.length() then explicit_parameter_types[parameter_index]
+    else Shared.new(TUnknown)
+    end
+  state.type_environment.set(parameter_name, parameter_type)
+  LambdaParameterBindState {
+    type_environment: state.type_environment,
+    parameter_types: state.parameter_types.concat([parameter_type])
+  }
+end
+
 export fn infer_lambda_with_param_types(
   parameter_names: [string],
   parameter_types: [Shared<Type>],
@@ -12,20 +34,16 @@ export fn infer_lambda_with_param_types(
   inference_context: CheckContext,
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult = do
-  let lambda_environment = inference_context.type_env
-  const built_parameter_types = parameter_names.fold(
-    do let empty_parameter_types: [Shared<Type>] = []; empty_parameter_types end,
-    (built_parameter_types_so_far, parameter_name) => do
-      const parameter_index = built_parameter_types_so_far.length()
-      const parameter_type =
-        if parameter_index < parameter_types.length() then parameter_types[parameter_index] else Shared.new(TUnknown) end
-      lambda_environment.set(parameter_name, parameter_type)
-      built_parameter_types_so_far.concat([parameter_type])
-    end)
-  const lambda_body_context = check_context_child(inference_context, lambda_environment)
+  const bound_parameters = parameter_names.fold(
+    LambdaParameterBindState {
+      type_environment: inference_context.type_env,
+      parameter_types: []
+    },
+    (state, parameter_name) => bind_lambda_parameter(state, parameter_name, parameter_types))
+  const lambda_body_context = check_context_child(inference_context, bound_parameters.type_environment)
   const body_parsed = infer_expr_fn(body, lambda_body_context)
   InferResult {
-    inferred_type: Shared.new(TFn(built_parameter_types, body_parsed.inferred_type)),
+    inferred_type: Shared.new(TFn(bound_parameters.parameter_types, body_parsed.inferred_type)),
     errors:        body_parsed.errors
   }
 end

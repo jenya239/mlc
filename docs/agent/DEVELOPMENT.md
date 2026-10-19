@@ -31,10 +31,11 @@ bash scripts/dev_gate_fast.sh
    compiler/out/mlcc -o .tmp_selfhost/p1 compiler/main.mlc
    compiler/build_bin.sh .tmp_selfhost/p1 .tmp_selfhost/mlcc2
    .tmp_selfhost/mlcc2 -o .tmp_selfhost/p2 compiler/main.mlc
-   diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2
+   diff -rq .tmp_selfhost/p1 .tmp_selfhost/p2 --exclude=obj
    ```
    Use `build_bin.sh`, not bare `clang++` — parallel + ccache.
 4. Step **14** in TRACK: mandatory self-host before closing visitor batch.
+5. If the change touches `compiler/checker/**`, `compiler/frontend/**`, `compiler/codegen/**`, `lib/mlc/source/parser/**`, or `lib/mlc/representations/semantic/gen/**`: `MLCC_FORCE_RUBY=1 compiler/build.sh` exits 0. This is the Ruby bootstrap of current `compiler/**`, including when `compiler/out/mlcc` is already fresh.
 
 **Tier C — CI / release:** `.github/workflows/build-mlcc-once.yml` or manual full Tier B on clean tree.
 Also: `bash scripts/regression_gate.sh` — frozen stdout suite, then `scripts/run_examples_compile_sweep.sh` (compile+link every `fn main` under `misc/examples`/`misc/gui`; soft-skips missing sysdeps).

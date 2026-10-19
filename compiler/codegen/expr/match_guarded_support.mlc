@@ -1,0 +1,260 @@
+import { Pattern, PatternIdent, PatternBool, PatternInt, PatternStr, PatternStringLit } from '../../frontend/ast'
+import { SemanticExpression, SemanticStatement, SemanticMatchArm } from '../../ir/semantic_ir'
+import { CodegenContext, lookup_ctor_type_info_for_context } from '../context'
+import { cpp_safe } from '../cpp_naming'
+import { pattern_binding_name_list } from './match_analysis'
+import { constructor_payload_binding } from './let_pat'
+import {
+  CppExpression,
+  CppStatement,
+  CppBinary,
+  CppIdent,
+  CppCall,
+  CppMember,
+  CppConstDecl,
+  CppTypeName,
+  CppTypeRef
+} from '../../cpp_ir/cpp_ast'
+import * as emit_helpers from '../../cpp_emit/emit_helpers'
+import { gen_boolean_literal_cpp, gen_integer_literal_cpp, gen_string_literal_cpp } from './literals'
+
+fn guarded_literal_condition_cpp(pattern: Shared<Pattern>, variant_access_expression: string) -> Shared<CppExpression> =
+  match pattern {
+    PatternBool(value, _) =>
+      Shared.new(CppBinary(
+        '==',
+        Shared.new(CppIdent(variant_access_expression)),
+        gen_boolean_literal_cpp(value))),
+    PatternInt(value, _) =>
+      Shared.new(CppBinary(
+        '==',
+        Shared.new(CppIdent(variant_access_expression)),
+        gen_integer_literal_cpp(value))),
+    PatternStr(value, _) =>
+      Shared.new(CppBinary(
+        '==',
+        Shared.new(CppIdent(variant_access_expression)),
+        gen_string_literal_cpp(value))),
+    PatternStringLit(value, _) =>
+      Shared.new(CppBinary(
+        '==',
+        Shared.new(CppIdent(variant_access_expression)),
+        gen_string_literal_cpp(value))),
+    _ => emit_helpers.make_boolean_cpp_expression(false)
+  }
+
+fn evaluated_expression_as_cpp(
+  expression: Shared<SemanticExpression>,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> Shared<CppExpression> =
+  emit_helpers.make_identifier_cpp_expression(eval_expr_fn(expression, context, gen_stmts))
+
+// A unit-typed guarded match is used as a statement (arm values discarded). Every
+// arm fragment must exit via a bare `return;` rather than `return <value>;`, because
+// different arm bodies lower to differently-shaped C++ (some to a value expression like
+// `std::make_tuple()`, others to a void-typed IIFE wrapping a loop/if with no trailing
+// value) - and the enclosing IIFE has no explicit return type, so clang requires every
+// `return` in it to deduce the same type. Evaluating the body as a discarded statement
+// before the bare `return;` keeps its side effects while forcing a uniform void shape.
+fn return_or_discard_statements(use_void: bool, body_expression: Shared<CppExpression>) -> [Shared<CppStatement>] =
+  if use_void then
+    [
+      emit_helpers.make_expression_cpp_statement(body_expression),
+      emit_helpers.make_expression_cpp_statement(emit_helpers.make_identifier_cpp_expression('return'))
+    ]
+  else
+    [emit_helpers.make_return_cpp_statement(body_expression)]
+  end
+
+export fn append_cpp_statements(
+  output: [Shared<CppStatement>],
+  statements: [Shared<CppStatement>]
+) -> [Shared<CppStatement>] = do
+  let mut index = 0
+  while index < statements.length() do
+    output.push(statements[index])
+    index = index + 1
+  end
+  output
+end
+
+export fn guarded_arm_tail_statements(
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  arm_context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const body_expression = evaluated_expression_as_cpp(arm.body, arm_context, gen_stmts, eval_expr_fn)
+  const body_statements = return_or_discard_statements(use_void, body_expression)
+  if arm.has_guard then
+    [
+      emit_helpers.make_if_cpp_statement(
+        evaluated_expression_as_cpp(arm.when_condition, arm_context, gen_stmts, eval_expr_fn),
+        emit_helpers.make_block_cpp_statement(body_statements),
+        emit_helpers.make_block_cpp_statement([]))
+    ]
+  else
+    body_statements
+  end
+end
+
+export fn gen_guarded_wild_or_unit_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] =
+  guarded_arm_tail_statements(arm, use_void, context, gen_stmts, eval_expr_fn)
+
+export fn gen_guarded_literal_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  variant_access_expression: string,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const literal_condition = guarded_literal_condition_cpp(arm.pattern, variant_access_expression)
+  const body_expression = evaluated_expression_as_cpp(arm.body, context, gen_stmts, eval_expr_fn)
+  const then_block = emit_helpers.make_block_cpp_statement(
+    return_or_discard_statements(use_void, body_expression))
+  const else_block = emit_helpers.make_block_cpp_statement([])
+  if arm.has_guard then
+    [
+      emit_helpers.make_if_cpp_statement(
+        Shared.new(CppBinary(
+          '&&',
+          literal_condition,
+          evaluated_expression_as_cpp(arm.when_condition, context, gen_stmts, eval_expr_fn))),
+        then_block,
+        else_block)
+    ]
+  else
+    [
+      emit_helpers.make_if_cpp_statement(literal_condition, then_block, else_block)
+    ]
+  end
+end
+
+export fn gen_guarded_identifier_binding_arm_statements(
+  arm: Shared<SemanticMatchArm>,
+  binding_name: string,
+  subject_holder_name: string,
+  use_void: bool,
+  context: CodegenContext,
+  gen_stmts: ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>],
+  eval_expr_fn: (Shared<SemanticExpression>, CodegenContext, ([Shared<SemanticStatement>], CodegenContext) -> [Shared<CppStatement>]) -> string
+) -> [Shared<CppStatement>] = do
+  const binding_cpp_safe = cpp_safe(binding_name)
+  const extended_context = context.add_value(binding_name)
+  let mut block_statements: [Shared<CppStatement>] = []
+  block_statements.push(emit_helpers.make_auto_cpp_statement(
+    binding_cpp_safe,
+    emit_helpers.make_identifier_cpp_expression(subject_holder_name)))
+  block_statements = append_cpp_statements(
+    block_statements,
+    guarded_arm_tail_statements(arm, use_void, extended_context, gen_stmts, eval_expr_fn))
+  const block_result = [emit_helpers.make_block_cpp_statement(block_statements)]
+  block_result
+end
+
+export fn variant_holds_alternative_expression(
+  variant_type_name: string,
+  variant_access_expression: string
+) -> Shared<CppExpression> =
+  Shared.new(CppCall(
+    Shared.new(CppIdent('std::holds_alternative<' + variant_type_name + ">")),
+    [Shared.new(CppIdent(variant_access_expression))]))
+
+export fn variant_get_const_ref_statement(
+  variant_type_name: string,
+  binding_name: string,
+  variant_access_expression: string
+) -> Shared<CppStatement> =
+  Shared.new(CppConstDecl(
+    binding_name,
+    Shared.new(CppTypeRef(Shared.new(CppTypeName(variant_type_name)))),
+    Shared.new(CppCall(
+      Shared.new(CppIdent('std::get<' + variant_type_name + ">")),
+      [Shared.new(CppIdent(variant_access_expression))]))))
+
+fn record_field_const_auto_ref_statement(field_cpp_safe: string, variant_lower_name: string) -> Shared<CppStatement> =
+  Shared.new(CppConstDecl(
+    field_cpp_safe,
+    Shared.new(CppTypeRef(Shared.new(CppTypeName('auto')))),
+    Shared.new(CppMember(
+      emit_helpers.make_identifier_cpp_expression(variant_lower_name),
+      field_cpp_safe,
+      false))))
+
+export type RecordFieldBindCppResult = RecordFieldBindCppResult {
+  field_binding_statements: [Shared<CppStatement>],
+  arm_context: CodegenContext
+}
+
+export type NestedMatchResume = NestedMatchResume {
+  constructor_name: string,
+  lower_name: string,
+  cursor: i32,
+  indexes: [i32],
+  patterns: [Shared<Pattern>]
+}
+
+export fn record_field_binding_cpp_result(
+  constructor_name: string,
+  field_patterns: [Shared<Pattern>],
+  lower_name: string,
+  start_context: CodegenContext
+) -> RecordFieldBindCppResult = do
+  const constructor_info = lookup_ctor_type_info_for_context(start_context, constructor_name)
+  let mut field_binding_statements: [Shared<CppStatement>] = []
+  let mut arm_context = start_context
+  let mut field_index = 0
+  while field_index < field_patterns.length() do
+    match field_patterns[field_index] {
+      PatternIdent(field_name, _) => do
+        const field_cpp_safe = cpp_safe(field_name)
+        if constructor_info.boxed_positions.contains(field_index) then
+          field_binding_statements.push(emit_helpers.make_fragment_cpp_statement(
+            'const auto& ' + field_cpp_safe + ' = (*' + lower_name + "." + field_cpp_safe + '); '))
+        else
+          field_binding_statements.push(
+            record_field_const_auto_ref_statement(field_cpp_safe, lower_name))
+        end
+        arm_context = arm_context.add_value(field_name)
+      end,
+      _ => do end
+    }
+    field_index = field_index + 1
+  end
+  RecordFieldBindCppResult {
+    field_binding_statements: field_binding_statements,
+    arm_context: arm_context
+  }
+end
+
+export fn constructor_payload_binding_statement(
+  constructor_name: string,
+  sub_patterns: [Shared<Pattern>],
+  lower_name: string,
+  context: CodegenContext
+) -> Shared<CppStatement> = do
+  const constructor_info = lookup_ctor_type_info_for_context(context, constructor_name)
+  if constructor_info.boxed_positions.length() == 0 then
+    emit_helpers.make_structured_binding_cpp_statement(
+      pattern_binding_name_list(sub_patterns),
+      emit_helpers.make_identifier_cpp_expression(lower_name))
+  else
+    emit_helpers.make_fragment_cpp_statement(
+      constructor_payload_binding(
+        constructor_name,
+        pattern_binding_name_list(sub_patterns),
+        lower_name,
+        context))
+  end
+end
+

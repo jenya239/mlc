@@ -1,0 +1,49 @@
+import { TypeExpr } from '../../frontend/ast'
+import { Type, TypeRegistry, type_from_annotation_with_registry } from '../registry'
+import { standalone_unknown_cell } from './transform_support'
+
+export type Transform_lambda_parameter_types_fold_state = Transform_lambda_parameter_types_fold_state {
+  type_environment:             Map<string, Shared<Type>>,
+  parameter_type_vector:        [Shared<Type>],
+  next_explicit_type_position: i32,
+}
+
+export fn lambda_environment_assign_unknown_placeholder(
+  type_environment_map: Map<string, Shared<Type>>,
+  parameter_binding_name: string
+) -> Map<string, Shared<Type>> = do
+  type_environment_map.set(parameter_binding_name, standalone_unknown_cell())
+  type_environment_map
+end
+
+export fn transform_lambda_parameter_types_environment_fold_step(
+  state: Transform_lambda_parameter_types_fold_state,
+  parameter_binding_name: string,
+  optional_explicit_parameter_types: [Shared<Type>]
+) -> Transform_lambda_parameter_types_fold_state = do
+  const resolved_parameter_type =
+    if state.next_explicit_type_position < optional_explicit_parameter_types.length() then
+      optional_explicit_parameter_types[state.next_explicit_type_position]
+    else
+      standalone_unknown_cell()
+    end
+  state.type_environment.set(parameter_binding_name, resolved_parameter_type)
+  Transform_lambda_parameter_types_fold_state {
+    type_environment:             state.type_environment,
+    parameter_type_vector:        state.parameter_type_vector.concat([resolved_parameter_type]),
+    next_explicit_type_position: state.next_explicit_type_position + 1,
+  }
+end
+
+export fn semantic_types_from_lambda_annotations(
+  parameter_type_expressions: [Shared<TypeExpr>],
+  registry: TypeRegistry
+) -> [Shared<Type>] = do
+  let parameter_types: [Shared<Type>] = []
+  let mut index = 0
+  while index < parameter_type_expressions.length() do
+    parameter_types.push(type_from_annotation_with_registry(parameter_type_expressions[index], registry))
+    index = index + 1
+  end
+  parameter_types
+end

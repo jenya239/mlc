@@ -2,8 +2,8 @@
 // Mirrors infer_expr but produces typed Shared<SemanticExpression> nodes instead of InferResult.
 // No errors emitted: uses TUnknown for unresolvable expressions.
 
-import { Expr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, expr_spawn_body_result, expr_spawn_body_statements } from '../../frontend/ast'
-import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, empty_registry, field_type_from_object } from '../registry'
+import { Expr, TypeExpr, Stmt, FieldVal, MatchArm, Pattern, Span, expr_span, pattern_span, expr_placeholder, RecordLitPart, expr_spawn_body_result, expr_spawn_body_statements } from '../../frontend/ast'
+import { Type, TypeRegistry, TArray, TTuple, TUnit, TGeneric, TFn, TUnknown, TF64, TI64, TI32, TU8, TUsize, TChar, TBool, TString, TNamed, TShared, type_from_annotation, type_from_annotation_with_registry, empty_registry, field_type_from_object } from '../registry'
 import {
   binary_operation_result_type,
   builtin_method_return_type,
@@ -45,6 +45,7 @@ import { TransformContext, transform_context_with_env, transform_context_with_la
 import { transform_call_arguments_using_callee_semantic_type, function_return_type_from_callee_type } from './transform_call_args'
 import { transform_result_option_hof_method_call, transform_array_hof_method_call, transform_regular_method_call, transform_region_alloc_method_call } from './transform_method'
 import { direct_call_parameter_mutability_flags, call_callee_ident_name, binary_result_type_for_operator, merge_conditional_expression_types, array_element_type_from_semantic_expression, question_unwrapped_type_from_inner, standalone_unknown_cell, inferred_types_from_record_literal_part_for_merge } from './transform_support'
+import { Transform_lambda_parameter_types_fold_state, lambda_environment_assign_unknown_placeholder, transform_lambda_parameter_types_environment_fold_step, semantic_types_from_lambda_annotations } from './transform_lambda_bind'
 
 fn transform_shared_static_new_call(
   method_arguments: [Shared<Expr>],
@@ -160,38 +161,6 @@ fn transform_match_arms(
       scrutinee_type,
       stmts_fn))
 
-type Transform_lambda_parameter_types_fold_state = Transform_lambda_parameter_types_fold_state {
-  type_environment:             Map<string, Shared<Type>>,
-  parameter_type_vector:        [Shared<Type>],
-  next_explicit_type_position: i32,
-}
-
-fn lambda_environment_assign_unknown_placeholder(
-  type_environment_map: Map<string, Shared<Type>>,
-  parameter_binding_name: string
-) -> Map<string, Shared<Type>> = do
-  type_environment_map.set(parameter_binding_name, standalone_unknown_cell())
-  type_environment_map
-end
-
-fn transform_lambda_parameter_types_environment_fold_step(
-  state: Transform_lambda_parameter_types_fold_state,
-  parameter_binding_name: string,
-  optional_explicit_parameter_types: [Shared<Type>]
-) -> Transform_lambda_parameter_types_fold_state = do
-  const resolved_parameter_type =
-    if state.next_explicit_type_position < optional_explicit_parameter_types.length() then
-      optional_explicit_parameter_types[state.next_explicit_type_position]
-    else
-      standalone_unknown_cell()
-    end
-  state.type_environment.set(parameter_binding_name, resolved_parameter_type)
-  Transform_lambda_parameter_types_fold_state {
-    type_environment:             state.type_environment,
-    parameter_type_vector:        state.parameter_type_vector.concat([resolved_parameter_type]),
-    next_explicit_type_position: state.next_explicit_type_position + 1,
-  }
-end
 
 fn transform_expr_lambda_with_param_types(
   parameter_names: [string],
@@ -297,8 +266,8 @@ fn dispatch_transform_pass(
       transform_pass.visit_tuple(elements, source_span, stmts_fn),
     ExprQuestion(inner_expression, source_span) =>
       transform_pass.visit_question(inner_expression, source_span, stmts_fn),
-    ExprLambda(parameter_names, body, source_span) =>
-      transform_pass.visit_lambda(parameter_names, body, source_span, stmts_fn),
+    ExprLambda(parameter_names, parameter_type_expressions, body, source_span) =>
+      transform_pass.visit_lambda(parameter_names, parameter_type_expressions, body, source_span, stmts_fn),
     ExprNamedArg(_, inner_expression, _) =>
       transform_pass.visit_named_arg(inner_expression, stmts_fn),
     ExprWith(resource, binder, statements, source_span) =>
@@ -654,10 +623,19 @@ extend TransformPass {
   fn visit_lambda(
     self: TransformPass,
     parameter_names: [string],
+    parameter_type_expressions: [Shared<TypeExpr>],
     body: Shared<Expr>,
     source_span: Span
   , stmts_fn: ([Shared<Stmt>], TransformContext) -> TransformStmtsResult) -> Shared<SemanticExpression> = do
-    if self.transform_context.lambda_parameter_types.length() > 0 then
+    if parameter_type_expressions.length() == parameter_names.length() && parameter_type_expressions.length() > 0 then
+      transform_expr_lambda_with_param_types(
+        parameter_names,
+        semantic_types_from_lambda_annotations(parameter_type_expressions, self.transform_context.registry),
+        body,
+        source_span,
+        transform_context_with_lambda_parameter_types(self.transform_context, []),
+        stmts_fn)
+    else if self.transform_context.lambda_parameter_types.length() > 0 then
       transform_expr_lambda_with_param_types(
         parameter_names,
         self.transform_context.lambda_parameter_types,

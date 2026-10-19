@@ -39,7 +39,7 @@ fn infer_expr_maybe_lambda(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult =
   match expression {
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       infer_lambda_with_param_types(parameter_names, expected_param_types, body, inference_context, infer_expr_fn),
     _ => infer_expr_fn(expression, inference_context)
   }
@@ -51,7 +51,7 @@ fn append_lambda_arity_diag(
   method_name: string
 ) -> [Diagnostic] =
   match expression {
-    ExprLambda(parameter_names, _, _) =>
+    ExprLambda(parameter_names, _, _, _) =>
       if parameter_names.length() != expected_params then
         diagnostics_append(errors, [
           diagnostic_error_with_code(

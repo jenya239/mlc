@@ -173,7 +173,7 @@ fn move_check_expr(expression: Shared<Expr>, moved: [string]) -> MoveCheckWalkSt
     ExprTuple(elements, _) =>
       move_check_expr_list(elements, MoveCheckWalkState { diagnostics: empty_diagnostics(), moved: moved }),
     ExprQuestion(inner, _) => move_check_expr(inner, moved),
-    ExprLambda(_, body, _) => do
+    ExprLambda(_, _, body, _) => do
       const body_state = move_check_expr(body, empty_names())
       MoveCheckWalkState { diagnostics: body_state.diagnostics, moved: moved }
     end,
@@ -222,7 +222,7 @@ fn move_check_spawn_method_arguments(
     state,
     (accumulator, expression) => do
       const next = match expression {
-        ExprLambda(_, body, _) => move_check_expr(body, accumulator.moved),
+        ExprLambda(_, _, body, _) => move_check_expr(body, accumulator.moved),
         _ => move_check_expr(expression, accumulator.moved)
       }
       MoveCheckWalkState {

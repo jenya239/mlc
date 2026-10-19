@@ -72,10 +72,17 @@ export fn comma_separated_exprs_suffix_from_first(
   const expressions: [Shared<Expr>] = []
   expressions.push(first.value)
   let mut state = first.parser
-  while state.kind().is_comma() do
-    const next = parse_one(state.advance())
-    expressions.push(next.value)
-    state = next.parser
+  let mut keep_reading = true
+  while keep_reading && state.kind().is_comma() do
+    const after_comma = state.advance()
+    if after_comma.kind().is_rbracket() || after_comma.kind().is_rparen() then
+      state = after_comma
+      keep_reading = false
+    else
+      const next = parse_one(after_comma)
+      expressions.push(next.value)
+      state = next.parser
+    end
   end
   expressions_parse_result(expressions, state)
 end

@@ -13,7 +13,7 @@ import { Type, TypeRegistry, TUnknown, build_registry, type_from_annotation_with
 import { trait_and_type_name_conflict_diagnostics, expand_trait_as_param_entry_using_full } from '../transform/trait_param_expand'
 import { expand_parameter_destructuring_in_program, extern_parameter_destructure_diagnostics, parameter_binding_is_plain_identifier } from '../transform/param_destructure_expand'
 import { derive_clause_diagnostics } from './derive_validation'
-import { build_cyclic_sum_type_names } from '../../codegen/decl/type_index'
+import { build_cyclic_sum_type_names } from '../cyclic_sum_names'
 import { infer_expr } from '../infer/infer'
 import { check_context_new, check_context_with_expected_return, CheckContext } from './check_context'
 import { types_structurally_equal, types_assignment_compatible, type_is_unknown, type_description } from '../semantic_type_structure'

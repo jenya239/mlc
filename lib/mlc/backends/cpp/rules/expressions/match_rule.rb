@@ -140,7 +140,7 @@ module MLC
 
             def terminate_void_iife_arm(code)
               stripped = code.strip
-              return stripped if stripped.empty?
+              return "return;" if stripped.empty?
               return stripped if stripped.start_with?("return ")
               return stripped if stripped.end_with?("return;", "return")
 

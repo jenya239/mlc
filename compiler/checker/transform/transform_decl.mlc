@@ -1,10 +1,10 @@
 // Declaration, program, and load-item AST → SemanticIR transforms.
 // Not called back by transform_expr/transform_stmts; imports from transform.mlc.
 
-import { Decl, TypeVariant, Param, Program, Stmt, Span, expr_span } from '../../frontend/ast'
+import { Decl, TypeVariant, Param, Program, Stmt, Span, expr_span, decl_inner } from '../../frontend/ast'
 import { expand_declarations_with_trait_nominal_maps, build_trait_nominal_maps, TraitNominalMaps } from './trait_param_expand'
 import { expand_parameter_destructuring_in_program } from './param_destructure_expand'
-import { Type, TypeRegistry, type_from_annotation_with_registry } from '../registry'
+import { Type, TypeRegistry, TFn, type_from_annotation_with_registry } from '../registry'
 import {
   SemanticDeclaration, SemanticProgram, SemanticLoadItem, SemanticNamespaceImportAlias,
   FnEscapeInfo, empty_fn_escape_info
@@ -50,15 +50,44 @@ fn fn_escape_info_for_declaration(declaration: Shared<Decl>, functions_used_as_v
   }
 end
 
+fn remember_local_function_type(
+  function_types: ref mut Map<string, Shared<Type>>,
+  declaration: Shared<Decl>,
+  registry: TypeRegistry
+) -> unit =
+  match decl_inner(declaration) {
+    DeclFn(name, _, _, parameters, return_type, _, _) =>
+      function_types.set(
+        name,
+        Shared.new(TFn(
+          parameters.map(parameter => type_from_annotation_with_registry(parameter.type_value, registry)),
+          type_from_annotation_with_registry(return_type, registry)))),
+    _ => ()
+  }
+
+fn local_function_types_from_declarations(
+  declarations: [Shared<Decl>],
+  registry: TypeRegistry
+) -> Map<string, Shared<Type>> = do
+  let mut function_types: Map<string, Shared<Type>> = Map.new()
+  let mut index = 0
+  while index < declarations.length() do
+    remember_local_function_type(function_types, declarations[index], registry)
+    index = index + 1
+  end
+  function_types
+end
+
 fn transform_decl(
   declaration: Shared<Decl>,
   registry: TypeRegistry,
   functions_used_as_values: [string],
-  apply_escape_templates: bool
+  apply_escape_templates: bool,
+  local_function_types: Map<string, Shared<Type>>
 ) -> Shared<SemanticDeclaration> =
   match declaration {
     DeclFn(name, type_params, trait_bounds, params, return_type_expr, body, where_clause_bounds_entries) => do
-      let mut param_env: Map<string, Shared<Type>> = Map.new()
+      let mut param_env = local_function_types
       let mut index = 0
       while index < params.length() do
         param_env.set(params[index].name, type_from_annotation_with_registry(params[index].type_value, registry))
@@ -75,11 +104,11 @@ fn transform_decl(
     DeclTypeAlias(type_name, type_params, type_expression, name_span) =>
       Shared.new(SemanticDeclarationTypeAlias(type_name, type_params, type_expression, name_span)),
     DeclTrait(trait_name, type_params, methods, name_span) => do
-      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false)
+      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false, local_function_types)
       Shared.new(SemanticDeclarationTrait(trait_name, type_params, typed_methods, name_span))
     end,
     DeclExtend(type_name, trait_name, methods, name_span) => do
-      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false)
+      const typed_methods = transform_decls(methods, registry, functions_used_as_values, false, local_function_types)
       Shared.new(SemanticDeclarationExtend(type_name, trait_name, typed_methods, name_span))
     end,
     DeclImport(path, names) => Shared.new(SemanticDeclarationImport(path, names)),
@@ -88,7 +117,7 @@ fn transform_decl(
       Shared.new(SemanticDeclarationExternType(
         type_name, c_type_name, extern_header, drop_function_name, concurrency_attrs, span)),
     DeclExported(exported_declaration) =>
-      Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry, functions_used_as_values, apply_escape_templates))),
+      Shared.new(SemanticDeclarationExported(transform_decl(exported_declaration, registry, functions_used_as_values, apply_escape_templates, local_function_types))),
     DeclAssocType(_, _)     => Shared.new(SemanticDeclarationImport('', [])),
     DeclAssocBind(name, type_expr, span) =>
       Shared.new(SemanticDeclarationAssocBind(name, type_from_annotation_with_registry(type_expr, registry), span))
@@ -98,16 +127,19 @@ fn transform_decls(
   declarations: [Shared<Decl>],
   registry: TypeRegistry,
   functions_used_as_values: [string],
-  apply_escape_templates: bool
+  apply_escape_templates: bool,
+  local_function_types: Map<string, Shared<Type>>
 ) -> [Shared<SemanticDeclaration>] =
   declarations.fold(
     do let empty_declarations: [Shared<SemanticDeclaration>] = []; empty_declarations end,
-    (result, declaration) => result.concat([transform_decl(declaration, registry, functions_used_as_values, apply_escape_templates)]))
+    (result, declaration) => result.concat([transform_decl(declaration, registry, functions_used_as_values, apply_escape_templates, local_function_types)]))
 
-export fn transform_program(program: Program, registry: TypeRegistry) -> SemanticProgram =
+export fn transform_program(program: Program, registry: TypeRegistry) -> SemanticProgram = do
+  const local_function_types = local_function_types_from_declarations(program.decls, registry)
   SemanticProgram {
-    decls: transform_decls(program.decls, registry, function_names_used_as_values(program), true)
+    decls: transform_decls(program.decls, registry, function_names_used_as_values(program), true, local_function_types)
   }
+end
 
 fn to_semantic_namespace_aliases(items: [NamespaceImportAlias]) -> [SemanticNamespaceImportAlias] =
   items.fold(
@@ -125,7 +157,8 @@ export fn transform_load_items(items: [LoadItem], registry: TypeRegistry, trait_
         expand_declarations_with_trait_nominal_maps(destructured_entry_declarations, trait_maps)
       const functions_used_as_values =
         function_names_used_as_values(Program { decls: expanded_declarations, module_name: item.module_name })
-      const typed_declarations = transform_decls(expanded_declarations, registry, functions_used_as_values, true)
+      const local_function_types = local_function_types_from_declarations(expanded_declarations, registry)
+      const typed_declarations = transform_decls(expanded_declarations, registry, functions_used_as_values, true, local_function_types)
       result.concat([SemanticLoadItem {
         path: item.path,
         decls: typed_declarations,

@@ -101,6 +101,19 @@ module MLC
       end
 
       # Type declarations
+      class ExternTypeDecl < Node
+        attr_reader :name, :native_type_name, :header, :drop_function_name, :exported
+
+        def initialize(name:, native_type_name:, header:, drop_function_name: nil, exported: false, origin: nil)
+          super(origin: origin)
+          @name = name
+          @native_type_name = native_type_name
+          @header = header
+          @drop_function_name = drop_function_name
+          @exported = exported
+        end
+      end
+
       class TypeDecl < Node
         attr_reader :name, :type, :type_params, :exported, :derive_traits
 
@@ -604,6 +617,16 @@ module MLC
         def initialize(body:, origin: nil)
           super(kind: :unsafe_block, data: { body: body }, origin: origin)
           @body = body # BlockExpr or single Expr
+        end
+      end
+
+      class RegionExpr < Expr
+        attr_reader :binder, :body
+
+        def initialize(binder:, body:, origin: nil)
+          super(kind: :region, data: { binder: binder, body: body }, origin: origin)
+          @binder = binder
+          @body = body
         end
       end
 

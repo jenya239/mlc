@@ -239,4 +239,5 @@ export fn split_layout_apply(layout: SplitLayout, bounds: Rect) -> SplitPanes = 
       )
     }
   end
+  end
 end

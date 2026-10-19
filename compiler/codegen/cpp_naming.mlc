@@ -16,13 +16,15 @@ export fn namespace_from_module_name(module_name: string) -> string = do
   end
 end
 
-export fn namespace_from_path(path: string) -> string = do
-  const base = path_to_module_base(path)
-  if base == "main" then "mlc_main" else base end
-end
+export fn namespace_from_path(path: string) -> string =
+  namespace_from_module_name(path_to_module_base(path))
 
-export fn module_namespace(module_name: string, path: string) -> string =
-  if module_name != "" then namespace_from_module_name(module_name) else namespace_from_path(path) end
+// Modular C++ namespace is the file basename. Ruby ModularCompiler passes
+// File.basename into transform and does not let a `module` declaration rename
+// the translation unit: logger.mlc stays `logger` when the file says `module Log`,
+// because `namespace log` collides with the C `log` from math.h.
+export fn module_namespace(path: string) -> string =
+  namespace_from_path(path)
 
 export fn path_to_module_base(path: string) -> string = do
   let mut last_slash = -1

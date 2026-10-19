@@ -4,7 +4,7 @@ import { Parser, ExprResult, PatternResult, PatternsResult, ExprsResult, ArmsRes
 import { parse_type } from './types'
 import { comma_separated_pats_suffix_from_first, comma_separated_exprs_suffix_from_first } from './comma_separated'
 import { parser_expect_rbrace, parser_expect_rparen, parser_expect_rbracket } from './expect_close'
-import { span_unknown, Span, TyUnit, StmtExpr, PatternTuple, PatternArray, PatternRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread, ExprIf, ExprUn, ExprSpawn, ExprWith, ExprScope, ExprRegion, ExprLambda, ExprMethod, ExprField, expr_span } from '../ast'
+import { span_unknown, Span, TypeExpr, TyUnit, StmtExpr, PatternTuple, PatternArray, PatternRecord, ExprTuple, ExprUnit, ExprBlock, ExprBool, MatchArm, FieldVal, ExprIdent, ExprRecord, ExprRecordUpdate, RecordLitPart, RecordLitFields, RecordLitSpread, ExprIf, ExprUn, ExprSpawn, ExprWith, ExprScope, ExprRegion, ExprLambda, ExprMethod, ExprField, expr_span, empty_type_expr_list } from '../ast'
 import { TokenKind, Eof } from '../ast_tokens'
 import { tokenize } from '../lexer'
 
@@ -648,7 +648,7 @@ fn parse_postfix(parser: Parser) -> ExprResult = do
         if after_spawn.kind().is_do() then
           const body_parsed = parse_statements_until_end(after_spawn.advance())
           const lambda_body = statements_result_to_block_expr(body_parsed, spawn_span)
-          const spawn_lambda = Shared.new(ExprLambda([], lambda_body, spawn_span))
+          const spawn_lambda = Shared.new(ExprLambda([], empty_type_expr_list(), lambda_body, spawn_span))
           const spawn_arguments: [Shared<Expr>] = [spawn_lambda]
           expression = Shared.new(ExprMethod(expression, 'spawn', spawn_arguments, spawn_span))
           state = body_parsed.parser
@@ -769,18 +769,18 @@ fn parse_primary_parenthesized(parser: Parser) -> ExprResult = do
     if after_close.kind().is_fat_arrow() && !parser.lambda_shorthand_suppression_active() then
       const params: [string] = []
       const body = parse_expr(parser.advance_by(3))
-      expression_parse_result(Shared.new(ExprLambda(params, body.value, open_paren_span)), body.parser)
+      expression_parse_result(Shared.new(ExprLambda(params, empty_type_expr_list(), body.value, open_paren_span)), body.parser)
     else
       expression_parse_result(Shared.new(ExprUnit(open_paren_span)), after_close)
     end
   else if !parser.lambda_shorthand_suppression_active() && looks_like_typed_lambda_params(parser.advance()) then
     const params_parsed = parse_typed_lambda_params(parser.advance())
     const body = parse_expr(params_parsed.parser.advance())
-    expression_parse_result(Shared.new(ExprLambda(params_parsed.value, body.value, open_paren_span)), body.parser)
+    expression_parse_result(Shared.new(ExprLambda(params_parsed.names, params_parsed.parameter_types, body.value, open_paren_span)), body.parser)
   else if !parser.lambda_shorthand_suppression_active() && looks_like_lambda_params(parser.advance()) then
     const params_parsed = parse_lambda_params(parser.advance())
     const body = parse_expr(params_parsed.parser.advance())
-    expression_parse_result(Shared.new(ExprLambda(params_parsed.value, body.value, open_paren_span)), body.parser)
+    expression_parse_result(Shared.new(ExprLambda(params_parsed.value, empty_type_expr_list(), body.value, open_paren_span)), body.parser)
   else
     const first_expression_parsed = parse_expr(parser.advance())
     if first_expression_parsed.parser.kind().is_comma() then
@@ -850,7 +850,7 @@ fn parse_primary_identifier(parser: Parser, name: string) -> ExprResult = do
   if after_name.kind().is_fat_arrow() && !parser.lambda_shorthand_suppression_active() then
     const parameters: [string] = [name]
     const body = parse_expr(after_name.advance())
-    expression_parse_result(Shared.new(ExprLambda(parameters, body.value, source_span)), body.parser)
+    expression_parse_result(Shared.new(ExprLambda(parameters, empty_type_expr_list(), body.value, source_span)), body.parser)
   else if is_ctor_name(name) && after_name.kind().is_lbrace() then
     const brace_span = after_name.span_at_cursor()
     parse_record_expr(after_name.advance(), name, brace_span)
@@ -930,18 +930,33 @@ end
 fn looks_like_typed_lambda_params(parser: Parser) -> bool =
   parser.kind().is_ident() && parser.advance().kind().is_colon()
 
+type TypedLambdaParameterParse = TypedLambdaParameterParse {
+  names: [string],
+  parameter_types: [Shared<TypeExpr>],
+  parser: Parser
+}
+
 // Parse typed lambda params: IDENT : Type (, IDENT : Type)* ) - stops AFTER `)`
-fn parse_typed_lambda_params(parser: Parser) -> NamesResult = do
+fn parse_typed_lambda_params(parser: Parser) -> TypedLambdaParameterParse = do
   const names: [string] = []
+  const parameter_types: [Shared<TypeExpr>] = []
   let mut state = parser
   names.push(state.kind().ident())
-  state = parse_type(state.advance_by(2)).parser
+  const first_type = parse_type(state.advance_by(2))
+  parameter_types.push(first_type.value)
+  state = first_type.parser
   while state.kind().is_comma() do
     state = state.advance()
     names.push(state.kind().ident())
-    state = parse_type(state.advance_by(2)).parser
+    const next_type = parse_type(state.advance_by(2))
+    parameter_types.push(next_type.value)
+    state = next_type.parser
   end
-  bounds_parse_result(names, state.advance())
+  TypedLambdaParameterParse {
+    names: names,
+    parameter_types: parameter_types,
+    parser: state.advance()
+  }
 end
 
 // Check if parser (after `(`) looks like lambda params: IDENT (, IDENT)* ) =>

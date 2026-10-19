@@ -2,14 +2,14 @@
 
 Экспериментальный самохостящийся компилятор. MLC-исходники → C++20.
 
-## Статус (2026-07-19)
+## Статус (2026-10-19)
 
-- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем сборка (по умолчанию `clang++`, см. `MLC_CXX`) → `compiler/out/mlcc`. Холодный старт с нуля через Ruby (`MLCC_FORCE_RUBY=1`) — порядка минут; обычный инкрементальный ребилд существующего `mlcc` — секунды (skip при неизменённом содержимом `.mlc`, полная регенерация при правке).
-- **Self-hosted тесты** (`rake test_compiler_mlc`): пересобирают **только** `compiler/out/run_tests` через Ruby; **свежий `mlcc` после правок в `compiler/**` — только `compiler/build.sh`**. Точное число тестов растёт с каждым треком — см. вывод команды, не фиксируем здесь, чтобы не устаревало.
+- **Bootstrap**: `compiler/build.sh` — Ruby → C++ для всего `compiler/`, затем сборка (по умолчанию `clang++`, см. `MLC_CXX`) → `compiler/out/mlcc`. Холодный старт `MLCC_FORCE_RUBY=1 compiler/build.sh` обязан заканчиваться файлом `compiler/out/mlcc` (код возврата 0), даже если бинарник уже есть: флаг не пропускается проверкой свежести. Обычный инкрементальный ребилд — секунды (skip при неизменённом содержимом `.mlc`).
+- **Self-hosted тесты** (`rake test_compiler_mlc`): `compiler/tests/build_tests.sh` собирает `compiler/out/tests/run_tests` через `mlcc`, если бинаря нет или любой `compiler/**/*.mlc` новее. Если при этом нет свежего `mlcc`, скрипт сначала вызывает `compiler/build.sh`. Точное число тестов — вывод команды.
 - **Codegen — типизированный CppAST, не строковая конкатенация**: `compiler/cpp_ir/cpp_ast.mlc` строится из `SemanticIR`/MIR и печатается через `cpp_emit/print.mlc`; старый string-templating модуль `codegen/expr/expr.mlc` удалён ([TRACK_CODEGEN_CPPAST_ONLY](docs/archive/tracks/TRACK_CODEGEN_CPPAST_ONLY.md), закрыт 2026-07-17). Не 100% — остаточные `CppStatementFragment`/print-at-call-site мостики есть, но основной путь типизирован.
 - **Самосборка**: точка входа `compiler/main.mlc` с импортами — `compiler/out/mlcc -o <dir> compiler/main.mlc`; контроль корректности кодогена: второй проход бинарём, собранным из выхода первого (`mlcc2`), и **`diff -rq` двух каталогов C++** (ожидается пустой diff). При нехватке `/tmp` задать `TMPDIR` внутри репозитория.
 - **Concurrency в self-hosted `mlcc`**: `spawn`/`Mutex`/`Channel`/`Task`/`TaskScope`/`Isolate` — язык поддерживает многопоточность (atomic refcount; `COW`-detach не атомарен — не делить мутируемые коллекции между потоками без синхронизации). Ruby-компилятор (`lib/mlc/`) этого не имеет — временный разрыв, детали: [docs/MLC.md](docs/MLC.md) §«Два пайплайна».
-- Ruby-компилятор (`lib/mlc/`): bootstrap и эталон семантики (~1100 unit-тестов), не удаляется.
+- Ruby-компилятор (`lib/mlc/`): bootstrap и эталон семантики. Число unit-тестов — вывод `bundle exec rake test_mlc`, здесь не фиксируется.
 
 ## Архитектура
 
@@ -48,6 +48,24 @@ clang++ -std=c++20 -I runtime/include \
 ```
 
 `build_bin.sh` (внутри `build.sh`): линкер **mold → lld → gold**; PCH (`MLCC_PCH=0` off); **`MLCC_INCREMENTAL=1` default** (stamp → skip mlcc codegen); тесты в `out/tests/`. `MLCC_INCREMENTAL=0` — cold. `compiler/scripts/bench_build.sh`. `MLCC_DEV=1` / `MLCC_OPT=2`. Dev: `clang ccache mold`.
+
+## Первая сборка после клонирования
+
+В репозитории нет `compiler/out/mlcc`. С нуля:
+
+```bash
+MLCC_FORCE_RUBY=1 compiler/build.sh
+```
+
+Код возврата 0 и файл `compiler/out/mlcc`. Если холодный путь недоступен, вторичный вариант — артефакт workflow `Build mlcc once` (`.github/workflows/build-mlcc-once.yml`, в том числе ночной `nightly-mlcc`). Release старше нескольких дней не обязан собирать текущий `compiler/main.mlc`.
+
+`runtime/include/mlc.hpp` включает `mlc/graphics/graphics.hpp`, а тот — заголовки xcb и cairo. Для линковки программ через `build_bin.sh`:
+
+```bash
+sudo apt-get install -y libxcb1-dev libx11-dev libcairo2-dev
+```
+
+Текстовый рендерер дополнительно требует `libfreetype-dev`, `libharfbuzz-dev`, `libfontconfig-dev`.
 
 ## Синтаксис
 

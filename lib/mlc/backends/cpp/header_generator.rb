@@ -21,6 +21,7 @@ module MLC
           # Set this before the header, which is emitted before the implementation pass.
           @lowering.container.user_functions =
             module_node.items.grep(SemanticIR::Func).map(&:name).to_set
+          assign_imported_function_namespaces(module_node, all_modules)
 
           # Separate: header keeps source order. A non-exported type moves into
           # the header when a header declaration or body names it.
@@ -53,6 +54,12 @@ module MLC
               next unless generic_function_in_header?(item, module_node)
               header_items << item unless header_items.include?(item)
             end
+          end
+
+          # Template bodies live in the header. A private callee must be
+          # declared there; its definition stays in the implementation.
+          functions_called_by_header_bodies(module_node, header_items).each do |item|
+            header_items << item unless header_items.include?(item)
           end
 
           # Generate header file
@@ -143,8 +150,7 @@ module MLC
           append_type_bodies(lines, type_items)
 
           declared_names = []
-          module_node.items.each do |item|
-            next unless item.is_a?(SemanticIR::Func)
+          function_items.each do |item|
             next if generic_function_in_header?(item, module_node)
 
             lines << generate_function_declaration(item)
@@ -264,11 +270,12 @@ module MLC
           append_sum_preambles(lines, type_items)
           append_type_bodies(lines, type_items)
 
-          # Forward declarations for internal functions (used before definition)
+          # Forward declarations for internal functions (used before definition).
+          # Private templates are defined in this file; a header template is not.
           items.each do |item|
             next unless item.is_a?(SemanticIR::Func)
-            next if (item.respond_to?(:generic?) ? (item.respond_to?(:generic?) ? item.generic? : item.type_params&.any?) : item.type_params.any?)
             next if item.body.nil?
+            next if module_node && generic_function_in_header?(item, module_node)
 
             lines << generate_function_declaration(item, include_default_values: false)
             lines << ""
@@ -559,6 +566,40 @@ module MLC
 
         RESERVED_NAMESPACES = %w[main stdin stdout stderr errno].freeze
 
+        def assign_imported_function_namespaces(module_node, all_modules)
+          functions_by_module = {}
+          Array(all_modules).each do |other_module|
+            next unless other_module.respond_to?(:name) && other_module.respond_to?(:items)
+
+            function_names = other_module.items.grep(SemanticIR::Func).map(&:name).to_set
+            functions_by_module[other_module.name.to_s] = function_names
+            functions_by_module[File.basename(other_module.name.to_s, ".mlc")] = function_names
+          end
+
+          namespaces = {}
+          Array(module_node&.imports).each do |import_decl|
+            namespace = namespace_for_file_import(import_decl.path)
+            next if namespace.nil? || namespace.empty?
+
+            defined_functions = functions_by_module[namespace]
+            next if defined_functions.nil?
+
+            Array(import_decl.items).each do |item|
+              name = item.to_s
+              namespaces[name] = namespace if defined_functions.include?(name)
+            end
+          end
+          @lowering.container.imported_function_namespaces = namespaces
+        end
+
+        def namespace_for_file_import(path)
+          return nil if path.nil?
+          return nil unless path.include?("/") || path.end_with?(".mlc")
+
+          base = File.basename(path, ".mlc").downcase
+          RESERVED_NAMESPACES.include?(base) ? "mlc_#{base}" : base
+        end
+
         def module_name_to_namespace(name)
           base = name.gsub("/", "::").split("::").map(&:downcase).join("::")
           RESERVED_NAMESPACES.include?(base) ? "mlc_#{base}" : base
@@ -567,6 +608,50 @@ module MLC
         def module_has_exported_generic_function?(module_node)
           module_node.items.any? do |item|
             item.is_a?(SemanticIR::Func) && item.exported && (item.respond_to?(:generic?) ? (item.respond_to?(:generic?) ? item.generic? : item.type_params&.any?) : item.type_params.any?) && item.body
+          end
+        end
+
+        def functions_called_by_header_bodies(module_node, header_items)
+          local_by_name = {}
+          module_node.items.each do |item|
+            next unless item.is_a?(SemanticIR::Func)
+
+            local_by_name[item.name] = item
+          end
+          called_names = Set.new
+          header_items.each do |item|
+            next unless item.is_a?(SemanticIR::Func)
+            next unless generic_function_in_header?(item, module_node)
+
+            collect_called_local_names(item.body, local_by_name.keys.to_set, called_names, Set.new)
+          end
+          called_names.filter_map { |name| local_by_name[name] }
+        end
+
+        def collect_called_local_names(node, local_names, called_names, seen)
+          return if node.nil? || seen.include?(node.object_id)
+
+          case node
+          when String, Symbol, Numeric, TrueClass, FalseClass, NilClass
+            nil
+          when Array
+            seen.add(node.object_id)
+            node.each { |item| collect_called_local_names(item, local_names, called_names, seen) }
+          when Hash
+            seen.add(node.object_id)
+            node.each_value { |item| collect_called_local_names(item, local_names, called_names, seen) }
+          else
+            return unless node.class.name.start_with?("MLC::SemanticIR")
+
+            seen.add(node.object_id)
+            if node.is_a?(SemanticIR::CallExpr) &&
+               node.callee.is_a?(SemanticIR::VarExpr) &&
+               local_names.include?(node.callee.name)
+              called_names << node.callee.name
+            end
+            node.instance_variables.each do |variable|
+              collect_called_local_names(node.instance_variable_get(variable), local_names, called_names, seen)
+            end
           end
         end
 

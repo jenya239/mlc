@@ -4,10 +4,20 @@ name: Build mlcc once
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+  push:
+    branches: [main]
+    paths:
+      - 'compiler/**'
+      - 'lib/mlc/**'
+      - '.github/workflows/build-mlcc-once.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       MLC_CXX: ccache clang++
       MLC_JOBS: 4
@@ -39,6 +49,18 @@ jobs:
 
       - name: Smoke check-only
         run: compiler/out/mlcc --check-only compiler/main.mlc
+
+      - name: Publish nightly mlcc release
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          gh release delete nightly-mlcc --repo jenya239/mlc --yes --cleanup-tag || true
+          gh release create nightly-mlcc compiler/out/mlcc \
+            --repo jenya239/mlc \
+            --title "Nightly mlcc ($(date -u +%Y-%m-%d))" \
+            --notes "Auto-built from $(git rev-parse --short HEAD)" \
+            --prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: ccache stats
         run: ccache -s

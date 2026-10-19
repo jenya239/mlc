@@ -19,7 +19,7 @@ fn append_lambda_arity(
   errors: [Diagnostic], expression: Shared<Expr>, expected: i32, method_name: string
 ) -> [Diagnostic] =
   match expression {
-    ExprLambda(parameter_names, _, _) =>
+    ExprLambda(parameter_names, _, _, _) =>
       if parameter_names.length() != expected then
         diagnostics_append(errors, [
           diagnostic_error_with_code(
@@ -96,7 +96,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [result_error_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -116,7 +116,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [result_ok_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -128,7 +128,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [result_error_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -140,7 +140,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [result_ok_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -172,7 +172,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [result_error_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -198,7 +198,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 0, 'or_else')
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -232,7 +232,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [option_inner_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -244,7 +244,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [option_inner_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }
@@ -265,7 +265,7 @@ export fn infer_result_option_hof_method_call(
       const callback_argument = method_arguments[0]
       let mut lambda_arity_errors: [Diagnostic] = append_lambda_arity([], callback_argument, 1, method_name)
       const lambda_parsed: InferResult = match callback_argument {
-        ExprLambda(parameter_names, body, _) =>
+        ExprLambda(parameter_names, _, body, _) =>
           infer_lambda_with_param_types(parameter_names, [option_inner_type_value], body, inference_context, infer_expr_fn),
         _ => infer_expr_fn(callback_argument, inference_context)
       }

@@ -158,7 +158,7 @@ module MLC
 
       cpp = MLC.to_cpp(source)
       assert_includes cpp, "enumerate"
-      assert_includes cpp, "size()"
+      assert_includes cpp, "length()"
     end
 
     def test_zip_length_chain
@@ -168,7 +168,7 @@ module MLC
 
       cpp = MLC.to_cpp(source)
       assert_includes cpp, "zip"
-      assert_includes cpp, "size()"
+      assert_includes cpp, "length()"
     end
 
     def test_filter_shared_lambda_param_type

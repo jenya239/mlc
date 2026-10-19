@@ -197,7 +197,7 @@ fn visit_expr(expression: Shared<Expr>, watched: [string], escaping: [string]) -
     ExprArray(elements, _) => visit_expr_list(elements, watched, escaping),
     ExprTuple(elements, _) => visit_expr_list(elements, watched, escaping),
     ExprQuestion(inner, _) => visit_expr(inner, watched, escaping),
-    ExprLambda(_, body, _) => visit_expr(body, watched, escaping),
+    ExprLambda(_, _, body, _) => visit_expr(body, watched, escaping),
     // Rule (4) / Ruby unknown-node conservatism: Spawn outlives the call.
     ExprSpawn(_, _) => mark_all_watched(watched, escaping),
     ExprNamedArg(_, value, _) => visit_expr(value, watched, escaping),
@@ -357,7 +357,7 @@ fn collect_idents_used_as_values_in_expr(expression: Shared<Expr>, names: [strin
       result
     end,
     ExprQuestion(inner, _) => collect_idents_used_as_values_in_expr(inner, names),
-    ExprLambda(_, body, _) => collect_idents_used_as_values_in_expr(body, names),
+    ExprLambda(_, _, body, _) => collect_idents_used_as_values_in_expr(body, names),
     ExprSpawn(body, _) => collect_idents_used_as_values_in_stmts(body, names),
     ExprNamedArg(_, value, _) => collect_idents_used_as_values_in_expr(value, names),
     ExprWith(resource, _, body, _) =>

@@ -380,6 +380,55 @@ fn ident_name_from_semantic_expression(expression: Shared<SemanticExpression>) -
 fn semantic_type_is_unit(semantic_type: Shared<Type>) -> bool =
   match semantic_type { TUnit => true, _ => false }
 
+fn constructor_name_from_let_value(value: Shared<SemanticExpression>) -> string =
+  match value {
+    SemanticExpressionIdent(name, _, _) => name,
+    SemanticExpressionCall(function_expression, _, _, _, _) =>
+      match function_expression {
+        SemanticExpressionIdent(name, _, _) => name,
+        _ => ''
+      },
+    _ => ''
+  }
+
+fn named_type_name_from_semantic_type(semantic_type: Shared<Type>) -> string =
+  match semantic_type {
+    TNamed(name) => name,
+    TGeneric(name, _) => name,
+    _ => ''
+  }
+
+// `auto` would deduce the alternative struct. std::variant's constructor from
+// that alternative is explicit, so the sum type has to be applied directly.
+fn sum_constructor_let_wrapper_type(
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext
+) -> string = do
+  const constructor_name = constructor_name_from_let_value(value)
+  if constructor_name == '' || !context.variant_types.has(constructor_name) then return '' end
+  const owner_name = context.variant_types.get(constructor_name)
+  if owner_name != named_type_name_from_semantic_type(value_type) then return '' end
+  if context.cyclic_sum_type_names.any(cyclic_name => cyclic_name == owner_name) then return '' end
+  const owner_cpp = sem_type_to_cpp(context, value_type)
+  if owner_cpp == '' || owner_cpp == 'auto' then '' else owner_cpp end
+end
+
+fn gen_let_initializer_cpp(
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext
+) -> Shared<CppExpression> = do
+  const lowered = gen_expr_cpp_for_stmt_codegen(value, context)
+  const wrapper_type = sum_constructor_let_wrapper_type(value, value_type, context)
+  if wrapper_type == '' then lowered
+  else
+    Shared.new(CppCall(
+      emit_helpers.make_identifier_cpp_expression(wrapper_type),
+      [lowered]))
+  end
+end
+
 fn gen_auto_let_stmt_cpp_result(
   name: string,
   value: Shared<SemanticExpression>,
@@ -390,6 +439,21 @@ fn gen_auto_let_stmt_cpp_result(
     statement: emit_helpers.make_auto_cpp_statement(
       cpp_safe(name),
       gen_expr_cpp_for_stmt_codegen(value, context)),
+    next_try: try_counter,
+    codegen_context: context
+  }
+
+fn gen_sum_aware_let_stmt_cpp_result(
+  name: string,
+  value: Shared<SemanticExpression>,
+  value_type: Shared<Type>,
+  context: CodegenContext,
+  try_counter: i32
+) -> GenStmtCppResult =
+  GenStmtCppResult {
+    statement: emit_helpers.make_auto_cpp_statement(
+      cpp_safe(name),
+      gen_let_initializer_cpp(value, value_type, context)),
     next_try: try_counter,
     codegen_context: context
   }
@@ -455,10 +519,12 @@ fn gen_let_stmt_cpp(
     SemanticExpressionBool(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
     SemanticExpressionUnit(_, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
     SemanticExpressionExtern(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
-    SemanticExpressionIdent(_, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionIdent(_, _, _) =>
+      gen_sum_aware_let_stmt_cpp_result(name, value, value_type, context, try_counter),
     SemanticExpressionBin(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
     SemanticExpressionUn(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
-    SemanticExpressionCall(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
+    SemanticExpressionCall(_, _, _, _, _) =>
+      gen_sum_aware_let_stmt_cpp_result(name, value, value_type, context, try_counter),
     SemanticExpressionField(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
     SemanticExpressionIndex(_, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),
     SemanticExpressionIf(_, _, _, _, _) => gen_auto_let_stmt_cpp_result(name, value, context, try_counter),

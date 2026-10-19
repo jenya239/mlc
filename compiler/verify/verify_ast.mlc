@@ -211,7 +211,7 @@ fn verify_ast_expression(expression: Shared<Expr>) -> [string] = do
       errors
     end,
     ExprQuestion(inner, _) => verify_ast_append_errors(errors, verify_ast_expression(inner)),
-    ExprLambda(_, body, _) => verify_ast_append_errors(errors, verify_ast_expression(body)),
+    ExprLambda(_, _, body, _) => verify_ast_append_errors(errors, verify_ast_expression(body)),
     ExprNamedArg(_, value, _) => verify_ast_append_errors(errors, verify_ast_expression(value)),
     ExprWith(subject, _, statements, _) => do
       errors = verify_ast_append_errors(errors, verify_ast_expression(subject))

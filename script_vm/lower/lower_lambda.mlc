@@ -205,7 +205,7 @@ fn lower_lambda_into(scope: ref mut LowerScope, enclosing_scope: ref mut LowerSc
         end
       end
     end,
-    ExprLambda(parameters, body, _) =>
+    ExprLambda(parameters, _, body, _) =>
       emit_lambda_at(scope, lambda_scope, captures, builder, parameters, body, target),
     ExprField(base, field_name, source_span) =>
       lower_lambda_field(scope, enclosing_scope, enclosing_captures, captures, lambda_scope, builder, base, field_name, source_span, target),
@@ -277,7 +277,7 @@ fn record_is_closure(record_name: string) -> bool =
   record_name.length() >= 9 && record_name.substring(0, 9) == "*closure*"
 fn argument_carries_closure(scope: ref mut LowerScope, argument: Shared<Expr>) -> bool =
   match argument {
-    ExprLambda(_, _, _) => true,
+    ExprLambda(_, _, _, _) => true,
     ExprIdent(name, _) => do
       let slot = lower_scope_lookup(scope, name)
       if slot < 0 then false else match scope.names[slot].value_type {
@@ -309,7 +309,7 @@ fn store_call_argument(scope: ref mut LowerScope, builder: ref mut ProtoBuilder,
         true
       end end
     end,
-    ExprLambda(parameters, body, _) => do
+    ExprLambda(parameters, _, body, _) => do
       lower_lambda_expression(scope, builder, parameters, body, argument_register)
       !scope.has_diagnostic
     end,
@@ -372,7 +372,7 @@ end
 fn call_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, callee: Shared<Expr>, arguments: [Shared<Expr>], source_span: Span, target: i32) -> LambdaAttempt =
   match callee {
     ExprIdent(name, _) => named_call_attempt(scope, builder, name, arguments, source_span, target),
-    ExprLambda(parameters, body, _) =>
+    ExprLambda(parameters, _, body, _) =>
       LambdaHandled(emit_direct_lambda_call(scope, builder, parameters, body, arguments, source_span, target)),
     _ => LambdaIgnored
   }
@@ -391,7 +391,7 @@ fn ident_attempt(scope: ref mut LowerScope, builder: ref mut ProtoBuilder, name:
   end
 export fn lower_lambda_try(scope: ref mut LowerScope, sink: ref mut LowerDiagnosticSink, builder: ref mut ProtoBuilder, expression: Shared<Expr>, target: i32) -> LambdaAttempt =
   match expression {
-    ExprLambda(parameters, body, _) =>
+    ExprLambda(parameters, _, body, _) =>
       LambdaHandled(lower_lambda_expression(scope, builder, parameters, body, target)),
     ExprCall(callee, arguments, source_span) =>
       call_attempt(scope, builder, callee, arguments, source_span, target),

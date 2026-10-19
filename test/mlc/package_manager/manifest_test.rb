@@ -7,6 +7,11 @@ require "fileutils"
 class PackageManagerManifestTest < Minitest::Test
   VALID_REV = "0123456789abcdef0123456789abcdef01234567"
 
+  def setup
+    super
+    MLC::PackageManager::Manifest
+  end
+
   def test_missing_file_is_empty_manifest
     Dir.mktmpdir do |directory|
       manifest = MLC::PackageManager::Manifest.load(directory)

@@ -22,6 +22,16 @@ Exit 0 required. Suite: `specs/regression/` — Ruby bootstrap stdout is source 
 
 Docs-only tracks (no `compiler/**` changes) are exempt.
 
+## Холодная Ruby-сборка
+
+Если трек затрагивает `compiler/checker/**`, `compiler/frontend/**`, `compiler/codegen/**` или `lib/mlc/source/parser/**`, `lib/mlc/representations/semantic/gen/**`, перед закрытием:
+
+```bash
+MLCC_FORCE_RUBY=1 compiler/build.sh
+```
+
+Код возврата 0. Флаг запускает Ruby bootstrap и при уже существующем свежем `compiler/out/mlcc`. `scripts/regression_gate.sh` проверяет собранный бинарник; холодная сборка проверяет, что Ruby всё ещё компилирует текущий `compiler/**`.
+
 ## Performance workflow (GUI / OpenGL)
 
 Low-level UI cannot be “vibe-coded” without a measurable loop. Architecture that looks right can still mean tens of thousands of shapes/draws per frame. Rules:

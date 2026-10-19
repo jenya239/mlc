@@ -75,7 +75,7 @@ fn infer_supervisor_handler(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult =
   match handler_expression {
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       infer_lambda_with_param_types(
         parameter_names,
         [Shared.new(TNamed('StopToken'))],

@@ -616,11 +616,17 @@ fn invoked_while_expression(condition: Shared<CppExpression>, body_statements: [
 fn invoked_for_expression(variable_name: string, iterator: Shared<CppExpression>, body_statements: [Shared<CppStatement>]) -> string =
   `[&]() {\nfor (auto ${variable_name} : ${print_expr(iterator)}) {\n${print_statements(body_statements, 0)}}\n}()`
 
+fn text_ends_with_newline(text: string) -> bool =
+  text.length() > 0 && text.byte_at(text.length() - 1) == "\n"
+
+fn ensure_trailing_newline(text: string) -> string =
+  if text_ends_with_newline(text) then text else text + "\n" end
+
 fn invoked_block_expression(body_statements: [Shared<CppStatement>]) -> string =
-  `[&]() {\n${print_statements(body_statements, 0)}}()`
+  `[&]() {\n${ensure_trailing_newline(print_statements(body_statements, 0))}}()`
 
 fn invoked_block_with_return_expression(return_type: string, body_statements: [Shared<CppStatement>]) -> string =
-  `[&]() -> ${return_type} {\n${print_statements(body_statements, 0)}}()`
+  `[&]() -> ${return_type} {\n${ensure_trailing_newline(print_statements(body_statements, 0))}}()`
 
 fn question_try_expression(inner: Shared<CppExpression>, from_converter_name: string) -> string =
   if from_converter_name.length() > 0 then

@@ -485,7 +485,7 @@ fn dispatch_infer_pass(infer_pass: InferPass, expression: Shared<Expr>) -> Infer
       infer_pass.visit_tuple(elements),
     ExprQuestion(inner_expression, question_span) =>
       infer_pass.visit_question(inner_expression, question_span),
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       infer_pass.visit_lambda(parameter_names, body),
     ExprNamedArg(_, inner_expression, _) =>
       infer_pass.visit_named_arg(inner_expression),

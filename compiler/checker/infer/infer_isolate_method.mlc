@@ -42,7 +42,7 @@ fn isolate_receiver_error(
 
 fn isolate_handler_arity_errors(handler_expression: Shared<Expr>) -> [Diagnostic] =
   match handler_expression {
-    ExprLambda(parameter_names, _, _) =>
+    ExprLambda(parameter_names, _, _, _) =>
       if parameter_names.length() != 2 then
         [diagnostic_error_with_code(
           'Isolate.start expects a handler with two parameters (state, message)',
@@ -68,7 +68,7 @@ fn infer_isolate_handler(
   infer_expr_fn: (Shared<Expr>, CheckContext) -> InferResult
 ) -> InferResult =
   match handler_expression {
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       infer_lambda_with_param_types(
         parameter_names,
         [state_type, Shared.new(TUnknown)],

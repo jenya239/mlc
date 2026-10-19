@@ -199,7 +199,7 @@ export fn cpp_printer_tests() -> [TestResult] = do
       Shared.new(CppCast(
         CppCastStatic,
         Shared.new(CppTypeName('int(*)()')),
-        Shared.new(CppUnary('&', Shared.new(CppIdent('::foo'))))))))),
+        Shared.new(CppUnary("&", Shared.new(CppIdent('::foo'))))))))),
     'static auto const binder = static_cast<int(*)()>((&::foo));'))
 
   results.push(assert_eq_str('print_statement CppStructuredBinding',

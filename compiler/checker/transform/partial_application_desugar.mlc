@@ -6,7 +6,7 @@ import {
   ExprIdent, ExprBin, ExprUn, ExprCall, ExprMethod, ExprField, ExprIndex,
   ExprIf, ExprBlock, ExprWhile, ExprSpawn, ExprFor, ExprMatch, ExprRecord, ExprRecordUpdate,
   ExprArray, ExprTuple, ExprQuestion,   ExprExtern, ExprLambda, ExprNamedArg, ExprWith,
-  ExprScope, ExprRegion,
+  ExprScope, ExprRegion, empty_type_expr_list,
   StmtLet, StmtLetPattern, StmtLetConst, StmtExpr, StmtReturn, StmtBreak, StmtContinue,
   Span
 } from '../../frontend/ast'
@@ -195,7 +195,7 @@ fn partial_wrap_call_after_children(
     const replaced = partial_replace_call_arguments(mapped_arguments, allocation.names, source_span)
     const inner_call = Shared.new(ExprCall(callee, replaced, source_span))
     PartialPair {
-      expression: Shared.new(ExprLambda(allocation.names, inner_call, source_span)),
+      expression: Shared.new(ExprLambda(allocation.names, empty_type_expr_list(), inner_call, source_span)),
       next_serial: allocation.next_serial
     }
   end end
@@ -219,7 +219,7 @@ fn partial_wrap_method_after_children(
     const replaced = partial_replace_call_arguments(mapped_arguments, allocation.names, source_span)
     const inner_call = Shared.new(ExprMethod(object_expression, method_name, replaced, source_span))
     PartialPair {
-      expression: Shared.new(ExprLambda(allocation.names, inner_call, source_span)),
+      expression: Shared.new(ExprLambda(allocation.names, empty_type_expr_list(), inner_call, source_span)),
       next_serial: allocation.next_serial
     }
   end end
@@ -529,10 +529,10 @@ fn partial_application_desugar_inner(expression: Shared<Expr>, serial: i32) -> P
         next_serial: inner_pair.next_serial
       }
     end,
-    ExprLambda(parameter_names, body, span_lambda) => do
+    ExprLambda(parameter_names, parameter_type_expressions, body, span_lambda) => do
       const body_pair = partial_application_desugar_inner(body, serial)
       PartialPair {
-        expression: Shared.new(ExprLambda(parameter_names, body_pair.expression, span_lambda)),
+        expression: Shared.new(ExprLambda(parameter_names, parameter_type_expressions, body_pair.expression, span_lambda)),
         next_serial: body_pair.next_serial
       }
     end,

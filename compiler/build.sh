@@ -5,7 +5,8 @@ set -e
 # Example: MLCC_BUILD_VERBOSE=1 compiler/build.sh
 #
 # Default: mlcc-only (skip when fresh, rebuild via mlcc + build_bin.sh when stale).
-# Cold start (no mlcc): MLCC_FORCE_RUBY=1 compiler/build.sh
+# Cold Ruby bootstrap, even when a fresh mlcc is already present:
+#   MLCC_FORCE_RUBY=1 compiler/build.sh
 # Bootstrap: MLCC_BOOTSTRAP=1 compiler/build.sh
 # Incremental codegen (default on): MLCC_INCREMENTAL=0 forces full wipe + mlcc emit.
 # Skip decision (both the outer "binary is fresh" gate and the inner codegen
@@ -134,10 +135,10 @@ build_via_mlcc() {
   "$COMPILER_DIR/build_bin.sh" "$OUT_DIR" "$BIN_OUT"
 }
 
-if mlcc_binary_is_fresh; then
-  echo "[mlcc build] ${BIN_OUT} up to date (skip)" >&2
-elif [ "${MLCC_FORCE_RUBY:-0}" = "1" ]; then
+if [ "${MLCC_FORCE_RUBY:-0}" = "1" ]; then
   build_via_ruby
+elif mlcc_binary_is_fresh; then
+  echo "[mlcc build] ${BIN_OUT} up to date (skip)" >&2
 elif [ ! -x "$BIN_OUT" ]; then
   echo "[mlcc build] no ${BIN_OUT}; cold start requires MLCC_FORCE_RUBY=1" >&2
   exit 1

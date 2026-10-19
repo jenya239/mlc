@@ -712,11 +712,15 @@ fn parse_function_declaration(parser: Parser) -> DeclResult = do
     declaration_parse_result(
       Shared.new(DeclFn(fn_name, type_parameters_parsed.value.params, merged_trait_bounds, params_parsed.value, return_type_parsed.value, body_parsed.value, where_parse.value)),
       body_parsed.parser)
-  else
+  else if where_parse.parser.kind().is_equal() then
     const body_parsed = parse_expr(where_parse.parser.advance())
     declaration_parse_result(
       Shared.new(DeclFn(fn_name, type_parameters_parsed.value.params, merged_trait_bounds, params_parsed.value, return_type_parsed.value, body_parsed.value, where_parse.value)),
       body_parsed.parser)
+  else
+    declaration_parse_result(
+      Shared.new(DeclFn(fn_name, type_parameters_parsed.value.params, merged_trait_bounds, params_parsed.value, return_type_parsed.value, Shared.new(ExprIdent('', where_parse.parser.span_at_cursor())), where_parse.value)),
+      where_parse.parser)
   end
 end
 
@@ -1114,6 +1118,35 @@ fn parse_module_header(parser: Parser) -> ModuleHeader = do
   ModuleHeader { name: name, parser: state }
 end
 
+fn declaration_is_bodyless_forward(declaration: Shared<Decl>) -> bool =
+  match declaration {
+    DeclFn(_, _, _, _, _, body_expression, _) =>
+      match body_expression {
+        ExprIdent(name, _) => name == '',
+        _ => false
+      },
+    _ => false
+  }
+
+fn declaration_function_name(declaration: Shared<Decl>) -> string =
+  match declaration {
+    DeclFn(name, _, _, _, _, _, _) => name,
+    _ => ''
+  }
+
+fn declarations_include_body_for(declarations: [Shared<Decl>], function_name: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < declarations.length() do
+    const declaration = declarations[index]
+    if declaration_function_name(declaration) == function_name && !declaration_is_bodyless_forward(declaration) then
+      found = true
+    end
+    index = index + 1
+  end
+  found
+end
+
 fn scan_program(tokens: [Token], source_path: string) -> ProgramScan = do
   const declarations: [Shared<Decl>] = []
   let mut state = parser_new_with_source_path(tokens, source_path)
@@ -1131,7 +1164,21 @@ fn scan_program(tokens: [Token], source_path: string) -> ProgramScan = do
     end
     state = parsed.parser
   end
-  ProgramScan { declarations: declarations, module_name: module_name, parser: state }
+  let mut kept_declarations: [Shared<Decl>] = []
+  let mut declaration_index = 0
+  while declaration_index < declarations.length() do
+    const declaration = declarations[declaration_index]
+    if declaration_is_bodyless_forward(declaration) then
+      const function_name = declaration_function_name(declaration)
+      if !declarations_include_body_for(declarations, function_name) then
+        state = state.record_parse_error('parse: function ' + function_name + ' requires a body')
+      end
+    else
+      kept_declarations.push(declaration)
+    end
+    declaration_index = declaration_index + 1
+  end
+  ProgramScan { declarations: kept_declarations, module_name: module_name, parser: state }
 end
 
 export fn parse_program_with_source_path(tokens: [Token], source_path: string) -> Program = do

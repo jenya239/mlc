@@ -159,7 +159,7 @@ fn expression_uses_ident(expression: Shared<Expr>, sought: string) -> bool =
       expression_uses_ident(condition, sought) ||
         expression_uses_ident(then_expression, sought) ||
         expression_uses_ident(else_expression, sought),
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       !names_contains(parameter_names, sought) && expression_uses_ident(body, sought),
     ExprArray(elements, _) => expression_list_uses_ident(elements, sought),
     ExprTuple(elements, _) => expression_list_uses_ident(elements, sought),
@@ -198,7 +198,7 @@ fn walk_region_expression(
   outer_bound: [string]
 ) -> [Diagnostic] =
   match expression {
-    ExprLambda(parameter_names, body, source_span) => do
+    ExprLambda(parameter_names, _, body, source_span) => do
       let mut diagnostics = empty_diagnostics()
       if lambda_captures_region_value(parameter_names, body, region_values) then
         diagnostics = diagnostics.concat([region_escape_closure_diagnostic(source_span)])
@@ -469,7 +469,7 @@ fn walk_expression_for_regions(
       diagnostics_append(
         walk_statements_for_regions(statements, outer_bound),
         walk_expression_for_regions(result_expression, outer_bound)),
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       walk_expression_for_regions(body, names_add_all(outer_bound, parameter_names)),
     ExprMethod(receiver, _, method_arguments, _) =>
       diagnostics_append(

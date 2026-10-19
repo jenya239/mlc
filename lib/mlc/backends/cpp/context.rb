@@ -184,6 +184,14 @@ module MLC
           # User-defined functions don't get qualified
           return nil if user_function?(name)
 
+          # A selective file import names the module. The function registry is
+          # one global map, so a same bare name in another module must not win.
+          imported_namespace = @container.imported_function_namespaces[name]
+          if imported_namespace && !imported_namespace.empty?
+            base_name = Services::Utils::StringHelpers.sanitize_identifier(name)
+            return "#{imported_namespace}::#{base_name}"
+          end
+
           # Try function registry first
           qualified = qualified_function_name(name)
           return qualified if qualified

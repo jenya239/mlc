@@ -226,6 +226,18 @@ module MLC
           build_block_expr(items, do_token)
         end
 
+        def parse_region_expression
+          region_token = consume(:IDENTIFIER)
+          binder_token = consume(:IDENTIFIER)
+          consume(:DO)
+          items = parse_block_items_until_end
+          body = build_block_expr(items, region_token)
+          attach_origin(
+            MLC::Source::AST::RegionExpr.new(binder: binder_token.value, body: body),
+            region_token
+          )
+        end
+
         def parse_do_statement
           # Parse a single statement/expression in a do block
           case current.type
@@ -1314,8 +1326,9 @@ module MLC
             regex_data = token.value
             attach_origin(MLC::Source::AST::RegexLit.new(pattern: regex_data[:pattern], flags: regex_data[:flags]), token)
           when :IDENTIFIER
-            # Check for lambda: x => expr
-            if !@forbid_lambda_shorthand && peek && peek.type == :FAT_ARROW
+            if current.value == "region" && peek&.type == :IDENTIFIER && peek_ahead(2)&.type == :DO
+              parse_region_expression
+            elsif !@forbid_lambda_shorthand && peek && peek.type == :FAT_ARROW
               parse_lambda
             else
               name_token = consume(:IDENTIFIER)

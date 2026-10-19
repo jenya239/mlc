@@ -317,7 +317,7 @@ fn free_mutable_capture_in_expr(
       free_mutable_capture_in_expr_list(elements, local_bound, outer_mutable),
     ExprQuestion(inner, _) =>
       free_mutable_capture_in_expr(inner, local_bound, outer_mutable),
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       free_mutable_capture_in_expr(body, names_add_all(local_bound, parameter_names), outer_mutable),
     // Nested spawn sites are checked by walk_spawn_sites; do not recurse here.
     ExprSpawn(_, _) => empty_diagnostics(),
@@ -553,7 +553,7 @@ fn free_send_capture_in_expr(
       free_send_capture_in_expr_list(elements, local_bound, capture_context),
     ExprQuestion(inner, _) =>
       free_send_capture_in_expr(inner, local_bound, capture_context),
-    ExprLambda(parameter_names, body, _) =>
+    ExprLambda(parameter_names, _, body, _) =>
       free_send_capture_in_expr(body, names_add_all(local_bound, parameter_names), capture_context),
     ExprSpawn(_, _) => empty_diagnostics(),
     ExprNamedArg(_, value, _) =>
@@ -781,7 +781,7 @@ fn walk_spawn_sites_in_expr(
       walk_spawn_sites_in_expr_list(elements, mutable_scope, capture_context),
     ExprQuestion(inner, _) =>
       walk_spawn_sites_in_expr(inner, mutable_scope, capture_context),
-    ExprLambda(_, body, _) =>
+    ExprLambda(_, _, body, _) =>
       walk_spawn_sites_in_expr(body, empty_names(), capture_context),
     ExprNamedArg(_, value, _) =>
       walk_spawn_sites_in_expr(value, mutable_scope, capture_context),
@@ -1121,7 +1121,7 @@ fn bare_spawn_diagnostics_in_expr(
       bare_spawn_diagnostics_in_expr_list(elements, false),
     ExprQuestion(inner, _) =>
       bare_spawn_diagnostics_in_expr(inner, false),
-    ExprLambda(_, body, _) =>
+    ExprLambda(_, _, body, _) =>
       bare_spawn_diagnostics_in_expr(body, false),
     ExprNamedArg(_, value, _) =>
       bare_spawn_diagnostics_in_expr(value, false),

@@ -72,6 +72,30 @@ module MLC
           end
         end
 
+        def parse_extern_type_decl(exported: false)
+          consume(:TYPE)
+          name_token = consume(:IDENTIFIER)
+          consume(:EQUAL)
+          native_type_name = consume(:STRING_LITERAL).value
+          consume(:FROM)
+          header = consume(:STRING_LITERAL).value
+          drop_function_name = nil
+          if current.type == :IDENTIFIER && current.value == "drop"
+            consume(:IDENTIFIER)
+            drop_function_name = consume(:STRING_LITERAL).value
+          end
+          skip_extern_concurrency_attributes
+          with_origin(name_token) do
+            MLC::Source::AST::ExternTypeDecl.new(
+              name: name_token.value,
+              native_type_name: native_type_name,
+              header: header,
+              drop_function_name: drop_function_name,
+              exported: exported
+            )
+          end
+        end
+
         def consume_extern_library_name
           consume(:IDENTIFIER)
           unless current.type == :STRING_LITERAL
@@ -148,6 +172,8 @@ module MLC
             consume(:FROM)
             path = parse_import_path # Can be string or identifier
             import_all = true
+          elsif current.type == :STRING_LITERAL
+            path = consume(:STRING_LITERAL).value
           else
             # Syntax 3-4 (backward compat): import Math or import Math::{...}
             path = parse_module_path
@@ -450,12 +476,14 @@ module MLC
                 declarations << func
 
               when :EXTERN
-                # export extern fn ...
+                # export extern fn ... / export extern type ...
                 consume(:EXTERN)
-                expect_token!(:FN, current)
-
-                func = parse_function(external: true, exported: true)
-                declarations << func
+                if current.type == :TYPE
+                  declarations << parse_extern_type_decl(exported: true)
+                else
+                  expect_token!(:FN, current)
+                  declarations << parse_function(external: true, exported: true)
+                end
 
               when :FN
                 func = parse_function(exported: true)
@@ -485,6 +513,8 @@ module MLC
                 consume_extern_library_name
               elsif current.type == :FN
                 declarations << parse_function(external: true)
+              elsif current.type == :TYPE
+                declarations << parse_extern_type_decl
               else
                 expect_token!(:FN, current)
               end

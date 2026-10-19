@@ -159,7 +159,7 @@ end
 // MLC name, skip local FFI wrapper emit. Otherwise resolve() would emit
 // `imported_ns::name` inside the consumer namespace → clang enclose-namespace error.
 fn ffi_extern_reuses_imported_binding(name: string, context: CodegenContext) -> bool =
-  context.qualified.has(name)
+  context.qualified.has(name) && context.qualified.get(name).length() > 0
 
 export fn gen_ffi_fn_proto_cpp(
   name: string,

@@ -3,7 +3,7 @@
 import { TypeExpr, TypeVariant, Decl, FieldDef, decl_inner, TyNamed, TyGeneric, TyArray } from '../../frontend/ast'
 import { is_shared_type, is_shared_array_type } from './param_analysis'
 import { list_contains } from './decl_index'
-import { build_cyclic_sum_type_names } from './type_index'
+import { build_cyclic_sum_type_names } from '../../checker/cyclic_sum_names'
 
 export type CtorTypeInfo = CtorTypeInfo {
   name: string,

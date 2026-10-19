@@ -45,10 +45,12 @@ import {
   match_visit_uses_void_lambdas,
   gen_match_guarded_expression,
   gen_match_guarded_expression_cpp,
-  gen_match_string_literal_expression,
+  gen_match_string_literal_expression
+} from './match_guarded_gen'
+import {
   arms_have_cyclic_option_nested_constructor,
   arms_have_cyclic_array_nested_pattern
-} from './match_guarded_gen'
+} from './match_guarded_patterns'
 
 fn gen_arm_wild_like_body(
   arm_body: Shared<SemanticExpression>,

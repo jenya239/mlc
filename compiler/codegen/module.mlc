@@ -4,9 +4,10 @@ import { Program, errs_append } from '../frontend/ast'
 import { SemanticDeclaration, SemanticLoadItem, SemanticNamespaceImportAlias, SemanticDeclarationAssocBind, SemanticDeclarationExternLib, SemanticDeclarationExported, sdecl_inner } from '../ir/semantic_ir'
 import { build_registry, TUnknown } from '../checker/registry'
 import { LoadItem, NamespaceImportAlias } from '../ir/load_item'
-import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path, using_namespaces_for_imports } from './decl/decl_index'
+import { build_namespace_alias_prefixes, build_field_order_index, build_qualified, build_item_index, extend_qualified_map, ast_decls_for_path, using_namespaces_for_imports, qualified_without_locally_defined_names } from './decl/decl_index'
 import { build_ctor_type_info_index } from './decl/ctor_info'
-import { build_sum_type_parameter_names_from_decls, build_variant_used_type_parameter_names_from_decls, build_cyclic_sum_type_names } from './decl/type_index'
+import { build_sum_type_parameter_names_from_decls, build_variant_used_type_parameter_names_from_decls } from './decl/type_index'
+import { build_cyclic_sum_type_names } from '../checker/cyclic_sum_names'
 import { CodegenContext, PrecomputedCtx, GenModuleOut,
          create_codegen_context, new_temp_name_counter, build_field_orders, build_variant_types_from_decls,
          build_ctor_type_infos_from_decls, build_generic_variants_from_decls,
@@ -157,8 +158,10 @@ fn prepare_module_generation(
   const base = path_to_module_base(load_item.path)
   const namespace_aliases = load_item.namespace_import_aliases
   const module_decls = ast_decls_for_path(load_item.path, all_items)
-  const qualified = extend_qualified_map(build_qualified(load_item.imports, all_items), all_items, load_item.path)
-  const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases), all_items)
+  const qualified = qualified_without_locally_defined_names(
+    extend_qualified_map(build_qualified(load_item.imports, all_items), all_items, load_item.path),
+    module_decls)
+  const namespace_alias_prefixes = build_namespace_alias_prefixes(namespace_aliases_mapped(namespace_aliases))
   const base_context = CodegenContext {
     field_orders: precomputed_context.field_orders,
     field_order_index: precomputed_context.field_order_index,
@@ -191,7 +194,7 @@ fn prepare_module_generation(
     cpp_mode: precomputed_context.cpp_mode
   }
   const context = base_context.with_struct_using_data(build_struct_using_data(load_item.decls, base_context))
-  const module_namespace_name = module_namespace(load_item.module_name, load_item.path)
+  const module_namespace_name = module_namespace(load_item.path)
   const is_entry = decls_have_main(load_item.decls)
   const std_includes = standard_translation_unit_runtime_headers() + include_lines(load_item.imports) + `\n`
   const ffi_includes = collect_ffi_include_lines(load_item.decls)
@@ -206,7 +209,7 @@ fn prepare_module_generation(
     decl_parts: decl_parts,
     implementation_import_includes: include_lines(load_item.imports) + ffi_includes,
     implementation_import_paths: load_item.imports,
-    using_namespaces: using_namespaces_for_imports(load_item.imports, all_items)
+    using_namespaces: using_namespaces_for_imports(load_item.imports)
   }
 end
 

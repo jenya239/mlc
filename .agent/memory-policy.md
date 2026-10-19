@@ -49,7 +49,7 @@ Do not use vector RAG instead of structural graph for code navigation.
 ## mlc commands (evidence)
 
 ```bash
-compiler/tests/build_tests.sh && compiler/out/run_tests
+compiler/tests/build_tests.sh
 compiler/build.sh && compiler/build_bin.sh
 compiler/tests/run_architecture_lint.sh
 ```
