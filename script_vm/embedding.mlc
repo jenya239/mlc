@@ -54,11 +54,11 @@ extern fn embedding_i64_store(data_pointer: i64, value: i64) -> i32 =
 
 export type EmbCallResult = { code: i32, raw: i64 }
 
-fn verify_decoded(module: DecodedModule) -> i32 = do
+fn verify_decoded(decoded_module: DecodedModule) -> i32 = do
   let mut proto_index = 0
   let mut failed = false
-  while proto_index < module.protos.length() && !failed do
-    const proto = module.protos[proto_index]
+  while proto_index < decoded_module.protos.length() && !failed do
+    const proto = decoded_module.protos[proto_index]
     const verified = verify_function(proto.words, proto.register_count, proto.constants.length())
     const is_err = match verified {
       VerifyErr(_code, _at) => true,
@@ -76,11 +76,11 @@ fn verify_decoded(module: DecodedModule) -> i32 = do
   end
 end
 
-fn find_export_proto(module: DecodedModule, export_name: string) -> i32 = do
+fn find_export_proto(decoded_module: DecodedModule, export_name: string) -> i32 = do
   let mut index = 0
-  while index < module.exports.length() do
-    if module.exports[index].name == export_name then
-      return module.exports[index].proto_index
+  while index < decoded_module.exports.length() do
+    if decoded_module.exports[index].name == export_name then
+      return decoded_module.exports[index].proto_index
     end
     index = index + 1
   end
@@ -116,7 +116,7 @@ export fn emb_verify_module_bytes(bytes: [i32]) -> i32 = do
   if decoded.code != emb_ok() then
     decoded.code
   else
-    verify_decoded(decoded.module)
+    verify_decoded(decoded.decoded_module)
   end
 end
 
@@ -131,11 +131,11 @@ export fn emb_call_export_bytes_limited(
   if decoded.code != emb_ok() then
     EmbCallResult { code: decoded.code, raw: embedding_u8_to_i64(0) }
   else
-    const verify_code = verify_decoded(decoded.module)
+    const verify_code = verify_decoded(decoded.decoded_module)
     if verify_code != emb_ok() then
       EmbCallResult { code: verify_code, raw: embedding_u8_to_i64(0) }
     else
-      const proto_index = find_export_proto(decoded.module, export_name)
+      const proto_index = find_export_proto(decoded.decoded_module, export_name)
       if proto_index < 0 then
         EmbCallResult { code: emb_not_found(), raw: embedding_u8_to_i64(0) }
       else
@@ -147,7 +147,7 @@ export fn emb_call_export_bytes_limited(
         end
         const ran = run_program_with_args_limited(
           heap_new(),
-          decoded.module.protos,
+          decoded.decoded_module.protos,
           proto_index,
           args,
           run_limits_new(instruction_limit, heap_limit_objects)
@@ -172,7 +172,7 @@ export fn emb_has_export_ptr(data_pointer: i64, size: i32, export_name: string) 
   if decoded.code != emb_ok() then
     0
   else
-    const proto_index = find_export_proto(decoded.module, export_name)
+    const proto_index = find_export_proto(decoded.decoded_module, export_name)
     if proto_index < 0 then 0 else 1 end
   end
 end

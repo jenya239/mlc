@@ -71,10 +71,10 @@ fn expect_if(source: string, expected: i32, label: string) -> i32 = do
   if decoded.code != emb_ok() then
     return report_failure(label + " decode")
   end
-  if !module_contains_opcode(decoded.module, 34) then
+  if !module_contains_opcode(decoded.decoded_module, 34) then
     return report_failure(label + " missing FCMP")
   end
-  if !module_contains_opcode(decoded.module, 9) then
+  if !module_contains_opcode(decoded.decoded_module, 9) then
     return report_failure(label + " missing JUMP_IF_FALSE")
   end
   const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())

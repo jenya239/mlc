@@ -41,10 +41,10 @@ fn direct_call_source() -> string =
 
 fn exported_word_count(bytes: [i32]) -> i32 = do
   const decoded = decode_module(bytes)
-  if decoded.code != emb_ok() || decoded.module.exports.length() == 0 then
+  if decoded.code != emb_ok() || decoded.decoded_module.exports.length() == 0 then
     0 - 1
   else
-    decoded.module.protos[decoded.module.exports[0].proto_index].words.length()
+    decoded.decoded_module.protos[decoded.decoded_module.exports[0].proto_index].words.length()
   end
 end
 

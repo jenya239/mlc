@@ -28,7 +28,7 @@ export type DecodedModule = {
   exports: [ModuleExport],
   protos: [FunctionProto]
 }
-export type DecodeResult = { code: i32, module: DecodedModule }
+export type DecodeResult = { code: i32, decoded_module: DecodedModule }
 
 fn magic_mlsc() -> i32 = 1129531469
 
@@ -220,9 +220,9 @@ fn limit_code(exports: [ModuleExport], protos: [FunctionProto]) -> i32 =
 fn accept_decoded(exports: [ModuleExport], protos: [FunctionProto], empty: DecodedModule) -> DecodeResult = do
   const code = limit_code(exports, protos)
   if code != emb_ok() then
-    DecodeResult { code: code, module: empty }
+    DecodeResult { code: code, decoded_module: empty }
   else
-    DecodeResult { code: code, module: DecodedModule { exports: exports, protos: protos } }
+    DecodeResult { code: code, decoded_module: DecodedModule { exports: exports, protos: protos } }
   end
 end
 
@@ -231,15 +231,15 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
   let mut empty_protos: [FunctionProto] = []
   const empty = DecodedModule { exports: empty_exports, protos: empty_protos }
   if bytes.length() < 8 then
-    DecodeResult { code: emb_format(), module: empty }
+    DecodeResult { code: emb_format(), decoded_module: empty }
   else if read_u32_le(bytes, 0) != magic_mlsc() then
-    DecodeResult { code: emb_unsupported(), module: empty }
+    DecodeResult { code: emb_unsupported(), decoded_module: empty }
   else if read_u32_le(bytes, 4) != 1 then
-    DecodeResult { code: emb_format(), module: empty }
+    DecodeResult { code: emb_format(), decoded_module: empty }
   else
     let mut offset = 8
     if offset + 4 > bytes.length() then
-      DecodeResult { code: emb_format(), module: empty }
+      DecodeResult { code: emb_format(), decoded_module: empty }
     else
       const export_count = read_u32_le(bytes, offset)
       offset = offset + 4
@@ -268,9 +268,9 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
         end
       end
       if decode_failed then
-        DecodeResult { code: fail_code, module: empty }
+        DecodeResult { code: fail_code, decoded_module: empty }
       else if offset + 4 > bytes.length() then
-        DecodeResult { code: emb_format(), module: empty }
+        DecodeResult { code: emb_format(), decoded_module: empty }
       else
         const proto_count = read_u32_le(bytes, offset)
         offset = offset + 4
@@ -320,9 +320,9 @@ export fn decode_module(bytes: [i32]) -> DecodeResult = do
           end
         end
         if decode_failed then
-          DecodeResult { code: fail_code, module: empty }
+          DecodeResult { code: fail_code, decoded_module: empty }
         else if offset != bytes.length() then
-          DecodeResult { code: emb_format(), module: empty }
+          DecodeResult { code: emb_format(), decoded_module: empty }
         else
           accept_decoded(exports, protos, empty)
         end

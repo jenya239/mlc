@@ -98,10 +98,10 @@ end
 
 fn interpreter_hit_instruction_limit(bytes: [i32], export_name: string, instruction_limit: i64) -> bool = do
   const decoded = decode_module(bytes)
-  const proto_index = export_proto_index(decoded.module, export_name)
+  const proto_index = export_proto_index(decoded.decoded_module, export_name)
   const result = run_program_with_args_limited(
     heap_new(),
-    decoded.module.protos,
+    decoded.decoded_module.protos,
     proto_index,
     no_values(),
     run_limits_new(instruction_limit, 0)

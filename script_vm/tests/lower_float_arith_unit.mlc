@@ -81,7 +81,7 @@ fn expect_float_add() -> i32 = do
   if decoded.code != emb_ok() then
     return report_failure("float_add decode")
   end
-  if !module_contains_opcode(decoded.module, float_add_opcode()) then
+  if !module_contains_opcode(decoded.decoded_module, float_add_opcode()) then
     return report_failure("float_add missing FADD")
   end
   const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())
@@ -119,7 +119,7 @@ fn expect_float_checked(source: string, opcode: i32, expected: f64, check_kind: 
   if decoded.code != emb_ok() then
     return report_failure(label + " decode")
   end
-  if !module_contains_opcode(decoded.module, opcode) then
+  if !module_contains_opcode(decoded.decoded_module, opcode) then
     return report_failure(label + " missing opcode")
   end
   const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())

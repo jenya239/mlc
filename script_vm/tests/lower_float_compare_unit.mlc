@@ -83,7 +83,7 @@ fn expect_float_compare(source: string, opcode: i32, expected: bool, label: stri
   if decoded.code != emb_ok() then
     return report_failure(label + " decode")
   end
-  if !module_contains_opcode(decoded.module, opcode) then
+  if !module_contains_opcode(decoded.decoded_module, opcode) then
     return report_failure(label + " missing FCMP")
   end
   const called = emb_call_export_bytes(lowered.bytes, "f", empty_arguments())

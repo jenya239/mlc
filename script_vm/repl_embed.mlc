@@ -78,22 +78,22 @@ fn answer_diagnostic(
     pending: pending
   }
 
-fn find_export_prototype(module: DecodedModule, export_name: string) -> i32 = do
+fn find_export_prototype(decoded_module: DecodedModule, export_name: string) -> i32 = do
   let mut index = 0
-  while index < module.exports.length() do
-    if module.exports[index].name == export_name then
-      return module.exports[index].proto_index
+  while index < decoded_module.exports.length() do
+    if decoded_module.exports[index].name == export_name then
+      return decoded_module.exports[index].proto_index
     end
     index = index + 1
   end
   0 - 1
 end
 
-fn verify_module(module: DecodedModule) -> i32 = do
+fn verify_module(decoded_module: DecodedModule) -> i32 = do
   let mut prototype_index = 0
   let mut failed = false
-  while prototype_index < module.protos.length() && !failed do
-    const prototype = module.protos[prototype_index]
+  while prototype_index < decoded_module.protos.length() && !failed do
+    const prototype = decoded_module.protos[prototype_index]
     const verified = verify_function(prototype.words, prototype.register_count, prototype.constants.length())
     const is_error = match verified {
       VerifyErr(_code, _at) => true,
@@ -118,7 +118,7 @@ fn integer_or_diagnostic(raw: i64, accepted_source: string, pending: string) -> 
   }
 
 fn run_entry(
-  module: DecodedModule,
+  decoded_module: DecodedModule,
   prototype_index: i32,
   instruction_limit: i64,
   heap_limit_objects: i32,
@@ -128,7 +128,7 @@ fn run_entry(
   let mut arguments: [Value] = []
   let ran = run_program_with_args_limited(
     heap_new(),
-    module.protos,
+    decoded_module.protos,
     prototype_index,
     arguments,
     run_limits_new(instruction_limit, heap_limit_objects)
@@ -150,15 +150,15 @@ fn execute_lowered(
   if decoded.code != emb_ok() then
     answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
   else
-    const verify_code = verify_module(decoded.module)
+    const verify_code = verify_module(decoded.decoded_module)
     if verify_code != emb_ok() then
       answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
     else
-      const prototype_index = find_export_prototype(decoded.module, "repl_entry")
+      const prototype_index = find_export_prototype(decoded.decoded_module, "repl_entry")
       if prototype_index < 0 then
         answer_diagnostic("repl_result_not_integer", 1, 1, accepted_source, pending)
       else
-        run_entry(decoded.module, prototype_index, instruction_limit, heap_limit_objects, accepted_source, pending)
+        run_entry(decoded.decoded_module, prototype_index, instruction_limit, heap_limit_objects, accepted_source, pending)
       end
     end
   end
