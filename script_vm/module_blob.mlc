@@ -194,10 +194,27 @@ fn export_proto_in_range(exports: [ModuleExport], proto_count: i32) -> bool = do
   let mut index = 0
   let mut accepted = true
   while index < exports.length() && accepted do
-    accepted = exports[index].proto_index < proto_count
+    const proto_index = exports[index].proto_index
+    accepted = proto_index >= 0 && proto_index < proto_count
     index = index + 1
   end
   accepted
+end
+
+fn export_names_unique(exports: [ModuleExport]) -> bool = do
+  let mut index = 0
+  let mut unique = true
+  while index < exports.length() && unique do
+    let mut earlier = 0
+    while earlier < index && unique do
+      if exports[earlier].name == exports[index].name then
+        unique = false
+      end
+      earlier = earlier + 1
+    end
+    index = index + 1
+  end
+  unique
 end
 
 fn register_count_in_range(register_count: i32) -> bool =
@@ -215,6 +232,8 @@ end
 
 fn limit_code(exports: [ModuleExport], protos: [FunctionProto]) -> i32 =
   if !export_proto_in_range(exports, protos.length()) then
+    emb_format()
+  else if !export_names_unique(exports) then
     emb_format()
   else if !proto_registers_in_range(protos) then
     emb_format()
