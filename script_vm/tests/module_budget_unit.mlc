@@ -1,0 +1,77 @@
+import { ModuleExport, decode_module, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import { emb_format } from '../embedding_codes'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm module_budget_unit] FAIL: " + label)
+  1
+end
+
+fn copy_bytes(bytes: [i32]) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < bytes.length() do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn append_u32_le(bytes: [i32], value: i32) -> [i32] = do
+  bytes.push(value & 255)
+  bytes.push((value >> 8) & 255)
+  bytes.push((value >> 16) & 255)
+  bytes.push((value >> 24) & 255)
+  bytes
+end
+
+fn write_u32_le(bytes: [i32], offset: i32, value: i32) -> [i32] = do
+  let mut copied = copy_bytes(bytes)
+  copied.set(offset, value & 255)
+  copied.set(offset + 1, (value >> 8) & 255)
+  copied.set(offset + 2, (value >> 16) & 255)
+  copied.set(offset + 3, (value >> 24) & 255)
+  copied
+end
+
+fn empty_module_bytes() -> [i32] = do
+  let mut exports: [ModuleExport] = []
+  let mut protos: [FunctionProto] = []
+  module_encode(exports, protos)
+end
+
+fn negative_export_count_bytes() -> [i32] =
+  write_u32_le(empty_module_bytes(), 8, 0 - 1)
+
+fn overflowing_word_count() -> i32 = 536870912
+
+fn overflowing_word_count_bytes() -> [i32] = do
+  let mut bytes = write_u32_le(empty_module_bytes(), 12, 1)
+  bytes = append_u32_le(bytes, 0)
+  append_u32_le(bytes, overflowing_word_count())
+end
+
+fn main() -> i32 = do
+  let mut failed = false
+  const negative = decode_module(negative_export_count_bytes())
+  if negative.code == emb_format() then
+    println("negative_export_count")
+  else
+    println("[script_vm module_budget_unit] FAIL: negative_export_count code=" + negative.code.to_string() + " exports=" + negative.decoded_module.exports.length().to_string())
+    failed = true
+  end
+  println("word_count_overflow probe word_count=" + overflowing_word_count().to_string())
+  const overflow = decode_module(overflowing_word_count_bytes())
+  if overflow.code == emb_format() then
+    println("word_count_overflow")
+  else
+    println("[script_vm module_budget_unit] FAIL: word_count_overflow code=" + overflow.code.to_string())
+    failed = true
+  end
+  if failed then
+    1
+  else
+    println("[script_vm] module_budget_unit ok")
+    0
+  end
+end
