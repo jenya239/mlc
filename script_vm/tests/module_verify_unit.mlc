@@ -1,11 +1,13 @@
 import {
   instruction_words_call,
+  instruction_words_jump,
   instruction_words_make_closure,
   instruction_words_return
 } from '../bytecode'
 import { VerifyOk, VerifyErr, VerifyResult } from '../verifier'
 import { verify_module, verify_err_arity } from '../module_verify'
 import { FunctionProto } from '../run_result'
+import { default_module_limits } from '../module_limits'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm module_verify_unit] FAIL: " + label)
@@ -49,13 +51,49 @@ fn mismatched_prototypes() -> [FunctionProto] = do
   prototypes
 end
 
+fn branch_words(branch_count: i32) -> [i32] = do
+  let mut words: [i32] = []
+  let mut index = 0
+  while index < branch_count do
+    words = append_words(words, instruction_words_jump(0))
+    index = index + 1
+  end
+  words
+end
+
+fn branch_prototypes(branch_count: i32) -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: branch_words(branch_count), constants: [], register_count: 0 })
+  prototypes
+end
+
+fn shown_code(result: VerifyResult) -> string = do
+  const code = error_code(result)
+  if code == "" then
+    "ok"
+  else
+    code
+  end
+end
+
 fn main() -> i32 = do
-  const result = verify_module(mismatched_prototypes())
-  if error_code(result) == verify_err_arity() then
-    println("cross_proto_arity")
+  const arity_result = verify_module(mismatched_prototypes())
+  if error_code(arity_result) != verify_err_arity() then
+    return fail("cross-proto arity code=" + error_code(arity_result))
+  end
+  println("cross_proto_arity")
+  const branch_count = 1025
+  const work = branch_count * branch_count
+  const limit = default_module_limits().maximum_verification_work
+  if work <= limit then
+    return fail("work fixture does not exceed limit work=" + work.to_string() + " limit=" + limit.to_string())
+  end
+  const heavy = verify_module(branch_prototypes(branch_count))
+  if error_code(heavy) == "work" then
+    println("verification_work_limit")
     println("[script_vm] module_verify_unit ok")
     0
   else
-    fail("cross-proto arity code=" + error_code(result))
+    fail("verification work unbounded code=" + shown_code(heavy) + " work=" + work.to_string() + " limit=" + limit.to_string())
   end
 end
