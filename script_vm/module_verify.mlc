@@ -22,14 +22,19 @@ import {
   instruction_opcode_get_prop,
   instruction_opcode_call,
   instruction_opcode_make_closure,
-  instruction_opcode_get_upval
+  instruction_opcode_get_upval,
+  instruction_opcode_jump,
+  instruction_opcode_jump_if_false
 } from './bytecode'
 import { instruction_opcode_length, instruction_opcode_make_string } from './bytecode_text'
 import { is_float_binary_opcode, is_float_compare_opcode } from './exec_float'
+import { default_module_limits } from './module_limits'
 
 export fn verify_err_arity() -> string = "arity"
 
 export fn verify_err_proto_index() -> string = "proto_index"
+
+export fn verify_err_work() -> string = "work"
 
 fn unknown_prototype() -> i32 = 0 - 1
 
@@ -167,11 +172,65 @@ fn prototypes_consistent(prototypes: [FunctionProto]) -> VerifyResult = do
   result
 end
 
-export fn verify_module(prototypes: [FunctionProto]) -> VerifyResult = do
-  const accepted = functions_accepted(prototypes)
-  if is_verify_ok(accepted) then
-    prototypes_consistent(prototypes)
+fn primary_indexes(words: [i32]) -> [i32] = do
+  let mut primaries: [i32] = []
+  let mut word_index = 0
+  while word_index < words.length() do
+    const span = instruction_word_span(words, word_index)
+    if span <= 0 then
+      word_index = words.length()
+    else
+      primaries.push(word_index)
+      word_index = word_index + span
+    end
+  end
+  primaries
+end
+
+fn branch_work(prototypes: [FunctionProto], limit: i32) -> VerifyResult = do
+  let mut prototype_index = 0
+  let mut work = 0
+  let mut code = ""
+  let mut at = 0
+  while prototype_index < prototypes.length() && code == "" do
+    const words = prototypes[prototype_index].words
+    const primaries = primary_indexes(words)
+    let mut primary_index = 0
+    while primary_index < primaries.length() && code == "" do
+      const primary = primaries[primary_index]
+      const decoded = instruction_decode(Instruction { word: words[primary] })
+      if decoded.opcode == instruction_opcode_jump() || decoded.opcode == instruction_opcode_jump_if_false() then
+        let mut compared = 0
+        while compared < primaries.length() && code == "" do
+          work = work + 1
+          if work > limit then
+            code = verify_err_work()
+            at = primary
+          end
+          compared = compared + 1
+        end
+      end
+      primary_index = primary_index + 1
+    end
+    prototype_index = prototype_index + 1
+  end
+  if code == "" then
+    VerifyOk
   else
-    accepted
+    VerifyErr(code, at)
+  end
+end
+
+export fn verify_module(prototypes: [FunctionProto]) -> VerifyResult = do
+  const budget = branch_work(prototypes, default_module_limits().maximum_verification_work)
+  if is_verify_ok(budget) then
+    const accepted = functions_accepted(prototypes)
+    if is_verify_ok(accepted) then
+      prototypes_consistent(prototypes)
+    else
+      accepted
+    end
+  else
+    budget
   end
 end
