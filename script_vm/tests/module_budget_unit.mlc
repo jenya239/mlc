@@ -66,6 +66,41 @@ fn limits_with_blob_bytes(byte_limit: i32) -> ModuleLimits = do
   }
 end
 
+fn drop_last_byte(bytes: [i32]) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < bytes.length() - 1 do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn repeated_name(length: i32) -> string = do
+  let mut name = ""
+  let mut index = 0
+  while index < length do
+    name = name + "a"
+    index = index + 1
+  end
+  name
+end
+
+fn one_export_bytes(name: string) -> [i32] = do
+  let mut words: [i32] = []
+  let mut constants: [Value] = []
+  let mut protos: [FunctionProto] = []
+  protos.push(FunctionProto { words: words, constants: constants, register_count: 0 })
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: name, proto_index: 0 })
+  module_encode(exports, protos)
+end
+
+fn truncated_module_bytes() -> [i32] = drop_last_byte(one_export_bytes("run"))
+
+fn huge_name_bytes() -> [i32] =
+  one_export_bytes(repeated_name(default_module_limits().maximum_name_bytes + 1))
+
 fn duplicate_export_bytes() -> [i32] = do
   let mut words: [i32] = []
   let mut constants: [Value] = []
@@ -121,6 +156,21 @@ fn main() -> i32 = do
     println("duplicate_export")
   else
     println("[script_vm module_budget_unit] FAIL: duplicate export accepted code=" + duplicate.code.to_string() + " count=" + duplicate.decoded_module.exports.length().to_string() + " name=" + duplicate.decoded_module.exports[0].name)
+    failed = true
+  end
+  const truncated = decode_module(truncated_module_bytes())
+  if truncated.code == emb_format() then
+    println("truncated_blob")
+  else
+    println("[script_vm module_budget_unit] FAIL: truncated blob accepted code=" + truncated.code.to_string() + " bytes=" + truncated_module_bytes().length().to_string())
+    failed = true
+  end
+  const name_limit = default_module_limits().maximum_name_bytes
+  const huge = decode_module(huge_name_bytes())
+  if huge.code == emb_format() then
+    println("huge_name")
+  else
+    println("[script_vm module_budget_unit] FAIL: huge name accepted code=" + huge.code.to_string() + " name_bytes=" + huge.decoded_module.exports[0].name.byte_size().to_string() + " limit=" + name_limit.to_string())
     failed = true
   end
   if failed then

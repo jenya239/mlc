@@ -1,8 +1,8 @@
-current_step: 320
+current_step: 321
 status: ready
-last_result: done step 320: B3.ns_per_call 1410 против базы 3201, S95.sum_call_ns 12144 против 11879, оба в допуске +20%
-last_verify: ruby scripts/run_script_vm_float_bench.rb => exit 0, float_ns_per_insn=50, B1=43, B3=1410; ruby scripts/run_script_vm_call_overhead.rb => exit 0, trivial=3069, sum=12144, fixed_share_x100=25
-next_step: 321
+last_result: done step 321: truncated blob уже emb_format; имя 4097 байт при лимите 4096 принимается, code=0
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/module_budget_unit.mlc => exit 1; truncated_blob; FAIL huge name accepted code=0 name_bytes=4097 limit=4096; gate не вызывался
+next_step: 322
 consult_count: 0
 consult_response:
 consult_verdict:
