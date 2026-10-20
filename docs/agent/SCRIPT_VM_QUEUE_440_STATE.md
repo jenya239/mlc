@@ -1,8 +1,8 @@
-current_step: 388
+current_step: 389
 status: ready
-last_result: done step 388: rejected batch даёт DamageKind None; hover_damage_min_us=144
-last_verify: ruby scripts/run_script_vm_gate.rb script_frame_damage_unit => script_vm_gate ok units=1; bash scripts/run_textui_hover_bench.sh => hover_damage_min_us=144 budget_us=1000, [textui hover] ok; ruby scripts/run_script_vm_queue200_gate.rb => unit script_frame_damage_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
-next_step: 389
+last_result: done step 389: gallery и chat дренируют service по отдельности; общего script_frame_pump нет
+last_verify: ruby scripts/run_script_vm_unit.rb misc/textui/test/script_frame_pump_unit.mlc => EXIT:1; FAIL: service drain is not shared gallery=gallery_inline chat=chat_inline pump=script_frame_pump; gate не вызывался
+next_step: 390
 consult_count: 0
 consult_response:
 consult_verdict:
