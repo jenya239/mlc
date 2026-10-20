@@ -1,0 +1,168 @@
+import { Value, ValueHeapRef, value_decode } from './value'
+
+export type ReplBinding = { name: string, raw: i64 }
+
+export type BindingSplit = { matched: bool, name: string, initializer: string, tail: string }
+
+fn character_is_blank(character: string) -> bool =
+  character == " " || character == "\n" || character == "\t" || character == "\r"
+
+fn character_is_name(character: string) -> bool =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".index_of(character) >= 0
+
+fn skip_blanks(text: string, start: i32) -> i32 = do
+  let mut index = start
+  while index < text.length() && character_is_blank(text.substring(index, 1)) do
+    index = index + 1
+  end
+  index
+end
+
+fn mutable_let_prefix() -> string = "let mut "
+
+fn text_starts_with(text: string, prefix: string) -> bool =
+  text.length() >= prefix.length() && text.substring(0, prefix.length()) == prefix
+
+fn read_binding_name(text: string, start: i32) -> string = do
+  let mut end_index = start
+  while end_index < text.length() && character_is_name(text.substring(end_index, 1)) do
+    end_index = end_index + 1
+  end
+  text.substring(start, end_index - start)
+end
+
+fn closing_bracket(text: string, open_index: i32) -> i32 = do
+  let mut index = open_index + 1
+  let mut depth = 1
+  while index < text.length() && depth > 0 do
+    let character = text.substring(index, 1)
+    if character == "[" then
+      depth = depth + 1
+    else if character == "]" then
+      depth = depth - 1
+    end
+    index = index + 1
+  end
+  if depth == 0 then
+    index
+  else
+    0 - 1
+  end
+end
+
+fn unmatched_binding() -> BindingSplit =
+  BindingSplit { matched: false, name: "", initializer: "", tail: "" }
+
+export fn split_mutable_array_let(text: string) -> BindingSplit = do
+  let prefix = mutable_let_prefix()
+  if !text_starts_with(text, prefix) then
+    unmatched_binding()
+  else
+    let name_start = prefix.length()
+    let name = read_binding_name(text, name_start)
+    let after_name = skip_blanks(text, name_start + name.length())
+    if name.length() == 0 || after_name >= text.length() || text.substring(after_name, 1) != "=" then
+      unmatched_binding()
+    else
+      let initializer_start = skip_blanks(text, after_name + 1)
+      if initializer_start >= text.length() || text.substring(initializer_start, 1) != "[" then
+        unmatched_binding()
+      else
+        let initializer_end = closing_bracket(text, initializer_start)
+        if initializer_end < 0 then
+          unmatched_binding()
+        else
+          let tail_start = skip_blanks(text, initializer_end)
+          BindingSplit {
+            matched: true,
+            name: name,
+            initializer: text.substring(initializer_start, initializer_end - initializer_start),
+            tail: text.substring(tail_start, text.length() - tail_start)
+          }
+        end
+      end
+    end
+  end
+end
+
+fn name_occurs(text: string, name: string) -> bool = do
+  let mut index = 0
+  let mut found = false
+  while index < text.length() && !found do
+    if index + name.length() <= text.length() && text.substring(index, name.length()) == name then
+      let previous_ok = index == 0 || !character_is_name(text.substring(index - 1, 1))
+      let next_index = index + name.length()
+      let next_ok = next_index >= text.length() || !character_is_name(text.substring(next_index, 1))
+      if previous_ok && next_ok then
+        found = true
+      end
+    end
+    index = index + 1
+  end
+  found
+end
+
+export fn mentioned_bindings(bindings: [ReplBinding], text: string) -> [ReplBinding] = do
+  let mut mentioned: [ReplBinding] = []
+  let mut index = 0
+  while index < bindings.length() do
+    if name_occurs(text, bindings[index].name) then
+      mentioned.push(bindings[index])
+    end
+    index = index + 1
+  end
+  mentioned
+end
+
+export fn parameter_text(bindings: [ReplBinding]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < bindings.length() do
+    if index > 0 then
+      text = text + ", "
+    end
+    text = text + "mut " + bindings[index].name + ": i32"
+    index = index + 1
+  end
+  text
+end
+
+export fn binding_raws(bindings: [ReplBinding]) -> [i64] = do
+  let mut raws: [i64] = []
+  let mut index = 0
+  while index < bindings.length() do
+    raws.push(bindings[index].raw)
+    index = index + 1
+  end
+  raws
+end
+
+export fn remember_binding(bindings: [ReplBinding], name: string, raw: i64) -> [ReplBinding] = do
+  let mut kept: [ReplBinding] = []
+  let mut index = 0
+  let mut replaced = false
+  while index < bindings.length() do
+    if bindings[index].name == name then
+      kept.push(ReplBinding { name: name, raw: raw })
+      replaced = true
+    else
+      kept.push(bindings[index])
+    end
+    index = index + 1
+  end
+  if !replaced then
+    kept.push(ReplBinding { name: name, raw: raw })
+  end
+  kept
+end
+
+export fn raw_is_heap_ref(raw: i64) -> bool =
+  match value_decode(Value { raw: raw }) {
+    ValueHeapRef(_object_id) => true,
+    _ => false
+  }
+
+export fn empty_repl_bindings() -> [ReplBinding] = do
+  let mut bindings: [ReplBinding] = []
+  bindings
+end

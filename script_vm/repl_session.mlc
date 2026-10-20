@@ -7,13 +7,41 @@ import {
   ReplDiagnostic
 } from './repl_answer'
 import { repl_balance_incomplete } from './repl_balance'
+import { emb_ok } from './embedding_codes'
+import {
+  BindingSplit,
+  ReplBinding,
+  binding_raws,
+  empty_repl_bindings,
+  mentioned_bindings,
+  parameter_text,
+  raw_is_heap_ref,
+  remember_binding,
+  split_mutable_array_let
+} from './repl_bindings'
+import { heap_root_push } from './heap_collect'
+import { Heap, heap_type_array } from './heap_types'
+import { instance_call_export, instance_load_module, script_instance_new, ScriptInstance } from './instance'
 import { lower_source } from './lower/lower_module'
-import { emb_call_export_bytes, emb_ok } from './embedding'
-import { Value, ValueInt32, value_decode } from './value'
+import { Value, ValueHeapRef, ValueInt32, value_decode, value_encode } from './value'
+
+// accepted_source is declaration text. Heap and rooted values live on ScriptInstance.
+// Those bindings are not actor durable state (§15.2).
 
 export type ReplSession = {
   accepted_source: string,
-  pending: string
+  pending: string,
+  instance: ScriptInstance,
+  bindings: [ReplBinding]
+}
+
+type EntryRaw = {
+  code: i32,
+  raw: i64,
+  lower_failed: bool,
+  diagnostic_code: string,
+  line: i32,
+  column: i32
 }
 
 fn character_is_blank(character: string) -> bool =
@@ -132,27 +160,106 @@ end
 fn expression_program(accepted_source: string, expression: string) -> string =
   joined_source(accepted_source, "export fn repl_entry() -> i32 = do " + expression + " end")
 
-fn evaluate_lowered_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
-  let lowered = lower_source(expression_program(session.accepted_source, text))
-  if lowered.diagnostics.length() != 0 then
-    session.pending = ""
-    let diagnostic = lowered.diagnostics[0]
-    ReplDiagnostic(diagnostic.code, diagnostic.line, diagnostic.column)
+fn entry_failed(code: string, line: i32, column: i32) -> EntryRaw =
+  EntryRaw { code: 0, raw: 0, lower_failed: true, diagnostic_code: code, line: line, column: column }
+
+fn entry_ran(code: i32, raw: i64) -> EntryRaw =
+  EntryRaw { code: code, raw: raw, lower_failed: false, diagnostic_code: "", line: 0, column: 0 }
+
+fn expression_source(session: ref mut ReplSession, text: string) -> string = do
+  let mentioned = mentioned_bindings(session.bindings, text)
+  if mentioned.length() == 0 then
+    expression_program(session.accepted_source, text)
   else
-    let called = emb_call_export_bytes(lowered.bytes, "repl_entry", empty_arguments())
+    joined_source(
+      session.accepted_source,
+      "export fn repl_entry(" + parameter_text(mentioned) + ") -> i32 = do " + text + " end"
+    )
+  end
+end
+
+fn run_entry_raw(session: ref mut ReplSession, source: string, argument_raws: [i64]) -> EntryRaw = do
+  let lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    let diagnostic = lowered.diagnostics[0]
     session.pending = ""
-    if called.code == emb_ok() then
-      integer_answer(called.raw)
+    entry_failed(diagnostic.code, diagnostic.line, diagnostic.column)
+  else
+    let loaded = instance_load_module(session.instance, lowered.bytes)
+    session.instance = loaded.instance
+    session.pending = ""
+    if loaded.code != emb_ok() then
+      entry_ran(loaded.code, 0)
     else
-      ReplDiagnostic("repl_result_not_integer", 1, 1)
+      let module_index = loaded.instance.loaded_modules.length() - 1
+      let called = instance_call_export(loaded.instance, module_index, "repl_entry", argument_raws)
+      session.instance = called.instance
+      entry_ran(called.code, called.raw)
     end
+  end
+end
+
+fn evaluate_lowered_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
+  let mentioned = mentioned_bindings(session.bindings, text)
+  let ran = run_entry_raw(session, expression_source(session, text), binding_raws(mentioned))
+  if ran.lower_failed then
+    ReplDiagnostic(ran.diagnostic_code, ran.line, ran.column)
+  else if ran.code != emb_ok() then
+    ReplDiagnostic("repl_result_not_integer", 1, 1)
+  else
+    integer_answer(ran.raw)
+  end
+end
+
+fn newest_array_raw(heap: Heap, slots_before: i32) -> i64 = do
+  let mut index = heap.slots.length() - 1
+  let mut found = 0 - 1
+  while index >= slots_before && found < 0 do
+    if heap.slots[index].live && heap.slots[index].header.type_id == heap_type_array() then
+      found = index
+    end
+    index = index - 1
+  end
+  if found < 0 then
+    0
+  else
+    value_encode(ValueHeapRef(found)).raw
+  end
+end
+
+fn root_instance_raw(instance: ScriptInstance, raw: i64) -> ScriptInstance = do
+  let value = Value { raw: raw }
+  let mut rooted_values = instance.rooted_values
+  rooted_values.push(value)
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: heap_root_push(instance.heap, value),
+    rooted_values: rooted_values
+  }
+end
+
+fn bind_mutable_array(session: ref mut ReplSession, text: string, split: BindingSplit) -> ReplAnswer = do
+  let slots_before = session.instance.heap.slots.length()
+  let answer = evaluate_lowered_expression(session, text)
+  let array_raw = newest_array_raw(session.instance.heap, slots_before)
+  if !raw_is_heap_ref(array_raw) then
+    answer
+  else
+    session.instance = root_instance_raw(session.instance, array_raw)
+    session.bindings = remember_binding(session.bindings, split.name, array_raw)
+    answer
   end
 end
 
 fn evaluate_expression(session: ref mut ReplSession, text: string) -> ReplAnswer = do
   let literal_length = quoted_literal_length(text)
+  let split = split_mutable_array_let(text)
   if literal_length >= 0 then
     finish_string_literal(session, literal_length)
+  else if split.matched then
+    bind_mutable_array(session, text, split)
   else
     evaluate_lowered_expression(session, text)
   end
@@ -180,7 +287,12 @@ fn append_pending(pending: string, chunk: string) -> string =
   end
 
 export fn repl_session_new() -> ReplSession =
-  ReplSession { accepted_source: "", pending: "" }
+  ReplSession {
+    accepted_source: "",
+    pending: "",
+    instance: script_instance_new(),
+    bindings: empty_repl_bindings()
+  }
 
 export fn repl_session_submit(session: ref mut ReplSession, chunk: string) -> ReplAnswer = do
   let combined = append_pending(session.pending, chunk)

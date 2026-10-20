@@ -37,6 +37,7 @@ registered_units = [
   ["module_constant_policy_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_constant_policy_unit.mlc"]],
   ["loaded_module_cache_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/loaded_module_cache_unit.mlc"]],
   ["persistent_instance_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/persistent_instance_unit.mlc"]],
+  ["repl_persistent_memory_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_persistent_memory_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],
   ["module_encode", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_encode_unit.mlc"]],

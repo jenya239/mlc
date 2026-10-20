@@ -1,5 +1,9 @@
 import { Value, ValueInt32, value_decode } from './value'
 import { heap_new } from './heap'
+
+// accepted_source is declaration text, not actor durable state (§15.2).
+// The C boundary round-trips only that text, so this entry cannot hold a ScriptInstance.
+// ReplSession is the session that keeps one heap across inputs.
 import { RunOk, RunErr, run_program_with_args_limited } from './interpreter'
 import { run_limits_new } from './run_result'
 import { verify_function, VerifyOk, VerifyErr } from './verifier'
