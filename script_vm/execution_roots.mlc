@@ -1,0 +1,115 @@
+import { Value } from './value'
+import { VmState, vm_state_live_roots, vm_state_new } from './vm_state'
+
+export type ExecutionRootSet = {
+  persistent_state: [Value],
+  execution_states: [VmState],
+  rooted_host_results: [Value],
+  pending_import_arguments: [Value]
+}
+
+fn empty_values() -> [Value] = do
+  let mut values: [Value] = []
+  values
+end
+
+fn empty_states() -> [VmState] = do
+  let mut states: [VmState] = []
+  states
+end
+
+fn append_values(destination: [Value], source: [Value]) -> [Value] = do
+  let mut next = destination
+  let mut index = 0
+  while index < source.length() do
+    next.push(source[index])
+    index = index + 1
+  end
+  next
+end
+
+fn state_snapshot(state: ref mut VmState) -> VmState = do
+  let mut snapshot = vm_state_new()
+  snapshot.stack = state.stack
+  snapshot.stack_top = state.stack_top
+  snapshot.frame_proto = state.frame_proto
+  snapshot.frame_program_counter = state.frame_program_counter
+  snapshot.frame_base = state.frame_base
+  snapshot.frame_closure = state.frame_closure
+  snapshot.frame_return_register = state.frame_return_register
+  snapshot.frame_depth = state.frame_depth
+  snapshot.instruction_count = state.instruction_count
+  snapshot.instruction_limit = state.instruction_limit
+  snapshot.heap_limit_objects = state.heap_limit_objects
+  snapshot.error_code = state.error_code
+  snapshot.error_at = state.error_at
+  snapshot.return_value = state.return_value
+  snapshot
+end
+
+fn append_execution_roots(states: [VmState], roots: [Value]) -> [Value] = do
+  let mut next = roots
+  let mut index = 0
+  while index < states.length() do
+    let mut state = states[index]
+    next = append_values(next, vm_state_live_roots(state))
+    index = index + 1
+  end
+  next
+end
+
+export fn execution_root_set_new() -> ExecutionRootSet =
+  ExecutionRootSet {
+    persistent_state: empty_values(),
+    execution_states: empty_states(),
+    rooted_host_results: empty_values(),
+    pending_import_arguments: empty_values()
+  }
+
+export fn execution_root_set_with_persistent(root_set: ExecutionRootSet, persistent_state: [Value]) -> ExecutionRootSet =
+  ExecutionRootSet {
+    persistent_state: persistent_state,
+    execution_states: root_set.execution_states,
+    rooted_host_results: root_set.rooted_host_results,
+    pending_import_arguments: root_set.pending_import_arguments
+  }
+
+export fn execution_root_set_with_host_results(root_set: ExecutionRootSet, rooted_host_results: [Value]) -> ExecutionRootSet =
+  ExecutionRootSet {
+    persistent_state: root_set.persistent_state,
+    execution_states: root_set.execution_states,
+    rooted_host_results: rooted_host_results,
+    pending_import_arguments: root_set.pending_import_arguments
+  }
+
+export fn execution_root_set_with_import_arguments(root_set: ExecutionRootSet, pending_import_arguments: [Value]) -> ExecutionRootSet =
+  ExecutionRootSet {
+    persistent_state: root_set.persistent_state,
+    execution_states: root_set.execution_states,
+    rooted_host_results: root_set.rooted_host_results,
+    pending_import_arguments: pending_import_arguments
+  }
+
+export fn execution_root_set_with_executions(root_set: ExecutionRootSet, execution_states: [VmState]) -> ExecutionRootSet =
+  ExecutionRootSet {
+    persistent_state: root_set.persistent_state,
+    execution_states: execution_states,
+    rooted_host_results: root_set.rooted_host_results,
+    pending_import_arguments: root_set.pending_import_arguments
+  }
+
+export fn execution_root_values(root_set: ExecutionRootSet) -> [Value] = do
+  let mut roots = empty_values()
+  roots = append_values(roots, root_set.persistent_state)
+  roots = append_execution_roots(root_set.execution_states, roots)
+  roots = append_values(roots, root_set.rooted_host_results)
+  append_values(roots, root_set.pending_import_arguments)
+end
+
+export fn execution_roots_from_active(state: ref mut VmState) -> [Value] = do
+  let mut execution_states: [VmState] = []
+  execution_states.push(state_snapshot(state))
+  let mut root_set = execution_root_set_new()
+  root_set = execution_root_set_with_executions(root_set, execution_states)
+  execution_root_values(root_set)
+end

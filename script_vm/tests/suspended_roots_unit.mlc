@@ -2,12 +2,13 @@ import { emb_ok } from '../embedding_codes'
 import { Cancelled, Failed, Finished, Ready, Running, Waiting, Yielded } from '../execution'
 import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
 import { heap_in_place_collect } from '../heap_collect'
+import { instance_execution_roots, script_instance_new } from '../instance'
 import { Heap, heap_live_object_count, heap_new, heap_object_type_id, heap_type_record } from '../heap'
 import { lower_source } from '../lower/lower_module'
 import { decode_module } from '../module_blob'
 import { FunctionProto, run_limits_new } from '../run_result'
 import { Value, ValueInt32, value_decode } from '../value'
-import { vm_state_frame_proto, vm_state_live_roots, vm_state_register } from '../vm_state'
+import { VmState, vm_state_frame_proto, vm_state_register } from '../vm_state'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm suspended_roots_unit] FAIL: " + label)
@@ -157,10 +158,16 @@ fn session_with_heap(session: SliceSession, heap: Heap) -> SliceSession = do
   next
 end
 
-fn collect_without_suspended_roots(collector: SliceSession) -> Heap = do
+fn collect_with_instance_roots(suspended: SliceSession, collector: SliceSession) -> Heap = do
   let mut heap = collector.heap
-  let mut state = collector.state
-  heap_in_place_collect(heap, vm_state_live_roots(state))
+  let mut execution_states: [VmState] = []
+  execution_states.push(suspended.state)
+  execution_states.push(collector.state)
+  let mut pending_import_arguments: [Value] = []
+  heap_in_place_collect(
+    heap,
+    instance_execution_roots(script_instance_new(), execution_states, pending_import_arguments)
+  )
   heap
 end
 
@@ -192,7 +199,7 @@ fn check_suspended_survives_collect() -> i32 = do
     run_limits_new(unlimited_limits(), 0)
   )
   collector = run_until_terminal(collector)
-  let collected_heap = collect_without_suspended_roots(collector)
+  let collected_heap = collect_with_instance_roots(suspended, collector)
   suspended = session_with_heap(suspended, collected_heap)
   let record_alive = session_has_record(suspended)
   suspended = run_until_terminal(suspended)

@@ -11,6 +11,14 @@ import {
   emb_overflow,
   emb_div_zero
 } from './embedding_codes'
+import {
+  execution_root_set_new,
+  execution_root_set_with_executions,
+  execution_root_set_with_host_results,
+  execution_root_set_with_import_arguments,
+  execution_root_set_with_persistent,
+  execution_root_values
+} from './execution_roots'
 import { heap_root_push } from './heap_collect'
 import { Heap, heap_new } from './heap_types'
 import { RunOk, RunErr, run_program_with_args_limited } from './interpreter'
@@ -27,6 +35,7 @@ import {
   run_err_div_zero
 } from './run_result'
 import { Value, ValueHeapRef, value_decode } from './value'
+import { VmState } from './vm_state'
 
 export type ExportHandle = {
   owner_identity: i64,
@@ -298,6 +307,19 @@ export fn instance_release_value(instance: ScriptInstance, handle: ValueHandle) 
       code: emb_ok()
     }
   end
+
+export fn instance_execution_roots(
+  instance: ScriptInstance,
+  execution_states: [VmState],
+  pending_import_arguments: [Value]
+) -> [Value] = do
+  let mut root_set = execution_root_set_new()
+  root_set = execution_root_set_with_persistent(root_set, instance.rooted_values)
+  root_set = execution_root_set_with_host_results(root_set, instance.rooted_values)
+  root_set = execution_root_set_with_executions(root_set, execution_states)
+  root_set = execution_root_set_with_import_arguments(root_set, pending_import_arguments)
+  execution_root_values(root_set)
+end
 
 export fn instance_call_handles(
   instance: ScriptInstance,

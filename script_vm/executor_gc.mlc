@@ -1,6 +1,7 @@
+import { execution_roots_from_active } from './execution_roots'
 import { Heap } from './heap_types'
 import { heap_in_place_collect } from './heap_collect'
-import { VmState, vm_state_live_roots } from './vm_state'
+import { VmState } from './vm_state'
 import { run_err_heap_limit } from './run_result'
 import { executor_step_continue, executor_fail } from './executor_step'
 
@@ -17,7 +18,7 @@ end
 
 fn collect_when_over_heap_limit(state: ref mut VmState, heap: ref mut Heap) -> unit = do
   if heap.live_count >= state.heap_limit_objects then
-    heap_in_place_collect(heap, vm_state_live_roots(state))
+    heap_in_place_collect(heap, execution_roots_from_active(state))
   end
 end
 
@@ -34,7 +35,7 @@ fn collect_for_heap_limit(state: ref mut VmState, heap: ref mut Heap, primary: i
 end
 
 fn raise_after_collect(state: ref mut VmState, heap: ref mut Heap) -> unit = do
-  heap_in_place_collect(heap, vm_state_live_roots(state))
+  heap_in_place_collect(heap, execution_roots_from_active(state))
   heap.gc_threshold = next_gc_threshold(heap.live_count)
 end
 
