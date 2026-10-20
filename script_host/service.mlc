@@ -1,0 +1,84 @@
+export type ServiceAdmission = ServiceAccepted | ServiceBusy
+
+export type ServicePop = ServicePopEmpty | ServicePopCommand(i32)
+
+export type ServiceQueue = {
+  commands: [i32],
+  head: i32,
+  count: i32,
+  capacity: i32,
+  owner_identity: i64
+}
+
+fn empty_commands() -> [i32] = do
+  let mut commands: [i32] = []
+  commands
+end
+
+fn non_negative_capacity(capacity: i32) -> i32 = do
+  if capacity <= 0 then
+    return 0
+  end
+  capacity
+end
+
+fn fill_slots(commands: ref mut [i32], capacity: i32) -> unit = do
+  let mut index = 0
+  while index < capacity do
+    commands.push(0)
+    index = index + 1
+  end
+end
+
+export fn service_queue_new(capacity: i32, owner_identity: i64) -> ServiceQueue = do
+  let stored_capacity = non_negative_capacity(capacity)
+  let mut commands = empty_commands()
+  fill_slots(commands, stored_capacity)
+  ServiceQueue {
+    commands: commands,
+    head: 0,
+    count: 0,
+    capacity: stored_capacity,
+    owner_identity: owner_identity
+  }
+end
+
+export fn service_queue_count(queue: ServiceQueue) -> i32 = queue.count
+
+export fn service_queue_capacity(queue: ServiceQueue) -> i32 = queue.capacity
+
+export fn service_queue_owner_identity(queue: ServiceQueue) -> i64 = queue.owner_identity
+
+fn slot_index(head: i32, offset: i32, capacity: i32) -> i32 = do
+  let index = head + offset
+  if index >= capacity then
+    index - capacity
+  else
+    index
+  end
+end
+
+export fn service_try_push(queue: ref mut ServiceQueue, command_code: i32) -> ServiceAdmission = do
+  if queue.count >= queue.capacity then
+    ServiceBusy
+  else
+    let index = slot_index(queue.head, queue.count, queue.capacity)
+    queue.commands.set(index, command_code)
+    queue.count = queue.count + 1
+    ServiceAccepted
+  end
+end
+
+export fn service_try_pop(queue: ref mut ServiceQueue) -> ServicePop = do
+  if queue.count <= 0 then
+    ServicePopEmpty
+  else
+    let command_code = queue.commands[queue.head]
+    queue.head = queue.head + 1
+    if queue.head >= queue.capacity then
+      queue.head = 0
+    end
+    queue.count = queue.count - 1
+    ServicePopCommand(command_code)
+  end
+end

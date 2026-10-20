@@ -1,7 +1,20 @@
+import {
+  ServiceAdmission,
+  ServiceAccepted,
+  ServiceBusy,
+  ServicePop,
+  ServicePopCommand,
+  ServicePopEmpty,
+  service_queue_new,
+  service_queue_count,
+  service_queue_capacity,
+  service_queue_owner_identity,
+  service_try_push,
+  service_try_pop
+} from '../service'
+
 extern fn host_monotonic_microseconds() -> i32 =
   "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
-
-type ServiceAdmission = ServiceAccepted | ServiceBusy
 
 fn fail(message: string) -> i32 = do
   println("[script_vm service_queue_unit] FAIL: " + message)
@@ -10,39 +23,74 @@ end
 
 fn queue_capacity() -> i32 = 8
 
+fn owner_identity() -> i64 = 1
+
+fn immediate_limit_microseconds() -> i32 = 50000
+
 fn admission_is_busy(admission: ServiceAdmission) -> bool =
   match admission {
     ServiceBusy => true,
     ServiceAccepted => false
   }
 
-fn host_push_without_busy(depth: i32, capacity: i32) -> ServiceAdmission = do
-  if depth < capacity then
-    ServiceAccepted
-  else
-    ServiceAccepted
-  end
-end
-
-fn main() -> i32 = do
+fn fill_queue(queue: ref mut ServiceQueue) -> i32 = do
   let mut depth = 0
-  while depth < queue_capacity() do
-    let admission = host_push_without_busy(depth, queue_capacity())
+  while depth < service_queue_capacity(queue) do
+    let admission = service_try_push(queue, depth + 1)
     if admission_is_busy(admission) then
       return fail("queue returned Busy before capacity depth=" + depth.to_string())
     end
     depth = depth + 1
   end
-  let started_microseconds = host_monotonic_microseconds()
-  let admission = host_push_without_busy(depth, queue_capacity())
-  let elapsed_microseconds = host_monotonic_microseconds() - started_microseconds
-  if admission_is_busy(admission) && elapsed_microseconds >= 0 then
-    println("[script_vm] service_queue_unit ok")
-    return 0
+  0
+end
+
+fn pop_command(pop: ServicePop) -> i32 =
+  match pop {
+    ServicePopCommand(command_code) => command_code,
+    ServicePopEmpty => 0
+  }
+
+fn main() -> i32 = do
+  let mut queue = service_queue_new(queue_capacity(), owner_identity())
+  if service_queue_owner_identity(queue) != owner_identity() then
+    return fail("owner identity missing")
   end
-  fail(
-    "full queue accepted instead of Busy depth=" + depth.to_string()
-      + " capacity=" + queue_capacity().to_string()
-      + " elapsed_microseconds=" + elapsed_microseconds.to_string()
-  )
+  let filled = fill_queue(queue)
+  if filled != 0 then
+    return filled
+  end
+  if service_queue_count(queue) != queue_capacity() then
+    return fail("depth after fill count=" + service_queue_count(queue).to_string())
+  end
+  let started_microseconds = host_monotonic_microseconds()
+  let admission = service_try_push(queue, queue_capacity() + 1)
+  let elapsed_microseconds = host_monotonic_microseconds() - started_microseconds
+  if !admission_is_busy(admission) then
+    return fail(
+      "full queue accepted instead of Busy depth=" + service_queue_count(queue).to_string()
+        + " capacity=" + queue_capacity().to_string()
+        + " elapsed_microseconds=" + elapsed_microseconds.to_string()
+    )
+  end
+  if elapsed_microseconds < 0 || elapsed_microseconds >= immediate_limit_microseconds() then
+    return fail(
+      "full queue Busy was not immediate elapsed_microseconds=" + elapsed_microseconds.to_string()
+        + " limit=" + immediate_limit_microseconds().to_string()
+    )
+  end
+  let popped = service_try_pop(queue)
+  if pop_command(popped) != 1 || service_queue_count(queue) != queue_capacity() - 1 then
+    return fail("pop did not free the oldest command")
+  end
+  let refilled = service_try_push(queue, queue_capacity() + 1)
+  if admission_is_busy(refilled) || service_queue_count(queue) != queue_capacity() then
+    return fail("push after pop did not accept")
+  end
+  let again = service_try_push(queue, queue_capacity() + 2)
+  if !admission_is_busy(again) then
+    return fail("queue accepted past capacity after refill")
+  end
+  println("[script_vm] service_queue_unit ok")
+  0
 end
