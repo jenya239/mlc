@@ -1,4 +1,4 @@
-import { Value, ValueNil, value_encode } from './value'
+import { Value, ValueNil, value_byte_size, value_encode } from './value'
 
 export type ObjectHeader = {
   type_id: i32,
@@ -34,6 +34,8 @@ export fn heap_type_array() -> i32 = 2
 export fn heap_type_record() -> i32 = 3
 export fn heap_type_closure() -> i32 = 4
 export fn heap_type_string() -> i32 = 5
+
+export fn element_arena_value_bytes() -> i32 = value_byte_size()
 
 fn initial_gc_threshold() -> i32 = 1024
 

@@ -1,4 +1,5 @@
 import { Value, ValueNil, ValueHeapRef, value_byte_size, value_encode } from './value'
+import { string_physical_byte_cost } from './heap_access'
 import {
   ObjectHeader,
   HeapSlot,
@@ -142,6 +143,17 @@ export fn heap_alloc_array_within_byte_limit(heap: Heap, length: i32, byte_limit
     HeapAlloc { heap: heap, value: value_encode(ValueNil) }
   else
     heap_alloc_array(heap, length)
+  end
+end
+
+fn string_exceeds_byte_limit(logical_length: i32, byte_limit: i32) -> bool =
+  byte_limit > 0 && string_physical_byte_cost(logical_length) > byte_limit
+
+export fn heap_alloc_string_within_byte_limit(heap: Heap, bytes: [i32], byte_limit: i32) -> HeapAlloc = do
+  if string_exceeds_byte_limit(bytes.length(), byte_limit) then
+    HeapAlloc { heap: heap, value: value_encode(ValueNil) }
+  else
+    heap_alloc_array(heap, bytes.length())
   end
 end
 

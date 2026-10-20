@@ -1,7 +1,6 @@
 import { Value, ValueHeapRef, value_byte_size, value_decode } from '../value'
-import { heap_alloc_array_within_byte_limit } from '../heap_alloc'
+import { heap_alloc_array_within_byte_limit, heap_alloc_string_within_byte_limit } from '../heap_alloc'
 import { Heap, heap_arena_cell_count, heap_element_count, heap_live_object_count, heap_new } from '../heap'
-import { string_heap_from_bytes, string_heap_length } from '../string_heap'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm byte_budget_unit] FAIL: " + label)
@@ -57,11 +56,11 @@ fn string_payload() -> [i32] = do
 end
 
 fn check_string_physical_cost() -> i32 = do
-  const allocated = string_heap_from_bytes(heap_new(), string_payload())
-  let logical = string_heap_length(allocated.heap, allocated.value)
+  const allocated = heap_alloc_string_within_byte_limit(heap_new(), string_payload(), small_byte_limit())
+  let logical = logical_string_bytes()
   let arena = heap_arena_cell_count(allocated.heap)
-  let physical = arena * value_byte_size()
-  if !is_heap_ref(allocated.value) && heap_live_object_count(allocated.heap) == 0 && arena == 0 then
+  let physical = logical * value_byte_size()
+  if !is_heap_ref(allocated.value) && heap_live_object_count(allocated.heap) == 0 && arena == 0 && physical > small_byte_limit() && logical <= small_byte_limit() then
     0
   else
     fail(

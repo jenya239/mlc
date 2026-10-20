@@ -1,5 +1,5 @@
 import { Value, ValueNil, ValueHeapRef, value_encode, value_decode } from './value'
-import { HeapSlot, Heap, heap_type_cell, heap_type_closure } from './heap_types'
+import { HeapSlot, Heap, element_arena_value_bytes, heap_type_cell, heap_type_closure } from './heap_types'
 
 fn encoded_nil() -> Value = value_encode(ValueNil)
 
@@ -154,4 +154,11 @@ end
 
 export fn heap_in_place_root_clear(heap: ref mut Heap) -> unit = do
   heap.roots = empty_values()
+end
+
+export fn string_physical_byte_cost(logical_length: i32) -> i32 = do
+  if logical_length <= 0 then
+    return 0
+  end
+  logical_length * element_arena_value_bytes()
 end
