@@ -1,8 +1,8 @@
-current_step: 336
+current_step: 337
 status: ready
-last_result: done step 336: dump_instance не существует; vm_dump_unit вызывает её на инстансе с тремя объектами кучи и не собирается
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/vm_dump_unit.mlc => exit 1, error: file not found: script_vm/vm_dump.mlc; unit не зарегистрирован; run_script_vm_gate.rb не вызывался
-next_step: 337
+last_result: done step 337: dump_instance печатает identity, модули, корни и слоты Heap в фиксированном порядке
+last_verify: ruby scripts/run_script_vm_gate.rb vm_dump_unit persistent_instance_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился); file size ok; unit vm_dump_unit ok
+next_step: 338
 consult_count: 0
 consult_response:
 consult_verdict:

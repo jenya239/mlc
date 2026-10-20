@@ -1,0 +1,166 @@
+import {
+  Heap,
+  HeapSlot,
+  heap_type_cell,
+  heap_type_array,
+  heap_type_record,
+  heap_type_closure,
+  heap_type_string
+} from './heap_types'
+import { ScriptInstance } from './instance'
+import { LoadedModule } from './loaded_module'
+import { FunctionProto } from './run_result'
+import {
+  Value,
+  ValueNil,
+  ValueBool,
+  ValueInt32,
+  ValueFloat64,
+  ValueHeapRef,
+  value_decode
+} from './value'
+
+fn dump_bit_text(flag: bool) -> string =
+  if flag then "1" else "0"
+
+fn dump_value_text(value: Value) -> string =
+  match value_decode(value) {
+    ValueNil => "nil 0",
+    ValueBool(flag) => "bool " + dump_bit_text(flag),
+    ValueInt32(number) => "int32 " + number.to_string(),
+    ValueFloat64(number) => "float64 " + number.to_string(),
+    ValueHeapRef(object_id) => "heap " + object_id.to_string()
+  }
+
+fn dump_type_name(type_id: i32) -> string =
+  if type_id == heap_type_cell() then
+    "cell"
+  else if type_id == heap_type_array() then
+    "array"
+  else if type_id == heap_type_record() then
+    "record"
+  else if type_id == heap_type_closure() then
+    "closure"
+  else if type_id == heap_type_string() then
+    "string"
+  else
+    type_id.to_string()
+  end
+
+fn dump_marked(slot: HeapSlot) -> bool =
+  (slot.header.gc_flags & 1) != 0
+
+fn dump_object_line(index: i32, slot: HeapSlot) -> string =
+  "object " + index.to_string()
+    + " type " + dump_type_name(slot.header.type_id)
+    + " live " + dump_bit_text(slot.live)
+    + " mark " + dump_bit_text(dump_marked(slot))
+    + " flags " + slot.header.object_flags.to_string()
+    + " shape " + slot.header.shape_or_meta.to_string()
+    + " elements " + slot.element_start.to_string() + " " + slot.element_count.to_string()
+    + " class " + slot.size_class.to_string()
+    + " child " + dump_value_text(slot.child)
+    + "\n"
+
+fn dump_object_lines(heap: Heap) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < heap.slots.length() do
+    text = text + dump_object_line(index, heap.slots[index])
+    index = index + 1
+  end
+  text
+end
+
+fn dump_export_lines(loaded: LoadedModule) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < loaded.exports.length() do
+    text = text
+      + "export " + loaded.exports[index].name
+      + " proto " + loaded.exports[index].proto_index.to_string()
+      + "\n"
+    index = index + 1
+  end
+  text
+end
+
+fn dump_prototype_lines(prototypes: [FunctionProto]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < prototypes.length() do
+    text = text
+      + "proto " + index.to_string()
+      + " registers " + prototypes[index].register_count.to_string()
+      + " words " + prototypes[index].words.length().to_string()
+      + " constants " + prototypes[index].constants.length().to_string()
+      + "\n"
+    index = index + 1
+  end
+  text
+end
+
+fn dump_module_lines(instance: ScriptInstance) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < instance.loaded_modules.length() do
+    const loaded = instance.loaded_modules[index]
+    text = text
+      + "module " + index.to_string()
+      + " bytes " + loaded.bytes.length().to_string()
+      + "\n"
+      + dump_export_lines(loaded)
+      + dump_prototype_lines(loaded.protos)
+    index = index + 1
+  end
+  text
+end
+
+fn dump_value_is_heap(value: Value) -> bool =
+  match value_decode(value) {
+    ValueHeapRef(_object_id) => true,
+    _ => false
+  }
+
+fn dump_root_lines(instance: ScriptInstance) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < instance.rooted_values.length() do
+    const value = instance.rooted_values[index]
+    text = text
+      + "root " + index.to_string()
+      + " " + dump_value_text(value)
+      + " owner " + instance.identity.to_string()
+      + " generation " + instance.incarnation.to_string()
+      + " rooted " + dump_bit_text(dump_value_is_heap(value))
+      + "\n"
+    index = index + 1
+  end
+  text
+end
+
+fn dump_heap_root_lines(heap: Heap) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < heap.roots.length() do
+    text = text + "heap_root " + index.to_string() + " " + dump_value_text(heap.roots[index]) + "\n"
+    index = index + 1
+  end
+  text
+end
+
+fn dump_counter_lines(heap: Heap) -> string =
+  "live_count " + heap.live_count.to_string() + "\n"
+    + "write_barrier_hits " + heap.write_barrier_hits.to_string() + "\n"
+    + "gc_threshold " + heap.gc_threshold.to_string() + "\n"
+    + "free_object_count " + heap.free_object_count.to_string() + "\n"
+    + "arena_cells " + heap.element_arena.length().to_string() + "\n"
+
+export fn dump_instance(instance: ScriptInstance) -> string =
+  "instance identity " + instance.identity.to_string()
+    + " incarnation " + instance.incarnation.to_string() + "\n"
+    + dump_module_lines(instance)
+    + dump_root_lines(instance)
+    + dump_heap_root_lines(instance.heap)
+    + dump_object_lines(instance.heap)
+    + dump_counter_lines(instance.heap)
