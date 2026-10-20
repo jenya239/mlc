@@ -1,24 +1,36 @@
+import {
+  chat_service_drain,
+  gallery_service_drain,
+  script_frame_phase_order,
+  script_frame_pump_drain,
+  script_frame_pump_name,
+  script_frame_pump_new,
+  script_frame_pump_owner_is_ui_thread
+} from '../script_events'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm script_frame_pump_unit] FAIL: " + message)
   1
 end
 
-fn gallery_service_drain() -> string = "gallery_inline"
-
-fn chat_service_drain() -> string = "chat_inline"
-
-fn shared_pump_name() -> string = "script_frame_pump"
-
 fn main() -> i32 = do
   let gallery = gallery_service_drain()
   let chat = chat_service_drain()
-  if gallery == chat && gallery == shared_pump_name() then
+  let pump = script_frame_pump_drain(script_frame_pump_new())
+  let phases = script_frame_phase_order()
+  if !script_frame_pump_owner_is_ui_thread() || !pump.owner_is_ui_thread then
+    return fail("submit left ui thread")
+  end
+  if phases.length() != 9 || phases[0] != "drain" || phases[7] != "submit" then
+    return fail("frame pump phase order is not §8.4")
+  end
+  if gallery == chat && gallery == script_frame_pump_name() && pump.last_drain == script_frame_pump_name() then
     println("[script_vm] script_frame_pump_unit ok")
     return 0
   end
   fail(
     "service drain is not shared gallery=" + gallery
       + " chat=" + chat
-      + " pump=" + shared_pump_name()
+      + " pump=" + script_frame_pump_name()
   )
 end

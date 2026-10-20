@@ -57,6 +57,7 @@ import { file_clipboard_publish } from './file_clipboard_os'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { music_host, music_playing, music_release } from './music_host'
 import { chat_frames } from './chat_host'
+import { script_frame_pump_drain, script_frame_pump_new } from './script_events'
 fn application_reload_status() -> i32 = 75
 
 fn remember_window() -> bool = do
@@ -102,9 +103,7 @@ fn main() -> i32 = do
   println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload, Pick, Dense. Esc to quit")
 
   let mut max_frames = 0
-  if has("MLC_TEXTUI_BENCH") then
-    max_frames = 8
-  end
+  if has("MLC_TEXTUI_BENCH") then max_frames = 8 end
 
   let mut state = ui_state_new()
   const started = gallery_start(store, session)
@@ -143,7 +142,9 @@ fn main() -> i32 = do
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut right_was_down = false
+  let mut pump = script_frame_pump_new()
   while glfw_gl_context_should_close() == 0 do
+    pump = script_frame_pump_drain(pump)
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input(frame_wait_seconds(effect_mode, image_preview_playing(), music_playing()))
     end

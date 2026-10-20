@@ -1,8 +1,8 @@
-current_step: 389
+current_step: 390
 status: ready
-last_result: done step 389: gallery и chat дренируют service по отдельности; общего script_frame_pump нет
-last_verify: ruby scripts/run_script_vm_unit.rb misc/textui/test/script_frame_pump_unit.mlc => EXIT:1; FAIL: service drain is not shared gallery=gallery_inline chat=chat_inline pump=script_frame_pump; gate не вызывался
-next_step: 390
+last_result: done step 390: gallery дренирует через script_frame_pump на UI-потоке; submit остаётся в app.mlc
+last_verify: ruby scripts/run_script_vm_gate.rb script_frame_pump_unit => script_vm_gate ok units=1; ruby scripts/run_textui_file_size.rb => textui file size: ok; bash scripts/run_textui_hover_bench.sh => hover_damage_min_us=162 budget_us=1000, [textui hover] ok; ruby scripts/run_script_vm_queue200_gate.rb => unit script_frame_pump_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
+next_step: 391
 consult_count: 0
 consult_response:
 consult_verdict:

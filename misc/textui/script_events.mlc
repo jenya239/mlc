@@ -1,0 +1,35 @@
+export type ScriptFramePump = {
+  last_drain: string,
+  owner_is_ui_thread: bool
+}
+
+export fn script_frame_pump_name() -> string = "script_frame_pump"
+
+export fn gallery_service_drain() -> string = script_frame_pump_name()
+
+export fn chat_service_drain() -> string = script_frame_pump_name()
+
+export fn script_frame_pump_owner_is_ui_thread() -> bool = true
+
+export fn script_frame_pump_new() -> ScriptFramePump =
+  ScriptFramePump { last_drain: "", owner_is_ui_thread: true }
+
+export fn script_frame_pump_drain(pump: ScriptFramePump) -> ScriptFramePump =
+  ScriptFramePump {
+    last_drain: script_frame_pump_name(),
+    owner_is_ui_thread: script_frame_pump_owner_is_ui_thread()
+  }
+
+export fn script_frame_phase_order() -> [string] = do
+  let mut phases: [string] = []
+  phases.push("drain")
+  phases.push("apply_batches")
+  phases.push("poll_input")
+  phases.push("update_widgets")
+  phases.push("enqueue_events")
+  phases.push("damage")
+  phases.push("layout")
+  phases.push("submit")
+  phases.push("present")
+  phases
+end
