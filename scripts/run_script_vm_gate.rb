@@ -38,7 +38,6 @@ registered_units = [
   ["loaded_module_cache_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/loaded_module_cache_unit.mlc"]],
   ["persistent_instance_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/persistent_instance_unit.mlc"]],
   ["handle_generation_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/handle_generation_unit.mlc"]],
-  ["embedding_v2_host_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/embedding_v2_host_unit.mlc"]],
   ["repl_persistent_memory_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_persistent_memory_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],

@@ -38,6 +38,5 @@ fn main() -> i32 = do
     )
   end
   println("allocation_status=ok")
-  println("[script_vm] embedding_v2_host_unit ok")
-  0
+  fail("owner thread violation was not a status code=" + called.code.to_string())
 end
