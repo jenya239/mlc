@@ -167,13 +167,14 @@ export type WidgetStore = {
   dialog: WidgetId,
   place_x: i32,
   place_y: i32,
-  placed: bool
+  placed: bool,
+  rebuild_generation: i32
 }
 
 export fn widget_store_empty() -> WidgetStore = do
   let mut nodes: [WidgetNode] = []
   return widget_store_make(
-    nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false
+    nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false, 0
   )
 end
 
@@ -231,7 +232,7 @@ export fn widget_store_append(
   end
   return widget_store_make(
     next_nodes, next_root, store.overlay, store.about, store.menu, store.dialog,
-    store.place_x, store.place_y, store.placed
+    store.place_x, store.place_y, store.placed, store.rebuild_generation
   )
 end
 
@@ -340,7 +341,8 @@ fn widget_store_make(
   dialog: WidgetId,
   place_x: i32,
   place_y: i32,
-  placed: bool
+  placed: bool,
+  rebuild_generation: i32
 ) -> WidgetStore =
   WidgetStore {
     nodes: nodes,
@@ -351,44 +353,32 @@ fn widget_store_make(
     dialog: dialog,
     place_x: place_x,
     place_y: place_y,
-    placed: placed
+    placed: placed,
+    rebuild_generation: rebuild_generation
   }
 
 export fn widget_store_keep(nodes: [WidgetNode], store: WidgetStore) -> WidgetStore =
-  widget_store_make(
-    nodes, store.root, store.overlay, store.about, store.menu, store.dialog,
-    store.place_x, store.place_y, store.placed
-  )
+  widget_store_make(nodes, store.root, store.overlay, store.about, store.menu, store.dialog, store.place_x, store.place_y, store.placed, store.rebuild_generation)
 
 export fn widget_store_with_overlay(store: WidgetStore, overlay: WidgetId) -> WidgetStore =
-  widget_store_make(
-    store.nodes, store.root, overlay, store.about, store.menu, store.dialog,
-    store.place_x, store.place_y, store.placed
-  )
+  widget_store_make(store.nodes, store.root, overlay, store.about, store.menu, store.dialog, store.place_x, store.place_y, store.placed, store.rebuild_generation)
 
 export fn widget_store_with_about(store: WidgetStore, about: WidgetId) -> WidgetStore =
-  widget_store_make(
-    store.nodes, store.root, store.overlay, about, store.menu, store.dialog,
-    store.place_x, store.place_y, store.placed
-  )
+  widget_store_make(store.nodes, store.root, store.overlay, about, store.menu, store.dialog, store.place_x, store.place_y, store.placed, store.rebuild_generation)
 
 export fn widget_store_with_menu(store: WidgetStore, menu: WidgetId) -> WidgetStore =
-  widget_store_make(
-    store.nodes, store.root, store.overlay, store.about, menu, store.dialog,
-    store.place_x, store.place_y, store.placed
-  )
+  widget_store_make(store.nodes, store.root, store.overlay, store.about, menu, store.dialog, store.place_x, store.place_y, store.placed, store.rebuild_generation)
 
 export fn widget_store_with_dialog(store: WidgetStore, dialog: WidgetId) -> WidgetStore =
-  widget_store_make(
-    store.nodes, store.root, store.overlay, store.about, store.menu, dialog,
-    store.place_x, store.place_y, store.placed
-  )
+  widget_store_make(store.nodes, store.root, store.overlay, store.about, store.menu, dialog, store.place_x, store.place_y, store.placed, store.rebuild_generation)
 
 export fn widget_store_with_place(store: WidgetStore, place_x: i32, place_y: i32, placed: bool) -> WidgetStore =
-  widget_store_make(
-    store.nodes, store.root, store.overlay, store.about, store.menu, store.dialog,
-    place_x, place_y, placed
-  )
+  widget_store_make(store.nodes, store.root, store.overlay, store.about, store.menu, store.dialog, place_x, place_y, placed, store.rebuild_generation)
+
+export fn widget_store_rebuild(store: WidgetStore) -> WidgetStore = do
+  let mut nodes: [WidgetNode] = []
+  widget_store_make(nodes, widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), widget_id_none(), 0, 0, false, store.rebuild_generation + 1)
+end
 
 export fn widget_store_set_visible(store: WidgetStore, id: WidgetId, visible: bool) -> WidgetStore = do
   if id.index < 0 || id.index >= store.nodes.length() then

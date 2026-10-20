@@ -1,39 +1,78 @@
-import { WidgetId, widget_id_none } from '../../misc/textui/store'
-
-type ExternalReference = RawWidgetIndex(i32) | ResourceHandle(i32)
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty,
+  widget_store_rebuild
+} from '../../misc/textui/store'
+import {
+  ResourceHit,
+  ResourceLookup,
+  ResourceMiss,
+  resource_table_bind,
+  resource_table_lookup,
+  resource_table_new
+} from '../resources'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm resource_table_unit] FAIL: " + message)
   1
 end
 
-fn existing_widget() -> WidgetId =
-  WidgetId { index: 3 }
+fn owner_principal() -> i64 = 7
 
-fn external_reference(widget: WidgetId) -> ExternalReference =
-  RawWidgetIndex(widget.index)
+fn subtree_identity() -> i64 = 11
 
-fn reference_is_handle(reference: ExternalReference) -> bool =
-  match reference {
-    ResourceHandle(_generation) => true,
-    RawWidgetIndex(_index) => false
-  }
+fn widget_count() -> i32 = 4
 
-fn reference_index(reference: ExternalReference) -> i32 =
-  match reference {
-    RawWidgetIndex(index) => index,
-    ResourceHandle(_generation) => 0
+fn store_with_widgets() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  let mut index = 0
+  while index < widget_count() do
+    store = widget_store_add_label(store, widget_id_none(), LabelData { text: "row" }, OverflowVisible, 0, true)
+    index = index + 1
+  end
+  store
+end
+
+fn bound_entry_status(lookup: ResourceLookup, widget_index: i32) -> i32 =
+  match lookup {
+    ResourceMiss => fail("resource handle absent widget_index=" + widget_index.to_string()),
+    ResourceHit(entry) => do
+      if !entry.live || entry.widget_id.index != widget_index || entry.owner_principal != owner_principal() || entry.subtree_identity != subtree_identity() then
+        fail("bound entry does not describe the widget")
+      else
+        0
+      end
+    end
   }
 
 fn main() -> i32 = do
-  let widget = existing_widget()
-  if widget.index == widget_id_none().index then
-    return fail("fixture widget is none")
+  let mut store = store_with_widgets()
+  let widget = WidgetId { index: widget_count() - 1 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  if handle.slot == widget.index then
+    return fail("resource handle is the raw widget index")
   end
-  let reference = external_reference(widget)
-  if reference_is_handle(reference) && reference_index(reference) != widget.index then
-    println("[script_vm] resource_table_unit ok")
-    return 0
+  let described = bound_entry_status(resource_table_lookup(table, store, handle), widget.index)
+  if described != 0 then
+    return described
   end
-  fail("resource handle absent widget_index=" + widget.index.to_string())
+  store = widget_store_rebuild(store)
+  let after = resource_table_lookup(table, store, handle)
+  let stayed = match after {
+    ResourceHit(_entry) => fail("handle stayed live after rebuild widget_index=" + widget.index.to_string()),
+    ResourceMiss => 0
+  }
+  if stayed != 0 then
+    return stayed
+  end
+  if table.entries[handle.slot].live then
+    return fail("mapping stayed live after rebuild widget_index=" + widget.index.to_string())
+  end
+  println("[script_vm] resource_table_unit ok")
+  0
 end

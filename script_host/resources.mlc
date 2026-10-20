@@ -1,0 +1,94 @@
+import { WidgetId, WidgetStore } from '../misc/textui/store'
+
+export type UiResourceEntry = {
+  generation: i32,
+  owner_principal: i64,
+  subtree_identity: i64,
+  widget_id: WidgetId,
+  revision: i32,
+  live: bool
+}
+
+export type ResourceHandle = {
+  slot: i32,
+  generation: i32
+}
+
+export type ResourceTable = {
+  entries: [UiResourceEntry],
+  store_generation: i32
+}
+
+export type ResourceLookup = ResourceMiss | ResourceHit(UiResourceEntry)
+
+fn empty_entries() -> [UiResourceEntry] = do
+  let mut entries: [UiResourceEntry] = []
+  entries
+end
+
+export fn resource_table_new() -> ResourceTable = do
+  ResourceTable { entries: empty_entries(), store_generation: 0 }
+end
+
+fn entry_not_live(entry: UiResourceEntry) -> UiResourceEntry = do
+  UiResourceEntry {
+    generation: entry.generation,
+    owner_principal: entry.owner_principal,
+    subtree_identity: entry.subtree_identity,
+    widget_id: entry.widget_id,
+    revision: entry.revision,
+    live: false
+  }
+end
+
+export fn resource_table_sync(table: ref mut ResourceTable, store: WidgetStore) -> unit = do
+  if table.store_generation != store.rebuild_generation then
+    let mut entries = table.entries
+    let mut index = 0
+    while index < entries.length() do
+      entries.set(index, entry_not_live(entries[index]))
+      index = index + 1
+    end
+    table.entries = entries
+    table.store_generation = store.rebuild_generation
+  end
+end
+
+export fn resource_table_bind(
+  table: ref mut ResourceTable,
+  store: WidgetStore,
+  widget_id: WidgetId,
+  owner_principal: i64,
+  subtree_identity: i64
+) -> ResourceHandle = do
+  resource_table_sync(table, store)
+  let handle = ResourceHandle { slot: table.entries.length(), generation: store.rebuild_generation }
+  let entry = UiResourceEntry {
+    generation: store.rebuild_generation,
+    owner_principal: owner_principal,
+    subtree_identity: subtree_identity,
+    widget_id: widget_id,
+    revision: 0,
+    live: true
+  }
+  let mut entries = table.entries
+  entries.push(entry)
+  table.entries = entries
+  handle
+end
+
+export fn resource_table_lookup(
+  table: ref mut ResourceTable,
+  store: WidgetStore,
+  handle: ResourceHandle
+) -> ResourceLookup = do
+  resource_table_sync(table, store)
+  if handle.slot < 0 || handle.slot >= table.entries.length() then
+    return ResourceMiss
+  end
+  let entry = table.entries[handle.slot]
+  if !entry.live || entry.generation != handle.generation then
+    return ResourceMiss
+  end
+  ResourceHit(entry)
+end
