@@ -1,5 +1,10 @@
 import { Value, ValueHeapRef, value_byte_size, value_decode } from '../value'
-import { heap_alloc_array_within_byte_limit, heap_alloc_string_within_byte_limit } from '../heap_alloc'
+import {
+  heap_alloc_array_within_byte_limit,
+  heap_alloc_cell,
+  heap_alloc_closure,
+  heap_alloc_string_within_byte_limit
+} from '../heap_alloc'
 import { Heap, heap_arena_cell_count, heap_element_count, heap_live_object_count, heap_new } from '../heap'
 
 fn fail(label: string) -> i32 = do
@@ -14,6 +19,10 @@ fn small_byte_limit() -> i32 = 64
 fn one_element() -> i32 = 1
 
 fn logical_string_bytes() -> i32 = 16
+
+fn closure_slot_count() -> i32 = 1
+
+fn upvalue_cell_count() -> i32 = 1
 
 fn is_heap_ref(value: Value) -> bool =
   match value_decode(value) {
@@ -73,6 +82,27 @@ fn check_string_physical_cost() -> i32 = do
   end
 end
 
+fn check_closure_upvalue_rollback() -> i32 = do
+  let closure_bytes = closure_slot_count() * value_byte_size()
+  let cell_bytes = upvalue_cell_count() * value_byte_size()
+  let byte_limit = closure_bytes
+  let closure_allocation = heap_alloc_closure(heap_new(), 0, closure_slot_count())
+  let cell_allocation = heap_alloc_cell(closure_allocation.heap)
+  let live = heap_live_object_count(cell_allocation.heap)
+  let arena = heap_arena_cell_count(cell_allocation.heap)
+  if live == 0 && arena == 0 && !is_heap_ref(closure_allocation.value) && !is_heap_ref(cell_allocation.value) && closure_bytes + cell_bytes > byte_limit then
+    0
+  else
+    fail(
+      "closure partial live=" + live.to_string()
+        + " arena=" + arena.to_string()
+        + " closure_bytes=" + closure_bytes.to_string()
+        + " cell_bytes=" + cell_bytes.to_string()
+        + " limit=" + byte_limit.to_string()
+    )
+  end
+end
+
 fn check_small_array_fits() -> i32 = do
   const allocated = heap_alloc_array_within_byte_limit(heap_new(), one_element(), small_byte_limit())
   if is_heap_ref(allocated.value) && heap_element_count(allocated.heap, allocated.value) == one_element() then
@@ -93,6 +123,9 @@ fn main() -> i32 = do
   end
   if status == 0 then
     status = check_string_physical_cost()
+  end
+  if status == 0 then
+    status = check_closure_upvalue_rollback()
   end
   if status != 0 then
     return status
