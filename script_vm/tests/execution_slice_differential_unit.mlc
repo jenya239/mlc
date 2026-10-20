@@ -1,0 +1,148 @@
+import { emb_ok } from '../embedding_codes'
+import { Execution, Finished, Yielded } from '../execution'
+import { run_execution } from '../executor'
+import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
+import { heap_new } from '../heap_types'
+import { lower_source } from '../lower/lower_module'
+import { ModuleExport, decode_module } from '../module_blob'
+import { FunctionProto, run_limits_new } from '../run_result'
+import { Value, ValueInt32, value_decode } from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm execution_slice_differential_unit] FAIL: " + label)
+  1
+end
+
+fn slice_quantum() -> i32 = 10
+
+fn resume_limit() -> i32 = 100000
+
+fn fixture_count() -> i32 = 6
+
+fn unlimited_limits() -> i64 = 0
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn integer_result(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn is_yielded(session: SliceSession) -> bool =
+  match session.execution.status {
+    Yielded => true,
+    _ => false
+  }
+
+fn fixture_name(index: i32) -> string =
+  if index == 0 then
+    "sum_loop"
+  else if index == 1 then
+    "fib"
+  else if index == 2 then
+    "gcd"
+  else if index == 3 then
+    "point"
+  else if index == 4 then
+    "nested_loops"
+  else
+    "logic_not"
+  end
+
+fn fixture_source(index: i32) -> string =
+  if index == 0 then
+    "fn sum_through(limit: i32) -> i32 = do\nlet mut total = 0\nlet mut index = 1\nwhile index <= limit do\ntotal = total + index\nindex = index + 1\nend\ntotal\nend\nexport fn run() -> i32 = sum_through(10)\n"
+  else if index == 1 then
+    "fn fibonacci(value: i32) -> i32 = if value <= 1 then value else fibonacci(value - 1) + fibonacci(value - 2) end\nexport fn run() -> i32 = fibonacci(10)\n"
+  else if index == 2 then
+    "fn greatest_common_divisor(left: i32, right: i32) -> i32 = if right == 0 then left else greatest_common_divisor(right, left - (left / right) * right) end\nexport fn run() -> i32 = greatest_common_divisor(48, 18)\n"
+  else if index == 3 then
+    "type Point = { horizontal: i32, vertical: i32 }\nfn make_point(left: i32, right: i32) -> Point = Point { horizontal: left, vertical: right }\nfn sum_point(point: Point) -> i32 = point.horizontal + point.vertical\nexport fn run() -> i32 = sum_point(make_point(3, 4))\n"
+  else if index == 4 then
+    "fn count_inner(limit: i32) -> i32 = do\nlet mut total = 0\nlet mut index = 0\nwhile index < limit do\ntotal = total + 1\nindex = index + 1\nend\ntotal\nend\nfn count_pairs(limit: i32) -> i32 = do\nlet mut total = 0\nlet mut index = 0\nwhile index < limit do\ntotal = total + count_inner(limit)\nindex = index + 1\nend\ntotal\nend\nexport fn run() -> i32 = count_pairs(10)\n"
+  else
+    "fn choose(flag: bool) -> i32 = if !flag then 2 else 3 end\nexport fn run() -> i32 = choose(false)\n"
+  end
+
+fn export_proto_index(exports: [ModuleExport]) -> i32 = do
+  let mut index = 0
+  let mut found = 0 - 1
+  while index < exports.length() && found < 0 do
+    if exports[index].name == "run" then
+      found = exports[index].proto_index
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn sliced_execution(prototypes: [FunctionProto], entry_index: i32) -> Execution = do
+  let limits = run_limits_new(unlimited_limits(), 0)
+  let mut session = slice_session_new(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  let mut slices = 0
+  session = run_slice(session, slice_quantum())
+  while is_yielded(session) && slices < resume_limit() do
+    session = run_slice(session, slice_quantum())
+    slices = slices + 1
+  end
+  session.execution
+end
+
+fn compare_finished(name: string, uninterrupted_value: i32, sliced: Execution) -> string =
+  match sliced.status {
+    Finished =>
+      if integer_result(sliced.value) == uninterrupted_value then
+        ""
+      else
+        "fixture=" + name + " uninterrupted=" + uninterrupted_value.to_string() + " sliced=" + integer_result(sliced.value).to_string()
+      end,
+    _ =>
+      "fixture=" + name + " uninterrupted=" + uninterrupted_value.to_string() + " sliced_code=" + sliced.error_code + " at=" + sliced.error_at.to_string()
+  }
+
+fn compare_fixture(name: string, source: string) -> string = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return "fixture=" + name + " lower=" + lowered.diagnostics[0].code
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return "fixture=" + name + " decode=" + decoded.code.to_string()
+  end
+  const prototypes = decoded.decoded_module.protos
+  const entry_index = export_proto_index(decoded.decoded_module.exports)
+  if entry_index < 0 then
+    return "fixture=" + name + " export=missing"
+  end
+  const limits = run_limits_new(unlimited_limits(), 0)
+  const uninterrupted = run_execution(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  match uninterrupted.status {
+    Finished => compare_finished(name, integer_result(uninterrupted.value), sliced_execution(prototypes, entry_index)),
+    _ => "fixture=" + name + " uninterrupted_code=" + uninterrupted.error_code
+  }
+end
+
+fn main() -> i32 = do
+  let mut report = ""
+  let mut index = 0
+  while index < fixture_count() do
+    let piece = compare_fixture(fixture_name(index), fixture_source(index))
+    if piece != "" then
+      if report != "" then
+        report = report + " | "
+      end
+      report = report + piece
+    end
+    index = index + 1
+  end
+  if report == "" then
+    println("[script_vm] execution_slice_differential_unit ok")
+    0
+  else
+    fail(report)
+  end
+end
