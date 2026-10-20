@@ -1,0 +1,79 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_node_with_kind,
+  widget_store_add_label,
+  widget_store_empty,
+  widget_store_keep
+} from '../store'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm script_transaction_unit] FAIL: " + message)
+  1
+end
+
+fn original_first() -> string = "first"
+
+fn original_second() -> string = "second"
+
+fn staged_first() -> string = "staged-first"
+
+fn staged_second() -> string = "staged-second"
+
+fn missing_widget() -> WidgetId =
+  WidgetId { index: 99 }
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn apply_set_label_text(store: WidgetStore, widget: WidgetId, text: string) -> WidgetStore = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return store
+  end
+  let node = store.nodes[widget.index]
+  let mut nodes = store.nodes
+  nodes.set(widget.index, widget_node_with_kind(node, KindLabel(LabelData { text: text })))
+  widget_store_keep(nodes, store)
+end
+
+fn main() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_first() }, OverflowVisible, 0, true)
+  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_second() }, OverflowVisible, 0, true)
+  let first = WidgetId { index: 0 }
+  let second = WidgetId { index: 1 }
+  store = apply_set_label_text(store, first, staged_first())
+  store = apply_set_label_text(store, missing_widget(), staged_second())
+  let first_text = store_text(store, first)
+  let second_text = store_text(store, second)
+  if first_text == original_first() && second_text == original_second() then
+    println("[script_vm] script_transaction_unit ok")
+    return 0
+  end
+  fail(
+    "partial batch visible first=" + first_text
+      + " second=" + second_text
+      + " expected_first=" + original_first()
+      + " expected_second=" + original_second()
+  )
+end
