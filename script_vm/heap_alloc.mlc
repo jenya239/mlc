@@ -1,4 +1,4 @@
-import { Value, ValueNil, ValueHeapRef, value_encode } from './value'
+import { Value, ValueNil, ValueHeapRef, value_byte_size, value_encode } from './value'
 import {
   ObjectHeader,
   HeapSlot,
@@ -121,10 +121,28 @@ export fn heap_alloc_cell(heap: Heap) -> HeapAlloc = do
   HeapAlloc { heap: next, value: value }
 end
 
+fn array_reservation_bytes(length: i32) -> i32 = do
+  if length <= 0 then
+    return 0
+  end
+  length * value_byte_size()
+end
+
+fn array_exceeds_byte_limit(length: i32, byte_limit: i32) -> bool =
+  byte_limit > 0 && array_reservation_bytes(length) > byte_limit
+
 export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc = do
   let mut next = heap
   const value = heap_in_place_alloc_array(next, length)
   HeapAlloc { heap: next, value: value }
+end
+
+export fn heap_alloc_array_within_byte_limit(heap: Heap, length: i32, byte_limit: i32) -> HeapAlloc = do
+  if array_exceeds_byte_limit(length, byte_limit) then
+    HeapAlloc { heap: heap, value: value_encode(ValueNil) }
+  else
+    heap_alloc_array(heap, length)
+  end
 end
 
 export fn heap_alloc_record(heap: Heap, field_count: i32) -> HeapAlloc = do
