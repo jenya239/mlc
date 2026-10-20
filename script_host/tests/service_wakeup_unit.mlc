@@ -1,0 +1,110 @@
+import {
+  ServiceAdmission,
+  ServiceAccepted,
+  ServiceBusy,
+  service_queue_new,
+  service_queue_count,
+  service_try_push
+} from '../service'
+
+type WakeupDouble = {
+  queue_observed: bool,
+  completion_pushed: bool,
+  wakeup_hint: bool,
+  wait_armed: bool,
+  saw_wakeup: bool
+}
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm service_wakeup_unit] FAIL: " + message)
+  1
+end
+
+fn queue_capacity() -> i32 = 8
+
+fn owner_identity() -> i64 = 1
+
+fn completion_code() -> i32 = 41
+
+fn admission_is_busy(admission: ServiceAdmission) -> bool =
+  match admission {
+    ServiceBusy => true,
+    ServiceAccepted => false
+  }
+
+fn wakeup_double_new() -> WakeupDouble = do
+  WakeupDouble {
+    queue_observed: false,
+    completion_pushed: false,
+    wakeup_hint: false,
+    wait_armed: false,
+    saw_wakeup: false
+  }
+end
+
+fn observe_empty_queue(double: WakeupDouble) -> WakeupDouble = do
+  WakeupDouble {
+    queue_observed: true,
+    completion_pushed: double.completion_pushed,
+    wakeup_hint: double.wakeup_hint,
+    wait_armed: double.wait_armed,
+    saw_wakeup: double.saw_wakeup
+  }
+end
+
+fn note_completion(double: WakeupDouble) -> WakeupDouble = do
+  WakeupDouble {
+    queue_observed: double.queue_observed,
+    completion_pushed: true,
+    wakeup_hint: double.wakeup_hint,
+    wait_armed: double.wait_armed,
+    saw_wakeup: double.saw_wakeup
+  }
+end
+
+fn deliver_wakeup_hint(double: WakeupDouble) -> WakeupDouble = do
+  let saw_wakeup = double.wait_armed
+  WakeupDouble {
+    queue_observed: double.queue_observed,
+    completion_pushed: double.completion_pushed,
+    wakeup_hint: true,
+    wait_armed: double.wait_armed,
+    saw_wakeup: saw_wakeup
+  }
+end
+
+fn arm_wait(double: WakeupDouble) -> WakeupDouble = do
+  WakeupDouble {
+    queue_observed: double.queue_observed,
+    completion_pushed: double.completion_pushed,
+    wakeup_hint: double.wakeup_hint,
+    wait_armed: true,
+    saw_wakeup: double.saw_wakeup
+  }
+end
+
+fn main() -> i32 = do
+  let mut queue = service_queue_new(queue_capacity(), owner_identity())
+  let mut double = wakeup_double_new()
+  if service_queue_count(queue) != 0 then
+    return fail("queue was not empty before the race")
+  end
+  double = observe_empty_queue(double)
+  let admission = service_try_push(queue, completion_code())
+  if admission_is_busy(admission) then
+    return fail("completion push was Busy")
+  end
+  double = note_completion(double)
+  double = deliver_wakeup_hint(double)
+  double = arm_wait(double)
+  let queued = service_queue_count(queue)
+  if double.queue_observed && double.completion_pushed && double.wakeup_hint && double.wait_armed && double.saw_wakeup then
+    println("[script_vm] service_wakeup_unit ok")
+    return 0
+  end
+  fail(
+    "lost wakeup queued=" + queued.to_string()
+      + " saw_wakeup=false"
+      + " wait_armed=true"
+  )
+end
