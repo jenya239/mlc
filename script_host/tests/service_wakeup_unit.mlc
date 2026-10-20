@@ -2,18 +2,17 @@ import {
   ServiceAdmission,
   ServiceAccepted,
   ServiceBusy,
+  ServicePop,
+  ServicePopCommand,
+  ServicePopEmpty,
   service_queue_new,
   service_queue_count,
-  service_try_push
+  service_try_push,
+  service_try_pop,
+  service_observe_before_wait,
+  service_note_wakeup_hint,
+  service_arm_wait
 } from '../service'
-
-type WakeupDouble = {
-  queue_observed: bool,
-  completion_pushed: bool,
-  wakeup_hint: bool,
-  wait_armed: bool,
-  saw_wakeup: bool
-}
 
 fn fail(message: string) -> i32 = do
   println("[script_vm service_wakeup_unit] FAIL: " + message)
@@ -32,79 +31,53 @@ fn admission_is_busy(admission: ServiceAdmission) -> bool =
     ServiceAccepted => false
   }
 
-fn wakeup_double_new() -> WakeupDouble = do
-  WakeupDouble {
-    queue_observed: false,
-    completion_pushed: false,
-    wakeup_hint: false,
-    wait_armed: false,
-    saw_wakeup: false
+fn pop_command(pop: ServicePop) -> i32 =
+  match pop {
+    ServicePopCommand(command_code) => command_code,
+    ServicePopEmpty => 0
   }
-end
 
-fn observe_empty_queue(double: WakeupDouble) -> WakeupDouble = do
-  WakeupDouble {
-    queue_observed: true,
-    completion_pushed: double.completion_pushed,
-    wakeup_hint: double.wakeup_hint,
-    wait_armed: double.wait_armed,
-    saw_wakeup: double.saw_wakeup
-  }
-end
-
-fn note_completion(double: WakeupDouble) -> WakeupDouble = do
-  WakeupDouble {
-    queue_observed: double.queue_observed,
-    completion_pushed: true,
-    wakeup_hint: double.wakeup_hint,
-    wait_armed: double.wait_armed,
-    saw_wakeup: double.saw_wakeup
-  }
-end
-
-fn deliver_wakeup_hint(double: WakeupDouble) -> WakeupDouble = do
-  let saw_wakeup = double.wait_armed
-  WakeupDouble {
-    queue_observed: double.queue_observed,
-    completion_pushed: double.completion_pushed,
-    wakeup_hint: true,
-    wait_armed: double.wait_armed,
-    saw_wakeup: saw_wakeup
-  }
-end
-
-fn arm_wait(double: WakeupDouble) -> WakeupDouble = do
-  WakeupDouble {
-    queue_observed: double.queue_observed,
-    completion_pushed: double.completion_pushed,
-    wakeup_hint: double.wakeup_hint,
-    wait_armed: true,
-    saw_wakeup: double.saw_wakeup
-  }
+fn check_idle_wait() -> i32 = do
+  let queue = service_queue_new(queue_capacity(), owner_identity())
+  let observed = service_observe_before_wait(queue)
+  let armed = service_arm_wait(queue, observed)
+  if armed.saw_wakeup || service_queue_count(queue) != 0 then
+    return fail("idle wait woke without a completion")
+  end
+  0
 end
 
 fn main() -> i32 = do
+  let idle = check_idle_wait()
+  if idle != 0 then
+    return idle
+  end
   let mut queue = service_queue_new(queue_capacity(), owner_identity())
-  let mut double = wakeup_double_new()
   if service_queue_count(queue) != 0 then
     return fail("queue was not empty before the race")
   end
-  double = observe_empty_queue(double)
+  let observed = service_observe_before_wait(queue)
   let admission = service_try_push(queue, completion_code())
   if admission_is_busy(admission) then
     return fail("completion push was Busy")
   end
-  double = note_completion(double)
-  double = deliver_wakeup_hint(double)
-  double = arm_wait(double)
-  let queued = service_queue_count(queue)
-  if double.queue_observed && double.completion_pushed && double.wakeup_hint && double.wait_armed && double.saw_wakeup then
-    println("[script_vm] service_wakeup_unit ok")
-    return 0
+  let hinted = service_note_wakeup_hint(queue, observed)
+  if hinted.saw_wakeup then
+    return fail("wakeup hint was treated as the completion")
   end
-  fail(
-    "lost wakeup queued=" + queued.to_string()
-      + " saw_wakeup=false"
-      + " wait_armed=true"
-  )
+  let armed = service_arm_wait(queue, hinted)
+  let queued = service_queue_count(queue)
+  if !armed.saw_wakeup then
+    return fail(
+      "lost wakeup queued=" + queued.to_string()
+        + " saw_wakeup=false"
+        + " wait_armed=true"
+    )
+  end
+  let popped = service_try_pop(queue)
+  if pop_command(popped) != completion_code() || service_queue_count(queue) != 0 then
+    return fail("queue was not authoritative after wakeup")
+  end
+  println("[script_vm] service_wakeup_unit ok")
+  0
 end
