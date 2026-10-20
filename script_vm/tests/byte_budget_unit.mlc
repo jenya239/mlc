@@ -1,6 +1,7 @@
 import { Value, ValueHeapRef, value_byte_size, value_decode } from '../value'
 import { heap_alloc_array_within_byte_limit } from '../heap_alloc'
 import { Heap, heap_arena_cell_count, heap_element_count, heap_live_object_count, heap_new } from '../heap'
+import { string_heap_from_bytes, string_heap_length } from '../string_heap'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm byte_budget_unit] FAIL: " + label)
@@ -12,6 +13,8 @@ fn million_elements() -> i32 = 1000000
 fn small_byte_limit() -> i32 = 64
 
 fn one_element() -> i32 = 1
+
+fn logical_string_bytes() -> i32 = 16
 
 fn is_heap_ref(value: Value) -> bool =
   match value_decode(value) {
@@ -43,6 +46,34 @@ fn check_million_array() -> i32 = do
   end
 end
 
+fn string_payload() -> [i32] = do
+  let mut bytes: [i32] = []
+  let mut index = 0
+  while index < logical_string_bytes() do
+    bytes.push(65)
+    index = index + 1
+  end
+  bytes
+end
+
+fn check_string_physical_cost() -> i32 = do
+  const allocated = string_heap_from_bytes(heap_new(), string_payload())
+  let logical = string_heap_length(allocated.heap, allocated.value)
+  let arena = heap_arena_cell_count(allocated.heap)
+  let physical = arena * value_byte_size()
+  if !is_heap_ref(allocated.value) && heap_live_object_count(allocated.heap) == 0 && arena == 0 then
+    0
+  else
+    fail(
+      "string counted logical bytes logical=" + logical.to_string()
+        + " physical=" + physical.to_string()
+        + " arena=" + arena.to_string()
+        + " limit=" + small_byte_limit().to_string()
+        + " live=" + heap_live_object_count(allocated.heap).to_string()
+    )
+  end
+end
+
 fn check_small_array_fits() -> i32 = do
   const allocated = heap_alloc_array_within_byte_limit(heap_new(), one_element(), small_byte_limit())
   if is_heap_ref(allocated.value) && heap_element_count(allocated.heap, allocated.value) == one_element() then
@@ -60,6 +91,9 @@ fn main() -> i32 = do
   let mut status = check_million_array()
   if status == 0 then
     status = check_small_array_fits()
+  end
+  if status == 0 then
+    status = check_string_physical_cost()
   end
   if status != 0 then
     return status
