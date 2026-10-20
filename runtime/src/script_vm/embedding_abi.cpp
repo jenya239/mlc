@@ -15,10 +15,23 @@ namespace {
 
 struct HandleSlot {
   bool live = false;
+  std::uint32_t generation = 1;
   std::string module_name;
   std::string export_name;
   std::vector<std::uint8_t> blob;
 };
+
+std::uint32_t handle_index(MlcHandle handle) {
+  return static_cast<std::uint32_t>(handle & 0xffffffffu);
+}
+
+std::uint32_t handle_generation(MlcHandle handle) {
+  return static_cast<std::uint32_t>(handle >> 32);
+}
+
+MlcHandle pack_handle(std::uint32_t index, std::uint32_t generation) {
+  return (static_cast<MlcHandle>(generation) << 32) | index;
+}
 
 struct EmbeddingVmState {
   std::uint64_t instruction_limit = 0;
@@ -111,13 +124,29 @@ MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* expo
   if (export_present == 0) {
     return 0;
   }
-  HandleSlot slot;
+  std::size_t reused_index = vm->state.handles.size();
+  for (std::size_t index = 0; index < vm->state.handles.size(); ++index) {
+    if (!vm->state.handles[index].live) {
+      reused_index = index;
+      break;
+    }
+  }
+  if (reused_index == vm->state.handles.size()) {
+    HandleSlot slot;
+    slot.live = true;
+    slot.generation = 1;
+    slot.module_name = module_name;
+    slot.export_name = export_name;
+    slot.blob = module_it->second;
+    vm->state.handles.push_back(std::move(slot));
+    return pack_handle(static_cast<std::uint32_t>(vm->state.handles.size()), 1);
+  }
+  HandleSlot& slot = vm->state.handles[reused_index];
   slot.live = true;
   slot.module_name = module_name;
   slot.export_name = export_name;
   slot.blob = module_it->second;
-  vm->state.handles.push_back(std::move(slot));
-  return static_cast<MlcHandle>(vm->state.handles.size());
+  return pack_handle(static_cast<std::uint32_t>(reused_index + 1), slot.generation);
 }
 
 MlcResult mlc_vm_call(
@@ -132,12 +161,14 @@ MlcResult mlc_vm_call(
     result.code = embedding_codes::emb_type();
     return result;
   }
-  if (callable == 0 || callable > static_cast<MlcHandle>(vm->state.handles.size())) {
+  const std::uint32_t callable_index = handle_index(callable);
+  const std::uint32_t callable_generation = handle_generation(callable);
+  if (callable_index == 0 || callable_index > static_cast<std::uint32_t>(vm->state.handles.size())) {
     result.code = embedding_codes::emb_bad_handle();
     return result;
   }
-  HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(callable - 1)];
-  if (!slot.live) {
+  HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(callable_index - 1)];
+  if (!slot.live || slot.generation != callable_generation) {
     result.code = embedding_codes::emb_bad_handle();
     return result;
   }
@@ -167,17 +198,20 @@ MlcResult mlc_vm_call(
 }
 
 void mlc_handle_release(MlcVm* vm, MlcHandle handle) {
-  if (vm == nullptr || handle == 0 ||
-      handle > static_cast<MlcHandle>(vm->state.handles.size())) {
+  const std::uint32_t released_index = handle_index(handle);
+  const std::uint32_t released_generation = handle_generation(handle);
+  if (vm == nullptr || released_index == 0 ||
+      released_index > static_cast<std::uint32_t>(vm->state.handles.size())) {
     maybe_panic(vm == nullptr ? nullptr : &vm->state, "mlc_handle_release: bad handle");
     return;
   }
-  HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(handle - 1)];
-  if (!slot.live) {
+  HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(released_index - 1)];
+  if (!slot.live || slot.generation != released_generation) {
     maybe_panic(&vm->state, "mlc_handle_release: double release");
     return;
   }
   slot.live = false;
+  slot.generation = slot.generation + 1;
   slot.blob.clear();
 }
 

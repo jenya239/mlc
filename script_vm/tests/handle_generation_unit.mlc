@@ -8,8 +8,11 @@ import {
 import { emb_bad_handle, emb_ok } from '../embedding_codes'
 import {
   ScriptInstance,
+  ValueHandle,
   instance_call_export,
+  instance_call_handles,
   instance_load_module,
+  instance_release_value,
   script_instance_new
 } from '../instance'
 import { ModuleExport, module_encode } from '../module_blob'
@@ -37,10 +40,10 @@ fn empty_arguments() -> [i64] = do
   arguments
 end
 
-fn one_argument(raw: i64) -> [i64] = do
-  let mut arguments: [i64] = []
-  arguments.push(raw)
-  arguments
+fn one_handle(handle: ValueHandle) -> [ValueHandle] = do
+  let mut handles: [ValueHandle] = []
+  handles.push(handle)
+  handles
 end
 
 fn integer_result(raw: i64) -> i32 =
@@ -114,19 +117,15 @@ fn main() -> i32 = do
   if foreign_allocated.code != emb_ok() then
     return fail("foreign allocate code=" + foreign_allocated.code.to_string())
   end
-  const measured = instance_call_export(
+  const measured = instance_call_handles(
     foreign_allocated.instance,
     0,
     "length",
-    one_argument(allocated.value_handle.raw)
+    one_handle(allocated.value_handle)
   )
   const measured_number = integer_result(measured.raw)
-  if measured.code == emb_bad_handle() then
-    println("cross_instance_rejected")
-    println("[script_vm] handle_generation_unit ok")
-    0
-  else
-    fail(
+  if measured.code != emb_bad_handle() then
+    return fail(
       "cross-instance handle accepted code="
         + measured.code.to_string()
         + " value="
@@ -137,4 +136,31 @@ fn main() -> i32 = do
         + foreign_allocated.instance.identity.to_string()
     )
   end
+  println("cross_instance_rejected")
+  const released = instance_release_value(allocated.instance, allocated.value_handle)
+  if released.code != emb_ok() then
+    return fail("release code=" + released.code.to_string())
+  end
+  const stale = instance_call_handles(
+    released.instance,
+    0,
+    "length",
+    one_handle(allocated.value_handle)
+  )
+  if stale.code != emb_bad_handle() then
+    return fail(
+      "stale generation accepted code="
+        + stale.code.to_string()
+        + " value="
+        + integer_result(stale.raw).to_string()
+    )
+  end
+  println("stale_generation_rejected")
+  const released_again = instance_release_value(released.instance, allocated.value_handle)
+  if released_again.code != emb_bad_handle() then
+    return fail("double release code=" + released_again.code.to_string())
+  end
+  println("double_release_rejected")
+  println("[script_vm] handle_generation_unit ok")
+  0
 end

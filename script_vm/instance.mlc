@@ -5,6 +5,7 @@ import {
   emb_bounds,
   emb_stack,
   emb_not_found,
+  emb_bad_handle,
   emb_instruction_limit,
   emb_heap_limit,
   emb_overflow,
@@ -248,3 +249,61 @@ export fn instance_call_export(
     RunErr(code, _at) => failed_call(continued, run_error_code(code))
   }
 end
+
+fn instance_with_incarnation(instance: ScriptInstance, incarnation: i32) -> ScriptInstance =
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: instance.heap,
+    rooted_values: instance.rooted_values
+  }
+
+fn handle_is_current(instance: ScriptInstance, handle: ValueHandle) -> bool =
+  handle.owner_identity == instance.identity && handle.generation == instance.incarnation
+
+fn handles_are_current(instance: ScriptInstance, handles: [ValueHandle]) -> bool = do
+  let mut index = 0
+  let mut current = true
+  while index < handles.length() && current do
+    if !handle_is_current(instance, handles[index]) then
+      current = false
+    end
+    index = index + 1
+  end
+  current
+end
+
+fn handle_raws(handles: [ValueHandle]) -> [i64] = do
+  let mut raws: [i64] = []
+  let mut index = 0
+  while index < handles.length() do
+    raws.push(handles[index].raw)
+    index = index + 1
+  end
+  raws
+end
+
+export type InstanceReleaseResult = { instance: ScriptInstance, code: i32 }
+
+export fn instance_release_value(instance: ScriptInstance, handle: ValueHandle) -> InstanceReleaseResult =
+  if !handle_is_current(instance, handle) then
+    InstanceReleaseResult { instance: instance, code: emb_bad_handle() }
+  else
+    InstanceReleaseResult {
+      instance: instance_with_incarnation(instance, instance.incarnation + 1),
+      code: emb_ok()
+    }
+  end
+
+export fn instance_call_handles(
+  instance: ScriptInstance,
+  module_index: i32,
+  export_name: string,
+  handles: [ValueHandle]
+) -> InstanceCallResult =
+  if !handles_are_current(instance, handles) then
+    failed_call(instance, emb_bad_handle())
+  else
+    instance_call_export(instance, module_index, export_name, handle_raws(handles))
+  end
