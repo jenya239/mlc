@@ -1,0 +1,48 @@
+extern fn host_monotonic_microseconds() -> i32 =
+  "mlc::profile::monotonic_micros_i32" from "mlc/core/profile.hpp" thread_safe
+
+type ServiceAdmission = ServiceAccepted | ServiceBusy
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm service_queue_unit] FAIL: " + message)
+  1
+end
+
+fn queue_capacity() -> i32 = 8
+
+fn admission_is_busy(admission: ServiceAdmission) -> bool =
+  match admission {
+    ServiceBusy => true,
+    ServiceAccepted => false
+  }
+
+fn host_push_without_busy(depth: i32, capacity: i32) -> ServiceAdmission = do
+  if depth < capacity then
+    ServiceAccepted
+  else
+    ServiceAccepted
+  end
+end
+
+fn main() -> i32 = do
+  let mut depth = 0
+  while depth < queue_capacity() do
+    let admission = host_push_without_busy(depth, queue_capacity())
+    if admission_is_busy(admission) then
+      return fail("queue returned Busy before capacity depth=" + depth.to_string())
+    end
+    depth = depth + 1
+  end
+  let started_microseconds = host_monotonic_microseconds()
+  let admission = host_push_without_busy(depth, queue_capacity())
+  let elapsed_microseconds = host_monotonic_microseconds() - started_microseconds
+  if admission_is_busy(admission) && elapsed_microseconds >= 0 then
+    println("[script_vm] service_queue_unit ok")
+    return 0
+  end
+  fail(
+    "full queue accepted instead of Busy depth=" + depth.to_string()
+      + " capacity=" + queue_capacity().to_string()
+      + " elapsed_microseconds=" + elapsed_microseconds.to_string()
+  )
+end
