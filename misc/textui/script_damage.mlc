@@ -1,0 +1,38 @@
+export type ScriptDamageKind =
+  | ScriptDamageLayoutPaint
+  | ScriptDamagePaint
+  | ScriptDamageNone
+  | ScriptDamageRejected
+
+export fn script_damage_for_set_label_text(text_changed: bool) -> ScriptDamageKind = do
+  if text_changed then
+    ScriptDamageLayoutPaint
+  else
+    ScriptDamageNone
+  end
+end
+
+export fn script_damage_for_rejected_batch() -> ScriptDamageKind =
+  ScriptDamageRejected
+
+export fn script_damage_needs_layout(kind: ScriptDamageKind) -> bool =
+  match kind
+    | ScriptDamageLayoutPaint => true
+    | ScriptDamagePaint => false
+    | ScriptDamageNone => false
+    | ScriptDamageRejected => false
+
+export fn script_damage_needs_paint(kind: ScriptDamageKind) -> bool =
+  match kind
+    | ScriptDamageLayoutPaint => true
+    | ScriptDamagePaint => true
+    | ScriptDamageNone => false
+    | ScriptDamageRejected => false
+
+export fn script_damage_revision_delta(kind: ScriptDamageKind) -> i32 = do
+  if script_damage_needs_paint(kind) then
+    1
+  else
+    0
+  end
+end

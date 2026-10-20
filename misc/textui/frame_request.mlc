@@ -30,7 +30,8 @@ export type FrameSignature = {
   field_revision: i32,
   listing_revision: i32,
   overlay_open: bool,
-  overlay_revision: i32
+  overlay_revision: i32,
+  script_damage_revision: i32
 }
 
 fn copy_integers(values: [i32]) -> [i32] = do
@@ -75,7 +76,12 @@ fn pointer_mark(pointer: PointerSession) -> PointerMark =
     | PointerListSession(session) => PointerMark { code: 4, owner: session.owner.index }
     | PointerSplitSession(session) => PointerMark { code: 5, owner: session.owner.index }
 
-export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: i32) -> FrameSignature = do
+export fn frame_signature_with_script_damage(
+  state: UiState,
+  viewport_width: i32,
+  viewport_height: i32,
+  script_damage_revision: i32
+) -> FrameSignature = do
   const pointer = pointer_mark(state.pointer)
   return FrameSignature {
     viewport_width: viewport_width,
@@ -100,9 +106,13 @@ export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: 
     field_revision: state.field_revision,
     listing_revision: state.listing_revision,
     overlay_open: state.overlay_open,
-    overlay_revision: state.overlay_revision
+    overlay_revision: state.overlay_revision,
+    script_damage_revision: script_damage_revision
   }
 end
+
+export fn frame_signature(state: UiState, viewport_width: i32, viewport_height: i32) -> FrameSignature =
+  frame_signature_with_script_damage(state, viewport_width, viewport_height, 0)
 
 fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
   if previous.overlay_revision != next.overlay_revision then
@@ -112,6 +122,9 @@ fn layout_differs(previous: FrameSignature, next: FrameSignature) -> bool = do
     return true
   end
   if previous.listing_revision != next.listing_revision then
+    return true
+  end
+  if previous.script_damage_revision != next.script_damage_revision then
     return true
   end
   if previous.viewport_width != next.viewport_width then
