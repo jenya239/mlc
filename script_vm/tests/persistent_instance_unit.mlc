@@ -6,7 +6,7 @@ import {
   instruction_words_return
 } from '../bytecode'
 import { emb_ok } from '../embedding_codes'
-import { call_loaded_export, load_module_bytes } from '../loaded_module'
+import { instance_call_export, instance_load_module, script_instance_new } from '../instance'
 import { ModuleExport, module_encode } from '../module_blob'
 import { FunctionProto } from '../run_result'
 import { Value, ValueInt32, value_encode, value_decode } from '../value'
@@ -79,15 +79,15 @@ fn instance_module_bytes() -> [i32] = do
 end
 
 fn main() -> i32 = do
-  const loaded_result = load_module_bytes(instance_module_bytes())
+  const loaded_result = instance_load_module(script_instance_new(), instance_module_bytes())
   if loaded_result.code != emb_ok() then
     return fail("load code=" + loaded_result.code.to_string())
   end
-  const allocated = call_loaded_export(loaded_result.loaded, "allocate", empty_arguments())
+  const allocated = instance_call_export(loaded_result.instance, 0, "allocate", empty_arguments())
   if allocated.code != emb_ok() then
     return fail("allocate code=" + allocated.code.to_string())
   end
-  const measured = call_loaded_export(loaded_result.loaded, "length", one_argument(allocated.raw))
+  const measured = instance_call_export(allocated.instance, 0, "length", one_argument(allocated.raw))
   const measured_number = integer_result(measured.raw)
   if measured.code == emb_ok() && measured_number == 1 then
     println("persistent_array")

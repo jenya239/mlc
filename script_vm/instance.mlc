@@ -1,0 +1,250 @@
+import {
+  emb_ok,
+  emb_verify,
+  emb_type,
+  emb_bounds,
+  emb_stack,
+  emb_not_found,
+  emb_instruction_limit,
+  emb_heap_limit,
+  emb_overflow,
+  emb_div_zero
+} from './embedding_codes'
+import { heap_root_push } from './heap_collect'
+import { Heap, heap_new } from './heap_types'
+import { RunOk, RunErr, run_program_with_args_limited } from './interpreter'
+import { LoadedModule, load_module_bytes } from './loaded_module'
+import {
+  run_limits_new,
+  run_err_verify,
+  run_err_type,
+  run_err_bounds,
+  run_err_stack,
+  run_err_instruction_limit,
+  run_err_heap_limit,
+  run_err_overflow,
+  run_err_div_zero
+} from './run_result'
+import { Value, ValueHeapRef, value_decode } from './value'
+
+export type ExportHandle = {
+  owner_identity: i64,
+  module_index: i32,
+  export_name: string
+}
+
+export type ValueHandle = {
+  owner_identity: i64,
+  generation: i32,
+  raw: i64,
+  rooted: bool
+}
+
+export type ScriptInstance = {
+  identity: i64,
+  incarnation: i32,
+  loaded_modules: [LoadedModule],
+  heap: Heap,
+  rooted_values: [Value]
+}
+
+export type InstanceLoadResult = { instance: ScriptInstance, code: i32 }
+
+export type InstanceCallResult = {
+  instance: ScriptInstance,
+  code: i32,
+  raw: i64,
+  value_handle: ValueHandle
+}
+
+fn first_instance_identity() -> i64 = 1
+
+fn persistent_instruction_limit() -> i64 = 1024
+
+fn zero_raw() -> i64 = 0
+
+fn empty_loaded_modules() -> [LoadedModule] = do
+  let mut loaded_modules: [LoadedModule] = []
+  loaded_modules
+end
+
+fn empty_rooted_values() -> [Value] = do
+  let mut rooted_values: [Value] = []
+  rooted_values
+end
+
+fn value_is_heap_ref(value: Value) -> bool =
+  match value_decode(value) {
+    ValueHeapRef(_object_id) => true,
+    _ => false
+  }
+
+fn run_error_code(code: string) -> i32 = do
+  if code == run_err_verify() then
+    emb_verify()
+  else if code == run_err_type() then
+    emb_type()
+  else if code == run_err_bounds() then
+    emb_bounds()
+  else if code == run_err_stack() then
+    emb_stack()
+  else if code == run_err_instruction_limit() then
+    emb_instruction_limit()
+  else if code == run_err_heap_limit() then
+    emb_heap_limit()
+  else if code == run_err_overflow() then
+    emb_overflow()
+  else if code == run_err_div_zero() then
+    emb_div_zero()
+  else
+    emb_type()
+  end
+end
+
+fn instance_with_heap(instance: ScriptInstance, heap: Heap) -> ScriptInstance =
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: heap,
+    rooted_values: instance.rooted_values
+  }
+
+fn instance_with_modules(instance: ScriptInstance, loaded_modules: [LoadedModule]) -> ScriptInstance =
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: loaded_modules,
+    heap: instance.heap,
+    rooted_values: instance.rooted_values
+  }
+
+fn remember_heap_value(instance: ScriptInstance, value: Value) -> ScriptInstance = do
+  let mut rooted_values = instance.rooted_values
+  rooted_values.push(value)
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: heap_root_push(instance.heap, value),
+    rooted_values: rooted_values
+  }
+end
+
+fn value_handle_for(instance: ScriptInstance, raw: i64, rooted: bool) -> ValueHandle =
+  ValueHandle {
+    owner_identity: instance.identity,
+    generation: instance.incarnation,
+    raw: raw,
+    rooted: rooted
+  }
+
+fn missing_call(instance: ScriptInstance) -> InstanceCallResult =
+  InstanceCallResult {
+    instance: instance,
+    code: emb_not_found(),
+    raw: zero_raw(),
+    value_handle: value_handle_for(instance, zero_raw(), false)
+  }
+
+fn failed_call(instance: ScriptInstance, code: i32) -> InstanceCallResult =
+  InstanceCallResult {
+    instance: instance,
+    code: code,
+    raw: zero_raw(),
+    value_handle: value_handle_for(instance, zero_raw(), false)
+  }
+
+fn successful_call(instance: ScriptInstance, value: Value) -> InstanceCallResult = do
+  const rooted = value_is_heap_ref(value)
+  const next = if rooted then remember_heap_value(instance, value) else instance
+  InstanceCallResult {
+    instance: next,
+    code: emb_ok(),
+    raw: value.raw,
+    value_handle: value_handle_for(next, value.raw, rooted)
+  }
+end
+
+fn loaded_export_prototype_index(loaded: LoadedModule, export_name: string) -> i32 = do
+  let mut index = 0
+  while index < loaded.exports.length() do
+    if loaded.exports[index].name == export_name then
+      return loaded.exports[index].proto_index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn argument_values(argument_raws: [i64]) -> [Value] = do
+  let mut arguments: [Value] = []
+  let mut argument_index = 0
+  while argument_index < argument_raws.length() do
+    arguments.push(Value { raw: argument_raws[argument_index] })
+    argument_index = argument_index + 1
+  end
+  arguments
+end
+
+export fn script_instance_new() -> ScriptInstance =
+  ScriptInstance {
+    identity: first_instance_identity(),
+    incarnation: 0,
+    loaded_modules: empty_loaded_modules(),
+    heap: heap_new(),
+    rooted_values: empty_rooted_values()
+  }
+
+export fn instance_export_handle(
+  instance: ScriptInstance,
+  module_index: i32,
+  export_name: string
+) -> ExportHandle =
+  ExportHandle {
+    owner_identity: instance.identity,
+    module_index: module_index,
+    export_name: export_name
+  }
+
+export fn instance_load_module(instance: ScriptInstance, bytes: [i32]) -> InstanceLoadResult = do
+  const loaded_result = load_module_bytes(bytes)
+  if loaded_result.code != emb_ok() then
+    InstanceLoadResult { instance: instance, code: loaded_result.code }
+  else
+    let mut loaded_modules = instance.loaded_modules
+    loaded_modules.push(loaded_result.loaded)
+    InstanceLoadResult {
+      instance: instance_with_modules(instance, loaded_modules),
+      code: emb_ok()
+    }
+  end
+end
+
+export fn instance_call_export(
+  instance: ScriptInstance,
+  module_index: i32,
+  export_name: string,
+  argument_raws: [i64]
+) -> InstanceCallResult = do
+  if module_index < 0 || module_index >= instance.loaded_modules.length() then
+    return missing_call(instance)
+  end
+  const loaded = instance.loaded_modules[module_index]
+  const prototype_index = loaded_export_prototype_index(loaded, export_name)
+  if prototype_index < 0 || prototype_index >= loaded.protos.length() then
+    return missing_call(instance)
+  end
+  const ran = run_program_with_args_limited(
+    instance.heap,
+    loaded.protos,
+    prototype_index,
+    argument_values(argument_raws),
+    run_limits_new(persistent_instruction_limit(), 0)
+  )
+  const continued = instance_with_heap(instance, ran.heap)
+  match ran.result {
+    RunOk(value) => successful_call(continued, value),
+    RunErr(code, _at) => failed_call(continued, run_error_code(code))
+  }
+end
