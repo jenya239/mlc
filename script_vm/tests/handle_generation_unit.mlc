@@ -1,0 +1,140 @@
+import { instruction_opcode_length } from '../bytecode_text'
+import {
+  instruction_words_binary,
+  instruction_words_load_const,
+  instruction_words_new_array,
+  instruction_words_return
+} from '../bytecode'
+import { emb_bad_handle, emb_ok } from '../embedding_codes'
+import {
+  ScriptInstance,
+  instance_call_export,
+  instance_load_module,
+  script_instance_new
+} from '../instance'
+import { ModuleExport, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm handle_generation_unit] FAIL: " + label)
+  1
+end
+
+fn foreign_identity() -> i64 = 2
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn one_argument(raw: i64) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(raw)
+  arguments
+end
+
+fn integer_result(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn instance_with_identity(identity: i64) -> ScriptInstance = do
+  let created = script_instance_new()
+  ScriptInstance {
+    identity: identity,
+    incarnation: created.incarnation,
+    loaded_modules: created.loaded_modules,
+    heap: created.heap,
+    rooted_values: created.rooted_values
+  }
+end
+
+fn allocate_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn length_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_binary(instruction_opcode_length(), 1, 0, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn one_constant(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(number)))
+  constants
+end
+
+fn empty_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants
+end
+
+fn instance_module_bytes() -> [i32] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: allocate_words(), constants: one_constant(1), register_count: 2 })
+  prototypes.push(FunctionProto { words: length_words(), constants: empty_constants(), register_count: 2 })
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "allocate", proto_index: 0 })
+  exports.push(ModuleExport { name: "length", proto_index: 1 })
+  module_encode(exports, prototypes)
+end
+
+fn main() -> i32 = do
+  const bytes = instance_module_bytes()
+  const owner_loaded = instance_load_module(script_instance_new(), bytes)
+  if owner_loaded.code != emb_ok() then
+    return fail("owner load code=" + owner_loaded.code.to_string())
+  end
+  const foreign_loaded = instance_load_module(instance_with_identity(foreign_identity()), bytes)
+  if foreign_loaded.code != emb_ok() then
+    return fail("foreign load code=" + foreign_loaded.code.to_string())
+  end
+  const allocated = instance_call_export(owner_loaded.instance, 0, "allocate", empty_arguments())
+  if allocated.code != emb_ok() then
+    return fail("allocate code=" + allocated.code.to_string())
+  end
+  const foreign_allocated = instance_call_export(foreign_loaded.instance, 0, "allocate", empty_arguments())
+  if foreign_allocated.code != emb_ok() then
+    return fail("foreign allocate code=" + foreign_allocated.code.to_string())
+  end
+  const measured = instance_call_export(
+    foreign_allocated.instance,
+    0,
+    "length",
+    one_argument(allocated.value_handle.raw)
+  )
+  const measured_number = integer_result(measured.raw)
+  if measured.code == emb_bad_handle() then
+    println("cross_instance_rejected")
+    println("[script_vm] handle_generation_unit ok")
+    0
+  else
+    fail(
+      "cross-instance handle accepted code="
+        + measured.code.to_string()
+        + " value="
+        + measured_number.to_string()
+        + " owner="
+        + allocated.value_handle.owner_identity.to_string()
+        + " foreign="
+        + foreign_allocated.instance.identity.to_string()
+    )
+  end
+end
