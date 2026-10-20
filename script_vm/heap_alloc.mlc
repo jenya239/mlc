@@ -1,5 +1,5 @@
 import { Value, ValueNil, ValueHeapRef, value_byte_size, value_encode } from './value'
-import { string_physical_byte_cost } from './heap_access'
+import { heap_in_place_write, string_physical_byte_cost } from './heap_access'
 import {
   ObjectHeader,
   HeapSlot,
@@ -167,4 +167,37 @@ export fn heap_alloc_closure(heap: Heap, proto_index: i32, upvalue_count: i32) -
   let mut next = heap
   const value = heap_in_place_alloc_closure(next, proto_index, upvalue_count)
   HeapAlloc { heap: next, value: value }
+end
+
+fn closure_reservation_bytes(upvalue_count: i32) -> i32 = do
+  if upvalue_count <= 0 then
+    return 0
+  end
+  upvalue_count * value_byte_size()
+end
+
+export fn closure_group_exceeds_byte_limit(upvalue_count: i32, byte_limit: i32) -> bool = do
+  let closure_bytes = closure_reservation_bytes(upvalue_count)
+  let cell_bytes = closure_reservation_bytes(upvalue_count)
+  byte_limit > 0 && closure_bytes + cell_bytes > byte_limit
+end
+
+fn allocate_closure_group(heap: Heap, proto_index: i32, upvalue_count: i32) -> HeapAlloc = do
+  let mut next = heap
+  let closure_value = heap_in_place_alloc_closure(next, proto_index, upvalue_count)
+  let mut index = 0
+  while index < upvalue_count do
+    let cell_value = heap_in_place_alloc_cell(next)
+    heap_in_place_write(next, closure_value, index, cell_value)
+    index = index + 1
+  end
+  HeapAlloc { heap: next, value: closure_value }
+end
+
+export fn heap_alloc_closure_within_byte_limit(heap: Heap, proto_index: i32, upvalue_count: i32, byte_limit: i32) -> HeapAlloc = do
+  if closure_group_exceeds_byte_limit(upvalue_count, byte_limit) then
+    HeapAlloc { heap: heap, value: value_encode(ValueNil) }
+  else
+    allocate_closure_group(heap, proto_index, upvalue_count)
+  end
 end

@@ -17,7 +17,8 @@ import {
   heap_in_place_element_count,
   heap_in_place_cell_child
 } from './heap'
-import { FunctionProto, run_err_type, run_err_bounds, run_err_stack } from './run_result'
+import { closure_group_exceeds_byte_limit } from './heap_alloc'
+import { FunctionProto, run_err_heap_limit, run_err_type, run_err_bounds, run_err_stack } from './run_result'
 import {
   VmState,
   vm_state_frame_depth,
@@ -222,6 +223,9 @@ fn finish_make_closure(
   primary: i32,
   span: i32
 ) -> i32 = do
+  if closure_group_exceeds_byte_limit(decoded.c, 0) then
+    return executor_fail(state, run_err_heap_limit(), primary)
+  end
   let registers = frame_registers(state, proto.register_count)
   let parent_closure = vm_state_frame_closure(state)
   let closure_value = heap_in_place_alloc_closure(heap, decoded.b, decoded.c)

@@ -1,8 +1,7 @@
 import { Value, ValueHeapRef, value_byte_size, value_decode } from '../value'
 import {
   heap_alloc_array_within_byte_limit,
-  heap_alloc_cell,
-  heap_alloc_closure,
+  heap_alloc_closure_within_byte_limit,
   heap_alloc_string_within_byte_limit
 } from '../heap_alloc'
 import { Heap, heap_arena_cell_count, heap_element_count, heap_live_object_count, heap_new } from '../heap'
@@ -86,11 +85,10 @@ fn check_closure_upvalue_rollback() -> i32 = do
   let closure_bytes = closure_slot_count() * value_byte_size()
   let cell_bytes = upvalue_cell_count() * value_byte_size()
   let byte_limit = closure_bytes
-  let closure_allocation = heap_alloc_closure(heap_new(), 0, closure_slot_count())
-  let cell_allocation = heap_alloc_cell(closure_allocation.heap)
-  let live = heap_live_object_count(cell_allocation.heap)
-  let arena = heap_arena_cell_count(cell_allocation.heap)
-  if live == 0 && arena == 0 && !is_heap_ref(closure_allocation.value) && !is_heap_ref(cell_allocation.value) && closure_bytes + cell_bytes > byte_limit then
+  let allocation = heap_alloc_closure_within_byte_limit(heap_new(), 0, closure_slot_count(), byte_limit)
+  let live = heap_live_object_count(allocation.heap)
+  let arena = heap_arena_cell_count(allocation.heap)
+  if live == 0 && arena == 0 && !is_heap_ref(allocation.value) && closure_bytes + cell_bytes > byte_limit then
     0
   else
     fail(
