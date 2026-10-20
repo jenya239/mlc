@@ -51,6 +51,26 @@ typedef struct MlcVmConfig {
   uint64_t reserved_jit_code_cache_limit;
 } MlcVmConfig;
 
+#define MLC_VM_ABI_VERSION_V2 2
+
+typedef struct MlcVmV2 MlcVmV2;
+
+/* struct_size is the caller-visible prefix.
+   A smaller struct_size is rejected; fields past that prefix are not read.
+   Allocation failure is returned as a status.
+   A segmentation fault is not a C++ exception and is not translated. */
+typedef struct MlcVmConfigV2 {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint64_t flags;
+  uint64_t instruction_limit;
+  int32_t heap_limit_objects;
+  MlcVmPanicCallback panic_callback;
+} MlcVmConfigV2;
+
+MlcResult mlc_vm_create_v2(const MlcVmConfigV2* config, MlcVmV2** created_out);
+void mlc_vm_destroy_v2(MlcVmV2* virtual_machine);
+
 MlcVm* mlc_vm_create(const MlcVmConfig* config);
 void mlc_vm_destroy(MlcVm* vm);
 MlcResult mlc_vm_load_module(

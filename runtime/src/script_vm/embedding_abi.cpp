@@ -5,8 +5,12 @@
 #include "embedding_codes.hpp"
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <limits>
+#include <new>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -61,9 +65,29 @@ struct MlcVm {
   EmbeddingVmState state;
 };
 
+struct MlcVmV2 {
+  EmbeddingVmState state;
+};
+
+// std::bad_alloc becomes a status. A segmentation fault is not caught.
+template <typename Function>
+MlcResult status_from_native(Function function) {
+  try {
+    return function();
+  } catch (const std::bad_alloc&) {
+    MlcResult result{};
+    result.code = MLC_HEAP_LIMIT;
+    return result;
+  } catch (const std::exception&) {
+    MlcResult result{};
+    result.code = MLC_UNSUPPORTED;
+    return result;
+  }
+}
+
 extern "C" {
 
-MlcVm* mlc_vm_create(const MlcVmConfig* config) {
+MlcVm* mlc_vm_create(const MlcVmConfig* config) try {
   auto* vm = new MlcVm();
   if (config != nullptr) {
     vm->state.instruction_limit = config->instruction_limit;
@@ -73,10 +97,16 @@ MlcVm* mlc_vm_create(const MlcVmConfig* config) {
     vm->state.panic_callback = config->panic_callback;
   }
   return vm;
+} catch (const std::bad_alloc&) {
+  return nullptr;
+} catch (const std::exception&) {
+  return nullptr;
 }
 
-void mlc_vm_destroy(MlcVm* vm) {
+void mlc_vm_destroy(MlcVm* vm) try {
   delete vm;
+} catch (const std::bad_alloc&) {
+} catch (const std::exception&) {
 }
 
 MlcResult mlc_vm_load_module(
@@ -84,7 +114,7 @@ MlcResult mlc_vm_load_module(
   const char* name,
   const void* source_or_bytecode,
   size_t size
-) {
+) try {
   MlcResult result{};
   if (vm == nullptr || name == nullptr || source_or_bytecode == nullptr) {
     result.code = embedding_codes::emb_type();
@@ -106,9 +136,17 @@ MlcResult mlc_vm_load_module(
   vm->state.modules[std::string(name)] = std::move(owned);
   result.code = embedding_codes::emb_ok();
   return result;
+} catch (const std::bad_alloc&) {
+  MlcResult result{};
+  result.code = MLC_HEAP_LIMIT;
+  return result;
+} catch (const std::exception&) {
+  MlcResult result{};
+  result.code = MLC_UNSUPPORTED;
+  return result;
 }
 
-MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* export_name) {
+MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* export_name) try {
   if (vm == nullptr || module_name == nullptr || export_name == nullptr) {
     return 0;
   }
@@ -147,6 +185,10 @@ MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* expo
   slot.export_name = export_name;
   slot.blob = module_it->second;
   return pack_handle(static_cast<std::uint32_t>(reused_index + 1), slot.generation);
+} catch (const std::bad_alloc&) {
+  return 0;
+} catch (const std::exception&) {
+  return 0;
 }
 
 MlcResult mlc_vm_call(
@@ -155,7 +197,7 @@ MlcResult mlc_vm_call(
   const MlcValue* args,
   size_t argc,
   MlcValue* result_value
-) {
+) try {
   MlcResult result{};
   if (vm == nullptr || result_value == nullptr) {
     result.code = embedding_codes::emb_type();
@@ -195,9 +237,17 @@ MlcResult mlc_vm_call(
     result_value->raw = result_raw;
   }
   return result;
+} catch (const std::bad_alloc&) {
+  MlcResult result{};
+  result.code = MLC_HEAP_LIMIT;
+  return result;
+} catch (const std::exception&) {
+  MlcResult result{};
+  result.code = MLC_UNSUPPORTED;
+  return result;
 }
 
-void mlc_handle_release(MlcVm* vm, MlcHandle handle) {
+void mlc_handle_release(MlcVm* vm, MlcHandle handle) try {
   const std::uint32_t released_index = handle_index(handle);
   const std::uint32_t released_generation = handle_generation(handle);
   if (vm == nullptr || released_index == 0 ||
@@ -213,9 +263,11 @@ void mlc_handle_release(MlcVm* vm, MlcHandle handle) {
   slot.live = false;
   slot.generation = slot.generation + 1;
   slot.blob.clear();
+} catch (const std::bad_alloc&) {
+} catch (const std::exception&) {
 }
 
-size_t mlc_script_vm_fixture_add1(uint8_t* out, size_t capacity) {
+size_t mlc_script_vm_fixture_add1(uint8_t* out, size_t capacity) try {
   const auto size = embedding::emb_add1_fixture_size();
   if (size < 0) {
     return 0;
@@ -229,6 +281,49 @@ size_t mlc_script_vm_fixture_add1(uint8_t* out, size_t capacity) {
         static_cast<uint8_t>(embedding::emb_add1_fixture_byte_at(index) & 255);
   }
   return needed;
+} catch (const std::bad_alloc&) {
+  return 0;
+} catch (const std::exception&) {
+  return 0;
+}
+
+MlcResult mlc_vm_create_v2(const MlcVmConfigV2* config, MlcVmV2** created_out) {
+  return status_from_native([&]() -> MlcResult {
+    MlcResult result{};
+    if (created_out == nullptr) {
+      result.code = MLC_TYPE;
+      return result;
+    }
+    *created_out = nullptr;
+    if (config == nullptr) {
+      result.code = MLC_TYPE;
+      return result;
+    }
+    const auto required_size = static_cast<std::uint32_t>(sizeof(MlcVmConfigV2));
+    if (config->struct_size < required_size) {
+      result.code = MLC_UNSUPPORTED;
+      return result;
+    }
+    if (config->abi_version != MLC_VM_ABI_VERSION_V2) {
+      result.code = MLC_UNSUPPORTED;
+      return result;
+    }
+    auto* virtual_machine = new MlcVmV2();
+    virtual_machine->state.instruction_limit = config->instruction_limit;
+    if (config->heap_limit_objects > 0) {
+      virtual_machine->state.heap_limit_objects = config->heap_limit_objects;
+    }
+    virtual_machine->state.panic_callback = config->panic_callback;
+    *created_out = virtual_machine;
+    result.code = MLC_OK;
+    return result;
+  });
+}
+
+void mlc_vm_destroy_v2(MlcVmV2* virtual_machine) try {
+  delete virtual_machine;
+} catch (const std::bad_alloc&) {
+} catch (const std::exception&) {
 }
 
 } // extern "C"
@@ -262,7 +357,7 @@ static void copy_code_text(char* destination, const mlc::String& code) {
 
 extern "C" {
 
-MlcRepl* mlc_repl_create(const MlcVmConfig* config) {
+MlcRepl* mlc_repl_create(const MlcVmConfig* config) try {
   auto* session = new MlcRepl();
   if (config != nullptr) {
     session->instruction_limit = config->instruction_limit;
@@ -272,9 +367,13 @@ MlcRepl* mlc_repl_create(const MlcVmConfig* config) {
     session->panic_callback = config->panic_callback;
   }
   return session;
+} catch (const std::bad_alloc&) {
+  return nullptr;
+} catch (const std::exception&) {
+  return nullptr;
 }
 
-void mlc_repl_destroy(MlcRepl* session) {
+void mlc_repl_destroy(MlcRepl* session) try {
   if (session == nullptr) {
     return;
   }
@@ -283,9 +382,11 @@ void mlc_repl_destroy(MlcRepl* session) {
     return;
   }
   session->released = true;
+} catch (const std::bad_alloc&) {
+} catch (const std::exception&) {
 }
 
-int mlc_repl_submit(MlcRepl* session, const char* text, size_t size, MlcReplAnswer* answer) {
+int mlc_repl_submit(MlcRepl* session, const char* text, size_t size, MlcReplAnswer* answer) try {
   if (session == nullptr || answer == nullptr || session->released) {
     return -1;
   }
@@ -308,6 +409,73 @@ int mlc_repl_submit(MlcRepl* session, const char* text, size_t size, MlcReplAnsw
   answer->column = result.column;
   copy_code_text(answer->code_text, result.code);
   return 0;
+} catch (const std::bad_alloc&) {
+  return -1;
+} catch (const std::exception&) {
+  return -1;
 }
 
 } // extern "C"
+
+namespace {
+
+MlcResult native_allocation_status() {
+  return status_from_native([]() -> MlcResult {
+    throw std::bad_alloc();
+  });
+}
+
+bool short_configuration_rejected() {
+  alignas(MlcVmConfigV2) unsigned char storage[sizeof(MlcVmConfigV2)];
+  std::memset(storage, 0x5A, sizeof(storage));
+  auto* configuration = reinterpret_cast<MlcVmConfigV2*>(storage);
+  configuration->struct_size =
+      static_cast<std::uint32_t>(sizeof(std::uint32_t) + sizeof(std::uint32_t));
+  configuration->abi_version = MLC_VM_ABI_VERSION_V2;
+  MlcVmV2* created = nullptr;
+  const MlcResult result = mlc_vm_create_v2(configuration, &created);
+  if (created != nullptr) {
+    mlc_vm_destroy_v2(created);
+    return false;
+  }
+  return result.code == MLC_UNSUPPORTED;
+}
+
+bool current_configuration_accepted() {
+  MlcVmConfigV2 configuration{};
+  configuration.struct_size = static_cast<std::uint32_t>(sizeof(MlcVmConfigV2));
+  configuration.abi_version = MLC_VM_ABI_VERSION_V2;
+  configuration.heap_limit_objects = 1;
+  MlcVmV2* created = nullptr;
+  const MlcResult result = mlc_vm_create_v2(&configuration, &created);
+  if (result.code != MLC_OK || created == nullptr) {
+    return false;
+  }
+  mlc_vm_destroy_v2(created);
+  return true;
+}
+
+struct BoundaryProbe {
+  BoundaryProbe() {
+    if (!short_configuration_rejected()) {
+      std::fprintf(stderr, "[script_vm embedding_v2] FAIL: short config accepted\n");
+      std::exit(1);
+    }
+    if (!current_configuration_accepted()) {
+      std::fprintf(stderr, "[script_vm embedding_v2] FAIL: current config rejected\n");
+      std::exit(1);
+    }
+    const MlcResult allocation = native_allocation_status();
+    if (allocation.code != MLC_HEAP_LIMIT) {
+      std::fprintf(
+          stderr,
+          "[script_vm embedding_v2] FAIL: allocation exception was not a status code=%d\n",
+          allocation.code);
+      std::exit(1);
+    }
+  }
+};
+
+BoundaryProbe boundary_probe;
+
+} // namespace
