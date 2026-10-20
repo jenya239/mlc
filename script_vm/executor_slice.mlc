@@ -73,7 +73,8 @@ export type SliceSession = {
   heap: Heap,
   state: VmState,
   protos: [FunctionProto],
-  execution: Execution
+  execution: Execution,
+  cancel_requested: bool
 }
 
 fn nil_value() -> Value = value_encode(ValueNil)
@@ -81,6 +82,8 @@ fn nil_value() -> Value = value_encode(ValueNil)
 fn slice_step_yielded() -> i32 = 4
 
 fn slice_step_frame() -> i32 = 3
+
+fn slice_step_cancelled() -> i32 = 5
 
 fn zero_instruction_limit() -> i64 = 0
 
@@ -249,7 +252,7 @@ fn execute_opcode(
   OpcodeCursor { step: step, program_counter: next_program_counter, registers: next_registers }
 end
 
-fn slice_frame(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto], quantum: i32) -> i32 = do
+fn slice_frame(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto], quantum: i32, cancel_requested: bool) -> i32 = do
   let mut registers = copy_frame_registers(state, protos[vm_state_frame_proto(state)].register_count)
   let mut program_counter = vm_state_program_counter(state)
   let mut executed = 0
@@ -257,7 +260,10 @@ fn slice_frame(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProt
   while step == executor_step_continue() && state.error_code == "" && vm_state_frame_depth(state) > 0 do
     let proto = protos[vm_state_frame_proto(state)]
     let words = proto.words
-    if executed >= quantum then
+    if cancel_requested then
+      materialize_current_frame(state, registers, program_counter)
+      step = slice_step_cancelled()
+    else if executed >= quantum then
       materialize_current_frame(state, registers, program_counter)
       step = slice_step_yielded()
     else if instruction_limit_reached(state) then
@@ -290,6 +296,9 @@ fn execution_ready(heap: Heap) -> Execution =
 fn execution_yielded(heap: Heap) -> Execution =
   Execution { status: Yielded, heap: heap, value: nil_value(), error_code: "", error_at: 0 }
 
+fn execution_cancelled(heap: Heap) -> Execution =
+  Execution { status: Cancelled, heap: heap, value: nil_value(), error_code: "", error_at: 0 }
+
 fn execution_is_terminal(execution: Execution) -> bool =
   match execution.status {
     Finished => true,
@@ -303,6 +312,8 @@ fn execution_from_step(heap: Heap, state: VmState, step: i32) -> Execution = do
     execution_finished(heap, state.return_value)
   else if step == slice_step_yielded() then
     execution_yielded(heap)
+  else if step == slice_step_cancelled() then
+    execution_cancelled(heap)
   else if state.error_code != "" then
     execution_failed(heap, state.error_code, state.error_at)
   else
@@ -311,7 +322,13 @@ fn execution_from_step(heap: Heap, state: VmState, step: i32) -> Execution = do
 end
 
 fn session_with(session: SliceSession, heap: Heap, state: VmState, execution: Execution) -> SliceSession =
-  SliceSession { heap: heap, state: state, protos: session.protos, execution: execution }
+  SliceSession {
+    heap: heap,
+    state: state,
+    protos: session.protos,
+    execution: execution,
+    cancel_requested: session.cancel_requested
+  }
 
 export fn slice_session_new(
   heap: Heap,
@@ -325,16 +342,25 @@ export fn slice_session_new(
   apply_run_limits(state, limits)
   let verification = verify_protos(protos)
   if verification.failed then
-    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_failed(heap_state, run_err_verify(), verification.at) }
+    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_failed(heap_state, run_err_verify(), verification.at), cancel_requested: false }
   else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
-    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_failed(heap_state, run_err_type(), 0) }
+    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_failed(heap_state, run_err_type(), 0), cancel_requested: false }
   else
     let entry = protos[entry_proto_index]
     vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
     place_arguments(state, entry.register_count, args)
-    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_ready(heap_state) }
+    SliceSession { heap: heap_state, state: state, protos: protos, execution: execution_ready(heap_state), cancel_requested: false }
   end
 end
+
+export fn slice_session_set_cancel(session: SliceSession, cancel_requested: bool) -> SliceSession =
+  SliceSession {
+    heap: session.heap,
+    state: session.state,
+    protos: session.protos,
+    execution: session.execution,
+    cancel_requested: cancel_requested
+  }
 
 export fn run_slice(session: SliceSession, quantum: i32) -> SliceSession = do
   if execution_is_terminal(session.execution) then
@@ -342,7 +368,7 @@ export fn run_slice(session: SliceSession, quantum: i32) -> SliceSession = do
   else
     let mut state = session.state
     let mut heap = session.heap
-    let step = slice_frame(heap, state, session.protos, quantum)
+    let step = slice_frame(heap, state, session.protos, quantum, session.cancel_requested)
     session_with(session, heap, state, execution_from_step(heap, state, step))
   end
 end

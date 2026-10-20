@@ -7,7 +7,7 @@ import {
   execution_budget_new,
   execution_budget_poll
 } from '../execution_budget'
-import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
+import { SliceSession, run_slice, slice_session_new, slice_session_set_cancel } from '../executor_slice'
 import { heap_new } from '../heap_types'
 import { lower_source } from '../lower/lower_module'
 import { decode_module } from '../module_blob'
@@ -72,6 +72,7 @@ fn check_cancel_during_slice() -> i32 = do
   if !budget.cancel_requested then
     return fail("cancel token was not set")
   end
+  session = slice_session_set_cancel(session, budget.cancel_requested)
   let instructions_at_cancel = session.state.instruction_count
   session = run_slice(session, cancel_window())
   let instructions_after_cancel = session.state.instruction_count - instructions_at_cancel
