@@ -1,0 +1,99 @@
+import { instruction_opcode_length } from '../bytecode_text'
+import {
+  instruction_words_binary,
+  instruction_words_load_const,
+  instruction_words_new_array,
+  instruction_words_return
+} from '../bytecode'
+import { emb_ok } from '../embedding_codes'
+import { call_loaded_export, load_module_bytes } from '../loaded_module'
+import { ModuleExport, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm persistent_instance_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn one_argument(raw: i64) -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments.push(raw)
+  arguments
+end
+
+fn integer_result(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn allocate_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_new_array(1, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn length_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_binary(instruction_opcode_length(), 1, 0, 0))
+  words = append_words(words, instruction_words_return(1))
+  words
+end
+
+fn one_constant(number: i32) -> [Value] = do
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(number)))
+  constants
+end
+
+fn empty_constants() -> [Value] = do
+  let mut constants: [Value] = []
+  constants
+end
+
+fn instance_module_bytes() -> [i32] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: allocate_words(), constants: one_constant(1), register_count: 2 })
+  prototypes.push(FunctionProto { words: length_words(), constants: empty_constants(), register_count: 2 })
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "allocate", proto_index: 0 })
+  exports.push(ModuleExport { name: "length", proto_index: 1 })
+  module_encode(exports, prototypes)
+end
+
+fn main() -> i32 = do
+  const loaded_result = load_module_bytes(instance_module_bytes())
+  if loaded_result.code != emb_ok() then
+    return fail("load code=" + loaded_result.code.to_string())
+  end
+  const allocated = call_loaded_export(loaded_result.loaded, "allocate", empty_arguments())
+  if allocated.code != emb_ok() then
+    return fail("allocate code=" + allocated.code.to_string())
+  end
+  const measured = call_loaded_export(loaded_result.loaded, "length", one_argument(allocated.raw))
+  const measured_number = integer_result(measured.raw)
+  if measured.code == emb_ok() && measured_number == 1 then
+    println("persistent_array")
+    println("[script_vm] persistent_instance_unit ok")
+    0
+  else
+    fail("fresh heap dropped rooted array code=" + measured.code.to_string() + " value=" + measured_number.to_string())
+  end
+end
