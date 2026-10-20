@@ -1,0 +1,116 @@
+import { Heap } from '../heap_types'
+import { heap_alloc_array, heap_alloc_cell, heap_alloc_record } from '../heap_alloc'
+import { heap_root_push } from '../heap_collect'
+import { emb_ok } from '../embedding_codes'
+import { instance_load_module, script_instance_new, ScriptInstance } from '../instance'
+import { lower_source } from '../lower/lower_module'
+import { Value } from '../value'
+import { dump_instance } from '../vm_dump'
+
+extern fn embedding_string_byte(text: string, index: i32) -> i32 =
+  "mlc::script_vm::embedding_string_byte" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm vm_dump_unit] FAIL: " + label)
+  1
+end
+
+fn module_source() -> string =
+  "export fn run() -> i32 = 1\n"
+
+fn text_has(text: string, pattern: string) -> bool = do
+  if pattern.byte_size() == 0 then
+    return true
+  end
+  if text.byte_size() < pattern.byte_size() then
+    return false
+  end
+  let mut start = 0
+  let mut found = false
+  while start + pattern.byte_size() <= text.byte_size() && !found do
+    let mut offset = 0
+    let mut same = true
+    while offset < pattern.byte_size() && same do
+      if embedding_string_byte(text, start + offset) != embedding_string_byte(pattern, offset) then
+        same = false
+      end
+      offset = offset + 1
+    end
+    if same then
+      found = true
+    end
+    start = start + 1
+  end
+  found
+end
+
+fn require_text(text: string, pattern: string, label: string) -> i32 = do
+  if text_has(text, pattern) then
+    0
+  else
+    fail(label + " bytes=" + text.byte_size().to_string())
+  end
+end
+
+fn with_heap(instance: ScriptInstance, heap: Heap, rooted_values: [Value]) -> ScriptInstance =
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: heap,
+    rooted_values: rooted_values
+  }
+
+fn main() -> i32 = do
+  const lowered = lower_source(module_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  const loaded = instance_load_module(script_instance_new(), lowered.bytes)
+  if loaded.code != emb_ok() then
+    return fail("load code=" + loaded.code.to_string())
+  end
+  const array_allocation = heap_alloc_array(loaded.instance.heap, 2)
+  const record_allocation = heap_alloc_record(array_allocation.heap, 2)
+  const cell_allocation = heap_alloc_cell(record_allocation.heap)
+  let mut rooted_values: [Value] = []
+  rooted_values.push(array_allocation.value)
+  rooted_values.push(record_allocation.value)
+  rooted_values.push(cell_allocation.value)
+  const rooted_heap = heap_root_push(
+    heap_root_push(heap_root_push(cell_allocation.heap, array_allocation.value), record_allocation.value),
+    cell_allocation.value
+  )
+  const populated = with_heap(loaded.instance, rooted_heap, rooted_values)
+  const dumped = dump_instance(populated)
+  let mut check = require_text(dumped, "instance identity 1 incarnation 0", "instance line")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "module 0 bytes ", "module line")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "object 0 type array", "array slot")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "object 1 type record", "record slot")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "object 2 type cell", "cell slot")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "root 0 heap", "root handle")
+  if check != 0 then
+    return check
+  end
+  check = require_text(dumped, "live_count 3", "live count")
+  if check != 0 then
+    return check
+  end
+  println("[script_vm] vm_dump_unit ok")
+  0
+end

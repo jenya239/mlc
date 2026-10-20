@@ -1,8 +1,8 @@
-current_step: 335
+current_step: 336
 status: ready
-last_result: done step 335: дамп ScriptInstance — identity/incarnation, индекс LoadedModule, rooted_values и слоты Heap; это не Checkpoint SVGUI-27
-last_verify: docs/agent/notes/s335_vm_dump_instance.md; gate нет
-next_step: 336
+last_result: done step 336: dump_instance не существует; vm_dump_unit вызывает её на инстансе с тремя объектами кучи и не собирается
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/vm_dump_unit.mlc => exit 1, error: file not found: script_vm/vm_dump.mlc; unit не зарегистрирован; run_script_vm_gate.rb не вызывался
+next_step: 337
 consult_count: 0
 consult_response:
 consult_verdict:
