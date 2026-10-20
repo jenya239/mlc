@@ -1,0 +1,103 @@
+import { Value, ValueInt32, value_byte_size, value_encode } from '../value'
+import {
+  instruction_words_load_const,
+  instruction_words_new_array,
+  instruction_words_return
+} from '../bytecode'
+import { RunHeapResult, run_err_heap_limit, run_limits_new } from '../run_result'
+import { FunctionProto, RunErr, RunOk, run_program_with_args_limited } from '../interpreter'
+import { heap_element_count, heap_live_object_count, heap_new } from '../heap'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm byte_budget_unit] FAIL: " + label)
+  1
+end
+
+fn million_elements() -> i32 = 1000000
+
+fn small_byte_limit() -> i32 = 64
+
+fn one_object_quota() -> i32 = 1
+
+fn unlimited_instructions() -> i64 = 0
+
+fn integer_value(number: i32) -> Value = value_encode(ValueInt32(number))
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn million_array_words() -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(1, 0))
+  words = append_words(words, instruction_words_new_array(0, 1))
+  append_words(words, instruction_words_return(0))
+end
+
+fn million_array_prototypes() -> [FunctionProto] = do
+  let mut constants: [Value] = []
+  constants.push(integer_value(million_elements()))
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto {
+    words: million_array_words(),
+    constants: constants,
+    register_count: 2
+  })
+  prototypes
+end
+
+fn error_code(outcome: RunHeapResult) -> string =
+  match outcome.result {
+    RunErr(code, _word_index) => code,
+    RunOk(_value) => "ok"
+  }
+
+fn allocated_length(outcome: RunHeapResult) -> i32 =
+  match outcome.result {
+    RunOk(value) => heap_element_count(outcome.heap, value),
+    RunErr(_code, _word_index) => 0 - 1
+  }
+
+fn allocation_refused(outcome: RunHeapResult) -> bool =
+  error_code(outcome) == run_err_heap_limit() && allocated_length(outcome) != million_elements()
+
+fn check_million_array() -> i32 = do
+  const outcome = run_program_with_args_limited(
+    heap_new(),
+    million_array_prototypes(),
+    0,
+    empty_arguments(),
+    run_limits_new(unlimited_instructions(), one_object_quota())
+  )
+  let byte_cost = million_elements() * value_byte_size()
+  if allocation_refused(outcome) && byte_cost > small_byte_limit() then
+    0
+  else
+    fail(
+      "million array bypassed byte limit code=" + error_code(outcome)
+        + " length=" + allocated_length(outcome).to_string()
+        + " live=" + heap_live_object_count(outcome.heap).to_string()
+        + " bytes=" + byte_cost.to_string()
+        + " limit=" + small_byte_limit().to_string()
+    )
+  end
+end
+
+fn main() -> i32 = do
+  let status = check_million_array()
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] byte_budget_unit ok")
+  0
+end
