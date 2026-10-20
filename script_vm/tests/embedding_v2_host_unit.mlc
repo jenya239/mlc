@@ -1,0 +1,45 @@
+import { emb_call_export_bytes_limited } from '../embedding'
+import { emb_heap_limit } from '../embedding_codes'
+import { lower_source } from '../lower/lower_module'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm embedding_v2_host_unit] FAIL: " + label)
+  1
+end
+
+fn zero_instruction_limit() -> i64 = 0
+
+fn heap_limit_one_object() -> i32 = 1
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn two_records_source() -> string =
+  "type Point = { horizontal: i32, vertical: i32 }\nexport fn run() -> i32 = do\nconst first = Point { horizontal: 1, vertical: 2 }\nconst second = Point { horizontal: 3, vertical: 4 }\nfirst.horizontal + second.vertical\nend\n"
+
+fn main() -> i32 = do
+  const lowered = lower_source(two_records_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  const called = emb_call_export_bytes_limited(
+    lowered.bytes,
+    "run",
+    empty_arguments(),
+    zero_instruction_limit(),
+    heap_limit_one_object()
+  )
+  if called.code == emb_heap_limit() then
+    fail(
+      "uncaught native exception at ABI boundary heap_limit=1 code="
+        + called.code.to_string()
+    )
+  else
+    fail(
+      "allocation failure was not a status heap_limit=1 code="
+        + called.code.to_string()
+    )
+  end
+end
