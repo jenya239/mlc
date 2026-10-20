@@ -27,6 +27,7 @@ import {
   ScriptDamageNone,
   ScriptDamagePaint,
   ScriptDamageRejected,
+  script_damage_for_rejected_batch,
   script_damage_for_set_label_text,
   script_damage_needs_layout,
   script_damage_revision_delta
@@ -44,6 +45,9 @@ fn viewport_height() -> i32 = 600
 fn original_text() -> string = "first"
 
 fn staged_text() -> string = "staged-first"
+
+fn missing_widget() -> WidgetId =
+  WidgetId { index: 99 }
 
 fn request_kind(request: FrameRequest) -> string =
   match request
@@ -107,10 +111,53 @@ fn check_noop() -> i32 = do
   0
 end
 
+fn damage_kind_name(kind: ScriptDamageKind) -> string =
+  match kind
+    | ScriptDamageLayoutPaint => "layout_paint"
+    | ScriptDamagePaint => "paint"
+    | ScriptDamageNone => "none"
+    | ScriptDamageRejected => "rejected"
+
+fn check_rejected_batch() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_text() }, OverflowVisible, 0, true)
+  let state = ui_state_new()
+  let previous = frame_signature(state, viewport_width(), viewport_height())
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(transaction, WidgetId { index: 0 }, staged_text())
+  transaction = script_transaction_stage_set_label_text(transaction, missing_widget(), staged_text())
+  transaction = script_transaction_commit(transaction)
+  let damage = script_damage_for_rejected_batch()
+  let next = frame_signature_with_script_damage(
+    state,
+    viewport_width(),
+    viewport_height(),
+    previous.script_damage_revision + script_damage_revision_delta(damage)
+  )
+  let request = frame_request(previous, next)
+  let none_status = match damage
+    | ScriptDamageNone => 0
+    | ScriptDamageLayoutPaint => 1
+    | ScriptDamagePaint => 1
+    | ScriptDamageRejected => 1
+  if none_status == 0 && request_kind(request) == "none" && transaction.revision == 0 then
+    0
+  else
+    fail(
+      "rejected batch requested " + request_kind(request)
+        + " damage=" + damage_kind_name(damage)
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
+end
+
 fn main() -> i32 = do
   let mut status = check_committed_label()
   if status == 0 then
     status = check_noop()
+  end
+  if status == 0 then
+    status = check_rejected_batch()
   end
   if status != 0 then
     return status
