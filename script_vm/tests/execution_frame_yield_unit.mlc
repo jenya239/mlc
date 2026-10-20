@@ -1,0 +1,148 @@
+import { Instruction, instruction_decode, instruction_opcode_call } from '../bytecode'
+import { emb_ok } from '../embedding_codes'
+import { Finished, Yielded } from '../execution'
+import { run_execution } from '../executor'
+import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
+import { heap_new } from '../heap_types'
+import { lower_source } from '../lower/lower_module'
+import { decode_module } from '../module_blob'
+import { run_limits_new } from '../run_result'
+import { Value, ValueInt32, value_decode } from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm execution_frame_yield_unit] FAIL: " + label)
+  1
+end
+
+fn expected_result() -> i32 = 41
+
+fn search_limit() -> i32 = 64
+
+fn resume_limit() -> i32 = 100000
+
+fn unlimited_limits() -> i64 = 0
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn integer_result(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn program_source() -> string =
+  "fn callee() -> i32 = 40\nexport fn run() -> i32 = callee() + 1\n"
+
+fn is_yielded(session: SliceSession) -> bool =
+  match session.execution.status {
+    Yielded => true,
+    _ => false
+  }
+
+fn current_program_counter(session: SliceSession) -> i32 = do
+  let frame_index = session.state.frame_depth - 1
+  if frame_index < 0 then
+    0 - 1
+  else
+    session.state.frame_program_counter[frame_index]
+  end
+end
+
+fn frame_opcode(session: SliceSession, word_index: i32) -> i32 = do
+  let frame_index = session.state.frame_depth - 1
+  if frame_index < 0 || word_index < 0 then
+    0 - 1
+  else
+    let words = session.protos[session.state.frame_proto[frame_index]].words
+    if word_index >= words.length() then
+      0 - 1
+    else
+      instruction_decode(Instruction { word: words[word_index] }).opcode
+    end
+  end
+end
+
+fn main() -> i32 = do
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return fail("decode code=" + decoded.code.to_string())
+  end
+  const prototypes = decoded.decoded_module.protos
+  const entry_index = decoded.decoded_module.exports[0].proto_index
+  const limits = run_limits_new(unlimited_limits(), 0)
+  const uninterrupted = run_execution(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  match uninterrupted.status {
+    Finished => do
+      const uninterrupted_value = integer_result(uninterrupted.value)
+      if uninterrupted_value != expected_result() then
+        return fail("uninterrupted value=" + uninterrupted_value.to_string())
+      end
+      let mut parked = slice_session_new(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+      let mut found = false
+      let mut call_quantum = 0
+      let mut stopped_code = ""
+      let mut stopped_at = 0
+      let mut stopped_opcode = 0 - 1
+      let mut stopped_instructions = 0
+      let mut quantum = 1
+      while quantum <= search_limit() && !found && stopped_code == "" do
+        let attempt = run_slice(
+          slice_session_new(heap_new(), prototypes, entry_index, empty_arguments(), limits),
+          quantum
+        )
+        if is_yielded(attempt) && frame_opcode(attempt, current_program_counter(attempt)) == instruction_opcode_call() then
+          found = true
+          call_quantum = quantum
+          parked = attempt
+        else if !is_yielded(attempt) then
+          stopped_code = attempt.execution.error_code
+          stopped_at = attempt.execution.error_at
+          stopped_opcode = frame_opcode(attempt, attempt.execution.error_at)
+          stopped_instructions = attempt.state.instruction_count
+          if stopped_code == "" then
+            stopped_code = "not_yielded"
+          end
+        end
+        quantum = quantum + 1
+      end
+      if !found then
+        return fail(
+          "yield on CALL absent code=" + stopped_code
+            + " at=" + stopped_at.to_string()
+            + " opcode=" + stopped_opcode.to_string()
+            + " call_opcode=" + instruction_opcode_call().to_string()
+            + " instructions=" + stopped_instructions.to_string()
+            + " uninterrupted=" + uninterrupted_value.to_string()
+        )
+      end
+      let mut slices = 0
+      while is_yielded(parked) && slices < resume_limit() do
+        parked = run_slice(parked, call_quantum)
+        slices = slices + 1
+      end
+      const resumed_value = integer_result(parked.execution.value)
+      if resumed_value == expected_result() && slices > 0 then
+        println("[script_vm] execution_frame_yield_unit ok")
+        0
+      else
+        fail(
+          "resume after CALL yield value=" + resumed_value.to_string()
+            + " code=" + parked.execution.error_code
+            + " at=" + parked.execution.error_at.to_string()
+            + " opcode=" + frame_opcode(parked, parked.execution.error_at).to_string()
+            + " slices=" + slices.to_string()
+            + " quantum=" + call_quantum.to_string()
+            + " expected=" + expected_result().to_string()
+        )
+      end
+    end,
+    _ => fail("uninterrupted code=" + uninterrupted.error_code)
+  }
+end
