@@ -60,7 +60,7 @@ fn foreign_lookup_status(
   handle: ResourceHandle,
   caller_principal: i64
 ) -> i32 =
-  match resource_table_lookup(table, store, handle) {
+  match resource_table_lookup(table, store, handle, caller_principal) {
     ResourceMiss => 0,
     ResourceHit(entry) => do
       if entry.owner_principal != caller_principal then
@@ -83,7 +83,7 @@ fn main() -> i32 = do
   if handle.slot == widget.index then
     return fail("resource handle is the raw widget index")
   end
-  let described = bound_entry_status(resource_table_lookup(table, store, handle), widget.index)
+  let described = bound_entry_status(resource_table_lookup(table, store, handle, owner_principal()), widget.index)
   if described != 0 then
     return described
   end
@@ -92,7 +92,7 @@ fn main() -> i32 = do
     return foreign
   end
   store = widget_store_rebuild(store)
-  let after = resource_table_lookup(table, store, handle)
+  let after = resource_table_lookup(table, store, handle, owner_principal())
   let stayed = match after {
     ResourceHit(_entry) => fail("handle stayed live after rebuild widget_index=" + widget.index.to_string()),
     ResourceMiss => 0

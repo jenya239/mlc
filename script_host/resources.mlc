@@ -80,7 +80,8 @@ end
 export fn resource_table_lookup(
   table: ref mut ResourceTable,
   store: WidgetStore,
-  handle: ResourceHandle
+  handle: ResourceHandle,
+  caller_principal: i64
 ) -> ResourceLookup = do
   resource_table_sync(table, store)
   if handle.slot < 0 || handle.slot >= table.entries.length() then
@@ -88,6 +89,9 @@ export fn resource_table_lookup(
   end
   let entry = table.entries[handle.slot]
   if !entry.live || entry.generation != handle.generation then
+    return ResourceMiss
+  end
+  if entry.owner_principal != caller_principal then
     return ResourceMiss
   end
   ResourceHit(entry)
