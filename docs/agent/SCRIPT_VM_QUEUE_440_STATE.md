@@ -1,8 +1,8 @@
-current_step: 360
+current_step: 361
 status: ready
-last_result: done step 360: mark и sweep режутся work budget; Continue при исчерпании, итог совпадает с полным collect
-last_verify: ruby scripts/run_script_vm_gate.rb gc_slice_unit suspended_roots_unit heap_limit => script_vm_gate ok units=3; ruby scripts/run_script_vm_queue200_gate.rb => unit gc_slice_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
-next_step: 361
+last_result: done step 361: decision, исход 302 (b), фаза 361–374 blocked; compiler/ и lib/mlc/ не правятся
+last_verify: карточка 361 заменена на decision; red unit не создавался; gate не вызывался; шаги 362–374 не выполняются
+next_step: 375
 consult_count: 0
 consult_response:
 consult_verdict:
