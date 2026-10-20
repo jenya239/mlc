@@ -1,0 +1,87 @@
+import { emb_call_export_bytes, emb_ok } from '../embedding'
+import { instruction_words_load_const, instruction_words_return } from '../bytecode'
+import { ModuleExport, module_encode } from '../module_blob'
+import { FunctionProto } from '../run_result'
+import { Value, ValueInt32, value_encode, value_decode } from '../value'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm loaded_module_cache_unit] FAIL: " + label)
+  1
+end
+
+fn append_words(destination: [i32], source: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < source.length() do
+    destination.push(source[index])
+    index = index + 1
+  end
+  destination
+end
+
+fn empty_arguments() -> [i64] = do
+  let mut arguments: [i64] = []
+  arguments
+end
+
+fn integer_result(raw: i64) -> i32 =
+  match value_decode(Value { raw: raw }) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn constant_module_bytes(number: i32) -> [i32] = do
+  let mut words: [i32] = []
+  words = append_words(words, instruction_words_load_const(0, 0))
+  words = append_words(words, instruction_words_return(0))
+  let mut constants: [Value] = []
+  constants.push(value_encode(ValueInt32(number)))
+  let mut prototypes: [FunctionProto] = []
+  prototypes.push(FunctionProto { words: words, constants: constants, register_count: 1 })
+  let mut exports: [ModuleExport] = []
+  exports.push(ModuleExport { name: "run", proto_index: 0 })
+  module_encode(exports, prototypes)
+end
+
+fn apply_changed_bytes(bytes: [i32], updated: [i32]) -> [i32] = do
+  let mut index = 0
+  while index < bytes.length() && index < updated.length() do
+    if bytes[index] != updated[index] then
+      bytes.set(index, updated[index])
+    end
+    index = index + 1
+  end
+  bytes
+end
+
+fn main() -> i32 = do
+  let mut bytes = constant_module_bytes(7)
+  const updated = constant_module_bytes(9)
+  if bytes.length() != updated.length() then
+    return fail("constant modules differ in length")
+  end
+  const first = emb_call_export_bytes(bytes, "run", empty_arguments())
+  if first.code != emb_ok() then
+    return fail("first call code=" + first.code.to_string())
+  end
+  bytes = apply_changed_bytes(bytes, updated)
+  const second = emb_call_export_bytes(bytes, "run", empty_arguments())
+  if second.code != emb_ok() then
+    return fail("second call code=" + second.code.to_string())
+  end
+  const first_number = integer_result(first.raw)
+  const second_number = integer_result(second.raw)
+  let mut decode_invocations = 0
+  if first_number == 7 then
+    decode_invocations = decode_invocations + 1
+  end
+  if second_number == 9 then
+    decode_invocations = decode_invocations + 1
+  end
+  if decode_invocations == 1 && second_number == 7 then
+    println("decode_once")
+    println("[script_vm] loaded_module_cache_unit ok")
+    0
+  else
+    fail("decode on each call decode_invocations=" + decode_invocations.to_string() + " first=" + first_number.to_string() + " second=" + second_number.to_string())
+  end
+end
