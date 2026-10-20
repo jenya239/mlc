@@ -5,11 +5,14 @@ import {
   WidgetKind,
   WidgetStore,
   widget_id_none,
-  widget_node_with_kind,
   widget_store_add_label,
-  widget_store_empty,
-  widget_store_keep
+  widget_store_empty
 } from '../store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../script_transaction'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm script_transaction_unit] FAIL: " + message)
@@ -46,34 +49,62 @@ fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
   label_text(store.nodes[widget.index].kind)
 end
 
-fn apply_set_label_text(store: WidgetStore, widget: WidgetId, text: string) -> WidgetStore = do
-  if widget.index < 0 || widget.index >= store.nodes.length() then
-    return store
+fn two_labels() -> WidgetStore = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_first() }, OverflowVisible, 0, true)
+  widget_store_add_label(store, widget_id_none(), LabelData { text: original_second() }, OverflowVisible, 0, true)
+end
+
+fn check_rejected_partial() -> i32 = do
+  let first = WidgetId { index: 0 }
+  let second = WidgetId { index: 1 }
+  let mut transaction = script_transaction_new(two_labels())
+  transaction = script_transaction_stage_set_label_text(transaction, first, staged_first())
+  transaction = script_transaction_stage_set_label_text(transaction, missing_widget(), staged_second())
+  transaction = script_transaction_commit(transaction)
+  let first_text = store_text(transaction.store, first)
+  let second_text = store_text(transaction.store, second)
+  if first_text == original_first() && second_text == original_second() && transaction.revision == 0 then
+    0
+  else
+    fail(
+      "partial batch visible first=" + first_text
+        + " second=" + second_text
+        + " expected_first=" + original_first()
+        + " expected_second=" + original_second()
+        + " revision=" + transaction.revision.to_string()
+    )
   end
-  let node = store.nodes[widget.index]
-  let mut nodes = store.nodes
-  nodes.set(widget.index, widget_node_with_kind(node, KindLabel(LabelData { text: text })))
-  widget_store_keep(nodes, store)
+end
+
+fn check_accepted_batch() -> i32 = do
+  let first = WidgetId { index: 0 }
+  let second = WidgetId { index: 1 }
+  let mut transaction = script_transaction_new(two_labels())
+  transaction = script_transaction_stage_set_label_text(transaction, first, staged_first())
+  transaction = script_transaction_stage_set_label_text(transaction, second, staged_second())
+  transaction = script_transaction_commit(transaction)
+  let first_text = store_text(transaction.store, first)
+  let second_text = store_text(transaction.store, second)
+  if first_text == staged_first() && second_text == staged_second() && transaction.revision == 1 then
+    0
+  else
+    fail(
+      "accepted batch missing first=" + first_text
+        + " second=" + second_text
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
 end
 
 fn main() -> i32 = do
-  let mut store = widget_store_empty()
-  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_first() }, OverflowVisible, 0, true)
-  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_second() }, OverflowVisible, 0, true)
-  let first = WidgetId { index: 0 }
-  let second = WidgetId { index: 1 }
-  store = apply_set_label_text(store, first, staged_first())
-  store = apply_set_label_text(store, missing_widget(), staged_second())
-  let first_text = store_text(store, first)
-  let second_text = store_text(store, second)
-  if first_text == original_first() && second_text == original_second() then
-    println("[script_vm] script_transaction_unit ok")
-    return 0
+  let mut status = check_rejected_partial()
+  if status == 0 then
+    status = check_accepted_batch()
   end
-  fail(
-    "partial batch visible first=" + first_text
-      + " second=" + second_text
-      + " expected_first=" + original_first()
-      + " expected_second=" + original_second()
-  )
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] script_transaction_unit ok")
+  0
 end

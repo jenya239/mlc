@@ -50,6 +50,7 @@ registered_units = [
   ["service_queue_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/service_queue_unit.mlc"]],
   ["service_wakeup_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/service_wakeup_unit.mlc"]],
   ["resource_table_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/resource_table_unit.mlc"]],
+  ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["repl_persistent_memory_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_persistent_memory_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],
