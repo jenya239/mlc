@@ -1,8 +1,8 @@
-current_step: 333
+current_step: 334
 status: ready
-last_result: done step 333: owner thread фиксируется при create; load, call, release и destroy на debug-сборке требуют этот поток
-last_verify: bash scripts/run_script_vm_embedding_abi_unit.sh => exit 0; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился); file size ok; persistent_instance_unit, handle_generation_unit, embedding_v2_host_unit, repl_persistent_memory_unit ok
-next_step: 334
+last_result: done step 334: embedding-вызов при heap_limit=1 возвращает code 10 и не даёт отдельный status нарушения owner thread
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/embedding_v2_host_unit.mlc => exit 1, allocation_status=ok, FAIL: owner thread violation was not a status code=10; unit снят с общего gate; run_script_vm_gate.rb не вызывался
+next_step: 335
 consult_count: 0
 consult_response:
 consult_verdict:
