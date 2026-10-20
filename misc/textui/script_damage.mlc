@@ -13,7 +13,7 @@ export fn script_damage_for_set_label_text(text_changed: bool) -> ScriptDamageKi
 end
 
 export fn script_damage_for_rejected_batch() -> ScriptDamageKind =
-  ScriptDamageRejected
+  ScriptDamageNone
 
 export fn script_damage_needs_layout(kind: ScriptDamageKind) -> bool =
   match kind
