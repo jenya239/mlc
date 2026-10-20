@@ -1,8 +1,8 @@
-current_step: 350
+current_step: 351
 status: ready
-last_result: done step 350: run_slice проверяет cancel_requested до следующей инструкции и возвращает Cancelled
-last_verify: ruby scripts/run_script_vm_gate.rb execution_budget_unit execution_frame_yield_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился); file size ok; unit execution_budget_unit ok
-next_step: 351
+last_result: done step 351: collect по корням другого execution убивает HeapRef приостановленного; resume даёт type
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/suspended_roots_unit.mlc => EXIT:1; FAIL: suspended record lost after other collect status=Failed code=type payload=-1 record_alive=false live=1; gate не вызывался
+next_step: 352
 consult_count: 0
 consult_response:
 consult_verdict:

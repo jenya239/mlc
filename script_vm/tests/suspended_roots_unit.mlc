@@ -1,0 +1,220 @@
+import { emb_ok } from '../embedding_codes'
+import { Cancelled, Failed, Finished, Ready, Running, Waiting, Yielded } from '../execution'
+import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
+import { heap_in_place_collect } from '../heap_collect'
+import { Heap, heap_live_object_count, heap_new, heap_object_type_id, heap_type_record } from '../heap'
+import { lower_source } from '../lower/lower_module'
+import { decode_module } from '../module_blob'
+import { FunctionProto, run_limits_new } from '../run_result'
+import { Value, ValueInt32, value_decode } from '../value'
+import { vm_state_frame_proto, vm_state_live_roots, vm_state_register } from '../vm_state'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm suspended_roots_unit] FAIL: " + label)
+  1
+end
+
+fn kept_payload() -> i32 = 41
+
+fn bool_text(value: bool) -> string =
+  if value then
+    "true"
+  else
+    "false"
+  end
+
+fn park_limit() -> i32 = 400
+
+fn resume_limit() -> i32 = 100000
+
+fn slice_quantum() -> i32 = 64
+
+fn unlimited_limits() -> i64 = 0
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn suspended_source() -> string =
+  "type Marker = { payload: i32 }\nexport fn run() -> i32 = do\nlet marker = Marker { payload: 41 }\nlet mut index = 0\nwhile index < 1000 do\nindex = index + 1\nend\nmarker.payload\nend\n"
+
+fn collector_source() -> string =
+  "type Marker = { payload: i32 }\nexport fn run() -> i32 = do\nlet noise = Marker { payload: 1 }\nnoise.payload\nend\n"
+
+fn status_name(session: SliceSession) -> string =
+  match session.execution.status {
+    Ready => "Ready",
+    Running => "Running",
+    Yielded => "Yielded",
+    Waiting => "Waiting",
+    Finished => "Finished",
+    Failed => "Failed",
+    Cancelled => "Cancelled"
+  }
+
+fn is_yielded(session: SliceSession) -> bool =
+  match session.execution.status {
+    Yielded => true,
+    _ => false
+  }
+
+fn is_terminal(session: SliceSession) -> bool =
+  match session.execution.status {
+    Finished => true,
+    Failed => true,
+    Cancelled => true,
+    _ => false
+  }
+
+fn finished_payload(session: SliceSession) -> i32 =
+  match session.execution.status {
+    Finished => match value_decode(session.execution.value) {
+      ValueInt32(number) => number,
+      _ => 0 - 1
+    },
+    _ => 0 - 1
+  }
+
+fn load_prototypes(source: string) -> [FunctionProto] = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return []
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return []
+  end
+  decoded.decoded_module.protos
+end
+
+fn entry_proto_index(source: string) -> i32 = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() != 0 then
+    return 0 - 1
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() || decoded.decoded_module.exports.length() == 0 then
+    return 0 - 1
+  end
+  decoded.decoded_module.exports[0].proto_index
+end
+
+fn frame_register_count(session: SliceSession) -> i32 = do
+  let mut state = session.state
+  let proto_index = vm_state_frame_proto(state)
+  if proto_index < 0 || proto_index >= session.protos.length() then
+    0
+  else
+    session.protos[proto_index].register_count
+  end
+end
+
+fn register_type_id(session: SliceSession, register_index: i32) -> i32 = do
+  let mut state = session.state
+  heap_object_type_id(session.heap, vm_state_register(state, register_index))
+end
+
+fn session_has_record(session: SliceSession) -> bool = do
+  let mut register_index = 0
+  let register_count = frame_register_count(session)
+  let mut found = false
+  while register_index < register_count && !found do
+    if register_type_id(session, register_index) == heap_type_record() then
+      found = true
+    end
+    register_index = register_index + 1
+  end
+  found
+end
+
+fn park_with_record(session: SliceSession) -> SliceSession = do
+  let mut current = session
+  let mut steps = 0
+  while steps < park_limit() && !(is_yielded(current) && session_has_record(current)) do
+    if is_terminal(current) then
+      return current
+    end
+    current = run_slice(current, 1)
+    steps = steps + 1
+  end
+  current
+end
+
+fn run_until_terminal(session: SliceSession) -> SliceSession = do
+  let mut current = session
+  let mut steps = 0
+  while !is_terminal(current) && steps < resume_limit() do
+    current = run_slice(current, slice_quantum())
+    steps = steps + 1
+  end
+  current
+end
+
+fn session_with_heap(session: SliceSession, heap: Heap) -> SliceSession = do
+  let mut next = session
+  next.heap = heap
+  next
+end
+
+fn collect_without_suspended_roots(collector: SliceSession) -> Heap = do
+  let mut heap = collector.heap
+  let mut state = collector.state
+  heap_in_place_collect(heap, vm_state_live_roots(state))
+  heap
+end
+
+fn check_suspended_survives_collect() -> i32 = do
+  let suspended_prototypes = load_prototypes(suspended_source())
+  let collector_prototypes = load_prototypes(collector_source())
+  if suspended_prototypes.length() == 0 || collector_prototypes.length() == 0 then
+    return fail("lower failed")
+  end
+  let mut suspended = slice_session_new(
+    heap_new(),
+    suspended_prototypes,
+    entry_proto_index(suspended_source()),
+    empty_arguments(),
+    run_limits_new(unlimited_limits(), 0)
+  )
+  suspended = park_with_record(suspended)
+  if !(is_yielded(suspended) && session_has_record(suspended)) then
+    return fail(
+      "suspended record absent status=" + status_name(suspended)
+        + " live=" + heap_live_object_count(suspended.heap).to_string()
+    )
+  end
+  let mut collector = slice_session_new(
+    suspended.heap,
+    collector_prototypes,
+    entry_proto_index(collector_source()),
+    empty_arguments(),
+    run_limits_new(unlimited_limits(), 0)
+  )
+  collector = run_until_terminal(collector)
+  let collected_heap = collect_without_suspended_roots(collector)
+  suspended = session_with_heap(suspended, collected_heap)
+  let record_alive = session_has_record(suspended)
+  suspended = run_until_terminal(suspended)
+  let payload = finished_payload(suspended)
+  if record_alive && payload == kept_payload() then
+    0
+  else
+    fail(
+      "suspended record lost after other collect status=" + status_name(suspended)
+        + " code=" + suspended.execution.error_code
+        + " payload=" + payload.to_string()
+        + " record_alive=" + bool_text(record_alive)
+        + " live=" + heap_live_object_count(collected_heap).to_string()
+    )
+  end
+end
+
+fn main() -> i32 = do
+  let status = check_suspended_survives_collect()
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] suspended_roots_unit ok")
+  0
+end
