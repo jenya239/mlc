@@ -63,6 +63,12 @@ import {
 } from './vm_state'
 import { apply_binary, apply_compare, value_jump_decision } from './arith'
 import {
+  Execution,
+  execution_failed,
+  execution_from_heap_result,
+  execution_to_run_heap
+} from './execution'
+import {
   executor_step_continue,
   executor_step_returned,
   executor_fail
@@ -334,23 +340,32 @@ fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index:
   end
 end
 
+export fn run_execution(
+  heap: Heap,
+  protos: [FunctionProto],
+  entry_proto_index: i32,
+  args: [Value],
+  limits: RunLimits
+) -> Execution = do
+  let mut heap_state = heap
+  let verification = verify_protos(protos)
+  if verification.failed then
+    execution_failed(heap_state, run_err_verify(), verification.at)
+  else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
+    execution_failed(heap_state, run_err_type(), 0)
+  else
+    execution_from_heap_result(execute_state(heap_state, protos, entry_proto_index, args, limits))
+  end
+end
+
 export fn run_state_program_limited(
   heap: Heap,
   protos: [FunctionProto],
   entry_proto_index: i32,
   args: [Value],
   limits: RunLimits
-) -> RunHeapResult = do
-  let mut heap_state = heap
-  let verification = verify_protos(protos)
-  if verification.failed then
-    RunHeapResult { heap: heap_state, result: RunErr(run_err_verify(), verification.at) }
-  else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
-    RunHeapResult { heap: heap_state, result: RunErr(run_err_type(), 0) }
-  else
-    execute_state(heap_state, protos, entry_proto_index, args, limits)
-  end
-end
+) -> RunHeapResult =
+  execution_to_run_heap(run_execution(heap, protos, entry_proto_index, args, limits))
 
 export fn run_state_program(
   heap: Heap,

@@ -1,0 +1,29 @@
+import {
+  Execution,
+  Ready,
+  Running,
+  Yielded,
+  Waiting,
+  Finished,
+  Failed,
+  Cancelled
+} from './execution'
+import { Value } from './value'
+
+export type PollResult =
+  | Completed(Value)
+  | PollYielded
+  | PollWaiting
+  | PollCancelled
+  | PollFailed(string, i32)
+
+export fn poll_execution(execution: Execution) -> PollResult =
+  match execution.status {
+    Finished => Completed(execution.value),
+    Failed => PollFailed(execution.error_code, execution.error_at),
+    Yielded => PollYielded,
+    Waiting => PollWaiting,
+    Cancelled => PollCancelled,
+    Ready => PollYielded,
+    Running => PollYielded
+  }

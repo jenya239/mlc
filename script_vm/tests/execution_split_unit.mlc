@@ -1,5 +1,7 @@
 import { emb_ok } from '../embedding_codes'
-import { run_state_program_limited } from '../executor'
+import { Finished } from '../execution'
+import { Completed, poll_execution } from '../execution_result'
+import { run_execution, run_state_program_limited } from '../executor'
 import { heap_new } from '../heap_types'
 import { lower_source } from '../lower/lower_module'
 import { decode_module } from '../module_blob'
@@ -36,17 +38,37 @@ fn main() -> i32 = do
   if decoded.code != emb_ok() then
     return fail("decode code=" + decoded.code.to_string())
   end
-  const ran = run_state_program_limited(
-    heap_new(),
-    decoded.decoded_module.protos,
-    decoded.decoded_module.exports[0].proto_index,
-    empty_arguments(),
-    run_limits_new(unlimited_limits(), 0)
-  )
-  match ran.result {
-    RunOk(value) => fail(
-      "Execution status absent variant=RunOk value=" + integer_result(value).to_string()
-    ),
-    RunErr(code, _at) => fail("Execution status absent variant=RunErr code=" + code)
+  const prototypes = decoded.decoded_module.protos
+  const entry_index = decoded.decoded_module.exports[0].proto_index
+  const limits = run_limits_new(unlimited_limits(), 0)
+  const legacy = run_state_program_limited(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  const execution = run_execution(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  const polled = poll_execution(execution)
+  match execution.status {
+    Finished =>
+      match legacy.result {
+        RunOk(legacy_value) =>
+          match polled {
+            Completed(polled_value) => do
+              const legacy_number = integer_result(legacy_value)
+              const execution_number = integer_result(execution.value)
+              const polled_number = integer_result(polled_value)
+              if legacy_number == 1 && execution_number == legacy_number && polled_number == legacy_number then
+                println("execution_finished")
+                println("[script_vm] execution_split_unit ok")
+                0
+              else
+                fail(
+                  "value mismatch legacy=" + legacy_number.to_string()
+                    + " execution=" + execution_number.to_string()
+                    + " poll=" + polled_number.to_string()
+                )
+              end
+            end,
+            _ => fail("poll was not Completed")
+          },
+        RunErr(code, _at) => fail("legacy RunErr code=" + code)
+      },
+    _ => fail("execution status was not Finished")
   }
 end

@@ -1,0 +1,63 @@
+import { Heap } from './heap'
+import { RunHeapResult, RunOk, RunErr, run_err_type } from './run_result'
+import { Value, ValueNil, value_encode } from './value'
+
+export type ExecutionStatus =
+  | Ready
+  | Running
+  | Yielded
+  | Waiting
+  | Finished
+  | Failed
+  | Cancelled
+
+export type Execution = {
+  status: ExecutionStatus,
+  heap: Heap,
+  value: Value,
+  error_code: string,
+  error_at: i32
+}
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+export fn execution_finished(heap: Heap, value: Value) -> Execution =
+  Execution {
+    status: Finished,
+    heap: heap,
+    value: value,
+    error_code: "",
+    error_at: 0
+  }
+
+export fn execution_failed(heap: Heap, error_code: string, error_at: i32) -> Execution =
+  Execution {
+    status: Failed,
+    heap: heap,
+    value: nil_value(),
+    error_code: error_code,
+    error_at: error_at
+  }
+
+export fn execution_from_heap_result(ran: RunHeapResult) -> Execution =
+  match ran.result {
+    RunOk(value) => execution_finished(ran.heap, value),
+    RunErr(code, at) => execution_failed(ran.heap, code, at)
+  }
+
+fn execution_type_error(execution: Execution) -> RunHeapResult =
+  RunHeapResult { heap: execution.heap, result: RunErr(run_err_type(), 0) }
+
+export fn execution_to_run_heap(execution: Execution) -> RunHeapResult =
+  match execution.status {
+    Finished => RunHeapResult { heap: execution.heap, result: RunOk(execution.value) },
+    Failed => RunHeapResult {
+      heap: execution.heap,
+      result: RunErr(execution.error_code, execution.error_at)
+    },
+    Ready => execution_type_error(execution),
+    Running => execution_type_error(execution),
+    Yielded => execution_type_error(execution),
+    Waiting => execution_type_error(execution),
+    Cancelled => execution_type_error(execution)
+  }
