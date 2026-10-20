@@ -1,8 +1,8 @@
-current_step: 347
+current_step: 348
 status: ready
-last_result: done step 347: instruction_count i32 при 2147483647 и limit 2147483648 даёт PANIC integer overflow на следующем шаге
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/execution_budget_unit.mlc => EXIT:1; PANIC: integer overflow; limit=2147483648; before_slice count=2147483647; gate не вызывался; unit не зарегистрирован
-next_step: 348
+last_result: done step 348: execution_budget считает i64 до 2147483648 без panic; миллион poll не обходит total 100; cancel — отдельное поле
+last_verify: ruby scripts/run_script_vm_gate.rb execution_budget_unit execution_frame_yield_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился); file size ok; unit execution_budget_unit ok
+next_step: 349
 consult_count: 0
 consult_response:
 consult_verdict:

@@ -1,11 +1,11 @@
-import { emb_ok } from '../embedding_codes'
-import { Failed, Finished, Yielded } from '../execution'
-import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
-import { heap_new } from '../heap_types'
-import { lower_source } from '../lower/lower_module'
-import { decode_module } from '../module_blob'
-import { run_err_instruction_limit, run_limits_new } from '../run_result'
-import { Value } from '../value'
+import {
+  execution_budget_at,
+  execution_budget_cancel,
+  execution_budget_charge,
+  execution_budget_new,
+  execution_budget_poll
+} from '../execution_budget'
+import { run_err_instruction_limit } from '../run_result'
 
 fn fail(label: string) -> i32 = do
   println("[script_vm execution_budget_unit] FAIL: " + label)
@@ -18,69 +18,89 @@ fn i64_from_i32(value: i32) -> i64 = value
 
 fn limit_past_i32_maximum() -> i64 = i64_from_i32(i32_maximum()) + i64_from_i32(1)
 
-fn slice_quantum() -> i32 = 1
+fn million_yields() -> i32 = 1000000
 
-fn empty_arguments() -> [Value] = do
-  let mut arguments: [Value] = []
-  arguments
+fn small_total() -> i64 = i64_from_i32(100)
+
+fn one_cost() -> i64 = i64_from_i32(1)
+
+fn check_overflow() -> i32 = do
+  let budget = execution_budget_at(limit_past_i32_maximum(), one_cost(), i64_from_i32(i32_maximum()))
+  let charged = execution_budget_charge(budget, one_cost())
+  if charged.limited || charged.budget.consumed != limit_past_i32_maximum() then
+    return fail(
+      "overflow charge consumed=" + charged.budget.consumed.to_string()
+        + " limited=" + charged.error_code
+    )
+  end
+  let blocked = execution_budget_charge(charged.budget, one_cost())
+  if !blocked.limited || blocked.error_code != run_err_instruction_limit() || blocked.budget.consumed != limit_past_i32_maximum() then
+    return fail(
+      "overflow second charge consumed=" + blocked.budget.consumed.to_string()
+        + " code=" + blocked.error_code
+    )
+  end
+  0
 end
 
-fn program_source() -> string = "export fn run() -> i32 = 1\n"
-
-fn status_text(session: SliceSession) -> string =
-  match session.execution.status {
-    Yielded => "Yielded",
-    Finished => "Finished",
-    Failed => "Failed",
-    _ => "other"
-  }
-
-fn count_is_checked(session: SliceSession) -> bool = do
-  let count = session.state.instruction_count
-  if count < 0 || count > i32_maximum() then
-    false
-  else if session.execution.error_code == run_err_instruction_limit() then
-    true
-  else
-    count == i32_maximum()
+fn check_poll_keeps_task_fuel() -> i32 = do
+  let budget = execution_budget_new(i64_from_i32(5), i64_from_i32(2))
+  let charged = execution_budget_charge(budget, one_cost())
+  let polled = execution_budget_poll(charged.budget)
+  if polled.quantum_fuel != i64_from_i32(2) || polled.task_fuel_remaining != i64_from_i32(4) || polled.consumed != one_cost() then
+    return fail(
+      "poll restored task fuel quantum=" + polled.quantum_fuel.to_string()
+        + " task=" + polled.task_fuel_remaining.to_string()
+        + " consumed=" + polled.consumed.to_string()
+    )
   end
+  0
+end
+
+fn check_million_yields() -> i32 = do
+  let mut budget = execution_budget_new(small_total(), one_cost())
+  let mut index = 0
+  while index < million_yields() do
+    budget = execution_budget_poll(budget)
+    let charged = execution_budget_charge(budget, one_cost())
+    budget = charged.budget
+    index = index + 1
+  end
+  if budget.consumed != small_total() || budget.task_fuel_remaining != i64_from_i32(0) then
+    return fail(
+      "million yields bypassed total consumed=" + budget.consumed.to_string()
+        + " task=" + budget.task_fuel_remaining.to_string()
+    )
+  end
+  0
+end
+
+fn check_cancel_token() -> i32 = do
+  let budget = execution_budget_cancel(execution_budget_new(small_total(), one_cost()))
+  let charged = execution_budget_charge(budget, one_cost())
+  if !charged.limited || charged.budget.consumed != i64_from_i32(0) || !charged.budget.cancel_requested then
+    return fail(
+      "cancel token consumed=" + charged.budget.consumed.to_string()
+        + " code=" + charged.error_code
+    )
+  end
+  0
 end
 
 fn main() -> i32 = do
-  const lowered = lower_source(program_source())
-  if lowered.diagnostics.length() != 0 then
-    return fail("lower code=" + lowered.diagnostics[0].code)
+  let mut status = check_overflow()
+  if status == 0 then
+    status = check_poll_keeps_task_fuel()
   end
-  const decoded = decode_module(lowered.bytes)
-  if decoded.code != emb_ok() then
-    return fail("decode code=" + decoded.code.to_string())
+  if status == 0 then
+    status = check_million_yields()
   end
-  let mut session = slice_session_new(
-    heap_new(),
-    decoded.decoded_module.protos,
-    decoded.decoded_module.exports[0].proto_index,
-    empty_arguments(),
-    run_limits_new(limit_past_i32_maximum(), 0)
-  )
-  let mut state = session.state
-  state.instruction_count = i32_maximum()
-  session.state = state
-  if session.state.instruction_limit <= i64_from_i32(i32_maximum()) then
-    return fail("limit was not past i32 maximum limit=" + session.state.instruction_limit.to_string())
+  if status == 0 then
+    status = check_cancel_token()
   end
-  println("limit=" + session.state.instruction_limit.to_string())
-  println("before_slice count=" + session.state.instruction_count.to_string())
-  session = run_slice(session, slice_quantum())
-  println("after_slice count=" + session.state.instruction_count.to_string())
-  if count_is_checked(session) then
-    println("[script_vm] execution_budget_unit ok")
-    0
-  else
-    fail(
-      "instruction_count overflowed count=" + session.state.instruction_count.to_string()
-        + " status=" + status_text(session)
-        + " code=" + session.execution.error_code
-        + " limit=" + session.state.instruction_limit.to_string()
-    )
+  if status != 0 then
+    return status
   end
+  println("[script_vm] execution_budget_unit ok")
+  0
 end

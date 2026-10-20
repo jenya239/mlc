@@ -43,6 +43,7 @@ registered_units = [
   ["execution_slice_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/execution_slice_unit.mlc"]],
   ["execution_frame_yield_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/execution_frame_yield_unit.mlc"]],
   ["execution_slice_differential_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/execution_slice_differential_unit.mlc"]],
+  ["execution_budget_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/execution_budget_unit.mlc"]],
   ["repl_persistent_memory_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_persistent_memory_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],

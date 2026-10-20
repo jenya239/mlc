@@ -1,0 +1,111 @@
+import { run_err_instruction_limit } from './run_result'
+
+export type ExecutionBudget = {
+  quantum_fuel: i64,
+  quantum_size: i64,
+  task_fuel_remaining: i64,
+  consumed: i64,
+  total_limit: i64,
+  cancel_requested: bool
+}
+
+export type BudgetCharge = {
+  budget: ExecutionBudget,
+  limited: bool,
+  error_code: string
+}
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn zero_fuel() -> i64 = i64_from_i32(0)
+
+fn budget_copy(
+  budget: ExecutionBudget,
+  quantum_fuel: i64,
+  task_fuel_remaining: i64,
+  consumed: i64,
+  cancel_requested: bool
+) -> ExecutionBudget =
+  ExecutionBudget {
+    quantum_fuel: quantum_fuel,
+    quantum_size: budget.quantum_size,
+    task_fuel_remaining: task_fuel_remaining,
+    consumed: consumed,
+    total_limit: budget.total_limit,
+    cancel_requested: cancel_requested
+  }
+
+fn limit_code(limited: bool) -> string =
+  if limited then
+    run_err_instruction_limit()
+  else
+    ""
+  end
+
+fn charge_result(budget: ExecutionBudget, limited: bool) -> BudgetCharge =
+  BudgetCharge {
+    budget: budget,
+    limited: limited,
+    error_code: limit_code(limited)
+  }
+
+fn fuel_blocks(budget: ExecutionBudget, cost: i64) -> bool =
+  cost > budget.quantum_fuel || cost > budget.task_fuel_remaining || (budget.total_limit > zero_fuel() && budget.consumed >= budget.total_limit)
+
+fn charge_within_limit(budget: ExecutionBudget, cost: i64) -> BudgetCharge = do
+  let next_consumed = budget.consumed + cost
+  if budget.total_limit > zero_fuel() && next_consumed > budget.total_limit then
+    charge_result(budget, true)
+  else
+    charge_result(
+      budget_copy(
+        budget,
+        budget.quantum_fuel - cost,
+        budget.task_fuel_remaining - cost,
+        next_consumed,
+        budget.cancel_requested
+      ),
+      false
+    )
+  end
+end
+
+export fn execution_budget_new(total_limit: i64, quantum: i64) -> ExecutionBudget =
+  ExecutionBudget {
+    quantum_fuel: quantum,
+    quantum_size: quantum,
+    task_fuel_remaining: total_limit,
+    consumed: zero_fuel(),
+    total_limit: total_limit,
+    cancel_requested: false
+  }
+
+export fn execution_budget_at(total_limit: i64, quantum: i64, consumed: i64) -> ExecutionBudget = do
+  let mut task_fuel_remaining = total_limit
+  if consumed > zero_fuel() && consumed < total_limit then
+    task_fuel_remaining = total_limit - consumed
+  else if consumed >= total_limit then
+    task_fuel_remaining = zero_fuel()
+  end
+  ExecutionBudget {
+    quantum_fuel: quantum,
+    quantum_size: quantum,
+    task_fuel_remaining: task_fuel_remaining,
+    consumed: consumed,
+    total_limit: total_limit,
+    cancel_requested: false
+  }
+end
+
+export fn execution_budget_poll(budget: ExecutionBudget) -> ExecutionBudget =
+  budget_copy(budget, budget.quantum_size, budget.task_fuel_remaining, budget.consumed, budget.cancel_requested)
+
+export fn execution_budget_cancel(budget: ExecutionBudget) -> ExecutionBudget =
+  budget_copy(budget, budget.quantum_fuel, budget.task_fuel_remaining, budget.consumed, true)
+
+export fn execution_budget_charge(budget: ExecutionBudget, cost: i64) -> BudgetCharge =
+  if budget.cancel_requested || cost <= zero_fuel() || fuel_blocks(budget, cost) then
+    charge_result(budget, budget.cancel_requested || fuel_blocks(budget, cost))
+  else
+    charge_within_limit(budget, cost)
+  end
