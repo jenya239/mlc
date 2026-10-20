@@ -1,0 +1,147 @@
+import { Value } from './value'
+import { Heap } from './heap_types'
+import {
+  compact_arena,
+  enqueue_slot_children,
+  enqueue_values,
+  sweep_one
+} from './heap_collect'
+
+export type HeapCollectSliceStatus =
+  | HeapCollectContinue
+  | HeapCollectDone
+
+export type HeapCollectSliceCursor = {
+  phase: i32,
+  mark_seeded: bool,
+  work_object_indexes: [i32],
+  work_count: i32,
+  sweep_index: i32,
+  sweep_prepared: bool,
+  free_object_indexes: [i32],
+  free_object_count: i32
+}
+
+fn heap_collect_phase_mark() -> i32 = 0
+
+fn heap_collect_phase_sweep() -> i32 = 1
+
+fn heap_collect_phase_done() -> i32 = 2
+
+fn empty_object_indexes() -> [i32] = do
+  let mut object_indexes: [i32] = []
+  object_indexes
+end
+
+export fn heap_collect_slice_cursor_new(heap: Heap) -> HeapCollectSliceCursor = do
+  HeapCollectSliceCursor {
+    phase: heap_collect_phase_mark(),
+    mark_seeded: false,
+    work_object_indexes: empty_object_indexes(),
+    work_count: 0,
+    sweep_index: 0,
+    sweep_prepared: false,
+    free_object_indexes: heap.free_object_ids,
+    free_object_count: heap.free_object_count
+  }
+end
+
+fn non_negative_budget(budget: i32) -> i32 = do
+  if budget <= 0 then
+    return 0
+  end
+  budget
+end
+
+fn drain_work_budget(
+  heap: ref mut Heap,
+  work_object_indexes: ref mut [i32],
+  work_count: i32,
+  mark_budget: i32
+) -> i32 = do
+  let mut count = work_count
+  let mut remaining = non_negative_budget(mark_budget)
+  while count > 0 && remaining > 0 do
+    count = count - 1
+    remaining = remaining - 1
+    const object_index = work_object_indexes[count]
+    count = enqueue_slot_children(heap, work_object_indexes, count, object_index)
+  end
+  count
+end
+
+fn seed_mark(heap: ref mut Heap, extra_roots: [Value], cursor: ref mut HeapCollectSliceCursor) -> unit = do
+  if !cursor.mark_seeded then
+    let mut work_object_indexes = cursor.work_object_indexes
+    let mut work_count = enqueue_values(heap, work_object_indexes, 0, heap.roots)
+    work_count = enqueue_values(heap, work_object_indexes, work_count, extra_roots)
+    cursor.work_object_indexes = work_object_indexes
+    cursor.work_count = work_count
+    cursor.mark_seeded = true
+  end
+end
+
+fn sweep_with_budget(heap: ref mut Heap, cursor: ref mut HeapCollectSliceCursor, sweep_budget: i32) -> bool = do
+  if !cursor.sweep_prepared then
+    cursor.sweep_prepared = true
+    heap.live_count = 0
+    cursor.sweep_index = 0
+  end
+  let mut free_object_indexes = cursor.free_object_indexes
+  let mut free_object_count = cursor.free_object_count
+  let mut remaining = non_negative_budget(sweep_budget)
+  while remaining > 0 && cursor.sweep_index < heap.slots.length() do
+    free_object_count = sweep_one(heap, free_object_indexes, free_object_count, cursor.sweep_index)
+    cursor.sweep_index = cursor.sweep_index + 1
+    remaining = remaining - 1
+  end
+  cursor.free_object_indexes = free_object_indexes
+  cursor.free_object_count = free_object_count
+  if cursor.sweep_index < heap.slots.length() then
+    return false
+  end
+  heap.free_object_ids = free_object_indexes
+  heap.free_object_count = free_object_count
+  true
+end
+
+fn mark_work_remains(
+  heap: ref mut Heap,
+  extra_roots: [Value],
+  cursor: ref mut HeapCollectSliceCursor,
+  mark_budget: i32
+) -> bool = do
+  seed_mark(heap, extra_roots, cursor)
+  let mut work_object_indexes = cursor.work_object_indexes
+  let next_count = drain_work_budget(heap, work_object_indexes, cursor.work_count, mark_budget)
+  cursor.work_object_indexes = work_object_indexes
+  cursor.work_count = next_count
+  next_count > 0
+end
+
+export fn heap_collect_slice(
+  heap: ref mut Heap,
+  extra_roots: [Value],
+  cursor: ref mut HeapCollectSliceCursor,
+  mark_budget: i32,
+  sweep_budget: i32
+) -> HeapCollectSliceStatus = do
+  if cursor.phase == heap_collect_phase_done() then
+    return HeapCollectDone
+  end
+  if cursor.phase == heap_collect_phase_mark() then
+    if mark_work_remains(heap, extra_roots, cursor, mark_budget) then
+      return HeapCollectContinue
+    end
+    cursor.phase = heap_collect_phase_sweep()
+  end
+  if sweep_budget <= 0 then
+    return HeapCollectContinue
+  end
+  if !sweep_with_budget(heap, cursor, sweep_budget) then
+    return HeapCollectContinue
+  end
+  compact_arena(heap)
+  cursor.phase = heap_collect_phase_done()
+  HeapCollectDone
+end

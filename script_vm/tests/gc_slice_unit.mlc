@@ -1,11 +1,25 @@
-import { Value } from '../value'
+import { Value, value_raw_equal } from '../value'
 import {
   heap_new,
   heap_live_object_count,
+  heap_arena_cell_count,
   heap_in_place_alloc_cell,
+  heap_in_place_alloc_array,
   heap_in_place_root_push,
-  heap_in_place_collect
+  heap_in_place_write,
+  heap_in_place_collect,
+  heap_in_place_type_id,
+  heap_in_place_cell_child,
+  heap_in_place_element_count,
+  heap_type_array
 } from '../heap'
+import {
+  HeapCollectSliceStatus,
+  HeapCollectContinue,
+  HeapCollectDone,
+  heap_collect_slice,
+  heap_collect_slice_cursor_new
+} from '../heap_collect_incremental'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm gc_slice_unit] FAIL: " + message)
@@ -17,32 +31,174 @@ fn empty_values() -> [Value] = do
   values
 end
 
-fn object_count() -> i32 = 32
+fn chain_length() -> i32 = 8
 
-fn rooted_count() -> i32 = 1
+fn garbage_count() -> i32 = 4
 
-fn requested_work_budget() -> i32 = 1
+fn array_length() -> i32 = 4
 
-fn main() -> i32 = do
-  let mut heap = heap_new()
+fn prepared_object_count() -> i32 = chain_length() + garbage_count() + 1
+
+fn surviving_object_count() -> i32 = chain_length() + 1
+
+fn mark_budget() -> i32 = 1
+
+fn sweep_budget() -> i32 = 1
+
+fn wide_budget() -> i32 = 64
+
+fn step_limit() -> i32 = 64
+
+fn slice_is_done(status: HeapCollectSliceStatus) -> bool =
+  match status {
+    HeapCollectDone => true,
+    HeapCollectContinue => false
+  }
+
+fn prepare(heap: ref mut Heap) -> [Value] = do
+  let mut objects: [Value] = []
   let mut index = 0
-  while index < object_count() do
-    let cell = heap_in_place_alloc_cell(heap)
-    if index == 0 then
-      heap_in_place_root_push(heap, cell)
+  while index < chain_length() do
+    objects.push(heap_in_place_alloc_cell(heap))
+    index = index + 1
+  end
+  index = 0
+  while index + 1 < chain_length() do
+    heap_in_place_write(heap, objects[index], 0, objects[index + 1])
+    index = index + 1
+  end
+  heap_in_place_root_push(heap, objects[0])
+  index = 0
+  while index < garbage_count() do
+    objects.push(heap_in_place_alloc_cell(heap))
+    index = index + 1
+  end
+  let array_value = heap_in_place_alloc_array(heap, array_length())
+  objects.push(array_value)
+  heap_in_place_root_push(heap, array_value)
+  objects
+end
+
+fn compare_objects(
+  left: ref mut Heap,
+  left_objects: [Value],
+  right: ref mut Heap,
+  right_objects: [Value]
+) -> i32 = do
+  if left_objects.length() != right_objects.length() then
+    return fail("object count diverged")
+  end
+  let mut index = 0
+  while index < left_objects.length() do
+    let left_type = heap_in_place_type_id(left, left_objects[index])
+    let right_type = heap_in_place_type_id(right, right_objects[index])
+    if left_type != right_type then
+      return fail(
+        "type diverged index=" + index.to_string()
+          + " sliced=" + left_type.to_string()
+          + " full=" + right_type.to_string()
+      )
     end
     index = index + 1
   end
-  let live_before = heap_live_object_count(heap)
-  heap_in_place_collect(heap, empty_values())
-  let live_after = heap_live_object_count(heap)
-  if live_before == object_count() && live_after == rooted_count() then
+  index = 0
+  while index + 1 < chain_length() do
+    let left_child = heap_in_place_cell_child(left, left_objects[index])
+    let right_child = heap_in_place_cell_child(right, right_objects[index])
+    if !value_raw_equal(left_child, left_objects[index + 1]) || !value_raw_equal(right_child, right_objects[index + 1]) || !value_raw_equal(left_child, right_child) then
+      return fail("chain child diverged index=" + index.to_string())
+    end
+    index = index + 1
+  end
+  let array_index = left_objects.length() - 1
+  let left_elements = heap_in_place_element_count(left, left_objects[array_index])
+  let right_elements = heap_in_place_element_count(right, right_objects[array_index])
+  if left_elements != array_length() || right_elements != array_length() then
     return fail(
-      "full collect finished without Partial live_before=" + live_before.to_string()
-        + " live_after=" + live_after.to_string()
-        + " rooted=" + rooted_count().to_string()
-        + " work_budget=" + requested_work_budget().to_string()
+      "array length diverged sliced=" + left_elements.to_string()
+        + " full=" + right_elements.to_string()
     )
+  end
+  if heap_in_place_type_id(left, left_objects[array_index]) != heap_type_array() then
+    return fail("array type lost")
+  end
+  0
+end
+
+fn compare_heaps(
+  left: ref mut Heap,
+  left_objects: [Value],
+  right: ref mut Heap,
+  right_objects: [Value]
+) -> i32 = do
+  if heap_live_object_count(left) != surviving_object_count() || heap_live_object_count(right) != surviving_object_count() then
+    return fail(
+      "live diverged sliced=" + heap_live_object_count(left).to_string()
+        + " full=" + heap_live_object_count(right).to_string()
+    )
+  end
+  if heap_arena_cell_count(left) != heap_arena_cell_count(right) then
+    return fail(
+      "arena diverged sliced=" + heap_arena_cell_count(left).to_string()
+        + " full=" + heap_arena_cell_count(right).to_string()
+    )
+  end
+  compare_objects(left, left_objects, right, right_objects)
+end
+
+fn check_partial_then_match() -> i32 = do
+  let mut sliced = heap_new()
+  let sliced_objects = prepare(sliced)
+  let mut cursor = heap_collect_slice_cursor_new(sliced)
+  let first = heap_collect_slice(sliced, empty_values(), cursor, mark_budget(), sweep_budget())
+  if slice_is_done(first) then
+    return fail(
+      "full collect finished without Continue live=" + heap_live_object_count(sliced).to_string()
+        + " work_budget=" + mark_budget().to_string()
+    )
+  end
+  if heap_live_object_count(sliced) != prepared_object_count() then
+    return fail(
+      "first slice changed live set live=" + heap_live_object_count(sliced).to_string()
+        + " before=" + prepared_object_count().to_string()
+    )
+  end
+  let mut status = first
+  let mut steps = 1
+  while !slice_is_done(status) && steps < step_limit() do
+    status = heap_collect_slice(sliced, empty_values(), cursor, mark_budget(), sweep_budget())
+    steps = steps + 1
+  end
+  if !slice_is_done(status) then
+    return fail("slice did not finish steps=" + steps.to_string())
+  end
+  let mut full = heap_new()
+  let full_objects = prepare(full)
+  heap_in_place_collect(full, empty_values())
+  compare_heaps(sliced, sliced_objects, full, full_objects)
+end
+
+fn check_wide_budget_matches() -> i32 = do
+  let mut sliced = heap_new()
+  let sliced_objects = prepare(sliced)
+  let mut cursor = heap_collect_slice_cursor_new(sliced)
+  let status = heap_collect_slice(sliced, empty_values(), cursor, wide_budget(), wide_budget())
+  if !slice_is_done(status) then
+    return fail("wide budget returned Continue")
+  end
+  let mut full = heap_new()
+  let full_objects = prepare(full)
+  heap_in_place_collect(full, empty_values())
+  compare_heaps(sliced, sliced_objects, full, full_objects)
+end
+
+fn main() -> i32 = do
+  let mut status = check_partial_then_match()
+  if status == 0 then
+    status = check_wide_budget_matches()
+  end
+  if status != 0 then
+    return status
   end
   println("[script_vm] gc_slice_unit ok")
   0

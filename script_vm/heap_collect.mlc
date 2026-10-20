@@ -139,7 +139,7 @@ fn enqueue_value(
     _ => work_count
   }
 
-fn enqueue_slot_children(
+export fn enqueue_slot_children(
   heap: ref mut Heap,
   work_ids: ref mut [i32],
   work_count: i32,
@@ -156,7 +156,7 @@ fn enqueue_slot_children(
   count
 end
 
-fn enqueue_values(
+export fn enqueue_values(
   heap: ref mut Heap,
   work_ids: ref mut [i32],
   work_count: i32,
@@ -180,7 +180,7 @@ fn drain_work(heap: ref mut Heap, work_ids: ref mut [i32], work_count: i32) -> u
   end
 end
 
-fn sweep_one(
+export fn sweep_one(
   heap: ref mut Heap,
   free_object_ids: ref mut [i32],
   free_object_count: i32,
@@ -240,7 +240,7 @@ fn relocate_live_slot(heap: ref mut Heap, new_arena: ref mut [Value], object_id:
   end
 end
 
-fn compact_arena(heap: ref mut Heap) -> unit = do
+export fn compact_arena(heap: ref mut Heap) -> unit = do
   let mut new_arena: [Value] = []
   let mut object_id = 0
   while object_id < heap.slots.length() do
