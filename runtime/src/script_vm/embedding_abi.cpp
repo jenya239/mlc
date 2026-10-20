@@ -81,15 +81,16 @@ MlcResult mlc_vm_load_module(
     result.code = embedding_codes::emb_format();
     return result;
   }
-  const auto data_pointer = reinterpret_cast<std::int64_t>(source_or_bytecode);
   const auto size_i32 = static_cast<std::int32_t>(size);
-  const auto code = embedding::emb_verify_module_ptr(data_pointer, size_i32);
+  const auto* source_bytes = static_cast<const std::uint8_t*>(source_or_bytecode);
+  std::vector<std::uint8_t> owned(source_bytes, source_bytes + size);
+  const auto owned_pointer = reinterpret_cast<std::int64_t>(owned.data());
+  const auto code = embedding::emb_verify_module_ptr(owned_pointer, size_i32);
   if (code != embedding_codes::emb_ok()) {
     result.code = code;
     return result;
   }
-  const auto* bytes = static_cast<const std::uint8_t*>(source_or_bytecode);
-  vm->state.modules[std::string(name)] = std::vector<std::uint8_t>(bytes, bytes + size);
+  vm->state.modules[std::string(name)] = std::move(owned);
   result.code = embedding_codes::emb_ok();
   return result;
 }

@@ -1,0 +1,138 @@
+import { EmbCallResult } from './embedding'
+import {
+  emb_ok,
+  emb_verify,
+  emb_type,
+  emb_bounds,
+  emb_stack,
+  emb_format,
+  emb_not_found,
+  emb_instruction_limit,
+  emb_heap_limit,
+  emb_overflow,
+  emb_div_zero
+} from './embedding_codes'
+import { heap_new } from './heap'
+import {
+  RunOk,
+  RunErr,
+  run_program_with_args_limited
+} from './interpreter'
+import { ModuleExport, decode_module } from './module_blob'
+import {
+  FunctionProto,
+  run_limits_new,
+  run_err_verify,
+  run_err_type,
+  run_err_bounds,
+  run_err_stack,
+  run_err_instruction_limit,
+  run_err_heap_limit,
+  run_err_overflow,
+  run_err_div_zero
+} from './run_result'
+import { Value } from './value'
+
+export type LoadedModule = {
+  bytes: [i32],
+  exports: [ModuleExport],
+  protos: [FunctionProto]
+}
+
+export type LoadModuleResult = { code: i32, loaded: LoadedModule }
+
+fn copy_bytes(bytes: [i32]) -> [i32] = do
+  let mut copied: [i32] = []
+  let mut index = 0
+  while index < bytes.length() do
+    copied.push(bytes[index])
+    index = index + 1
+  end
+  copied
+end
+
+fn empty_loaded_module() -> LoadedModule = do
+  let mut bytes: [i32] = []
+  let mut exports: [ModuleExport] = []
+  let mut prototypes: [FunctionProto] = []
+  LoadedModule { bytes: bytes, exports: exports, protos: prototypes }
+end
+
+fn zero_instruction_limit() -> i64 = 0
+
+fn zero_raw() -> i64 = 0
+
+fn run_error_code(code: string) -> i32 = do
+  if code == run_err_verify() then
+    emb_verify()
+  else if code == run_err_type() then
+    emb_type()
+  else if code == run_err_bounds() then
+    emb_bounds()
+  else if code == run_err_stack() then
+    emb_stack()
+  else if code == run_err_instruction_limit() then
+    emb_instruction_limit()
+  else if code == run_err_heap_limit() then
+    emb_heap_limit()
+  else if code == run_err_overflow() then
+    emb_overflow()
+  else if code == run_err_div_zero() then
+    emb_div_zero()
+  else
+    emb_type()
+  end
+end
+
+fn export_prototype_index(loaded: LoadedModule, export_name: string) -> i32 = do
+  let mut index = 0
+  while index < loaded.exports.length() do
+    if loaded.exports[index].name == export_name then
+      return loaded.exports[index].proto_index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn load_module_bytes(bytes: [i32]) -> LoadModuleResult = do
+  const owned = copy_bytes(bytes)
+  const decoded = decode_module(owned)
+  if decoded.code != emb_ok() then
+    LoadModuleResult { code: decoded.code, loaded: empty_loaded_module() }
+  else
+    LoadModuleResult {
+      code: emb_ok(),
+      loaded: LoadedModule {
+        bytes: owned,
+        exports: decoded.decoded_module.exports,
+        protos: decoded.decoded_module.protos
+      }
+    }
+  end
+end
+
+export fn call_loaded_export(loaded: LoadedModule, export_name: string, argument_raws: [i64]) -> EmbCallResult = do
+  const prototype_index = export_prototype_index(loaded, export_name)
+  if prototype_index < 0 || prototype_index >= loaded.protos.length() then
+    EmbCallResult { code: emb_not_found(), raw: zero_raw() }
+  else
+    let mut arguments: [Value] = []
+    let mut argument_index = 0
+    while argument_index < argument_raws.length() do
+      arguments.push(Value { raw: argument_raws[argument_index] })
+      argument_index = argument_index + 1
+    end
+    const ran = run_program_with_args_limited(
+      heap_new(),
+      loaded.protos,
+      prototype_index,
+      arguments,
+      run_limits_new(zero_instruction_limit(), 0)
+    )
+    match ran.result {
+      RunOk(value) => EmbCallResult { code: emb_ok(), raw: value.raw },
+      RunErr(code, _at) => EmbCallResult { code: run_error_code(code), raw: zero_raw() }
+    }
+  end
+end
