@@ -1,0 +1,54 @@
+import {
+  repl_session_new,
+  repl_session_submit,
+  ReplAnswer,
+  ReplIncomplete,
+  ReplAccepted,
+  ReplValueInt32,
+  ReplValueString,
+  ReplDiagnostic
+} from '../repl_session'
+
+fn fail(label: string) -> i32 = do
+  println("[script_vm repl_persistent_memory_unit] FAIL: " + label)
+  1
+end
+
+fn answer_code(answer: ReplAnswer) -> string =
+  match answer {
+    ReplIncomplete => "incomplete",
+    ReplAccepted => "accepted",
+    ReplValueInt32(number) => "int32:" + number.to_string(),
+    ReplValueString(string_length) => "string:" + string_length.to_string(),
+    ReplDiagnostic(code, _line, _column) => "diagnostic:" + code
+  }
+
+fn integer_answer(answer: ReplAnswer) -> i32 =
+  match answer {
+    ReplValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn main() -> i32 = do
+  let mut session = repl_session_new()
+  const created = repl_session_submit(session, "let mut items = [1] items[0]")
+  if integer_answer(created) != 1 then
+    return fail("create mutable array answer=" + answer_code(created))
+  end
+  const read_back = repl_session_submit(session, "items[0] = 9 items[0]")
+  const read_number = integer_answer(read_back)
+  if read_number == 9 then
+    println("persistent_binding")
+    println("[script_vm] repl_persistent_memory_unit ok")
+    0
+  else
+    fail(
+      "accepted_source lost mutable array length="
+        + session.accepted_source.length().to_string()
+        + " answer="
+        + answer_code(read_back)
+        + " value="
+        + read_number.to_string()
+    )
+  end
+end

@@ -1,8 +1,8 @@
-current_step: 326
+current_step: 327
 status: ready
-last_result: done step 326: ScriptInstance держит один heap между allocate и length; массив длины 1 виден второму вызову
-last_verify: ruby scripts/run_script_vm_gate.rb persistent_instance_unit loaded_module_cache_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился)
-next_step: 327
+last_result: done step 327: первый ввод создаёт items = [1], второй items[0] = 9 не видит binding; accepted_source остаётся пустым
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/repl_persistent_memory_unit.mlc => exit 1; FAIL: accepted_source lost mutable array length=0 answer=diagnostic:unknown_identifier value=-1; gate не вызывался; unit не регистрировался
+next_step: 328
 consult_count: 0
 consult_response:
 consult_verdict:
