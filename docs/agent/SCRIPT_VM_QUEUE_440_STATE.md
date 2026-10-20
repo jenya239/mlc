@@ -1,8 +1,8 @@
-current_step: 343
+current_step: 344
 status: ready
-last_result: done step 343: yield на CALL отсутствует; slice падает unsupported_opcode на opcode 23 при at=0, uninterrupted=41
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/execution_frame_yield_unit.mlc => EXIT:1; FAIL: yield on CALL absent code=unsupported_opcode at=0 opcode=23 call_opcode=22 instructions=1 uninterrupted=41; gate не вызывался; unit не зарегистрирован
-next_step: 344
+last_result: done step 344: yield на CALL и resume входят в callee и возвращают 41, как uninterrupted
+last_verify: ruby scripts/run_script_vm_gate.rb execution_frame_yield_unit execution_slice_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => script_vm_queue200_gate FAIL queue (unit lower_stage1 FAIL, syntax_error code, вне шага, compiler/ не правился); file size ok; unit execution_frame_yield_unit ok
+next_step: 345
 consult_count: 0
 consult_response:
 consult_verdict:

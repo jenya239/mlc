@@ -19,7 +19,9 @@ import {
   instruction_opcode_lt,
   instruction_opcode_le,
   instruction_opcode_gt,
-  instruction_opcode_ge
+  instruction_opcode_ge,
+  instruction_opcode_call,
+  instruction_opcode_make_closure
 } from './bytecode'
 import { VerifyOk, VerifyErr, verify_function } from './verifier'
 import { Heap } from './heap'
@@ -41,7 +43,9 @@ import {
   vm_state_set_register,
   vm_state_program_counter,
   vm_state_set_program_counter,
-  vm_state_frame_proto
+  vm_state_frame_proto,
+  vm_state_frame_return_register,
+  vm_state_pop_frame
 } from './vm_state'
 import { apply_binary, apply_compare, value_jump_decision } from './arith'
 import {
@@ -55,6 +59,7 @@ import {
   execution_failed
 } from './execution'
 import { executor_step_continue, executor_step_returned, executor_fail } from './executor_step'
+import { executor_exec_call, executor_exec_make_closure } from './executor_calls'
 
 type VerifyScan = { failed: bool, at: i32 }
 
@@ -70,6 +75,8 @@ export type SliceSession = {
 fn nil_value() -> Value = value_encode(ValueNil)
 
 fn slice_step_yielded() -> i32 = 4
+
+fn slice_step_frame() -> i32 = 3
 
 fn zero_instruction_limit() -> i64 = 0
 
@@ -138,8 +145,19 @@ fn apply_run_limits(state: ref mut VmState, limits: RunLimits) -> unit = do
   state.heap_limit_objects = limits.heap_limit_objects
 end
 
+fn reload_frame(state: ref mut VmState, protos: [FunctionProto]) -> OpcodeCursor = do
+  let proto = protos[vm_state_frame_proto(state)]
+  OpcodeCursor {
+    step: executor_step_continue(),
+    program_counter: vm_state_program_counter(state),
+    registers: copy_frame_registers(state, proto.register_count)
+  }
+end
+
 fn execute_opcode(
+  heap: ref mut Heap,
   state: ref mut VmState,
+  protos: [FunctionProto],
   proto: FunctionProto,
   registers: [Value],
   program_counter: i32
@@ -184,12 +202,29 @@ fn execute_opcode(
   else if decoded.opcode == instruction_opcode_move() then
     next_registers.set(decoded.a, next_registers[decoded.b])
     next_program_counter = primary + span
+  else if decoded.opcode == instruction_opcode_make_closure() then
+    materialize_current_frame(state, next_registers, primary)
+    step = executor_exec_make_closure(heap, state, protos, proto, decoded, words, primary, span)
+    if step == executor_step_continue() then
+      next_registers = copy_frame_registers(state, proto.register_count)
+      next_program_counter = vm_state_program_counter(state)
+    end
+  else if decoded.opcode == instruction_opcode_call() then
+    materialize_current_frame(state, next_registers, primary)
+    step = executor_exec_call(heap, state, protos, proto, decoded, primary, span)
+    if step == executor_step_continue() then
+      step = slice_step_frame()
+    end
   else if decoded.opcode == instruction_opcode_return() then
     if vm_state_frame_depth(state) == 1 then
       state.return_value = next_registers[decoded.a]
       step = executor_step_returned()
     else
-      step = executor_fail(state, run_err_unsupported_opcode(), primary)
+      let returned_value = next_registers[decoded.a]
+      let return_register = vm_state_frame_return_register(state)
+      vm_state_pop_frame(state)
+      vm_state_set_register(state, return_register, returned_value)
+      step = slice_step_frame()
     end
   else
     step = executor_fail(state, run_err_unsupported_opcode(), primary)
@@ -197,14 +232,14 @@ fn execute_opcode(
   OpcodeCursor { step: step, program_counter: next_program_counter, registers: next_registers }
 end
 
-fn slice_frame(state: ref mut VmState, protos: [FunctionProto], quantum: i32) -> i32 = do
-  let proto = protos[vm_state_frame_proto(state)]
-  let words = proto.words
-  let mut registers = copy_frame_registers(state, proto.register_count)
+fn slice_frame(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto], quantum: i32) -> i32 = do
+  let mut registers = copy_frame_registers(state, protos[vm_state_frame_proto(state)].register_count)
   let mut program_counter = vm_state_program_counter(state)
   let mut executed = 0
   let mut step = executor_step_continue()
-  while step == executor_step_continue() && state.error_code == "" do
+  while step == executor_step_continue() && state.error_code == "" && vm_state_frame_depth(state) > 0 do
+    let proto = protos[vm_state_frame_proto(state)]
+    let words = proto.words
     if executed >= quantum then
       materialize_current_frame(state, registers, program_counter)
       step = slice_step_yielded()
@@ -216,10 +251,17 @@ fn slice_frame(state: ref mut VmState, protos: [FunctionProto], quantum: i32) ->
     else
       note_instruction(state)
       executed = executed + 1
-      let cursor = execute_opcode(state, proto, registers, program_counter)
-      step = cursor.step
-      program_counter = cursor.program_counter
-      registers = cursor.registers
+      let cursor = execute_opcode(heap, state, protos, proto, registers, program_counter)
+      if cursor.step == slice_step_frame() then
+        let reloaded = reload_frame(state, protos)
+        registers = reloaded.registers
+        program_counter = reloaded.program_counter
+        step = executor_step_continue()
+      else
+        step = cursor.step
+        program_counter = cursor.program_counter
+        registers = cursor.registers
+      end
     end
   end
   step
@@ -282,7 +324,8 @@ export fn run_slice(session: SliceSession, quantum: i32) -> SliceSession = do
     session
   else
     let mut state = session.state
-    let step = slice_frame(state, session.protos, quantum)
-    session_with(session, session.heap, state, execution_from_step(session.heap, state, step))
+    let mut heap = session.heap
+    let step = slice_frame(heap, state, session.protos, quantum)
+    session_with(session, heap, state, execution_from_step(heap, state, step))
   end
 end
