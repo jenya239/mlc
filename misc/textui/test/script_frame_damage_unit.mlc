@@ -1,0 +1,67 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../script_transaction'
+import { ui_state_new } from '../ui_state'
+import {
+  FrameRequest,
+  FrameRequestLayout,
+  FrameRequestNone,
+  FrameRequestPaint,
+  frame_request,
+  frame_signature
+} from '../frame_request'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm script_frame_damage_unit] FAIL: " + message)
+  1
+end
+
+fn viewport_width() -> i32 = 800
+
+fn viewport_height() -> i32 = 600
+
+fn original_text() -> string = "first"
+
+fn staged_text() -> string = "staged-first"
+
+fn request_kind(request: FrameRequest) -> string =
+  match request
+    | FrameRequestNone => "none"
+    | FrameRequestPaint => "paint"
+    | FrameRequestLayout => "layout"
+
+fn request_needs_frame(request: FrameRequest) -> bool =
+  match request
+    | FrameRequestNone => false
+    | FrameRequestPaint => true
+    | FrameRequestLayout => true
+
+fn main() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(store, widget_id_none(), LabelData { text: original_text() }, OverflowVisible, 0, true)
+  let state = ui_state_new()
+  let previous = frame_signature(state, viewport_width(), viewport_height())
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(transaction, WidgetId { index: 0 }, staged_text())
+  transaction = script_transaction_commit(transaction)
+  let next = frame_signature(state, viewport_width(), viewport_height())
+  let request = frame_request(previous, next)
+  if request_needs_frame(request) && transaction.revision == 1 then
+    println("[script_vm] script_frame_damage_unit ok")
+    return 0
+  end
+  fail(
+    "committed SetLabelText requested " + request_kind(request)
+      + " revision=" + transaction.revision.to_string()
+  )
+end
