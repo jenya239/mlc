@@ -294,6 +294,9 @@ export fn decode_module_with_limits(bytes: [i32], limits: ModuleLimits) -> Decod
           if !cursor_count_fits(offset, name_length, 1, 4, bytes.length()) then
             decode_failed = true
             fail_code = emb_format()
+          else if name_length > limits.maximum_name_bytes then
+            decode_failed = true
+            fail_code = emb_format()
           else
             const name = name_from_bytes(bytes, offset, name_length)
             offset = offset + name_length
