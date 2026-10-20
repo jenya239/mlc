@@ -41,6 +41,9 @@ export type ValueHandle = {
   rooted: bool
 }
 
+// Invariants:
+// - load, call, and value release stay on the creating owner
+// - the instance is not attached to another thread
 export type ScriptInstance = {
   identity: i64,
   incarnation: i32,

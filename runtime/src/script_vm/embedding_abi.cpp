@@ -4,6 +4,7 @@
 #include "embedding.hpp"
 #include "embedding_codes.hpp"
 
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +13,7 @@
 #include <limits>
 #include <new>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -41,9 +43,23 @@ struct EmbeddingVmState {
   std::uint64_t instruction_limit = 0;
   std::int32_t heap_limit_objects = 1000000;
   MlcVmPanicCallback panic_callback = nullptr;
+  bool owner_thread_bound = false;
+  std::thread::id owner_thread{};
   std::unordered_map<std::string, std::vector<std::uint8_t>> modules;
   std::vector<HandleSlot> handles;
 };
+
+// Load, call, and release run only on the thread that created the instance.
+// A foreign thread is not attached. Debug builds assert; they do not continue into the heap.
+void bind_owner_thread(EmbeddingVmState& state) {
+  state.owner_thread = std::this_thread::get_id();
+  state.owner_thread_bound = true;
+}
+
+void require_owner_thread(const EmbeddingVmState& state) {
+  assert(state.owner_thread_bound);
+  assert(state.owner_thread == std::this_thread::get_id());
+}
 
 void maybe_panic(EmbeddingVmState* vm, const char* message) {
   if (vm != nullptr && vm->panic_callback != nullptr) {
@@ -96,6 +112,7 @@ MlcVm* mlc_vm_create(const MlcVmConfig* config) try {
     }
     vm->state.panic_callback = config->panic_callback;
   }
+  bind_owner_thread(vm->state);
   return vm;
 } catch (const std::bad_alloc&) {
   return nullptr;
@@ -104,6 +121,9 @@ MlcVm* mlc_vm_create(const MlcVmConfig* config) try {
 }
 
 void mlc_vm_destroy(MlcVm* vm) try {
+  if (vm != nullptr) {
+    require_owner_thread(vm->state);
+  }
   delete vm;
 } catch (const std::bad_alloc&) {
 } catch (const std::exception&) {
@@ -120,6 +140,7 @@ MlcResult mlc_vm_load_module(
     result.code = embedding_codes::emb_type();
     return result;
   }
+  require_owner_thread(vm->state);
   if (size > static_cast<size_t>(0x7fffffff)) {
     result.code = embedding_codes::emb_format();
     return result;
@@ -150,6 +171,7 @@ MlcHandle mlc_vm_get_export(MlcVm* vm, const char* module_name, const char* expo
   if (vm == nullptr || module_name == nullptr || export_name == nullptr) {
     return 0;
   }
+  require_owner_thread(vm->state);
   const auto module_it = vm->state.modules.find(std::string(module_name));
   if (module_it == vm->state.modules.end()) {
     return 0;
@@ -203,6 +225,7 @@ MlcResult mlc_vm_call(
     result.code = embedding_codes::emb_type();
     return result;
   }
+  require_owner_thread(vm->state);
   const std::uint32_t callable_index = handle_index(callable);
   const std::uint32_t callable_generation = handle_generation(callable);
   if (callable_index == 0 || callable_index > static_cast<std::uint32_t>(vm->state.handles.size())) {
@@ -255,6 +278,7 @@ void mlc_handle_release(MlcVm* vm, MlcHandle handle) try {
     maybe_panic(vm == nullptr ? nullptr : &vm->state, "mlc_handle_release: bad handle");
     return;
   }
+  require_owner_thread(vm->state);
   HandleSlot& slot = vm->state.handles[static_cast<std::size_t>(released_index - 1)];
   if (!slot.live || slot.generation != released_generation) {
     maybe_panic(&vm->state, "mlc_handle_release: double release");
@@ -314,6 +338,7 @@ MlcResult mlc_vm_create_v2(const MlcVmConfigV2* config, MlcVmV2** created_out) {
       virtual_machine->state.heap_limit_objects = config->heap_limit_objects;
     }
     virtual_machine->state.panic_callback = config->panic_callback;
+    bind_owner_thread(virtual_machine->state);
     *created_out = virtual_machine;
     result.code = MLC_OK;
     return result;
@@ -321,6 +346,9 @@ MlcResult mlc_vm_create_v2(const MlcVmConfigV2* config, MlcVmV2** created_out) {
 }
 
 void mlc_vm_destroy_v2(MlcVmV2* virtual_machine) try {
+  if (virtual_machine != nullptr) {
+    require_owner_thread(virtual_machine->state);
+  }
   delete virtual_machine;
 } catch (const std::bad_alloc&) {
 } catch (const std::exception&) {
@@ -451,8 +479,11 @@ bool current_configuration_accepted() {
   if (result.code != MLC_OK || created == nullptr) {
     return false;
   }
+  const bool owner_matches =
+      created->state.owner_thread_bound &&
+      created->state.owner_thread == std::this_thread::get_id();
   mlc_vm_destroy_v2(created);
-  return true;
+  return owner_matches;
 }
 
 struct BoundaryProbe {
