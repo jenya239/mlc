@@ -9,6 +9,14 @@ fn fail(message: string) -> i32 = do
   1
 end
 
+fn restore_creates_new_incarnation() -> i32 = 0
+
+fn restore_creates_new_fence() -> i32 = 0
+
+fn restore_reacquires_capabilities() -> i32 = 0
+
+fn restore_revoked_rights_not_auto_granted() -> i32 = 0
+
 fn check_logical_checkpoint() -> i32 = do
   if checkpoint_logical_state_present() == 0 then
     return fail("raw HeapRef checkpoint not rejected need logical state")
@@ -22,10 +30,30 @@ fn check_logical_checkpoint() -> i32 = do
   0
 end
 
+fn check_restore_fence_and_capabilities() -> i32 = do
+  if restore_creates_new_incarnation() == 0 then
+    return fail("restore did not create new incarnation")
+  end
+  if restore_creates_new_fence() == 0 then
+    return fail("restore did not create new fence")
+  end
+  if restore_reacquires_capabilities() == 0 then
+    return fail("restore did not reacquire capabilities")
+  end
+  if restore_revoked_rights_not_auto_granted() == 0 then
+    return fail("restore restored revoked capabilities without reacquisition")
+  end
+  0
+end
+
 fn main() -> i32 = do
-  let status = check_logical_checkpoint()
-  if status != 0 then
-    return status
+  let logical_status = check_logical_checkpoint()
+  if logical_status != 0 then
+    return logical_status
+  end
+  let restore_status = check_restore_fence_and_capabilities()
+  if restore_status != 0 then
+    return restore_status
   end
   println("[script_vm] checkpoint_unit ok")
   0
