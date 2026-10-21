@@ -1,8 +1,8 @@
-current_step: 413
+current_step: 414
 status: ready
-last_result: done step 413: analysis — расширять vm_dump.mlc (опциональная секция actor), не отдельный actor_dump; 414 не skipped; dump_instance без scheduler остаётся форматом 335; 166 строк, лимит 400
-last_verify: analysis only, gate none; note docs/agent/notes/s413_actor_dump.md
-next_step: 414
+last_result: done step 414: red — dump_instance без секции actor (нет mailbox depth, active_execution, waiting_requests); bytes=635
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/vm_dump_unit.mlc => EXIT:1, [script_vm vm_dump_unit] FAIL: dump missing ActorRecord mailbox depth active_execution waiting_requests bytes=635
+next_step: 415
 consult_count: 0
 consult_response:
 consult_verdict:

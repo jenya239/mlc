@@ -111,6 +111,12 @@ fn main() -> i32 = do
   if check != 0 then
     return check
   end
+  if !text_has(dumped, "actor identity") || !text_has(dumped, " mailbox ") || !text_has(dumped, " waiting ") then
+    return fail(
+      "dump missing ActorRecord mailbox depth active_execution waiting_requests bytes="
+        + dumped.byte_size().to_string()
+    )
+  end
   println("[script_vm] vm_dump_unit ok")
   0
 end
