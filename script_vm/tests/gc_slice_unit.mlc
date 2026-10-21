@@ -11,7 +11,8 @@ import {
   heap_in_place_type_id,
   heap_in_place_cell_child,
   heap_in_place_element_count,
-  heap_type_array
+  heap_type_array,
+  heap_type_cell
 } from '../heap'
 import {
   HeapCollectSliceStatus,
@@ -178,6 +179,37 @@ fn check_partial_then_match() -> i32 = do
   compare_heaps(sliced, sliced_objects, full, full_objects)
 end
 
+fn check_mutation_between_mark_slices() -> i32 = do
+  let mut heap = heap_new()
+  let root_cell = heap_in_place_alloc_cell(heap)
+  let first_child = heap_in_place_alloc_cell(heap)
+  let hidden_child = heap_in_place_alloc_cell(heap)
+  heap_in_place_write(heap, root_cell, 0, first_child)
+  heap_in_place_root_push(heap, root_cell)
+  let mut cursor = heap_collect_slice_cursor_new(heap)
+  let first = heap_collect_slice(heap, empty_values(), cursor, mark_budget(), sweep_budget())
+  if slice_is_done(first) then
+    return fail("mark slice finished before interleaved mutation")
+  end
+  heap_in_place_write(heap, root_cell, 0, hidden_child)
+  let mut status = first
+  let mut slice_count = 1
+  while !slice_is_done(status) && slice_count < step_limit() do
+    status = heap_collect_slice(heap, empty_values(), cursor, mark_budget(), sweep_budget())
+    slice_count = slice_count + 1
+  end
+  if !slice_is_done(status) then
+    return fail("slice did not finish after mutation steps=" + slice_count.to_string())
+  end
+  if heap_in_place_type_id(heap, root_cell) != heap_type_cell() then
+    return fail("incremental collector lost live object after mutation between mark slices")
+  end
+  if heap_in_place_type_id(heap, hidden_child) != heap_type_cell() then
+    return fail("incremental collector lost live object after mutation between mark slices")
+  end
+  0
+end
+
 fn check_wide_budget_matches() -> i32 = do
   let mut sliced = heap_new()
   let sliced_objects = prepare(sliced)
@@ -196,6 +228,9 @@ fn main() -> i32 = do
   let mut status = check_partial_then_match()
   if status == 0 then
     status = check_wide_budget_matches()
+  end
+  if status == 0 then
+    status = check_mutation_between_mark_slices()
   end
   if status != 0 then
     return status
