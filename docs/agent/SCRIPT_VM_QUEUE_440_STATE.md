@@ -1,8 +1,8 @@
-current_step: 422
+current_step: 423
 status: ready
-last_result: done step 422: green — Unix domain socketpair loopback, owned-copy framing, HostRequest/HostReply round-trip; без FD passing и shared memory
-last_verify: ruby scripts/run_script_vm_gate.rb transport_loopback_unit ipc_codec_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => transport_loopback_unit ok, last line script_vm_queue200_gate FAIL queue (known lower_stage1 syntax_error code)
-next_step: 423
+last_result: done step 423: red — нет launcher env allowlist / no_new_privs / filesystem/network isolation; DISPLAY мог бы уйти в child
+last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/sandbox_policy_unit.mlc => EXIT:1, [script_vm sandbox_policy_unit] FAIL: no env allowlist no_new_privs filesystem network isolation
+next_step: 424
 consult_count: 0
 consult_response:
 consult_verdict:
