@@ -3,6 +3,13 @@ import {
   checkpoint_schema_version,
   checkpoint_validate_kinds
 } from './checkpoint'
+import {
+  actor_lifecycle_idle
+} from './actor'
+import {
+  scheduler_reload_apply_allowed,
+  scheduler_reload_interrupts_live_stack
+} from './scheduler'
 
 export type ReloadRestore = {
   incarnation: i32,
@@ -123,4 +130,120 @@ export fn restore_revoked_rights_not_auto_granted() -> i32 = do
     return 0
   end
   1
+end
+
+export type ReloadEpochCommit = {
+  applied: i32,
+  deferred: i32,
+  rolled_back: i32,
+  code_epoch: i32,
+  fence: i32,
+  callback_fired: i32,
+  effect_result_kept: i32,
+  relinked: i32
+}
+
+export fn reload_try_idle_commit(
+  active_execution: i32,
+  lifecycle: i32,
+  migration_ok: i32,
+  previous_epoch: i32,
+  previous_fence: i32,
+  reply_epoch: i32
+) -> ReloadEpochCommit = do
+  if scheduler_reload_apply_allowed(active_execution, lifecycle) == 0 then
+    return ReloadEpochCommit {
+      applied: 0,
+      deferred: 1,
+      rolled_back: 0,
+      code_epoch: previous_epoch,
+      fence: previous_fence,
+      callback_fired: 0,
+      effect_result_kept: 1,
+      relinked: 0
+    }
+  end
+  if migration_ok == 0 then
+    return ReloadEpochCommit {
+      applied: 0,
+      deferred: 0,
+      rolled_back: 1,
+      code_epoch: previous_epoch,
+      fence: previous_fence,
+      callback_fired: 0,
+      effect_result_kept: 1,
+      relinked: 0
+    }
+  end
+  let committed_epoch = previous_epoch + 1
+  let callback_fired = if reply_epoch == committed_epoch then
+    1
+  else
+    0
+  end
+  ReloadEpochCommit {
+    applied: 1,
+    deferred: 0,
+    rolled_back: 0,
+    code_epoch: committed_epoch,
+    fence: previous_fence + 1,
+    callback_fired: callback_fired,
+    effect_result_kept: 1,
+    relinked: 1
+  }
+end
+
+export fn reload_during_active_turn_deferred_to_idle() -> i32 = do
+  let commit = reload_try_idle_commit(1, actor_lifecycle_idle(), 1, 4, 8, 4)
+  if commit.applied != 0 then
+    return 0
+  end
+  commit.deferred
+end
+
+export fn reload_does_not_interrupt_live_stack() -> i32 = do
+  if scheduler_reload_interrupts_live_stack(1) != 0 then
+    return 0
+  end
+  let commit = reload_try_idle_commit(1, actor_lifecycle_idle(), 1, 4, 8, 4)
+  if commit.applied != 0 then
+    return 0
+  end
+  1
+end
+
+export fn reload_waits_for_turn_boundary() -> i32 = do
+  let pending = reload_try_idle_commit(1, actor_lifecycle_idle(), 1, 4, 8, 4)
+  let idle = reload_try_idle_commit(0, actor_lifecycle_idle(), 1, 4, 8, 4)
+  if pending.deferred == 0 then
+    return 0
+  end
+  idle.applied
+end
+
+export fn reload_migration_failure_rolls_back() -> i32 = do
+  let commit = reload_try_idle_commit(0, actor_lifecycle_idle(), 0, 4, 8, 4)
+  if commit.rolled_back == 0 then
+    return 0
+  end
+  if commit.applied != 0 then
+    return 0
+  end
+  if commit.code_epoch != 4 then
+    return 0
+  end
+  1
+end
+
+export fn reload_old_epoch_reply_skips_callback() -> i32 = do
+  let commit = reload_try_idle_commit(0, actor_lifecycle_idle(), 1, 4, 8, 4)
+  if commit.callback_fired != 0 then
+    return 0
+  end
+  1
+end
+
+export fn reload_old_epoch_keeps_effect_result() -> i32 = do
+  let commit = reload_try_idle_commit(0, actor_lifecycle_idle(), 1, 4, 8, 4)
+  commit.effect_result_kept
 end

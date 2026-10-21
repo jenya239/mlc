@@ -1,13 +1,16 @@
+import {
+  reload_does_not_interrupt_live_stack,
+  reload_during_active_turn_deferred_to_idle,
+  reload_migration_failure_rolls_back,
+  reload_old_epoch_keeps_effect_result,
+  reload_old_epoch_reply_skips_callback,
+  reload_waits_for_turn_boundary
+} from '../reload'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm reload_epoch_unit] FAIL: " + message)
   1
 end
-
-fn reload_during_active_turn_deferred_to_idle() -> i32 = 0
-
-fn reload_does_not_interrupt_live_stack() -> i32 = 0
-
-fn reload_waits_for_turn_boundary() -> i32 = 0
 
 fn check_idle_turn_reload() -> i32 = do
   if reload_during_active_turn_deferred_to_idle() == 0 then
@@ -18,6 +21,15 @@ fn check_idle_turn_reload() -> i32 = do
   end
   if reload_waits_for_turn_boundary() == 0 then
     return fail("reload did not wait for turn boundary")
+  end
+  if reload_migration_failure_rolls_back() == 0 then
+    return fail("migration failure did not roll back")
+  end
+  if reload_old_epoch_reply_skips_callback() == 0 then
+    return fail("old epoch reply fired callback")
+  end
+  if reload_old_epoch_keeps_effect_result() == 0 then
+    return fail("old epoch reply dropped durable effect result")
   end
   0
 end
