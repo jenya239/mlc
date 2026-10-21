@@ -1,65 +1,173 @@
+import { actor_new } from '../actor'
 import {
-  ServiceAccepted,
-  ServiceBusy,
-  ServicePop,
-  ServicePopCommand,
-  ServicePopEmpty,
-  counter_actor_button_command,
-  counter_actor_handle_command,
-  counter_actor_new,
-  service_queue_new,
-  service_try_pop,
-  service_try_push
-} from '../service'
+  mailbox_message_completion,
+  mailbox_message_normal
+} from '../mailbox'
+import {
+  SchedulerAccepted,
+  SchedulerAdmission,
+  SchedulerBusy,
+  SchedulerDeadlock,
+  SchedulerDispatch,
+  SchedulerDispatchCompletion,
+  SchedulerDispatchControl,
+  SchedulerDispatchIdle,
+  SchedulerDispatchStarted,
+  scheduler_enqueue,
+  scheduler_finish_turn,
+  scheduler_note_waiting,
+  scheduler_queued_count,
+  scheduler_try_dispatch,
+  scheduler_wait_for_actor
+} from '../scheduler'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm scheduler_unit] FAIL: " + message)
   1
 end
 
-fn owner_identity() -> i64 = 1
+fn logical_identity() -> i64 = 1
 
-fn queue_capacity() -> i32 = 8
+fn other_identity() -> i64 = 2
 
-fn pop_command(pop: ServicePop) -> i32 =
-  match pop {
-    ServicePopCommand(command_code) => command_code,
-    ServicePopEmpty => 0
+fn principal() -> i64 = 7
+
+fn mailbox_capacity() -> i32 = 8
+
+fn button_command() -> i32 = 1
+
+fn completion_command() -> i32 = 2
+
+fn admission_is_busy(admission: SchedulerAdmission) -> bool =
+  match admission {
+    SchedulerBusy => true,
+    SchedulerAccepted => false,
+    SchedulerDeadlock => false
   }
 
-fn main() -> i32 = do
-  let mut actor = counter_actor_new()
-  let mut queue = service_queue_new(queue_capacity(), owner_identity())
-  let first_push = service_try_push(queue, counter_actor_button_command())
-  let second_push = service_try_push(queue, counter_actor_button_command())
-  let first_busy = match first_push {
-    ServiceBusy => true,
-    ServiceAccepted => false
+fn admission_is_deadlock(admission: SchedulerAdmission) -> bool =
+  match admission {
+    SchedulerDeadlock => true,
+    SchedulerAccepted => false,
+    SchedulerBusy => false
   }
-  if first_busy then
-    return fail("first message was Busy")
+
+fn dispatch_kind(dispatch: SchedulerDispatch) -> string =
+  match dispatch {
+    SchedulerDispatchIdle => "Idle",
+    SchedulerDispatchStarted(_command) => "Started",
+    SchedulerDispatchControl(_command) => "Control",
+    SchedulerDispatchCompletion(_command) => "Completion"
+  }
+
+fn check_second_normal_waits_for_turn() -> i32 = do
+  let mut actor = actor_new(logical_identity(), 0, 0, principal(), 0, mailbox_capacity(), 0)
+  let first_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
+  let second_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
+  if admission_is_busy(first_push) || admission_is_busy(second_push) then
+    return fail("normal messages were Busy")
   end
-  let second_busy = match second_push {
-    ServiceBusy => true,
-    ServiceAccepted => false
-  }
-  if second_busy then
-    return fail("second message was Busy")
+  let first = scheduler_try_dispatch(actor)
+  if dispatch_kind(first) != "Started" || !actor.active_execution then
+    return fail("first turn did not start kind=" + dispatch_kind(first))
   end
-  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
-  if !actor.waiting_timer then
+  actor = scheduler_note_waiting(actor)
+  if actor.waiting_requests <= 0 then
     return fail("first turn completed before second message was considered")
   end
-  let first_turn_active = actor.waiting_timer
-  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
-  if first_turn_active then
+  let second = scheduler_try_dispatch(actor)
+  if dispatch_kind(second) == "Started" then
     return fail(
       "second turn started before first completed waiting_timer="
-        + actor.waiting_timer.to_string()
-        + " counter="
-        + actor.counter.to_string()
-        + " messages=2"
+        + actor.active_execution.to_string()
+        + " counter=0 messages=2"
     )
+  end
+  if dispatch_kind(second) != "Idle" || scheduler_queued_count(actor) != 1 then
+    return fail(
+      "second normal was not held queued kind="
+        + dispatch_kind(second)
+        + " queued="
+        + scheduler_queued_count(actor).to_string()
+    )
+  end
+  0
+end
+
+fn check_completion_passes_during_turn() -> i32 = do
+  let mut actor = actor_new(logical_identity(), 0, 0, principal(), 0, mailbox_capacity(), 0)
+  let first_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
+  if admission_is_busy(first_push) then
+    return fail("normal message was Busy")
+  end
+  let first = scheduler_try_dispatch(actor)
+  if dispatch_kind(first) != "Started" then
+    return fail("turn missing before completion kind=" + dispatch_kind(first))
+  end
+  let completion_push = scheduler_enqueue(actor, mailbox_message_completion(completion_command()))
+  if admission_is_busy(completion_push) then
+    return fail("completion was Busy")
+  end
+  let completion = scheduler_try_dispatch(actor)
+  if dispatch_kind(completion) != "Completion" || !actor.active_execution then
+    return fail(
+      "completion did not pass during turn kind="
+        + dispatch_kind(completion)
+        + " active="
+        + actor.active_execution.to_string()
+    )
+  end
+  0
+end
+
+fn check_self_wait_deadlock() -> i32 = do
+  let actor = actor_new(logical_identity(), 0, 0, principal(), 0, mailbox_capacity(), 0)
+  let self_wait = scheduler_wait_for_actor(actor, logical_identity())
+  if !admission_is_deadlock(self_wait) then
+    return fail("actor wait on self was not deadlock")
+  end
+  let other_wait = scheduler_wait_for_actor(actor, other_identity())
+  if admission_is_deadlock(other_wait) || admission_is_busy(other_wait) then
+    return fail("wait on other actor was rejected")
+  end
+  0
+end
+
+fn check_second_starts_after_finish() -> i32 = do
+  let mut actor = actor_new(logical_identity(), 0, 0, principal(), 0, mailbox_capacity(), 0)
+  let first_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
+  let second_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
+  if admission_is_busy(first_push) || admission_is_busy(second_push) then
+    return fail("normal messages were Busy before finish")
+  end
+  let first = scheduler_try_dispatch(actor)
+  if dispatch_kind(first) != "Started" then
+    return fail("first turn missing kind=" + dispatch_kind(first))
+  end
+  actor = scheduler_finish_turn(actor)
+  let second = scheduler_try_dispatch(actor)
+  if dispatch_kind(second) != "Started" then
+    return fail("second turn did not start after finish kind=" + dispatch_kind(second))
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let wait_status = check_second_normal_waits_for_turn()
+  if wait_status != 0 then
+    return wait_status
+  end
+  let completion_status = check_completion_passes_during_turn()
+  if completion_status != 0 then
+    return completion_status
+  end
+  let deadlock_status = check_self_wait_deadlock()
+  if deadlock_status != 0 then
+    return deadlock_status
+  end
+  let finish_status = check_second_starts_after_finish()
+  if finish_status != 0 then
+    return finish_status
   end
   println("[script_vm] scheduler_unit ok")
   0

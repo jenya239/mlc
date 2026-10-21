@@ -1,0 +1,42 @@
+import { ActorMailbox, mailbox_new } from './mailbox'
+
+export type ActorRecord = {
+  logical_identity: i64,
+  incarnation: i32,
+  code_epoch: i32,
+  principal: i64,
+  instance: i32,
+  bounded_mailbox: ActorMailbox,
+  active_execution: bool,
+  waiting_requests: i32,
+  lifecycle: i32,
+  budgets: i32
+}
+
+export fn actor_lifecycle_idle() -> i32 = 0
+
+export fn actor_lifecycle_running() -> i32 = 1
+
+export fn actor_lifecycle_waiting() -> i32 = 2
+
+export fn actor_new(
+  logical_identity: i64,
+  incarnation: i32,
+  code_epoch: i32,
+  principal: i64,
+  instance: i32,
+  mailbox_capacity: i32,
+  budgets: i32
+) -> ActorRecord =
+  ActorRecord {
+    logical_identity: logical_identity,
+    incarnation: incarnation,
+    code_epoch: code_epoch,
+    principal: principal,
+    instance: instance,
+    bounded_mailbox: mailbox_new(mailbox_capacity),
+    active_execution: false,
+    waiting_requests: 0,
+    lifecycle: actor_lifecycle_idle(),
+    budgets: budgets
+  }

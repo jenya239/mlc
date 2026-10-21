@@ -1,0 +1,88 @@
+export type MailboxMessage = {
+  class_code: i32,
+  command_code: i32
+}
+
+export type ActorMailbox = {
+  messages: [MailboxMessage],
+  capacity: i32
+}
+
+export type MailboxAdmission = MailboxAccepted | MailboxBusy
+
+export type MailboxTake = MailboxTakeEmpty | MailboxTakeMessage(MailboxMessage)
+
+export fn mailbox_class_normal() -> i32 = 0
+
+export fn mailbox_class_control() -> i32 = 1
+
+export fn mailbox_class_completion() -> i32 = 2
+
+fn empty_messages() -> [MailboxMessage] = do
+  let mut messages: [MailboxMessage] = []
+  messages
+end
+
+fn non_negative_capacity(capacity: i32) -> i32 = do
+  if capacity <= 0 then
+    return 0
+  end
+  capacity
+end
+
+export fn mailbox_new(capacity: i32) -> ActorMailbox =
+  ActorMailbox { messages: empty_messages(), capacity: non_negative_capacity(capacity) }
+
+export fn mailbox_count(mailbox: ActorMailbox) -> i32 = mailbox.messages.length()
+
+export fn mailbox_message_normal(command_code: i32) -> MailboxMessage =
+  MailboxMessage { class_code: mailbox_class_normal(), command_code: command_code }
+
+export fn mailbox_message_control(command_code: i32) -> MailboxMessage =
+  MailboxMessage { class_code: mailbox_class_control(), command_code: command_code }
+
+export fn mailbox_message_completion(command_code: i32) -> MailboxMessage =
+  MailboxMessage { class_code: mailbox_class_completion(), command_code: command_code }
+
+export fn mailbox_try_push(mailbox: ref mut ActorMailbox, message: MailboxMessage) -> MailboxAdmission = do
+  if mailbox.messages.length() >= mailbox.capacity then
+    MailboxBusy
+  else
+    let mut messages = mailbox.messages
+    messages.push(message)
+    mailbox.messages = messages
+    MailboxAccepted
+  end
+end
+
+fn is_priority_class(class_code: i32) -> bool =
+  class_code == mailbox_class_control() || class_code == mailbox_class_completion()
+
+fn take_index(mailbox: ref mut ActorMailbox, index: i32) -> MailboxMessage = do
+  let taken = mailbox.messages[index]
+  let mut kept: [MailboxMessage] = []
+  let mut cursor = 0
+  while cursor < mailbox.messages.length() do
+    if cursor != index then
+      kept.push(mailbox.messages[cursor])
+    end
+    cursor = cursor + 1
+  end
+  mailbox.messages = kept
+  taken
+end
+
+export fn mailbox_try_take(mailbox: ref mut ActorMailbox, allow_normal: bool) -> MailboxTake = do
+  let mut index = 0
+  while index < mailbox.messages.length() do
+    if is_priority_class(mailbox.messages[index].class_code) then
+      return MailboxTakeMessage(take_index(mailbox, index))
+    end
+    index = index + 1
+  end
+  if allow_normal && mailbox.messages.length() > 0 then
+    MailboxTakeMessage(take_index(mailbox, 0))
+  else
+    MailboxTakeEmpty
+  end
+end

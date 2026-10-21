@@ -1,0 +1,94 @@
+import {
+  ActorRecord,
+  actor_lifecycle_idle,
+  actor_lifecycle_running,
+  actor_lifecycle_waiting
+} from './actor'
+import {
+  MailboxAccepted,
+  MailboxBusy,
+  MailboxMessage,
+  MailboxTakeEmpty,
+  MailboxTakeMessage,
+  mailbox_class_completion,
+  mailbox_class_control,
+  mailbox_class_normal,
+  mailbox_count,
+  mailbox_try_push,
+  mailbox_try_take
+} from './mailbox'
+
+export type SchedulerAdmission = SchedulerAccepted | SchedulerBusy | SchedulerDeadlock
+
+export type SchedulerDispatch =
+  SchedulerDispatchIdle
+  | SchedulerDispatchStarted(i32)
+  | SchedulerDispatchControl(i32)
+  | SchedulerDispatchCompletion(i32)
+
+export fn scheduler_enqueue(actor: ref mut ActorRecord, message: MailboxMessage) -> SchedulerAdmission =
+  match mailbox_try_push(actor.bounded_mailbox, message) {
+    MailboxBusy => SchedulerBusy,
+    MailboxAccepted => SchedulerAccepted
+  }
+
+export fn scheduler_wait_for_actor(actor: ActorRecord, waited_logical_identity: i64) -> SchedulerAdmission = do
+  if waited_logical_identity == actor.logical_identity then
+    SchedulerDeadlock
+  else
+    SchedulerAccepted
+  end
+end
+
+export fn scheduler_note_waiting(actor: ActorRecord) -> ActorRecord =
+  ActorRecord {
+    logical_identity: actor.logical_identity,
+    incarnation: actor.incarnation,
+    code_epoch: actor.code_epoch,
+    principal: actor.principal,
+    instance: actor.instance,
+    bounded_mailbox: actor.bounded_mailbox,
+    active_execution: true,
+    waiting_requests: actor.waiting_requests + 1,
+    lifecycle: actor_lifecycle_waiting(),
+    budgets: actor.budgets
+  }
+
+export fn scheduler_finish_turn(actor: ActorRecord) -> ActorRecord =
+  ActorRecord {
+    logical_identity: actor.logical_identity,
+    incarnation: actor.incarnation,
+    code_epoch: actor.code_epoch,
+    principal: actor.principal,
+    instance: actor.instance,
+    bounded_mailbox: actor.bounded_mailbox,
+    active_execution: false,
+    waiting_requests: 0,
+    lifecycle: actor_lifecycle_idle(),
+    budgets: actor.budgets
+  }
+
+fn dispatch_from_take(actor: ref mut ActorRecord, message: MailboxMessage) -> SchedulerDispatch = do
+  if message.class_code == mailbox_class_control() then
+    return SchedulerDispatchControl(message.command_code)
+  end
+  if message.class_code == mailbox_class_completion() then
+    return SchedulerDispatchCompletion(message.command_code)
+  end
+  actor.active_execution = true
+  actor.lifecycle = actor_lifecycle_running()
+  SchedulerDispatchStarted(message.command_code)
+end
+
+export fn scheduler_try_dispatch(actor: ref mut ActorRecord) -> SchedulerDispatch = do
+  let allow_normal = !actor.active_execution
+  match mailbox_try_take(actor.bounded_mailbox, allow_normal) {
+    MailboxTakeEmpty => SchedulerDispatchIdle,
+    MailboxTakeMessage(message) => dispatch_from_take(actor, message)
+  }
+end
+
+export fn scheduler_queued_count(actor: ActorRecord) -> i32 = mailbox_count(actor.bounded_mailbox)
+
+export fn scheduler_message_is_normal(message: MailboxMessage) -> bool =
+  message.class_code == mailbox_class_normal()

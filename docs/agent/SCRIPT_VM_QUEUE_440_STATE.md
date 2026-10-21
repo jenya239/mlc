@@ -1,8 +1,8 @@
-current_step: 407
+current_step: 408
 status: ready
-last_result: done step 407: red — нет scheduler.mlc; два button одному CounterActor — второе handle_command стартует при waiting_timer=true (первый turn не завершён)
-last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/scheduler_unit.mlc => EXIT:1, [script_vm scheduler_unit] FAIL: second turn started before first completed waiting_timer=true counter=0 messages=2
-next_step: 408
+last_result: done step 408: green — scheduler.mlc non-reentrant turn; обычные сообщения ждут active_execution; control/completion проходят; wait на себя — SchedulerDeadlock
+last_verify: ruby scripts/run_script_vm_gate.rb scheduler_unit capability_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => scheduler_unit ok, capability_unit ok, lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
+next_step: 409
 consult_count: 0
 consult_response:
 consult_verdict:
