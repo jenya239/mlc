@@ -1,8 +1,8 @@
-current_step: 410
+current_step: 411
 status: ready
-last_result: done step 410: green — scheduler_pick_fair: fuel по principal, затем по actor; flood 1000 vs 1 при fuel=10 даёт 5/5
-last_verify: ruby scripts/run_script_vm_gate.rb scheduler_unit => script_vm_gate ok units=1; ruby scripts/run_script_vm_queue200_gate.rb => scheduler_unit ok, lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
-next_step: 411
+last_result: done step 411: red — out-of-order worker: fast публикует revision=1 «fast», медленный job с base_revision=0 затем затирает label на «slow» без проверки непрерывности
+last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/subscription_unit.mlc => EXIT:1, [script_vm subscription_unit] FAIL: stale worker result applied over newer revision shown=slow slow_base_revision=0 current_revision=1 handle_slot=0
+next_step: 412
 consult_count: 0
 consult_response:
 consult_verdict:

@@ -1,0 +1,101 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../../misc/textui/store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../../misc/textui/script_transaction'
+import {
+  resource_table_bind,
+  resource_table_new
+} from '../resources'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm subscription_unit] FAIL: " + message)
+  1
+end
+
+fn owner_principal() -> i64 = 7
+
+fn subtree_identity() -> i64 = 11
+
+fn original_label() -> string = "base"
+
+fn slow_worker_label() -> string = "slow"
+
+fn fast_worker_label() -> string = "fast"
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn main() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let slow_job_base_revision = 0
+  let mut fast = script_transaction_new(store)
+  fast = script_transaction_stage_set_label_text(fast, widget, fast_worker_label())
+  fast = script_transaction_commit(fast)
+  if store_text(fast.store, widget) != fast_worker_label() || fast.revision != 1 then
+    return fail(
+      "out-of-order fast worker did not publish shown="
+        + store_text(fast.store, widget)
+        + " revision="
+        + fast.revision.to_string()
+    )
+  end
+  let mut slow = script_transaction_new(fast.store)
+  slow = script_transaction_stage_set_label_text(slow, widget, slow_worker_label())
+  slow = script_transaction_commit(slow)
+  let shown = store_text(slow.store, widget)
+  if shown == slow_worker_label() then
+    return fail(
+      "stale worker result applied over newer revision shown="
+        + shown
+        + " slow_base_revision="
+        + slow_job_base_revision.to_string()
+        + " current_revision="
+        + fast.revision.to_string()
+        + " handle_slot="
+        + handle.slot.to_string()
+    )
+  end
+  if shown != fast_worker_label() then
+    return fail("expected current revision label shown=" + shown)
+  end
+  println("[script_vm] subscription_unit ok")
+  0
+end
