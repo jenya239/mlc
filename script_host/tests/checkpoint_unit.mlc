@@ -1,0 +1,32 @@
+fn fail(message: string) -> i32 = do
+  println("[script_vm checkpoint_unit] FAIL: " + message)
+  1
+end
+
+fn checkpoint_rejects_raw_heap_ref() -> i32 = 0
+
+fn checkpoint_logical_state_present() -> i32 = 0
+
+fn checkpoint_rejects_native_handle() -> i32 = 0
+
+fn check_logical_checkpoint() -> i32 = do
+  if checkpoint_logical_state_present() == 0 then
+    return fail("raw HeapRef checkpoint not rejected need logical state")
+  end
+  if checkpoint_rejects_raw_heap_ref() == 0 then
+    return fail("raw HeapRef checkpoint not rejected need logical state")
+  end
+  if checkpoint_rejects_native_handle() == 0 then
+    return fail("native handle checkpoint not rejected")
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let status = check_logical_checkpoint()
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] checkpoint_unit ok")
+  0
+end
