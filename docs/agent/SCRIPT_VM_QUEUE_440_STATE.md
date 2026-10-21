@@ -1,8 +1,8 @@
-current_step: 420
+current_step: 421
 status: ready
-last_result: done step 420: green — protocol_max_input_words / protocol_max_decode_depth / protocol_max_decode_work; encode режет oversized, decode режет nested depth
-last_verify: ruby scripts/run_script_vm_gate.rb ipc_codec_unit => script_vm_gate ok units=1; ruby scripts/run_script_vm_queue200_gate.rb => ipc_codec_unit ok, last line script_vm_queue200_gate FAIL queue (known lower_stage1 syntax_error code)
-next_step: 421
+last_result: done step 421: red — нет loopback Unix domain socket; transport_loopback_exchange возвращает пустой буфер, HostRequest/HostReply round-trip отсутствует
+last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/transport_loopback_unit.mlc => EXIT:1, [script_vm transport_loopback_unit] FAIL: no loopback Unix domain socket HostRequest HostReply owned-copy
+next_step: 422
 consult_count: 0
 consult_response:
 consult_verdict:

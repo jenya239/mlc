@@ -1,0 +1,48 @@
+import {
+  ProtocolDecodeErr,
+  ProtocolDecodeOk,
+  protocol_decode,
+  protocol_encode_host_request,
+  protocol_kind_host_reply
+} from '../protocol'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm transport_loopback_unit] FAIL: " + message)
+  1
+end
+
+fn empty_words() -> [i32] = do
+  let mut words: [i32] = []
+  words
+end
+
+fn transport_loopback_exchange(_request: [i32]) -> [i32] =
+  empty_words()
+
+fn session_epoch() -> i32 = 3
+
+fn check_host_request_host_reply() -> i32 = do
+  let request = protocol_encode_host_request(session_epoch(), 1, 12, 38)
+  let reply = transport_loopback_exchange(request)
+  if reply.length() == 0 then
+    return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
+  end
+  match protocol_decode(reply) {
+    ProtocolDecodeOk(header) => do
+      if header.kind != protocol_kind_host_reply() then
+        return fail("loopback did not deliver HostReply kind=" + header.kind.to_string())
+      end
+      0
+    end,
+    ProtocolDecodeErr(_code) => fail("loopback reply not a protocol frame")
+  }
+end
+
+fn main() -> i32 = do
+  let status = check_host_request_host_reply()
+  if status != 0 then
+    return status
+  end
+  println("[script_vm] transport_loopback_unit ok")
+  0
+end
