@@ -1,4 +1,4 @@
-import { actor_new } from '../actor'
+import { ActorRecord, actor_new } from '../actor'
 import {
   mailbox_message_completion,
   mailbox_message_normal
@@ -31,6 +31,14 @@ fn logical_identity() -> i64 = 1
 fn other_identity() -> i64 = 2
 
 fn principal() -> i64 = 7
+
+fn flood_principal() -> i64 = 7
+
+fn other_principal() -> i64 = 13
+
+fn flood_actor_count() -> i32 = 1000
+
+fn other_actor_count() -> i32 = 1
 
 fn mailbox_capacity() -> i32 = 8
 
@@ -133,6 +141,59 @@ fn check_self_wait_deadlock() -> i32 = do
   0
 end
 
+fn identity_from_index(index: i32) -> i64 = index + 1
+
+fn check_flood_principal_share() -> i32 = do
+  let mut actors: [ActorRecord] = []
+  let mut flood_index = 0
+  while flood_index < flood_actor_count() do
+    actors.push(
+      actor_new(identity_from_index(flood_index), 0, 0, flood_principal(), flood_index, mailbox_capacity(), 0)
+    )
+    flood_index = flood_index + 1
+  end
+  let mut other_index = 0
+  while other_index < other_actor_count() do
+    actors.push(
+      actor_new(
+        identity_from_index(flood_actor_count() + other_index),
+        0,
+        0,
+        other_principal(),
+        flood_actor_count() + other_index,
+        mailbox_capacity(),
+        0
+      )
+    )
+    other_index = other_index + 1
+  end
+  let total_actors = actors.length()
+  let mut flood_turns = 0
+  let mut other_turns = 0
+  let mut cursor = 0
+  while cursor < total_actors do
+    if actors[cursor].principal == flood_principal() then
+      flood_turns = flood_turns + 1
+    else
+      other_turns = other_turns + 1
+    end
+    cursor = cursor + 1
+  end
+  if flood_turns == other_turns then
+    return 0
+  end
+  fail(
+    "flood principal share is actor-weighted flood_turns="
+      + flood_turns.to_string()
+      + " other_turns="
+      + other_turns.to_string()
+      + " flood_actors="
+      + flood_actor_count().to_string()
+      + " other_actors="
+      + other_actor_count().to_string()
+  )
+end
+
 fn check_second_starts_after_finish() -> i32 = do
   let mut actor = actor_new(logical_identity(), 0, 0, principal(), 0, mailbox_capacity(), 0)
   let first_push = scheduler_enqueue(actor, mailbox_message_normal(button_command()))
@@ -168,6 +229,10 @@ fn main() -> i32 = do
   let finish_status = check_second_starts_after_finish()
   if finish_status != 0 then
     return finish_status
+  end
+  let flood_status = check_flood_principal_share()
+  if flood_status != 0 then
+    return flood_status
   end
   println("[script_vm] scheduler_unit ok")
   0
