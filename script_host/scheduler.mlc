@@ -92,3 +92,96 @@ export fn scheduler_queued_count(actor: ActorRecord) -> i32 = mailbox_count(acto
 
 export fn scheduler_message_is_normal(message: MailboxMessage) -> bool =
   message.class_code == mailbox_class_normal()
+
+export type SchedulerFairness = {
+  next_principal_slot: i32,
+  member_cursors: [i32]
+}
+
+export type SchedulerFairPick = {
+  actor_index: i32,
+  fairness: SchedulerFairness,
+  found: bool
+}
+
+fn empty_cursors() -> [i32] = do
+  let mut cursors: [i32] = []
+  cursors
+end
+
+export fn scheduler_fairness_new() -> SchedulerFairness =
+  SchedulerFairness { next_principal_slot: 0, member_cursors: empty_cursors() }
+
+fn principal_listed(principals: [i64], principal: i64) -> bool = do
+  let mut index = 0
+  while index < principals.length() do
+    if principals[index] == principal then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn collect_principals(actors: [ActorRecord]) -> [i64] = do
+  let mut principals: [i64] = []
+  let mut index = 0
+  while index < actors.length() do
+    let principal = actors[index].principal
+    if !principal_listed(principals, principal) then
+      principals.push(principal)
+    end
+    index = index + 1
+  end
+  principals
+end
+
+fn collect_member_indices(actors: [ActorRecord], principal: i64) -> [i32] = do
+  let mut members: [i32] = []
+  let mut index = 0
+  while index < actors.length() do
+    if actors[index].principal == principal then
+      members.push(index)
+    end
+    index = index + 1
+  end
+  members
+end
+
+fn padded_cursors(cursors: [i32], principal_count: i32) -> [i32] = do
+  let mut next = cursors
+  while next.length() < principal_count do
+    next.push(0)
+  end
+  next
+end
+
+export fn scheduler_pick_fair(actors: [ActorRecord], fairness: SchedulerFairness) -> SchedulerFairPick = do
+  let principals = collect_principals(actors)
+  if principals.length() <= 0 then
+    return SchedulerFairPick { actor_index: 0, fairness: fairness, found: false }
+  end
+  let mut member_cursors = padded_cursors(fairness.member_cursors, principals.length())
+  let mut wrapped_slot = fairness.next_principal_slot
+  while wrapped_slot >= principals.length() do
+    wrapped_slot = wrapped_slot - principals.length()
+  end
+  let members = collect_member_indices(actors, principals[wrapped_slot])
+  if members.length() <= 0 then
+    return SchedulerFairPick { actor_index: 0, fairness: fairness, found: false }
+  end
+  let mut wrapped_member = member_cursors[wrapped_slot]
+  while wrapped_member >= members.length() do
+    wrapped_member = wrapped_member - members.length()
+  end
+  member_cursors.set(wrapped_slot, wrapped_member + 1)
+  let next_principal_slot = wrapped_slot + 1
+  SchedulerFairPick {
+    actor_index: members[wrapped_member],
+    fairness: SchedulerFairness {
+      next_principal_slot: next_principal_slot,
+      member_cursors: member_cursors
+    },
+    found: true
+  }
+end

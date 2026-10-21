@@ -14,8 +14,10 @@ import {
   SchedulerDispatchIdle,
   SchedulerDispatchStarted,
   scheduler_enqueue,
+  scheduler_fairness_new,
   scheduler_finish_turn,
   scheduler_note_waiting,
+  scheduler_pick_fair,
   scheduler_queued_count,
   scheduler_try_dispatch,
   scheduler_wait_for_actor
@@ -39,6 +41,8 @@ fn other_principal() -> i64 = 13
 fn flood_actor_count() -> i32 = 1000
 
 fn other_actor_count() -> i32 = 1
+
+fn fairness_fuel() -> i32 = 10
 
 fn mailbox_capacity() -> i32 = 8
 
@@ -167,17 +171,22 @@ fn check_flood_principal_share() -> i32 = do
     )
     other_index = other_index + 1
   end
-  let total_actors = actors.length()
+  let mut fairness = scheduler_fairness_new()
   let mut flood_turns = 0
   let mut other_turns = 0
-  let mut cursor = 0
-  while cursor < total_actors do
-    if actors[cursor].principal == flood_principal() then
+  let mut slice = 0
+  while slice < fairness_fuel() do
+    let picked = scheduler_pick_fair(actors, fairness)
+    if !picked.found then
+      return fail("fair pick missed actors slice=" + slice.to_string())
+    end
+    fairness = picked.fairness
+    if actors[picked.actor_index].principal == flood_principal() then
       flood_turns = flood_turns + 1
     else
       other_turns = other_turns + 1
     end
-    cursor = cursor + 1
+    slice = slice + 1
   end
   if flood_turns == other_turns then
     return 0
