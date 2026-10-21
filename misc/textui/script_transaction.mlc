@@ -6,6 +6,12 @@ import {
   widget_node_with_kind,
   widget_store_keep
 } from './store'
+import {
+  Capability,
+  capability_admit_is_ok,
+  capability_admit_set_label_text
+} from '../../script_host/capabilities'
+import { ResourceHandle, ResourceTable } from '../../script_host/resources'
 
 export type ScriptLabelPatch = {
   widget: WidgetId,
@@ -95,5 +101,32 @@ export fn script_transaction_commit(transaction: ScriptTransaction) -> ScriptTra
       patches: empty_patches(),
       revision: transaction.revision + 1
     }
+  end
+end
+
+export fn script_transaction_commit_with_capability(
+  transaction: ScriptTransaction,
+  table: ref mut ResourceTable,
+  handle: ResourceHandle,
+  capability: Capability,
+  actor_principal: i64,
+  current_policy_epoch: i32,
+  expected_revision: i32,
+  reserved_cost: i32
+) -> ScriptTransaction = do
+  let admitted = capability_admit_set_label_text(
+    table,
+    transaction.store,
+    handle,
+    capability,
+    actor_principal,
+    current_policy_epoch,
+    expected_revision,
+    reserved_cost
+  )
+  if !capability_admit_is_ok(admitted) then
+    ScriptTransaction { store: transaction.store, patches: empty_patches(), revision: transaction.revision }
+  else
+    script_transaction_commit(transaction)
   end
 end

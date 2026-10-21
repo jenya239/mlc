@@ -9,7 +9,7 @@ import {
   widget_store_empty
 } from '../../misc/textui/store'
 import {
-  script_transaction_commit,
+  script_transaction_commit_with_capability,
   script_transaction_new,
   script_transaction_stage_set_label_text
 } from '../../misc/textui/script_transaction'
@@ -69,31 +69,7 @@ fn admit_is_ok(result: CapabilityAdmit) -> bool =
     CapabilityAdmitDenied(_code) => false
   }
 
-fn live_capability() -> Capability =
-  Capability {
-    identity: capability_identity(),
-    owner: owner_principal(),
-    scope: subtree_identity(),
-    operations: capability_operation_set_label_text(),
-    expires: 0,
-    policy_epoch: policy_epoch(),
-    parent: capability_root_parent(),
-    revoked: false
-  }
-
-fn revoked_capability(capability: Capability) -> Capability =
-  Capability {
-    identity: capability.identity,
-    owner: capability.owner,
-    scope: capability.scope,
-    operations: capability.operations,
-    expires: capability.expires,
-    policy_epoch: capability.policy_epoch,
-    parent: capability.parent,
-    revoked: true
-  }
-
-fn main() -> i32 = do
+fn check_queued_commit_denied_after_revoke() -> i32 = do
   let mut store = widget_store_empty()
   store = widget_store_add_label(
     store,
@@ -126,7 +102,16 @@ fn main() -> i32 = do
   if !after_revoke.revoked then
     return fail("revoke flag was not set")
   end
-  transaction = script_transaction_commit(transaction)
+  transaction = script_transaction_commit_with_capability(
+    transaction,
+    table,
+    handle,
+    after_revoke,
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
   let shown = store_text(transaction.store, widget)
   if shown == queued_label() && transaction.revision != 0 then
     return fail(
@@ -137,6 +122,108 @@ fn main() -> i32 = do
         + " revoked="
         + after_revoke.revoked.to_string()
     )
+  end
+  if shown != original_label() || transaction.revision != 0 then
+    return fail(
+      "revoke at publish left store shown=" + shown
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
+  0
+end
+
+fn check_published_effect_not_undone_by_revoke() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let capability = live_capability()
+  let admitted = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    capability,
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if !admit_is_ok(admitted) then
+    return fail("enqueue admit rejected before publish")
+  end
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(transaction, widget, queued_label())
+  transaction = script_transaction_commit_with_capability(
+    transaction,
+    table,
+    handle,
+    capability,
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  let shown = store_text(transaction.store, widget)
+  if shown != queued_label() || transaction.revision != 1 then
+    return fail(
+      "live capability publish shown=" + shown
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
+  let after_revoke = revoked_capability(capability)
+  if !after_revoke.revoked then
+    return fail("revoke flag was not set after publish")
+  end
+  let after_shown = store_text(transaction.store, widget)
+  if after_shown != queued_label() || transaction.revision != 1 then
+    return fail(
+      "revoke after publish undid effect shown=" + after_shown
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
+  0
+end
+
+fn live_capability() -> Capability =
+  Capability {
+    identity: capability_identity(),
+    owner: owner_principal(),
+    scope: subtree_identity(),
+    operations: capability_operation_set_label_text(),
+    expires: 0,
+    policy_epoch: policy_epoch(),
+    parent: capability_root_parent(),
+    revoked: false
+  }
+
+fn revoked_capability(capability: Capability) -> Capability =
+  Capability {
+    identity: capability.identity,
+    owner: capability.owner,
+    scope: capability.scope,
+    operations: capability.operations,
+    expires: capability.expires,
+    policy_epoch: capability.policy_epoch,
+    parent: capability.parent,
+    revoked: true
+  }
+
+fn main() -> i32 = do
+  let revoke_status = check_queued_commit_denied_after_revoke()
+  if revoke_status != 0 then
+    return revoke_status
+  end
+  let published_status = check_published_effect_not_undone_by_revoke()
+  if published_status != 0 then
+    return published_status
   end
   println("[script_vm] capability_unit ok")
   0

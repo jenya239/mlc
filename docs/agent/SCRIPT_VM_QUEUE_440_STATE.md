@@ -1,8 +1,8 @@
-current_step: 405
+current_step: 406
 status: ready
-last_result: done step 405: red — admit на enqueue проходит, revoke до publish, script_transaction_commit всё равно публикует queued SetLabelText (revision=1)
-last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/capability_unit.mlc => EXIT:1, [script_vm capability_unit] FAIL: queued commit after revoke published shown=queued revision=1 revoked=true
-next_step: 406
+last_result: done step 406: green — script_transaction_commit_with_capability повторно вызывает admit перед publish; revoke до publish отклоняет queued batch; уже опубликованный эффект revoke не откатывает; ungated commit без изменений
+last_verify: ruby scripts/run_script_vm_gate.rb capability_unit script_transaction_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => capability_unit ok, script_transaction_unit ok, lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
+next_step: 407
 consult_count: 0
 consult_response:
 consult_verdict:

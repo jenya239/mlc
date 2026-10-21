@@ -42,6 +42,12 @@ fn deny(code: string) -> CapabilityAdmit = CapabilityAdmitDenied(code)
 
 fn admit_ok(entry: UiResourceEntry) -> CapabilityAdmit = CapabilityAdmitOk(entry)
 
+export fn capability_admit_is_ok(result: CapabilityAdmit) -> bool =
+  match result {
+    CapabilityAdmitOk(_entry) => true,
+    CapabilityAdmitDenied(_code) => false
+  }
+
 fn decode_rejected(capability: Capability, operation: i32) -> bool = do
   if capability.identity == 0 then
     return true
