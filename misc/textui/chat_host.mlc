@@ -24,6 +24,11 @@ import { chat_frame_run } from './chat_frame'
 import { frame_signature } from './frame_request'
 import { chat_config_resolve } from './chat_support_env'
 import { cursor_lens_show_window } from './cursor_lens'
+import {
+  ScriptFramePump,
+  script_frame_pump_drain,
+  script_frame_pump_new
+} from './script_events'
 
 export type ChatHostResult = {
   resources: SubmitResources,
@@ -76,6 +81,9 @@ fn world_dismiss_picker(world: ChatWorld) -> ChatWorld =
     dismiss_picker: 1
   }
 
+export fn drain_control_and_script_commands(pump: ScriptFramePump) -> ScriptFramePump =
+  script_frame_pump_drain(pump)
+
 fn chat_frame_wait_seconds(model: ChatModel, dragging: i32) -> f64 = do
   let mut wait = chat_wait_seconds(model)
   if dragging != 0 then
@@ -108,7 +116,9 @@ export fn chat_frames(
   let mut escape_was_down = false
   let mut error_code = 0
   let mut running = true
+  let mut pump = script_frame_pump_new()
   while running && glfw_gl_context_should_close() == 0 do
+    pump = drain_control_and_script_commands(pump)
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input(chat_frame_wait_seconds(world.model, world.selection.dragging))
     end

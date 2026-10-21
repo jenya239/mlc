@@ -24,6 +24,16 @@ fn main() -> i32 = do
   if phases.length() != 9 || phases[0] != "drain" || phases[7] != "submit" then
     return fail("frame pump phase order is not §8.4")
   end
+  let opened = script_frame_pump_drain(script_frame_pump_new())
+  let mut delivered = 0
+  if chat == script_frame_pump_name() && opened.last_drain == chat then
+    delivered = 1
+  end
+  if delivered != 1 then
+    return fail(
+      "message lost while chat open queued=1 delivered=" + delivered.to_string()
+    )
+  end
   if gallery == chat && gallery == script_frame_pump_name() && pump.last_drain == script_frame_pump_name() then
     println("[script_vm] script_frame_pump_unit ok")
     return 0
