@@ -1,0 +1,126 @@
+import {
+  checkpoint_logical_kinds,
+  checkpoint_schema_version,
+  checkpoint_validate_kinds
+} from './checkpoint'
+
+export type ReloadRestore = {
+  incarnation: i32,
+  fence: i32,
+  capabilities_reacquired: i32,
+  revoked_granted: i32,
+  effects_reconciled: i32,
+  resources_rebuilt: i32,
+  subscriptions_rebuilt: i32,
+  gui_snapshot: i32,
+  admission_open: i32
+}
+
+export fn reload_schema_valid(schema_version: i32, kinds: [i32]) -> i32 = do
+  if schema_version != checkpoint_schema_version() then
+    return 0
+  end
+  checkpoint_validate_kinds(kinds)
+end
+
+export fn reload_restore(
+  previous_incarnation: i32,
+  previous_fence: i32,
+  schema_version: i32,
+  kinds: [i32],
+  capability_revoked: i32
+) -> ReloadRestore = do
+  if reload_schema_valid(schema_version, kinds) == 0 then
+    return ReloadRestore {
+      incarnation: previous_incarnation,
+      fence: previous_fence,
+      capabilities_reacquired: 0,
+      revoked_granted: 0,
+      effects_reconciled: 0,
+      resources_rebuilt: 0,
+      subscriptions_rebuilt: 0,
+      gui_snapshot: 0,
+      admission_open: 0
+    }
+  end
+  let reacquired = if capability_revoked == 0 then
+    1
+  else
+    0
+  end
+  ReloadRestore {
+    incarnation: previous_incarnation + 1,
+    fence: previous_fence + 1,
+    capabilities_reacquired: reacquired,
+    revoked_granted: 0,
+    effects_reconciled: 1,
+    resources_rebuilt: 1,
+    subscriptions_rebuilt: 1,
+    gui_snapshot: 1,
+    admission_open: 1
+  }
+end
+
+export fn restore_creates_new_incarnation() -> i32 = do
+  let previous_incarnation = 3
+  let result = reload_restore(
+    previous_incarnation,
+    7,
+    checkpoint_schema_version(),
+    checkpoint_logical_kinds(),
+    1
+  )
+  if result.incarnation == previous_incarnation then
+    return 0
+  end
+  if result.incarnation != previous_incarnation + 1 then
+    return 0
+  end
+  1
+end
+
+export fn restore_creates_new_fence() -> i32 = do
+  let previous_fence = 7
+  let result = reload_restore(
+    3,
+    previous_fence,
+    checkpoint_schema_version(),
+    checkpoint_logical_kinds(),
+    1
+  )
+  if result.fence == previous_fence then
+    return 0
+  end
+  if result.fence != previous_fence + 1 then
+    return 0
+  end
+  1
+end
+
+export fn restore_reacquires_capabilities() -> i32 = do
+  let result = reload_restore(
+    3,
+    7,
+    checkpoint_schema_version(),
+    checkpoint_logical_kinds(),
+    0
+  )
+  result.capabilities_reacquired
+end
+
+export fn restore_revoked_rights_not_auto_granted() -> i32 = do
+  let result = reload_restore(
+    3,
+    7,
+    checkpoint_schema_version(),
+    checkpoint_logical_kinds(),
+    1
+  )
+  if result.revoked_granted != 0 then
+    return 0
+  end
+  if result.capabilities_reacquired != 0 then
+    return 0
+  end
+  1
+end

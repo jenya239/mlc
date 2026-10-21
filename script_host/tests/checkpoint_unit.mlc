@@ -4,18 +4,17 @@ import {
   checkpoint_rejects_raw_heap_ref
 } from '../checkpoint'
 
+import {
+  restore_creates_new_fence,
+  restore_creates_new_incarnation,
+  restore_reacquires_capabilities,
+  restore_revoked_rights_not_auto_granted
+} from '../reload'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm checkpoint_unit] FAIL: " + message)
   1
 end
-
-fn restore_creates_new_incarnation() -> i32 = 0
-
-fn restore_creates_new_fence() -> i32 = 0
-
-fn restore_reacquires_capabilities() -> i32 = 0
-
-fn restore_revoked_rights_not_auto_granted() -> i32 = 0
 
 fn check_logical_checkpoint() -> i32 = do
   if checkpoint_logical_state_present() == 0 then
