@@ -1,8 +1,8 @@
-current_step: 400
+current_step: 401
 status: ready
-last_result: done step 400: executor_host_call_resume один раз при совпадении session/incarnation/code_epoch; duplicate и late epoch — rejected, аргументы освобождены, continuation не повторяется
-last_verify: ruby scripts/run_script_vm_gate.rb host_wait_unit => script_vm_gate ok units=1; ruby scripts/run_script_vm_queue200_gate.rb => unit host_wait_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
-next_step: 401
+last_result: done step 401: red — click инкрементирует counter до timer.after wakeup (counter=1, delay_milliseconds=100); путь timer не подключён к service/reactor
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/counter_actor_demo_unit.mlc => EXIT:1, [script_vm counter_actor_demo_unit] FAIL: timer.after path not connected counter=1 before timer wakeup delay_milliseconds=100
+next_step: 402
 consult_count: 0
 consult_response:
 consult_verdict:

@@ -142,6 +142,46 @@ fn check_click_updates_label() -> i32 = do
   0
 end
 
+fn check_timer_after_then_label() -> i32 = do
+  let mut actor = counter_actor_new()
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let mapped = WidgetId { index: actor.mapped_widget_index }
+  let mut queue = service_queue_new(queue_capacity(), owner_identity())
+  let admission = service_try_push(queue, counter_actor_button_command())
+  if admission_is_busy(admission) then
+    return fail("button command was Busy")
+  end
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if actor.counter != 0 then
+    return fail(
+      "timer.after path not connected counter=" + actor.counter.to_string()
+        + " before timer wakeup delay_milliseconds=100"
+    )
+  end
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(
+    transaction,
+    mapped,
+    counter_actor_label_text(actor)
+  )
+  transaction = script_transaction_commit(transaction)
+  let shown = store_text(transaction.store, mapped)
+  if shown != original_label() then
+    return fail(
+      "timer.after path not connected label updated before wait shown=" + shown
+    )
+  end
+  0
+end
+
 fn check_busy_loop_does_not_block_ui() -> i32 = do
   let quantum = counter_actor_slice_quantum()
   let mut remaining = counter_actor_busy_work()
@@ -164,6 +204,10 @@ fn main() -> i32 = do
   let loop_status = check_busy_loop_does_not_block_ui()
   if loop_status != 0 then
     return loop_status
+  end
+  let timer_status = check_timer_after_then_label()
+  if timer_status != 0 then
+    return timer_status
   end
   println("[script_vm] counter_actor_demo_unit ok")
   0
