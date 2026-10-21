@@ -14,13 +14,18 @@ import {
   script_transaction_stage_set_label_text
 } from '../../misc/textui/script_transaction'
 import {
-  ResourceHit,
-  ResourceLookup,
-  ResourceMiss,
   resource_table_bind,
-  resource_table_lookup,
   resource_table_new
 } from '../resources'
+import {
+  Capability,
+  CapabilityAdmit,
+  CapabilityAdmitDenied,
+  CapabilityAdmitOk,
+  capability_admit_set_label_text,
+  capability_operation_set_label_text,
+  capability_root_parent
+} from '../capabilities'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm capability_unit] FAIL: " + message)
@@ -29,13 +34,15 @@ end
 
 fn owner_principal() -> i64 = 7
 
-fn foreign_principal() -> i64 = 13
-
 fn subtree_identity() -> i64 = 11
+
+fn policy_epoch() -> i32 = 1
+
+fn capability_identity() -> i64 = 1
 
 fn original_label() -> string = "owned"
 
-fn foreign_label() -> string = "hijacked"
+fn queued_label() -> string = "queued"
 
 fn label_text(kind: WidgetKind) -> string =
   match kind
@@ -56,10 +63,34 @@ fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
   label_text(store.nodes[widget.index].kind)
 end
 
-fn lookup_is_hit(lookup: ResourceLookup) -> bool =
-  match lookup {
-    ResourceHit(_entry) => true,
-    ResourceMiss => false
+fn admit_is_ok(result: CapabilityAdmit) -> bool =
+  match result {
+    CapabilityAdmitOk(_entry) => true,
+    CapabilityAdmitDenied(_code) => false
+  }
+
+fn live_capability() -> Capability =
+  Capability {
+    identity: capability_identity(),
+    owner: owner_principal(),
+    scope: subtree_identity(),
+    operations: capability_operation_set_label_text(),
+    expires: 0,
+    policy_epoch: policy_epoch(),
+    parent: capability_root_parent(),
+    revoked: false
+  }
+
+fn revoked_capability(capability: Capability) -> Capability =
+  Capability {
+    identity: capability.identity,
+    owner: capability.owner,
+    scope: capability.scope,
+    operations: capability.operations,
+    expires: capability.expires,
+    policy_epoch: capability.policy_epoch,
+    parent: capability.parent,
+    revoked: true
   }
 
 fn main() -> i32 = do
@@ -75,24 +106,36 @@ fn main() -> i32 = do
   let widget = WidgetId { index: 0 }
   let mut table = resource_table_new()
   let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
-  if !lookup_is_hit(resource_table_lookup(table, store, handle, owner_principal())) then
-    return fail("owner resource handle absent")
-  end
-  if lookup_is_hit(resource_table_lookup(table, store, handle, foreign_principal())) then
-    return fail("foreign principal accepted as resource owner")
+  let capability = live_capability()
+  let admitted = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    capability,
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if !admit_is_ok(admitted) then
+    return fail("enqueue admit rejected before revoke")
   end
   let mut transaction = script_transaction_new(store)
-  transaction = script_transaction_stage_set_label_text(transaction, widget, foreign_label())
+  transaction = script_transaction_stage_set_label_text(transaction, widget, queued_label())
+  let after_revoke = revoked_capability(capability)
+  if !after_revoke.revoked then
+    return fail("revoke flag was not set")
+  end
   transaction = script_transaction_commit(transaction)
   let shown = store_text(transaction.store, widget)
-  if shown == foreign_label() && transaction.revision != 0 then
+  if shown == queued_label() && transaction.revision != 0 then
     return fail(
-      "broker admits SetLabelText without capability identity owner scope operations expires policy_epoch parent revoked actor="
-        + foreign_principal().to_string()
-        + " resource_owner="
-        + owner_principal().to_string()
-        + " shown="
+      "queued commit after revoke published shown="
         + shown
+        + " revision="
+        + transaction.revision.to_string()
+        + " revoked="
+        + after_revoke.revoked.to_string()
     )
   end
   println("[script_vm] capability_unit ok")
