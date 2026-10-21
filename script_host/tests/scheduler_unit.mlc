@@ -1,0 +1,66 @@
+import {
+  ServiceAccepted,
+  ServiceBusy,
+  ServicePop,
+  ServicePopCommand,
+  ServicePopEmpty,
+  counter_actor_button_command,
+  counter_actor_handle_command,
+  counter_actor_new,
+  service_queue_new,
+  service_try_pop,
+  service_try_push
+} from '../service'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm scheduler_unit] FAIL: " + message)
+  1
+end
+
+fn owner_identity() -> i64 = 1
+
+fn queue_capacity() -> i32 = 8
+
+fn pop_command(pop: ServicePop) -> i32 =
+  match pop {
+    ServicePopCommand(command_code) => command_code,
+    ServicePopEmpty => 0
+  }
+
+fn main() -> i32 = do
+  let mut actor = counter_actor_new()
+  let mut queue = service_queue_new(queue_capacity(), owner_identity())
+  let first_push = service_try_push(queue, counter_actor_button_command())
+  let second_push = service_try_push(queue, counter_actor_button_command())
+  let first_busy = match first_push {
+    ServiceBusy => true,
+    ServiceAccepted => false
+  }
+  if first_busy then
+    return fail("first message was Busy")
+  end
+  let second_busy = match second_push {
+    ServiceBusy => true,
+    ServiceAccepted => false
+  }
+  if second_busy then
+    return fail("second message was Busy")
+  end
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if !actor.waiting_timer then
+    return fail("first turn completed before second message was considered")
+  end
+  let first_turn_active = actor.waiting_timer
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if first_turn_active then
+    return fail(
+      "second turn started before first completed waiting_timer="
+        + actor.waiting_timer.to_string()
+        + " counter="
+        + actor.counter.to_string()
+        + " messages=2"
+    )
+  end
+  println("[script_vm] scheduler_unit ok")
+  0
+end
