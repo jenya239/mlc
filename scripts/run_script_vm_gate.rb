@@ -53,6 +53,7 @@ registered_units = [
   ["service_queue_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/service_queue_unit.mlc"]],
   ["service_wakeup_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/service_wakeup_unit.mlc"]],
   ["resource_table_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/resource_table_unit.mlc"]],
+  ["capability_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/capability_unit.mlc"]],
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],

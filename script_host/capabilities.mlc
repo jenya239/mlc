@@ -1,0 +1,131 @@
+import {
+  ResourceHandle,
+  ResourceSlotEmpty,
+  ResourceSlotEntry,
+  ResourceTable,
+  UiResourceEntry,
+  resource_table_slot,
+  resource_table_sync
+} from './resources'
+import { WidgetStore } from '../misc/textui/store'
+
+export type Capability = {
+  identity: i64,
+  owner: i64,
+  scope: i64,
+  operations: i32,
+  expires: i32,
+  policy_epoch: i32,
+  parent: i64,
+  revoked: bool
+}
+
+export type CapabilityAdmit = CapabilityAdmitOk(UiResourceEntry) | CapabilityAdmitDenied(string)
+
+export fn capability_operation_set_label_text() -> i32 = 1
+
+export fn capability_deny_decode() -> string = "decode"
+
+export fn capability_deny_authenticate() -> string = "authenticate"
+
+export fn capability_deny_capability() -> string = "capability"
+
+export fn capability_deny_generation() -> string = "generation"
+
+export fn capability_deny_revision() -> string = "revision"
+
+export fn capability_deny_cost() -> string = "cost"
+
+export fn capability_root_parent() -> i64 = 0
+
+fn deny(code: string) -> CapabilityAdmit = CapabilityAdmitDenied(code)
+
+fn admit_ok(entry: UiResourceEntry) -> CapabilityAdmit = CapabilityAdmitOk(entry)
+
+fn decode_rejected(capability: Capability, operation: i32) -> bool = do
+  if capability.identity == 0 then
+    return true
+  end
+  if operation != capability_operation_set_label_text() then
+    return true
+  end
+  false
+end
+
+fn authenticate_rejected(capability: Capability, actor_principal: i64) -> bool =
+  capability.owner != actor_principal
+
+fn capability_rejected(capability: Capability, current_policy_epoch: i32, entry: UiResourceEntry) -> bool = do
+  if capability.revoked then
+    return true
+  end
+  if capability.operations != capability_operation_set_label_text() then
+    return true
+  end
+  if capability.policy_epoch != current_policy_epoch then
+    return true
+  end
+  if capability.parent != capability_root_parent() then
+    return true
+  end
+  if capability.scope != entry.subtree_identity then
+    return true
+  end
+  if capability.owner != entry.owner_principal then
+    return true
+  end
+  false
+end
+
+fn generation_rejected(handle: ResourceHandle, entry: UiResourceEntry) -> bool = do
+  if !entry.live then
+    return true
+  end
+  if entry.generation != handle.generation then
+    return true
+  end
+  false
+end
+
+fn revision_rejected(entry: UiResourceEntry, expected_revision: i32) -> bool =
+  entry.revision != expected_revision
+
+fn cost_rejected(reserved_cost: i32) -> bool =
+  reserved_cost < 0
+
+export fn capability_admit_set_label_text(
+  table: ref mut ResourceTable,
+  store: WidgetStore,
+  handle: ResourceHandle,
+  capability: Capability,
+  actor_principal: i64,
+  current_policy_epoch: i32,
+  expected_revision: i32,
+  reserved_cost: i32
+) -> CapabilityAdmit = do
+  resource_table_sync(table, store)
+  if decode_rejected(capability, capability_operation_set_label_text()) then
+    return deny(capability_deny_decode())
+  end
+  if authenticate_rejected(capability, actor_principal) then
+    return deny(capability_deny_authenticate())
+  end
+  match resource_table_slot(table, handle) {
+    ResourceSlotEmpty => deny(capability_deny_generation()),
+    ResourceSlotEntry(entry) => do
+      if capability_rejected(capability, current_policy_epoch, entry) then
+        return deny(capability_deny_capability())
+      end
+      if generation_rejected(handle, entry) then
+        return deny(capability_deny_generation())
+      end
+      if revision_rejected(entry, expected_revision) then
+        return deny(capability_deny_revision())
+      end
+      if cost_rejected(reserved_cost) then
+        return deny(capability_deny_cost())
+      end
+      admit_ok(entry)
+    end
+  }
+end

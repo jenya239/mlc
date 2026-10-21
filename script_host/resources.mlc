@@ -21,6 +21,8 @@ export type ResourceTable = {
 
 export type ResourceLookup = ResourceMiss | ResourceHit(UiResourceEntry)
 
+export type ResourceSlot = ResourceSlotEmpty | ResourceSlotEntry(UiResourceEntry)
+
 fn empty_entries() -> [UiResourceEntry] = do
   let mut entries: [UiResourceEntry] = []
   entries
@@ -95,4 +97,12 @@ export fn resource_table_lookup(
     return ResourceMiss
   end
   ResourceHit(entry)
+end
+
+export fn resource_table_slot(table: ResourceTable, handle: ResourceHandle) -> ResourceSlot = do
+  if handle.slot < 0 || handle.slot >= table.entries.length() then
+    ResourceSlotEmpty
+  else
+    ResourceSlotEntry(table.entries[handle.slot])
+  end
 end

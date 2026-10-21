@@ -1,0 +1,304 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../../misc/textui/store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../../misc/textui/script_transaction'
+import {
+  ResourceHandle,
+  resource_table_bind,
+  resource_table_new
+} from '../../script_host/resources'
+import {
+  Capability,
+  CapabilityAdmit,
+  CapabilityAdmitDenied,
+  CapabilityAdmitOk,
+  capability_admit_set_label_text,
+  capability_deny_authenticate,
+  capability_deny_capability,
+  capability_deny_decode,
+  capability_deny_generation,
+  capability_deny_revision,
+  capability_operation_set_label_text,
+  capability_root_parent
+} from '../../script_host/capabilities'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm capability_unit] FAIL: " + message)
+  1
+end
+
+fn owner_principal() -> i64 = 7
+
+fn foreign_principal() -> i64 = 13
+
+fn subtree_identity() -> i64 = 11
+
+fn policy_epoch() -> i32 = 1
+
+fn capability_identity() -> i64 = 1
+
+fn missing_identity() -> i64 = 0
+
+fn original_label() -> string = "owned"
+
+fn foreign_label() -> string = "hijacked"
+
+fn owner_label() -> string = "updated"
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn admit_code(result: CapabilityAdmit) -> string =
+  match result {
+    CapabilityAdmitOk(_entry) => "ok",
+    CapabilityAdmitDenied(code) => code
+  }
+
+fn owner_capability() -> Capability =
+  Capability {
+    identity: capability_identity(),
+    owner: owner_principal(),
+    scope: subtree_identity(),
+    operations: capability_operation_set_label_text(),
+    expires: 0,
+    policy_epoch: policy_epoch(),
+    parent: capability_root_parent(),
+    revoked: false
+  }
+
+fn missing_capability() -> Capability =
+  Capability {
+    identity: missing_identity(),
+    owner: foreign_principal(),
+    scope: subtree_identity(),
+    operations: 0,
+    expires: 0,
+    policy_epoch: policy_epoch(),
+    parent: capability_root_parent(),
+    revoked: false
+  }
+
+fn capability_without_operation() -> Capability =
+  Capability {
+    identity: capability_identity(),
+    owner: owner_principal(),
+    scope: subtree_identity(),
+    operations: 0,
+    expires: 0,
+    policy_epoch: policy_epoch(),
+    parent: capability_root_parent(),
+    revoked: false
+  }
+
+fn stale_handle(handle: ResourceHandle) -> ResourceHandle =
+  ResourceHandle { slot: handle.slot, generation: handle.generation + 1 }
+
+fn check_foreign_set_label_denied() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let admitted = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    missing_capability(),
+    foreign_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if admit_code(admitted) != capability_deny_decode() then
+    return fail(
+      "broker admits SetLabelText without capability identity owner scope operations expires policy_epoch parent revoked actor="
+        + foreign_principal().to_string()
+        + " resource_owner="
+        + owner_principal().to_string()
+        + " admit="
+        + admit_code(admitted)
+    )
+  end
+  let shown = store_text(store, widget)
+  if shown != original_label() then
+    return fail("SetLabelText mutated store without capability shown=" + shown)
+  end
+  0
+end
+
+fn check_capability_before_generation() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let mixed = capability_admit_set_label_text(
+    table,
+    store,
+    stale_handle(handle),
+    capability_without_operation(),
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if admit_code(mixed) != capability_deny_capability() then
+    return fail(
+      "check order expected capability before generation admit=" + admit_code(mixed)
+    )
+  end
+  let generation_only = capability_admit_set_label_text(
+    table,
+    store,
+    stale_handle(handle),
+    owner_capability(),
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if admit_code(generation_only) != capability_deny_generation() then
+    return fail("stale generation admit=" + admit_code(generation_only))
+  end
+  0
+end
+
+fn check_authenticate_and_revision() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let stolen = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    owner_capability(),
+    foreign_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if admit_code(stolen) != capability_deny_authenticate() then
+    return fail("foreign actor authenticate admit=" + admit_code(stolen))
+  end
+  let revision = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    owner_capability(),
+    owner_principal(),
+    policy_epoch(),
+    1,
+    0
+  )
+  if admit_code(revision) != capability_deny_revision() then
+    return fail("expected revision checked after generation admit=" + admit_code(revision))
+  end
+  0
+end
+
+fn check_owner_set_label_after_admit() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  let admitted = capability_admit_set_label_text(
+    table,
+    store,
+    handle,
+    owner_capability(),
+    owner_principal(),
+    policy_epoch(),
+    0,
+    0
+  )
+  if admit_code(admitted) != "ok" then
+    return fail("owner capability denied admit=" + admit_code(admitted))
+  end
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(transaction, widget, owner_label())
+  transaction = script_transaction_commit(transaction)
+  let shown = store_text(transaction.store, widget)
+  if shown != owner_label() || transaction.revision != 1 then
+    return fail("owner SetLabelText after admit shown=" + shown)
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let foreign_status = check_foreign_set_label_denied()
+  if foreign_status != 0 then
+    return foreign_status
+  end
+  let order_status = check_capability_before_generation()
+  if order_status != 0 then
+    return order_status
+  end
+  let auth_status = check_authenticate_and_revision()
+  if auth_status != 0 then
+    return auth_status
+  end
+  let owner_status = check_owner_set_label_after_admit()
+  if owner_status != 0 then
+    return owner_status
+  end
+  println("[script_vm] capability_unit ok")
+  0
+end
