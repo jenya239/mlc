@@ -1,32 +1,136 @@
+import {
+  ProtocolChannel,
+  ProtocolDecodeErr,
+  ProtocolDecodeOk,
+  protocol_channel_principal,
+  protocol_decode,
+  protocol_encode_hello,
+  protocol_encode_host_reply,
+  protocol_encode_host_request,
+  protocol_encode_load_module,
+  protocol_kind_hello,
+  protocol_kind_host_reply,
+  protocol_kind_host_request,
+  protocol_kind_load_module,
+  protocol_payload_words,
+  protocol_state_connected,
+  protocol_state_idle,
+  protocol_state_loaded,
+  protocol_transition_allowed
+} from '../protocol'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm ipc_codec_unit] FAIL: " + message)
   1
 end
 
-fn empty_bytes() -> [i32] = do
-  let mut bytes: [i32] = []
-  bytes
-end
-
-fn local_encode_hello() -> [i32] = empty_bytes()
-
-fn local_encode_load_module() -> [i32] = empty_bytes()
-
-fn local_encode_host_request() -> [i32] = empty_bytes()
-
-fn local_encode_host_reply() -> [i32] = empty_bytes()
-
 fn bytes_empty(bytes: [i32]) -> bool = bytes.length() == 0
 
-fn main() -> i32 = do
-  if bytes_empty(local_encode_hello())
-    || bytes_empty(local_encode_load_module())
-    || bytes_empty(local_encode_host_request())
-    || bytes_empty(local_encode_host_reply())
-  then
+fn session_epoch() -> i32 = 3
+
+fn host_principal() -> i64 = 7
+
+fn foreign_principal() -> i64 = 13
+
+fn decode_kind(words: [i32]) -> i32 =
+  match protocol_decode(words) {
+    ProtocolDecodeOk(header) => header.kind,
+    ProtocolDecodeErr(_code) => 0
+  }
+
+fn decode_request_id(words: [i32]) -> i32 =
+  match protocol_decode(words) {
+    ProtocolDecodeOk(header) => header.request_id,
+    ProtocolDecodeErr(_code) => 0
+  }
+
+fn decode_ok(words: [i32]) -> bool =
+  match protocol_decode(words) {
+    ProtocolDecodeOk(_header) => true,
+    ProtocolDecodeErr(_code) => false
+  }
+
+fn first_payload(words: [i32]) -> i32 = do
+  let payload = protocol_payload_words(words)
+  if payload.length() <= 0 then
+    return 0
+  end
+  payload[0]
+end
+
+fn check_round_trip() -> i32 = do
+  let hello = protocol_encode_hello(session_epoch(), 1, 10)
+  let load_module = protocol_encode_load_module(session_epoch(), 2, 11, 4)
+  let host_request = protocol_encode_host_request(session_epoch(), 3, 12, 38)
+  let host_reply = protocol_encode_host_reply(session_epoch(), 4, 12, 0)
+  if bytes_empty(hello) || bytes_empty(load_module) || bytes_empty(host_request) || bytes_empty(host_reply) then
     return fail(
       "no Header protocol_major protocol_minor kind payload_size session_epoch sequence request_id Hello LoadModule HostRequest HostReply"
     )
+  end
+  if decode_kind(hello) != protocol_kind_hello() || decode_request_id(hello) != 10 then
+    return fail("Hello round-trip kind=" + decode_kind(hello).to_string())
+  end
+  if decode_kind(load_module) != protocol_kind_load_module() || first_payload(load_module) != 4 then
+    return fail("LoadModule round-trip kind=" + decode_kind(load_module).to_string())
+  end
+  if decode_kind(host_request) != protocol_kind_host_request() || first_payload(host_request) != 38 then
+    return fail("HostRequest round-trip kind=" + decode_kind(host_request).to_string())
+  end
+  if decode_kind(host_reply) != protocol_kind_host_reply() || first_payload(host_reply) != 0 then
+    return fail("HostReply round-trip kind=" + decode_kind(host_reply).to_string())
+  end
+  if !decode_ok(hello) || !decode_ok(load_module) || !decode_ok(host_request) || !decode_ok(host_reply) then
+    return fail("decode rejected a valid frame")
+  end
+  0
+end
+
+fn check_principal_from_channel() -> i32 = do
+  let words = protocol_encode_host_request(session_epoch(), 3, 12, 38)
+  let mut forged = words
+  forged.push(13)
+  let channel = ProtocolChannel { principal: host_principal(), session_epoch: session_epoch() }
+  let bound = protocol_channel_principal(channel, protocol_payload_words(forged))
+  if bound != host_principal() then
+    return fail(
+      "payload set principal bound="
+        + bound.to_string()
+        + " channel="
+        + host_principal().to_string()
+    )
+  end
+  0
+end
+
+fn check_transitions() -> i32 = do
+  if !protocol_transition_allowed(protocol_state_idle(), protocol_kind_hello()) then
+    return fail("idle did not allow Hello")
+  end
+  if protocol_transition_allowed(protocol_state_idle(), protocol_kind_host_request()) then
+    return fail("idle allowed HostRequest")
+  end
+  if !protocol_transition_allowed(protocol_state_connected(), protocol_kind_load_module()) then
+    return fail("connected did not allow LoadModule")
+  end
+  if !protocol_transition_allowed(protocol_state_loaded(), protocol_kind_host_reply()) then
+    return fail("loaded did not allow HostReply")
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let round_status = check_round_trip()
+  if round_status != 0 then
+    return round_status
+  end
+  let principal_status = check_principal_from_channel()
+  if principal_status != 0 then
+    return principal_status
+  end
+  let transition_status = check_transitions()
+  if transition_status != 0 then
+    return transition_status
   end
   println("[script_vm] ipc_codec_unit ok")
   0

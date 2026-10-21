@@ -1,0 +1,205 @@
+export type ProtocolHeader = {
+  protocol_major: i32,
+  protocol_minor: i32,
+  kind: i32,
+  payload_size: i32,
+  session_epoch: i32,
+  sequence: i32,
+  request_id: i32
+}
+
+export type ProtocolChannel = {
+  principal: i64,
+  session_epoch: i32
+}
+
+export type ProtocolDecode = ProtocolDecodeOk(ProtocolHeader) | ProtocolDecodeErr(string)
+
+export fn protocol_major_version() -> i32 = 1
+
+export fn protocol_minor_version() -> i32 = 0
+
+export fn protocol_header_word_count() -> i32 = 7
+
+export fn protocol_kind_hello() -> i32 = 1
+
+export fn protocol_kind_load_module() -> i32 = 2
+
+export fn protocol_kind_start_actor() -> i32 = 3
+
+export fn protocol_kind_deliver_event() -> i32 = 4
+
+export fn protocol_kind_host_request() -> i32 = 5
+
+export fn protocol_kind_host_reply() -> i32 = 6
+
+export fn protocol_kind_gui_batch() -> i32 = 7
+
+export fn protocol_kind_cancel() -> i32 = 8
+
+export fn protocol_kind_stop_actor() -> i32 = 9
+
+export fn protocol_kind_health() -> i32 = 10
+
+export fn protocol_kind_protocol_error() -> i32 = 11
+
+export fn protocol_max_payload_hello() -> i32 = 8
+
+export fn protocol_max_payload_load_module() -> i32 = 8
+
+export fn protocol_max_payload_start_actor() -> i32 = 8
+
+export fn protocol_max_payload_deliver_event() -> i32 = 8
+
+export fn protocol_max_payload_host_request() -> i32 = 8
+
+export fn protocol_max_payload_host_reply() -> i32 = 8
+
+export fn protocol_max_payload_gui_batch() -> i32 = 8
+
+export fn protocol_max_payload_cancel() -> i32 = 8
+
+export fn protocol_max_payload_stop_actor() -> i32 = 8
+
+export fn protocol_max_payload_health() -> i32 = 8
+
+export fn protocol_max_payload_protocol_error() -> i32 = 8
+
+export fn protocol_state_idle() -> i32 = 0
+
+export fn protocol_state_connected() -> i32 = 1
+
+export fn protocol_state_loaded() -> i32 = 2
+
+export fn protocol_max_payload_for_kind(kind: i32) -> i32 = do
+  if kind == protocol_kind_hello() then
+    return protocol_max_payload_hello()
+  end
+  if kind == protocol_kind_load_module() then
+    return protocol_max_payload_load_module()
+  end
+  if kind == protocol_kind_host_request() then
+    return protocol_max_payload_host_request()
+  end
+  if kind == protocol_kind_host_reply() then
+    return protocol_max_payload_host_reply()
+  end
+  protocol_max_payload_protocol_error()
+end
+
+export fn protocol_transition_allowed(state: i32, kind: i32) -> bool = do
+  if state == protocol_state_idle() then
+    return kind == protocol_kind_hello()
+  end
+  if state == protocol_state_connected() then
+    return kind == protocol_kind_load_module() || kind == protocol_kind_protocol_error()
+  end
+  if state == protocol_state_loaded() then
+    return kind == protocol_kind_host_request()
+      || kind == protocol_kind_host_reply()
+      || kind == protocol_kind_health()
+      || kind == protocol_kind_stop_actor()
+      || kind == protocol_kind_cancel()
+  end
+  false
+end
+
+export fn protocol_header(
+  kind: i32,
+  payload_size: i32,
+  session_epoch: i32,
+  sequence: i32,
+  request_id: i32
+) -> ProtocolHeader =
+  ProtocolHeader {
+    protocol_major: protocol_major_version(),
+    protocol_minor: protocol_minor_version(),
+    kind: kind,
+    payload_size: payload_size,
+    session_epoch: session_epoch,
+    sequence: sequence,
+    request_id: request_id
+  }
+
+fn empty_words() -> [i32] = do
+  let mut words: [i32] = []
+  words
+end
+
+export fn protocol_encode(header: ProtocolHeader, payload: [i32]) -> [i32] = do
+  let mut words = empty_words()
+  words.push(header.protocol_major)
+  words.push(header.protocol_minor)
+  words.push(header.kind)
+  words.push(header.payload_size)
+  words.push(header.session_epoch)
+  words.push(header.sequence)
+  words.push(header.request_id)
+  let mut index = 0
+  while index < payload.length() do
+    words.push(payload[index])
+    index = index + 1
+  end
+  words
+end
+
+export fn protocol_decode(words: [i32]) -> ProtocolDecode = do
+  if words.length() < protocol_header_word_count() then
+    return ProtocolDecodeErr("truncated_header")
+  end
+  let header = ProtocolHeader {
+    protocol_major: words[0],
+    protocol_minor: words[1],
+    kind: words[2],
+    payload_size: words[3],
+    session_epoch: words[4],
+    sequence: words[5],
+    request_id: words[6]
+  }
+  if header.protocol_major != protocol_major_version() then
+    return ProtocolDecodeErr("protocol_major")
+  end
+  if header.payload_size != words.length() - protocol_header_word_count() then
+    return ProtocolDecodeErr("payload_size")
+  end
+  if header.payload_size > protocol_max_payload_for_kind(header.kind) then
+    return ProtocolDecodeErr("payload_limit")
+  end
+  ProtocolDecodeOk(header)
+end
+
+export fn protocol_payload_words(words: [i32]) -> [i32] = do
+  let mut payload = empty_words()
+  let mut index = protocol_header_word_count()
+  while index < words.length() do
+    payload.push(words[index])
+    index = index + 1
+  end
+  payload
+end
+
+export fn protocol_channel_principal(channel: ProtocolChannel, _payload: [i32]) -> i64 =
+  channel.principal
+
+export fn protocol_encode_hello(session_epoch: i32, sequence: i32, request_id: i32) -> [i32] = do
+  let payload = empty_words()
+  protocol_encode(protocol_header(protocol_kind_hello(), 0, session_epoch, sequence, request_id), payload)
+end
+
+export fn protocol_encode_load_module(session_epoch: i32, sequence: i32, request_id: i32, blob_length: i32) -> [i32] = do
+  let mut payload = empty_words()
+  payload.push(blob_length)
+  protocol_encode(protocol_header(protocol_kind_load_module(), 1, session_epoch, sequence, request_id), payload)
+end
+
+export fn protocol_encode_host_request(session_epoch: i32, sequence: i32, request_id: i32, operation_code: i32) -> [i32] = do
+  let mut payload = empty_words()
+  payload.push(operation_code)
+  protocol_encode(protocol_header(protocol_kind_host_request(), 1, session_epoch, sequence, request_id), payload)
+end
+
+export fn protocol_encode_host_reply(session_epoch: i32, sequence: i32, request_id: i32, status_code: i32) -> [i32] = do
+  let mut payload = empty_words()
+  payload.push(status_code)
+  protocol_encode(protocol_header(protocol_kind_host_reply(), 1, session_epoch, sequence, request_id), payload)
+end
