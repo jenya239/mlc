@@ -1,0 +1,16 @@
+extern fn sandbox_launcher_prepare_isolated_required() -> i32
+  = "mlc::script_host::sandbox_launcher_prepare_isolated_required" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_trusted_in_process_fallback() -> i32
+  = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
+
+fn main() -> i32 = do
+  let prepared = sandbox_launcher_prepare_isolated_required()
+  if prepared == 0 then
+    if sandbox_trusted_in_process_fallback() != 0 then
+      return 2
+    end
+    return 1
+  end
+  0
+end

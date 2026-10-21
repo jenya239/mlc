@@ -1,17 +1,31 @@
+extern fn sandbox_env_allowlist_present() -> i32
+  = "mlc::script_host::sandbox_env_allowlist_present" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_no_new_privs_applied() -> i32
+  = "mlc::script_host::sandbox_no_new_privs_applied" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_filesystem_isolated() -> i32
+  = "mlc::script_host::sandbox_filesystem_isolated" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_network_isolated() -> i32
+  = "mlc::script_host::sandbox_network_isolated" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_display_passed_to_child() -> i32
+  = "mlc::script_host::sandbox_display_passed_to_child" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_trusted_in_process_fallback() -> i32
+  = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_launch_child_isolated_required() -> i32
+  = "mlc::script_host::sandbox_launch_child_isolated_required" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_env_name_allowed(name: string) -> i32
+  = "mlc::script_host::sandbox_env_name_allowed" from "mlc/script_host/launcher.hpp" blocking
+
 fn fail(message: string) -> i32 = do
   println("[script_vm sandbox_policy_unit] FAIL: " + message)
   1
 end
-
-fn sandbox_env_allowlist_present() -> i32 = 0
-
-fn sandbox_no_new_privs_applied() -> i32 = 0
-
-fn sandbox_filesystem_isolated() -> i32 = 0
-
-fn sandbox_network_isolated() -> i32 = 0
-
-fn sandbox_display_passed_to_child() -> i32 = 1
 
 fn check_linux_policy() -> i32 = do
   if sandbox_env_allowlist_present() == 0 then
@@ -28,6 +42,28 @@ fn check_linux_policy() -> i32 = do
   end
   if sandbox_display_passed_to_child() != 0 then
     return fail("DISPLAY passed to child")
+  end
+  if sandbox_env_name_allowed("DISPLAY") != 0 then
+    return fail("DISPLAY passed to child")
+  end
+  if sandbox_env_name_allowed("WAYLAND_DISPLAY") != 0 then
+    return fail("WAYLAND_DISPLAY passed to child")
+  end
+  if sandbox_env_name_allowed("DBUS_SESSION_BUS_ADDRESS") != 0 then
+    return fail("D-Bus passed to child")
+  end
+  if sandbox_env_name_allowed("XAUTHORITY") != 0 then
+    return fail("X11 cookies passed to child")
+  end
+  if sandbox_env_name_allowed("HOME") != 0 then
+    return fail("home secrets passed to child")
+  end
+  if sandbox_trusted_in_process_fallback() != 0 then
+    return fail("trusted-in-process fallback")
+  end
+  let launched = sandbox_launch_child_isolated_required()
+  if launched != 0 && sandbox_trusted_in_process_fallback() != 0 then
+    return fail("trusted-in-process fallback")
   end
   0
 end

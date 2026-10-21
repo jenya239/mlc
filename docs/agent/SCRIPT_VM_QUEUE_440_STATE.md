@@ -1,8 +1,8 @@
-current_step: 423
+current_step: 424
 status: ready
-last_result: done step 423: red — нет launcher env allowlist / no_new_privs / filesystem/network isolation; DISPLAY мог бы уйти в child
-last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/sandbox_policy_unit.mlc => EXIT:1, [script_vm sandbox_policy_unit] FAIL: no env allowlist no_new_privs filesystem network isolation
-next_step: 424
+last_result: done step 424: green — launcher env allowlist (без DISPLAY/Wayland/D-Bus/XAUTHORITY/HOME), prctl no_new_privs, isolated-required fail-closed, trusted-in-process не fallback; sandbox_main.mlc
+last_verify: ruby scripts/run_script_vm_gate.rb sandbox_policy_unit transport_loopback_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => sandbox_policy_unit ok, last line script_vm_queue200_gate FAIL queue (known lower_stage1 syntax_error code)
+next_step: 425
 consult_count: 0
 consult_response:
 consult_verdict:

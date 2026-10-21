@@ -58,6 +58,7 @@ registered_units = [
   ["subscription_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/subscription_unit.mlc"]],
   ["ipc_codec_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/ipc_codec_unit.mlc"]],
   ["transport_loopback_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/transport_loopback_unit.mlc"]],
+  ["sandbox_policy_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/sandbox_policy_unit.mlc"]],
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],
