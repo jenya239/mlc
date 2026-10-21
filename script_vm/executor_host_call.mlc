@@ -1,14 +1,21 @@
 import { Execution, execution_waiting } from './execution'
 import { Heap } from './heap'
 import { host_import_timer_after } from './host_imports'
-import { HostRequest, host_request_copy_arguments, host_request_new } from './host_request'
+import { HostRequest, host_request_copy_arguments, host_request_new, host_request_release } from './host_request'
 import { Value } from './value'
 
 export type HostCallWait = {
   execution: Execution,
   request: HostRequest,
   destination_register: i32,
-  resume_pc: i32
+  resume_pc: i32,
+  resumed: bool
+}
+
+export type HostCallResume = {
+  wait: HostCallWait,
+  outcome: string,
+  continuation_ran: bool
 }
 
 export fn executor_host_call_suspend(
@@ -24,8 +31,49 @@ export fn executor_host_call_suspend(
     execution: execution_waiting(heap),
     request: request,
     destination_register: destination_register,
-    resume_pc: resume_pc
+    resume_pc: resume_pc,
+    resumed: false
   }
+end
+
+fn host_call_wait_with_request(wait: HostCallWait, request: HostRequest, resumed: bool) -> HostCallWait =
+  HostCallWait {
+    execution: wait.execution,
+    request: request,
+    destination_register: wait.destination_register,
+    resume_pc: wait.resume_pc,
+    resumed: resumed
+  }
+
+fn epochs_match(request: HostRequest, session_epoch: i32, incarnation: i32, code_epoch: i32) -> bool =
+  request.session_epoch == session_epoch
+    && request.incarnation == incarnation
+    && request.code_epoch == code_epoch
+
+fn host_call_resume_rejected(wait: HostCallWait) -> HostCallResume =
+  HostCallResume {
+    wait: host_call_wait_with_request(wait, host_request_release(wait.request), true),
+    outcome: "rejected",
+    continuation_ran: false
+  }
+
+export fn executor_host_call_resume(
+  wait: HostCallWait,
+  session_epoch: i32,
+  incarnation: i32,
+  code_epoch: i32
+) -> HostCallResume = do
+  if wait.resumed then
+    host_call_resume_rejected(wait)
+  else if !epochs_match(wait.request, session_epoch, incarnation, code_epoch) then
+    host_call_resume_rejected(wait)
+  else
+    HostCallResume {
+      wait: host_call_wait_with_request(wait, wait.request, true),
+      outcome: "accepted",
+      continuation_ran: true
+    }
+  end
 end
 
 export fn executor_host_call_timer_after(

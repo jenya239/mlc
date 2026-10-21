@@ -1,8 +1,7 @@
 import { Completed, PollFailed, PollResult, PollWaiting, PollYielded, PollCancelled, poll_execution } from '../execution_result'
-import { executor_host_call_timer_after } from '../executor_host_call'
+import { executor_host_call_resume, executor_host_call_timer_after } from '../executor_host_call'
 import { heap_new } from '../heap_types'
 import { host_import_timer_after } from '../host_imports'
-import { HostRequest } from '../host_request'
 import { Value, ValueInt32, value_encode } from '../value'
 
 fn fail(message: string) -> i32 = do
@@ -27,21 +26,8 @@ fn poll_kind(result: PollResult) -> string =
     PollFailed(code, at) => "Failed:" + code + "@" + at.to_string()
   }
 
-fn host_call_resume_outcome(
-  request: HostRequest,
-  incarnation: i32,
-  code_epoch: i32,
-  already_resumed: bool
-) -> string = do
-  let mut unused = request.request_id + incarnation + code_epoch
-  if already_resumed then
-    unused = unused + 0
-  end
-  "accepted"
-end
-
 fn main() -> i32 = do
-  const waited = executor_host_call_timer_after(heap_new(), 0, 2, delay_arguments())
+  let waited = executor_host_call_timer_after(heap_new(), 0, 2, delay_arguments())
   const polled = poll_execution(waited.execution)
   const request_operation = waited.request.operation_id
   if poll_kind(polled) != "Waiting" || request_operation != timer_after_operation_id() then
@@ -62,30 +48,44 @@ fn main() -> i32 = do
       "HostCall arguments were not copied count=" + waited.request.owned_arguments.length().to_string()
     )
   end
-  const duplicate = host_call_resume_outcome(
-    waited.request,
+  let first = executor_host_call_resume(
+    waited,
+    waited.request.session_epoch,
     waited.request.incarnation,
-    waited.request.code_epoch,
-    true
+    waited.request.code_epoch
   )
-  if duplicate == "accepted" then
-    return fail("duplicate resume accepted request_id=" + waited.request.request_id.to_string())
+  if first.outcome != "accepted" || !first.continuation_ran then
+    return fail("matching resume rejected outcome=" + first.outcome)
   end
-  const stale_epoch = 0
-  const late = host_call_resume_outcome(
-    waited.request,
-    waited.request.incarnation,
-    stale_epoch,
-    false
+  let duplicate = executor_host_call_resume(
+    first.wait,
+    first.wait.request.session_epoch,
+    first.wait.request.incarnation,
+    first.wait.request.code_epoch
   )
-  if late == "accepted" then
+  if duplicate.outcome == "accepted" || duplicate.continuation_ran then
+    return fail("duplicate resume accepted request_id=" + first.wait.request.request_id.to_string())
+  end
+  let late_wait = executor_host_call_timer_after(heap_new(), 0, 2, delay_arguments())
+  const stale_epoch = 0
+  let late = executor_host_call_resume(
+    late_wait,
+    late_wait.request.session_epoch,
+    late_wait.request.incarnation,
+    stale_epoch
+  )
+  if late.outcome == "accepted" || late.continuation_ran then
     return fail(
-      "late resume epoch mismatch accepted incarnation=" + waited.request.incarnation.to_string()
-        + " code_epoch=" + waited.request.code_epoch.to_string()
+      "late resume epoch mismatch accepted incarnation=" + late_wait.request.incarnation.to_string()
+        + " code_epoch=" + late_wait.request.code_epoch.to_string()
         + " shown_epoch=" + stale_epoch.to_string()
+    )
+  end
+  if late.wait.request.owned_arguments.length() != 0 then
+    return fail(
+      "late resume did not release arguments count=" + late.wait.request.owned_arguments.length().to_string()
     )
   end
   println("[script_vm] host_wait_unit ok")
   0
 end
-

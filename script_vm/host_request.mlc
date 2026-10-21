@@ -26,6 +26,25 @@ export fn host_request_copy_arguments(arguments: [Value]) -> [Value] = do
   owned
 end
 
+export fn host_request_release(request: HostRequest) -> HostRequest = do
+  let mut owned_arguments: [Value] = []
+  HostRequest {
+    session_epoch: request.session_epoch,
+    actor_id: request.actor_id,
+    incarnation: request.incarnation,
+    code_epoch: request.code_epoch,
+    request_id: request.request_id,
+    operation_id: request.operation_id,
+    resource_handle_slot: request.resource_handle_slot,
+    resource_handle_generation: request.resource_handle_generation,
+    capability_reference: request.capability_reference,
+    expected_revision: request.expected_revision,
+    deadline_budget: request.deadline_budget,
+    idempotency_key: request.idempotency_key,
+    owned_arguments: owned_arguments
+  }
+end
+
 export fn host_request_new(
   operation_id: string,
   owned_arguments: [Value]
