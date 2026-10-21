@@ -58,7 +58,7 @@ import { image_preview_arm, image_preview_needs_paint, image_preview_playing, im
 import { music_host, music_playing, music_release } from './music_host'
 import { chat_frames } from './chat_host'
 import { script_frame_pump_drain, script_frame_pump_new } from './script_events'
-fn application_reload_status() -> i32 = 75
+export fn application_reload_status() -> i32 = 75
 
 fn remember_window() -> bool = do
   if has("MLC_TEXTUI_BENCH") then

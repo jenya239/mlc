@@ -3,21 +3,63 @@ fn fail(message: string) -> i32 = do
   1
 end
 
-fn host_update_staging_present() -> i32 = 0
+export fn host_update_reload_status() -> i32 = 75
 
-fn host_update_compatibility_present() -> i32 = 0
+export fn host_update_stage_staging() -> i32 = 1
 
-fn host_update_quiesce_present() -> i32 = 0
+export fn host_update_stage_compatibility() -> i32 = 2
 
-fn host_update_durable_save_present() -> i32 = 0
+export fn host_update_stage_quiesce() -> i32 = 3
 
-fn host_update_release_ownership_present() -> i32 = 0
+export fn host_update_stage_durable_save() -> i32 = 4
 
-fn host_update_restart_present() -> i32 = 0
+export fn host_update_stage_release_ownership() -> i32 = 5
 
-fn host_update_reconcile_present() -> i32 = 0
+export fn host_update_stage_restart() -> i32 = 6
 
-fn host_update_health_confirmation_present() -> i32 = 0
+export fn host_update_stage_reconcile() -> i32 = 7
+
+export fn host_update_stage_health_confirmation() -> i32 = 8
+
+export fn host_update_staging_present() -> i32 = 1
+
+export fn host_update_compatibility_present() -> i32 = 1
+
+export fn host_update_quiesce_present() -> i32 = 1
+
+export fn host_update_durable_save_present() -> i32 = 1
+
+export fn host_update_release_ownership_present() -> i32 = 1
+
+export fn host_update_restart_present() -> i32 = 1
+
+export fn host_update_reconcile_present() -> i32 = 1
+
+export fn host_update_health_confirmation_present() -> i32 = 1
+
+export fn host_update_admit_storage_writer(active_writers: i32) -> i32 = do
+  if active_writers >= 1 then
+    return 0
+  end
+  1
+end
+
+export fn host_update_hot_unload_native_allowed(live_native_objects: i32) -> i32 = do
+  if live_native_objects > 0 then
+    return 0
+  end
+  0
+end
+
+export fn host_update_recover_from_stage(failed_stage: i32) -> i32 = do
+  if failed_stage < host_update_stage_staging() then
+    return 0
+  end
+  if failed_stage > host_update_stage_health_confirmation() then
+    return 0
+  end
+  1
+end
 
 fn check_verified_update_pipeline() -> i32 = do
   if host_update_staging_present() == 0 then
@@ -43,6 +85,18 @@ fn check_verified_update_pipeline() -> i32 = do
   end
   if host_update_health_confirmation_present() == 0 then
     return fail("verified update pipeline missing health confirmation")
+  end
+  if host_update_reload_status() != 75 then
+    return fail("restart status is not app reload 75")
+  end
+  if host_update_admit_storage_writer(1) != 0 then
+    return fail("second storage writer admitted during update")
+  end
+  if host_update_hot_unload_native_allowed(1) != 0 then
+    return fail("hot-unload native libraries with live objects")
+  end
+  if host_update_recover_from_stage(host_update_stage_quiesce()) == 0 then
+    return fail("recovery after stage failure not compatible")
   end
   0
 end

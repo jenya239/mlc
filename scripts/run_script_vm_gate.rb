@@ -63,6 +63,7 @@ registered_units = [
   ["effect_outbox_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/effect_outbox_unit.mlc"]],
   ["checkpoint_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/checkpoint_unit.mlc"]],
   ["reload_epoch_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/reload_epoch_unit.mlc"]],
+  ["host_update_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/host_update_unit.mlc"]],
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],
