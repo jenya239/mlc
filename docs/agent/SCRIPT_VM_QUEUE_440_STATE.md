@@ -1,8 +1,8 @@
-current_step: 421
+current_step: 422
 status: ready
-last_result: done step 421: red — нет loopback Unix domain socket; transport_loopback_exchange возвращает пустой буфер, HostRequest/HostReply round-trip отсутствует
-last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/transport_loopback_unit.mlc => EXIT:1, [script_vm transport_loopback_unit] FAIL: no loopback Unix domain socket HostRequest HostReply owned-copy
-next_step: 422
+last_result: done step 422: green — Unix domain socketpair loopback, owned-copy framing, HostRequest/HostReply round-trip; без FD passing и shared memory
+last_verify: ruby scripts/run_script_vm_gate.rb transport_loopback_unit ipc_codec_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => transport_loopback_unit ok, last line script_vm_queue200_gate FAIL queue (known lower_stage1 syntax_error code)
+next_step: 423
 consult_count: 0
 consult_response:
 consult_verdict:

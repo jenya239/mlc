@@ -2,40 +2,84 @@ import {
   ProtocolDecodeErr,
   ProtocolDecodeOk,
   protocol_decode,
+  protocol_encode_host_reply,
   protocol_encode_host_request,
-  protocol_kind_host_reply
+  protocol_kind_host_reply,
+  protocol_kind_host_request
 } from '../protocol'
+
+extern fn transport_loopback_open() -> i32
+  = "mlc::script_host::transport_loopback_open" from "mlc/script_host/transport.hpp" blocking
+
+extern fn transport_loopback_close(handle: i32) -> i32
+  = "mlc::script_host::transport_loopback_close" from "mlc/script_host/transport.hpp" blocking
+
+extern fn transport_loopback_send(handle: i32, socket_end: i32, words: [i32]) -> i32
+  = "mlc::script_host::transport_loopback_send" from "mlc/script_host/transport.hpp" blocking
+
+extern fn transport_loopback_receive(handle: i32, socket_end: i32) -> [i32]
+  = "mlc::script_host::transport_loopback_receive" from "mlc/script_host/transport.hpp" blocking
+
+extern fn transport_loopback_used_shared_memory() -> i32
+  = "mlc::script_host::transport_loopback_used_shared_memory" from "mlc/script_host/transport.hpp" blocking
+
+extern fn transport_loopback_used_file_descriptor_passing() -> i32
+  = "mlc::script_host::transport_loopback_used_file_descriptor_passing" from "mlc/script_host/transport.hpp" blocking
 
 fn fail(message: string) -> i32 = do
   println("[script_vm transport_loopback_unit] FAIL: " + message)
   1
 end
 
-fn empty_words() -> [i32] = do
-  let mut words: [i32] = []
-  words
-end
-
-fn transport_loopback_exchange(_request: [i32]) -> [i32] =
-  empty_words()
-
 fn session_epoch() -> i32 = 3
 
+fn decode_kind(words: [i32]) -> i32 =
+  match protocol_decode(words) {
+    ProtocolDecodeOk(header) => header.kind,
+    ProtocolDecodeErr(_code) => 0
+  }
+
 fn check_host_request_host_reply() -> i32 = do
-  let request = protocol_encode_host_request(session_epoch(), 1, 12, 38)
-  let reply = transport_loopback_exchange(request)
-  if reply.length() == 0 then
+  let handle = transport_loopback_open()
+  if handle == 0 then
     return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
   end
-  match protocol_decode(reply) {
-    ProtocolDecodeOk(header) => do
-      if header.kind != protocol_kind_host_reply() then
-        return fail("loopback did not deliver HostReply kind=" + header.kind.to_string())
-      end
-      0
-    end,
-    ProtocolDecodeErr(_code) => fail("loopback reply not a protocol frame")
-  }
+  let request = protocol_encode_host_request(session_epoch(), 1, 12, 38)
+  let send_request = transport_loopback_send(handle, 0, request)
+  if send_request == 0 then
+    let _closed = transport_loopback_close(handle)
+    return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
+  end
+  let received_request = transport_loopback_receive(handle, 1)
+  if received_request.length() == 0 then
+    let _closed = transport_loopback_close(handle)
+    return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
+  end
+  if decode_kind(received_request) != protocol_kind_host_request() then
+    let _closed = transport_loopback_close(handle)
+    return fail("loopback did not deliver HostRequest kind=" + decode_kind(received_request).to_string())
+  end
+  let reply = protocol_encode_host_reply(session_epoch(), 2, 12, 0)
+  let send_reply = transport_loopback_send(handle, 1, reply)
+  if send_reply == 0 then
+    let _closed = transport_loopback_close(handle)
+    return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
+  end
+  let delivered = transport_loopback_receive(handle, 0)
+  let _closed = transport_loopback_close(handle)
+  if delivered.length() == 0 then
+    return fail("no loopback Unix domain socket HostRequest HostReply owned-copy")
+  end
+  if decode_kind(delivered) != protocol_kind_host_reply() then
+    return fail("loopback did not deliver HostReply kind=" + decode_kind(delivered).to_string())
+  end
+  if transport_loopback_used_shared_memory() != 0 then
+    return fail("shared memory used instead of owned-copy")
+  end
+  if transport_loopback_used_file_descriptor_passing() != 0 then
+    return fail("file descriptor passing used")
+  end
+  0
 end
 
 fn main() -> i32 = do
