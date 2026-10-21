@@ -36,6 +36,9 @@ import {
   counter_actor_slice_yielded,
   service_queue_new,
   service_thread_issues_submit,
+  service_timer_after_arm,
+  service_timer_after_delay_milliseconds,
+  service_timer_uses_run_until_on_ui_thread,
   service_try_pop,
   service_try_push
 } from '../../script_host/service'
@@ -83,7 +86,7 @@ fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
 end
 
 fn check_owner(pump_owner: bool) -> i32 = do
-  if !pump_owner || service_thread_issues_submit() then
+  if !pump_owner || service_thread_issues_submit() || service_timer_uses_run_until_on_ui_thread() then
     return fail("submit left ui thread")
   end
   0
@@ -124,6 +127,19 @@ fn check_click_updates_label() -> i32 = do
   actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
   if actor.executor_issues_submit then
     return fail("submit left ui thread")
+  end
+  if actor.counter != 0 then
+    return fail(
+      "click incremented before timer.after wakeup counter=" + actor.counter.to_string()
+    )
+  end
+  let timer_admission = service_timer_after_arm(queue, service_timer_after_delay_milliseconds())
+  if admission_is_busy(timer_admission) then
+    return fail("timer.after completion was Busy")
+  end
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if actor.counter != 1 then
+    return fail("timer.after wakeup did not increment counter=" + actor.counter.to_string())
   end
   let mut transaction = script_transaction_new(store)
   transaction = script_transaction_stage_set_label_text(
@@ -178,6 +194,25 @@ fn check_timer_after_then_label() -> i32 = do
     return fail(
       "timer.after path not connected label updated before wait shown=" + shown
     )
+  end
+  let timer_admission = service_timer_after_arm(queue, service_timer_after_delay_milliseconds())
+  if admission_is_busy(timer_admission) then
+    return fail("timer.after completion was Busy")
+  end
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if actor.counter != 1 then
+    return fail("timer.after wakeup did not increment counter=" + actor.counter.to_string())
+  end
+  let mut after_wait = script_transaction_new(transaction.store)
+  after_wait = script_transaction_stage_set_label_text(
+    after_wait,
+    mapped,
+    counter_actor_label_text(actor)
+  )
+  after_wait = script_transaction_commit(after_wait)
+  let after_shown = store_text(after_wait.store, mapped)
+  if after_shown != "1" then
+    return fail("label after timer wakeup shown=" + after_shown)
   end
   0
 end

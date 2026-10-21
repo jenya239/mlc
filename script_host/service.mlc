@@ -132,6 +132,7 @@ export type CounterActor = {
   mapped_widget_count: i32,
   mapped_widget_index: i32,
   counter: i32,
+  waiting_timer: bool,
   executor_issues_submit: bool
 }
 
@@ -139,7 +140,21 @@ export fn counter_actor_export_name() -> string = "increment"
 
 export fn counter_actor_button_command() -> i32 = 1
 
+export fn service_timer_after_command() -> i32 = 2
+
+export fn service_timer_after_delay_milliseconds() -> i32 = 100
+
 export fn service_thread_issues_submit() -> bool = false
+
+export fn service_timer_uses_run_until_on_ui_thread() -> bool = false
+
+export fn service_timer_after_arm(queue: ref mut ServiceQueue, delay_milliseconds: i32) -> ServiceAdmission = do
+  if service_timer_uses_run_until_on_ui_thread() || delay_milliseconds < 0 then
+    ServiceBusy
+  else
+    service_try_push(queue, service_timer_after_command())
+  end
+end
 
 export fn counter_actor_slice_quantum() -> i32 = 10
 
@@ -152,6 +167,7 @@ export fn counter_actor_new() -> CounterActor =
     mapped_widget_count: 1,
     mapped_widget_index: 0,
     counter: 0,
+    waiting_timer: false,
     executor_issues_submit: service_thread_issues_submit()
   }
 
@@ -165,11 +181,25 @@ export fn counter_actor_apply_button(actor: CounterActor) -> CounterActor =
     mapped_widget_count: actor.mapped_widget_count,
     mapped_widget_index: actor.mapped_widget_index,
     counter: actor.counter + 1,
+    waiting_timer: false,
+    executor_issues_submit: service_thread_issues_submit()
+  }
+
+fn counter_actor_begin_timer_wait(actor: CounterActor) -> CounterActor =
+  CounterActor {
+    export_name: actor.export_name,
+    export_count: actor.export_count,
+    mapped_widget_count: actor.mapped_widget_count,
+    mapped_widget_index: actor.mapped_widget_index,
+    counter: actor.counter,
+    waiting_timer: true,
     executor_issues_submit: service_thread_issues_submit()
   }
 
 export fn counter_actor_handle_command(actor: CounterActor, command_code: i32) -> CounterActor = do
   if command_code == counter_actor_button_command() then
+    counter_actor_begin_timer_wait(actor)
+  else if command_code == service_timer_after_command() && actor.waiting_timer then
     counter_actor_apply_button(actor)
   else
     actor
