@@ -1,8 +1,8 @@
-current_step: 398
+current_step: 399
 status: ready
-last_result: done step 398: executor_host_call_suspend копирует аргументы и ставит Execution Waiting + HostRequest (timer.after); import не вызывается на стеке интерпретатора
-last_verify: ruby scripts/run_script_vm_gate.rb host_wait_unit host_call_opcode_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => unit host_wait_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
-next_step: 399
+last_result: done step 399: red — duplicate resume принимается (request_id=1); late epoch mismatch не проверяется, executor_host_call_resume нет
+last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/host_wait_unit.mlc => EXIT:1, [script_vm host_wait_unit] FAIL: duplicate resume accepted request_id=1
+next_step: 400
 consult_count: 0
 consult_response:
 consult_verdict:

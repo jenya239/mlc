@@ -2,6 +2,7 @@ import { Completed, PollFailed, PollResult, PollWaiting, PollYielded, PollCancel
 import { executor_host_call_timer_after } from '../executor_host_call'
 import { heap_new } from '../heap_types'
 import { host_import_timer_after } from '../host_imports'
+import { HostRequest } from '../host_request'
 import { Value, ValueInt32, value_encode } from '../value'
 
 fn fail(message: string) -> i32 = do
@@ -26,6 +27,19 @@ fn poll_kind(result: PollResult) -> string =
     PollFailed(code, at) => "Failed:" + code + "@" + at.to_string()
   }
 
+fn host_call_resume_outcome(
+  request: HostRequest,
+  incarnation: i32,
+  code_epoch: i32,
+  already_resumed: bool
+) -> string = do
+  let mut unused = request.request_id + incarnation + code_epoch
+  if already_resumed then
+    unused = unused + 0
+  end
+  "accepted"
+end
+
 fn main() -> i32 = do
   const waited = executor_host_call_timer_after(heap_new(), 0, 2, delay_arguments())
   const polled = poll_execution(waited.execution)
@@ -48,6 +62,30 @@ fn main() -> i32 = do
       "HostCall arguments were not copied count=" + waited.request.owned_arguments.length().to_string()
     )
   end
+  const duplicate = host_call_resume_outcome(
+    waited.request,
+    waited.request.incarnation,
+    waited.request.code_epoch,
+    true
+  )
+  if duplicate == "accepted" then
+    return fail("duplicate resume accepted request_id=" + waited.request.request_id.to_string())
+  end
+  const stale_epoch = 0
+  const late = host_call_resume_outcome(
+    waited.request,
+    waited.request.incarnation,
+    stale_epoch,
+    false
+  )
+  if late == "accepted" then
+    return fail(
+      "late resume epoch mismatch accepted incarnation=" + waited.request.incarnation.to_string()
+        + " code_epoch=" + waited.request.code_epoch.to_string()
+        + " shown_epoch=" + stale_epoch.to_string()
+    )
+  end
   println("[script_vm] host_wait_unit ok")
   0
 end
+
