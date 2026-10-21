@@ -34,6 +34,7 @@ registered_units = [
   ["module_verify_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_verify_unit.mlc"]],
   ["module_import_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_import_unit.mlc"]],
   ["host_call_opcode_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/host_call_opcode_unit.mlc"]],
+  ["host_wait_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/host_wait_unit.mlc"]],
   ["blob_limits", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/blob_limits_unit.mlc"]],
   ["module_budget_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_budget_unit.mlc"]],
   ["module_constant_policy_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/module_constant_policy_unit.mlc"]],

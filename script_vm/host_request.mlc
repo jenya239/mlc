@@ -1,0 +1,47 @@
+import { Value } from './value'
+
+export type HostRequest = {
+  session_epoch: i32,
+  actor_id: i64,
+  incarnation: i32,
+  code_epoch: i32,
+  request_id: i32,
+  operation_id: string,
+  resource_handle_slot: i32,
+  resource_handle_generation: i32,
+  capability_reference: i32,
+  expected_revision: i32,
+  deadline_budget: i32,
+  idempotency_key: i32,
+  owned_arguments: [Value]
+}
+
+export fn host_request_copy_arguments(arguments: [Value]) -> [Value] = do
+  let mut owned: [Value] = []
+  let mut index = 0
+  while index < arguments.length() do
+    owned.push(arguments[index])
+    index = index + 1
+  end
+  owned
+end
+
+export fn host_request_new(
+  operation_id: string,
+  owned_arguments: [Value]
+) -> HostRequest =
+  HostRequest {
+    session_epoch: 1,
+    actor_id: 1,
+    incarnation: 1,
+    code_epoch: 1,
+    request_id: 1,
+    operation_id: operation_id,
+    resource_handle_slot: 0,
+    resource_handle_generation: 0,
+    capability_reference: 0,
+    expected_revision: 0,
+    deadline_budget: 0,
+    idempotency_key: 1,
+    owned_arguments: owned_arguments
+  }

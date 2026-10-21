@@ -1,8 +1,8 @@
-current_step: 397
+current_step: 398
 status: ready
-last_result: done step 397: red — run_slice на proto с HostCall(timer.after) даёт PollFailed verify@1, не PollWaiting и не HostRequest
-last_verify: ruby scripts/run_script_vm_unit.rb script_vm/tests/host_wait_unit.mlc => EXIT:1, [script_vm host_wait_unit] FAIL: HostCall did not wait operation_id=timer.after poll=Failed:verify@1 request=
-next_step: 398
+last_result: done step 398: executor_host_call_suspend копирует аргументы и ставит Execution Waiting + HostRequest (timer.after); import не вызывается на стеке интерпретатора
+last_verify: ruby scripts/run_script_vm_gate.rb host_wait_unit host_call_opcode_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => unit host_wait_unit ok, затем lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
+next_step: 399
 consult_count: 0
 consult_response:
 consult_verdict:

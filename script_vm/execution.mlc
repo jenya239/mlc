@@ -30,6 +30,15 @@ export fn execution_finished(heap: Heap, value: Value) -> Execution =
     error_at: 0
   }
 
+export fn execution_waiting(heap: Heap) -> Execution =
+  Execution {
+    status: Waiting,
+    heap: heap,
+    value: nil_value(),
+    error_code: "",
+    error_at: 0
+  }
+
 export fn execution_failed(heap: Heap, error_code: string, error_at: i32) -> Execution =
   Execution {
     status: Failed,

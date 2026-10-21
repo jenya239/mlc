@@ -1,11 +1,7 @@
-import { instruction_words_load_const, instruction_words_return } from '../bytecode'
-import { Waiting } from '../execution'
 import { Completed, PollFailed, PollResult, PollWaiting, PollYielded, PollCancelled, poll_execution } from '../execution_result'
-import { SliceSession, run_slice, slice_session_new } from '../executor_slice'
+import { executor_host_call_timer_after } from '../executor_host_call'
 import { heap_new } from '../heap_types'
 import { host_import_timer_after } from '../host_imports'
-import { lower_timer_after_host_call } from '../lower/lower_host_call'
-import { FunctionProto, run_limits_new } from '../run_result'
 import { Value, ValueInt32, value_encode } from '../value'
 
 fn fail(message: string) -> i32 = do
@@ -15,27 +11,9 @@ end
 
 fn timer_after_operation_id() -> string = host_import_timer_after().operation_id
 
-fn append_instruction(words: [i32], instruction: [i32]) -> [i32] = do
-  let mut index = 0
-  while index < instruction.length() do
-    words.push(instruction[index])
-    index = index + 1
-  end
-  words
-end
-
-fn timer_after_proto() -> FunctionProto = do
-  let mut words: [i32] = []
-  words = append_instruction(words, instruction_words_load_const(1, 0))
-  words = append_instruction(words, lower_timer_after_host_call(0, 1))
-  words = append_instruction(words, instruction_words_return(0))
-  let mut constants: [Value] = []
-  constants.push(value_encode(ValueInt32(100)))
-  FunctionProto { words: words, constants: constants, register_count: 2 }
-end
-
-fn empty_arguments() -> [Value] = do
+fn delay_arguments() -> [Value] = do
   let mut arguments: [Value] = []
+  arguments.push(value_encode(ValueInt32(100)))
   arguments
 end
 
@@ -48,30 +26,26 @@ fn poll_kind(result: PollResult) -> string =
     PollFailed(code, at) => "Failed:" + code + "@" + at.to_string()
   }
 
-fn host_request_operation_id(session: SliceSession) -> string =
-  match session.execution.status {
-    Waiting => "",
-    _ => ""
-  }
-
 fn main() -> i32 = do
-  let mut protos: [FunctionProto] = []
-  protos.push(timer_after_proto())
-  let mut session = slice_session_new(
-    heap_new(),
-    protos,
-    0,
-    empty_arguments(),
-    run_limits_new(0, 0)
-  )
-  session = run_slice(session, 8)
-  const polled = poll_execution(session.execution)
-  const request_operation = host_request_operation_id(session)
+  const waited = executor_host_call_timer_after(heap_new(), 0, 2, delay_arguments())
+  const polled = poll_execution(waited.execution)
+  const request_operation = waited.request.operation_id
   if poll_kind(polled) != "Waiting" || request_operation != timer_after_operation_id() then
     return fail(
       "HostCall did not wait operation_id=" + timer_after_operation_id()
         + " poll=" + poll_kind(polled)
         + " request=" + request_operation
+    )
+  end
+  if waited.destination_register != 0 || waited.resume_pc != 2 then
+    return fail(
+      "HostCall wait frame destination=" + waited.destination_register.to_string()
+        + " resume_pc=" + waited.resume_pc.to_string()
+    )
+  end
+  if waited.request.owned_arguments.length() != 1 then
+    return fail(
+      "HostCall arguments were not copied count=" + waited.request.owned_arguments.length().to_string()
     )
   end
   println("[script_vm] host_wait_unit ok")

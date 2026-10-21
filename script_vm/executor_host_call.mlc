@@ -1,0 +1,43 @@
+import { Execution, execution_waiting } from './execution'
+import { Heap } from './heap'
+import { host_import_timer_after } from './host_imports'
+import { HostRequest, host_request_copy_arguments, host_request_new } from './host_request'
+import { Value } from './value'
+
+export type HostCallWait = {
+  execution: Execution,
+  request: HostRequest,
+  destination_register: i32,
+  resume_pc: i32
+}
+
+export fn executor_host_call_suspend(
+  heap: Heap,
+  destination_register: i32,
+  resume_pc: i32,
+  operation_id: string,
+  arguments: [Value]
+) -> HostCallWait = do
+  let owned_arguments = host_request_copy_arguments(arguments)
+  let request = host_request_new(operation_id, owned_arguments)
+  HostCallWait {
+    execution: execution_waiting(heap),
+    request: request,
+    destination_register: destination_register,
+    resume_pc: resume_pc
+  }
+end
+
+export fn executor_host_call_timer_after(
+  heap: Heap,
+  destination_register: i32,
+  resume_pc: i32,
+  arguments: [Value]
+) -> HostCallWait =
+  executor_host_call_suspend(
+    heap,
+    destination_register,
+    resume_pc,
+    host_import_timer_after().operation_id,
+    arguments
+  )
