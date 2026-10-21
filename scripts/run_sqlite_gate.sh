@@ -80,6 +80,10 @@ run_storage_schema() {
   ruby "$ROOT/scripts/run_script_vm_unit.rb" "$ROOT/script_host/tests/storage_schema_unit.mlc"
 }
 
+run_effect_outbox() {
+  ruby "$ROOT/scripts/run_script_vm_unit.rb" "$ROOT/script_host/tests/effect_outbox_unit.mlc"
+}
+
 case "$STAGE" in
   link) run_link ;;
   shim) run_shim ;;
@@ -87,6 +91,7 @@ case "$STAGE" in
   stmt) run_stmt ;;
   tx) run_tx ;;
   storage_schema_unit) run_storage_schema ;;
+  effect_outbox_unit) run_effect_outbox ;;
   all)
     run_link
     run_shim
@@ -95,6 +100,7 @@ case "$STAGE" in
     run_tx
     run_demo
     run_storage_schema
+    run_effect_outbox
     ;;
   *)
     echo "[sqlite gate] FAIL: unknown stage $STAGE" >&2

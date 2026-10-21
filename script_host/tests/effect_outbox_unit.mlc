@@ -1,22 +1,33 @@
+import {
+  effect_outbox_dispatch_before_intent,
+  effect_outbox_idempotency_key_present,
+  effect_outbox_reconcile_after_crash,
+  effect_outbox_reconcile_status,
+  effect_outbox_status_sent,
+  effect_outbox_status_unknown,
+  effect_outbox_unknown_without_status_check
+} from '../effect_outbox'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm effect_outbox_unit] FAIL: " + message)
   1
 end
 
-fn effect_outbox_reconcile_after_crash() -> i32 = 0
-
-fn effect_outbox_idempotency_key_present() -> i32 = 0
-
-fn effect_outbox_unknown_without_status_check() -> i32 = 0
-
 fn check_crash_between_send_and_ack() -> i32 = do
   if effect_outbox_idempotency_key_present() == 0 then
     return fail("crash between send and ack lost effect without Unknown or idempotency_key")
+  end
+  if effect_outbox_dispatch_before_intent() != 0 then
+    return fail("effect dispatched before outbox intent commit")
   end
   if effect_outbox_reconcile_after_crash() == 0 then
     return fail("unfinished effect not detected after restart")
   end
   if effect_outbox_unknown_without_status_check() == 0 then
+    return fail("missing status check did not become Unknown")
+  end
+  let outcome = effect_outbox_reconcile_status(effect_outbox_status_sent(), 0)
+  if outcome != effect_outbox_status_unknown() then
     return fail("missing status check did not become Unknown")
   end
   0

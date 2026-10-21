@@ -1,0 +1,48 @@
+export fn effect_outbox_status_pending() -> string = "pending"
+
+export fn effect_outbox_status_sent() -> string = "sent"
+
+export fn effect_outbox_status_ack() -> string = "ack"
+
+export fn effect_outbox_status_unknown() -> string = "unknown"
+
+export fn effect_outbox_idempotency_key_present() -> i32 = 1
+
+export fn effect_outbox_dispatch_before_intent() -> i32 = 0
+
+export fn effect_outbox_reconcile_status(current_status: string, status_check_supported: i32) -> string = do
+  if current_status == effect_outbox_status_ack() then
+    return effect_outbox_status_ack()
+  end
+  if current_status == effect_outbox_status_pending() then
+    return effect_outbox_status_pending()
+  end
+  if current_status == effect_outbox_status_sent() then
+    if status_check_supported == 0 then
+      return effect_outbox_status_unknown()
+    end
+    return effect_outbox_status_sent()
+  end
+  effect_outbox_status_unknown()
+end
+
+export fn effect_outbox_automatic_retry_without_status_check() -> i32 = 0
+
+export fn effect_outbox_reconcile_after_crash() -> i32 = do
+  let outcome = effect_outbox_reconcile_status(effect_outbox_status_sent(), 0)
+  if outcome == effect_outbox_status_unknown() then
+    return 1
+  end
+  0
+end
+
+export fn effect_outbox_unknown_without_status_check() -> i32 = do
+  if effect_outbox_automatic_retry_without_status_check() != 0 then
+    return 0
+  end
+  let outcome = effect_outbox_reconcile_status(effect_outbox_status_sent(), 0)
+  if outcome == effect_outbox_status_unknown() then
+    return 1
+  end
+  0
+end
