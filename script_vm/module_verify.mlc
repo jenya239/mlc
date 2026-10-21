@@ -1,5 +1,6 @@
 import { FunctionProto } from './run_result'
 import { VerifyResult, VerifyOk, VerifyErr, verify_function } from './verifier'
+import { ImportDeclaration, host_import_manifest_allows } from './host_imports'
 import {
   Instruction,
   instruction_decode,
@@ -48,6 +49,26 @@ export fn verify_err_arity() -> string = "arity"
 export fn verify_err_proto_index() -> string = "proto_index"
 
 export fn verify_err_work() -> string = "work"
+
+export fn verify_err_import() -> string = "import"
+
+export fn verify_module_imports(imports: [ImportDeclaration]) -> VerifyResult = do
+  let mut index = 0
+  let mut code = ""
+  let mut at = 0
+  while index < imports.length() && code == "" do
+    if !host_import_manifest_allows(imports[index]) then
+      code = verify_err_import()
+      at = index
+    end
+    index = index + 1
+  end
+  if code == "" then
+    VerifyOk
+  else
+    VerifyErr(code, at)
+  end
+end
 
 fn unknown_prototype() -> i32 = 0 - 1
 

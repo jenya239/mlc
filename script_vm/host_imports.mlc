@@ -1,0 +1,56 @@
+export type ImportEffectClass =
+  | ImportEffectPureBounded
+  | ImportEffectAsyncRead
+  | ImportEffectAsyncMutation
+
+export type ImportDeclaration = {
+  operation_id: string,
+  major_version: i32,
+  argument_schema: string,
+  result_schema: string,
+  effect_class: ImportEffectClass
+}
+
+export fn host_import_timer_after() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "timer.after",
+    major_version: 1,
+    argument_schema: "i32",
+    result_schema: "unit",
+    effect_class: ImportEffectAsyncRead
+  }
+
+fn effect_class_code(effect_class: ImportEffectClass) -> i32 =
+  match effect_class
+    | ImportEffectPureBounded => 0
+    | ImportEffectAsyncRead => 1
+    | ImportEffectAsyncMutation => 2
+
+fn effect_class_matches(left: ImportEffectClass, right: ImportEffectClass) -> bool =
+  effect_class_code(left) == effect_class_code(right)
+
+fn declaration_matches(allowed: ImportDeclaration, candidate: ImportDeclaration) -> bool =
+  allowed.operation_id == candidate.operation_id
+    && allowed.major_version == candidate.major_version
+    && allowed.argument_schema == candidate.argument_schema
+    && allowed.result_schema == candidate.result_schema
+    && effect_class_matches(allowed.effect_class, candidate.effect_class)
+
+export fn host_import_manifest() -> [ImportDeclaration] = do
+  let mut manifest: [ImportDeclaration] = []
+  manifest.push(host_import_timer_after())
+  manifest
+end
+
+export fn host_import_manifest_allows(declaration: ImportDeclaration) -> bool = do
+  const manifest = host_import_manifest()
+  let mut index = 0
+  let mut allowed = false
+  while index < manifest.length() && !allowed do
+    if declaration_matches(manifest[index], declaration) then
+      allowed = true
+    end
+    index = index + 1
+  end
+  allowed
+end
