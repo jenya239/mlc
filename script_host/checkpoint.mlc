@@ -1,0 +1,114 @@
+export type CheckpointSnapshot = {
+  schema_version: i32,
+  logical_state: string,
+  mailbox_cursor: i32,
+  pending_effects: i32,
+  timer_deadline: i64,
+  timer_resume_policy: string
+}
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+fn empty_kinds() -> [i32] = do
+  let mut kinds: [i32] = []
+  kinds
+end
+
+export fn checkpoint_schema_version() -> i32 = 1
+
+export fn checkpoint_kind_logical() -> i32 = 1
+
+export fn checkpoint_kind_raw_heap_ref() -> i32 = 2
+
+export fn checkpoint_kind_native_handle() -> i32 = 3
+
+export fn checkpoint_kind_gl_state() -> i32 = 4
+
+export fn checkpoint_kind_sqlite_connection() -> i32 = 5
+
+export fn checkpoint_kind_coroutine_frame() -> i32 = 6
+
+export fn checkpoint_kind_native_timer_handle() -> i32 = 7
+
+export fn checkpoint_timer_resume_policy() -> string = "rearm"
+
+export fn checkpoint_field_allowed(kind: i32) -> i32 = do
+  if kind == checkpoint_kind_logical() then
+    return 1
+  end
+  0
+end
+
+export fn checkpoint_validate_kinds(kinds: [i32]) -> i32 = do
+  let mut index = 0
+  while index < kinds.length() do
+    if checkpoint_field_allowed(kinds[index]) == 0 then
+      return 0
+    end
+    index = index + 1
+  end
+  1
+end
+
+export fn checkpoint_new_logical(
+  logical_state: string,
+  mailbox_cursor: i32,
+  pending_effects: i32,
+  timer_deadline: i64
+) -> CheckpointSnapshot =
+  CheckpointSnapshot {
+    schema_version: checkpoint_schema_version(),
+    logical_state: logical_state,
+    mailbox_cursor: mailbox_cursor,
+    pending_effects: pending_effects,
+    timer_deadline: timer_deadline,
+    timer_resume_policy: checkpoint_timer_resume_policy()
+  }
+
+export fn checkpoint_logical_kinds() -> [i32] = do
+  let mut kinds = empty_kinds()
+  kinds.push(checkpoint_kind_logical())
+  kinds.push(checkpoint_kind_logical())
+  kinds.push(checkpoint_kind_logical())
+  kinds
+end
+
+export fn checkpoint_blob_with_raw_heap_ref() -> [i32] = do
+  let mut kinds = checkpoint_logical_kinds()
+  kinds.push(checkpoint_kind_raw_heap_ref())
+  kinds
+end
+
+export fn checkpoint_blob_with_native_handle() -> [i32] = do
+  let mut kinds = checkpoint_logical_kinds()
+  kinds.push(checkpoint_kind_native_handle())
+  kinds
+end
+
+export fn checkpoint_logical_state_present() -> i32 = do
+  let snapshot = checkpoint_new_logical("actor", 0, 0, i64_from_i32(0))
+  if snapshot.schema_version != checkpoint_schema_version() then
+    return 0
+  end
+  if snapshot.logical_state.length() == 0 then
+    return 0
+  end
+  if snapshot.timer_resume_policy != checkpoint_timer_resume_policy() then
+    return 0
+  end
+  checkpoint_validate_kinds(checkpoint_logical_kinds())
+end
+
+export fn checkpoint_rejects_raw_heap_ref() -> i32 = do
+  if checkpoint_validate_kinds(checkpoint_blob_with_raw_heap_ref()) != 0 then
+    return 0
+  end
+  1
+end
+
+export fn checkpoint_rejects_native_handle() -> i32 = do
+  if checkpoint_validate_kinds(checkpoint_blob_with_native_handle()) != 0 then
+    return 0
+  end
+  1
+end

@@ -61,6 +61,7 @@ registered_units = [
   ["sandbox_policy_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/sandbox_policy_unit.mlc"]],
   ["storage_schema_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/storage_schema_unit.mlc"]],
   ["effect_outbox_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/effect_outbox_unit.mlc"]],
+  ["checkpoint_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/checkpoint_unit.mlc"]],
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],

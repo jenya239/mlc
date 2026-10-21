@@ -1,13 +1,13 @@
+import {
+  checkpoint_logical_state_present,
+  checkpoint_rejects_native_handle,
+  checkpoint_rejects_raw_heap_ref
+} from '../checkpoint'
+
 fn fail(message: string) -> i32 = do
   println("[script_vm checkpoint_unit] FAIL: " + message)
   1
 end
-
-fn checkpoint_rejects_raw_heap_ref() -> i32 = 0
-
-fn checkpoint_logical_state_present() -> i32 = 0
-
-fn checkpoint_rejects_native_handle() -> i32 = 0
 
 fn check_logical_checkpoint() -> i32 = do
   if checkpoint_logical_state_present() == 0 then

@@ -84,6 +84,10 @@ run_effect_outbox() {
   ruby "$ROOT/scripts/run_script_vm_unit.rb" "$ROOT/script_host/tests/effect_outbox_unit.mlc"
 }
 
+run_checkpoint() {
+  ruby "$ROOT/scripts/run_script_vm_unit.rb" "$ROOT/script_host/tests/checkpoint_unit.mlc"
+}
+
 case "$STAGE" in
   link) run_link ;;
   shim) run_shim ;;
@@ -92,6 +96,7 @@ case "$STAGE" in
   tx) run_tx ;;
   storage_schema_unit) run_storage_schema ;;
   effect_outbox_unit) run_effect_outbox ;;
+  checkpoint_unit) run_checkpoint ;;
   all)
     run_link
     run_shim
@@ -101,6 +106,7 @@ case "$STAGE" in
     run_demo
     run_storage_schema
     run_effect_outbox
+    run_checkpoint
     ;;
   *)
     echo "[sqlite gate] FAIL: unknown stage $STAGE" >&2
