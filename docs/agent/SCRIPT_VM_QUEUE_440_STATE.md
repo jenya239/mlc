@@ -1,8 +1,8 @@
-current_step: 442
+current_step: 443
 status: ready
-last_result: done step 442: critic единый gate 301–440 — scripts/run_script_vm_queue440_gate.rb; 38 unit-имён (контракт карточки); skip lower_generic_method_unit (фаза 361–374 blocked) и embedding_v2_host_unit (не в run_script_vm_gate); 36 units через run_script_vm_gate.rb; hardcoded expected_plan_unit_count=38 ловит удаление имени
-last_verify: ruby scripts/run_script_vm_queue440_gate.rb last line script_vm_queue440_gate ok EXIT:0; units=38 expected=38; script_vm_gate ok units=36; queue200 last line script_vm_queue200_gate FAIL queue (pre-existing lower_stage1 FAIL: syntax_error code), recorded; green-карточек 301–440 kind:green = 63, из них unique unit-имена контракта 442 = 38
-next_step: 443
+last_result: done step 443: critic файловые бюджеты — оба size gate ok; sabotage heap_collect 401>400 FAIL затем откат
+last_verify: ruby scripts/run_script_vm_file_size.rb => script_vm file size: ok EXIT:0; ruby scripts/run_textui_file_size.rb => textui file size: ok (kit max 400, misc/textui/main.mlc freeze 637) EXIT:0; sabotage heap_collect.mlc 281→401 => EXIT:1 `script_vm/heap_collect.mlc 401 > 400`; git checkout; heap_collect 281; оба gate снова EXIT:0; lower_generic_method.mlc отсутствует
+next_step: 444
 consult_count: 0
 consult_response:
 consult_verdict:
