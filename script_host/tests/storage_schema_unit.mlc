@@ -5,11 +5,11 @@ import {
   SqliteUnitErr,
   SqliteUnitOk,
   SqliteUnitResult,
-  close_db,
-  exec
+  close_db
 } from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
 import {
   state_store_accepts_foreign_thread_handle,
+  state_store_cas_update_actor_state,
   state_store_insert_actor_inbox,
   state_store_insert_actor_state,
   state_store_insert_effect_outbox,
@@ -84,13 +84,21 @@ fn check_schema() -> i32 = do
     end
     return fail("exhausted revision wrapped")
   end
-  let first_write = exec(
+  let first_write = state_store_cas_update_actor_state(
     connection,
-    "UPDATE actor_state SET revision = 2 WHERE actor_id = 'a'"
+    "a",
+    revision,
+    fencing_token,
+    i64_from_i32(2),
+    fencing_token
   )
-  let stale_write = exec(
+  let stale_write = state_store_cas_update_actor_state(
     connection,
-    "UPDATE actor_state SET revision = 3 WHERE actor_id = 'a'"
+    "a",
+    revision,
+    fencing_token,
+    i64_from_i32(3),
+    fencing_token
   )
   if write_failed(first_write) then
     let closed_status = close_db(connection)

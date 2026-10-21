@@ -6,14 +6,23 @@ import {
   SqliteUnitErr,
   SqliteUnitOk,
   SqliteUnitResult,
+  SqliteIntErr,
+  SqliteIntOk,
+  SqliteIntResult,
+  begin_transaction,
   busy_timeout,
+  changes,
+  commit,
   exec,
-  open_memory
+  open_memory,
+  rollback
 } from '../lib/mlc/common/stdlib/db/sqlite.mlc'
 
 fn i64_from_i32(value: i32) -> i64 = value
 
 export fn state_store_busy_timeout_milliseconds() -> i32 = 5000
+
+export fn state_store_journal_mode() -> string = "DELETE"
 
 export fn storage_owner_thread_present() -> i32 = 1
 
@@ -99,6 +108,10 @@ export fn state_store_open_memory() -> SqliteHandleResult = do
   if unit_is_error(timeout_status) then
     return SqliteHandleErr(unit_error(timeout_status))
   end
+  let journal_status = exec(connection, "PRAGMA journal_mode = " + state_store_journal_mode())
+  if unit_is_error(journal_status) then
+    return SqliteHandleErr(unit_error(journal_status))
+  end
   let schema_status = state_store_ensure_schema(connection)
   if unit_is_error(schema_status) then
     return SqliteHandleErr(unit_error(schema_status))
@@ -152,6 +165,57 @@ export fn state_store_insert_actor_inbox(
       + status_text
       + "')"
   )
+
+fn change_count(value: SqliteIntResult) -> i64 =
+  match value {
+    SqliteIntOk(count) => count,
+    SqliteIntErr(_error) => i64_from_i32(0)
+  }
+
+export fn state_store_cas_update_actor_state(
+  connection: i32,
+  actor_id: string,
+  expected_revision: i64,
+  expected_fencing_token: i64,
+  next_revision: i64,
+  next_fencing_token: i64
+) -> SqliteUnitResult = do
+  if state_store_revision_rejected(next_revision, next_fencing_token) then
+    return SqliteUnitErr(SqliteError { code: 19, extended_code: 19, message: "revision_exhausted_or_negative" })
+  end
+  let began = begin_transaction(connection)
+  if unit_is_error(began) then
+    return began
+  end
+  let updated = exec(
+    connection,
+    "UPDATE actor_state SET revision = "
+      + next_revision.to_string()
+      + ", fencing_token = "
+      + next_fencing_token.to_string()
+      + " WHERE actor_id = '"
+      + actor_id
+      + "' AND revision = "
+      + expected_revision.to_string()
+      + " AND fencing_token = "
+      + expected_fencing_token.to_string()
+  )
+  if unit_is_error(updated) then
+    let rolled = rollback(connection)
+    if unit_is_error(rolled) then
+      return rolled
+    end
+    return updated
+  end
+  if change_count(changes(connection)) != i64_from_i32(1) then
+    let rolled = rollback(connection)
+    if unit_is_error(rolled) then
+      return rolled
+    end
+    return SqliteUnitErr(SqliteError { code: 19, extended_code: 19, message: "cas_revision_fencing" })
+  end
+  commit(connection)
+end
 
 export fn state_store_insert_effect_outbox(
   connection: i32,
