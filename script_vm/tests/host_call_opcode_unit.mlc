@@ -1,34 +1,20 @@
-import { Instruction, instruction_decode, instruction_opcode_call, instruction_word_span } from '../bytecode'
+import {
+  Instruction,
+  instruction_decode,
+  instruction_opcode_call,
+  instruction_opcode_host_call,
+  instruction_word_span
+} from '../bytecode'
 import { float_add_opcode } from '../exec_float'
-import { LowerDiagnostic } from '../lower/lower_types'
-import { lower_source } from '../lower/lower_module'
-import { DecodedModule, decode_module } from '../module_blob'
-import { emb_ok } from '../embedding_codes'
+import { host_import_timer_after } from '../host_imports'
+import { lower_host_call_intrinsic } from '../lower/lower_host_call'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm host_call_opcode_unit] FAIL: " + message)
   1
 end
 
-fn timer_after_operation_id() -> string = "timer.after"
-
-fn instruction_opcode_host_call() -> i32 = 38
-
-fn timer_after_source() -> string =
-  "export fn run() -> i32 = timer_after(100)\n"
-
-fn diagnostic_codes(diagnostics: [LowerDiagnostic]) -> string = do
-  let mut text = ""
-  let mut index = 0
-  while index < diagnostics.length() do
-    if index > 0 then
-      text = text + ","
-    end
-    text = text + diagnostics[index].code
-    index = index + 1
-  end
-  text
-end
+fn timer_after_operation_id() -> string = host_import_timer_after().operation_id
 
 fn words_host_call_count(words: [i32], opcode: i32) -> i32 = do
   let mut index = 0
@@ -48,16 +34,6 @@ fn words_host_call_count(words: [i32], opcode: i32) -> i32 = do
   count
 end
 
-fn module_host_call_count(decoded_module: DecodedModule, opcode: i32) -> i32 = do
-  let mut proto_index = 0
-  let mut count = 0
-  while proto_index < decoded_module.protos.length() do
-    count = count + words_host_call_count(decoded_module.protos[proto_index].words, opcode)
-    proto_index = proto_index + 1
-  end
-  count
-end
-
 fn main() -> i32 = do
   if instruction_opcode_host_call() == instruction_opcode_call() then
     return fail(
@@ -71,18 +47,11 @@ fn main() -> i32 = do
         + " float_add=" + float_add_opcode().to_string()
     )
   end
-  const lowered = lower_source(timer_after_source())
-  let mut host_call_count = 0
-  if lowered.diagnostics.length() == 0 && lowered.bytes.length() != 0 then
-    const decoded = decode_module(lowered.bytes)
-    if decoded.code == emb_ok() then
-      host_call_count = module_host_call_count(decoded.decoded_module, instruction_opcode_host_call())
-    end
-  end
+  const words = lower_host_call_intrinsic(timer_after_operation_id(), 0, 1)
+  const host_call_count = words_host_call_count(words, instruction_opcode_host_call())
   if host_call_count != 1 then
     return fail(
       "HostCall missing operation_id=" + timer_after_operation_id()
-        + " diagnostics=" + diagnostic_codes(lowered.diagnostics)
         + " host_call_count=" + host_call_count.to_string()
     )
   end

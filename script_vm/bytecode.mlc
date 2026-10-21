@@ -37,6 +37,7 @@ fn opcode_call() -> i32 = 22
 fn opcode_make_closure() -> i32 = 23
 fn opcode_get_upval() -> i32 = 24
 fn opcode_set_upval() -> i32 = 25
+fn opcode_host_call() -> i32 = 38
 
 export fn instruction_opcode_load_const() -> i32 = opcode_load_const()
 export fn instruction_opcode_move() -> i32 = opcode_move()
@@ -63,6 +64,7 @@ export fn instruction_opcode_call() -> i32 = opcode_call()
 export fn instruction_opcode_make_closure() -> i32 = opcode_make_closure()
 export fn instruction_opcode_get_upval() -> i32 = opcode_get_upval()
 export fn instruction_opcode_set_upval() -> i32 = opcode_set_upval()
+export fn instruction_opcode_host_call() -> i32 = opcode_host_call()
 
 export fn instruction_encode(opcode: i32, a: i32, b: i32, c: i32) -> Instruction =
   Instruction {
