@@ -53,6 +53,7 @@ registered_units = [
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],
+  ["counter_actor_demo_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/counter_actor_demo_unit.mlc"]],
   ["repl_persistent_memory_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/repl_persistent_memory_unit.mlc"]],
   ["sweep_gap", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/sweep_gap_unit.mlc"]],
   ["lower_builder", ["ruby", "scripts/run_script_vm_unit.rb", "script_vm/tests/lower_builder_unit.mlc"]],

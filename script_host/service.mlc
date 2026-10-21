@@ -125,3 +125,64 @@ export fn service_arm_wait(queue: ServiceQueue, waiter: ServiceWaiter) -> Servic
     saw_wakeup: sequence_moved(queue, waiter)
   }
 end
+
+export type CounterActor = {
+  export_name: string,
+  export_count: i32,
+  mapped_widget_count: i32,
+  mapped_widget_index: i32,
+  counter: i32,
+  executor_issues_submit: bool
+}
+
+export fn counter_actor_export_name() -> string = "increment"
+
+export fn counter_actor_button_command() -> i32 = 1
+
+export fn service_thread_issues_submit() -> bool = false
+
+export fn counter_actor_slice_quantum() -> i32 = 10
+
+export fn counter_actor_busy_work() -> i32 = 1000
+
+export fn counter_actor_new() -> CounterActor =
+  CounterActor {
+    export_name: counter_actor_export_name(),
+    export_count: 1,
+    mapped_widget_count: 1,
+    mapped_widget_index: 0,
+    counter: 0,
+    executor_issues_submit: service_thread_issues_submit()
+  }
+
+export fn counter_actor_label_text(actor: CounterActor) -> string =
+  actor.counter.to_string()
+
+export fn counter_actor_apply_button(actor: CounterActor) -> CounterActor =
+  CounterActor {
+    export_name: actor.export_name,
+    export_count: actor.export_count,
+    mapped_widget_count: actor.mapped_widget_count,
+    mapped_widget_index: actor.mapped_widget_index,
+    counter: actor.counter + 1,
+    executor_issues_submit: service_thread_issues_submit()
+  }
+
+export fn counter_actor_handle_command(actor: CounterActor, command_code: i32) -> CounterActor = do
+  if command_code == counter_actor_button_command() then
+    counter_actor_apply_button(actor)
+  else
+    actor
+  end
+end
+
+export fn counter_actor_slice_remaining(remaining_work: i32, quantum: i32) -> i32 = do
+  if remaining_work <= quantum then
+    0
+  else
+    remaining_work - quantum
+  end
+end
+
+export fn counter_actor_slice_yielded(remaining_work: i32, quantum: i32) -> bool =
+  remaining_work > quantum

@@ -20,6 +20,12 @@ export fn script_frame_pump_drain(pump: ScriptFramePump) -> ScriptFramePump =
     owner_is_ui_thread: script_frame_pump_owner_is_ui_thread()
   }
 
+export fn script_frame_pump_after_service_slice(pump: ScriptFramePump) -> ScriptFramePump =
+  script_frame_pump_drain(pump)
+
+export fn script_frame_submit_owner_is_ui_thread(pump: ScriptFramePump) -> bool =
+  pump.owner_is_ui_thread && script_frame_pump_owner_is_ui_thread()
+
 export fn script_frame_phase_order() -> [string] = do
   let mut phases: [string] = []
   phases.push("drain")

@@ -1,0 +1,170 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../../misc/textui/store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../../misc/textui/script_transaction'
+import {
+  script_frame_pump_after_service_slice,
+  script_frame_pump_new,
+  script_frame_submit_owner_is_ui_thread
+} from '../../misc/textui/script_events'
+import {
+  ServiceAccepted,
+  ServiceAdmission,
+  ServiceBusy,
+  ServicePop,
+  ServicePopCommand,
+  ServicePopEmpty,
+  counter_actor_busy_work,
+  counter_actor_button_command,
+  counter_actor_export_name,
+  counter_actor_handle_command,
+  counter_actor_label_text,
+  counter_actor_new,
+  counter_actor_slice_quantum,
+  counter_actor_slice_remaining,
+  counter_actor_slice_yielded,
+  service_queue_new,
+  service_thread_issues_submit,
+  service_try_pop,
+  service_try_push
+} from '../../script_host/service'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm counter_actor_demo_unit] FAIL: " + message)
+  1
+end
+
+fn owner_identity() -> i64 = 1
+
+fn queue_capacity() -> i32 = 8
+
+fn original_label() -> string = "0"
+
+fn admission_is_busy(admission: ServiceAdmission) -> bool =
+  match admission {
+    ServiceBusy => true,
+    ServiceAccepted => false
+  }
+
+fn pop_command(pop: ServicePop) -> i32 =
+  match pop {
+    ServicePopCommand(command_code) => command_code,
+    ServicePopEmpty => 0
+  }
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn check_owner(pump_owner: bool) -> i32 = do
+  if !pump_owner || service_thread_issues_submit() then
+    return fail("submit left ui thread")
+  end
+  0
+end
+
+fn check_click_updates_label() -> i32 = do
+  let mut actor = counter_actor_new()
+  if actor.export_count != 1 || actor.export_name != counter_actor_export_name() then
+    return fail(
+      "actor export_count=" + actor.export_count.to_string()
+        + " export_name=" + actor.export_name
+    )
+  end
+  if actor.mapped_widget_count != 1 then
+    return fail("mapped widget count=" + actor.mapped_widget_count.to_string())
+  end
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let mapped = WidgetId { index: actor.mapped_widget_index }
+  let mut queue = service_queue_new(queue_capacity(), owner_identity())
+  let mut pump = script_frame_pump_new()
+  let admission = service_try_push(queue, counter_actor_button_command())
+  if admission_is_busy(admission) then
+    return fail("button command was Busy")
+  end
+  pump = script_frame_pump_after_service_slice(pump)
+  let owner_status = check_owner(script_frame_submit_owner_is_ui_thread(pump))
+  if owner_status != 0 then
+    return owner_status
+  end
+  actor = counter_actor_handle_command(actor, pop_command(service_try_pop(queue)))
+  if actor.executor_issues_submit then
+    return fail("submit left ui thread")
+  end
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(
+    transaction,
+    mapped,
+    counter_actor_label_text(actor)
+  )
+  transaction = script_transaction_commit(transaction)
+  let shown = store_text(transaction.store, mapped)
+  if shown != "1" || transaction.revision != 1 then
+    return fail(
+      "label after click shown=" + shown
+        + " revision=" + transaction.revision.to_string()
+    )
+  end
+  0
+end
+
+fn check_busy_loop_does_not_block_ui() -> i32 = do
+  let quantum = counter_actor_slice_quantum()
+  let mut remaining = counter_actor_busy_work()
+  if !counter_actor_slice_yielded(remaining, quantum) then
+    return fail(
+      "busy loop did not yield remaining=" + remaining.to_string()
+        + " quantum=" + quantum.to_string()
+    )
+  end
+  remaining = counter_actor_slice_remaining(remaining, quantum)
+  let pump = script_frame_pump_after_service_slice(script_frame_pump_new())
+  check_owner(script_frame_submit_owner_is_ui_thread(pump) && remaining > 0)
+end
+
+fn main() -> i32 = do
+  let click_status = check_click_updates_label()
+  if click_status != 0 then
+    return click_status
+  end
+  let loop_status = check_busy_loop_does_not_block_ui()
+  if loop_status != 0 then
+    return loop_status
+  end
+  println("[script_vm] counter_actor_demo_unit ok")
+  0
+end
