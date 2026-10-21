@@ -264,3 +264,18 @@ export fn heap_collect(heap: Heap) -> Heap = do
   heap_in_place_collect(next, empty_values())
   next
 end
+
+export fn heap_incremental_write_barrier(heap: ref mut Heap, parent: Value, child: Value) -> unit =
+  match value_decode(parent) {
+    ValueHeapRef(parent_id) => do
+      if parent_id >= 0 && parent_id < heap.slots.length() then
+        const parent_slot = heap.slots[parent_id]
+        if parent_slot.live && slot_is_marked(parent_slot) then
+          let mut work_ids: [i32] = []
+          let work_count = enqueue_value(heap, work_ids, 0, child)
+          drain_work(heap, work_ids, work_count)
+        end
+      end
+    end,
+    _ => do end
+  }

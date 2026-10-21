@@ -1,5 +1,6 @@
 import { Value, ValueNil, ValueHeapRef, value_byte_size, value_encode } from './value'
 import { heap_in_place_write, string_physical_byte_cost } from './heap_access'
+import { heap_incremental_write_barrier } from './heap_collect'
 import {
   ObjectHeader,
   HeapSlot,
@@ -129,8 +130,18 @@ fn array_reservation_bytes(length: i32) -> i32 = do
   length * value_byte_size()
 end
 
+export fn heap_compaction_reserve_bytes(payload_bytes: i32) -> i32 = do
+  if payload_bytes <= 0 then
+    return 0
+  end
+  payload_bytes
+end
+
+fn reserved_allocation_bytes(payload_bytes: i32) -> i32 =
+  payload_bytes + heap_compaction_reserve_bytes(payload_bytes)
+
 fn array_exceeds_byte_limit(length: i32, byte_limit: i32) -> bool =
-  byte_limit > 0 && array_reservation_bytes(length) > byte_limit
+  byte_limit > 0 && reserved_allocation_bytes(array_reservation_bytes(length)) > byte_limit
 
 export fn heap_alloc_array(heap: Heap, length: i32) -> HeapAlloc = do
   let mut next = heap
@@ -147,7 +158,7 @@ export fn heap_alloc_array_within_byte_limit(heap: Heap, length: i32, byte_limit
 end
 
 fn string_exceeds_byte_limit(logical_length: i32, byte_limit: i32) -> bool =
-  byte_limit > 0 && string_physical_byte_cost(logical_length) > byte_limit
+  byte_limit > 0 && reserved_allocation_bytes(string_physical_byte_cost(logical_length)) > byte_limit
 
 export fn heap_alloc_string_within_byte_limit(heap: Heap, bytes: [i32], byte_limit: i32) -> HeapAlloc = do
   if string_exceeds_byte_limit(bytes.length(), byte_limit) then
@@ -179,7 +190,7 @@ end
 export fn closure_group_exceeds_byte_limit(upvalue_count: i32, byte_limit: i32) -> bool = do
   let closure_bytes = closure_reservation_bytes(upvalue_count)
   let cell_bytes = closure_reservation_bytes(upvalue_count)
-  byte_limit > 0 && closure_bytes + cell_bytes > byte_limit
+  byte_limit > 0 && reserved_allocation_bytes(closure_bytes + cell_bytes) > byte_limit
 end
 
 fn allocate_closure_group(heap: Heap, proto_index: i32, upvalue_count: i32) -> HeapAlloc = do
@@ -189,6 +200,7 @@ fn allocate_closure_group(heap: Heap, proto_index: i32, upvalue_count: i32) -> H
   while index < upvalue_count do
     let cell_value = heap_in_place_alloc_cell(next)
     heap_in_place_write(next, closure_value, index, cell_value)
+    heap_incremental_write_barrier(next, closure_value, cell_value)
     index = index + 1
   end
   HeapAlloc { heap: next, value: closure_value }

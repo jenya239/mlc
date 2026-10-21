@@ -21,6 +21,7 @@ import {
   heap_collect_slice,
   heap_collect_slice_cursor_new
 } from '../heap_collect_incremental'
+import { heap_incremental_write_barrier } from '../heap_collect'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm gc_slice_unit] FAIL: " + message)
@@ -192,6 +193,7 @@ fn check_mutation_between_mark_slices() -> i32 = do
     return fail("mark slice finished before interleaved mutation")
   end
   heap_in_place_write(heap, root_cell, 0, hidden_child)
+  heap_incremental_write_barrier(heap, root_cell, hidden_child)
   let mut status = first
   let mut slice_count = 1
   while !slice_is_done(status) && slice_count < step_limit() do
