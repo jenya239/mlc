@@ -1,0 +1,177 @@
+import {
+  SqliteError,
+  SqliteHandleErr,
+  SqliteHandleOk,
+  SqliteHandleResult,
+  SqliteUnitErr,
+  SqliteUnitOk,
+  SqliteUnitResult,
+  busy_timeout,
+  exec,
+  open_memory
+} from '../lib/mlc/common/stdlib/db/sqlite.mlc'
+
+fn i64_from_i32(value: i32) -> i64 = value
+
+export fn state_store_busy_timeout_milliseconds() -> i32 = 5000
+
+export fn storage_owner_thread_present() -> i32 = 1
+
+export fn state_store_accepts_foreign_thread_handle() -> i32 = 0
+
+export fn state_store_foreign_thread_handle_code() -> i32 = 21
+
+export fn state_store_revision_ceiling() -> i64 = do
+  let mut power = i64_from_i32(1)
+  let mut shift_count = 0
+  while shift_count < 62 do
+    power = power + power
+    shift_count = shift_count + 1
+  end
+  power + (power - i64_from_i32(1))
+end
+
+export fn state_store_revision_exhausted(revision: i64) -> bool =
+  revision == state_store_revision_ceiling()
+
+export fn state_store_revision_rejected(revision: i64, fencing_token: i64) -> bool = do
+  if revision < i64_from_i32(0) then
+    return true
+  end
+  if fencing_token < i64_from_i32(0) then
+    return true
+  end
+  state_store_revision_exhausted(revision)
+end
+
+fn create_actor_state_sql() -> string =
+  "CREATE TABLE actor_state (actor_id TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, module_hash TEXT NOT NULL, revision INTEGER NOT NULL, fencing_token INTEGER NOT NULL, state_blob BLOB NOT NULL)"
+
+fn create_actor_inbox_sql() -> string =
+  "CREATE TABLE actor_inbox (actor_id TEXT NOT NULL, message_id TEXT NOT NULL, payload_hash TEXT NOT NULL, status TEXT NOT NULL, result_blob BLOB, PRIMARY KEY(actor_id, message_id))"
+
+fn create_effect_outbox_sql() -> string =
+  "CREATE TABLE effect_outbox (actor_id TEXT NOT NULL, effect_id TEXT NOT NULL, operation_kind TEXT NOT NULL, arguments_blob BLOB NOT NULL, idempotency_key TEXT NOT NULL, status TEXT NOT NULL, result_blob BLOB, PRIMARY KEY(actor_id, effect_id))"
+
+fn unit_is_error(value: SqliteUnitResult) -> bool =
+  match value {
+    SqliteUnitOk => false,
+    SqliteUnitErr(_error) => true
+  }
+
+export fn state_store_ensure_schema(connection: i32) -> SqliteUnitResult = do
+  let state_table = exec(connection, create_actor_state_sql())
+  if unit_is_error(state_table) then
+    return state_table
+  end
+  let inbox_table = exec(connection, create_actor_inbox_sql())
+  if unit_is_error(inbox_table) then
+    return inbox_table
+  end
+  exec(connection, create_effect_outbox_sql())
+end
+
+fn handle_connection(value: SqliteHandleResult) -> i32 =
+  match value {
+    SqliteHandleOk(connection) => connection,
+    SqliteHandleErr(_error) => 0
+  }
+
+fn handle_error(value: SqliteHandleResult) -> SqliteError =
+  match value {
+    SqliteHandleOk(_connection) => SqliteError { code: 21, extended_code: 21, message: "missing_handle" },
+    SqliteHandleErr(error) => error
+  }
+
+fn unit_error(value: SqliteUnitResult) -> SqliteError =
+  match value {
+    SqliteUnitOk => SqliteError { code: 0, extended_code: 0, message: "" },
+    SqliteUnitErr(error) => error
+  }
+
+export fn state_store_open_memory() -> SqliteHandleResult = do
+  let opened = open_memory()
+  let connection = handle_connection(opened)
+  if connection <= 0 then
+    return SqliteHandleErr(handle_error(opened))
+  end
+  let timeout_status = busy_timeout(connection, state_store_busy_timeout_milliseconds())
+  if unit_is_error(timeout_status) then
+    return SqliteHandleErr(unit_error(timeout_status))
+  end
+  let schema_status = state_store_ensure_schema(connection)
+  if unit_is_error(schema_status) then
+    return SqliteHandleErr(unit_error(schema_status))
+  end
+  SqliteHandleOk(connection)
+end
+
+export fn state_store_insert_actor_state(
+  connection: i32,
+  actor_id: string,
+  schema_version: i64,
+  module_hash: string,
+  revision: i64,
+  fencing_token: i64
+) -> SqliteUnitResult = do
+  if state_store_revision_rejected(revision, fencing_token) then
+    return SqliteUnitErr(SqliteError { code: 19, extended_code: 19, message: "revision_exhausted_or_negative" })
+  end
+  exec(
+    connection,
+    "INSERT INTO actor_state(actor_id, schema_version, module_hash, revision, fencing_token, state_blob) VALUES ('"
+      + actor_id
+      + "', "
+      + schema_version.to_string()
+      + ", '"
+      + module_hash
+      + "', "
+      + revision.to_string()
+      + ", "
+      + fencing_token.to_string()
+      + ", x'00')"
+  )
+end
+
+export fn state_store_insert_actor_inbox(
+  connection: i32,
+  actor_id: string,
+  message_id: string,
+  payload_hash: string,
+  status_text: string
+) -> SqliteUnitResult =
+  exec(
+    connection,
+    "INSERT INTO actor_inbox(actor_id, message_id, payload_hash, status) VALUES ('"
+      + actor_id
+      + "', '"
+      + message_id
+      + "', '"
+      + payload_hash
+      + "', '"
+      + status_text
+      + "')"
+  )
+
+export fn state_store_insert_effect_outbox(
+  connection: i32,
+  actor_id: string,
+  effect_id: string,
+  operation_kind: string,
+  idempotency_key: string,
+  status_text: string
+) -> SqliteUnitResult =
+  exec(
+    connection,
+    "INSERT INTO effect_outbox(actor_id, effect_id, operation_kind, arguments_blob, idempotency_key, status) VALUES ('"
+      + actor_id
+      + "', '"
+      + effect_id
+      + "', '"
+      + operation_kind
+      + "', x'00', '"
+      + idempotency_key
+      + "', '"
+      + status_text
+      + "')"
+  )

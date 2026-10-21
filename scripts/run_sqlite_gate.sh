@@ -76,12 +76,17 @@ run_demo() {
   run_program sqlite_demo "$ROOT/misc/examples/sqlite_demo.mlc"
 }
 
+run_storage_schema() {
+  ruby "$ROOT/scripts/run_script_vm_unit.rb" "$ROOT/script_host/tests/storage_schema_unit.mlc"
+}
+
 case "$STAGE" in
   link) run_link ;;
   shim) run_shim ;;
   module) run_module ;;
   stmt) run_stmt ;;
   tx) run_tx ;;
+  storage_schema_unit) run_storage_schema ;;
   all)
     run_link
     run_shim
@@ -89,6 +94,7 @@ case "$STAGE" in
     run_stmt
     run_tx
     run_demo
+    run_storage_schema
     ;;
   *)
     echo "[sqlite gate] FAIL: unknown stage $STAGE" >&2

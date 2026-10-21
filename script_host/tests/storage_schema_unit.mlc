@@ -5,10 +5,18 @@ import {
   SqliteUnitErr,
   SqliteUnitOk,
   SqliteUnitResult,
-  close_db,
-  exec,
-  open_memory
+  close_db
 } from '../../lib/mlc/common/stdlib/db/sqlite.mlc'
+import {
+  state_store_accepts_foreign_thread_handle,
+  state_store_insert_actor_inbox,
+  state_store_insert_actor_state,
+  state_store_insert_effect_outbox,
+  state_store_open_memory,
+  state_store_revision_ceiling,
+  state_store_revision_rejected,
+  storage_owner_thread_present
+} from '../state_store'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm storage_schema_unit] FAIL: " + message)
@@ -27,34 +35,57 @@ fn write_failed(value: SqliteUnitResult) -> bool =
     SqliteUnitErr(_error) => true
   }
 
-fn storage_owner_thread_present() -> i32 = 0
-
-fn insert_actor_state_sql() -> string =
-  "INSERT INTO actor_state(actor_id, schema_version, module_hash, revision, fencing_token, state_blob) VALUES ('a', 1, 'h', 1, 1, x'00')"
-
-fn insert_actor_inbox_sql() -> string =
-  "INSERT INTO actor_inbox(actor_id, message_id, payload_hash, status) VALUES ('a', 'm', 'p', 'queued')"
-
-fn insert_effect_outbox_sql() -> string =
-  "INSERT INTO effect_outbox(actor_id, effect_id, operation_kind, arguments_blob, idempotency_key, status) VALUES ('a', 'e', 'k', x'00', 'i', 'pending')"
+fn i64_from_i32(value: i32) -> i64 = value
 
 fn check_schema() -> i32 = do
-  let connection = handle_of(open_memory())
+  if storage_owner_thread_present() == 0 then
+    return fail("no actor_state actor_inbox effect_outbox storage owner thread")
+  end
+  if state_store_accepts_foreign_thread_handle() != 0 then
+    return fail("connection handle accepted on a foreign thread")
+  end
+  let connection = handle_of(state_store_open_memory())
   if connection <= 0 then
     return fail("sqlite memory connection failed")
   end
-  let state_write = exec(connection, insert_actor_state_sql())
-  let inbox_write = exec(connection, insert_actor_inbox_sql())
-  let outbox_write = exec(connection, insert_effect_outbox_sql())
+  let revision = i64_from_i32(1)
+  let fencing_token = i64_from_i32(1)
+  let schema_version = i64_from_i32(1)
+  let state_write = state_store_insert_actor_state(
+    connection,
+    "a",
+    schema_version,
+    "h",
+    revision,
+    fencing_token
+  )
+  let inbox_write = state_store_insert_actor_inbox(connection, "a", "m", "p", "queued")
+  let outbox_write = state_store_insert_effect_outbox(connection, "a", "e", "k", "i", "pending")
+  if write_failed(state_write) || write_failed(inbox_write) || write_failed(outbox_write) then
+    let closed_status = close_db(connection)
+    if write_failed(closed_status) then
+      return fail("no actor_state actor_inbox effect_outbox storage owner thread")
+    end
+    return fail("no actor_state actor_inbox effect_outbox storage owner thread")
+  end
+  let negative = i64_from_i32(0) - i64_from_i32(1)
+  if !state_store_revision_rejected(negative, fencing_token) then
+    let closed_status = close_db(connection)
+    if write_failed(closed_status) then
+      return fail("negative revision accepted")
+    end
+    return fail("negative revision accepted")
+  end
+  if !state_store_revision_rejected(state_store_revision_ceiling(), fencing_token) then
+    let closed_status = close_db(connection)
+    if write_failed(closed_status) then
+      return fail("exhausted revision wrapped")
+    end
+    return fail("exhausted revision wrapped")
+  end
   let closed_status = close_db(connection)
   if write_failed(closed_status) then
     return fail("sqlite close failed")
-  end
-  if !write_failed(state_write) || !write_failed(inbox_write) || !write_failed(outbox_write) then
-    return fail("actor schema already present")
-  end
-  if storage_owner_thread_present() == 0 then
-    return fail("no actor_state actor_inbox effect_outbox storage owner thread")
   end
   0
 end
