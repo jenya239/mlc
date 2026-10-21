@@ -65,6 +65,15 @@ export fn protocol_max_payload_health() -> i32 = 8
 
 export fn protocol_max_payload_protocol_error() -> i32 = 8
 
+export fn protocol_max_input_words() -> i32 =
+  protocol_header_word_count() + protocol_max_payload_hello()
+
+export fn protocol_max_decode_depth() -> i32 = 4
+
+export fn protocol_max_decode_work() -> i32 = protocol_max_payload_hello()
+
+export fn protocol_nested_record_tag() -> i32 = 1
+
 export fn protocol_state_idle() -> i32 = 0
 
 export fn protocol_state_connected() -> i32 = 1
@@ -126,7 +135,37 @@ fn empty_words() -> [i32] = do
   words
 end
 
+export fn protocol_payload_nested_depth(payload: [i32]) -> i32 = do
+  let mut depth = 0
+  while depth < payload.length() do
+    if payload[depth] != protocol_nested_record_tag() then
+      return depth
+    end
+    depth = depth + 1
+  end
+  depth
+end
+
+fn protocol_limits_ok(header: ProtocolHeader, payload: [i32]) -> bool = do
+  if header.payload_size != payload.length() then
+    return false
+  end
+  if payload.length() > protocol_max_payload_for_kind(header.kind) then
+    return false
+  end
+  if protocol_header_word_count() + payload.length() > protocol_max_input_words() then
+    return false
+  end
+  if payload.length() > protocol_max_decode_work() then
+    return false
+  end
+  true
+end
+
 export fn protocol_encode(header: ProtocolHeader, payload: [i32]) -> [i32] = do
+  if !protocol_limits_ok(header, payload) then
+    return empty_words()
+  end
   let mut words = empty_words()
   words.push(header.protocol_major)
   words.push(header.protocol_minor)
@@ -141,6 +180,16 @@ export fn protocol_encode(header: ProtocolHeader, payload: [i32]) -> [i32] = do
     index = index + 1
   end
   words
+end
+
+export fn protocol_payload_words(words: [i32]) -> [i32] = do
+  let mut payload = empty_words()
+  let mut index = protocol_header_word_count()
+  while index < words.length() do
+    payload.push(words[index])
+    index = index + 1
+  end
+  payload
 end
 
 export fn protocol_decode(words: [i32]) -> ProtocolDecode = do
@@ -165,17 +214,17 @@ export fn protocol_decode(words: [i32]) -> ProtocolDecode = do
   if header.payload_size > protocol_max_payload_for_kind(header.kind) then
     return ProtocolDecodeErr("payload_limit")
   end
-  ProtocolDecodeOk(header)
-end
-
-export fn protocol_payload_words(words: [i32]) -> [i32] = do
-  let mut payload = empty_words()
-  let mut index = protocol_header_word_count()
-  while index < words.length() do
-    payload.push(words[index])
-    index = index + 1
+  if words.length() > protocol_max_input_words() then
+    return ProtocolDecodeErr("input_limit")
   end
-  payload
+  let payload = protocol_payload_words(words)
+  if protocol_payload_nested_depth(payload) > protocol_max_decode_depth() then
+    return ProtocolDecodeErr("decode_depth")
+  end
+  if payload.length() > protocol_max_decode_work() then
+    return ProtocolDecodeErr("decode_work")
+  end
+  ProtocolDecodeOk(header)
 end
 
 export fn protocol_channel_principal(channel: ProtocolChannel, _payload: [i32]) -> i64 =

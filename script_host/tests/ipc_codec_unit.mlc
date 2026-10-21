@@ -14,6 +14,9 @@ import {
   protocol_kind_host_reply,
   protocol_kind_host_request,
   protocol_kind_load_module,
+  protocol_max_decode_depth,
+  protocol_max_input_words,
+  protocol_nested_record_tag,
   protocol_payload_words,
   protocol_state_connected,
   protocol_state_idle,
@@ -110,13 +113,7 @@ fn empty_words() -> [i32] = do
   words
 end
 
-fn required_max_input_words() -> i32 = 15
-
-fn required_max_decode_depth() -> i32 = 4
-
 fn oversized_payload_words() -> i32 = 16
-
-fn nested_record_tag() -> i32 = 1
 
 fn check_payload_size_over_limit() -> i32 = do
   let mut payload = empty_words()
@@ -129,20 +126,20 @@ fn check_payload_size_over_limit() -> i32 = do
     protocol_header(protocol_kind_hello(), oversized_payload_words(), session_epoch(), 9, 20),
     payload
   )
-  if words.length() > required_max_input_words() && decode_ok(words) then
+  if words.length() > protocol_max_input_words() && decode_ok(words) then
     return fail(
       "payload_size over limit not rejected words="
         + words.length().to_string()
         + " max_input="
-        + required_max_input_words().to_string()
+        + protocol_max_input_words().to_string()
     )
   end
-  if words.length() > required_max_input_words() then
+  if words.length() > protocol_max_input_words() then
     return fail(
       "payload_size over limit not rejected words="
         + words.length().to_string()
         + " max_input="
-        + required_max_input_words().to_string()
+        + protocol_max_input_words().to_string()
     )
   end
   0
@@ -151,8 +148,8 @@ end
 fn check_deeply_nested_record() -> i32 = do
   let mut payload = empty_words()
   let mut depth = 0
-  while depth < required_max_decode_depth() + 1 do
-    payload.push(nested_record_tag())
+  while depth < protocol_max_decode_depth() + 1 do
+    payload.push(protocol_nested_record_tag())
     depth = depth + 1
   end
   let words = protocol_encode(
@@ -164,7 +161,7 @@ fn check_deeply_nested_record() -> i32 = do
       "deeply nested record not rejected depth="
         + payload.length().to_string()
         + " max_depth="
-        + required_max_decode_depth().to_string()
+        + protocol_max_decode_depth().to_string()
     )
   end
   0
