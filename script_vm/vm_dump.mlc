@@ -7,6 +7,8 @@ import {
   heap_type_closure,
   heap_type_string
 } from './heap_types'
+import { ActorRecord } from '../script_host/actor'
+import { scheduler_queued_count } from '../script_host/scheduler'
 import { ScriptInstance } from './instance'
 import { LoadedModule } from './loaded_module'
 import { FunctionProto } from './run_result'
@@ -164,3 +166,26 @@ export fn dump_instance(instance: ScriptInstance) -> string =
     + dump_heap_root_lines(instance.heap)
     + dump_object_lines(instance.heap)
     + dump_counter_lines(instance.heap)
+
+fn dump_actor_line(actor: ActorRecord) -> string =
+  "actor identity " + actor.logical_identity.to_string()
+    + " incarnation " + actor.incarnation.to_string()
+    + " code_epoch " + actor.code_epoch.to_string()
+    + " principal " + actor.principal.to_string()
+    + " mailbox " + scheduler_queued_count(actor).to_string()
+    + " active " + dump_bit_text(actor.active_execution)
+    + " waiting " + actor.waiting_requests.to_string()
+    + "\n"
+
+export fn dump_actor_lines(actors: [ActorRecord]) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < actors.length() do
+    text = text + dump_actor_line(actors[index])
+    index = index + 1
+  end
+  text
+end
+
+export fn dump_instance_with_actors(instance: ScriptInstance, actors: [ActorRecord]) -> string =
+  dump_instance(instance) + dump_actor_lines(actors)

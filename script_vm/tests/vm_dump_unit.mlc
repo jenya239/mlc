@@ -5,7 +5,17 @@ import { emb_ok } from '../embedding_codes'
 import { instance_load_module, script_instance_new, ScriptInstance } from '../instance'
 import { lower_source } from '../lower/lower_module'
 import { Value } from '../value'
-import { dump_instance } from '../vm_dump'
+import { ActorRecord, actor_new } from '../../script_host/actor'
+import { mailbox_message_normal } from '../../script_host/mailbox'
+import {
+  SchedulerAccepted,
+  SchedulerAdmission,
+  SchedulerBusy,
+  SchedulerDeadlock,
+  scheduler_enqueue,
+  scheduler_note_waiting
+} from '../../script_host/scheduler'
+import { dump_instance, dump_instance_with_actors } from '../vm_dump'
 
 extern fn embedding_string_byte(text: string, index: i32) -> i32 =
   "mlc::script_vm::embedding_string_byte" from "mlc/script_vm/embedding_helpers.hpp" thread_safe
@@ -51,6 +61,26 @@ fn require_text(text: string, pattern: string, label: string) -> i32 = do
     fail(label + " bytes=" + text.byte_size().to_string())
   end
 end
+
+fn first_actor_identity() -> i64 = 2
+
+fn second_actor_identity() -> i64 = 1
+
+fn dump_principal() -> i64 = 7
+
+fn mailbox_capacity() -> i32 = 8
+
+fn empty_actors() -> [ActorRecord] = do
+  let mut actors: [ActorRecord] = []
+  actors
+end
+
+fn admission_is_busy(admission: SchedulerAdmission) -> bool =
+  match admission {
+    SchedulerBusy => true,
+    SchedulerAccepted => false,
+    SchedulerDeadlock => false
+  }
 
 fn with_heap(instance: ScriptInstance, heap: Heap, rooted_values: [Value]) -> ScriptInstance =
   ScriptInstance {
@@ -111,11 +141,49 @@ fn main() -> i32 = do
   if check != 0 then
     return check
   end
-  if !text_has(dumped, "actor identity") || !text_has(dumped, " mailbox ") || !text_has(dumped, " waiting ") then
+  if text_has(dumped, "actor identity") then
+    return fail("dump_instance without scheduler context printed actor lines")
+  end
+  let mut first = actor_new(first_actor_identity(), 0, 0, dump_principal(), 0, mailbox_capacity(), 0)
+  let enqueue_status = scheduler_enqueue(first, mailbox_message_normal(1))
+  if admission_is_busy(enqueue_status) then
+    return fail("actor mailbox enqueue was Busy")
+  end
+  first = scheduler_note_waiting(first)
+  let second = actor_new(second_actor_identity(), 0, 0, dump_principal(), 0, mailbox_capacity(), 0)
+  let mut actors = empty_actors()
+  actors.push(first)
+  actors.push(second)
+  const dumped_actors = dump_instance_with_actors(populated, actors)
+  if !text_has(dumped_actors, "actor identity") || !text_has(dumped_actors, " mailbox ") || !text_has(dumped_actors, " waiting ") then
     return fail(
       "dump missing ActorRecord mailbox depth active_execution waiting_requests bytes="
-        + dumped.byte_size().to_string()
+        + dumped_actors.byte_size().to_string()
     )
+  end
+  check = require_text(
+    dumped_actors,
+    "actor identity 2 incarnation 0 code_epoch 0 principal 7 mailbox 1 active 1 waiting 1",
+    "first actor line"
+  )
+  if check != 0 then
+    return check
+  end
+  check = require_text(
+    dumped_actors,
+    "actor identity 1 incarnation 0 code_epoch 0 principal 7 mailbox 0 active 0 waiting 0",
+    "second actor line"
+  )
+  if check != 0 then
+    return check
+  end
+  check = require_text(
+    dumped_actors,
+    "actor identity 2 incarnation 0 code_epoch 0 principal 7 mailbox 1 active 1 waiting 1\nactor identity 1 incarnation 0 code_epoch 0 principal 7 mailbox 0 active 0 waiting 0\n",
+    "actor order"
+  )
+  if check != 0 then
+    return check
   end
   println("[script_vm] vm_dump_unit ok")
   0
