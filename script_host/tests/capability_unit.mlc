@@ -1,0 +1,100 @@
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../../misc/textui/store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from '../../misc/textui/script_transaction'
+import {
+  ResourceHit,
+  ResourceLookup,
+  ResourceMiss,
+  resource_table_bind,
+  resource_table_lookup,
+  resource_table_new
+} from '../resources'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm capability_unit] FAIL: " + message)
+  1
+end
+
+fn owner_principal() -> i64 = 7
+
+fn foreign_principal() -> i64 = 13
+
+fn subtree_identity() -> i64 = 11
+
+fn original_label() -> string = "owned"
+
+fn foreign_label() -> string = "hijacked"
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn lookup_is_hit(lookup: ResourceLookup) -> bool =
+  match lookup {
+    ResourceHit(_entry) => true,
+    ResourceMiss => false
+  }
+
+fn main() -> i32 = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_label(
+    store,
+    widget_id_none(),
+    LabelData { text: original_label() },
+    OverflowVisible,
+    0,
+    true
+  )
+  let widget = WidgetId { index: 0 }
+  let mut table = resource_table_new()
+  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
+  if !lookup_is_hit(resource_table_lookup(table, store, handle, owner_principal())) then
+    return fail("owner resource handle absent")
+  end
+  if lookup_is_hit(resource_table_lookup(table, store, handle, foreign_principal())) then
+    return fail("foreign principal accepted as resource owner")
+  end
+  let mut transaction = script_transaction_new(store)
+  transaction = script_transaction_stage_set_label_text(transaction, widget, foreign_label())
+  transaction = script_transaction_commit(transaction)
+  let shown = store_text(transaction.store, widget)
+  if shown == foreign_label() && transaction.revision != 0 then
+    return fail(
+      "broker admits SetLabelText without capability identity owner scope operations expires policy_epoch parent revoked actor="
+        + foreign_principal().to_string()
+        + " resource_owner="
+        + owner_principal().to_string()
+        + " shown="
+        + shown
+    )
+  end
+  println("[script_vm] capability_unit ok")
+  0
+end
