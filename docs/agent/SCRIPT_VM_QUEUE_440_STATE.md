@@ -1,8 +1,8 @@
-current_step: 411
+current_step: 412
 status: ready
-last_result: done step 411: red — out-of-order worker: fast публикует revision=1 «fast», медленный job с base_revision=0 затем затирает label на «slow» без проверки непрерывности
-last_verify: ruby scripts/run_script_vm_unit.rb script_host/tests/subscription_unit.mlc => EXIT:1, [script_vm subscription_unit] FAIL: stale worker result applied over newer revision shown=slow slow_base_revision=0 current_revision=1 handle_slot=0
-next_step: 412
+last_result: done step 412: green — subscriptions.mlc: subscribe snapshot+cursor атомарно; Delta только при непрерывности epoch/base/revision/sequence; gap → ResetRequired; stale worker Rejected, text остаётся fast
+last_verify: ruby scripts/run_script_vm_gate.rb subscription_unit scheduler_unit => script_vm_gate ok units=2; ruby scripts/run_script_vm_queue200_gate.rb => subscription_unit ok, scheduler_unit ok, lower_stage1 FAIL syntax_error code, script_vm_queue200_gate FAIL queue
+next_step: 413
 consult_count: 0
 consult_response:
 consult_verdict:

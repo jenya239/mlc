@@ -1,0 +1,92 @@
+export type SubscriptionCursor = {
+  revision: i32,
+  sequence: i32,
+  subscription_epoch: i32
+}
+
+export type SubscriptionSnapshot = {
+  revision: i32,
+  cursor: SubscriptionCursor,
+  text: string
+}
+
+export type SubscriptionDelta = {
+  base_revision: i32,
+  revision: i32,
+  sequence: i32,
+  subscription_epoch: i32,
+  text: string
+}
+
+export type Subscription = {
+  revision: i32,
+  sequence: i32,
+  subscription_epoch: i32,
+  text: string
+}
+
+export type SubscriptionApply =
+  SubscriptionApplied(SubscriptionCursor)
+  | SubscriptionResetRequired
+  | SubscriptionRejected
+
+export fn subscription_epoch_initial() -> i32 = 1
+
+export fn subscription_subscribe(text: string) -> SubscriptionSnapshot = do
+  let cursor = SubscriptionCursor {
+    revision: 0,
+    sequence: 0,
+    subscription_epoch: subscription_epoch_initial()
+  }
+  SubscriptionSnapshot { revision: 0, cursor: cursor, text: text }
+end
+
+export fn subscription_from_snapshot(snapshot: SubscriptionSnapshot) -> Subscription =
+  Subscription {
+    revision: snapshot.revision,
+    sequence: snapshot.cursor.sequence,
+    subscription_epoch: snapshot.cursor.subscription_epoch,
+    text: snapshot.text
+  }
+
+fn cursor_of(subscription: Subscription) -> SubscriptionCursor =
+  SubscriptionCursor {
+    revision: subscription.revision,
+    sequence: subscription.sequence,
+    subscription_epoch: subscription.subscription_epoch
+  }
+
+fn epoch_mismatch(subscription: Subscription, delta: SubscriptionDelta) -> bool =
+  delta.subscription_epoch != subscription.subscription_epoch
+
+fn sequence_gap(subscription: Subscription, delta: SubscriptionDelta) -> bool =
+  delta.sequence > subscription.sequence + 1
+
+fn not_contiguous(subscription: Subscription, delta: SubscriptionDelta) -> bool = do
+  if delta.base_revision != subscription.revision then
+    return true
+  end
+  if delta.revision != subscription.revision + 1 then
+    return true
+  end
+  if delta.sequence != subscription.sequence + 1 then
+    return true
+  end
+  false
+end
+
+export fn subscription_apply(subscription: ref mut Subscription, delta: SubscriptionDelta) -> SubscriptionApply = do
+  if epoch_mismatch(subscription, delta) then
+    return SubscriptionRejected
+  end
+  if sequence_gap(subscription, delta) then
+    return SubscriptionResetRequired
+  end
+  if not_contiguous(subscription, delta) then
+    return SubscriptionRejected
+  end
+  subscription.revision = delta.revision
+  subscription.sequence = delta.sequence
+  subscription.text = delta.text
+  SubscriptionApplied(cursor_of(subscription))
+end

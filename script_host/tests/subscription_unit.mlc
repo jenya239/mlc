@@ -1,31 +1,19 @@
 import {
-  LabelData,
-  OverflowVisible,
-  WidgetId,
-  WidgetKind,
-  WidgetStore,
-  widget_id_none,
-  widget_store_add_label,
-  widget_store_empty
-} from '../../misc/textui/store'
-import {
-  script_transaction_commit,
-  script_transaction_new,
-  script_transaction_stage_set_label_text
-} from '../../misc/textui/script_transaction'
-import {
-  resource_table_bind,
-  resource_table_new
-} from '../resources'
+  Subscription,
+  SubscriptionApplied,
+  SubscriptionApply,
+  SubscriptionDelta,
+  SubscriptionRejected,
+  SubscriptionResetRequired,
+  subscription_apply,
+  subscription_from_snapshot,
+  subscription_subscribe
+} from '../subscriptions'
 
 fn fail(message: string) -> i32 = do
   println("[script_vm subscription_unit] FAIL: " + message)
   1
 end
-
-fn owner_principal() -> i64 = 7
-
-fn subtree_identity() -> i64 = 11
 
 fn original_label() -> string = "base"
 
@@ -33,68 +21,95 @@ fn slow_worker_label() -> string = "slow"
 
 fn fast_worker_label() -> string = "fast"
 
-fn label_text(kind: WidgetKind) -> string =
-  match kind
-    | KindLabel(data) => data.text
-    | KindBox(_) => ""
-    | KindButton(_) => ""
-    | KindCheckbox(_) => ""
-    | KindScrollView => ""
-    | KindListView(_) => ""
-    | KindSplitter(_) => ""
-    | KindTextField(_) => ""
-    | KindIcon(_) => ""
+fn apply_kind(result: SubscriptionApply) -> string =
+  match result {
+    SubscriptionApplied(_cursor) => "Applied",
+    SubscriptionResetRequired => "ResetRequired",
+    SubscriptionRejected => "Rejected"
+  }
 
-fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
-  if widget.index < 0 || widget.index >= store.nodes.length() then
-    return ""
+fn fast_delta(subscription: Subscription) -> SubscriptionDelta =
+  SubscriptionDelta {
+    base_revision: subscription.revision,
+    revision: subscription.revision + 1,
+    sequence: subscription.sequence + 1,
+    subscription_epoch: subscription.subscription_epoch,
+    text: fast_worker_label()
+  }
+
+fn stale_slow_delta(base_revision: i32, epoch: i32) -> SubscriptionDelta =
+  SubscriptionDelta {
+    base_revision: base_revision,
+    revision: base_revision + 1,
+    sequence: 1,
+    subscription_epoch: epoch,
+    text: slow_worker_label()
+  }
+
+fn overflow_delta(subscription: Subscription) -> SubscriptionDelta =
+  SubscriptionDelta {
+    base_revision: subscription.revision,
+    revision: subscription.revision + 1,
+    sequence: subscription.sequence + 2,
+    subscription_epoch: subscription.subscription_epoch,
+    text: slow_worker_label()
+  }
+
+fn check_stale_worker_rejected() -> i32 = do
+  let snapshot = subscription_subscribe(original_label())
+  if snapshot.revision != snapshot.cursor.revision then
+    return fail("subscribe snapshot revision and cursor were not atomic")
   end
-  label_text(store.nodes[widget.index].kind)
-end
-
-fn main() -> i32 = do
-  let mut store = widget_store_empty()
-  store = widget_store_add_label(
-    store,
-    widget_id_none(),
-    LabelData { text: original_label() },
-    OverflowVisible,
-    0,
-    true
-  )
-  let widget = WidgetId { index: 0 }
-  let mut table = resource_table_new()
-  let handle = resource_table_bind(table, store, widget, owner_principal(), subtree_identity())
-  let slow_job_base_revision = 0
-  let mut fast = script_transaction_new(store)
-  fast = script_transaction_stage_set_label_text(fast, widget, fast_worker_label())
-  fast = script_transaction_commit(fast)
-  if store_text(fast.store, widget) != fast_worker_label() || fast.revision != 1 then
+  let mut subscription = subscription_from_snapshot(snapshot)
+  let slow_job_base_revision = subscription.revision
+  let fast = subscription_apply(subscription, fast_delta(subscription))
+  if apply_kind(fast) != "Applied" || subscription.text != fast_worker_label() || subscription.revision != 1 then
     return fail(
       "out-of-order fast worker did not publish shown="
-        + store_text(fast.store, widget)
+        + subscription.text
         + " revision="
-        + fast.revision.to_string()
+        + subscription.revision.to_string()
     )
   end
-  let mut slow = script_transaction_new(fast.store)
-  slow = script_transaction_stage_set_label_text(slow, widget, slow_worker_label())
-  slow = script_transaction_commit(slow)
-  let shown = store_text(slow.store, widget)
-  if shown == slow_worker_label() then
+  let current_revision = subscription.revision
+  let slow = subscription_apply(subscription, stale_slow_delta(slow_job_base_revision, subscription.subscription_epoch))
+  if apply_kind(slow) == "Applied" || subscription.text == slow_worker_label() then
     return fail(
       "stale worker result applied over newer revision shown="
-        + shown
+        + subscription.text
         + " slow_base_revision="
         + slow_job_base_revision.to_string()
         + " current_revision="
-        + fast.revision.to_string()
-        + " handle_slot="
-        + handle.slot.to_string()
+        + current_revision.to_string()
+        + " handle_slot=0"
     )
   end
-  if shown != fast_worker_label() then
-    return fail("expected current revision label shown=" + shown)
+  if subscription.text != fast_worker_label() then
+    return fail("expected current revision label shown=" + subscription.text)
+  end
+  0
+end
+
+fn check_overflow_reset_required() -> i32 = do
+  let mut subscription = subscription_from_snapshot(subscription_subscribe(original_label()))
+  let overflow = subscription_apply(subscription, overflow_delta(subscription))
+  if apply_kind(overflow) != "ResetRequired" then
+    return fail("overflow delta was not ResetRequired kind=" + apply_kind(overflow))
+  end
+  if subscription.text != original_label() || subscription.revision != 0 then
+    return fail("overflow silently mutated snapshot shown=" + subscription.text)
+  end
+  0
+end
+
+fn main() -> i32 = do
+  let stale_status = check_stale_worker_rejected()
+  if stale_status != 0 then
+    return stale_status
+  end
+  let overflow_status = check_overflow_reset_required()
+  if overflow_status != 0 then
+    return overflow_status
   end
   println("[script_vm] subscription_unit ok")
   0

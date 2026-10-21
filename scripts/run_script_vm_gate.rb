@@ -55,6 +55,7 @@ registered_units = [
   ["resource_table_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/resource_table_unit.mlc"]],
   ["capability_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/capability_unit.mlc"]],
   ["scheduler_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/scheduler_unit.mlc"]],
+  ["subscription_unit", ["ruby", "scripts/run_script_vm_unit.rb", "script_host/tests/subscription_unit.mlc"]],
   ["script_transaction_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_transaction_unit.mlc"]],
   ["script_frame_damage_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_damage_unit.mlc"]],
   ["script_frame_pump_unit", ["ruby", "scripts/run_script_vm_unit.rb", "misc/textui/test/script_frame_pump_unit.mlc"]],
