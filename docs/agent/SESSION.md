@@ -4,6 +4,21 @@ Turns before TRACK_COMPILER_ARCHITECTURE_HYGIENE §104-6 s20 Decision (archived 
 
 ## Entries
 
+### Turn 2026-10-22 (Planner — MLC audio readiness diagnostic specification)
+
+| field   | value |
+|---------|-------|
+| role    | Planner |
+| step    | audio-readiness-document |
+| track   | Audio readiness specification; independent of existing queues |
+| started | 2026-10-22 |
+| instructions_rev | 2026-08-07-queue-sync |
+| done    | Authored `docs/MLC_REALTIME_AUDIO_READINESS_RU.md`: source evidence, L01–L10 diagnostics, buffers/ABI/queue/reclamation contracts, P00–P07 probes, proposed gates and A0–A7 execution stages; registered tagged spec index row |
+| verify  | Documentation local links and fences checked; session lint and diff whitespace check pass. No compiler/runtime implementation or audio benchmark executed |
+| result  | Detailed agent specification delivered; implementation stages remain proposed; existing queue priorities unchanged |
+| issues  | Existing dirty files preserved; only the new audio index row staged from already-modified specs index |
+| next    | ROLE=Planner STEP=3 TRACK=TRACK_TEXTUI_FILE_MANAGER (02-selection); prior routing preserved, subject to current explicit user request and dedicated queue state |
+
 ### Turn 2026-10-15 (Planner — Script VM GUI documentation)
 
 | field   | value |

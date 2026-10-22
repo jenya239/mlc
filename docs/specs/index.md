@@ -12,6 +12,7 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 | [../DEBUGGING.md](../DEBUGGING.md) | debugging, source-map, line, gdb, dwarf | `#line` → `.mlc` backtrace, `MLCC_DEV=1` |
 | [../LANGUAGE_DESIGN.md](../LANGUAGE_DESIGN.md) | language, design, principles, planned | New language constructs, design rationale |
 | [../mlc2.md](../mlc2.md) | parity, ruby, mlcc, checker, codegen | Ruby ⇄ mlcc parity, edge cases |
+| [../MLC_REALTIME_AUDIO_READINESS_RU.md](../MLC_REALTIME_AUDIO_READINESS_RU.md) | audio, realtime, dsp, memory, runtime, ffi, codegen | Диагностика и минимальные доработки MLC для аудиоядра; proposed, не запуск реализации |
 | [../MEMORY_MODEL.md](../MEMORY_MODEL.md) | memory, runtime, cow, ownership | Types, collections, capture, resources |
 | [../RUNTIME_OWNERSHIP_GUIDE.md](../RUNTIME_OWNERSHIP_GUIDE.md) | runtime, ownership, string, array, map | Heap types, refcount, COW implementation |
 | [../CPP_PARSER_DESIGN.md](../CPP_PARSER_DESIGN.md) | parser, cpp, import, roundtrip | C++ header import, `cpp_ast`, trivia |
