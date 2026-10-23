@@ -1,3 +1,2 @@
 # mlcc_exit ruby_exit filename # reason (parser/lexer parity gaps; checker-negative files must not appear here)
-# Intentional mlcc-stricter: reject at lex/parse rather than accept invalid input (Ruby bootstrap tolerant).
-1 0 lex_unclosed_string.mlc # intentional: mlcc lexer rejects unterminated string; Ruby parser accepts
+# No entries. Unterminated double-quoted strings are parse errors in both compilers.

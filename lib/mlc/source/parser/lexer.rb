@@ -428,6 +428,8 @@ module MLC
           # Add remaining text
           parts << { type: :text, value: current_text.join } if current_text.any?
 
+          raise ParseError, "unterminated string" if @pos >= @source.length
+
           @pos += 1 # Skip closing quote
           @column += 1
 

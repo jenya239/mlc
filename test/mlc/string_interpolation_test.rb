@@ -80,6 +80,13 @@ line2`
     assert_includes cpp, '""'
   end
 
+  def test_unterminated_double_quoted_string_raises
+    err = assert_raises(MLC::ParseError) do
+      MLC.parse("fn f() -> string = \"unclosed")
+    end
+    assert_match(/unterminated string/, err.message)
+  end
+
   def test_unterminated_template_raises
     err = assert_raises(MLC::ParseError) do
       MLC.to_cpp(<<~MLC)
