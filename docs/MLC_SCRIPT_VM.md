@@ -195,9 +195,14 @@ safepoint. Guard fail → slow path или возврат в интерпрет�
    `Value`, non-moving GC, embedding ABI, native type descriptors, fibers,
    bytecode dump/trace. Срез 201–298, сделано: float в лоуэре, `match`,
    лямбды и замыкания из исходника, простые методы без generics и без
-   наследования, имя поля в диагностике лоуэра. Ещё не сделано: generics,
-   embedding (живая куча между вводами REPL), fibers, дамп VM,
-   инкрементальный GC, лимит памяти элементов.
+   наследования, имя поля в диагностике лоуэра. Очередь 301–445 закрыта
+   (`docs/agent/SCRIPT_VM_QUEUE_440_STATE.md`, `304778da`): живая куча REPL,
+   fibers/slicing, дамп VM, инкрементальный GC, лимит байт, SVGUI-01…23 и
+   SVGUI-25…29. Не сделано: generics методов (фаза 361–374 blocked, нужны
+   `compiler/` или `lib/mlc/`), SVGUI-24 и SVGUI-30.
+   Пункты 2 и 3 ниже не начинать. Lifetime модуля, slicing и security
+   boundary уже зафиксированы; это не разрешение на (В). См.
+   `docs/agent/notes/s444_remainder_after_440.md`.
 2. Адаптивный интерпретатор: counters, quickening, shapes, inline caches,
    specialized arithmetic/native calls — **уже практически полезный продукт**.
 3. Baseline JIT x86-64: whole-function compile, guards+slow stubs,

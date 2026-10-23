@@ -29,12 +29,21 @@ Load only rows whose **tags** match the active track. Agent turn workflow stays 
 
 ## Script VM + GUI implementation reference (2026-10-15)
 
-Документы текущего архитектурного аудита; не меняют приоритет или статус очередей.
+Очередь 301–445 закрыта (`../agent/SCRIPT_VM_QUEUE_440_STATE.md`). Пункт 2 §12, SVGUI-24, SVGUI-30 и шаг 228 не открывать.
 
 | Document | Tags | Load when |
 |----------|------|-----------|
 | [../MLC_VM_GUI_Architecture_RU.md](../MLC_VM_GUI_Architecture_RU.md) | vm, script, gui, security, architecture | Полная целевая архитектура embedding; импортированный общий документ |
 | [../MLC_SCRIPT_VM_GUI_IMPLEMENTATION_RU.md](../MLC_SCRIPT_VM_GUI_IMPLEMENTATION_RU.md) | vm, script, gui, implementation, sandbox, persistence | Текущее состояние кода, разрывы, файлы изменений и proposed SVGUI steps |
+
+## Research drafts (не трек реализации)
+
+Черновики 2026-10-21…22. Наличие документа не начинает бэкенд, GPU-подмножество или аудиоядро.
+
+| Document | Tags | Load when |
+|----------|------|-----------|
+| [../MLC_CPP_FIRST_PORTABLE_COMPUTE_RFC.md](../MLC_CPP_FIRST_PORTABLE_COMPUTE_RFC.md) | portable, cpp, gpu, design-only, rfc | Вопрос о втором таргете поверх C++-пути. Не разрешает писать бэкенд |
+| [../mlc_glsl_plan.md](../mlc_glsl_plan.md) | glsl, gpu, design-only | Исторический набросок `mlcc --target=glsl`. Подчинён RFC выше; M0 не запускать |
 
 ## Verification
 
