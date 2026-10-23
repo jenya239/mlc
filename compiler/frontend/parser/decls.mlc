@@ -865,11 +865,23 @@ fn parse_param(parser_for_parameter: Parser, parameter_slot_index: i32) -> Param
   end
 end
 
+fn parameter_token_starts_binding(parser: Parser) -> bool =
+  if parser.kind().is_mut() then true
+  else if parser.kind().is_lbrace() then true
+  else if parser.kind().is_lparen() then true
+  else parser.kind().is_ident()
+  end
+
 fn parse_params(parser: Parser) -> ParamsResult =
   if parser.kind().is_rparen() then
     do
       let empty_parameters: [Shared<Param>] = []
       parameters_parse_result(empty_parameters, parser.advance())
+    end
+  else if !parameter_token_starts_binding(parser) then
+    do
+      let empty_parameters: [Shared<Param>] = []
+      parameters_parse_result(empty_parameters, parser.record_parse_error('parse: expected parameter or )'))
     end
   else
     const suffix = comma_separated_params_suffix_from_first(parse_param(parser, 0), 1, parse_param)

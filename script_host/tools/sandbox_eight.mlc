@@ -1,0 +1,83 @@
+import { lower_source } from '../../script_vm/lower/lower_module'
+
+extern fn sandbox_trusted_in_process_fallback() -> i32
+  = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_stage_child_module(module_bytes: [i32]) -> i32
+  = "mlc::script_host::sandbox_stage_child_module" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_set_principal_quota(quota: i32) -> i32
+  = "mlc::script_host::sandbox_set_principal_quota" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_launch_principal_child(principal: i32) -> i32
+  = "mlc::script_host::sandbox_launch_principal_child" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_read_instance_vm_result(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_read_instance_vm_result" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_kill_instance(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_kill_instance" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_reap_instance(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_reap_instance" from "mlc/script_host/launcher.hpp" blocking
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm sandbox_eight] FAIL: " + message)
+  1
+end
+
+fn program_source() -> string =
+  "export fn run() -> i32 = 42\n"
+
+fn instance_count() -> i32 = 8
+
+fn release_instances(count: i32, incarnations: [i32]) -> i32 = do
+  let mut principal = 1
+  while principal <= count do
+    sandbox_kill_instance(principal, incarnations[principal - 1])
+    sandbox_reap_instance(principal, incarnations[principal - 1])
+    principal = principal + 1
+  end
+  0
+end
+
+fn main() -> i32 = do
+  if sandbox_trusted_in_process_fallback() != 0 then
+    return fail("trusted-in-process fallback")
+  end
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  if sandbox_stage_child_module(lowered.bytes) == 0 then
+    return fail("stage module")
+  end
+  if sandbox_set_principal_quota(instance_count()) == 0 then
+    return fail("quota")
+  end
+  let mut incarnations: [i32] = []
+  let mut principal = 1
+  while principal <= instance_count() do
+    let incarnation = sandbox_launch_principal_child(principal)
+    if incarnation <= 0 then
+      release_instances(incarnations.length(), incarnations)
+      return fail("launch " + principal.to_string())
+    end
+    incarnations.push(incarnation)
+    principal = principal + 1
+  end
+  principal = 1
+  while principal <= instance_count() do
+    let incarnation = incarnations[principal - 1]
+    let vm_result = sandbox_read_instance_vm_result(principal, incarnation)
+    if vm_result != 42 then
+      release_instances(instance_count(), incarnations)
+      return fail("vm principal=" + principal.to_string() + " result=" + vm_result.to_string())
+    end
+    println("sandbox_instance principal=" + principal.to_string() + " vm=" + vm_result.to_string())
+    principal = principal + 1
+  end
+  release_instances(instance_count(), incarnations)
+  println("[script_vm] sandbox_eight ok")
+  0
+end

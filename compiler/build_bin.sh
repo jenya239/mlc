@@ -97,6 +97,8 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists glfw3; then
       TEXT_CFLAGS+=($(pkg-config --cflags libpulse-simple libswresample))
       # shellcheck disable=SC2207
       TEXT_LIBS+=($(pkg-config --libs libpulse-simple libswresample))
+    else
+      RT_SRC+=("$ROOT_DIR/runtime/src/audio/music_player_level_stub.cpp")
     fi
   fi
   if pkg-config --exists freetype2 && pkg-config --exists harfbuzz; then

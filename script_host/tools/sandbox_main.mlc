@@ -1,16 +1,94 @@
+import { emb_ok } from '../../script_vm/embedding_codes'
+import { Finished } from '../../script_vm/execution'
+import { run_execution } from '../../script_vm/executor'
+import { heap_new } from '../../script_vm/heap_types'
+import { ModuleExport, decode_module } from '../../script_vm/module_blob'
+import { run_limits_new } from '../../script_vm/run_result'
+import { Value, ValueInt32, value_decode } from '../../script_vm/value'
+
 extern fn sandbox_launcher_prepare_isolated_required() -> i32
   = "mlc::script_host::sandbox_launcher_prepare_isolated_required" from "mlc/script_host/launcher.hpp" blocking
 
 extern fn sandbox_trusted_in_process_fallback() -> i32
   = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
 
-fn main() -> i32 = do
-  let prepared = sandbox_launcher_prepare_isolated_required()
-  if prepared == 0 then
-    if sandbox_trusted_in_process_fallback() != 0 then
-      return 2
+extern fn sandbox_child_take_module() -> [i32]
+  = "mlc::script_host::sandbox_child_take_module" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_child_denied_environment_present() -> i32
+  = "mlc::script_host::sandbox_child_denied_environment_present" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_child_report_and_wait(vm_result: i32) -> i32
+  = "mlc::script_host::sandbox_child_report_and_wait" from "mlc/script_host/launcher.hpp" blocking
+
+fn integer_result(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn export_proto_index(exports: [ModuleExport]) -> i32 = do
+  let mut index = 0
+  let mut found = 0 - 1
+  while index < exports.length() && found < 0 do
+    if exports[index].name == "run" then
+      found = exports[index].proto_index
     end
+    index = index + 1
+  end
+  found
+end
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn instruction_budget() -> i64 = 1000
+
+fn heap_budget() -> i32 = 64
+
+fn run_child_module(module_bytes: [i32]) -> i32 = do
+  if module_bytes.length() == 0 then
+    return 0 - 6
+  end
+  const decoded = decode_module(module_bytes)
+  if decoded.code != emb_ok() then
+    return 0 - 3
+  end
+  const entry_index = export_proto_index(decoded.decoded_module.exports)
+  if entry_index < 0 then
+    return 0 - 4
+  end
+  const limits = run_limits_new(instruction_budget(), heap_budget())
+  const execution = run_execution(
+    heap_new(),
+    decoded.decoded_module.protos,
+    entry_index,
+    empty_arguments(),
+    limits
+  )
+  match execution.status {
+    Finished => integer_result(execution.value),
+    _ => 0 - 5
+  }
+end
+
+fn main() -> i32 = do
+  let module_bytes = sandbox_child_take_module()
+  if sandbox_launcher_prepare_isolated_required() == 0 then
+    sandbox_child_report_and_wait(0 - 7)
     return 1
   end
+  if sandbox_trusted_in_process_fallback() != 0 then
+    sandbox_child_report_and_wait(0 - 8)
+    return 2
+  end
+  if sandbox_child_denied_environment_present() != 0 then
+    sandbox_child_report_and_wait(0 - 2)
+    return 3
+  end
+  let vm_result = run_child_module(module_bytes)
+  sandbox_child_report_and_wait(vm_result)
   0
 end

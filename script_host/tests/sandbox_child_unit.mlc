@@ -1,0 +1,66 @@
+import { lower_source } from '../../script_vm/lower/lower_module'
+
+extern fn sandbox_trusted_in_process_fallback() -> i32
+  = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_stage_child_module(module_bytes: [i32]) -> i32
+  = "mlc::script_host::sandbox_stage_child_module" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_launch_child_isolated_required() -> i32
+  = "mlc::script_host::sandbox_launch_child_isolated_required" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_host_process_identifier() -> i32
+  = "mlc::script_host::sandbox_host_process_identifier" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_read_child_vm_result() -> i32
+  = "mlc::script_host::sandbox_read_child_vm_result" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_kill_child_process() -> i32
+  = "mlc::script_host::sandbox_kill_child_process" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_child_killed_by_signal() -> i32
+  = "mlc::script_host::sandbox_child_killed_by_signal" from "mlc/script_host/launcher.hpp" blocking
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm sandbox_child_unit] FAIL: " + message)
+  1
+end
+
+fn program_source() -> string =
+  "export fn run() -> i32 = 42\n"
+
+fn main() -> i32 = do
+  if sandbox_trusted_in_process_fallback() != 0 then
+    return fail("trusted-in-process fallback")
+  end
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  if sandbox_stage_child_module(lowered.bytes) == 0 then
+    return fail("stage module")
+  end
+  let launched = sandbox_launch_child_isolated_required()
+  if launched <= 0 then
+    return fail("child not launched")
+  end
+  if launched == sandbox_host_process_identifier() then
+    return fail("child process identifier is the host")
+  end
+  let vm_result = sandbox_read_child_vm_result()
+  if vm_result != 42 then
+    sandbox_kill_child_process()
+    sandbox_child_killed_by_signal()
+    return fail("vm result " + vm_result.to_string())
+  end
+  println("sandbox_child_vm=" + vm_result.to_string())
+  if sandbox_kill_child_process() == 0 then
+    return fail("kill")
+  end
+  if sandbox_child_killed_by_signal() == 0 then
+    return fail("child was not killed")
+  end
+  println("sandbox_child_killed")
+  println("[script_vm] sandbox_child_unit ok")
+  0
+end

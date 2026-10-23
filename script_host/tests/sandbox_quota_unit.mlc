@@ -1,0 +1,162 @@
+import { lower_source } from '../../script_vm/lower/lower_module'
+
+extern fn sandbox_trusted_in_process_fallback() -> i32
+  = "mlc::script_host::sandbox_trusted_in_process_fallback" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_stage_child_module(module_bytes: [i32]) -> i32
+  = "mlc::script_host::sandbox_stage_child_module" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_set_principal_quota(quota: i32) -> i32
+  = "mlc::script_host::sandbox_set_principal_quota" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_launch_principal_child(principal: i32) -> i32
+  = "mlc::script_host::sandbox_launch_principal_child" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_read_instance_vm_result(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_read_instance_vm_result" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_accept_instance_reply(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_accept_instance_reply" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_kill_instance(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_kill_instance" from "mlc/script_host/launcher.hpp" blocking
+
+extern fn sandbox_reap_instance(principal: i32, incarnation: i32) -> i32
+  = "mlc::script_host::sandbox_reap_instance" from "mlc/script_host/launcher.hpp" blocking
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm sandbox_quota_unit] FAIL: " + message)
+  1
+end
+
+fn program_source() -> string =
+  "export fn run() -> i32 = 42\n"
+
+fn principal_quota() -> i32 = 2
+
+fn first_principal() -> i32 = 7
+
+fn second_principal() -> i32 = 8
+
+fn reap_instance(principal: i32, incarnation: i32) -> i32 = do
+  if incarnation <= 0 then
+    return 0
+  end
+  sandbox_kill_instance(principal, incarnation)
+  sandbox_reap_instance(principal, incarnation)
+end
+
+fn main() -> i32 = do
+  if sandbox_trusted_in_process_fallback() != 0 then
+    return fail("trusted-in-process fallback")
+  end
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  if sandbox_stage_child_module(lowered.bytes) == 0 then
+    return fail("stage module")
+  end
+  if sandbox_set_principal_quota(principal_quota()) == 0 then
+    return fail("quota")
+  end
+  let first_incarnation = sandbox_launch_principal_child(first_principal())
+  let second_incarnation = sandbox_launch_principal_child(first_principal())
+  if first_incarnation <= 0 || second_incarnation <= 0 || first_incarnation == second_incarnation then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    return fail("launch pair")
+  end
+  let blocked = sandbox_launch_principal_child(first_principal())
+  if blocked != 0 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(first_principal(), blocked)
+    return fail("quota not enforced")
+  end
+  let other_incarnation = sandbox_launch_principal_child(second_principal())
+  if other_incarnation <= 0 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    return fail("other principal")
+  end
+  if sandbox_read_instance_vm_result(first_principal(), first_incarnation) != 42 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("first vm")
+  end
+  if sandbox_read_instance_vm_result(first_principal(), second_incarnation) != 42 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("second vm")
+  end
+  if sandbox_read_instance_vm_result(second_principal(), other_incarnation) != 42 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("other vm")
+  end
+  if sandbox_accept_instance_reply(first_principal(), first_incarnation) == 0 then
+    reap_instance(first_principal(), first_incarnation)
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("live reply")
+  end
+  if sandbox_kill_instance(first_principal(), first_incarnation) == 0 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("kill")
+  end
+  if sandbox_reap_instance(first_principal(), first_incarnation) == 0 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("reap")
+  end
+  if sandbox_accept_instance_reply(first_principal(), first_incarnation) != 0 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    return fail("dead reply accepted")
+  end
+  let restarted_incarnation = sandbox_launch_principal_child(first_principal())
+  if restarted_incarnation <= 0 || restarted_incarnation == first_incarnation then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("restart incarnation")
+  end
+  if sandbox_accept_instance_reply(first_principal(), first_incarnation) != 0 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("old reply after restart")
+  end
+  if sandbox_read_instance_vm_result(first_principal(), restarted_incarnation) != 42 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("restart vm")
+  end
+  if sandbox_accept_instance_reply(first_principal(), second_incarnation) == 0 then
+    reap_instance(first_principal(), second_incarnation)
+    reap_instance(second_principal(), other_incarnation)
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("sibling reply")
+  end
+  if reap_instance(first_principal(), second_incarnation) == 0 then
+    reap_instance(second_principal(), other_incarnation)
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("reap sibling")
+  end
+  if reap_instance(second_principal(), other_incarnation) == 0 then
+    reap_instance(first_principal(), restarted_incarnation)
+    return fail("reap other")
+  end
+  if reap_instance(first_principal(), restarted_incarnation) == 0 then
+    return fail("reap restart")
+  end
+  println("sandbox_quota_instances=4")
+  println("[script_vm] sandbox_quota_unit ok")
+  0
+end
