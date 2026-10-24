@@ -1,0 +1,49 @@
+import { resume_guest } from './executor_guest'
+import { GuestHalt } from './executor_halt'
+import { host_import_timer_after } from './host_imports'
+import { host_call_import_index } from './lower/lower_host_call'
+import { FunctionProto } from './run_result'
+import { Value, ValueInt32, value_encode } from './value'
+
+fn timer_after_index() -> i32 =
+  host_call_import_index(host_import_timer_after().operation_id)
+
+fn timer_reply() -> Value = value_encode(ValueInt32(1))
+
+export fn guest_timer_ready(origin_milliseconds: i32, delay_milliseconds: i32, now_milliseconds: i32) -> bool =
+  now_milliseconds - origin_milliseconds >= delay_milliseconds
+
+export fn guest_timer_remaining(
+  origin_milliseconds: i32,
+  delay_milliseconds: i32,
+  now_milliseconds: i32
+) -> i32 = do
+  if guest_timer_ready(origin_milliseconds, delay_milliseconds, now_milliseconds) then
+    0
+  else
+    delay_milliseconds - (now_milliseconds - origin_milliseconds)
+  end
+end
+
+export fn guest_timer_poll(
+  halt: GuestHalt,
+  prototypes: [FunctionProto],
+  origin_milliseconds: i32,
+  delay_milliseconds: i32,
+  now_milliseconds: i32
+) -> GuestHalt = do
+  if halt.outcome != "waiting" || halt.state.host_import_index != timer_after_index() then
+    return halt
+  end
+  if guest_timer_ready(origin_milliseconds, delay_milliseconds, now_milliseconds) == false then
+    return halt
+  end
+  resume_guest(
+    halt,
+    timer_reply(),
+    halt.session_epoch,
+    halt.incarnation,
+    halt.code_epoch,
+    prototypes
+  )
+end

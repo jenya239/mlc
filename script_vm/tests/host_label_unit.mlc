@@ -1,0 +1,154 @@
+import { emb_ok, emb_waiting } from '../embedding_codes'
+import { heap_live_object_count } from '../heap_types'
+import { host_import_label_set_text } from '../host_imports'
+import { instance_call_export, instance_load_module, script_instance_new } from '../instance'
+import { host_call_import_index } from '../lower/lower_host_call'
+import { lower_source } from '../lower/lower_module'
+import { decode_module } from '../module_blob'
+import { Value, ValueInt32, value_decode } from '../value'
+import { gallery_guest_ping, gallery_guest_repeat, gallery_guest_start } from '../../misc/textui/gallery_guest'
+import { script_frame_accept_label_text } from '../../misc/textui/script_label_frame'
+import {
+  LabelData,
+  OverflowVisible,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_id_none,
+  widget_store_add_label,
+  widget_store_empty
+} from '../../misc/textui/store'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm host_label_unit] FAIL: " + message)
+  1
+end
+
+fn empty_raw_arguments() -> [i64] = do
+  let mut raw_arguments: [i64] = []
+  raw_arguments
+end
+
+fn idle_text() -> string = "VM: idle"
+
+fn scripted_text() -> string = "VM: scripted"
+
+fn program_source() -> string =
+  "export fn run() -> i32 = set_label_text(\"VM: scripted\")\n"
+
+fn label_import_index() -> i32 =
+  host_call_import_index(host_import_label_set_text().operation_id)
+
+fn integer_result(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind {
+    KindLabel(data) => data.text,
+    KindBox(_) => "",
+    KindButton(_) => "",
+    KindCheckbox(_) => "",
+    KindScrollView => "",
+    KindListView(_) => "",
+    KindSplitter(_) => "",
+    KindTextField(_) => "",
+    KindIcon(_) => ""
+  }
+
+fn store_text(store: WidgetStore, widget: WidgetId) -> string = do
+  if widget.index < 0 || widget.index >= store.nodes.length() then
+    return ""
+  end
+  label_text(store.nodes[widget.index].kind)
+end
+
+fn one_label() -> WidgetStore =
+  widget_store_add_label(
+    widget_store_empty(),
+    widget_id_none(),
+    LabelData { text: idle_text() },
+    OverflowVisible,
+    0,
+    true
+  )
+
+fn main() -> i32 = do
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() || decoded.decoded_module.exports.length() != 1 then
+    return fail("decode code=" + decoded.code.to_string())
+  end
+  const prototypes = decoded.decoded_module.protos
+  const entry_index = decoded.decoded_module.exports[0].proto_index
+  let label = WidgetId { index: 0 }
+  let guest = gallery_guest_start(one_label(), label, prototypes, entry_index)
+  if guest.halt.outcome != "waiting" || guest.halt.state.error_code != "" then
+    return fail(
+      "guest outcome=" + guest.halt.outcome
+        + " error=" + guest.halt.state.error_code
+        + " instructions=" + guest.halt.state.instruction_count.to_string()
+    )
+  end
+  if guest.halt.state.host_import_index != label_import_index() then
+    return fail("import=" + guest.halt.state.host_import_index.to_string())
+  end
+  if store_text(guest.store, label) != idle_text() || guest.revision != 0 then
+    return fail("opened text=" + store_text(guest.store, label) + " revision=" + guest.revision.to_string())
+  end
+  let repeated = gallery_guest_repeat(guest)
+  if heap_live_object_count(repeated.halt.heap) != heap_live_object_count(guest.halt.heap) then
+    return fail("repeat heap changed")
+  end
+  if repeated.halt.argument.raw != guest.halt.argument.raw then
+    return fail("repeat argument changed")
+  end
+  if repeated.halt.state.instruction_count != guest.halt.state.instruction_count then
+    return fail("repeat instructions changed")
+  end
+  let loaded = instance_load_module(script_instance_new(), lowered.bytes)
+  if loaded.code != emb_ok() then
+    return fail("load code=" + loaded.code.to_string())
+  end
+  let first = instance_call_export(loaded.instance, 0, "run", empty_raw_arguments())
+  if first.code != emb_waiting() then
+    return fail("instance code=" + first.code.to_string())
+  end
+  let second = instance_call_export(first.instance, 0, "run", empty_raw_arguments())
+  if second.code != emb_waiting() || second.raw != first.raw then
+    return fail("second instance code=" + second.code.to_string())
+  end
+  if heap_live_object_count(second.instance.heap) != heap_live_object_count(first.instance.heap) then
+    return fail("second instance heap changed")
+  end
+  let missing = WidgetId { index: 99 }
+  let rejected = script_frame_accept_label_text(guest.halt, guest.store, missing, prototypes)
+  if rejected.applied || rejected.halt.outcome != "waiting" then
+    return fail("missing label applied outcome=" + rejected.halt.outcome)
+  end
+  if store_text(rejected.store, label) != idle_text() then
+    return fail("missing label changed text=" + store_text(rejected.store, label))
+  end
+  let pinged = gallery_guest_ping(guest, guest.store)
+  if pinged.revision != 1 || pinged.halt.outcome != "finished" then
+    return fail("ping revision=" + pinged.revision.to_string() + " outcome=" + pinged.halt.outcome)
+  end
+  if store_text(pinged.store, label) != scripted_text() then
+    return fail("label text=" + store_text(pinged.store, label))
+  end
+  if integer_result(pinged.halt.state.return_value) != 1 then
+    return fail("reply=" + integer_result(pinged.halt.state.return_value).to_string())
+  end
+  let duplicate = gallery_guest_ping(pinged, pinged.store)
+  if duplicate.revision != pinged.revision || store_text(duplicate.store, label) != scripted_text() then
+    return fail("duplicate frame changed label")
+  end
+  println("host_label_text=VM: scripted")
+  println("[script_vm] host_label_unit ok")
+  0
+end

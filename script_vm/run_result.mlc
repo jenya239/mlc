@@ -24,12 +24,35 @@ export fn run_err_stack() -> string = "stack"
 export fn run_err_instruction_limit() -> string = "instruction_limit"
 export fn run_err_heap_limit() -> string = "heap_limit"
 
-export type RunLimits = { instruction_limit: i64, heap_limit_objects: i32 }
+export type RunLimits = {
+  instruction_limit: i64,
+  heap_limit_objects: i32,
+  quantum_limit: i32
+}
 
 fn instruction_limit_from_i32(number: i32) -> i64 = number
 
 export fn run_limits_unlimited() -> RunLimits =
-  RunLimits { instruction_limit: instruction_limit_from_i32(0), heap_limit_objects: 0 }
+  RunLimits {
+    instruction_limit: instruction_limit_from_i32(0),
+    heap_limit_objects: 0,
+    quantum_limit: 0
+  }
 
 export fn run_limits_new(instruction_limit: i64, heap_limit_objects: i32) -> RunLimits =
-  RunLimits { instruction_limit: instruction_limit, heap_limit_objects: heap_limit_objects }
+  RunLimits {
+    instruction_limit: instruction_limit,
+    heap_limit_objects: heap_limit_objects,
+    quantum_limit: 0
+  }
+
+export fn run_limits_quantum(
+  instruction_limit: i64,
+  heap_limit_objects: i32,
+  quantum_limit: i32
+) -> RunLimits =
+  RunLimits {
+    instruction_limit: instruction_limit,
+    heap_limit_objects: heap_limit_objects,
+    quantum_limit: quantum_limit
+  }

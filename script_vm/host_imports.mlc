@@ -20,6 +20,15 @@ export fn host_import_timer_after() -> ImportDeclaration =
     effect_class: ImportEffectAsyncRead
   }
 
+export fn host_import_label_set_text() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "label.set_text",
+    major_version: 1,
+    argument_schema: "string",
+    result_schema: "i32",
+    effect_class: ImportEffectAsyncMutation
+  }
+
 fn effect_class_code(effect_class: ImportEffectClass) -> i32 =
   match effect_class
     | ImportEffectPureBounded => 0
@@ -39,6 +48,7 @@ fn declaration_matches(allowed: ImportDeclaration, candidate: ImportDeclaration)
 export fn host_import_manifest() -> [ImportDeclaration] = do
   let mut manifest: [ImportDeclaration] = []
   manifest.push(host_import_timer_after())
+  manifest.push(host_import_label_set_text())
   manifest
 end
 

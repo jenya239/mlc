@@ -1,6 +1,7 @@
 import { emb_ok } from '../embedding_codes'
 import { Completed, PollFailed, PollResult, PollWaiting, PollYielded, PollCancelled, poll_execution } from '../execution_result'
 import { resume_guest, run_guest_halt } from '../executor_guest'
+import { guest_timer_poll } from '../guest_timer'
 import { run_execution } from '../executor'
 import { heap_new } from '../heap_types'
 import { lower_source } from '../lower/lower_module'
@@ -100,6 +101,26 @@ fn main() -> i32 = do
   )
   if duplicate.outcome != "rejected" then
     return fail("duplicate resume outcome=" + duplicate.outcome)
+  end
+  let clocked = run_guest_halt(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  let early = guest_timer_poll(clocked, prototypes, 0, 100, 99)
+  if early.outcome != "waiting" || integer_result(early.argument) != 100 || early.code_epoch != clocked.code_epoch then
+    return fail("early clock outcome=" + early.outcome + " argument=" + integer_result(early.argument).to_string())
+  end
+  let due = guest_timer_poll(early, prototypes, 0, 100, 100)
+  if due.outcome != "finished" || integer_result(due.state.return_value) != 1 then
+    return fail("due clock outcome=" + due.outcome + " error=" + due.state.error_code)
+  end
+  let clock_duplicate = resume_guest(
+    due,
+    value_encode(ValueInt32(1)),
+    due.session_epoch,
+    due.incarnation,
+    due.code_epoch,
+    prototypes
+  )
+  if clock_duplicate.outcome != "rejected" then
+    return fail("clock duplicate outcome=" + clock_duplicate.outcome)
   end
   println("host_guest_reply=7")
   println("[script_vm] host_guest_unit ok")

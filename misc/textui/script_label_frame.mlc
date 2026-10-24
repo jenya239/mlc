@@ -1,0 +1,80 @@
+import { WidgetId, WidgetStore } from './store'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from './script_transaction'
+import { resume_guest } from '../../script_vm/executor_guest'
+import { GuestHalt } from '../../script_vm/executor_halt'
+import { heap_element_count, heap_get_element, heap_object_type_id } from '../../script_vm/heap'
+import { Heap, heap_type_string } from '../../script_vm/heap_types'
+import { host_import_label_set_text } from '../../script_vm/host_imports'
+import { host_call_import_index } from '../../script_vm/lower/lower_host_call'
+import { FunctionProto } from '../../script_vm/run_result'
+import { Value, ValueInt32, value_encode, value_int32 } from '../../script_vm/value'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+
+export type ScriptLabelFrame = {
+  halt: GuestHalt,
+  store: WidgetStore,
+  applied: bool
+}
+
+fn label_set_text_index() -> i32 =
+  host_call_import_index(host_import_label_set_text().operation_id)
+
+fn unchanged_frame(halt: GuestHalt, store: WidgetStore) -> ScriptLabelFrame =
+  ScriptLabelFrame { halt: halt, store: store, applied: false }
+
+fn heap_string_text(heap: Heap, value: Value) -> string = do
+  if heap_object_type_id(heap, value) != heap_type_string() then
+    return ""
+  end
+  let mut text = ""
+  let mut index = 0
+  let count = heap_element_count(heap, value)
+  while index < count do
+    text = text + string_from_byte_u8(value_int32(heap_get_element(heap, value, index)))
+    index = index + 1
+  end
+  text
+end
+
+fn applied_revision() -> i32 = 1
+
+export fn script_frame_accept_label_text(
+  halt: GuestHalt,
+  store: WidgetStore,
+  widget: WidgetId,
+  prototypes: [FunctionProto]
+) -> ScriptLabelFrame = do
+  if halt.outcome != "waiting" || halt.state.host_import_index != label_set_text_index() then
+    unchanged_frame(halt, store)
+  else
+    let staged = script_transaction_stage_set_label_text(
+      script_transaction_new(store),
+      widget,
+      heap_string_text(halt.heap, halt.argument)
+    )
+    let committed = script_transaction_commit(staged)
+    if committed.revision != applied_revision() then
+      unchanged_frame(halt, store)
+    else
+      let resumed = resume_guest(
+        halt,
+        value_encode(ValueInt32(applied_revision())),
+        halt.session_epoch,
+        halt.incarnation,
+        halt.code_epoch,
+        prototypes
+      )
+      ScriptLabelFrame {
+        halt: resumed,
+        store: committed.store,
+        applied: resumed.outcome == "finished"
+      }
+    end
+  end
+end

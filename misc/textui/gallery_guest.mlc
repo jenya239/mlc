@@ -1,0 +1,134 @@
+import { continue_halt } from '../../script_vm/executor'
+import { run_guest_halt } from '../../script_vm/executor_guest'
+import { GuestHalt } from '../../script_vm/executor_halt'
+import { guest_timer_poll } from '../../script_vm/guest_timer'
+import { heap_new } from '../../script_vm/heap_types'
+import { host_import_timer_after } from '../../script_vm/host_imports'
+import { host_call_import_index } from '../../script_vm/lower/lower_host_call'
+import { FunctionProto, run_limits_quantum } from '../../script_vm/run_result'
+import { Value, value_int32 } from '../../script_vm/value'
+import { script_damage_for_set_label_text, script_damage_revision_delta } from './script_damage'
+import { script_frame_accept_label_text } from './script_label_frame'
+import { WidgetId, WidgetStore } from './store'
+
+export type GalleryGuest = {
+  store: WidgetStore,
+  halt: GuestHalt,
+  prototypes: [FunctionProto],
+  widget: WidgetId,
+  revision: i32,
+  timer_origin_milliseconds: i32,
+  timer_armed: bool
+}
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+export fn gallery_instruction_limit() -> i64 = 100000
+
+export fn gallery_quantum() -> i32 = 256
+
+fn timer_after_index() -> i32 =
+  host_call_import_index(host_import_timer_after().operation_id)
+
+fn guest_copy(
+  guest: GalleryGuest,
+  store: WidgetStore,
+  halt: GuestHalt,
+  revision: i32,
+  timer_origin_milliseconds: i32,
+  timer_armed: bool
+) -> GalleryGuest =
+  GalleryGuest {
+    store: store,
+    halt: halt,
+    prototypes: guest.prototypes,
+    widget: guest.widget,
+    revision: revision,
+    timer_origin_milliseconds: timer_origin_milliseconds,
+    timer_armed: timer_armed
+  }
+
+export fn gallery_guest_start(
+  store: WidgetStore,
+  widget: WidgetId,
+  prototypes: [FunctionProto],
+  entry_index: i32
+) -> GalleryGuest = do
+  let halted = run_guest_halt(
+    heap_new(),
+    prototypes,
+    entry_index,
+    empty_arguments(),
+    run_limits_quantum(gallery_instruction_limit(), 0, gallery_quantum())
+  )
+  GalleryGuest {
+    store: store,
+    halt: halted,
+    prototypes: prototypes,
+    widget: widget,
+    revision: 0,
+    timer_origin_milliseconds: 0,
+    timer_armed: false
+  }
+end
+
+export fn gallery_guest_repeat(guest: GalleryGuest) -> GalleryGuest =
+  guest_copy(
+    guest,
+    guest.store,
+    guest.halt,
+    guest.revision,
+    guest.timer_origin_milliseconds,
+    guest.timer_armed
+  )
+
+fn continue_yielded(guest: GalleryGuest) -> GalleryGuest = do
+  if guest.halt.outcome != "yielded" then
+    return guest
+  end
+  let mut heap = guest.halt.heap
+  let mut state = guest.halt.state
+  state.quantum_limit = gallery_quantum()
+  let halt = continue_halt(heap, state, guest.prototypes)
+  guest_copy(guest, guest.store, halt, guest.revision, guest.timer_origin_milliseconds, guest.timer_armed)
+end
+
+fn arm_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
+  if guest.timer_armed || guest.halt.outcome != "waiting" then
+    return guest
+  end
+  if guest.halt.state.host_import_index != timer_after_index() then
+    return guest
+  end
+  guest_copy(guest, guest.store, guest.halt, guest.revision, now_milliseconds, true)
+end
+
+fn poll_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
+  if guest.timer_armed == false then
+    return guest
+  end
+  let polled = guest_timer_poll(
+    guest.halt,
+    guest.prototypes,
+    guest.timer_origin_milliseconds,
+    value_int32(guest.halt.argument),
+    now_milliseconds
+  )
+  let armed = polled.outcome == "waiting" && polled.state.host_import_index == timer_after_index()
+  guest_copy(guest, guest.store, polled, guest.revision, guest.timer_origin_milliseconds, armed)
+end
+
+export fn gallery_guest_tick(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest =
+  poll_timer(arm_timer(continue_yielded(guest), now_milliseconds), now_milliseconds)
+
+export fn gallery_guest_ping(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest = do
+  let accepted = script_frame_accept_label_text(guest.halt, store, guest.widget, guest.prototypes)
+  if accepted.applied == false then
+    return guest_copy(guest, store, guest.halt, guest.revision, guest.timer_origin_milliseconds, guest.timer_armed)
+  end
+  let revision = guest.revision + script_damage_revision_delta(script_damage_for_set_label_text(true))
+  guest_copy(guest, accepted.store, accepted.halt, revision, guest.timer_origin_milliseconds, false)
+end

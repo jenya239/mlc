@@ -70,6 +70,7 @@ import { GuestHalt, guest_halt_execution, guest_halt_new } from './executor_halt
 import {
   executor_step_continue,
   executor_step_returned,
+  executor_step_yielded,
   executor_fail
 } from './executor_step'
 import {
@@ -155,12 +156,14 @@ end
 
 fn note_instruction(state: ref mut VmState) -> bool = do
   state.instruction_count = state.instruction_count + 1
+  state.quantum_used = state.quantum_used + 1
   true
 end
 
 fn apply_run_limits(state: ref mut VmState, limits: RunLimits) -> unit = do
   state.instruction_limit = limits.instruction_limit
   state.heap_limit_objects = limits.heap_limit_objects
+  state.quantum_limit = limits.quantum_limit
 end
 
 fn dispatch_instruction(
@@ -214,7 +217,12 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
   let mut program_counter = vm_state_program_counter(state)
   let mut step = continue_step
   while step == continue_step && state.error_code == "" do
-    if instruction_limit_reached(state) then
+    if state.quantum_limit > 0 && state.quantum_used >= state.quantum_limit then
+      write_frame_registers(state, registers)
+      vm_state_set_program_counter(state, program_counter)
+      state.quantum_yielded = true
+      step = executor_step_yielded()
+    else if instruction_limit_reached(state) then
       step = executor_fail(state, run_err_instruction_limit(), program_counter)
     else if note_instruction(state) then
       if program_counter >= words.length() then
@@ -324,7 +332,9 @@ end
 
 export fn continue_halt(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto]) -> GuestHalt = do
   let mut finished = false
-  while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished && !state.host_waiting do
+  state.quantum_used = 0
+  state.quantum_yielded = false
+  while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished && !state.host_waiting && !state.quantum_yielded do
     let outcome = execute_current_frame(heap, state, protos)
     if outcome == executor_step_returned() then
       finished = true

@@ -7,20 +7,22 @@ import {
   glfw_gl_context_end,
   glfw_gl_window_width,
   glfw_gl_window_height,
-  glfw_gl_window_x,
-  glfw_gl_window_y,
   glfw_gl_window_request_position,
   glfw_gl_key_escape_down,
   glfw_gl_mouse_right_down
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { theme_default } from './theme'
 import { WidgetId, WidgetStore, widget_id_is_none } from './store'
-import { build_label_gallery } from './gallery_scene'
+import { open_scripted_gallery } from './gallery_script'
+import {
+  gallery_frame_advance,
+  gallery_frame_signature,
+  gallery_frame_wait_seconds
+} from './gallery_frame'
 import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
 import { layout_ui } from './layout_pass'
 import {
-  frame_signature,
   frame_request,
   frame_request_layouts,
   frame_request_paints, frame_signature_hover_only
@@ -38,11 +40,11 @@ import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
 import { activated_row_text } from './row_label'
 import { ui_update } from './ui_update'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
-import { apply_toolbar, frame_wait_seconds } from './visual_effect'
+import { apply_toolbar } from './visual_effect'
 import { hit_test } from './hit'
 import { widget_inspect_report } from './inspect'
 import { button_caption, input_clear_buttons } from './app_input'
-import { WindowPlacement, window_placement_save } from './window_placement'
+import { remember_window } from './window_placement'
 import { gallery_start, session_with_directory, window_session_load, window_session_store } from './window_session'
 import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
 import { apply_checkbox_click } from './jail_switch'
@@ -57,21 +59,7 @@ import { file_clipboard_publish } from './file_clipboard_os'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { music_host, music_playing, music_release } from './music_host'
 import { chat_frames } from './chat_host'
-import { script_frame_pump_drain, script_frame_pump_new } from './script_events'
 export fn application_reload_status() -> i32 = 75
-
-fn remember_window() -> bool = do
-  if has("MLC_TEXTUI_BENCH") then
-    return false
-  end
-  window_placement_save(WindowPlacement {
-    x: glfw_gl_window_x(),
-    y: glfw_gl_window_y(),
-    width: glfw_gl_window_width(),
-    height: glfw_gl_window_height(),
-    restored: true
-  })
-end
 
 fn main() -> i32 = do
   let mut open_width = 1280
@@ -96,7 +84,8 @@ fn main() -> i32 = do
     return error_code
   end
   const theme = theme_default()
-  let mut store = attach_dialog(attach_file_menu(attach_about_card(build_label_gallery())))
+  let mut guest = open_scripted_gallery()
+  let mut store = attach_dialog(attach_file_menu(attach_about_card(guest.store)))
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
 
@@ -132,7 +121,7 @@ fn main() -> i32 = do
   )
   shaping = laid_out.shaping
   cache = laid_out.cache
-  let mut presented = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
+  let mut presented = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
   let mut composed = false
   let mut target_list = 0 - 1
   let mut target_row = 0 - 1
@@ -142,11 +131,9 @@ fn main() -> i32 = do
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut right_was_down = false
-  let mut pump = script_frame_pump_new()
   while glfw_gl_context_should_close() == 0 do
-    pump = script_frame_pump_drain(pump)
     if sample_after_present == false && max_frames == 0 then
-      host_wait_for_input(frame_wait_seconds(effect_mode, image_preview_playing(), music_playing()))
+      host_wait_for_input(gallery_frame_wait_seconds(guest, effect_mode, image_preview_playing(), music_playing(), host_now_ms()))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0
@@ -248,7 +235,9 @@ fn main() -> i32 = do
     const heard = music_host(store, state, laid_out.layout, theme, updated.events, jail_root, input.mouse_x, input.mouse_y, input.left_down)
     store = heard.store
     state = heard.state
-    const early_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
+    guest = gallery_frame_advance(guest, store, updated.events, host_now_ms())
+    store = guest.store
+    const early_signature = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
     const request = frame_request(presented, early_signature)
     if frame_request_layouts(request) then
       laid_out = layout_ui(
@@ -265,7 +254,7 @@ fn main() -> i32 = do
       cache = laid_out.cache
       state = field_align_scroll(store, laid_out.layout, theme, state)
     end
-    const next_signature = frame_signature(state, glfw_gl_window_width(), glfw_gl_window_height())
+    const next_signature = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
     if state.pick_enabled && widget_id_is_none(state.inspected) == false then
       if state.inspected.index != reported_inspect then
         println(widget_inspect_report(store, laid_out.layout, state.inspected))
@@ -304,7 +293,7 @@ fn main() -> i32 = do
           close_window = true
         end
         escape_was_down = true
-        presented = frame_signature(state, 0, 0)
+        presented = gallery_frame_signature(guest, state, 0, 0)
         sample_after_present = true
       end
       store = acted.store

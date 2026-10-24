@@ -9,7 +9,8 @@ import {
   emb_instruction_limit,
   emb_heap_limit,
   emb_overflow,
-  emb_div_zero
+  emb_div_zero,
+  emb_waiting
 } from './embedding_codes'
 import {
   execution_root_set_new,
@@ -19,9 +20,10 @@ import {
   execution_root_set_with_persistent,
   execution_root_values
 } from './execution_roots'
+import { GuestHalt, guest_halt_new } from './executor_halt'
+import { run_guest_halt } from './executor_guest'
 import { heap_root_push } from './heap_collect'
 import { Heap, heap_new } from './heap_types'
-import { RunOk, RunErr, run_program_with_args_limited } from './interpreter'
 import { LoadedModule, load_module_bytes } from './loaded_module'
 import {
   run_limits_new,
@@ -35,7 +37,7 @@ import {
   run_err_div_zero
 } from './run_result'
 import { Value, ValueHeapRef, value_decode } from './value'
-import { VmState } from './vm_state'
+import { VmState, vm_state_new } from './vm_state'
 
 export type ExportHandle = {
   owner_identity: i64,
@@ -58,7 +60,8 @@ export type ScriptInstance = {
   incarnation: i32,
   loaded_modules: [LoadedModule],
   heap: Heap,
-  rooted_values: [Value]
+  rooted_values: [Value],
+  halt: GuestHalt
 }
 
 export type InstanceLoadResult = { instance: ScriptInstance, code: i32 }
@@ -114,22 +117,14 @@ fn run_error_code(code: string) -> i32 = do
   end
 end
 
-fn instance_with_heap(instance: ScriptInstance, heap: Heap) -> ScriptInstance =
-  ScriptInstance {
-    identity: instance.identity,
-    incarnation: instance.incarnation,
-    loaded_modules: instance.loaded_modules,
-    heap: heap,
-    rooted_values: instance.rooted_values
-  }
-
 fn instance_with_modules(instance: ScriptInstance, loaded_modules: [LoadedModule]) -> ScriptInstance =
   ScriptInstance {
     identity: instance.identity,
     incarnation: instance.incarnation,
     loaded_modules: loaded_modules,
     heap: instance.heap,
-    rooted_values: instance.rooted_values
+    rooted_values: instance.rooted_values,
+    halt: instance.halt
   }
 
 fn remember_heap_value(instance: ScriptInstance, value: Value) -> ScriptInstance = do
@@ -140,7 +135,8 @@ fn remember_heap_value(instance: ScriptInstance, value: Value) -> ScriptInstance
     incarnation: instance.incarnation,
     loaded_modules: instance.loaded_modules,
     heap: heap_root_push(instance.heap, value),
-    rooted_values: rooted_values
+    rooted_values: rooted_values,
+    halt: instance.halt
   }
 end
 
@@ -166,6 +162,24 @@ fn failed_call(instance: ScriptInstance, code: i32) -> InstanceCallResult =
     code: code,
     raw: zero_raw(),
     value_handle: value_handle_for(instance, zero_raw(), false)
+  }
+
+fn waiting_call(instance: ScriptInstance) -> InstanceCallResult =
+  InstanceCallResult {
+    instance: instance,
+    code: emb_waiting(),
+    raw: instance.halt.argument.raw,
+    value_handle: value_handle_for(instance, instance.halt.argument.raw, false)
+  }
+
+fn instance_with_halt(instance: ScriptInstance, halt: GuestHalt) -> ScriptInstance =
+  ScriptInstance {
+    identity: instance.identity,
+    incarnation: instance.incarnation,
+    loaded_modules: instance.loaded_modules,
+    heap: halt.heap,
+    rooted_values: instance.rooted_values,
+    halt: halt
   }
 
 fn successful_call(instance: ScriptInstance, value: Value) -> InstanceCallResult = do
@@ -200,14 +214,17 @@ fn argument_values(argument_raws: [i64]) -> [Value] = do
   arguments
 end
 
-export fn script_instance_new() -> ScriptInstance =
+export fn script_instance_new() -> ScriptInstance = do
+  let heap = heap_new()
   ScriptInstance {
     identity: first_instance_identity(),
     incarnation: 0,
     loaded_modules: empty_loaded_modules(),
-    heap: heap_new(),
-    rooted_values: empty_rooted_values()
+    heap: heap,
+    rooted_values: empty_rooted_values(),
+    halt: guest_halt_new(heap, vm_state_new())
   }
+end
 
 export fn instance_export_handle(
   instance: ScriptInstance,
@@ -240,6 +257,9 @@ export fn instance_call_export(
   export_name: string,
   argument_raws: [i64]
 ) -> InstanceCallResult = do
+  if instance.halt.outcome == "waiting" then
+    return waiting_call(instance)
+  end
   if module_index < 0 || module_index >= instance.loaded_modules.length() then
     return missing_call(instance)
   end
@@ -248,18 +268,23 @@ export fn instance_call_export(
   if prototype_index < 0 || prototype_index >= loaded.protos.length() then
     return missing_call(instance)
   end
-  const ran = run_program_with_args_limited(
+  let halted = run_guest_halt(
     instance.heap,
     loaded.protos,
     prototype_index,
     argument_values(argument_raws),
     run_limits_new(persistent_instruction_limit(), 0)
   )
-  const continued = instance_with_heap(instance, ran.heap)
-  match ran.result {
-    RunOk(value) => successful_call(continued, value),
-    RunErr(code, _at) => failed_call(continued, run_error_code(code))
-  }
+  let continued = instance_with_halt(instance, halted)
+  if halted.outcome == "waiting" then
+    waiting_call(continued)
+  else if halted.outcome == "finished" then
+    successful_call(continued, halted.state.return_value)
+  else if halted.outcome == "failed" then
+    failed_call(continued, run_error_code(halted.state.error_code))
+  else
+    failed_call(continued, emb_type())
+  end
 end
 
 fn instance_with_incarnation(instance: ScriptInstance, incarnation: i32) -> ScriptInstance =
@@ -268,7 +293,8 @@ fn instance_with_incarnation(instance: ScriptInstance, incarnation: i32) -> Scri
     incarnation: incarnation,
     loaded_modules: instance.loaded_modules,
     heap: instance.heap,
-    rooted_values: instance.rooted_values
+    rooted_values: instance.rooted_values,
+    halt: instance.halt
   }
 
 fn handle_is_current(instance: ScriptInstance, handle: ValueHandle) -> bool =

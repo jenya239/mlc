@@ -66,11 +66,74 @@ EOF
   fi
 }
 
+prepare_pulse_client() {
+  if pkg-config --exists libpulse-simple; then
+    return 0
+  fi
+  if [ ! -e /usr/lib/x86_64-linux-gnu/libpulse-simple.so.0 ]; then
+    return 0
+  fi
+  local extract="$ROOT_DIR/tmp/debs/extract"
+  local package_config="$ROOT_DIR/tmp/debs/pkgconfig"
+  local header_root="$extract/usr/include"
+  local library_directory="$extract/usr/lib/x86_64-linux-gnu"
+  if [ ! -f "$header_root/pulse/simple.h" ]; then
+    mkdir -p "$ROOT_DIR/tmp/debs" "$extract"
+    (
+      cd "$ROOT_DIR/tmp/debs"
+      apt-get download libpulse-dev
+    )
+    local archive
+    for archive in "$ROOT_DIR"/tmp/debs/libpulse-dev_*.deb; do
+      if [ -f "$archive" ]; then
+        dpkg-deb -x "$archive" "$extract"
+      fi
+    done
+  fi
+  if [ ! -f "$header_root/pulse/simple.h" ]; then
+    return 0
+  fi
+  mkdir -p "$library_directory" "$package_config"
+  ln -sfn /usr/lib/x86_64-linux-gnu/libpulse-simple.so.0 "$library_directory/libpulse-simple.so"
+  ln -sfn /usr/lib/x86_64-linux-gnu/libpulse.so.0 "$library_directory/libpulse.so"
+  cat > "$package_config/libpulse.pc" <<EOF
+prefix=${extract}/usr
+exec_prefix=\${prefix}
+libdir=${library_directory}
+includedir=${header_root}
+
+Name: libpulse
+Description: PulseAudio Client Interface
+Version: 17.0
+Libs: -L\${libdir} -lpulse -pthread
+Cflags: -I\${includedir} -D_REENTRANT
+EOF
+  cat > "$package_config/libpulse-simple.pc" <<EOF
+prefix=${extract}/usr
+exec_prefix=\${prefix}
+libdir=${library_directory}
+includedir=${header_root}
+
+Name: libpulse-simple
+Description: PulseAudio Simplified Synchronous Client Interface
+Version: 17.0
+Libs: -L\${libdir} -lpulse-simple -pthread
+Cflags: -I\${includedir} -D_REENTRANT
+Requires: libpulse
+EOF
+  if [ -n "${PKG_CONFIG_PATH:-}" ]; then
+    export PKG_CONFIG_PATH="${package_config}:${PKG_CONFIG_PATH}"
+  else
+    export PKG_CONFIG_PATH="${package_config}"
+  fi
+}
+
 if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists glfw3; then
   echo "[textui gallery] SKIP: glfw3 not found" >&2
   exit 0
 fi
 prepare_extracted_text_packages
+prepare_pulse_client
 if ! pkg-config --exists freetype2 || ! pkg-config --exists harfbuzz; then
   echo "[textui gallery] SKIP: freetype2/harfbuzz not found" >&2
   if [ "${MLC_TEXTUI_REQUIRE:-0}" = "1" ]; then

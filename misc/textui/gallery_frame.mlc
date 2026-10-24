@@ -1,0 +1,101 @@
+extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
+
+import { guest_timer_remaining } from '../../script_vm/guest_timer'
+import { value_int32 } from '../../script_vm/value'
+import { button_caption } from './app_input'
+import { FrameSignature, frame_signature_with_script_damage } from './frame_request'
+import { GalleryGuest, gallery_guest_ping, gallery_guest_tick } from './gallery_guest'
+import { script_frame_pump_drain, script_frame_pump_name, script_frame_pump_new } from './script_events'
+import { UiState } from './ui_state'
+import { UiEvent } from './ui_event'
+import { frame_wait_seconds } from './visual_effect'
+import { WidgetStore } from './store'
+
+fn drain_frame_pump() -> string = do
+  let drained = script_frame_pump_drain(script_frame_pump_new())
+  drained.last_drain
+end
+
+fn caption_is_ping(store: WidgetStore, event: UiEvent) -> bool = do
+  if event.widget.index < 0 || event.widget.index >= store.nodes.length() then
+    return false
+  end
+  button_caption(store, event.widget) == "Ping"
+end
+
+fn events_request_ping(store: WidgetStore, events: [UiEvent]) -> bool = do
+  let mut index = 0
+  let mut requested = false
+  while index < events.length() && requested == false do
+    if caption_is_ping(store, events[index]) then
+      requested = true
+    end
+    index = index + 1
+  end
+  requested
+end
+
+fn guest_with_store(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest =
+  GalleryGuest {
+    store: store,
+    halt: guest.halt,
+    prototypes: guest.prototypes,
+    widget: guest.widget,
+    revision: guest.revision,
+    timer_origin_milliseconds: guest.timer_origin_milliseconds,
+    timer_armed: guest.timer_armed
+  }
+
+export fn gallery_frame_advance(
+  guest: GalleryGuest,
+  store: WidgetStore,
+  events: [UiEvent],
+  now_milliseconds: i32
+) -> GalleryGuest = do
+  let drained = drain_frame_pump()
+  if drained != script_frame_pump_name() then
+    return guest_with_store(guest, store)
+  end
+  let ticked = gallery_guest_tick(guest_with_store(guest, store), now_milliseconds)
+  if events_request_ping(ticked.store, events) then
+    let pinged = gallery_guest_ping(ticked, ticked.store)
+    if pinged.revision != ticked.revision then
+      println("[textui] vm label=VM: scripted")
+    end
+    pinged
+  else
+    ticked
+  end
+end
+
+export fn gallery_frame_signature(
+  guest: GalleryGuest,
+  state: UiState,
+  viewport_width: i32,
+  viewport_height: i32
+) -> FrameSignature =
+  frame_signature_with_script_damage(state, viewport_width, viewport_height, guest.revision)
+
+export fn gallery_frame_wait_seconds(
+  guest: GalleryGuest,
+  effect_mode: i32,
+  preview_playing: i32,
+  music_running: i32,
+  now_milliseconds: i32
+) -> f64 = do
+  if guest.halt.outcome == "yielded" then
+    return 0.0
+  end
+  if guest.timer_armed && guest.halt.outcome == "waiting" then
+    let remaining = guest_timer_remaining(
+      guest.timer_origin_milliseconds,
+      value_int32(guest.halt.argument),
+      now_milliseconds
+    )
+    if remaining <= 0 then
+      return 0.0
+    end
+    return i32_to_f64(remaining) / 1000.0
+  end
+  frame_wait_seconds(effect_mode, preview_playing, music_running)
+end

@@ -2,7 +2,7 @@ import { DecodedAbc } from './bytecode'
 import { Execution, execution_waiting } from './execution'
 import { executor_fail, executor_step_waiting } from './executor_step'
 import { Heap } from './heap'
-import { host_import_timer_after } from './host_imports'
+import { host_import_manifest, host_import_timer_after } from './host_imports'
 import { HostRequest, host_request_copy_arguments, host_request_new, host_request_release } from './host_request'
 import { host_call_import_index } from './lower/lower_host_call'
 import { run_err_unsupported_opcode } from './run_result'
@@ -87,11 +87,12 @@ export fn executor_exec_host_call(
   primary: i32,
   span: i32
 ) -> i32 = do
-  if decoded.c != host_call_import_index(host_import_timer_after().operation_id) then
+  if decoded.c < 0 || decoded.c >= host_import_manifest().length() then
     executor_fail(state, run_err_unsupported_opcode(), primary)
   else
     state.host_waiting = true
     state.host_destination_register = decoded.a
+    state.host_import_index = decoded.c
     state.host_argument = vm_state_register(state, decoded.b)
     vm_state_set_program_counter(state, primary + span)
     executor_step_waiting()

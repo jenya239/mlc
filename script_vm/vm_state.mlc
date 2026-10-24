@@ -17,7 +17,11 @@ export type VmState = {
   return_value: Value,
   host_waiting: bool,
   host_destination_register: i32,
-  host_argument: Value
+  host_import_index: i32,
+  host_argument: Value,
+  quantum_limit: i32,
+  quantum_used: i32,
+  quantum_yielded: bool
 }
 
 fn nil_value() -> Value = value_encode(ValueNil)
@@ -42,7 +46,11 @@ export fn vm_state_new() -> VmState =
     return_value: nil_value(),
     host_waiting: false,
     host_destination_register: 0,
-    host_argument: nil_value()
+    host_import_index: 0,
+    host_argument: nil_value(),
+    quantum_limit: 0,
+    quantum_used: 0,
+    quantum_yielded: false
   }
 
 fn grow_stack_to(state: ref mut VmState, needed_length: i32) -> unit = do

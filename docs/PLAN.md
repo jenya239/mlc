@@ -509,6 +509,7 @@ compiler/
 | **110** (authorized 2026-08-04 as **path**, user: «не прошу сразу, главное путь»; STEPs blocked until §109 Critic-closed) | **Editor frame / paint architecture path** — destination: dirty generations → layout → paint list → batch/stream GL (not per-widget GL / O(doc) idle). Phases: 0 finish §109 → A Xvfb isolate → B frame ownership → C paint list → D batch/stream → E glyph damage residual → F optional overlay → G docs handoff. Harness-first; dogfood gate stays green. After §109: this ahead of §103f+ / §104 W2 under standing perf/arch priority | **CLOSED** 2026-08-06 — §110a–g Critic OK; epic handoff complete | [agent/TRACK_EDITOR_FRAME_ARCHITECTURE](agent/TRACK_EDITOR_FRAME_ARCHITECTURE.md) |
 | **111** (authorized 2026-08-06, user: faster but crooked; why demo_live; agents need clear non-overlapping UI — study first) | **Editor layout integrity / product shell** — geometry contract for agents: `EditorShellLayout` + partition/no-overlap L1 + live one-map wire + bleed scenarios + rename `demo_live`→product entry + agent checklist. Not paint rewrite (§110 done). Phases §111a0 scroll/content_dirty (**CLOSED**) → §111a1 S1+S3 clamp/ensure note + glyph adjust_x (**CLOSED** 2026-08-07) → §111a study → b partition → c live wire → d bleed → e rename → f gate | **aborted** 2026-09-20 — editor product failed experiment; do not resume §111. Restart from §32 | [agent/TRACK_EDITOR_LAYOUT_INTEGRITY](agent/TRACK_EDITOR_LAYOUT_INTEGRITY.md); [archive/EDITOR_EXPERIMENT_FAILED.md](archive/EDITOR_EXPERIMENT_FAILED.md) |
 | **112** (authorized 2026-09-20, user: new GUI in a separate folder, file manager first, follow Cairo playground, 100% MLC, STEP=0 via mlc-support) | **Text UI kit + file manager** in `misc/textui/`. Substrate = PLAN §32 (`text_renderer` GlyphCache + `text_shaping` + GLFW/GL). Contracts from `ruby-playground-2026` `experiments/cairo_ui` (retained, ListView as data, overflow=hit+paint, focus≠selection). Not `misc/editor/`. STEP=0–2 **done** 2026-09-20 (slice 0 + 01-label); next = 02-selection | **open** 02-selection | [agent/TRACK_TEXTUI_FILE_MANAGER](agent/TRACK_TEXTUI_FILE_MANAGER.md) |
+| **113** (authorized 2026-10-24, user: короткий трек доверенной VM, без очереди 100–440) | **Доверенная сессия Script VM.** Один гость живёт вместе с окном: куча и `GuestHalt` переживают кадр, **Ping** продолжает ту же сессию и меняет метку, `timer_after` завершают часы, длинный цикл останавливается на кванте. Не песочница и не Phase 2–5 §103 | **done** STEP=1–4 | [agent/TRACK_SCRIPT_VM_TRUSTED_SESSION](agent/TRACK_SCRIPT_VM_TRUSTED_SESSION.md) |
 
 **Приоритет очереди (строгий порядок + зависимости):**
 
@@ -1086,6 +1087,9 @@ PARSE_PROGRAM_RESULT → CODE_QUALITY → FORMATTER → PHASE26_REMAINING
   → **TEXTUI_FILE_MANAGER (§112) 02-selection next**
       STEP=2 01-label **done** (`scripts/run_textui_slice01_smoke.sh`).
       → [agent/TRACK_TEXTUI_FILE_MANAGER](agent/TRACK_TEXTUI_FILE_MANAGER.md)
+  → **SCRIPT_VM_TRUSTED_SESSION (§113) done**
+      Доверенный гость в процессе окна. Очереди 100–440 не открывать.
+      → [agent/TRACK_SCRIPT_VM_TRUSTED_SESSION](agent/TRACK_SCRIPT_VM_TRUSTED_SESSION.md)
   → **§104 Wave 2 compiler QUEUE HEAD (§104-6 slice 24 Red done; Green next)**
       → [agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE](agent/TRACK_COMPILER_ARCHITECTURE_HYGIENE.md)
   → **MLC_SCRIPT_VM Phase 1 (§103 — CLOSED 2026-08-06 §103a–i;

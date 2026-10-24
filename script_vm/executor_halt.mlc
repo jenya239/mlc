@@ -1,6 +1,12 @@
-import { Execution, execution_failed, execution_finished, execution_waiting } from './execution'
+import {
+  Execution,
+  execution_failed,
+  execution_finished,
+  execution_waiting,
+  execution_yielded
+} from './execution'
 import { Heap } from './heap'
-import { host_import_timer_after } from './host_imports'
+import { host_import_manifest } from './host_imports'
 import { HostRequest, host_request_new } from './host_request'
 import { run_err_type } from './run_result'
 import { Value, ValueNil, value_encode } from './value'
@@ -23,10 +29,19 @@ fn empty_arguments() -> [Value] = do
   arguments
 end
 
+fn waiting_operation_id(state: VmState) -> string = do
+  const manifest = host_import_manifest()
+  if state.host_import_index < 0 || state.host_import_index >= manifest.length() then
+    ""
+  else
+    manifest[state.host_import_index].operation_id
+  end
+end
+
 fn waiting_request(state: VmState) -> HostRequest = do
   let mut arguments = empty_arguments()
   arguments.push(state.host_argument)
-  host_request_new(host_import_timer_after().operation_id, arguments)
+  host_request_new(waiting_operation_id(state), arguments)
 end
 
 fn halted_guest(
@@ -62,6 +77,8 @@ export fn guest_halt_new(heap: Heap, state: VmState) -> GuestHalt = do
       request.code_epoch,
       state.host_argument
     )
+  else if state.quantum_yielded then
+    halted_guest(heap, state, "yielded", 0, 0, 0, nil_value())
   else
     halted_guest(heap, state, "finished", 0, 0, 0, nil_value())
   end
@@ -81,6 +98,8 @@ export fn guest_halt_execution(halt: GuestHalt) -> Execution =
     execution_waiting(halt.heap)
   else if halt.outcome == "finished" then
     execution_finished(halt.heap, halt.state.return_value)
+  else if halt.outcome == "yielded" then
+    execution_yielded(halt.heap)
   else
     execution_failed(halt.heap, run_err_type(), 0)
   end

@@ -1,5 +1,5 @@
 import { instruction_words_host_call } from '../bytecode_wide'
-import { host_import_manifest, host_import_timer_after } from '../host_imports'
+import { host_import_label_set_text, host_import_manifest, host_import_timer_after } from '../host_imports'
 
 fn empty_words() -> [i32] = do
   let mut words: [i32] = []
@@ -35,6 +35,13 @@ export fn lower_timer_after_host_call(destination: i32, argument_register: i32) 
     import_index_for(host_import_timer_after().operation_id)
   )
 
+export fn lower_label_set_text_host_call(destination: i32, argument_register: i32) -> [i32] =
+  instruction_words_host_call(
+    destination,
+    argument_register,
+    import_index_for(host_import_label_set_text().operation_id)
+  )
+
 export fn lower_host_call_intrinsic(
   operation_id: string,
   destination: i32,
@@ -42,6 +49,8 @@ export fn lower_host_call_intrinsic(
 ) -> [i32] = do
   if operation_id == host_import_timer_after().operation_id then
     lower_timer_after_host_call(destination, argument_register)
+  else if operation_id == host_import_label_set_text().operation_id then
+    lower_label_set_text_host_call(destination, argument_register)
   else
     empty_words()
   end

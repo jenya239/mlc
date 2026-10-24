@@ -1,4 +1,10 @@
-import { get_or } from 'Env'
+import { get_or, has } from 'Env'
+import {
+  glfw_gl_window_height,
+  glfw_gl_window_width,
+  glfw_gl_window_x,
+  glfw_gl_window_y
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 
 extern fn file_read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
@@ -200,3 +206,16 @@ export fn window_placement_load() -> WindowPlacement =
 
 export fn window_placement_save(placement: WindowPlacement) -> bool =
   window_placement_save_path(window_placement_config_path(), placement)
+
+export fn remember_window() -> bool = do
+  if has("MLC_TEXTUI_BENCH") then
+    return false
+  end
+  window_placement_save(WindowPlacement {
+    x: glfw_gl_window_x(),
+    y: glfw_gl_window_y(),
+    width: glfw_gl_window_width(),
+    height: glfw_gl_window_height(),
+    restored: true
+  })
+end

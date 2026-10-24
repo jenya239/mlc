@@ -1,0 +1,69 @@
+import { emb_ok } from '../../script_vm/embedding_codes'
+import { guest_halt_new } from '../../script_vm/executor_halt'
+import { heap_new } from '../../script_vm/heap_types'
+import { lower_source } from '../../script_vm/lower/lower_module'
+import { decode_module } from '../../script_vm/module_blob'
+import { FunctionProto } from '../../script_vm/run_result'
+import { vm_state_new } from '../../script_vm/vm_state'
+import { build_label_gallery } from './gallery_scene'
+import { GalleryGuest, gallery_guest_start } from './gallery_guest'
+import { LabelData, OverflowVisible, WidgetId, WidgetStore, widget_store_add_label } from './store'
+
+fn idle_label_text() -> string = "VM: idle"
+
+fn guest_program() -> string =
+  "export fn run() -> i32 = set_label_text(\"VM: scripted\")\n"
+
+fn empty_prototypes() -> [FunctionProto] = do
+  let mut prototypes: [FunctionProto] = []
+  prototypes
+end
+
+fn idle_guest(store: WidgetStore, widget: WidgetId) -> GalleryGuest =
+  GalleryGuest {
+    store: store,
+    halt: guest_halt_new(heap_new(), vm_state_new()),
+    prototypes: empty_prototypes(),
+    widget: widget,
+    revision: 0,
+    timer_origin_milliseconds: 0,
+    timer_armed: false
+  }
+
+fn open_lowered(store: WidgetStore, widget: WidgetId) -> GalleryGuest = do
+  const lowered = lower_source(guest_program())
+  if lowered.diagnostics.length() != 0 then
+    println("[textui] vm label idle lower=" + lowered.diagnostics[0].code)
+    return idle_guest(store, widget)
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() || decoded.decoded_module.exports.length() != 1 then
+    println("[textui] vm label idle decode=" + decoded.code.to_string())
+    return idle_guest(store, widget)
+  end
+  let started = gallery_guest_start(
+    store,
+    widget,
+    decoded.decoded_module.protos,
+    decoded.decoded_module.exports[0].proto_index
+  )
+  if started.halt.outcome != "waiting" && started.halt.outcome != "yielded" then
+    println("[textui] vm label idle outcome=" + started.halt.outcome)
+  end
+  started
+end
+
+export fn open_scripted_gallery() -> GalleryGuest = do
+  const gallery = build_label_gallery()
+  const labeled = widget_store_add_label(
+    gallery,
+    gallery.root,
+    LabelData { text: idle_label_text() },
+    OverflowVisible,
+    0,
+    true
+  )
+  const widget = labeled.nodes[labeled.nodes.length() - 1].id
+  println("[textui] vm label=" + idle_label_text())
+  open_lowered(labeled, widget)
+end

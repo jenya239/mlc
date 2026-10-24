@@ -11,3 +11,4 @@ export fn emb_instruction_limit() -> i32 = 9
 export fn emb_heap_limit() -> i32 = 10
 export fn emb_overflow() -> i32 = 11
 export fn emb_div_zero() -> i32 = 12
+export fn emb_waiting() -> i32 = 13
