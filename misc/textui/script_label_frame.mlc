@@ -28,7 +28,7 @@ fn label_set_text_index() -> i32 =
 fn unchanged_frame(halt: GuestHalt, store: WidgetStore) -> ScriptLabelFrame =
   ScriptLabelFrame { halt: halt, store: store, applied: false }
 
-fn heap_string_text(heap: Heap, value: Value) -> string = do
+export fn script_frame_heap_string(heap: Heap, value: Value) -> string = do
   if heap_object_type_id(heap, value) != heap_type_string() then
     return ""
   end
@@ -56,7 +56,7 @@ export fn script_frame_accept_label_text(
     let staged = script_transaction_stage_set_label_text(
       script_transaction_new(store),
       widget,
-      heap_string_text(halt.heap, halt.argument)
+      script_frame_heap_string(halt.heap, halt.argument)
     )
     let committed = script_transaction_commit(staged)
     if committed.revision != applied_revision() then
@@ -73,7 +73,7 @@ export fn script_frame_accept_label_text(
       ScriptLabelFrame {
         halt: resumed,
         store: committed.store,
-        applied: resumed.outcome == "finished"
+        applied: resumed.outcome == "finished" || resumed.outcome == "waiting" || resumed.outcome == "yielded"
       }
     end
   end

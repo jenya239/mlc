@@ -6,7 +6,16 @@ import {
   HttpsRequest,
   HttpsResult
 } from '../../lib/mlc/common/stdlib/net/https_request.mlc'
-import { ChatMessage, ChatRole, ReplyFailed, ReplyOutcome, ReplyText } from './chat_model'
+import { ChatMessage, ChatRole, ReplyFailed, ReplyGuestCall, ReplyOutcome, ReplyText } from './chat_model'
+import {
+  GuestCallNone,
+  GuestCallReady,
+  chat_guest_assistant_tool,
+  chat_guest_from_message,
+  chat_guest_system,
+  chat_guest_tool_result,
+  chat_guest_tools_suffix
+} from './chat_guest'
 import {
   chat_json_field,
   chat_json_index,
@@ -64,7 +73,7 @@ fn role_token(role: ChatRole) -> string =
 fn message_object(role: string, text: string) -> string =
   "{\"role\":\"" + json_escape(role) + "\",\"content\":\"" + json_escape(text) + "\"}"
 
-fn messages_json(config: ChatConfig, messages: [ChatMessage]) -> string = do
+fn messages_json(config: ChatConfig, messages: [ChatMessage], trailer: string) -> string = do
   let mut items = ""
   let mut pending_separator = false
   if config.system_prompt.byte_size() > 0 then
@@ -87,7 +96,7 @@ fn messages_json(config: ChatConfig, messages: [ChatMessage]) -> string = do
     end
     index = index + 1
   end
-  "[" + items + "]"
+  "[" + items + trailer + "]"
 end
 
 fn uses_responses_api(base_url: string) -> bool =
@@ -138,8 +147,16 @@ fn anthropic_body(config: ChatConfig, messages: [ChatMessage]) -> string = do
   if config.system_prompt.byte_size() > 0 then
     body = body + ",\"system\":\"" + json_escape(config.system_prompt) + "\""
   end
-  body + ",\"messages\":" + messages_json(chat_config_from(config.base_url, config.model, config.api_key, ""), messages) + "}"
+  body + ",\"messages\":" + messages_json(chat_config_from(config.base_url, config.model, config.api_key, ""), messages, "") + "}"
 end
+
+fn completions_config(config: ChatConfig) -> ChatConfig =
+  chat_config_from(config.base_url, config.model, config.api_key, chat_guest_system(config.system_prompt))
+
+fn completions_body(config: ChatConfig, messages: [ChatMessage], trailer: string) -> string =
+  "{\"model\":\"" + json_escape(config.model) + "\",\"messages\":"
+    + messages_json(completions_config(config), messages, trailer)
+    + chat_guest_tools_suffix() + "}"
 
 export fn chat_request_body(config: ChatConfig, messages: [ChatMessage]) -> string = do
   if uses_responses_api(config.base_url) then
@@ -148,7 +165,7 @@ export fn chat_request_body(config: ChatConfig, messages: [ChatMessage]) -> stri
   if uses_messages_api(config.base_url) then
     return anthropic_body(config, messages)
   end
-  "{\"model\":\"" + json_escape(config.model) + "\",\"messages\":" + messages_json(config, messages) + "}"
+  completions_body(config, messages, "")
 end
 
 fn messages_url(base_url: string) -> string = do
@@ -180,17 +197,32 @@ fn request_headers(config: ChatConfig) -> [HttpsHeader] = do
   headers
 end
 
-export fn chat_build_request(config: ChatConfig, messages: [ChatMessage]) -> HttpsRequest =
+fn https_request(config: ChatConfig, body: string) -> HttpsRequest =
   HttpsRequest {
     method: "POST",
     url: request_url(config),
     headers: request_headers(config),
-    body: chat_request_body(config, messages),
+    body: body,
     timeout_milliseconds: 60000,
     max_response_bytes: 1048576,
     ca_bundle_path: "",
     proxy_url: ""
   }
+
+export fn chat_build_request(config: ChatConfig, messages: [ChatMessage]) -> HttpsRequest =
+  https_request(config, chat_request_body(config, messages))
+
+export fn chat_build_guest_followup(
+  config: ChatConfig,
+  messages: [ChatMessage],
+  call_identifier: string,
+  source: string,
+  result: string
+) -> HttpsRequest = do
+  const trailer = "," + chat_guest_assistant_tool(call_identifier, source) + ","
+    + chat_guest_tool_result(call_identifier, result)
+  https_request(config, completions_body(config, messages, trailer))
+end
 
 export fn chat_prepare(config: ChatConfig, messages: [ChatMessage]) -> ChatRequestResult = do
   if config.api_key.byte_size() == 0 then
@@ -280,7 +312,11 @@ fn success_reply(body: string) -> ReplyOutcome = do
   if message.byte_size() == 0 then
     return ReplyFailed("пустой ответ")
   end
-  content_reply(message)
+  const guest_call = chat_guest_from_message(message)
+  match guest_call do
+    | GuestCallReady(call_identifier, source) => ReplyGuestCall(call_identifier, source)
+    | GuestCallNone => content_reply(message)
+  end
 end
 
 fn error_message(body: string) -> string = do

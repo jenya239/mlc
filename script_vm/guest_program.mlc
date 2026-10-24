@@ -1,0 +1,249 @@
+import { emb_ok } from './embedding_codes'
+import { continue_halt } from './executor'
+import { resume_guest, run_guest_halt } from './executor_guest'
+import { GuestHalt } from './executor_halt'
+import { heap_element_count, heap_get_element, heap_object_type_id } from './heap'
+import { Heap, heap_new, heap_type_string } from './heap_types'
+import { host_import_manifest } from './host_imports'
+import { lower_source } from './lower/lower_module'
+import { decode_module } from './module_blob'
+import { FunctionProto, run_limits_quantum } from './run_result'
+import {
+  Value,
+  ValueBool,
+  ValueFloat64,
+  ValueHeapRef,
+  ValueInt32,
+  ValueNil,
+  value_decode,
+  value_encode,
+  value_int32
+} from './value'
+
+extern fn string_from_byte_u8(value: i32) -> string =
+  "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+extern fn env_get_or(key: string, default_value: string) -> string =
+  "mlc::env::get_or" from "mlc/env/env_abi.hpp" blocking
+extern fn file_read_to_string(path: string) -> string =
+  "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool =
+  "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn instruction_limit() -> i64 = 100000
+
+fn quantum_limit() -> i32 = 256
+
+fn host_resume_limit() -> i32 = 32
+
+fn entry_name() -> string = "run"
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn blank_source(source: string) -> bool = do
+  let mut index = 0
+  let mut blank = true
+  while index < source.length() && blank do
+    let character = source.substring(index, 1)
+    if character != " " && character != "\n" && character != "\t" && character != "\r" then
+      blank = false
+    end
+    index = index + 1
+  end
+  blank
+end
+
+fn single_line(text: string) -> string = do
+  let mut line = ""
+  let mut index = 0
+  while index < text.length() do
+    let character = text.substring(index, 1)
+    if character == "\n" || character == "\r" then
+      line = line + " "
+    else
+      line = line + character
+    end
+    index = index + 1
+  end
+  line
+end
+
+fn heap_string_text(heap: Heap, value: Value) -> string = do
+  if heap_object_type_id(heap, value) != heap_type_string() then
+    return "heap"
+  end
+  let mut text = ""
+  let mut index = 0
+  let count = heap_element_count(heap, value)
+  while index < count do
+    text = text + string_from_byte_u8(value_int32(heap_get_element(heap, value, index)))
+    index = index + 1
+  end
+  single_line(text)
+end
+
+fn value_text(heap: Heap, value: Value) -> string =
+  match value_decode(value) {
+    ValueNil => "nil",
+    ValueBool(flag) => if flag then "true" else "false" end,
+    ValueInt32(number) => number.to_string(),
+    ValueFloat64(_) => "float",
+    ValueHeapRef(_) => heap_string_text(heap, value)
+  }
+
+fn operation_name(import_index: i32) -> string = do
+  const manifest = host_import_manifest()
+  if import_index < 0 || import_index >= manifest.length() then
+    return "unknown"
+  end
+  manifest[import_index].operation_id
+end
+
+fn host_queue_path() -> string =
+  env_get_or("SCRIPT_VM_HOST_QUEUE", "/home/jenya/workspaces/current/mlc/tmp/script_vm_host_queue")
+
+fn queue_controls_host(operation: string) -> bool =
+  operation == "label.set_text" || operation == "effect.set" || operation == "listing.reload" || operation == "host.log"
+
+fn enqueue_host(operation: string, argument: string) -> i32 = do
+  if queue_controls_host(operation) == false then
+    return 0
+  end
+  let path = host_queue_path()
+  let existing = file_read_to_string(path)
+  let line = if operation == "listing.reload" then operation else operation + " " + argument end
+  file_write_string(path, existing + line + "\n")
+  0
+end
+
+fn host_line(halt: GuestHalt) -> string = do
+  let operation = operation_name(halt.state.host_import_index)
+  let argument = value_text(halt.heap, halt.argument)
+  enqueue_host(operation, argument)
+  "host=" + operation + " argument=" + argument + "\n"
+end
+
+fn stop_text(halt: GuestHalt) -> string = do
+  if halt.outcome == "finished" then
+    return "outcome=finished\nvalue=" + value_text(halt.heap, halt.state.return_value)
+      + "\ninstructions=" + halt.state.instruction_count.to_string() + "\n"
+  end
+  if halt.outcome == "failed" then
+    return "outcome=failed\nerror=" + halt.state.error_code
+      + "\nerror_at=" + halt.state.error_at.to_string() + "\n"
+  end
+  "outcome=" + halt.outcome + "\n"
+end
+
+fn continue_yielded(halt: GuestHalt, prototypes: [FunctionProto]) -> GuestHalt = do
+  let mut heap = halt.heap
+  let mut state = halt.state
+  state.quantum_limit = quantum_limit()
+  continue_halt(heap, state, prototypes)
+end
+
+fn answer_host(halt: GuestHalt, prototypes: [FunctionProto]) -> GuestHalt =
+  resume_guest(
+    halt,
+    value_encode(ValueInt32(1)),
+    halt.session_epoch,
+    halt.incarnation,
+    halt.code_epoch,
+    prototypes
+  )
+
+fn drive(halt: GuestHalt, prototypes: [FunctionProto]) -> string = do
+  let mut current = halt
+  let mut host_resumes = 0
+  let mut report = ""
+  let mut stopped = false
+  while stopped == false do
+    if current.outcome == "yielded" then
+      current = continue_yielded(current, prototypes)
+    else if current.outcome == "waiting" && host_resumes >= host_resume_limit() then
+      report = report + "outcome=host_resume_limit\nhost_resumes=" + host_resumes.to_string() + "\n"
+      report = report + host_line(current)
+      stopped = true
+    else if current.outcome == "waiting" then
+      report = report + host_line(current)
+      current = answer_host(current, prototypes)
+      host_resumes = host_resumes + 1
+    else
+      report = report + stop_text(current)
+      stopped = true
+    end
+  end
+  report
+end
+
+fn export_proto_index(exports_length: i32, names: [string], indexes: [i32], name: string) -> i32 = do
+  let mut found = 0 - 1
+  let mut index = 0
+  while index < exports_length && found < 0 do
+    if names[index] == name then
+      found = indexes[index]
+    end
+    index = index + 1
+  end
+  found
+end
+
+fn diagnostic_report(source: string) -> string = do
+  const lowered = lower_source(source)
+  if lowered.diagnostics.length() == 0 then
+    return ""
+  end
+  let mut report = ""
+  let mut index = 0
+  while index < lowered.diagnostics.length() do
+    const diagnostic = lowered.diagnostics[index]
+    report = report + "diagnostic=" + diagnostic.code + ":" + diagnostic.line.to_string() + ":"
+      + diagnostic.column.to_string() + ":" + single_line(diagnostic.message) + "\n"
+    index = index + 1
+  end
+  "source=" + single_line(source) + "\n" + report
+    + "outcome=lower_failed\n"
+    + "hint=A function body is = expression or = do ... end. Braces, return, and semicolons are rejected.\n"
+end
+
+export fn guest_program_run(source: string) -> string = do
+  if blank_source(source) then
+    return "outcome=empty\n"
+  end
+  const diagnostics = diagnostic_report(source)
+  if diagnostics.length() != 0 then
+    return diagnostics
+  end
+  const lowered = lower_source(source)
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return "outcome=decode_failed\ncode=" + decoded.code.to_string() + "\n"
+  end
+  let mut names: [string] = []
+  let mut indexes: [i32] = []
+  let mut export_index = 0
+  while export_index < decoded.decoded_module.exports.length() do
+    names.push(decoded.decoded_module.exports[export_index].name)
+    indexes.push(decoded.decoded_module.exports[export_index].proto_index)
+    export_index = export_index + 1
+  end
+  const proto_index = export_proto_index(
+    decoded.decoded_module.exports.length(),
+    names,
+    indexes,
+    entry_name()
+  )
+  if proto_index < 0 then
+    return "outcome=missing_export\n"
+  end
+  let halted = run_guest_halt(
+    heap_new(),
+    decoded.decoded_module.protos,
+    proto_index,
+    empty_arguments(),
+    run_limits_quantum(instruction_limit(), 0, quantum_limit())
+  )
+  drive(halted, decoded.decoded_module.protos)
+end

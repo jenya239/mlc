@@ -1,0 +1,177 @@
+import { get_or } from 'Env'
+import {
+  script_transaction_commit,
+  script_transaction_new,
+  script_transaction_stage_set_label_text
+} from './script_transaction'
+import { script_damage_for_set_label_text, script_damage_revision_delta } from './script_damage'
+import { GalleryGuest } from './gallery_guest'
+import { show_effect_mode } from './visual_effect'
+
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn host_queue_path() -> string =
+  get_or("SCRIPT_VM_HOST_QUEUE", "/home/jenya/workspaces/current/mlc/tmp/script_vm_host_queue")
+
+fn effect_mode_allowed(mode: i32) -> bool =
+  mode == 0 || mode == 1 || mode == 2 || mode == 3
+
+fn parse_effect_mode(text: string) -> i32 = do
+  if text == "0" || text == "1" || text == "2" || text == "3" then
+    if text == "0" then
+      return 0
+    end
+    if text == "1" then
+      return 1
+    end
+    if text == "2" then
+      return 2
+    end
+    return 3
+  end
+  0 - 1
+end
+
+fn guest_with_flags(
+  guest: GalleryGuest,
+  store_revision: i32,
+  effect_requested: bool,
+  effect_mode: i32,
+  reload_requested: bool
+) -> GalleryGuest =
+  GalleryGuest {
+    store: guest.store,
+    halt: guest.halt,
+    prototypes: guest.prototypes,
+    widget: guest.widget,
+    revision: store_revision,
+    timer_origin_milliseconds: guest.timer_origin_milliseconds,
+    timer_armed: guest.timer_armed,
+    guest_released: guest.guest_released,
+    effect_requested: effect_requested,
+    effect_mode: effect_mode,
+    reload_requested: reload_requested
+  }
+
+fn apply_label(guest: GalleryGuest, text: string) -> GalleryGuest = do
+  let committed = script_transaction_commit(
+    script_transaction_stage_set_label_text(script_transaction_new(guest.store), guest.widget, text)
+  )
+  if committed.revision != 1 then
+    return guest
+  end
+  let revision = guest.revision + script_damage_revision_delta(script_damage_for_set_label_text(true))
+  GalleryGuest {
+    store: committed.store,
+    halt: guest.halt,
+    prototypes: guest.prototypes,
+    widget: guest.widget,
+    revision: revision,
+    timer_origin_milliseconds: guest.timer_origin_milliseconds,
+    timer_armed: guest.timer_armed,
+    guest_released: guest.guest_released,
+    effect_requested: guest.effect_requested,
+    effect_mode: guest.effect_mode,
+    reload_requested: guest.reload_requested
+  }
+end
+
+fn apply_effect(guest: GalleryGuest, text: string) -> GalleryGuest = do
+  let mode = parse_effect_mode(text)
+  if effect_mode_allowed(mode) == false then
+    return guest
+  end
+  GalleryGuest {
+    store: show_effect_mode(guest.store, mode),
+    halt: guest.halt,
+    prototypes: guest.prototypes,
+    widget: guest.widget,
+    revision: guest.revision + 1,
+    timer_origin_milliseconds: guest.timer_origin_milliseconds,
+    timer_armed: guest.timer_armed,
+    guest_released: guest.guest_released,
+    effect_requested: true,
+    effect_mode: mode,
+    reload_requested: guest.reload_requested
+  }
+end
+
+fn apply_line(guest: GalleryGuest, operation: string, argument: string) -> GalleryGuest = do
+  if operation == "label.set_text" then
+    return apply_label(guest, argument)
+  end
+  if operation == "effect.set" then
+    return apply_effect(guest, argument)
+  end
+  if operation == "listing.reload" then
+    return guest_with_flags(guest, guest.revision, guest.effect_requested, guest.effect_mode, true)
+  end
+  if operation == "host.log" then
+    println("[textui] host log=" + argument)
+    return guest
+  end
+  guest
+end
+
+fn line_operation(line: string) -> string = do
+  let space = line.index_of(" ")
+  if space < 0 then
+    return line
+  end
+  line.substring(0, space)
+end
+
+fn line_argument(line: string) -> string = do
+  let space = line.index_of(" ")
+  if space < 0 then
+    return ""
+  end
+  line.substring(space + 1, line.length() - space - 1)
+end
+
+fn apply_text(guest: GalleryGuest, text: string) -> GalleryGuest = do
+  let mut current = guest
+  let mut start = 0
+  while start < text.length() do
+    let mut end_index = start
+    while end_index < text.length() && text.substring(end_index, 1) != "\n" do
+      end_index = end_index + 1
+    end
+    let line = text.substring(start, end_index - start)
+    if line.length() > 0 then
+      current = apply_line(current, line_operation(line), line_argument(line))
+    end
+    start = end_index + 1
+  end
+  current
+end
+
+fn retain_suffix(path: string, applied_text: string) -> i32 = do
+  let current = file_read_to_string(path)
+  if current == applied_text then
+    let replaced = file_write_string(path, "")
+    replaced
+  else
+    if current.length() >= applied_text.length() && current.substring(0, applied_text.length()) == applied_text then
+      let replaced = file_write_string(path, current.substring(applied_text.length(), current.length() - applied_text.length()))
+      replaced
+    else
+      false
+    end
+  end
+  0
+end
+
+export fn apply_host_queue(guest: GalleryGuest) -> GalleryGuest = do
+  let path = host_queue_path()
+  let text = file_read_to_string(path)
+  if text.length() == 0 then
+    return guest
+  end
+  let applied = apply_text(guest, text)
+  retain_suffix(path, text)
+  applied
+end

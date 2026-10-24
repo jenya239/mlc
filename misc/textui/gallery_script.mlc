@@ -12,7 +12,7 @@ import { LabelData, OverflowVisible, WidgetId, WidgetStore, widget_store_add_lab
 fn idle_label_text() -> string = "VM: idle"
 
 fn guest_program() -> string =
-  "export fn run() -> i32 = set_label_text(\"VM: scripted\")\n"
+  "export fn run() -> i32 = do\nset_label_text(\"V\")\ntimer_after(140)\nset_label_text(\"VM\")\ntimer_after(140)\nset_label_text(\"VM:\")\ntimer_after(140)\nset_label_text(\"VM: s\")\ntimer_after(140)\nset_label_text(\"VM: sc\")\ntimer_after(140)\nset_label_text(\"VM: scr\")\ntimer_after(140)\nset_label_text(\"VM: scri\")\ntimer_after(140)\nset_label_text(\"VM: scrip\")\ntimer_after(140)\nset_label_text(\"VM: script\")\ntimer_after(140)\nset_label_text(\"VM: scripte\")\ntimer_after(140)\nset_label_text(\"VM: scripted\")\nend\n"
 
 fn empty_prototypes() -> [FunctionProto] = do
   let mut prototypes: [FunctionProto] = []
@@ -27,7 +27,11 @@ fn idle_guest(store: WidgetStore, widget: WidgetId) -> GalleryGuest =
     widget: widget,
     revision: 0,
     timer_origin_milliseconds: 0,
-    timer_armed: false
+    timer_armed: false,
+    guest_released: false,
+    effect_requested: false,
+    effect_mode: 0,
+    reload_requested: false
   }
 
 fn open_lowered(store: WidgetStore, widget: WidgetId) -> GalleryGuest = do

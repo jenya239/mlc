@@ -1,5 +1,12 @@
 import { instruction_words_host_call } from '../bytecode_wide'
-import { host_import_label_set_text, host_import_manifest, host_import_timer_after } from '../host_imports'
+import {
+  host_import_effect_set,
+  host_import_host_log,
+  host_import_label_set_text,
+  host_import_listing_reload,
+  host_import_manifest,
+  host_import_timer_after
+} from '../host_imports'
 
 fn empty_words() -> [i32] = do
   let mut words: [i32] = []
@@ -42,6 +49,13 @@ export fn lower_label_set_text_host_call(destination: i32, argument_register: i3
     import_index_for(host_import_label_set_text().operation_id)
   )
 
+export fn lower_operation_host_call(
+  operation_id: string,
+  destination: i32,
+  argument_register: i32
+) -> [i32] =
+  instruction_words_host_call(destination, argument_register, import_index_for(operation_id))
+
 export fn lower_host_call_intrinsic(
   operation_id: string,
   destination: i32,
@@ -51,6 +65,12 @@ export fn lower_host_call_intrinsic(
     lower_timer_after_host_call(destination, argument_register)
   else if operation_id == host_import_label_set_text().operation_id then
     lower_label_set_text_host_call(destination, argument_register)
+  else if operation_id == host_import_effect_set().operation_id then
+    lower_operation_host_call(operation_id, destination, argument_register)
+  else if operation_id == host_import_listing_reload().operation_id then
+    lower_operation_host_call(operation_id, destination, argument_register)
+  else if operation_id == host_import_host_log().operation_id then
+    lower_operation_host_call(operation_id, destination, argument_register)
   else
     empty_words()
   end

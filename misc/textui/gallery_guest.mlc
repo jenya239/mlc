@@ -1,15 +1,21 @@
 import { continue_halt } from '../../script_vm/executor'
-import { run_guest_halt } from '../../script_vm/executor_guest'
+import { resume_guest, run_guest_halt } from '../../script_vm/executor_guest'
 import { GuestHalt } from '../../script_vm/executor_halt'
 import { guest_timer_poll } from '../../script_vm/guest_timer'
 import { heap_new } from '../../script_vm/heap_types'
-import { host_import_timer_after } from '../../script_vm/host_imports'
+import {
+  host_import_effect_set,
+  host_import_host_log,
+  host_import_listing_reload,
+  host_import_timer_after
+} from '../../script_vm/host_imports'
 import { host_call_import_index } from '../../script_vm/lower/lower_host_call'
 import { FunctionProto, run_limits_quantum } from '../../script_vm/run_result'
-import { Value, value_int32 } from '../../script_vm/value'
+import { Value, ValueInt32, value_encode, value_int32 } from '../../script_vm/value'
 import { script_damage_for_set_label_text, script_damage_revision_delta } from './script_damage'
-import { script_frame_accept_label_text } from './script_label_frame'
+import { script_frame_accept_label_text, script_frame_heap_string } from './script_label_frame'
 import { WidgetId, WidgetStore } from './store'
+import { show_effect_mode } from './visual_effect'
 
 export type GalleryGuest = {
   store: WidgetStore,
@@ -18,7 +24,11 @@ export type GalleryGuest = {
   widget: WidgetId,
   revision: i32,
   timer_origin_milliseconds: i32,
-  timer_armed: bool
+  timer_armed: bool,
+  guest_released: bool,
+  effect_requested: bool,
+  effect_mode: i32,
+  reload_requested: bool
 }
 
 fn empty_arguments() -> [Value] = do
@@ -39,7 +49,11 @@ fn guest_copy(
   halt: GuestHalt,
   revision: i32,
   timer_origin_milliseconds: i32,
-  timer_armed: bool
+  timer_armed: bool,
+  guest_released: bool,
+  effect_requested: bool,
+  effect_mode: i32,
+  reload_requested: bool
 ) -> GalleryGuest =
   GalleryGuest {
     store: store,
@@ -48,7 +62,11 @@ fn guest_copy(
     widget: guest.widget,
     revision: revision,
     timer_origin_milliseconds: timer_origin_milliseconds,
-    timer_armed: timer_armed
+    timer_armed: timer_armed,
+    guest_released: guest_released,
+    effect_requested: effect_requested,
+    effect_mode: effect_mode,
+    reload_requested: reload_requested
   }
 
 export fn gallery_guest_start(
@@ -71,7 +89,11 @@ export fn gallery_guest_start(
     widget: widget,
     revision: 0,
     timer_origin_milliseconds: 0,
-    timer_armed: false
+    timer_armed: false,
+    guest_released: false,
+    effect_requested: false,
+    effect_mode: 0,
+    reload_requested: false
   }
 end
 
@@ -82,7 +104,11 @@ export fn gallery_guest_repeat(guest: GalleryGuest) -> GalleryGuest =
     guest.halt,
     guest.revision,
     guest.timer_origin_milliseconds,
-    guest.timer_armed
+    guest.timer_armed,
+    guest.guest_released,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
   )
 
 fn continue_yielded(guest: GalleryGuest) -> GalleryGuest = do
@@ -93,7 +119,18 @@ fn continue_yielded(guest: GalleryGuest) -> GalleryGuest = do
   let mut state = guest.halt.state
   state.quantum_limit = gallery_quantum()
   let halt = continue_halt(heap, state, guest.prototypes)
-  guest_copy(guest, guest.store, halt, guest.revision, guest.timer_origin_milliseconds, guest.timer_armed)
+  guest_copy(
+    guest,
+    guest.store,
+    halt,
+    guest.revision,
+    guest.timer_origin_milliseconds,
+    guest.timer_armed,
+    guest.guest_released,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
+  )
 end
 
 fn arm_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
@@ -103,7 +140,18 @@ fn arm_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
   if guest.halt.state.host_import_index != timer_after_index() then
     return guest
   end
-  guest_copy(guest, guest.store, guest.halt, guest.revision, now_milliseconds, true)
+  guest_copy(
+    guest,
+    guest.store,
+    guest.halt,
+    guest.revision,
+    now_milliseconds,
+    true,
+    guest.guest_released,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
+  )
 end
 
 fn poll_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
@@ -118,7 +166,18 @@ fn poll_timer(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest = do
     now_milliseconds
   )
   let armed = polled.outcome == "waiting" && polled.state.host_import_index == timer_after_index()
-  guest_copy(guest, guest.store, polled, guest.revision, guest.timer_origin_milliseconds, armed)
+  guest_copy(
+    guest,
+    guest.store,
+    polled,
+    guest.revision,
+    guest.timer_origin_milliseconds,
+    armed,
+    guest.guest_released,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
+  )
 end
 
 export fn gallery_guest_tick(guest: GalleryGuest, now_milliseconds: i32) -> GalleryGuest =
@@ -127,8 +186,133 @@ export fn gallery_guest_tick(guest: GalleryGuest, now_milliseconds: i32) -> Gall
 export fn gallery_guest_ping(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest = do
   let accepted = script_frame_accept_label_text(guest.halt, store, guest.widget, guest.prototypes)
   if accepted.applied == false then
-    return guest_copy(guest, store, guest.halt, guest.revision, guest.timer_origin_milliseconds, guest.timer_armed)
+    return guest_copy(
+      guest,
+      store,
+      guest.halt,
+      guest.revision,
+      guest.timer_origin_milliseconds,
+      guest.timer_armed,
+      guest.guest_released,
+      guest.effect_requested,
+      guest.effect_mode,
+      guest.reload_requested
+    )
   end
   let revision = guest.revision + script_damage_revision_delta(script_damage_for_set_label_text(true))
-  guest_copy(guest, accepted.store, accepted.halt, revision, guest.timer_origin_milliseconds, false)
+  guest_copy(
+    guest,
+    accepted.store,
+    accepted.halt,
+    revision,
+    guest.timer_origin_milliseconds,
+    false,
+    true,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
+  )
+end
+
+fn effect_set_index() -> i32 =
+  host_call_import_index(host_import_effect_set().operation_id)
+
+fn listing_reload_index() -> i32 =
+  host_call_import_index(host_import_listing_reload().operation_id)
+
+fn host_log_index() -> i32 =
+  host_call_import_index(host_import_host_log().operation_id)
+
+fn effect_mode_allowed(mode: i32) -> bool =
+  mode == 0 || mode == 1 || mode == 2 || mode == 3
+
+fn resume_host(guest: GalleryGuest) -> GuestHalt =
+  resume_guest(
+    guest.halt,
+    value_encode(ValueInt32(1)),
+    guest.halt.session_epoch,
+    guest.halt.incarnation,
+    guest.halt.code_epoch,
+    guest.prototypes
+  )
+
+export fn gallery_guest_clear_requests(guest: GalleryGuest) -> GalleryGuest =
+  guest_copy(
+    guest,
+    guest.store,
+    guest.halt,
+    guest.revision,
+    guest.timer_origin_milliseconds,
+    guest.timer_armed,
+    guest.guest_released,
+    false,
+    0,
+    false
+  )
+
+export fn gallery_guest_accept_control(guest: GalleryGuest) -> GalleryGuest = do
+  if guest.halt.outcome != "waiting" then
+    return guest
+  end
+  let import_index = guest.halt.state.host_import_index
+  if import_index == effect_set_index() then
+    let mode = value_int32(guest.halt.argument)
+    let resumed = resume_host(guest)
+    if effect_mode_allowed(mode) then
+      return guest_copy(
+        guest,
+        show_effect_mode(guest.store, mode),
+        resumed,
+        guest.revision + 1,
+        guest.timer_origin_milliseconds,
+        false,
+        guest.guest_released,
+        true,
+        mode,
+        guest.reload_requested
+      )
+    end
+    return guest_copy(
+      guest,
+      guest.store,
+      resumed,
+      guest.revision,
+      guest.timer_origin_milliseconds,
+      false,
+      guest.guest_released,
+      guest.effect_requested,
+      guest.effect_mode,
+      guest.reload_requested
+    )
+  end
+  if import_index == listing_reload_index() then
+    return guest_copy(
+      guest,
+      guest.store,
+      resume_host(guest),
+      guest.revision,
+      guest.timer_origin_milliseconds,
+      false,
+      guest.guest_released,
+      guest.effect_requested,
+      guest.effect_mode,
+      true
+    )
+  end
+  if import_index == host_log_index() then
+    println("[textui] host log=" + script_frame_heap_string(guest.halt.heap, guest.halt.argument))
+    return guest_copy(
+      guest,
+      guest.store,
+      resume_host(guest),
+      guest.revision,
+      guest.timer_origin_milliseconds,
+      false,
+      guest.guest_released,
+      guest.effect_requested,
+      guest.effect_mode,
+      guest.reload_requested
+    )
+  end
+  guest
 end

@@ -237,6 +237,12 @@ fn main() -> i32 = do
     state = heard.state
     guest = gallery_frame_advance(guest, store, updated.events, host_now_ms())
     store = guest.store
+    if guest.reload_requested then
+      reload_requested = true
+    end
+    if guest.effect_requested then
+      effect_mode = guest.effect_mode
+    end
     const early_signature = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
     const request = frame_request(presented, early_signature)
     if frame_request_layouts(request) then

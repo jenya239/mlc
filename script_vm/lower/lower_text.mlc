@@ -1,4 +1,4 @@
-import { Expr, ExprInt, Span } from '../../compiler/frontend/ast'
+import { Expr, ExprInt, ExprStr, Span } from '../../compiler/frontend/ast'
 import { ValueInt32, value_encode } from '../value'
 import {
   instruction_opcode_add,
@@ -16,7 +16,12 @@ import {
 } from './lower_builder'
 import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
 import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
-import { lower_label_set_text_host_call, lower_timer_after_host_call } from './lower_host_call'
+import { host_import_effect_set, host_import_host_log, host_import_listing_reload } from '../host_imports'
+import {
+  lower_label_set_text_host_call,
+  lower_operation_host_call,
+  lower_timer_after_host_call
+} from './lower_host_call'
 import { LowerType, LowerInt } from './lower_types'
 
 extern fn source_byte(text: string, index: i32) -> i32 =
@@ -202,6 +207,61 @@ fn lower_set_label_text(
     _ => unknown_name(scope, source_span)
   }
 
+fn lower_integer_host_call(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32,
+  operation_id: string
+) -> LowerType =
+  match arguments[0] {
+    ExprInt(number, _) => do
+      let mark = proto_builder_register_mark(builder)
+      let argument_register = proto_builder_register_allocate(builder)
+      proto_builder_load_constant(builder, argument_register, value_encode(ValueInt32(number)))
+      emit_instruction(builder, lower_operation_host_call(operation_id, target, argument_register))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end,
+    _ => unknown_name(scope, source_span)
+  }
+
+fn lower_string_host_call(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32,
+  operation_id: string
+) -> LowerType =
+  match arguments[0] {
+    ExprStr(text, _) => do
+      let mark = proto_builder_register_mark(builder)
+      let argument_register = proto_builder_register_allocate(builder)
+      lower_text_literal(builder, text, argument_register)
+      emit_instruction(builder, lower_operation_host_call(operation_id, target, argument_register))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end,
+    _ => unknown_name(scope, source_span)
+  }
+
+fn lower_reload_listing(
+  builder: ref mut ProtoBuilder,
+  target: i32
+) -> LowerType = do
+  let mark = proto_builder_register_mark(builder)
+  let argument_register = proto_builder_register_allocate(builder)
+  proto_builder_load_constant(builder, argument_register, value_encode(ValueInt32(0)))
+  emit_instruction(
+    builder,
+    lower_operation_host_call(host_import_listing_reload().operation_id, target, argument_register)
+  )
+  proto_builder_register_release_to(builder, mark)
+  LowerInt
+end
+
 fn lower_length_argument(
   scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
@@ -261,6 +321,16 @@ export fn lower_text_named(
     lower_timer_after(scope, builder, arguments, source_span, target)
   else if name == "set_label_text" && arguments.length() == 1 then
     lower_set_label_text(scope, builder, arguments, source_span, target)
+  else if name == "set_effect_mode" && arguments.length() == 1 then
+    lower_integer_host_call(
+      scope, builder, arguments, source_span, target, host_import_effect_set().operation_id
+    )
+  else if name == "log_host" && arguments.length() == 1 then
+    lower_string_host_call(
+      scope, builder, arguments, source_span, target, host_import_host_log().operation_id
+    )
+  else if name == "reload_listing" && arguments.length() == 0 then
+    lower_reload_listing(builder, target)
   else
     unknown_name(scope, source_span)
   end

@@ -10,6 +10,10 @@
       "env": {
         "SQLITE_DB_PATH": ".cursor/memory.db"
       }
+    },
+    "script-vm": {
+      "command": "ruby",
+      "args": ["tools/mcp/script_vm_server.rb"]
     }
   }
 }

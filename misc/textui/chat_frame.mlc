@@ -155,7 +155,7 @@ export fn chat_frame_run(
   const revision_before = world.model.revision
   const view_before = world.view
   const selection_before = world.selection
-  let mut model = chat_session_poll(world.model)
+  let mut model = chat_session_poll(world.config, world.model)
   const bounds = chat_transcript_rect(world.layout, world.scene)
   const routed = transcript_pointer_routed(input, bounds)
   let mut delivered = input

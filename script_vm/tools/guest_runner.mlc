@@ -1,0 +1,6 @@
+import { guest_program_run } from '../guest_program'
+
+fn main() -> i32 = do
+  println(guest_program_run(read_all()))
+  0
+end

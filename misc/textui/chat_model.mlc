@@ -8,7 +8,7 @@ export type ChatMessage = {
   model_name: string
 }
 
-export type ReplyOutcome = ReplyText(string) | ReplyFailed(string)
+export type ReplyOutcome = ReplyText(string) | ReplyFailed(string) | ReplyGuestCall(string, string)
 
 export type ChatModel = {
   messages: [ChatMessage],
@@ -120,17 +120,7 @@ export fn chat_stamp_submission(
   }
 end
 
-export fn chat_apply_reply(
-  model: ChatModel,
-  generation: i32,
-  outcome: ReplyOutcome
-) -> ChatModel = do
-  if generation != model.generation then
-    return model
-  end
-  const reply = match outcome
-    | ReplyText(text) => assistant_message(text, false, model.messages)
-    | ReplyFailed(text) => assistant_message(text, true, model.messages)
+fn finish_reply(model: ChatModel, reply: ChatMessage) -> ChatModel = do
   let mut messages = model.messages
   messages.push(reply)
   ChatModel {
@@ -139,6 +129,21 @@ export fn chat_apply_reply(
     generation: model.generation,
     revision: model.revision + 1
   }
+end
+
+export fn chat_apply_reply(
+  model: ChatModel,
+  generation: i32,
+  outcome: ReplyOutcome
+) -> ChatModel = do
+  if generation != model.generation then
+    return model
+  end
+  match outcome do
+    | ReplyGuestCall(_, _) => model
+    | ReplyText(text) => finish_reply(model, assistant_message(text, false, model.messages))
+    | ReplyFailed(text) => finish_reply(model, assistant_message(text, true, model.messages))
+  end
 end
 
 export fn chat_cancel(model: ChatModel) -> ChatModel = do

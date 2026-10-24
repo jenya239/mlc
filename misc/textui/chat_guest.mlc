@@ -1,0 +1,71 @@
+import {
+  chat_json_field,
+  chat_json_index,
+  json_escape,
+  parsed_array,
+  parsed_object,
+  parsed_string
+} from './chat_json'
+
+export type GuestCall =
+  GuestCallNone
+  | GuestCallReady(string, string)
+
+fn guest_contract() -> string = do
+  "You can run a trusted MLC guest with the tool run_guest. The source is MLC, not C, JavaScript, or Python.\n"
+    + "export fn run() -> i32 = 2 + 2\n"
+    + "export fn run() -> i32 = do\n"
+    + "  set_label_text(\"agent\")\n"
+    + "  set_effect_mode(2)\n"
+    + "  0\n"
+    + "end\n"
+    + "A body is = expression or = do ... end. The last expression is the result. Braces, return, and semicolons are rejected.\n"
+    + "Host calls take literals only. set_label_text(\"text\") sets the gallery label. set_effect_mode(0) is Off, 1 is Lens, 2 is Cyber, 3 is Fractal. reload_listing() restarts the window. log_host(\"text\") prints from the gallery. timer_after(milliseconds) returns immediately and does not change the window. The gallery applies queued host calls after this chat closes.\n"
+    + "Read outcome=, value=, and host= lines. If outcome=lower_failed, send a corrected source to run_guest."
+end
+
+export fn chat_guest_system(existing: string) -> string = do
+  if existing.byte_size() == 0 then
+    return guest_contract()
+  end
+  existing + "\n" + guest_contract()
+end
+
+export fn chat_guest_tools_suffix() -> string =
+  ",\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"run_guest\",\"description\":\"Run one trusted MLC guest. Example: export fn run() -> i32 = 2 + 2. A block is = do ... end, and its last expression is the result. Braces, return, and semicolons are rejected. set_effect_mode(2) is Cyber.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source\":{\"type\":\"string\"}},\"required\":[\"source\"]}}}]"
+
+export fn chat_guest_from_message(message: string) -> GuestCall = do
+  const calls = parsed_array(chat_json_field(message, "tool_calls"))
+  if calls.byte_size() == 0 then
+    return GuestCallNone
+  end
+  const first = parsed_object(chat_json_index(calls, 0))
+  const function_object = parsed_object(chat_json_field(first, "function"))
+  if parsed_string(chat_json_field(function_object, "name")) != "run_guest" then
+    return GuestCallNone
+  end
+  const arguments_text = parsed_string(chat_json_field(function_object, "arguments"))
+  const source = parsed_string(chat_json_field(arguments_text, "source"))
+  if source.byte_size() == 0 then
+    return GuestCallNone
+  end
+  let call_identifier = parsed_string(chat_json_field(first, "id"))
+  if call_identifier.byte_size() == 0 then
+    call_identifier = "run_guest"
+  end
+  GuestCallReady(call_identifier, source)
+end
+
+fn arguments_json(source: string) -> string =
+  "{\"source\":\"" + json_escape(source) + "\"}"
+
+export fn chat_guest_assistant_tool(call_identifier: string, source: string) -> string =
+  "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\""
+    + json_escape(call_identifier)
+    + "\",\"type\":\"function\",\"function\":{\"name\":\"run_guest\",\"arguments\":\""
+    + json_escape(arguments_json(source))
+    + "\"}}]}"
+
+export fn chat_guest_tool_result(call_identifier: string, result: string) -> string =
+  "{\"role\":\"tool\",\"tool_call_id\":\"" + json_escape(call_identifier)
+    + "\",\"content\":\"" + json_escape(result) + "\"}"

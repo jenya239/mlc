@@ -1,10 +1,19 @@
 extern fn i32_to_f64(value: i32) -> f64 = "mlc::math::i32_to_f64" from "mlc/math/math.hpp"
 
 import { guest_timer_remaining } from '../../script_vm/guest_timer'
+import { host_import_label_set_text } from '../../script_vm/host_imports'
+import { host_call_import_index } from '../../script_vm/lower/lower_host_call'
 import { value_int32 } from '../../script_vm/value'
 import { button_caption } from './app_input'
 import { FrameSignature, frame_signature_with_script_damage } from './frame_request'
-import { GalleryGuest, gallery_guest_ping, gallery_guest_tick } from './gallery_guest'
+import {
+  GalleryGuest,
+  gallery_guest_accept_control,
+  gallery_guest_clear_requests,
+  gallery_guest_ping,
+  gallery_guest_tick
+} from './gallery_guest'
+import { apply_host_queue } from './host_command'
 import { script_frame_pump_drain, script_frame_pump_name, script_frame_pump_new } from './script_events'
 import { UiState } from './ui_state'
 import { UiEvent } from './ui_event'
@@ -35,6 +44,12 @@ fn events_request_ping(store: WidgetStore, events: [UiEvent]) -> bool = do
   requested
 end
 
+fn label_set_text_index() -> i32 =
+  host_call_import_index(host_import_label_set_text().operation_id)
+
+fn waiting_for_label(guest: GalleryGuest) -> bool =
+  guest.halt.outcome == "waiting" && guest.halt.state.host_import_index == label_set_text_index()
+
 fn guest_with_store(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest =
   GalleryGuest {
     store: store,
@@ -43,7 +58,11 @@ fn guest_with_store(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest =
     widget: guest.widget,
     revision: guest.revision,
     timer_origin_milliseconds: guest.timer_origin_milliseconds,
-    timer_armed: guest.timer_armed
+    timer_armed: guest.timer_armed,
+    guest_released: guest.guest_released,
+    effect_requested: guest.effect_requested,
+    effect_mode: guest.effect_mode,
+    reload_requested: guest.reload_requested
   }
 
 export fn gallery_frame_advance(
@@ -56,16 +75,16 @@ export fn gallery_frame_advance(
   if drained != script_frame_pump_name() then
     return guest_with_store(guest, store)
   end
-  let ticked = gallery_guest_tick(guest_with_store(guest, store), now_milliseconds)
-  if events_request_ping(ticked.store, events) then
-    let pinged = gallery_guest_ping(ticked, ticked.store)
-    if pinged.revision != ticked.revision then
-      println("[textui] vm label=VM: scripted")
-    end
-    pinged
-  else
-    ticked
+  let cleared = gallery_guest_clear_requests(guest_with_store(guest, store))
+  let queued = apply_host_queue(cleared)
+  let ticked = gallery_guest_tick(queued, now_milliseconds)
+  let controlled = gallery_guest_accept_control(ticked)
+  let follow_label = events_request_ping(controlled.store, events) || (controlled.guest_released && waiting_for_label(controlled))
+  let stepped = if follow_label then gallery_guest_ping(controlled, controlled.store) else controlled
+  if stepped.revision != ticked.revision then
+    println("[textui] vm label step")
   end
+  gallery_guest_tick(stepped, now_milliseconds)
 end
 
 export fn gallery_frame_signature(
@@ -97,5 +116,9 @@ export fn gallery_frame_wait_seconds(
     end
     return i32_to_f64(remaining) / 1000.0
   end
-  frame_wait_seconds(effect_mode, preview_playing, music_running)
+  let base = frame_wait_seconds(effect_mode, preview_playing, music_running)
+  if base < 0.0 || base > 0.25 then
+    return 0.25
+  end
+  base
 end

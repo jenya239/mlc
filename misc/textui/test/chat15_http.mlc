@@ -1,4 +1,4 @@
-import { ChatMessage, ReplyFailed, ReplyOutcome, ReplyText } from '../chat_model'
+import { ChatMessage, ReplyFailed, ReplyGuestCall, ReplyOutcome, ReplyText, RoleAssistant, RoleUser } from '../chat_model'
 import { chat_json_message_content } from '../chat_json'
 import {
   ChatConfig,
@@ -28,11 +28,19 @@ fn reply_text(outcome: ReplyOutcome) -> string =
   match outcome
     | ReplyText(text) => text
     | ReplyFailed(_) => ""
+    | ReplyGuestCall(_, _) => ""
 
 fn failed_text(outcome: ReplyOutcome) -> string =
   match outcome
     | ReplyFailed(text) => text
     | ReplyText(_) => ""
+    | ReplyGuestCall(_, _) => ""
+
+fn guest_source(outcome: ReplyOutcome) -> string =
+  match outcome
+    | ReplyGuestCall(_, source) => source
+    | ReplyText(_) => ""
+    | ReplyFailed(_) => ""
 
 fn prepared_refusal(result: ChatRequestResult) -> string =
   match result
@@ -46,22 +54,22 @@ fn main() -> i32 = do
   messages.push(user_message(original))
   const config = sample_config()
   const body = chat_request_body(config, messages)
-  if chat_json_message_content(body, 0) != original then
+  if chat_json_message_content(body, 1) != original then
     return -1
   end
   if body.index_of("secret-key-value") >= 0 || body.index_of("secret-leak") >= 0 || body.index_of("api_key") >= 0 then
     return -2
   end
-  if body.index_of("\"role\":\"system\"") >= 0 then
+  if body.index_of("\"role\":\"system\"") < 0 || body.index_of("run_guest") < 0 || body.index_of("\"tools\"") < 0 then
+    return -2
+  end
+  if body.index_of("= do") < 0 || body.index_of("Braces, return, and semicolons are rejected.") < 0 then
     return -2
   end
 
   const with_system = chat_config_from(config.base_url, config.model, config.api_key, "be brief")
   const system_body = chat_request_body(with_system, [user_message("hi")])
-  if chat_json_message_content(system_body, 0) != "be brief" then
-    return -3
-  end
-  if chat_json_message_content(system_body, 1) != "hi" then
+  if system_body.index_of("be brief") < 0 || chat_json_message_content(system_body, 1) != "hi" then
     return -3
   end
 
@@ -150,6 +158,24 @@ fn main() -> i32 = do
   const loaded = chat_config_load()
   if loaded.base_url.byte_size() < 0 then
     return -16
+  end
+  const tool_body = "{\"choices\":[{\"message\":{\"content\":null,\"tool_calls\":[{\"id\":\"call_1\",\"function\":{\"name\":\"run_guest\",\"arguments\":\"{\\\"source\\\":\\\"export fn run() -> i32 = 1\\\"}\"}}]}}]}"
+  if guest_source(chat_reply_from(200, tool_body)) != "export fn run() -> i32 = 1" then
+    return -17
+  end
+  const anthropic_body = chat_request_body(
+    chat_config_from("https://api.anthropic.com/v1", "claude", "key", ""),
+    [user_message("hi")]
+  )
+  if anthropic_body.index_of("run_guest") >= 0 then
+    return -18
+  end
+  const meta_body = chat_request_body(
+    chat_config_from("https://api.meta.ai/v1", "meta", "key", ""),
+    [user_message("hi")]
+  )
+  if meta_body.index_of("run_guest") >= 0 then
+    return -19
   end
   0
 end

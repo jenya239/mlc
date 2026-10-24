@@ -1,6 +1,7 @@
 import {
   ChatModel,
   RoleAssistant,
+  RoleUser,
   chat_cancel,
   chat_model_new,
   chat_submit
@@ -43,11 +44,11 @@ fn last_is_assistant_failure(model: ChatModel) -> bool = do
   false
 end
 
-fn poll_until_settled(model: ChatModel) -> ChatModel = do
+fn poll_until_settled(config: ChatConfig, model: ChatModel) -> ChatModel = do
   let mut current = model
   let mut ticks = 0
   while ticks < 1500 && current.pending do
-    current = chat_session_poll(current)
+    current = chat_session_poll(config, current)
     if current.pending then
       const slept = sleep_milliseconds(10)
       if slept < 0 then
@@ -59,11 +60,11 @@ fn poll_until_settled(model: ChatModel) -> ChatModel = do
   current
 end
 
-fn poll_until_idle(model: ChatModel) -> ChatModel = do
+fn poll_until_idle(config: ChatConfig, model: ChatModel) -> ChatModel = do
   let mut current = model
   let mut ticks = 0
   while ticks < 1500 do
-    current = chat_session_poll(current)
+    current = chat_session_poll(config, current)
     if transport_in_flight() == 0 then
       return current
     end
@@ -127,7 +128,7 @@ fn main() -> i32 = do
   if chat_wait_seconds(dispatched) != 0.05 then
     return -12
   end
-  const settled = poll_until_settled(dispatched)
+  const settled = poll_until_settled(unreachable_config("secret-key-value"), dispatched)
   if settled.pending then
     return -13
   end
@@ -154,7 +155,7 @@ fn main() -> i32 = do
   if stopped.pending then
     return -18
   end
-  const late = poll_until_idle(stopped)
+  const late = poll_until_idle(unreachable_config("secret-key-value"), stopped)
   if late.messages.length() != stopped.messages.length() then
     return -19
   end

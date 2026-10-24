@@ -29,6 +29,33 @@ export fn host_import_label_set_text() -> ImportDeclaration =
     effect_class: ImportEffectAsyncMutation
   }
 
+export fn host_import_effect_set() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "effect.set",
+    major_version: 1,
+    argument_schema: "i32",
+    result_schema: "i32",
+    effect_class: ImportEffectAsyncMutation
+  }
+
+export fn host_import_listing_reload() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "listing.reload",
+    major_version: 1,
+    argument_schema: "i32",
+    result_schema: "i32",
+    effect_class: ImportEffectAsyncMutation
+  }
+
+export fn host_import_host_log() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "host.log",
+    major_version: 1,
+    argument_schema: "string",
+    result_schema: "i32",
+    effect_class: ImportEffectAsyncMutation
+  }
+
 fn effect_class_code(effect_class: ImportEffectClass) -> i32 =
   match effect_class
     | ImportEffectPureBounded => 0
@@ -49,6 +76,9 @@ export fn host_import_manifest() -> [ImportDeclaration] = do
   let mut manifest: [ImportDeclaration] = []
   manifest.push(host_import_timer_after())
   manifest.push(host_import_label_set_text())
+  manifest.push(host_import_effect_set())
+  manifest.push(host_import_listing_reload())
+  manifest.push(host_import_host_log())
   manifest
 end
 

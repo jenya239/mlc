@@ -1,11 +1,18 @@
-import { ChatConfig, chat_build_request } from './chat_http'
+import { guest_program_run } from '../../script_vm/guest_program'
+import { ChatConfig, chat_build_guest_followup, chat_build_request } from './chat_http'
 import {
+  ChatMessage,
   ChatModel,
   ReplyFailed,
+  ReplyGuestCall,
+  ReplyText,
+  RoleAssistant,
+  RoleUser,
   chat_apply_reply,
   chat_history_for_request
 } from './chat_model'
 import {
+  TransportDelivery,
   TransportDone,
   TransportIdle,
   transport_poll,
@@ -14,6 +21,9 @@ import {
 
 fn request_character_budget() -> i32 =
   100000
+
+fn guest_round_limit() -> i32 =
+  4
 
 fn dispatch_send(config: ChatConfig, model: ChatModel) -> ChatModel = do
   if config.api_key.byte_size() == 0 then
@@ -39,12 +49,86 @@ export fn chat_session_dispatch(
   model
 end
 
-export fn chat_session_poll(model: ChatModel) -> ChatModel = do
+fn guest_rounds(messages: [ChatMessage]) -> i32 = do
+  let mut index = 0
+  let mut last_user = 0 - 1
+  while index < messages.length() do
+    const user = match messages[index].role
+      | RoleUser => true
+      | RoleAssistant => false
+    if user then
+      last_user = index
+    end
+    index = index + 1
+  end
+  let mut count = 0
+  let mut cursor = last_user + 1
+  while cursor < messages.length() do
+    if messages[cursor].text.index_of("run_guest\n") == 0 then
+      count = count + 1
+    end
+    cursor = cursor + 1
+  end
+  count
+end
+
+fn guest_visible(result: string) -> string =
+  "run_guest\n" + result
+
+fn note_guest_result(model: ChatModel, result: string) -> ChatModel = do
+  let mut messages = model.messages
+  messages.push(ChatMessage {
+    role: RoleAssistant,
+    text: guest_visible(result),
+    failed: false,
+    provider: "",
+    model_name: ""
+  })
+  ChatModel {
+    messages: messages,
+    pending: true,
+    generation: model.generation,
+    revision: model.revision + 1
+  }
+end
+
+fn continue_guest(
+  config: ChatConfig,
+  model: ChatModel,
+  generation: i32,
+  call_identifier: string,
+  source: string
+) -> ChatModel = do
+  if generation != model.generation then
+    return model
+  end
+  const result = guest_program_run(source)
+  if guest_rounds(model.messages) + 1 >= guest_round_limit() then
+    return chat_apply_reply(
+      model,
+      generation,
+      ReplyText(guest_visible(result) + "outcome=guest_round_limit\n")
+    )
+  end
+  const history = chat_history_for_request(model, request_character_budget())
+  transport_start(
+    generation,
+    chat_build_guest_followup(config, history, call_identifier, source, result)
+  )
+  note_guest_result(model, result)
+end
+
+fn settle(config: ChatConfig, model: ChatModel, delivery: TransportDelivery) -> ChatModel =
+  match delivery.outcome
+    | ReplyGuestCall(call_identifier, source) => continue_guest(config, model, delivery.generation, call_identifier, source)
+    | ReplyText(text) => chat_apply_reply(model, delivery.generation, ReplyText(text))
+    | ReplyFailed(text) => chat_apply_reply(model, delivery.generation, ReplyFailed(text))
+
+export fn chat_session_poll(config: ChatConfig, model: ChatModel) -> ChatModel = do
   const polled = transport_poll()
   const updated = match polled
     | TransportIdle => model
-    | TransportDone(delivery) =>
-      chat_apply_reply(model, delivery.generation, delivery.outcome)
+    | TransportDone(delivery) => settle(config, model, delivery)
   updated
 end
 
