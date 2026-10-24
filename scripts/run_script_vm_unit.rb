@@ -32,6 +32,11 @@ end
 ENV["TMPDIR"] = File.join(root_directory, "tmp")
 ENV["MLCC_OBJ_CLEAN"] = "1"
 ENV["MLCC_PCH"] = "0"
+extracted_include = File.join(root_directory, "tmp/debs/extract/usr/include")
+if !File.file?("/usr/include/cairo/cairo.h") && File.file?(File.join(extracted_include, "cairo/cairo.h"))
+  include_prefix = ENV["CPLUS_INCLUDE_PATH"].to_s
+  ENV["CPLUS_INCLUDE_PATH"] = [extracted_include, include_prefix].reject(&:empty?).join(":")
+end
 FileUtils.mkdir_p(ENV["TMPDIR"])
 
 output_directory = File.join(root_directory, "tmp", "script_vm_#{unit_name}")

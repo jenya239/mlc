@@ -6,6 +6,8 @@ export fn executor_step_returned() -> i32 = 1
 
 export fn executor_step_error() -> i32 = 2
 
+export fn executor_step_waiting() -> i32 = 4
+
 export fn executor_fail(state: ref mut VmState, code: string, at: i32) -> i32 = do
   state.error_code = code
   state.error_at = at

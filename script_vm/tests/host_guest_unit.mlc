@@ -1,0 +1,107 @@
+import { emb_ok } from '../embedding_codes'
+import { Completed, PollFailed, PollResult, PollWaiting, PollYielded, PollCancelled, poll_execution } from '../execution_result'
+import { resume_guest, run_guest_halt } from '../executor_guest'
+import { run_execution } from '../executor'
+import { heap_new } from '../heap_types'
+import { lower_source } from '../lower/lower_module'
+import { decode_module } from '../module_blob'
+import { run_limits_new } from '../run_result'
+import { Value, ValueInt32, value_decode, value_encode } from '../value'
+
+fn fail(message: string) -> i32 = do
+  println("[script_vm host_guest_unit] FAIL: " + message)
+  1
+end
+
+fn unlimited_limit() -> i64 = 0
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn integer_result(value: Value) -> i32 =
+  match value_decode(value) {
+    ValueInt32(number) => number,
+    _ => 0 - 1
+  }
+
+fn program_source() -> string =
+  "export fn run() -> i32 = timer_after(100)\n"
+
+fn poll_kind(result: PollResult) -> string =
+  match result {
+    Completed(_) => "Completed",
+    PollYielded => "Yielded",
+    PollWaiting => "Waiting",
+    PollCancelled => "Cancelled",
+    PollFailed(code, at) => "Failed:" + code + "@" + at.to_string()
+  }
+
+fn main() -> i32 = do
+  const lowered = lower_source(program_source())
+  if lowered.diagnostics.length() != 0 then
+    return fail("lower code=" + lowered.diagnostics[0].code)
+  end
+  const decoded = decode_module(lowered.bytes)
+  if decoded.code != emb_ok() then
+    return fail("decode code=" + decoded.code.to_string())
+  end
+  if decoded.decoded_module.exports.length() != 1 then
+    return fail("export count=" + decoded.decoded_module.exports.length().to_string())
+  end
+  const prototypes = decoded.decoded_module.protos
+  const entry_index = decoded.decoded_module.exports[0].proto_index
+  const limits = run_limits_new(unlimited_limit(), 0)
+  const execution = run_execution(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  const execution_poll = poll_kind(poll_execution(execution))
+  if execution_poll != "Waiting" then
+    return fail("run_execution poll=" + execution_poll)
+  end
+  let halted = run_guest_halt(heap_new(), prototypes, entry_index, empty_arguments(), limits)
+  if halted.outcome != "waiting" then
+    return fail("guest outcome=" + halted.outcome)
+  end
+  if integer_result(halted.argument) != 100 then
+    return fail("guest argument=" + integer_result(halted.argument).to_string())
+  end
+  let stale = resume_guest(
+    halted,
+    value_encode(ValueInt32(7)),
+    halted.session_epoch,
+    halted.incarnation,
+    0,
+    prototypes
+  )
+  if stale.outcome != "rejected" then
+    return fail("stale resume outcome=" + stale.outcome)
+  end
+  let resumed = resume_guest(
+    halted,
+    value_encode(ValueInt32(7)),
+    halted.session_epoch,
+    halted.incarnation,
+    halted.code_epoch,
+    prototypes
+  )
+  if resumed.outcome != "finished" then
+    return fail("resume outcome=" + resumed.outcome + " error=" + resumed.state.error_code)
+  end
+  if integer_result(resumed.state.return_value) != 7 then
+    return fail("reply=" + integer_result(resumed.state.return_value).to_string())
+  end
+  let duplicate = resume_guest(
+    resumed,
+    value_encode(ValueInt32(7)),
+    resumed.session_epoch,
+    resumed.incarnation,
+    resumed.code_epoch,
+    prototypes
+  )
+  if duplicate.outcome != "rejected" then
+    return fail("duplicate resume outcome=" + duplicate.outcome)
+  end
+  println("host_guest_reply=7")
+  println("[script_vm] host_guest_unit ok")
+  0
+end

@@ -25,6 +25,9 @@ fn import_index_for(operation_id: string) -> i32 = do
   end
 end
 
+export fn host_call_import_index(operation_id: string) -> i32 =
+  import_index_for(operation_id)
+
 export fn lower_timer_after_host_call(destination: i32, argument_register: i32) -> [i32] =
   instruction_words_host_call(
     destination,

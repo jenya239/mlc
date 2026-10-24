@@ -1,4 +1,4 @@
-import { Expr, Span } from '../../compiler/frontend/ast'
+import { Expr, ExprInt, Span } from '../../compiler/frontend/ast'
 import { ValueInt32, value_encode } from '../value'
 import {
   instruction_opcode_add,
@@ -16,6 +16,7 @@ import {
 } from './lower_builder'
 import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
 import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
+import { lower_timer_after_host_call } from './lower_host_call'
 import { LowerType, LowerInt } from './lower_types'
 
 extern fn source_byte(text: string, index: i32) -> i32 =
@@ -163,6 +164,25 @@ fn unknown_name(scope: ref mut LowerScope, source_span: Span) -> LowerType = do
   LowerInt
 end
 
+fn lower_timer_after(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  match arguments[0] {
+    ExprInt(number, _) => do
+      let mark = proto_builder_register_mark(builder)
+      let argument_register = proto_builder_register_allocate(builder)
+      proto_builder_load_constant(builder, argument_register, value_encode(ValueInt32(number)))
+      emit_instruction(builder, lower_timer_after_host_call(target, argument_register))
+      proto_builder_register_release_to(builder, mark)
+      LowerInt
+    end,
+    _ => unknown_name(scope, source_span)
+  }
+
 fn lower_length_argument(
   scope: ref mut LowerScope,
   builder: ref mut ProtoBuilder,
@@ -218,6 +238,8 @@ export fn lower_text_named(
 ) -> LowerType =
   if name == "len" && arguments.length() == 1 then
     lower_length_argument(scope, builder, arguments[0], source_span, target)
+  else if name == "timer_after" && arguments.length() == 1 then
+    lower_timer_after(scope, builder, arguments, source_span, target)
   else
     unknown_name(scope, source_span)
   end

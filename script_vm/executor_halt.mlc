@@ -1,0 +1,86 @@
+import { Execution, execution_failed, execution_finished, execution_waiting } from './execution'
+import { Heap } from './heap'
+import { host_import_timer_after } from './host_imports'
+import { HostRequest, host_request_new } from './host_request'
+import { run_err_type } from './run_result'
+import { Value, ValueNil, value_encode } from './value'
+import { VmState, vm_state_new } from './vm_state'
+
+export type GuestHalt = {
+  heap: Heap,
+  state: VmState,
+  outcome: string,
+  session_epoch: i32,
+  incarnation: i32,
+  code_epoch: i32,
+  argument: Value
+}
+
+fn nil_value() -> Value = value_encode(ValueNil)
+
+fn empty_arguments() -> [Value] = do
+  let mut arguments: [Value] = []
+  arguments
+end
+
+fn waiting_request(state: VmState) -> HostRequest = do
+  let mut arguments = empty_arguments()
+  arguments.push(state.host_argument)
+  host_request_new(host_import_timer_after().operation_id, arguments)
+end
+
+fn halted_guest(
+  heap: Heap,
+  state: VmState,
+  outcome: string,
+  session_epoch: i32,
+  incarnation: i32,
+  code_epoch: i32,
+  argument: Value
+) -> GuestHalt =
+  GuestHalt {
+    heap: heap,
+    state: state,
+    outcome: outcome,
+    session_epoch: session_epoch,
+    incarnation: incarnation,
+    code_epoch: code_epoch,
+    argument: argument
+  }
+
+export fn guest_halt_new(heap: Heap, state: VmState) -> GuestHalt = do
+  if state.error_code != "" then
+    halted_guest(heap, state, "failed", 0, 0, 0, nil_value())
+  else if state.host_waiting then
+    let request = waiting_request(state)
+    halted_guest(
+      heap,
+      state,
+      "waiting",
+      request.session_epoch,
+      request.incarnation,
+      request.code_epoch,
+      state.host_argument
+    )
+  else
+    halted_guest(heap, state, "finished", 0, 0, 0, nil_value())
+  end
+end
+
+export fn guest_halt_failed(heap: Heap, error_code: string, error_at: i32) -> GuestHalt = do
+  let mut state = vm_state_new()
+  state.error_code = error_code
+  state.error_at = error_at
+  guest_halt_new(heap, state)
+end
+
+export fn guest_halt_execution(halt: GuestHalt) -> Execution =
+  if halt.outcome == "failed" then
+    execution_failed(halt.heap, halt.state.error_code, halt.state.error_at)
+  else if halt.outcome == "waiting" then
+    execution_waiting(halt.heap)
+  else if halt.outcome == "finished" then
+    execution_finished(halt.heap, halt.state.return_value)
+  else
+    execution_failed(halt.heap, run_err_type(), 0)
+  end

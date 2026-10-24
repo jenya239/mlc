@@ -46,4 +46,5 @@ export fn click_release_events(
       events.push(ui_event_button_clicked(session.owner))
       events
     end
+  end
 end

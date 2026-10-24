@@ -14,7 +14,10 @@ export type VmState = {
   heap_limit_objects: i32,
   error_code: string,
   error_at: i32,
-  return_value: Value
+  return_value: Value,
+  host_waiting: bool,
+  host_destination_register: i32,
+  host_argument: Value
 }
 
 fn nil_value() -> Value = value_encode(ValueNil)
@@ -36,7 +39,10 @@ export fn vm_state_new() -> VmState =
     heap_limit_objects: 0,
     error_code: "",
     error_at: 0,
-    return_value: nil_value()
+    return_value: nil_value(),
+    host_waiting: false,
+    host_destination_register: 0,
+    host_argument: nil_value()
   }
 
 fn grow_stack_to(state: ref mut VmState, needed_length: i32) -> unit = do

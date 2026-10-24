@@ -21,6 +21,7 @@ end
 def compile_gallery(compile_script)
   env = ENV.to_h
   env["MLC_TEXTUI_COMPILE_ONLY"] = "1"
+  env["MLC_TEXTUI_REQUIRE"] = "1"
   return if system(env, "/bin/bash", compile_script)
 
   abort "launch_textui_gallery: compile failed"

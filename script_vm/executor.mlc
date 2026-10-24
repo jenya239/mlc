@@ -31,15 +31,14 @@ import {
   instruction_opcode_set_index,
   instruction_opcode_new_record,
   instruction_opcode_get_prop,
-  instruction_opcode_set_prop
+  instruction_opcode_set_prop,
+  instruction_opcode_host_call
 } from './bytecode'
 import { VerifyOk, VerifyErr, verify_function } from './verifier'
 import { Heap } from './heap'
 import {
   FunctionProto,
   RunHeapResult,
-  RunOk,
-  RunErr,
   RunLimits,
   run_limits_unlimited,
   run_err_verify,
@@ -65,9 +64,9 @@ import { apply_binary, apply_compare, value_jump_decision } from './arith'
 import {
   Execution,
   execution_failed,
-  execution_from_heap_result,
   execution_to_run_heap
 } from './execution'
+import { GuestHalt, guest_halt_execution, guest_halt_new } from './executor_halt'
 import {
   executor_step_continue,
   executor_step_returned,
@@ -89,12 +88,13 @@ import {
   executor_exec_get_prop,
   executor_exec_set_prop
 } from './executor_heap'
+import { executor_exec_host_call } from './executor_host_call'
 
-type VerifyScan = { failed: bool, at: i32 }
+export type VerifyScan = { failed: bool, at: i32 }
 
 fn nil_value() -> Value = value_encode(ValueNil)
 
-fn verify_protos(protos: [FunctionProto]) -> VerifyScan = do
+export fn verify_protos(protos: [FunctionProto]) -> VerifyScan = do
   let mut proto_index = 0
   let mut failed = false
   let mut at = 0
@@ -198,6 +198,8 @@ fn dispatch_instruction(
     executor_exec_length(heap, state, decoded, primary, span)
   else if decoded.opcode == instruction_opcode_make_string() then
     executor_exec_make_string(heap, state, decoded, primary, span)
+  else if decoded.opcode == instruction_opcode_host_call() then
+    executor_exec_host_call(state, decoded, primary, span)
   else
     executor_fail(state, run_err_unsupported_opcode(), primary)
   end
@@ -320,24 +322,24 @@ fn execute_current_frame(heap: ref mut Heap, state: ref mut VmState, protos: [Fu
   end
 end
 
-fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value], limits: RunLimits) -> RunHeapResult = do
-  let mut state = vm_state_new()
-  apply_run_limits(state, limits)
-  let entry = protos[entry_proto_index]
-  vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
-  place_arguments(state, entry.register_count, args)
+export fn continue_halt(heap: ref mut Heap, state: ref mut VmState, protos: [FunctionProto]) -> GuestHalt = do
   let mut finished = false
-  while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished do
+  while vm_state_frame_depth(state) > 0 && state.error_code == "" && !finished && !state.host_waiting do
     let outcome = execute_current_frame(heap, state, protos)
     if outcome == executor_step_returned() then
       finished = true
     end
   end
-  if state.error_code != "" then
-    RunHeapResult { heap: heap, result: RunErr(state.error_code, state.error_at) }
-  else
-    RunHeapResult { heap: heap, result: RunOk(state.return_value) }
-  end
+  guest_halt_new(heap, state)
+end
+
+export fn execute_state(heap: ref mut Heap, protos: [FunctionProto], entry_proto_index: i32, args: [Value], limits: RunLimits) -> GuestHalt = do
+  let mut state = vm_state_new()
+  apply_run_limits(state, limits)
+  let entry = protos[entry_proto_index]
+  vm_state_push_frame(state, entry_proto_index, entry.register_count, nil_value(), 0)
+  place_arguments(state, entry.register_count, args)
+  continue_halt(heap, state, protos)
 end
 
 export fn run_execution(
@@ -354,7 +356,7 @@ export fn run_execution(
   else if entry_proto_index < 0 || entry_proto_index >= protos.length() then
     execution_failed(heap_state, run_err_type(), 0)
   else
-    execution_from_heap_result(execute_state(heap_state, protos, entry_proto_index, args, limits))
+    guest_halt_execution(execute_state(heap_state, protos, entry_proto_index, args, limits))
   end
 end
 

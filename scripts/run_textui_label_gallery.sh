@@ -12,12 +12,70 @@ OUT_DIR="${TEXTUI_GALLERY_OUT:-$ROOT_DIR/tmp/textui_label_gallery}"
 BIN_OUT="$OUT_DIR/bin"
 FONT="${TEXTUI_GALLERY_FONT:-/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}"
 
+prepare_extracted_text_packages() {
+  local extract="$ROOT_DIR/tmp/debs/extract"
+  local package_config="$ROOT_DIR/tmp/debs/pkgconfig"
+  local header_root="$extract/usr/include"
+  local library_directory="$extract/usr/lib/x86_64-linux-gnu"
+  if pkg-config --exists harfbuzz && [ -f /usr/include/cairo/cairo.h ]; then
+    return 0
+  fi
+  if [ ! -f "$header_root/harfbuzz/hb.h" ] || [ ! -f "$header_root/cairo/cairo.h" ]; then
+    mkdir -p "$ROOT_DIR/tmp/debs" "$extract"
+    (
+      cd "$ROOT_DIR/tmp/debs"
+      apt-get download libharfbuzz-dev libcairo2-dev libpixman-1-dev
+    )
+    local archive
+    for archive in "$ROOT_DIR"/tmp/debs/*.deb; do
+      if [ -f "$archive" ]; then
+        dpkg-deb -x "$archive" "$extract"
+      fi
+    done
+  fi
+  if [ ! -f "$header_root/harfbuzz/hb.h" ]; then
+    return 0
+  fi
+  mkdir -p "$library_directory" "$package_config"
+  if [ -e /usr/lib/x86_64-linux-gnu/libharfbuzz.so.0 ]; then
+    ln -sfn /usr/lib/x86_64-linux-gnu/libharfbuzz.so.0 "$library_directory/libharfbuzz.so.0"
+  fi
+  if [ -e /usr/lib/x86_64-linux-gnu/libcairo.so.2 ]; then
+    ln -sfn /usr/lib/x86_64-linux-gnu/libcairo.so.2 "$library_directory/libcairo.so.2"
+  fi
+  cat > "$package_config/harfbuzz.pc" <<EOF
+Name: harfbuzz
+Description: HarfBuzz text shaping library
+Version: 12.3.2
+Libs: -L${library_directory} -lharfbuzz
+Cflags: -I${header_root}/harfbuzz
+EOF
+  if ! pkg-config --exists harfbuzz; then
+    if [ -n "${PKG_CONFIG_PATH:-}" ]; then
+      export PKG_CONFIG_PATH="${package_config}:${PKG_CONFIG_PATH}"
+    else
+      export PKG_CONFIG_PATH="${package_config}"
+    fi
+  fi
+  if [ ! -f /usr/include/cairo/cairo.h ] && [ -f "$header_root/cairo/cairo.h" ]; then
+    if [ -n "${CPLUS_INCLUDE_PATH:-}" ]; then
+      export CPLUS_INCLUDE_PATH="${header_root}:${CPLUS_INCLUDE_PATH}"
+    else
+      export CPLUS_INCLUDE_PATH="${header_root}"
+    fi
+  fi
+}
+
 if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists glfw3; then
   echo "[textui gallery] SKIP: glfw3 not found" >&2
   exit 0
 fi
+prepare_extracted_text_packages
 if ! pkg-config --exists freetype2 || ! pkg-config --exists harfbuzz; then
   echo "[textui gallery] SKIP: freetype2/harfbuzz not found" >&2
+  if [ "${MLC_TEXTUI_REQUIRE:-0}" = "1" ]; then
+    exit 1
+  fi
   exit 0
 fi
 if [ ! -f "$FONT" ]; then

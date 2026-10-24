@@ -1,0 +1,59 @@
+import { continue_halt, execute_state, verify_protos } from './executor'
+import { GuestHalt, guest_halt_failed } from './executor_halt'
+import { Heap } from './heap'
+import { FunctionProto, RunLimits, run_err_type, run_err_verify } from './run_result'
+import { Value } from './value'
+import { vm_state_set_register } from './vm_state'
+
+fn rejected_halt(halt: GuestHalt) -> GuestHalt =
+  GuestHalt {
+    heap: halt.heap,
+    state: halt.state,
+    outcome: "rejected",
+    session_epoch: halt.session_epoch,
+    incarnation: halt.incarnation,
+    code_epoch: halt.code_epoch,
+    argument: halt.argument
+  }
+
+fn epochs_match(halt: GuestHalt, session_epoch: i32, incarnation: i32, code_epoch: i32) -> bool =
+  halt.session_epoch == session_epoch && halt.incarnation == incarnation && halt.code_epoch == code_epoch
+
+export fn run_guest_halt(
+  heap: Heap,
+  prototypes: [FunctionProto],
+  entry_proto_index: i32,
+  arguments: [Value],
+  limits: RunLimits
+) -> GuestHalt = do
+  let mut heap_state = heap
+  let verification = verify_protos(prototypes)
+  if verification.failed then
+    guest_halt_failed(heap_state, run_err_verify(), verification.at)
+  else if entry_proto_index < 0 || entry_proto_index >= prototypes.length() then
+    guest_halt_failed(heap_state, run_err_type(), 0)
+  else
+    execute_state(heap_state, prototypes, entry_proto_index, arguments, limits)
+  end
+end
+
+export fn resume_guest(
+  halt: GuestHalt,
+  reply: Value,
+  session_epoch: i32,
+  incarnation: i32,
+  code_epoch: i32,
+  prototypes: [FunctionProto]
+) -> GuestHalt = do
+  if !halt.state.host_waiting then
+    rejected_halt(halt)
+  else if !epochs_match(halt, session_epoch, incarnation, code_epoch) then
+    rejected_halt(halt)
+  else
+    let mut state = halt.state
+    let mut heap = halt.heap
+    vm_state_set_register(state, state.host_destination_register, reply)
+    state.host_waiting = false
+    continue_halt(heap, state, prototypes)
+  end
+end
