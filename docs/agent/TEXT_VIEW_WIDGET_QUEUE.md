@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=14
+STEP=15
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -218,7 +218,8 @@ verify: красный `tmp/text_undo_unit/bin` → RUN:1. После стека
 
 ### STEP=14 — запись на диск
 
-status: pending
+status: done
+verify: красный `tmp/text_view_save_unit/bin` → RUN:1. После записи: `compiler/out/mlcc -o tmp/text_view_save_unit misc/textui/test/text_view_save_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_save_unit tmp/text_view_save_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Диалог не вызывается. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D4 закрыто
 
 Красный тест: при полном документе сохранение пишет его байты. `lossy` не пишется. Документ с непрочитанным хвостом не заменяет файл загруженным началом: на диск ложатся только изменённые байты по прежним смещениям. Диалога нет.

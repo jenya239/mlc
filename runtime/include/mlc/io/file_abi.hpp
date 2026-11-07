@@ -125,6 +125,30 @@ inline String file_read_range_value(String path, int32_t offset, int32_t length)
   }
 }
 
+inline bool file_write_range_value(String path, int32_t offset, String content) {
+  if (offset < 0) {
+    return false;
+  }
+  try {
+    std::fstream output(
+      path.as_std_string(),
+      std::ios::binary | std::ios::in | std::ios::out
+    );
+    if (!output) {
+      return false;
+    }
+    output.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!output) {
+      return false;
+    }
+    const std::string bytes = content.as_std_string();
+    output.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    return static_cast<bool>(output);
+  } catch (...) {
+    return false;
+  }
+}
+
 inline Array<String> list_dir_names_value(String path) {
   try {
     return list_dir_names(path);

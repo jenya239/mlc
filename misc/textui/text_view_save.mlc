@@ -1,0 +1,86 @@
+import { normalize_path, path_inside_jail } from './directory_jail'
+import { text_line_terminator_bytes } from './text_line'
+import {
+  TextDocument,
+  text_document_is_complete,
+  text_document_line,
+  text_document_line_count,
+  text_document_to_bytes,
+  text_document_unloaded_count,
+  text_document_unloaded_file_offset
+} from './text_document'
+
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_range(path: string, offset: i32, content: string) -> bool
+  = "mlc::file::file_write_range_value" from "mlc/io/file_abi.hpp" blocking
+
+fn ends_with(name: string, suffix: string) -> bool = do
+  if name.byte_size() < suffix.byte_size() then
+    return false
+  end
+  name.byte_substring(name.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn secret_name(name: string) -> bool = do
+  if name == "" || name == "." || name == ".." || name == ".env" then
+    return true
+  end
+  if name.index_of(".env.") == 0 || name.index_of("id_rsa") == 0 || name.index_of("id_ed25519") == 0 then
+    return true
+  end
+  ends_with(name, ".pem") || ends_with(name, ".key") || ends_with(name, ".kdbx")
+end
+
+fn base_name(path: string) -> string = do
+  const normalized = normalize_path(path)
+  let mut start = 0
+  let mut index = 0
+  while index < normalized.byte_size() do
+    if normalized.byte_at(index) == "/" then
+      start = index + 1
+    end
+    index = index + 1
+  end
+  normalized.byte_substring(start, normalized.byte_size() - start)
+end
+
+fn loaded_bytes(document: TextDocument) -> string = do
+  let mut bytes = ""
+  let mut index = 0
+  while index < text_document_line_count(document) do
+    const line = text_document_line(document, index)
+    bytes = bytes + line.text + text_line_terminator_bytes(line.terminator)
+    index = index + 1
+  end
+  bytes
+end
+
+fn save_loaded_prefix(path: string, document: TextDocument) -> bool = do
+  const loaded = loaded_bytes(document)
+  const origin = text_document_unloaded_file_offset(document)
+  if loaded.byte_size() != origin then
+    return false
+  end
+  file_write_range(path, 0, loaded)
+end
+
+export fn text_view_save(path: string, jail: string, document: TextDocument) -> bool = do
+  if path_inside_jail(jail, path) == false then
+    return false
+  end
+  if secret_name(base_name(path)) then
+    return false
+  end
+  if text_document_is_complete(document) == false then
+    return false
+  end
+  if text_document_unloaded_count(document) > 0 then
+    return save_loaded_prefix(path, document)
+  end
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false then
+    return false
+  end
+  file_write_string(path, assembled.bytes)
+end

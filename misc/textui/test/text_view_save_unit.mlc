@@ -1,0 +1,78 @@
+import {
+  text_document_from_bytes,
+  text_document_is_complete,
+  text_document_with_unloaded_tail
+} from '../text_document'
+import { text_view_save } from '../text_view_save'
+
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_read_range(path: string, offset: i32, length: i32) -> string
+  = "mlc::file::file_read_range_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn invalid_lead() -> string = "ÿ"
+
+fn jail() -> string = "/home/jenya/workspaces/current/mlc/tmp/text_view_save_jail"
+
+fn file_text(path: string) -> string = do
+  const size = file_byte_size(path)
+  if size <= 0 then
+    return ""
+  end
+  file_read_range(path, 0, size)
+end
+
+fn main() -> i32 = do
+  const note = jail() + "/note.txt"
+  if file_write_string(note, "OLD") == false then
+    return 9
+  end
+  const saved = text_view_save(note, jail(), text_document_from_bytes("ab\ncd"))
+  if saved == false || file_text(note) != "ab\ncd" then
+    return 1
+  end
+  const lossy_path = jail() + "/lossy.txt"
+  if file_write_string(lossy_path, "KEEP") == false then
+    return 9
+  end
+  const lossy = text_document_from_bytes("a" + invalid_lead())
+  if text_document_is_complete(lossy) then
+    return 9
+  end
+  if text_view_save(lossy_path, jail(), lossy) || file_text(lossy_path) != "KEEP" then
+    return 2
+  end
+  const tail_path = jail() + "/tail.txt"
+  if file_write_string(tail_path, "abTAIL") == false then
+    return 9
+  end
+  const tailed = text_view_save(tail_path, jail(), text_document_with_unloaded_tail("qb", 2, 4))
+  if tailed == false || file_text(tail_path) != "qbTAIL" then
+    return 3
+  end
+  const secret_path = jail() + "/.env"
+  if file_write_string(secret_path, "SECRET") == false then
+    return 9
+  end
+  if text_view_save(secret_path, jail(), text_document_from_bytes("no")) || file_text(secret_path) != "SECRET" then
+    return 4
+  end
+  const outside = jail() + "2/note.txt"
+  if file_write_string(outside, "OUT") == false then
+    return 9
+  end
+  if text_view_save(outside, jail(), text_document_from_bytes("in")) || file_text(outside) != "OUT" then
+    return 5
+  end
+  const grown_path = jail() + "/grown.txt"
+  if file_write_string(grown_path, "abTAIL") == false then
+    return 9
+  end
+  const grown = text_view_save(grown_path, jail(), text_document_with_unloaded_tail("abc", 2, 4))
+  if grown || file_text(grown_path) != "abTAIL" then
+    return 6
+  end
+  0
+end
