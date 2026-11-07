@@ -1,0 +1,209 @@
+import { text_grapheme_boundaries } from './text_graphemes'
+import {
+  TextShapingState,
+  text_shaping_glyph_advance_at,
+  text_shaping_glyph_cluster_at,
+  text_shaping_line_height,
+  text_shaping_new,
+  text_shaping_shape
+} from '../gui/text_shaping'
+
+export type TextShapeRequest = {
+  line_identifier: i32,
+  revision: i32,
+  token_revision: i32,
+  text: string
+}
+
+export type TextShapeEntry = {
+  line_identifier: i32,
+  revision: i32,
+  token_revision: i32,
+  font_path: string,
+  pixel_size: i32,
+  wrap_pixels: i32,
+  byte_limit: i32,
+  advances: [i32],
+  boundary_positions: [i32],
+  height: i32
+}
+
+export type TextShapeCache = {
+  shaping: TextShapingState,
+  font_path: string,
+  pixel_size: i32,
+  wrap_pixels: i32,
+  byte_limit: i32,
+  entries: [TextShapeEntry],
+  shape_call_count: i32,
+  caret_line: i32,
+  hover_line: i32,
+  scroll_y: i32
+}
+
+type ShapedLine = {
+  shaping: TextShapingState,
+  entry: TextShapeEntry
+}
+
+fn empty_entries() -> [TextShapeEntry] = do
+  let mut entries: [TextShapeEntry] = []
+  entries
+end
+
+fn empty_numbers() -> [i32] = do
+  let mut numbers: [i32] = []
+  numbers
+end
+
+export fn text_shape_cache_empty(
+  font_path: string,
+  pixel_size: i32,
+  wrap_pixels: i32,
+  byte_limit: i32
+) -> TextShapeCache = do
+  TextShapeCache {
+    shaping: text_shaping_new(),
+    font_path: font_path,
+    pixel_size: pixel_size,
+    wrap_pixels: wrap_pixels,
+    byte_limit: byte_limit,
+    entries: empty_entries(),
+    shape_call_count: 0,
+    caret_line: 0,
+    hover_line: 0 - 1,
+    scroll_y: 0
+  }
+end
+
+fn copied_advances(glyph_count: i32) -> [i32] = do
+  let mut advances = empty_numbers()
+  let mut index = 0
+  while index < glyph_count do
+    advances.push(text_shaping_glyph_advance_at(index) / 64)
+    index = index + 1
+  end
+  advances
+end
+
+fn copied_clusters(glyph_count: i32) -> [i32] = do
+  let mut clusters = empty_numbers()
+  let mut index = 0
+  while index < glyph_count do
+    clusters.push(text_shaping_glyph_cluster_at(index))
+    index = index + 1
+  end
+  clusters
+end
+
+fn position_before_byte(advances: [i32], clusters: [i32], byte_offset: i32) -> i32 = do
+  let mut cursor = 0
+  let mut position = 0
+  while cursor < advances.length() && cursor < clusters.length() do
+    if clusters[cursor] >= byte_offset then
+      return position
+    end
+    position = position + advances[cursor]
+    cursor = cursor + 1
+  end
+  position
+end
+
+fn boundary_positions(text: string, advances: [i32], clusters: [i32]) -> [i32] = do
+  const boundaries = text_grapheme_boundaries(text)
+  let mut positions = empty_numbers()
+  let mut index = 0
+  while index < boundaries.length() do
+    positions.push(position_before_byte(advances, clusters, boundaries[index]))
+    index = index + 1
+  end
+  positions
+end
+
+fn line_height(shaping: TextShapingState, font_path: string, pixel_size: i32) -> i32 = do
+  const measured = text_shaping_line_height(shaping, font_path, pixel_size)
+  if measured < 0 then
+    return pixel_size
+  end
+  measured
+end
+
+fn shape_request(shaping: TextShapingState, cache: TextShapeCache, request: TextShapeRequest) -> ShapedLine = do
+  const shaped = text_shaping_shape(shaping, cache.font_path, cache.pixel_size, request.text)
+  const advances = copied_advances(shaped.glyph_count)
+  const clusters = copied_clusters(shaped.glyph_count)
+  ShapedLine {
+    shaping: shaped.state,
+    entry: TextShapeEntry {
+      line_identifier: request.line_identifier,
+      revision: request.revision,
+      token_revision: request.token_revision,
+      font_path: cache.font_path,
+      pixel_size: cache.pixel_size,
+      wrap_pixels: cache.wrap_pixels,
+      byte_limit: cache.byte_limit,
+      advances: advances,
+      boundary_positions: boundary_positions(request.text, advances, clusters),
+      height: line_height(shaped.state, cache.font_path, cache.pixel_size)
+    }
+  }
+end
+
+fn entry_matches(entry: TextShapeEntry, cache: TextShapeCache, request: TextShapeRequest) -> bool = do
+  entry.line_identifier == request.line_identifier &&
+    entry.revision == request.revision &&
+    entry.token_revision == request.token_revision &&
+    entry.font_path == cache.font_path &&
+    entry.pixel_size == cache.pixel_size &&
+    entry.wrap_pixels == cache.wrap_pixels &&
+    entry.byte_limit == cache.byte_limit
+end
+
+fn matching_entry(entries: [TextShapeEntry], cache: TextShapeCache, request: TextShapeRequest) -> i32 = do
+  let mut index = 0
+  while index < entries.length() do
+    if entry_matches(entries[index], cache, request) then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+export fn text_shape_cache_frame(
+  cache: TextShapeCache,
+  requests: [TextShapeRequest],
+  caret_line: i32,
+  hover_line: i32,
+  scroll_y: i32
+) -> TextShapeCache = do
+  let mut shaping = cache.shaping
+  let mut shape_call_count = cache.shape_call_count
+  let mut entries = empty_entries()
+  let mut index = 0
+  while index < requests.length() do
+    const request = requests[index]
+    const found = matching_entry(cache.entries, cache, request)
+    if found >= 0 then
+      entries.push(cache.entries[found])
+    else
+      const shaped = shape_request(shaping, cache, request)
+      shaping = shaped.shaping
+      shape_call_count = shape_call_count + 1
+      entries.push(shaped.entry)
+    end
+    index = index + 1
+  end
+  TextShapeCache {
+    shaping: shaping,
+    font_path: cache.font_path,
+    pixel_size: cache.pixel_size,
+    wrap_pixels: cache.wrap_pixels,
+    byte_limit: cache.byte_limit,
+    entries: entries,
+    shape_call_count: shape_call_count,
+    caret_line: caret_line,
+    hover_line: hover_line,
+    scroll_y: scroll_y
+  }
+end

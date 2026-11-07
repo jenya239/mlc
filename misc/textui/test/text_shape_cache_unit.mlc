@@ -1,0 +1,30 @@
+import { TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from '../text_shape_cache'
+
+fn visible_lines() -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests.push(TextShapeRequest { line_identifier: 1, revision: 0, token_revision: 0, text: "one" })
+  requests.push(TextShapeRequest { line_identifier: 2, revision: 0, token_revision: 0, text: "two" })
+  requests.push(TextShapeRequest { line_identifier: 3, revision: 0, token_revision: 0, text: "three" })
+  requests
+end
+
+fn main() -> i32 = do
+  const cache = text_shape_cache_empty("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16, 0, 4096)
+  const lines = visible_lines()
+  const first = text_shape_cache_frame(cache, lines, 0, 0 - 1, 0)
+  if first.shape_call_count != 3 then
+    return 1
+  end
+  const second = text_shape_cache_frame(first, lines, 0, 0 - 1, 0)
+  if second.shape_call_count != 3 then
+    return 2
+  end
+  const moved = text_shape_cache_frame(second, lines, 1, 2, 40)
+  if moved.shape_call_count != 3 then
+    return 3
+  end
+  if moved.caret_line != 1 || moved.hover_line != 2 || moved.scroll_y != 40 then
+    return 4
+  end
+  0
+end
