@@ -1,4 +1,4 @@
-import { ChatMessage, ReplyFailed, ReplyGuestCall, ReplyOutcome, ReplyText, RoleAssistant, RoleUser } from '../chat_model'
+import { ChatMessage, ReplyFailed, ReplyFileCall, ReplyGuestCall, ReplyOutcome, ReplyText, RoleAssistant, RoleUser } from '../chat_model'
 import { chat_json_message_content } from '../chat_json'
 import {
   ChatConfig,
@@ -29,16 +29,26 @@ fn reply_text(outcome: ReplyOutcome) -> string =
     | ReplyText(text) => text
     | ReplyFailed(_) => ""
     | ReplyGuestCall(_, _) => ""
+    | ReplyFileCall(_, _, _) => ""
 
 fn failed_text(outcome: ReplyOutcome) -> string =
   match outcome
     | ReplyFailed(text) => text
     | ReplyText(_) => ""
     | ReplyGuestCall(_, _) => ""
+    | ReplyFileCall(_, _, _) => ""
 
 fn guest_source(outcome: ReplyOutcome) -> string =
   match outcome
     | ReplyGuestCall(_, source) => source
+    | ReplyText(_) => ""
+    | ReplyFailed(_) => ""
+    | ReplyFileCall(_, _, _) => ""
+
+fn file_call_name(outcome: ReplyOutcome) -> string =
+  match outcome
+    | ReplyFileCall(name, _, _) => name
+    | ReplyGuestCall(_, _) => ""
     | ReplyText(_) => ""
     | ReplyFailed(_) => ""
 
@@ -60,7 +70,7 @@ fn main() -> i32 = do
   if body.index_of("secret-key-value") >= 0 || body.index_of("secret-leak") >= 0 || body.index_of("api_key") >= 0 then
     return -2
   end
-  if body.index_of("\"role\":\"system\"") < 0 || body.index_of("run_guest") < 0 || body.index_of("\"tools\"") < 0 then
+  if body.index_of("\"role\":\"system\"") < 0 || body.index_of("run_guest") < 0 || body.index_of("\"tools\"") < 0 || body.index_of("file_read") < 0 || body.index_of("file_write") < 0 then
     return -2
   end
   if body.index_of("= do") < 0 || body.index_of("Braces, return, and semicolons are rejected.") < 0 then
@@ -174,8 +184,15 @@ fn main() -> i32 = do
     chat_config_from("https://api.meta.ai/v1", "meta", "key", ""),
     [user_message("hi")]
   )
-  if meta_body.index_of("run_guest") >= 0 then
+  if meta_body.index_of("run_guest") >= 0 || meta_body.index_of("file_read") >= 0 then
     return -19
+  end
+  if anthropic_body.index_of("file_read") >= 0 then
+    return -20
+  end
+  const file_body = "{\"choices\":[{\"message\":{\"content\":null,\"tool_calls\":[{\"id\":\"call_2\",\"function\":{\"name\":\"file_read\",\"arguments\":\"{\\\"path\\\":\\\"notes.txt\\\"}\"}}]}}]}"
+  if file_call_name(chat_reply_from(200, file_body)) != "file_read" then
+    return -21
   end
   0
 end

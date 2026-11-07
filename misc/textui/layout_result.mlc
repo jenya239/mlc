@@ -1,4 +1,4 @@
-import { Rect, rect_intersect } from './geometry'
+import { Rect, rect_intersect, rect_new } from './geometry'
 import { WidgetStore, widget_id_is_none, overflow_is_hidden } from './store'
 import { TextLayout, text_layout_empty } from './text_layout'
 
@@ -68,4 +68,28 @@ end
 
 export fn layout_result_from_rects(store: WidgetStore, rects: [Rect]) -> LayoutResult =
   layout_result_from_parts(store, rects, empty_text_layouts(store.nodes.length()))
+
+fn shift_rect(rect: Rect, delta_x: i32, delta_y: i32) -> Rect =
+  rect_new(rect.x + delta_x, rect.y + delta_y, rect.width, rect.height)
+
+fn shift_rects(rects: [Rect], delta_x: i32, delta_y: i32) -> [Rect] = do
+  let mut shifted: [Rect] = []
+  let mut index = 0
+  while index < rects.length() do
+    shifted.push(shift_rect(rects[index], delta_x, delta_y))
+    index = index + 1
+  end
+  shifted
+end
+
+export fn layout_shift(layout: LayoutResult, delta_x: i32, delta_y: i32) -> LayoutResult = do
+  if delta_x == 0 && delta_y == 0 then
+    return layout
+  end
+  LayoutResult {
+    rects: shift_rects(layout.rects, delta_x, delta_y),
+    clips: shift_rects(layout.clips, delta_x, delta_y),
+    text_layouts: layout.text_layouts
+  }
+end
 

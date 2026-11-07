@@ -1,0 +1,267 @@
+import {
+  glfw_gl_context_end,
+  glfw_gl_context_should_close,
+  glfw_gl_context_swap_poll,
+  glfw_gl_clipboard_set,
+  glfw_gl_key_escape_down,
+  glfw_gl_mouse_right_down,
+  glfw_gl_window_height,
+  glfw_gl_window_width
+} from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
+import { cursor_lens_bind, cursor_lens_destroy, cursor_lens_show_window } from './cursor_lens'
+import { chat_frame_run } from './chat_frame'
+import { chat_frame_wait_seconds } from './chat_host'
+import { chat_world_dismiss, chat_world_move, chat_world_note_journal, chat_world_open, chat_world_set_origin, chat_world_with_grant_text, chat_world_with_workspace_root } from './chat_world'
+import { companion_host_step } from './companion_host'
+import { journal_focus, journal_occupation, journal_text } from './companion_journal'
+import { companion_visible_names } from './companion_listing'
+import { companion_journal_shown, companion_quiet_empty } from './companion_quiet'
+import { companion_activity_text } from './companion_trace'
+import { pane_conversations } from './chat_roster'
+import { persistence_close } from './chat_persistence'
+import { chat_config_resolve } from './chat_support_env'
+import { DrawOp } from './draw_op'
+import { gallery_frame_wait_seconds } from './gallery_frame'
+import {
+  GalleryTurn,
+  gallery_turn,
+  gallery_turn_after_paint,
+  gallery_turn_apply_queue,
+  gallery_turn_settle,
+  gallery_turn_with_presented
+} from './gallery_turn'
+import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
+import { path_bar_current } from './path_bar'
+import { HostPane, host_pane_new, host_pane_place, host_pane_route, host_pane_sash_operations } from './host_pane'
+import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
+import { LayoutColumnResult } from './layout_pass'
+import { music_playing, music_release } from './music_host'
+import { paint_overlay_frame, paint_tree_frame } from './paint_pass'
+import { paint_preview_caption } from './preview_caption'
+import { scene_finish } from './scene_present'
+import { SubmitFrameResult, SubmitResources, submit_destroy, submit_frame } from './submit'
+import { submit_painted_layers } from './submit_layers'
+import { TextShapingState } from '../gui/text_shaping'
+import { Theme } from './theme'
+import { remember_window } from './window_placement'
+
+export type ChatLiveResult = {
+  turn: GalleryTurn,
+  error_code: i32,
+  window_closed: bool
+}
+
+fn earlier_wait_seconds(left: f64, right: f64) -> f64 = do
+  if left < 0.0 then
+    return right
+  end
+  if right < 0.0 then
+    return left
+  end
+  if left < right then
+    return left
+  end
+  right
+end
+
+fn column_with(column: LayoutColumnResult, shaping: TextShapingState) -> LayoutColumnResult =
+  LayoutColumnResult { shaping: shaping, cache: column.cache, layout: column.layout }
+
+fn submit_overlay(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  underlay: [DrawOp],
+  overlay: [DrawOp],
+  window_width: i32,
+  window_height: i32
+) -> SubmitFrameResult = do
+  const under = submit_frame(resources, shaping, theme, underlay, window_width, window_height, false)
+  if under.error_code != 0 then
+    return under
+  end
+  submit_frame(under.resources, under.shaping, theme, overlay, window_width, window_height, false)
+end
+
+fn fail_live(turn: GalleryTurn, error_code: i32) -> ChatLiveResult = do
+  submit_destroy(turn.resources)
+  cursor_lens_destroy(turn.lens)
+  image_preview_release()
+  music_release()
+  remember_window()
+  glfw_gl_context_end()
+  ChatLiveResult { turn: turn, error_code: error_code, window_closed: false }
+end
+
+export fn chat_live_run(turn: GalleryTurn, theme: Theme) -> ChatLiveResult = do
+  let mut current = turn
+  let mut error_code = 0
+  let mut running = true
+  let mut sample_after_present = true
+  let mut escape_was_down = false
+  let mut buttons = host_buttons_new()
+  let mut pane = host_pane_new()
+  let mut sash_was_hot = false
+  const open_width = glfw_gl_window_width()
+  const open_height = glfw_gl_window_height()
+  const open_placed = host_pane_place(pane, theme, open_width, open_height)
+  let mut companion = companion_quiet_empty()
+  let mut world = chat_world_move(
+    chat_world_open(chat_config_resolve(), open_placed.second.width, open_height, turn.jail_root),
+    open_placed.second.x,
+    open_placed.second.width,
+    open_height
+  )
+  while running && glfw_gl_context_should_close() == 0 && current.reload_requested == false do
+    const width = glfw_gl_window_width()
+    const height = glfw_gl_window_height()
+    const wait = earlier_wait_seconds(
+      chat_frame_wait_seconds(world.model, world.selection.dragging),
+      gallery_frame_wait_seconds(
+        current.guest, current.effect_mode, image_preview_playing(), music_playing(), host_now_ms()
+      )
+    )
+    if sample_after_present == false || wait >= 0.0 then
+      host_wait_for_input(wait)
+    end
+    sample_after_present = false
+    const escape_down = glfw_gl_key_escape_down() != 0
+    const escape_pressed = escape_down && escape_was_down == false
+    escape_was_down = escape_down
+    let mut dismiss_overlay = false
+    if escape_pressed && current.state.overlay_open then
+      dismiss_overlay = true
+    else
+      if escape_pressed && world.roster.pane != pane_conversations() then
+        world = chat_world_dismiss(world)
+      end
+      if escape_pressed && world.roster.pane == pane_conversations() then
+        running = false
+      end
+    end
+    if running then
+      const polled = host_poll_input(buttons, host_now_ms())
+      buttons = polled.buttons
+      const route = host_pane_route(pane, theme, width, height, polled.input)
+      pane = route.pane
+      if world.origin_x != route.placement.second.x then
+        world = chat_world_set_origin(world, route.placement.second.x)
+      end
+      const presented_before = current.presented
+      const turned = gallery_turn(
+        current, route.gallery_input, theme, route.placement.first.width, height,
+        glfw_gl_mouse_right_down() != 0 && route.gallery_pointer, false, dismiss_overlay
+      )
+      const marked = gallery_turn_with_presented(turned.turn, turned.next_signature)
+      const queued = gallery_turn_apply_queue(marked)
+      const settled = gallery_turn_settle(queued, theme, route.placement.first.width, height)
+      world = chat_world_with_workspace_root(world, path_bar_current(settled.turn.store))
+      const digest = journal_text(settled.turn.observation)
+      const focus = journal_focus(settled.turn.observation, companion_visible_names(settled.turn.store))
+      companion = companion_host_step(
+        companion,
+        focus.key,
+        focus.prompt,
+        focus.label,
+        focus.path,
+        host_now_ms(),
+        world.config
+      )
+      const occupation = journal_occupation(settled.turn.observation)
+      world = chat_world_note_journal(
+        world,
+        companion_journal_shown(
+          digest,
+          companion_activity_text(occupation, focus.path, companion, host_now_ms())
+        )
+      )
+      world = chat_world_with_grant_text(world, settled.turn.observation.file_access.body)
+      const frame = chat_frame_run(
+        world, route.chat_input, route.placement.second.width, height
+      )
+      world = frame.world
+      let draw = frame.paints || turned.paint || settled.paint || settled.turn.effect_mode != 0
+      if route.sash_hot != sash_was_hot || image_preview_needs_paint() != 0 || image_preview_playing() != 0 || music_playing() != 0 then
+        draw = true
+      end
+      sash_was_hot = route.sash_hot
+      let mut resources = settled.turn.resources
+      let mut shaping = settled.turn.column.shaping
+      let mut lens = settled.turn.lens
+      if draw then
+        if frame.clipboard != "" then
+          glfw_gl_clipboard_set(frame.clipboard)
+        end
+        lens = cursor_lens_bind(lens, width, height, settled.turn.effect_mode)
+        image_preview_arm(
+          settled.turn.store, settled.turn.state, settled.turn.column.layout, theme,
+          settled.turn.jail_root, settled.turn.effect_mode, lens.framebuffer
+        )
+        const gallery = submit_painted_layers(
+          resources, shaping, theme,
+          paint_preview_caption(
+            theme, settled.turn.store, settled.turn.column.layout, settled.turn.state, settled.turn.jail_root,
+            paint_tree_frame(theme, settled.turn.store, settled.turn.column.layout, settled.turn.state)
+          ),
+          paint_overlay_frame(theme, settled.turn.store, settled.turn.column.layout, settled.turn.state),
+          width, height
+        )
+        resources = gallery.resources
+        shaping = gallery.shaping
+        if gallery.error_code != 0 then
+          error_code = gallery.error_code
+          running = false
+        end
+        if running then
+          lens = scene_finish(
+            lens, polled.input.mouse_x, polled.input.mouse_y, width, height, true, settled.turn.effect_mode
+          )
+          cursor_lens_show_window()
+          const sash = submit_frame(
+            resources, shaping, theme,
+            host_pane_sash_operations(theme, route.placement.sash, route.sash_hot),
+            width, height, false
+          )
+          resources = sash.resources
+          shaping = sash.shaping
+          if sash.error_code != 0 then
+            error_code = sash.error_code
+            running = false
+          end
+        end
+        if running then
+          const overlay = submit_overlay(
+            resources, shaping, theme, frame.ops_under, frame.ops_over, width, height
+          )
+          resources = overlay.resources
+          shaping = overlay.shaping
+          if overlay.error_code != 0 then
+            error_code = overlay.error_code
+            running = false
+          end
+        end
+        if running then
+          glfw_gl_context_swap_poll()
+          sample_after_present = true
+        end
+        current = gallery_turn_after_paint(
+          settled.turn, resources, column_with(settled.turn.column, shaping), lens, settled.next_signature
+        )
+      else
+        current = gallery_turn_with_presented(settled.turn, presented_before)
+      end
+      if frame.leave_requested then
+        running = false
+      end
+    end
+  end
+  persistence_close(world.persistence)
+  if error_code != 0 then
+    return fail_live(current, error_code)
+  end
+  let mut window_closed = false
+  if running && current.reload_requested == false then
+    window_closed = glfw_gl_context_should_close() != 0
+  end
+  ChatLiveResult { turn: current, error_code: 0, window_closed: window_closed }
+end

@@ -8,7 +8,11 @@ export type ChatMessage = {
   model_name: string
 }
 
-export type ReplyOutcome = ReplyText(string) | ReplyFailed(string) | ReplyGuestCall(string, string)
+export type ReplyOutcome =
+  ReplyText(string)
+  | ReplyFailed(string)
+  | ReplyGuestCall(string, string)
+  | ReplyFileCall(string, string, string)
 
 export type ChatModel = {
   messages: [ChatMessage],
@@ -141,6 +145,7 @@ export fn chat_apply_reply(
   end
   match outcome do
     | ReplyGuestCall(_, _) => model
+    | ReplyFileCall(_, _, _) => model
     | ReplyText(text) => finish_reply(model, assistant_message(text, false, model.messages))
     | ReplyFailed(text) => finish_reply(model, assistant_message(text, true, model.messages))
   end

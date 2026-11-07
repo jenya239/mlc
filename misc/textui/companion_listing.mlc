@@ -1,0 +1,93 @@
+import { WidgetKind, WidgetStore, kind_is_list_view } from './store'
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindIcon(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+
+fn file_list_texts(store: WidgetStore) -> [string] = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return list_texts(store.nodes[index].kind)
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  let mut empty: [string] = []
+  empty
+end
+
+fn ends_with(name: string, suffix: string) -> bool = do
+  if name.byte_size() < suffix.byte_size() then
+    return false
+  end
+  name.byte_substring(name.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn name_kind(name: string) -> string = do
+  if ends_with(name, ".mp3") || ends_with(name, ".MP3") || ends_with(name, ".flac") || ends_with(name, ".ogg") || ends_with(name, ".wav") || ends_with(name, ".m4a") then
+    return "аудио"
+  end
+  if ends_with(name, ".png") || ends_with(name, ".PNG") || ends_with(name, ".jpg") || ends_with(name, ".JPG") || ends_with(name, ".jpeg") || ends_with(name, ".webp") || ends_with(name, ".gif") then
+    return "изображение"
+  end
+  if ends_with(name, ".mp4") || ends_with(name, ".MP4") || ends_with(name, ".mkv") || ends_with(name, ".webm") || ends_with(name, ".mov") || ends_with(name, ".avi") then
+    return "видео"
+  end
+  if ends_with(name, ".txt") || ends_with(name, ".TXT") || ends_with(name, ".md") || ends_with(name, ".json") || ends_with(name, ".mlc") then
+    return "текст"
+  end
+  "файл"
+end
+
+fn secret_file_name(name: string) -> bool = do
+  if name == "" || name == "." || name == ".." || name == ".env" then
+    return true
+  end
+  if name.index_of(".env.") == 0 || name.index_of("id_rsa") == 0 || name.index_of("id_ed25519") == 0 then
+    return true
+  end
+  ends_with(name, ".pem") || ends_with(name, ".key") || ends_with(name, ".kdbx")
+end
+
+fn name_limit() -> i32 = 12
+
+export fn companion_names_line(names: [string]) -> string = do
+  let mut line = ""
+  let mut kept = 0
+  let mut extra = 0
+  let mut index = 0
+  while index < names.length() do
+    const name = names[index]
+    if secret_file_name(name) == false then
+      if kept < name_limit() then
+        if line != "" then
+          line = line + ", "
+        end
+        line = line + name + " (" + name_kind(name) + ")"
+        kept = kept + 1
+      else
+        extra = extra + 1
+      end
+    end
+    index = index + 1
+  end
+  if extra > 0 then
+    line = line + " и ещё " + extra.to_string()
+  end
+  line
+end
+
+export fn companion_visible_names(store: WidgetStore) -> string =
+  companion_names_line(file_list_texts(store))

@@ -6,6 +6,7 @@ import { UiState, ui_state_with_listing_revision } from './ui_state'
 import { selection_is_empty, selection_none } from './selection'
 import { rect_contains } from './geometry'
 import { layout_ui } from './layout_pass'
+import { layout_shift } from './layout_result'
 import { field_align_scroll } from './widget_field'
 import { frame_request, frame_request_layouts, frame_request_paints, frame_signature } from './frame_request'
 import { paint_overlay_frame, paint_tree_frame } from './paint_pass'
@@ -34,6 +35,7 @@ import { chat_stamp_submission } from './chat_model'
 import { picker_apply } from './chat_picker'
 import { persistence_sync } from './chat_persistence'
 import { roster_refresh } from './chat_roster'
+import { journal_display_model, journal_header, journal_is_identifier, presence_label } from './companion_journal'
 
 export type ChatFrameResult = {
   world: ChatWorld,
@@ -155,18 +157,22 @@ export fn chat_frame_run(
   const revision_before = world.model.revision
   const view_before = world.view
   const selection_before = world.selection
-  let mut model = chat_session_poll(world.config, world.model)
+  let mut model = chat_session_poll(world.config, world.model, world.file_grant_text, world.workspace_root)
   const bounds = chat_transcript_rect(world.layout, world.scene)
   const routed = transcript_pointer_routed(input, bounds)
   let mut delivered = input
   if routed then
     delivered = transcript_consume_press(input, bounds)
   end
+  let mut input_model = model
+  if journal_is_identifier(world.roster.conversation_identifiers, world.roster.conversation_row) then
+    input_model = journal_display_model(world.journal_text, model.generation)
+  end
   const handled = transcript_input_shown(
     theme,
     world.view,
     world.selection,
-    model,
+    input_model,
     world.shaping,
     world.cache,
     bounds,
@@ -183,7 +189,11 @@ export fn chat_frame_run(
     updated.events
   )
   let mut submitted_model = applied.model
-  if applied.send_requested then
+  let mut send_requested = applied.send_requested
+  if journal_is_identifier(world.roster.conversation_identifiers, world.roster.conversation_row) then
+    send_requested = false
+  end
+  if send_requested then
     submitted_model = chat_stamp_submission(
       applied.model,
       catalog_provider_name(world.catalog),
@@ -207,7 +217,10 @@ export fn chat_frame_run(
     world.layout,
     updated.events
   )
-  model = chat_session_dispatch(directed.config, directed.model, applied.send_requested)
+  if journal_is_identifier(directed.roster.conversation_identifiers, directed.roster.conversation_row) then
+    send_requested = false
+  end
+  model = chat_session_dispatch(directed.config, directed.model, send_requested)
   const persistence = persistence_sync(
     directed.persistence, directed.config.api_key, directed.model_before, model
   )
@@ -264,6 +277,19 @@ export fn chat_frame_run(
       index: view.index
     }
   end
+  let mut shown = model
+  const journal_open = journal_is_identifier(
+    refreshed.roster.conversation_identifiers, refreshed.roster.conversation_row
+  )
+  if journal_open then
+    shown = journal_display_model(world.journal_text, model.generation)
+  end
+  const headed = journal_header(store, world.scene.title, journal_open)
+  const presence = presence_label(headed.store, world.scene.presence, world.journal_text)
+  store = presence.store
+  if headed.changed || presence.changed then
+    state = ui_state_with_listing_revision(state, state.listing_revision + 1)
+  end
   const request = frame_request(world.presented, frame_signature(state, width, height))
   if frame_request_layouts(request) then
     let mut offsets = state.scroll_offsets
@@ -271,11 +297,11 @@ export fn chat_frame_run(
     const laid = layout_ui(store, theme, shaping, cache, width, height, offsets, ratios)
     shaping = laid.shaping
     cache = laid.cache
-    layout = laid.layout
-    state = field_align_scroll(store, layout, theme, state)
+    layout = layout_shift(laid.layout, world.origin_x, 0)
+    state = field_align_scroll(store, laid.layout, theme, state)
     const next_bounds = chat_transcript_rect(layout, world.scene)
     const measured = transcript_measure_shown(
-      model, view, shaping, cache, theme, next_bounds.width, highlight
+      shown, view, shaping, cache, theme, next_bounds.width, highlight
     )
     view = chat_view_at_bottom(measured.view, next_bounds.height)
     shaping = measured.shaping
@@ -288,7 +314,7 @@ export fn chat_frame_run(
     const tree = paint_tree_frame(theme, store, layout, state)
     const transcript = paint_transcript_styled(
       theme,
-      model,
+      shown,
       view,
       shaping,
       cache,
@@ -323,7 +349,11 @@ export fn chat_frame_run(
     persistence: persistence,
     catalog: directed.catalog,
     roster: refreshed.roster,
-    dismiss_picker: 0
+    dismiss_picker: 0,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
   }
   ChatFrameResult {
     world: next,

@@ -1,0 +1,245 @@
+import { Observation, ObservationFrame, observation_subject_name } from './companion_observe'
+import { companion_state_marker } from './companion_quiet'
+import { ChatMessage, ChatModel, RoleAssistant } from './chat_model'
+import {
+  LabelData,
+  WidgetId,
+  WidgetKind,
+  WidgetStore,
+  widget_node_with_kind,
+  widget_store_keep
+} from './store'
+
+fn widen(value: i32) -> i64 = value
+
+export fn journal_identifier() -> i64 =
+  widen(0) - widen(1)
+
+export fn journal_title() -> string =
+  "Журнал"
+
+export fn journal_is_identifier(identifiers: [i64], row: i32) -> bool = do
+  if row < 0 || row >= identifiers.length() then
+    return false
+  end
+  identifiers[row] == journal_identifier()
+end
+
+fn journal_play(item: Observation, label: string) -> string = do
+  if item.detail == 0 then
+    return "пауза " + label
+  end
+  "воспроизведение " + label
+end
+
+fn journal_phrase(item: Observation, label: string) -> string =
+  match item.kind
+    | ObservationSelect => "выбор " + label
+    | ObservationMedia => "просмотр " + label
+    | ObservationPlay => journal_play(item, label)
+    | ObservationDirectory => "каталог " + label
+    | ObservationButton => "кнопка " + label
+
+fn journal_span(duration_ms: i32) -> string = do
+  if duration_ms < 1000 then
+    return ""
+  end
+  "  " + (duration_ms / 1000).to_string() + " с"
+end
+
+fn journal_context_label(item: Observation) -> string = do
+  if item.path != "" then
+    return item.path
+  end
+  item.subject
+end
+
+fn journal_clock(time_ms: i32) -> string = do
+  let mut seconds = time_ms / 1000
+  if seconds < 0 then
+    seconds = 0
+  end
+  seconds.to_string() + " с"
+end
+
+fn journal_empty_text() -> string =
+  "Действия\nпока пусто\n\nКонтекст для модели\nпока пусто"
+
+fn append_items(items: [Observation], note: string, include_span: bool) -> string = do
+  let mut actions = ""
+  let mut context = ""
+  let mut index = 0
+  while index < items.length() do
+    const item = items[index]
+    let mut span = ""
+    if include_span then
+      span = journal_span(item.duration_ms)
+    end
+    actions = actions + "\n" + journal_clock(item.time_ms) + "  " + journal_phrase(item, item.subject)
+    context = context + "\n" + journal_clock(item.time_ms) + "  " + journal_phrase(item, journal_context_label(item)) + span
+    index = index + 1
+  end
+  if note != "" then
+    context = context + "\n" + note
+  end
+  actions + "\n\nКонтекст для модели" + context
+end
+
+export fn journal_text(frame: ObservationFrame) -> string = do
+  if frame.ring.items.length() == 0 then
+    return journal_empty_text()
+  end
+  "Действия" + append_items(frame.ring.items, frame.file_access.note, true)
+end
+
+export type JournalFocus = {
+  key: string,
+  label: string,
+  path: string,
+  prompt: string
+}
+
+fn journal_focus_empty() -> JournalFocus =
+  JournalFocus { key: journal_empty_text(), label: "", path: "", prompt: "" }
+
+fn journal_focus_of(kind_label: string, path: string, screen: string) -> JournalFocus = do
+  const label = kind_label + " " + observation_subject_name(path)
+  let mut prompt = "Эпизод\n" + label + "\n"
+  if screen != "" then
+    prompt = prompt + "на экране: " + screen + "\n"
+  end
+  prompt = prompt + "осведомлённость: регистрация\nсодержимое файлов не передавалось"
+  JournalFocus {
+    key: kind_label + "\n" + path + "\n" + screen,
+    label: label,
+    path: path,
+    prompt: prompt
+  }
+end
+
+export fn journal_focus(frame: ObservationFrame, screen: string) -> JournalFocus = do
+  if frame.playing && frame.track_name != "" then
+    return journal_focus_of("воспроизведение", frame.track_name, screen)
+  end
+  if frame.selected_name != "" then
+    return journal_focus_of("выбор", frame.selected_name, screen)
+  end
+  if frame.directory_label != "" then
+    return journal_focus_of("каталог", frame.directory_label, screen)
+  end
+  journal_focus_empty()
+end
+
+export fn journal_occupation(frame: ObservationFrame) -> string = do
+  if frame.playing && frame.track_name != "" then
+    return "воспроизведение " + observation_subject_name(frame.track_name)
+  end
+  if frame.selected_name != "" then
+    return "выбор " + observation_subject_name(frame.selected_name)
+  end
+  if frame.directory_label != "" then
+    return "каталог " + observation_subject_name(frame.directory_label)
+  end
+  "пока пусто"
+end
+
+export fn journal_episode_key(frame: ObservationFrame) -> string = do
+  if frame.ring.items.length() == 0 then
+    return journal_empty_text()
+  end
+  "Действия" + append_items(frame.ring.items, frame.file_access.note, false)
+end
+
+export fn journal_display_model(text: string, generation: i32) -> ChatModel = do
+  let mut messages: [ChatMessage] = []
+  messages.push(ChatMessage {
+    role: RoleAssistant,
+    text: text,
+    failed: false,
+    provider: "",
+    model_name: ""
+  })
+  ChatModel {
+    messages: messages,
+    pending: false,
+    generation: generation,
+    revision: 0
+  }
+end
+
+fn label_text(kind: WidgetKind) -> string =
+  match kind
+    | KindLabel(data) => data.text
+    | KindBox(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+
+export type JournalHeader = {
+  store: WidgetStore,
+  changed: bool
+}
+
+fn presence_default() -> string =
+  "занят: пока пусто · думает: молчит"
+
+fn line_at(text: string, line_index: i32) -> string = do
+  let mut rest = text
+  let mut index = 0
+  while index < line_index do
+    const found = rest.index_of("\n")
+    if found < 0 then
+      return ""
+    end
+    rest = rest.substring(found + 1)
+    index = index + 1
+  end
+  const newline = rest.index_of("\n")
+  if newline < 0 then
+    return rest
+  end
+  rest.substring(0, newline)
+end
+
+export fn presence_caption(text: string) -> string = do
+  const found = text.index_of(companion_state_marker())
+  if found < 0 then
+    return presence_default()
+  end
+  const body = text.substring(found + companion_state_marker().length())
+  const occupation = line_at(body, 0)
+  const mind = line_at(body, 1)
+  if occupation.index_of("занят: ") != 0 || mind.index_of("думает: ") != 0 then
+    return presence_default()
+  end
+  occupation + " · " + mind
+end
+
+fn label_apply(store: WidgetStore, title: WidgetId, caption: string) -> JournalHeader = do
+  if title.index < 0 || title.index >= store.nodes.length() then
+    return JournalHeader { store: store, changed: false }
+  end
+  if label_text(store.nodes[title.index].kind) == caption then
+    return JournalHeader { store: store, changed: false }
+  end
+  const node = store.nodes[title.index]
+  let mut nodes = store.nodes
+  nodes.set(title.index, widget_node_with_kind(node, KindLabel(LabelData { text: caption })))
+  JournalHeader { store: widget_store_keep(nodes, store), changed: true }
+end
+
+export fn journal_header(store: WidgetStore, title: WidgetId, journal_open: bool) -> JournalHeader = do
+  let mut caption = "Chat"
+  if journal_open then
+    caption = journal_title()
+  end
+  label_apply(store, title, caption)
+end
+
+export fn presence_label(store: WidgetStore, presence: WidgetId, journal_text: string) -> JournalHeader =
+  label_apply(store, presence, presence_caption(journal_text))
+

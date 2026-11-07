@@ -1,0 +1,208 @@
+import { DrawOp } from './draw_op'
+import { Rect, rect_contains } from './geometry'
+import { Theme } from './theme'
+import { UiInput } from './ui_input'
+import {
+  SplitterPlacement,
+  sash_fill,
+  splitter_placement,
+  splitter_ratio_from_drag,
+  splitter_sash_contains
+} from './widget_split'
+
+export type HostPane = {
+  ratio_thousandths: i32,
+  pointer_owner: i32,
+  press_origin: i32,
+  press_ratio: i32,
+  chat_focused: bool
+}
+
+export type HostPaneRoute = {
+  pane: HostPane,
+  placement: SplitterPlacement,
+  gallery_input: UiInput,
+  chat_input: UiInput,
+  gallery_pointer: bool,
+  sash_hot: bool
+}
+
+fn pointer_owner_none() -> i32 = 0
+
+fn pointer_owner_gallery() -> i32 = 1
+
+fn pointer_owner_chat() -> i32 = 2
+
+fn pointer_owner_sash() -> i32 = 3
+
+fn host_pane_minimum_pixels() -> i32 = 280
+
+export fn host_pane_new() -> HostPane =
+  HostPane {
+    ratio_thousandths: 500,
+    pointer_owner: pointer_owner_none(),
+    press_origin: 0,
+    press_ratio: 500,
+    chat_focused: true
+  }
+
+export fn host_pane_place(pane: HostPane, theme: Theme, width: i32, height: i32) -> SplitterPlacement =
+  splitter_placement(
+    true,
+    pane.ratio_thousandths,
+    host_pane_minimum_pixels(),
+    theme.splitter_width,
+    0,
+    0,
+    width,
+    height
+  )
+
+fn input_deliver(input: UiInput, pointer: bool, keys: bool) -> UiInput = do
+  let mut mouse_x = 0 - 1
+  let mut mouse_y = 0 - 1
+  let mut left_pressed = false
+  let mut left_down = false
+  let mut left_released = false
+  let mut wheel_y = 0
+  if pointer then
+    mouse_x = input.mouse_x
+    mouse_y = input.mouse_y
+    left_pressed = input.left_pressed
+    left_down = input.left_down
+    left_released = input.left_released
+    wheel_y = input.wheel_y
+  end
+  let mut text = ""
+  let mut binding_key = ""
+  let mut paste_text = ""
+  let mut copy_pressed = false
+  let mut backspace_pressed = false
+  let mut enter_pressed = false
+  if keys then
+    text = input.text
+    binding_key = input.binding_key
+    paste_text = input.paste_text
+    copy_pressed = input.copy_pressed
+    backspace_pressed = input.backspace_pressed
+    enter_pressed = input.enter_pressed
+  end
+  let mut control_down = false
+  let mut shift_down = false
+  if pointer || keys then
+    control_down = input.control_down
+    shift_down = input.shift_down
+  end
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: left_released,
+    control_down: control_down,
+    copy_pressed: copy_pressed,
+    wheel_y: wheel_y,
+    now_ms: input.now_ms,
+    text: text,
+    binding_key: binding_key,
+    shift_down: shift_down,
+    backspace_pressed: backspace_pressed,
+    enter_pressed: enter_pressed,
+    paste_text: paste_text
+  }
+end
+
+fn pane_owner(placement: SplitterPlacement, input: UiInput) -> i32 = do
+  if splitter_sash_contains(placement.sash, true, input.mouse_x, input.mouse_y) then
+    return pointer_owner_sash()
+  end
+  if rect_contains(placement.first, input.mouse_x, input.mouse_y) then
+    return pointer_owner_gallery()
+  end
+  if rect_contains(placement.second, input.mouse_x, input.mouse_y) then
+    return pointer_owner_chat()
+  end
+  pointer_owner_none()
+end
+
+export fn host_pane_route(
+  pane: HostPane,
+  theme: Theme,
+  width: i32,
+  height: i32,
+  input: UiInput
+) -> HostPaneRoute = do
+  const placed_before = host_pane_place(pane, theme, width, height)
+  let mut owner = pane.pointer_owner
+  let mut press_origin = pane.press_origin
+  let mut press_ratio = pane.press_ratio
+  let mut chat_focused = pane.chat_focused
+  if input.left_pressed then
+    owner = pane_owner(placed_before, input)
+    if owner == pointer_owner_sash() then
+      press_origin = input.mouse_x
+      press_ratio = pane.ratio_thousandths
+    end
+    if owner == pointer_owner_gallery() then
+      chat_focused = false
+    end
+    if owner == pointer_owner_chat() then
+      chat_focused = true
+    end
+  end
+  let mut ratio = pane.ratio_thousandths
+  if owner == pointer_owner_sash() && input.left_down then
+    let mut available = width - theme.splitter_width
+    if available < 0 then
+      available = 0
+    end
+    ratio = splitter_ratio_from_drag(
+      available,
+      press_ratio,
+      press_origin,
+      input.mouse_x,
+      host_pane_minimum_pixels()
+    )
+  end
+  const placed = host_pane_place(
+    HostPane {
+      ratio_thousandths: ratio,
+      pointer_owner: owner,
+      press_origin: press_origin,
+      press_ratio: press_ratio,
+      chat_focused: chat_focused
+    },
+    theme,
+    width,
+    height
+  )
+  let mut gallery_pointer = owner == pointer_owner_gallery()
+  let mut chat_pointer = owner == pointer_owner_chat()
+  if owner == pointer_owner_none() then
+    gallery_pointer = rect_contains(placed.first, input.mouse_x, input.mouse_y)
+    chat_pointer = rect_contains(placed.second, input.mouse_x, input.mouse_y)
+  end
+  if input.left_down == false then
+    owner = pointer_owner_none()
+  end
+  HostPaneRoute {
+    pane: HostPane {
+      ratio_thousandths: ratio,
+      pointer_owner: owner,
+      press_origin: press_origin,
+      press_ratio: press_ratio,
+      chat_focused: chat_focused
+    },
+    placement: placed,
+    gallery_input: input_deliver(input, gallery_pointer, chat_focused == false),
+    chat_input: input_deliver(input, chat_pointer, chat_focused),
+    gallery_pointer: gallery_pointer,
+    sash_hot: owner == pointer_owner_sash() || splitter_sash_contains(placed.sash, true, input.mouse_x, input.mouse_y)
+  }
+end
+
+export fn host_pane_sash_operations(theme: Theme, sash: Rect, hot: bool) -> [DrawOp] = do
+  let mut operations: [DrawOp] = []
+  operations.push(sash_fill(theme, sash, hot))
+  operations
+end

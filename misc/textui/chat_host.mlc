@@ -56,7 +56,11 @@ fn world_before_first_paint(world: ChatWorld, width: i32, height: i32) -> ChatWo
     persistence: world.persistence,
     catalog: world.catalog,
     roster: world.roster,
-    dismiss_picker: 0
+    dismiss_picker: 0,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
   }
 
 fn world_dismiss_picker(world: ChatWorld) -> ChatWorld =
@@ -78,13 +82,17 @@ fn world_dismiss_picker(world: ChatWorld) -> ChatWorld =
     persistence: world.persistence,
     catalog: world.catalog,
     roster: world.roster,
-    dismiss_picker: 1
+    dismiss_picker: 1,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
   }
 
 export fn drain_control_and_script_commands(pump: ScriptFramePump) -> ScriptFramePump =
   script_frame_pump_drain(pump)
 
-fn chat_frame_wait_seconds(model: ChatModel, dragging: i32) -> f64 = do
+export fn chat_frame_wait_seconds(model: ChatModel, dragging: i32) -> f64 = do
   let mut wait = chat_wait_seconds(model)
   if dragging != 0 then
     if wait < 0.0 || wait > 0.016 then

@@ -1,0 +1,63 @@
+import { chat_json_field, parsed_string } from './chat_json'
+import { workspace_home, workspace_resolve } from './workspace_files'
+
+extern fn command_capture(command: string, directory: string, timeout_milliseconds: i32, output_byte_limit: i32) -> string
+  = "mlc::process::command_capture_value" from "mlc/process/process_abi.hpp" blocking
+extern fn path_is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+export type CommandRequest =
+  CommandRefused(string)
+  | CommandReady(string, string)
+
+fn command_byte_limit() -> i32 = 16384
+
+fn command_directory(home: string, workspace_root: string, requested: string) -> string = do
+  if requested == "" then
+    if workspace_root != "" then
+      return workspace_root
+    end
+    return home
+  end
+  workspace_resolve(home, workspace_root, requested)
+end
+
+export fn command_run_limited(
+  home: string,
+  workspace_root: string,
+  command: string,
+  requested_directory: string,
+  timeout_milliseconds: i32,
+  output_byte_limit: i32
+) -> string = do
+  if command == "" then
+    return "refused: command"
+  end
+  if command.byte_size() > command_byte_limit() then
+    return "refused: large"
+  end
+  const directory = command_directory(home, workspace_root, requested_directory)
+  if directory == "" || path_is_directory(directory) == false then
+    return "refused: directory"
+  end
+  command_capture(command, directory, timeout_milliseconds, output_byte_limit)
+end
+
+export fn command_request(workspace_root: string, arguments: string) -> CommandRequest = do
+  const command = parsed_string(chat_json_field(arguments, "command"))
+  if command == "" then
+    return CommandRefused("refused: command")
+  end
+  if command.byte_size() > command_byte_limit() then
+    return CommandRefused("refused: large")
+  end
+  const directory = command_directory(
+    workspace_home(),
+    workspace_root,
+    parsed_string(chat_json_field(arguments, "working_directory"))
+  )
+  if directory == "" || path_is_directory(directory) == false then
+    return CommandRefused("refused: directory")
+  end
+  CommandReady(command, directory)
+end

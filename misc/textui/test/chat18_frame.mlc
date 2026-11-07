@@ -81,7 +81,11 @@ fn with_pending(world: ChatWorld) -> ChatWorld =
     persistence: world.persistence,
     catalog: world.catalog,
     roster: world.roster,
-    dismiss_picker: world.dismiss_picker
+    dismiss_picker: world.dismiss_picker,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
   }
 
 fn operations_contain(operations: [DrawOp], needle: string) -> bool = do

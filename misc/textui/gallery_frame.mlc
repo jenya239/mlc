@@ -11,7 +11,8 @@ import {
   gallery_guest_accept_control,
   gallery_guest_clear_requests,
   gallery_guest_ping,
-  gallery_guest_tick
+  gallery_guest_tick,
+  gallery_guest_with_store
 } from './gallery_guest'
 import { apply_host_queue } from './host_command'
 import { script_frame_pump_drain, script_frame_pump_name, script_frame_pump_new } from './script_events'
@@ -50,21 +51,6 @@ fn label_set_text_index() -> i32 =
 fn waiting_for_label(guest: GalleryGuest) -> bool =
   guest.halt.outcome == "waiting" && guest.halt.state.host_import_index == label_set_text_index()
 
-fn guest_with_store(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest =
-  GalleryGuest {
-    store: store,
-    halt: guest.halt,
-    prototypes: guest.prototypes,
-    widget: guest.widget,
-    revision: guest.revision,
-    timer_origin_milliseconds: guest.timer_origin_milliseconds,
-    timer_armed: guest.timer_armed,
-    guest_released: guest.guest_released,
-    effect_requested: guest.effect_requested,
-    effect_mode: guest.effect_mode,
-    reload_requested: guest.reload_requested
-  }
-
 export fn gallery_frame_advance(
   guest: GalleryGuest,
   store: WidgetStore,
@@ -73,9 +59,9 @@ export fn gallery_frame_advance(
 ) -> GalleryGuest = do
   let drained = drain_frame_pump()
   if drained != script_frame_pump_name() then
-    return guest_with_store(guest, store)
+    return gallery_guest_with_store(guest, store)
   end
-  let cleared = gallery_guest_clear_requests(guest_with_store(guest, store))
+  let cleared = gallery_guest_clear_requests(gallery_guest_with_store(guest, store))
   let queued = apply_host_queue(cleared)
   let ticked = gallery_guest_tick(queued, now_milliseconds)
   let controlled = gallery_guest_accept_control(ticked)

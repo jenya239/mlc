@@ -1,0 +1,158 @@
+import {
+  CompanionQuiet,
+  companion_cooldown_milliseconds,
+  companion_empty_digest,
+  companion_quiet_with_history,
+  companion_settle_milliseconds,
+  companion_status
+} from './companion_quiet'
+
+fn companion_history_limit() -> i32 = 16
+
+fn elapsed_milliseconds(now_milliseconds: i32, start_milliseconds: i32) -> i32 = do
+  if now_milliseconds < start_milliseconds then
+    return 0
+  end
+  now_milliseconds - start_milliseconds
+end
+
+fn trace_clock(time_ms: i32) -> string = do
+  let mut seconds = time_ms / 1000
+  if seconds < 0 then
+    seconds = 0
+  end
+  seconds.to_string() + " с"
+end
+
+fn companion_history_push(history: [string], line: string) -> [string] = do
+  let mut next = history
+  next.push(line)
+  if next.length() <= companion_history_limit() then
+    return next
+  end
+  let mut kept: [string] = []
+  let mut index = next.length() - companion_history_limit()
+  while index < next.length() do
+    kept.push(next[index])
+    index = index + 1
+  end
+  kept
+end
+
+export fn companion_quiet_note(quiet: CompanionQuiet, now_milliseconds: i32, line: string) -> CompanionQuiet = do
+  if line == "" then
+    return quiet
+  end
+  companion_quiet_with_history(
+    quiet,
+    companion_history_push(quiet.history, trace_clock(now_milliseconds) + "  " + line)
+  )
+end
+
+export fn companion_phase(quiet: CompanionQuiet, now_milliseconds: i32) -> string = do
+  if quiet.waiting != 0 then
+    return "жду ответ"
+  end
+  if quiet.digest == "" || quiet.digest == companion_empty_digest() then
+    return "нет эпизода"
+  end
+  if quiet.digest != quiet.sent_digest then
+    if elapsed_milliseconds(now_milliseconds, quiet.stable_since_milliseconds) < companion_settle_milliseconds() then
+      return "эпизод ещё не устоялся"
+    end
+    if quiet.attempted != 0 && elapsed_milliseconds(now_milliseconds, quiet.attempt_milliseconds) < companion_cooldown_milliseconds() then
+      return "пауза между запросами"
+    end
+    return "готов спросить модель"
+  end
+  if quiet.remark == "" then
+    return "по этому эпизоду тишина"
+  end
+  if quiet.remark == "модель недоступна" then
+    return "модель недоступна"
+  end
+  "фраза относится к этому эпизоду"
+end
+
+fn yes_no(flag: i32) -> string = do
+  if flag != 0 then
+    return "да"
+  end
+  "нет"
+end
+
+fn episode_sent(quiet: CompanionQuiet) -> i32 = do
+  if quiet.digest != "" && quiet.digest == quiet.sent_digest then
+    return 1
+  end
+  0
+end
+
+export fn companion_episode_formed(quiet: CompanionQuiet, now_milliseconds: i32) -> bool = do
+  if quiet.digest == "" || quiet.digest == companion_empty_digest() then
+    return false
+  end
+  elapsed_milliseconds(now_milliseconds, quiet.stable_since_milliseconds) >= companion_settle_milliseconds()
+end
+
+export fn companion_awareness(quiet: CompanionQuiet) -> string = do
+  if quiet.digest == "" || quiet.digest == companion_empty_digest() then
+    return "нет"
+  end
+  if quiet.waiting != 0 then
+    return "регистрация"
+  end
+  if quiet.digest == quiet.sent_digest && quiet.remark != "" && quiet.remark != "модель недоступна" && quiet.remark != "смотрю журнал" then
+    return "интерпретация"
+  end
+  "регистрация"
+end
+
+fn companion_late_line(quiet: CompanionQuiet) -> string = do
+  if quiet.remark == "" || quiet.digest == quiet.sent_digest || quiet.sent_label == "" then
+    return ""
+  end
+  let mut line = "поздний ответ не про этот файл: " + quiet.remark + " · " + quiet.sent_label
+  if quiet.sent_path != "" then
+    line = line + " · " + quiet.sent_path
+  end
+  line
+end
+
+export fn companion_activity_text(
+  occupation: string,
+  path: string,
+  quiet: CompanionQuiet,
+  now_milliseconds: i32
+) -> string = do
+  let mut text = companion_status(occupation, quiet)
+  text = text + "\nфаза: " + companion_phase(quiet, now_milliseconds)
+  text = text + "\nзапрос в полёте: " + yes_no(quiet.waiting)
+  text = text + "\nэпизод отправлен: " + yes_no(episode_sent(quiet))
+  if companion_episode_formed(quiet, now_milliseconds) then
+    text = text + "\nэпизод: " + occupation
+  else
+    text = text + "\nэпизод: нет"
+    if occupation != "" && occupation != "пока пусто" then
+      text = text + "\nкандидат: " + occupation
+    end
+  end
+  if path != "" then
+    text = text + "\nпуть: " + path
+  end
+  text = text + "\nосведомлённость: " + companion_awareness(quiet)
+  const late = companion_late_line(quiet)
+  if late != "" then
+    text = text + "\n" + late
+  end
+  text = text + "\n\nИстория"
+  if quiet.history.length() == 0 then
+    return text + "\nпока пусто"
+  end
+  let mut index = 0
+  while index < quiet.history.length() do
+    text = text + "\n" + quiet.history[index]
+    index = index + 1
+  end
+  text
+end

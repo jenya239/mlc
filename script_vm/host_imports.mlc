@@ -47,6 +47,15 @@ export fn host_import_listing_reload() -> ImportDeclaration =
     effect_class: ImportEffectAsyncMutation
   }
 
+export fn host_import_file_read_granted() -> ImportDeclaration =
+  ImportDeclaration {
+    operation_id: "file.read_granted",
+    major_version: 1,
+    argument_schema: "i32",
+    result_schema: "string",
+    effect_class: ImportEffectAsyncRead
+  }
+
 export fn host_import_host_log() -> ImportDeclaration =
   ImportDeclaration {
     operation_id: "host.log",
@@ -79,6 +88,7 @@ export fn host_import_manifest() -> [ImportDeclaration] = do
   manifest.push(host_import_effect_set())
   manifest.push(host_import_listing_reload())
   manifest.push(host_import_host_log())
+  manifest.push(host_import_file_read_granted())
   manifest
 end
 

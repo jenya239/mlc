@@ -1,0 +1,399 @@
+import {
+  ObservationFrame,
+  ObservationKind,
+  ObservationSample,
+  observation_accept,
+  observation_frame_apply,
+  observation_frame_empty,
+  observation_media_dwell_ms,
+  observation_ring_capacity,
+  ObservationSelect,
+  ObservationMedia
+} from '../companion_observe'
+import { companion_observer_apply } from '../companion_observer'
+import { journal_identifier, journal_is_identifier, journal_text } from '../companion_journal'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  ListData,
+  OverflowVisible,
+  WidgetId,
+  WidgetStore,
+  field_data_new,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_add_list_view,
+  widget_store_add_text_field,
+  widget_store_empty
+} from '../store'
+import { ui_event_button_clicked } from '../ui_event'
+import { UiEvent } from '../ui_event'
+import { UiState, ui_state_new, ui_state_with, ui_state_with_list_hover_row, ui_state_with_list_selected, ui_state_with_listing_revision } from '../ui_state'
+import { list_selected_put } from '../widget_list'
+
+fn kind_code(kind: ObservationKind) -> i32 =
+  match kind
+    | ObservationSelect => 1
+    | ObservationMedia => 2
+    | ObservationPlay => 3
+    | ObservationDirectory => 4
+    | ObservationButton => 5
+
+fn captions_empty() -> [string] = do
+  let mut captions: [string] = []
+  captions
+end
+
+fn events_empty() -> [UiEvent] = do
+  let mut events: [UiEvent] = []
+  events
+end
+
+fn sample_of(
+  selected_name: string,
+  hovered_media_path: string,
+  playing: bool,
+  track_name: string,
+  directory_label: string,
+  directory_revision: i32,
+  button_captions: [string],
+  now_ms: i32
+) -> ObservationSample =
+  ObservationSample {
+    selected_name: selected_name,
+    hovered_media_path: hovered_media_path,
+    playing: playing,
+    track_name: track_name,
+    directory_label: directory_label,
+    directory_revision: directory_revision,
+    button_captions: button_captions,
+    now_ms: now_ms
+  }
+
+fn media_sample(path: string, now_ms: i32) -> ObservationSample =
+  sample_of("", path, false, "", "", 0, captions_empty(), now_ms)
+
+fn ring_length(frame: ObservationFrame) -> i32 =
+  frame.ring.items.length()
+
+fn dwell_cases() -> i32 = do
+  const dwell = observation_media_dwell_ms()
+  const early = observation_frame_apply(observation_frame_empty(), media_sample("/jail/photos/cat.png", 0))
+  if ring_length(early) != 0 then
+    return 1
+  end
+  const held_short = observation_frame_apply(early, media_sample("/jail/photos/cat.png", dwell - 1))
+  if ring_length(held_short) != 0 then
+    return 2
+  end
+  const due = observation_frame_apply(held_short, media_sample("/jail/photos/cat.png", dwell))
+  if ring_length(due) != 1 || due.ring.items[0].subject != "cat.png" then
+    return 3
+  end
+  if kind_code(due.ring.items[0].kind) != 2 || due.ring.items[0].time_ms != 0 || due.ring.items[0].duration_ms != dwell then
+    return 4
+  end
+  const still = observation_frame_apply(due, media_sample("/jail/photos/cat.png", dwell + dwell))
+  if ring_length(still) != 1 || still.ring.items[0].duration_ms != dwell + dwell || still.ring.items[0].path != "/jail/photos/cat.png" then
+    return 5
+  end
+  const started = observation_frame_apply(observation_frame_empty(), media_sample("/jail/photos/a.png", 0))
+  const left = observation_frame_apply(started, media_sample("", dwell / 2))
+  if ring_length(left) != 0 then
+    return 6
+  end
+  const away = observation_frame_apply(still, media_sample("", dwell + 10))
+  if ring_length(away) != 1 then
+    return 7
+  end
+  const returned = observation_frame_apply(away, media_sample("/jail/photos/cat.png", dwell + 10))
+  const returned_due = observation_frame_apply(returned, media_sample("/jail/photos/cat.png", dwell + 10 + dwell))
+  if ring_length(returned_due) != 2 || returned_due.ring.items[1].time_ms != dwell + 10 then
+    return 8
+  end
+  let mut racing = observation_frame_empty()
+  let mut step = 0
+  while step < 8 do
+    racing = observation_frame_apply(
+      racing, media_sample("/jail/photos/clip" + step.to_string() + ".png", step * (dwell / 4))
+    )
+    step = step + 1
+  end
+  if ring_length(racing) != 0 then
+    return 9
+  end
+  const blank = observation_frame_apply(observation_frame_empty(), media_sample("", dwell + dwell))
+  if ring_length(blank) != 0 then
+    return 10
+  end
+  const backwards = observation_frame_apply(observation_frame_empty(), media_sample("/jail/photos/a.png", 5000))
+  const restarted = observation_frame_apply(backwards, media_sample("/jail/photos/a.png", 10))
+  if ring_length(restarted) != 0 then
+    return 11
+  end
+  const restarted_due = observation_frame_apply(restarted, media_sample("/jail/photos/a.png", 10 + dwell))
+  if ring_length(restarted_due) != 1 || restarted_due.ring.items[0].time_ms != 10 then
+    return 12
+  end
+  0
+end
+
+fn select_and_ring_cases() -> i32 = do
+  const selected = observation_frame_apply(
+    observation_frame_empty(),
+    sample_of("/jail/photos/shot.png", "", false, "", "", 0, captions_empty(), 20)
+  )
+  if ring_length(selected) != 1 || selected.ring.items[0].subject != "shot.png" || kind_code(selected.ring.items[0].kind) != 1 then
+    return 13
+  end
+  const repeated = observation_frame_apply(
+    selected, sample_of("/jail/photos/shot.png", "", false, "", "", 0, captions_empty(), 30)
+  )
+  if ring_length(repeated) != 1 || repeated.ring.accepted_count != 1 || repeated.ring.items[0].time_ms != 20 || repeated.ring.items[0].duration_ms != 10 then
+    return 14
+  end
+  let mut ring = observation_frame_empty().ring
+  ring = observation_accept(ring, ObservationSelect, 1, "same.png", 0)
+  ring = observation_accept(ring, ObservationSelect, 2, "same.png", 0)
+  if ring.items.length() != 1 || ring.items[0].time_ms != 1 || ring.items[0].duration_ms != 1 || ring.accepted_count != 1 then
+    return 15
+  end
+  ring = observation_accept(ring, ObservationMedia, 3, "same.png", 0)
+  ring = observation_accept(ring, ObservationMedia, 4, "same.png", 0)
+  if ring.items.length() != 3 then
+    return 16
+  end
+  ring = observation_accept(ring, ObservationSelect, 5, "", 0)
+  if ring.items.length() != 3 then
+    return 17
+  end
+  ring = observation_accept(ring, ObservationSelect, 6, "/jail/photos/shot.png", 0)
+  if ring.items[ring.items.length() - 1].subject != "shot.png" then
+    return 18
+  end
+  ring = observation_accept(ring, ObservationSelect, 7, "dir\\shot.png", 0)
+  if ring.items[ring.items.length() - 1].subject != "shot.png" then
+    return 19
+  end
+  let mut filled = observation_frame_empty().ring
+  let mut index = 0
+  const capacity = observation_ring_capacity()
+  while index < capacity + 1 do
+    filled = observation_accept(filled, ObservationSelect, index, "row" + index.to_string(), 0)
+    index = index + 1
+  end
+  if filled.items.length() != capacity || filled.accepted_count != capacity + 1 then
+    return 20
+  end
+  if filled.items[0].subject != "row1" || filled.items[capacity - 1].subject != "row" + capacity.to_string() then
+    return 21
+  end
+  0
+end
+
+fn play_directory_button_cases() -> i32 = do
+  const started = observation_frame_apply(
+    observation_frame_empty(),
+    sample_of("", "", true, "/music/a.flac", "", 0, captions_empty(), 40)
+  )
+  if ring_length(started) != 1 || started.ring.items[0].subject != "a.flac" || started.ring.items[0].detail != 1 then
+    return 22
+  end
+  const paused = observation_frame_apply(
+    started, sample_of("", "", false, "/music/a.flac", "", 0, captions_empty(), 50)
+  )
+  if ring_length(paused) != 2 || paused.ring.items[1].detail != 0 || paused.ring.items[1].subject != "a.flac" then
+    return 23
+  end
+  const opened = observation_frame_apply(
+    observation_frame_empty(),
+    sample_of("", "", false, "", "/jail/photos", 1, captions_empty(), 10)
+  )
+  if ring_length(opened) != 1 || opened.ring.items[0].subject != "photos" || kind_code(opened.ring.items[0].kind) != 4 then
+    return 24
+  end
+  const same_revision = observation_frame_apply(
+    opened, sample_of("", "", false, "", "/jail/photos", 1, captions_empty(), 15)
+  )
+  if ring_length(same_revision) != 1 || same_revision.ring.items[0].time_ms != 10 then
+    return 25
+  end
+  const same_name = observation_frame_apply(
+    same_revision, sample_of("", "", false, "", "/other/photos", 2, captions_empty(), 80)
+  )
+  if ring_length(same_name) != 2 || same_name.ring.items[1].path != "/other/photos" || same_name.ring.items[0].time_ms != 10 then
+    return 26
+  end
+  const moved = observation_frame_apply(
+    same_name, sample_of("", "", false, "", "/jail/video/", 3, captions_empty(), 90)
+  )
+  if ring_length(moved) != 3 || moved.ring.items[2].subject != "video" || moved.ring.items[2].path != "/jail/video" then
+    return 27
+  end
+  let mut captions = captions_empty()
+  captions.push("Chat")
+  const pressed = observation_frame_apply(
+    observation_frame_empty(), sample_of("", "", false, "", "", 0, captions, 5)
+  )
+  captions.push("Chat")
+  const pressed_again = observation_frame_apply(
+    pressed, sample_of("", "", false, "", "", 0, captions, 6)
+  )
+  if ring_length(pressed) != 1 || ring_length(pressed_again) != 1 || pressed_again.ring.items[0].time_ms != 5 || pressed_again.ring.items[0].duration_ms != 1 then
+    return 28
+  end
+  if kind_code(pressed.ring.items[0].kind) != 5 || pressed.ring.items[0].subject != "Chat" then
+    return 29
+  end
+  0
+end
+
+type ObserveFixture = {
+  store: WidgetStore,
+  file_list: WidgetId,
+  chat_button: WidgetId,
+  progress_button: WidgetId
+}
+
+fn last_id(store: WidgetStore) -> WidgetId =
+  store.nodes[store.nodes.length() - 1].id
+
+fn observe_fixture() -> ObserveFixture = do
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store, widget_id_none(), BoxData { direction: DirectionColumn, padding: 0, gap: 0 }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_text_field(store, store.root, field_data_new("/jail/photos"), 0, true)
+  let mut directories: [string] = []
+  directories.push("albums")
+  store = widget_store_add_list_view(store, store.root, ListData { texts: directories }, 0, true)
+  let mut files: [string] = []
+  files.push("notes.txt")
+  files.push("cat.png")
+  store = widget_store_add_list_view(store, store.root, ListData { texts: files }, 0, true)
+  const file_list = last_id(store)
+  store = widget_store_add_button(store, store.root, ButtonData { text: "Chat" }, OverflowVisible, 0, true)
+  const chat_button = last_id(store)
+  store = widget_store_add_button(store, store.root, ButtonData { text: "track [0:00]" }, OverflowVisible, 0, true)
+  ObserveFixture {
+    store: store,
+    file_list: file_list,
+    chat_button: chat_button,
+    progress_button: last_id(store)
+  }
+end
+
+fn state_on_row(hover: WidgetId, row: i32) -> UiState =
+  ui_state_with_list_hover_row(
+    ui_state_with(
+      ui_state_new(),
+      ui_state_new().selection,
+      ui_state_new().grab,
+      ui_state_new().pointer,
+      ui_state_new().last_press,
+      ui_state_new().clipboard,
+      hover
+    ),
+    row
+  )
+
+fn store_cases() -> i32 = do
+  const fixture = observe_fixture()
+  const notes = companion_observer_apply(
+    observation_frame_empty(), fixture.store, state_on_row(fixture.file_list, 0), events_empty(), "/jail", 0
+  )
+  const notes_held = companion_observer_apply(
+    notes, fixture.store, state_on_row(fixture.file_list, 0), events_empty(), "/jail", observation_media_dwell_ms() + observation_media_dwell_ms()
+  )
+  if notes_held.ring.items.length() != 1 || notes_held.ring.items[0].subject != "photos" then
+    return 30
+  end
+  const picture = companion_observer_apply(
+    observation_frame_empty(), fixture.store, state_on_row(fixture.file_list, 1), events_empty(), "/jail", 0
+  )
+  const picture_due = companion_observer_apply(
+    picture,
+    fixture.store,
+    state_on_row(fixture.file_list, 1),
+    events_empty(),
+    "/jail",
+    observation_media_dwell_ms()
+  )
+  if picture_due.ring.items.length() != 2 then
+    return 31
+  end
+  if picture_due.ring.items[1].subject != "cat.png" || picture_due.ring.items[1].path != "photos/cat.png" || kind_code(picture_due.ring.items[1].kind) != 2 then
+    return 32
+  end
+  const chosen = ui_state_with_list_selected(
+    ui_state_new(), list_selected_put(ui_state_new().list_selected, fixture.file_list.index, 1)
+  )
+  const selected = companion_observer_apply(
+    observation_frame_empty(), fixture.store, chosen, events_empty(), "/jail", 3
+  )
+  if selected.ring.items.length() != 2 || selected.ring.items[0].subject != "cat.png" || selected.ring.items[0].path != "photos/cat.png" || kind_code(selected.ring.items[0].kind) != 1 then
+    return 33
+  end
+  let mut events = events_empty()
+  events.push(ui_event_button_clicked(fixture.chat_button))
+  events.push(ui_event_button_clicked(fixture.progress_button))
+  const pressed = companion_observer_apply(
+    observation_frame_empty(), fixture.store, ui_state_new(), events, "/jail", 4
+  )
+  if pressed.ring.items.length() != 2 || pressed.ring.items[1].subject != "Chat" || kind_code(pressed.ring.items[1].kind) != 5 then
+    return 34
+  end
+  const revised = companion_observer_apply(
+    observation_frame_empty(),
+    fixture.store,
+    ui_state_with_listing_revision(ui_state_new(), 4),
+    events_empty(),
+    "/jail",
+    7
+  )
+  if revised.ring.items.length() != 1 || revised.ring.items[0].subject != "photos" || revised.ring.items[0].path != "photos" then
+    return 35
+  end
+  0
+end
+
+fn journal_cases() -> i32 = do
+  const empty_text = journal_text(observation_frame_empty())
+  if empty_text.index_of("пока пусто") < 0 || empty_text.index_of("Контекст для модели") < 0 then
+    return 36
+  end
+  const noted = observation_frame_apply(
+    observation_frame_empty(), sample_of("/jail/photos/shot.png", "", false, "", "", 0, captions_empty(), 2500)
+  )
+  const text = journal_text(noted)
+  const marker = text.index_of("Контекст для модели")
+  if marker < 0 || text.substring(0, marker).index_of("/jail") >= 0 || text.index_of("/jail/photos/shot.png") < 0 then return 37 end
+  let mut identifiers: [i64] = []
+  identifiers.push(journal_identifier())
+  if journal_is_identifier(identifiers, 0) == false || journal_is_identifier(identifiers, 1) then
+    return 38
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const dwelled = dwell_cases()
+  if dwelled != 0 then
+    return dwelled
+  end
+  const selected = select_and_ring_cases()
+  if selected != 0 then
+    return selected
+  end
+  const played = play_directory_button_cases()
+  if played != 0 then
+    return played
+  end
+  const stored = store_cases()
+  if stored != 0 then
+    return stored
+  end
+  journal_cases()
+end

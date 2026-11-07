@@ -1,0 +1,189 @@
+import { get_or } from 'Env'
+import {
+  HttpsHeader,
+  HttpsRequest
+} from '../../lib/mlc/common/stdlib/net/https_request.mlc'
+import { ChatConfig, chat_reply_from } from './chat_http'
+import {
+  ReplyFailed,
+  ReplyFileCall,
+  ReplyGuestCall,
+  ReplyText
+} from './chat_model'
+import {
+  CompanionQuiet,
+  companion_quiet_advance,
+  companion_quiet_commit,
+  companion_quiet_due,
+  companion_quiet_finish,
+  companion_quiet_with_remark,
+  companion_remark_from_reply,
+  companion_request_body,
+  companion_responses_body
+} from './companion_quiet'
+import { companion_quiet_note } from './companion_trace'
+
+export extern fn companion_launch(request: HttpsRequest) -> i32 =
+  "mlc::companion::transport_launch" from "mlc/chat/companion_mailbox.hpp" blocking
+
+export extern fn companion_take_ready() -> i32 =
+  "mlc::companion::companion_take_ready" from "mlc/chat/companion_mailbox.hpp" blocking
+
+export extern fn companion_staged_transport_failure() -> i32 =
+  "mlc::companion::companion_staged_transport_failure" from "mlc/chat/companion_mailbox.hpp" blocking
+
+export extern fn companion_staged_status() -> i32 =
+  "mlc::companion::companion_staged_status" from "mlc/chat/companion_mailbox.hpp" blocking
+
+export extern fn companion_staged_text() -> string =
+  "mlc::companion::companion_staged_text" from "mlc/chat/companion_mailbox.hpp" blocking
+
+export extern fn companion_abandon() -> i32 =
+  "mlc::companion::companion_abandon" from "mlc/chat/companion_mailbox.hpp" blocking
+
+fn companion_model(config: ChatConfig) -> string = do
+  const named = get_or("MLC_COMPANION_MODEL", "")
+  if named != "" then
+    return named
+  end
+  config.model
+end
+
+fn companion_supported(config: ChatConfig) -> bool = do
+  if config.api_key == "" || companion_model(config) == "" then
+    return false
+  end
+  if config.base_url.index_of("api.anthropic.com") >= 0 then
+    return false
+  end
+  true
+end
+
+fn completions_url(base_url: string) -> string = do
+  if base_url.byte_size() > 0 && base_url.byte_at(base_url.byte_size() - 1) == "/" then
+    return base_url + "chat/completions"
+  end
+  base_url + "/chat/completions"
+end
+
+fn responses_url(base_url: string) -> string = do
+  if base_url.byte_size() > 0 && base_url.byte_at(base_url.byte_size() - 1) == "/" then
+    return base_url + "responses"
+  end
+  base_url + "/responses"
+end
+
+fn companion_request(config: ChatConfig, digest: string) -> HttpsRequest = do
+  let mut headers: [HttpsHeader] = []
+  headers.push(HttpsHeader { name: "Content-Type", value: "application/json" })
+  headers.push(HttpsHeader { name: "Authorization", value: "Bearer " + config.api_key })
+  const model = companion_model(config)
+  let mut url = completions_url(config.base_url)
+  let mut body = companion_request_body(model, digest)
+  if config.base_url.index_of("api.meta.ai") >= 0 then
+    url = responses_url(config.base_url)
+    body = companion_responses_body(model, digest)
+  end
+  HttpsRequest {
+    method: "POST",
+    url: url,
+    headers: headers,
+    body: body,
+    timeout_milliseconds: 20000,
+    max_response_bytes: 65536,
+    ca_bundle_path: "",
+    proxy_url: ""
+  }
+end
+
+fn companion_subject(label: string) -> string = do
+  if label == "" then
+    return ""
+  end
+  " про " + label
+end
+
+fn companion_noted_reply(quiet: CompanionQuiet, now_milliseconds: i32, remark: string) -> CompanionQuiet = do
+  const finished = companion_quiet_finish(quiet, remark)
+  let mut line = "ответ" + companion_subject(quiet.sent_label) + ": " + remark
+  if remark == "" then
+    line = "ответ" + companion_subject(quiet.sent_label) + ": тишина"
+  end
+  companion_quiet_note(finished, now_milliseconds, line)
+end
+
+fn companion_apply_text(quiet: CompanionQuiet, now_milliseconds: i32, text: string) -> CompanionQuiet =
+  companion_noted_reply(quiet, now_milliseconds, companion_remark_from_reply(text))
+
+fn companion_apply_failure(quiet: CompanionQuiet, now_milliseconds: i32) -> CompanionQuiet =
+  companion_noted_reply(quiet, now_milliseconds, "модель недоступна")
+
+fn companion_wait_expired(quiet: CompanionQuiet, now_milliseconds: i32) -> bool = do
+  if quiet.waiting == 0 then
+    return false
+  end
+  if now_milliseconds < quiet.attempt_milliseconds then
+    return true
+  end
+  now_milliseconds - quiet.attempt_milliseconds >= 25000
+end
+
+fn companion_host_take(quiet: CompanionQuiet, now_milliseconds: i32) -> CompanionQuiet = do
+  if companion_take_ready() == 0 then
+    return quiet
+  end
+  if companion_staged_transport_failure() != 0 then
+    return companion_apply_failure(quiet, now_milliseconds)
+  end
+  match chat_reply_from(companion_staged_status(), companion_staged_text()) do
+    | ReplyText(text) => companion_apply_text(quiet, now_milliseconds, text)
+    | ReplyFailed(_) => companion_apply_failure(quiet, now_milliseconds)
+    | ReplyGuestCall(_, _) => companion_apply_failure(quiet, now_milliseconds)
+    | ReplyFileCall(_, _, _) => companion_apply_failure(quiet, now_milliseconds)
+  end
+end
+
+export fn companion_host_step(
+  quiet: CompanionQuiet,
+  episode: string,
+  prompt: string,
+  label: string,
+  path: string,
+  now_milliseconds: i32,
+  config: ChatConfig
+) -> CompanionQuiet = do
+  let mut next = companion_quiet_advance(quiet, episode, now_milliseconds)
+  if companion_wait_expired(next, now_milliseconds) then
+    companion_abandon()
+    next = companion_quiet_note(
+      companion_quiet_finish(next, "модель недоступна"),
+      now_milliseconds,
+      "ответ" + companion_subject(next.sent_label) + ": модель недоступна"
+    )
+  end
+  if companion_quiet_due(next, now_milliseconds) then
+    if companion_supported(config) == false then
+      next = companion_quiet_note(
+        companion_quiet_with_remark(companion_quiet_commit(next, now_milliseconds, 0, label, path), "модель недоступна"),
+        now_milliseconds,
+        "запрос не отправлен" + companion_subject(label) + ": модель недоступна"
+      )
+    else
+      const launched = companion_launch(companion_request(config, prompt))
+      if launched != 0 then
+        next = companion_quiet_note(
+          companion_quiet_with_remark(companion_quiet_commit(next, now_milliseconds, 1, label, path), "смотрю журнал"),
+          now_milliseconds,
+          "запрос отправлен" + companion_subject(label)
+        )
+      else
+        next = companion_quiet_note(
+          companion_quiet_commit(next, now_milliseconds, 0, label, path),
+          now_milliseconds,
+          "запрос не начат" + companion_subject(label)
+        )
+      end
+    end
+  end
+  companion_host_take(next, now_milliseconds)
+end

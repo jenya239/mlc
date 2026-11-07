@@ -1,0 +1,398 @@
+import { FileAccess, file_access_empty } from './file_access'
+
+export type ObservationKind =
+  ObservationSelect
+  | ObservationMedia
+  | ObservationPlay
+  | ObservationDirectory
+  | ObservationButton
+
+export type Observation = {
+  kind: ObservationKind,
+  time_ms: i32,
+  subject: string,
+  path: string,
+  duration_ms: i32,
+  detail: i32
+}
+
+export type ObservationRing = {
+  items: [Observation],
+  accepted_count: i32
+}
+
+export type MediaHoverWatch = {
+  name: string,
+  started_ms: i32,
+  committed: bool
+}
+
+export type ObservationSample = {
+  selected_name: string,
+  hovered_media_path: string,
+  playing: bool,
+  track_name: string,
+  directory_label: string,
+  directory_revision: i32,
+  button_captions: [string],
+  now_ms: i32
+}
+
+export type ObservationFrame = {
+  ring: ObservationRing,
+  watch: MediaHoverWatch,
+  selected_name: string,
+  playing: bool,
+  track_name: string,
+  directory_label: string,
+  directory_revision: i32,
+  directory_seen: bool,
+  file_access: FileAccess
+}
+
+type MediaHoverAdvance = {
+  ring: ObservationRing,
+  watch: MediaHoverWatch
+}
+
+export fn observation_media_dwell_ms() -> i32 = 400
+
+export fn observation_ring_capacity() -> i32 = 64
+
+fn observation_items_empty() -> [Observation] = do
+  let mut items: [Observation] = []
+  return items
+end
+
+fn observation_ring_empty() -> ObservationRing =
+  ObservationRing { items: observation_items_empty(), accepted_count: 0 }
+
+fn media_hover_watch_empty() -> MediaHoverWatch =
+  MediaHoverWatch { name: "", started_ms: 0, committed: false }
+
+export fn observation_frame_empty() -> ObservationFrame =
+  ObservationFrame {
+    ring: observation_ring_empty(),
+    watch: media_hover_watch_empty(),
+    selected_name: "",
+    playing: false,
+    track_name: "",
+    directory_label: "",
+    directory_revision: 0,
+    directory_seen: false,
+    file_access: file_access_empty()
+  }
+
+fn observation_path(path: string) -> string = do
+  let mut limit = path.byte_size()
+  while limit > 0 do
+    const mark = path.byte_substring(limit - 1, 1)
+    if mark != "/" && mark != "\\" then
+      break
+    end
+    limit = limit - 1
+  end
+  return path.byte_substring(0, limit)
+end
+
+export fn observation_subject_name(path: string) -> string = do
+  const stored = observation_path(path)
+  let mut separator = 0 - 1
+  let mut index = 0
+  while index < stored.byte_size() do
+    const mark = stored.byte_substring(index, 1)
+    if mark == "/" || mark == "\\" then
+      separator = index
+    end
+    index = index + 1
+  end
+  if separator < 0 then
+    return stored
+  end
+  return stored.byte_substring(separator + 1, stored.byte_size() - separator - 1)
+end
+
+fn observation_located(directory: string, name: string) -> string = do
+  const file_path = observation_path(name)
+  if file_path == "" then
+    return ""
+  end
+  let mut index = 0
+  while index < file_path.byte_size() do
+    const mark = file_path.byte_substring(index, 1)
+    if mark == "/" || mark == "\\" then
+      return file_path
+    end
+    index = index + 1
+  end
+  const folder = observation_path(directory)
+  if folder == "" then
+    return file_path
+  end
+  return folder + "/" + file_path
+end
+
+fn observation_kind_code(kind: ObservationKind) -> i32 =
+  match kind
+    | ObservationSelect => 1
+    | ObservationMedia => 2
+    | ObservationPlay => 3
+    | ObservationDirectory => 4
+    | ObservationButton => 5
+
+fn observation_kind_same(left: ObservationKind, right: ObservationKind) -> bool =
+  observation_kind_code(left) == observation_kind_code(right)
+
+fn observation_kind_is_media(kind: ObservationKind) -> bool =
+  observation_kind_same(kind, ObservationMedia)
+
+fn observation_kind_label(kind: ObservationKind) -> string =
+  match kind
+    | ObservationSelect => "select"
+    | ObservationMedia => "media"
+    | ObservationPlay => "play"
+    | ObservationDirectory => "directory"
+    | ObservationButton => "button"
+
+fn ring_without_oldest(items: [Observation]) -> [Observation] = do
+  let mut kept = observation_items_empty()
+  let mut index = 1
+  while index < items.length() do
+    kept.push(items[index])
+    index = index + 1
+  end
+  return kept
+end
+
+fn ring_extend(
+  ring: ObservationRing,
+  kind: ObservationKind,
+  path: string,
+  detail: i32,
+  time_ms: i32
+) -> ObservationRing = do
+  if ring.items.length() == 0 then
+    return ring
+  end
+  const stored = observation_path(path)
+  let mut items = ring.items
+  let mut found = 0 - 1
+  let mut index = 0
+  while index < items.length() do
+    const item = items[index]
+    if observation_kind_same(item.kind, kind) && item.path == stored && item.detail == detail then
+      found = index
+    end
+    index = index + 1
+  end
+  if found < 0 then
+    return ring
+  end
+  const last = items[found]
+  let mut duration_ms = last.duration_ms
+  if time_ms >= last.time_ms then
+    duration_ms = time_ms - last.time_ms
+  end
+  items.set(found, Observation {
+    kind: last.kind,
+    time_ms: last.time_ms,
+    subject: last.subject,
+    path: last.path,
+    duration_ms: duration_ms,
+    detail: last.detail
+  })
+  return ObservationRing { items: items, accepted_count: ring.accepted_count }
+end
+
+export fn observation_accept(
+  ring: ObservationRing,
+  kind: ObservationKind,
+  time_ms: i32,
+  subject: string,
+  detail: i32
+) -> ObservationRing = do
+  const stored_path = observation_path(subject)
+  const subject_name = observation_subject_name(stored_path)
+  if subject_name == "" then
+    return ring
+  end
+  if observation_kind_is_media(kind) == false && ring.items.length() > 0 then
+    const last = ring.items[ring.items.length() - 1]
+    if observation_kind_same(last.kind, kind) && last.path == stored_path && last.detail == detail then
+      return ring_extend(ring, kind, stored_path, detail, time_ms)
+    end
+  end
+  let mut items = ring.items
+  if items.length() >= observation_ring_capacity() then
+    items = ring_without_oldest(items)
+  end
+  items.push(Observation {
+    kind: kind,
+    time_ms: time_ms,
+    subject: subject_name,
+    path: stored_path,
+    duration_ms: 0,
+    detail: detail
+  })
+  const accepted = ObservationRing { items: items, accepted_count: ring.accepted_count + 1 }
+  println(
+    "[textui] observation count=" + accepted.accepted_count.to_string()
+      + " kind=" + observation_kind_label(kind)
+      + " name=" + subject_name
+  )
+  return accepted
+end
+
+fn media_hover_begin(name: string, now_ms: i32) -> MediaHoverWatch = do
+  const stored = observation_path(name)
+  if observation_subject_name(stored) == "" then
+    return media_hover_watch_empty()
+  end
+  return MediaHoverWatch { name: stored, started_ms: now_ms, committed: false }
+end
+
+fn media_hover_commit_due(ring: ObservationRing, watch: MediaHoverWatch, now_ms: i32) -> ObservationRing = do
+  if watch.name == "" || watch.committed then
+    return ring
+  end
+  if now_ms < watch.started_ms then
+    return ring
+  end
+  if now_ms - watch.started_ms < observation_media_dwell_ms() then
+    return ring
+  end
+  const accepted = observation_accept(ring, ObservationMedia, watch.started_ms, watch.name, 0)
+  return ring_extend(accepted, ObservationMedia, watch.name, 0, now_ms)
+end
+
+fn media_hover_advance(
+  ring: ObservationRing,
+  watch: MediaHoverWatch,
+  media_name: string,
+  now_ms: i32
+) -> MediaHoverAdvance = do
+  if watch.name != "" && now_ms < watch.started_ms then
+    return MediaHoverAdvance { ring: ring, watch: media_hover_begin(media_name, now_ms) }
+  end
+  if media_name != watch.name then
+    return MediaHoverAdvance {
+      ring: media_hover_commit_due(ring, watch, now_ms),
+      watch: media_hover_begin(media_name, now_ms)
+    }
+  end
+  if watch.name == "" then
+    return MediaHoverAdvance { ring: ring, watch: watch }
+  end
+  if watch.committed then
+    return MediaHoverAdvance {
+      ring: ring_extend(ring, ObservationMedia, watch.name, 0, now_ms),
+      watch: watch
+    }
+  end
+  if now_ms - watch.started_ms < observation_media_dwell_ms() then
+    return MediaHoverAdvance { ring: ring, watch: watch }
+  end
+  const accepted = observation_accept(ring, ObservationMedia, watch.started_ms, watch.name, 0)
+  return MediaHoverAdvance {
+    ring: ring_extend(accepted, ObservationMedia, watch.name, 0, now_ms),
+    watch: MediaHoverWatch { name: watch.name, started_ms: watch.started_ms, committed: true }
+  }
+end
+
+export fn observation_frame_apply(frame: ObservationFrame, sample: ObservationSample) -> ObservationFrame = do
+  let mut ring = frame.ring
+  let mut selected_name = frame.selected_name
+  let mut playing = frame.playing
+  let mut track_name = frame.track_name
+  let mut directory_label = frame.directory_label
+  let mut directory_revision = frame.directory_revision
+  let mut directory_seen = frame.directory_seen
+  if directory_seen && sample.directory_revision != directory_revision then
+    selected_name = ""
+  end
+  const selected = observation_located(sample.directory_label, sample.selected_name)
+  if selected != selected_name then
+    selected_name = selected
+    if selected != "" then
+      ring = observation_accept(ring, ObservationSelect, sample.now_ms, selected, 0)
+    end
+  else
+    if selected != "" then
+      ring = ring_extend(ring, ObservationSelect, selected, 0, sample.now_ms)
+    end
+  end
+  const hovered = media_hover_advance(ring, frame.watch, sample.hovered_media_path, sample.now_ms)
+  ring = hovered.ring
+  const track = observation_path(sample.track_name)
+  if sample.playing != playing || track != track_name then
+    if playing then
+      ring = ring_extend(ring, ObservationPlay, track_name, 1, sample.now_ms)
+    end
+    let mut play_path = track
+    if observation_subject_name(play_path) == "" then
+      play_path = track_name
+    end
+    let mut play_detail = 0
+    if sample.playing then
+      play_detail = 1
+    end
+    if observation_subject_name(play_path) != "" then
+      ring = observation_accept(ring, ObservationPlay, sample.now_ms, play_path, play_detail)
+    end
+    playing = sample.playing
+    track_name = track
+  else
+    if playing then
+      ring = ring_extend(ring, ObservationPlay, track_name, 1, sample.now_ms)
+    end
+  end
+  const directory = observation_path(sample.directory_label)
+  if directory_seen == false then
+    if directory != "" then
+      ring = observation_accept(ring, ObservationDirectory, sample.now_ms, directory, 0)
+      directory_label = directory
+      directory_revision = sample.directory_revision
+      directory_seen = true
+    end
+  else
+    if sample.directory_revision != directory_revision then
+      if directory != "" then
+        ring = observation_accept(ring, ObservationDirectory, sample.now_ms, directory, 0)
+      end
+      directory_label = directory
+      directory_revision = sample.directory_revision
+    else
+      if directory != "" then
+        ring = ring_extend(ring, ObservationDirectory, directory, 0, sample.now_ms)
+      end
+    end
+  end
+  let mut button_index = 0
+  while button_index < sample.button_captions.length() do
+    const caption = sample.button_captions[button_index]
+    if caption != "" then
+      ring = observation_accept(ring, ObservationButton, sample.now_ms, caption, 0)
+    end
+    button_index = button_index + 1
+  end
+  return ObservationFrame {
+    ring: ring,
+    watch: hovered.watch,
+    selected_name: selected_name,
+    playing: playing,
+    track_name: track_name,
+    directory_label: directory_label,
+    directory_revision: directory_revision,
+    directory_seen: directory_seen,
+    file_access: frame.file_access
+  }
+end
+
+export fn observation_frame_with_file_access(frame: ObservationFrame, file_access: FileAccess) -> ObservationFrame =
+  ObservationFrame {
+    ring: frame.ring, watch: frame.watch,
+    selected_name: frame.selected_name, playing: frame.playing,
+    track_name: frame.track_name, directory_label: frame.directory_label,
+    directory_revision: frame.directory_revision, directory_seen: frame.directory_seen,
+    file_access: file_access
+  }

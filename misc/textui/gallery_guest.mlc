@@ -1,10 +1,12 @@
 import { continue_halt } from '../../script_vm/executor'
 import { resume_guest, run_guest_halt } from '../../script_vm/executor_guest'
+import { guest_resume_text } from '../../script_vm/guest_program'
 import { GuestHalt } from '../../script_vm/executor_halt'
 import { guest_timer_poll } from '../../script_vm/guest_timer'
 import { heap_new } from '../../script_vm/heap_types'
 import {
   host_import_effect_set,
+  host_import_file_read_granted,
   host_import_host_log,
   host_import_listing_reload,
   host_import_timer_after
@@ -68,6 +70,20 @@ fn guest_copy(
     effect_mode: effect_mode,
     reload_requested: reload_requested
   }
+
+export fn gallery_guest_with_store(guest: GalleryGuest, store: WidgetStore) -> GalleryGuest =
+  guest_copy(
+    guest,
+    store,
+    guest.halt,
+    guest.revision,
+    guest.timer_origin_milliseconds,
+    guest.timer_armed,
+    guest.guest_released,
+    guest.effect_requested,
+    guest.effect_mode,
+    guest.reload_requested
+  )
 
 export fn gallery_guest_start(
   store: WidgetStore,
@@ -220,6 +236,9 @@ fn effect_set_index() -> i32 =
 fn listing_reload_index() -> i32 =
   host_call_import_index(host_import_listing_reload().operation_id)
 
+fn file_read_granted_index() -> i32 =
+  host_call_import_index(host_import_file_read_granted().operation_id)
+
 fn host_log_index() -> i32 =
   host_call_import_index(host_import_host_log().operation_id)
 
@@ -297,6 +316,20 @@ export fn gallery_guest_accept_control(guest: GalleryGuest) -> GalleryGuest = do
       guest.effect_requested,
       guest.effect_mode,
       true
+    )
+  end
+  if import_index == file_read_granted_index() then
+    return guest_copy(
+      guest,
+      guest.store,
+      guest_resume_text(guest.halt, guest.prototypes, ""),
+      guest.revision,
+      guest.timer_origin_milliseconds,
+      false,
+      guest.guest_released,
+      guest.effect_requested,
+      guest.effect_mode,
+      guest.reload_requested
     )
   end
   if import_index == host_log_index() then

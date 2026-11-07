@@ -1,0 +1,125 @@
+import { workspace_tool_run } from '../chat_files'
+import {
+  workspace_delete,
+  workspace_list,
+  workspace_read,
+  workspace_search,
+  workspace_write
+} from '../workspace_files'
+
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_remove(path: string) -> bool
+  = "mlc::file::remove_file_value" from "mlc/io/file_abi.hpp" blocking
+
+fn home() -> string = "/home/jenya"
+
+fn work() -> string = "/home/jenya/workspaces/current/mlc/tmp/file_agent_work"
+
+fn marker() -> string = work() + "/marker.txt"
+
+fn secret_file() -> string = work() + "/.env"
+
+fn created() -> string = work() + "/created.txt"
+
+fn refuses(text: string, code: string) -> bool = do
+  if text.index_of(code) != 0 then
+    return false
+  end
+  text.index_of("AGENT_MARKER_91") < 0 && text.index_of("SECRET_TOKEN_91") < 0
+end
+
+fn refusal_cases() -> i32 = do
+  if refuses(workspace_write(home(), work(), "/etc/hostname", "x"), "refused: system") == false then
+    return 1
+  end
+  if refuses(workspace_read(home(), work(), "/home/jenya/.ssh/id_rsa"), "refused: secret") == false then
+    return 2
+  end
+  if refuses(workspace_read(home(), work(), "~/.ssh/id_rsa"), "refused: secret") == false then
+    return 2
+  end
+  if refuses(workspace_read(home(), work(), work() + "/../.ssh/id_rsa"), "refused: secret") == false then
+    return 3
+  end
+  if refuses(workspace_write(home(), work(), "app/.env", "SECRET_TOKEN_91"), "refused: secret") == false then
+    return 4
+  end
+  if file_byte_size(work() + "/app/.env") >= 0 then
+    return 5
+  end
+  const jail = "/home/jenya/workspaces/current/mlc/tmp/file_agent_jail"
+  if refuses(workspace_read(jail, jail, jail + "2/secret.txt"), "refused: outside") == false then
+    return 6
+  end
+  if refuses(workspace_read("", "", "marker.txt"), "refused: outside") == false then
+    return 7
+  end
+  0
+end
+
+fn edit_cases() -> i32 = do
+  const written = workspace_write(home(), work(), "marker.txt", "AGENT_MARKER_91\n")
+  if written != "wrote 16" then
+    return 8
+  end
+  const body = workspace_read(home(), work(), "marker.txt")
+  if body.index_of("AGENT_MARKER_91") < 0 then
+    return 9
+  end
+  const elsewhere = "/home/jenya/workspaces/current/mlc/tmp/file_agent_jail"
+  const from_home = workspace_read(home(), elsewhere, "~/workspaces/current/mlc/tmp/file_agent_work/marker.txt")
+  if from_home.index_of("AGENT_MARKER_91") < 0 then
+    return 9
+  end
+  const home_list = workspace_list(home(), elsewhere, "~")
+  if home_list.index_of("refused") >= 0 || home_list.index_of(".ssh") >= 0 || home_list.index_of(".env") >= 0 then
+    return 9
+  end
+  if file_write_string(secret_file(), "SECRET_TOKEN_91\n") == false then
+    return 10
+  end
+  const listed = workspace_list(home(), work(), ".")
+  if listed.index_of("marker.txt") < 0 || listed.index_of(".env") >= 0 then
+    return 11
+  end
+  const found = workspace_search(home(), work(), ".", "AGENT_MARKER_91")
+  if found.index_of(marker()) < 0 then
+    return 12
+  end
+  const hidden = workspace_search(home(), work(), ".", "SECRET_TOKEN_91")
+  if hidden.index_of("SECRET_TOKEN_91") >= 0 || hidden.index_of(".env") >= 0 then
+    return 13
+  end
+  const created_body = workspace_tool_run(work(), "file_write", "{\"path\":\"created.txt\",\"content\":\"created-line\"}")
+  if created_body != "wrote 12" then
+    return 14
+  end
+  const read_back = workspace_tool_run(work(), "file_read", "{\"path\":\"created.txt\"}")
+  if read_back != "created-line" then
+    return 15
+  end
+  if workspace_delete(home(), work(), "created.txt") != "deleted" then
+    return 16
+  end
+  if workspace_read(home(), work(), "created.txt") != "refused: missing" then
+    return 17
+  end
+  if workspace_delete(home(), work(), "/etc/hostname") != "refused: system" then
+    return 18
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const refused = refusal_cases()
+  if refused != 0 then
+    return refused
+  end
+  const edited = edit_cases()
+  file_remove(secret_file())
+  file_remove(created())
+  edited
+end

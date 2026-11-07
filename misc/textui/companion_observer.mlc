@@ -1,0 +1,188 @@
+import {
+  ObservationFrame,
+  ObservationKind,
+  ObservationMedia,
+  ObservationSample,
+  ObservationSelect,
+  observation_frame_apply,
+  observation_frame_with_file_access,
+  observation_subject_name
+} from './companion_observe'
+import { file_access_advance } from './file_access'
+import { strip_trailing_slash } from './directory_rows'
+import { normalize_path, path_inside_jail } from './directory_jail'
+import { hovered_image_path } from './image_preview'
+import { music_playing, music_track } from './music_host'
+import { path_bar_current } from './path_bar'
+import {
+  WidgetKind,
+  WidgetStore,
+  kind_is_list_view
+} from './store'
+import { UiEvent } from './ui_event'
+import { UiState } from './ui_state'
+import { list_selected_at } from './widget_list'
+
+fn list_view_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindIcon(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+
+fn file_list_index(store: WidgetStore) -> i32 = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return index
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return 0 - 1
+end
+
+fn selected_file_name(store: WidgetStore, state: UiState) -> string = do
+  const index = file_list_index(store)
+  if index < 0 then
+    return ""
+  end
+  const texts = list_view_texts(store.nodes[index].kind)
+  const row = list_selected_at(state.list_selected, store.nodes[index].id.index)
+  if row < 0 || row >= texts.length() then
+    return ""
+  end
+  return texts[row]
+end
+
+fn caption_is_progress(text: string) -> bool = do
+  let mut index = 0
+  while index + 2 <= text.byte_size() do
+    if text.byte_substring(index, 2) == " [" then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
+fn button_text(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindCheckbox(_) => ""
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindBox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn toolbar_captions(store: WidgetStore, events: [UiEvent]) -> [string] = do
+  let mut captions: [string] = []
+  let mut index = 0
+  while index < events.length() do
+    const owner = events[index].widget
+    if owner.index >= 0 && owner.index < store.nodes.length() then
+      const caption = button_text(store.nodes[owner.index].kind)
+      if caption != "" && caption_is_progress(caption) == false then
+        captions.push(caption)
+      end
+    end
+    index = index + 1
+  end
+  return captions
+end
+
+fn path_below_root(root: string, path: string) -> string = do
+  const full = normalize_path(path)
+  if full == "" then
+    return ""
+  end
+  const base = normalize_path(root)
+  if base == "" || base == "/" then
+    return full
+  end
+  if full == base then
+    return observation_subject_name(full)
+  end
+  if path_inside_jail(base, full) then
+    return full.byte_substring(base.byte_size() + 1, full.byte_size() - base.byte_size() - 1)
+  end
+  return full
+end
+
+fn observation_sample(
+  store: WidgetStore,
+  state: UiState,
+  events: [UiEvent],
+  root: string,
+  now_ms: i32
+) -> ObservationSample =
+  ObservationSample {
+    selected_name: selected_file_name(store, state),
+    hovered_media_path: path_below_root(root, hovered_image_path(store, state, root)),
+    playing: music_playing() != 0,
+    track_name: path_below_root(root, music_track()),
+    directory_label: path_below_root(root, path_bar_current(store)),
+    directory_revision: state.listing_revision,
+    button_captions: toolbar_captions(store, events),
+    now_ms: now_ms
+  }
+
+fn file_kind(kind: ObservationKind) -> bool =
+  match kind
+    | ObservationSelect => true
+    | ObservationMedia => true
+    | ObservationPlay => false
+    | ObservationDirectory => false
+    | ObservationButton => false
+
+fn latest_file_name(frame: ObservationFrame) -> string = do
+  let mut index = frame.ring.items.length() - 1
+  while index >= 0 do
+    if file_kind(frame.ring.items[index].kind) then
+      return frame.ring.items[index].subject
+    end
+    index = index - 1
+  end
+  ""
+end
+
+fn current_file_path(directory: string, file_name: string) -> string = do
+  if directory == "" || file_name == "" then
+    return ""
+  end
+  strip_trailing_slash(directory) + "/" + file_name
+end
+
+export fn companion_observer_apply(
+  frame: ObservationFrame,
+  store: WidgetStore,
+  state: UiState,
+  events: [UiEvent],
+  root: string,
+  now_ms: i32
+) -> ObservationFrame = do
+  const applied = observation_frame_apply(frame, observation_sample(store, state, events, root, now_ms))
+  const directory = path_bar_current(store)
+  observation_frame_with_file_access(
+    applied,
+    file_access_advance(
+      frame.file_access,
+      directory,
+      current_file_path(directory, latest_file_name(applied)),
+      root,
+      state.listing_revision,
+      now_ms
+    )
+  )
+end

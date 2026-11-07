@@ -1,9 +1,21 @@
-import { guest_program_run } from '../../script_vm/guest_program'
-import { ChatConfig, chat_build_guest_followup, chat_build_request } from './chat_http'
+import { guest_program_run_with_grant } from '../../script_vm/guest_program'
+import { workspace_tool_run } from './chat_files'
+import { CommandReady, CommandRefused, command_request } from './command_run'
+import {
+  command_host_launch,
+  command_staged_arguments,
+  command_staged_call_identifier,
+  command_staged_generation,
+  command_staged_name,
+  command_staged_text,
+  command_take_ready
+} from './command_host'
+import { ChatConfig, chat_build_file_followup, chat_build_guest_followup, chat_build_request } from './chat_http'
 import {
   ChatMessage,
   ChatModel,
   ReplyFailed,
+  ReplyFileCall,
   ReplyGuestCall,
   ReplyText,
   RoleAssistant,
@@ -23,7 +35,7 @@ fn request_character_budget() -> i32 =
   100000
 
 fn guest_round_limit() -> i32 =
-  4
+  8
 
 fn dispatch_send(config: ChatConfig, model: ChatModel) -> ChatModel = do
   if config.api_key.byte_size() == 0 then
@@ -64,7 +76,8 @@ fn guest_rounds(messages: [ChatMessage]) -> i32 = do
   let mut count = 0
   let mut cursor = last_user + 1
   while cursor < messages.length() do
-    if messages[cursor].text.index_of("run_guest\n") == 0 then
+    const text = messages[cursor].text
+    if text.index_of("run_guest\n") == 0 || text.index_of("file_") == 0 || text.index_of("run_command\n") == 0 then
       count = count + 1
     end
     cursor = cursor + 1
@@ -75,11 +88,15 @@ end
 fn guest_visible(result: string) -> string =
   "run_guest\n" + result
 
-fn note_guest_result(model: ChatModel, result: string) -> ChatModel = do
+fn note_tool_result(model: ChatModel, text: string) -> ChatModel = do
+  let mut shown = text
+  if shown.byte_size() > 2000 then
+    shown = shown.byte_substring(0, 2000) + "\n…"
+  end
   let mut messages = model.messages
   messages.push(ChatMessage {
     role: RoleAssistant,
-    text: guest_visible(result),
+    text: shown,
     failed: false,
     provider: "",
     model_name: ""
@@ -97,12 +114,13 @@ fn continue_guest(
   model: ChatModel,
   generation: i32,
   call_identifier: string,
-  source: string
+  source: string,
+  grant_text: string
 ) -> ChatModel = do
   if generation != model.generation then
     return model
   end
-  const result = guest_program_run(source)
+  const result = guest_program_run_with_grant(source, grant_text)
   if guest_rounds(model.messages) + 1 >= guest_round_limit() then
     return chat_apply_reply(
       model,
@@ -115,20 +133,134 @@ fn continue_guest(
     generation,
     chat_build_guest_followup(config, history, call_identifier, source, result)
   )
-  note_guest_result(model, result)
+  note_tool_result(model, guest_visible(result))
 end
 
-fn settle(config: ChatConfig, model: ChatModel, delivery: TransportDelivery) -> ChatModel =
+fn deliver_tool_result(
+  config: ChatConfig,
+  model: ChatModel,
+  generation: i32,
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  result: string
+) -> ChatModel = do
+  const visible = name + "\n" + result
+  if guest_rounds(model.messages) + 1 >= guest_round_limit() then
+    return chat_apply_reply(model, generation, ReplyText(visible + "outcome=guest_round_limit\n"))
+  end
+  const history = chat_history_for_request(model, request_character_budget())
+  transport_start(
+    generation,
+    chat_build_file_followup(config, history, name, call_identifier, arguments, result)
+  )
+  note_tool_result(model, visible)
+end
+
+fn command_start(
+  config: ChatConfig,
+  model: ChatModel,
+  generation: i32,
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  command: string,
+  directory: string
+) -> ChatModel = do
+  const launched = command_host_launch(generation, name, call_identifier, arguments, command, directory)
+  if launched == 0 then
+    return deliver_tool_result(config, model, generation, name, call_identifier, arguments, "refused: busy")
+  end
+  model
+end
+
+fn continue_command(
+  config: ChatConfig,
+  model: ChatModel,
+  generation: i32,
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  workspace_root: string
+) -> ChatModel = do
+  if generation != model.generation then
+    return model
+  end
+  const request = command_request(workspace_root, arguments)
+  match request do
+    | CommandRefused(text) => deliver_tool_result(config, model, generation, name, call_identifier, arguments, text)
+    | CommandReady(command, directory) => command_start(config, model, generation, name, call_identifier, arguments, command, directory)
+  end
+end
+
+fn continue_file(
+  config: ChatConfig,
+  model: ChatModel,
+  generation: i32,
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  workspace_root: string
+) -> ChatModel = do
+  if generation != model.generation then
+    return model
+  end
+  if name == "run_command" then
+    return continue_command(config, model, generation, name, call_identifier, arguments, workspace_root)
+  end
+  deliver_tool_result(
+    config,
+    model,
+    generation,
+    name,
+    call_identifier,
+    arguments,
+    workspace_tool_run(workspace_root, name, arguments)
+  )
+end
+
+fn finish_command(config: ChatConfig, model: ChatModel) -> ChatModel = do
+  const generation = command_staged_generation()
+  if generation != model.generation then
+    return model
+  end
+  deliver_tool_result(
+    config,
+    model,
+    generation,
+    command_staged_name(),
+    command_staged_call_identifier(),
+    command_staged_arguments(),
+    command_staged_text()
+  )
+end
+
+fn settle(
+  config: ChatConfig,
+  model: ChatModel,
+  delivery: TransportDelivery,
+  grant_text: string,
+  workspace_root: string
+) -> ChatModel =
   match delivery.outcome
-    | ReplyGuestCall(call_identifier, source) => continue_guest(config, model, delivery.generation, call_identifier, source)
+    | ReplyGuestCall(call_identifier, source) => continue_guest(config, model, delivery.generation, call_identifier, source, grant_text)
+    | ReplyFileCall(name, call_identifier, arguments) => continue_file(config, model, delivery.generation, name, call_identifier, arguments, workspace_root)
     | ReplyText(text) => chat_apply_reply(model, delivery.generation, ReplyText(text))
     | ReplyFailed(text) => chat_apply_reply(model, delivery.generation, ReplyFailed(text))
 
-export fn chat_session_poll(config: ChatConfig, model: ChatModel) -> ChatModel = do
+export fn chat_session_poll(
+  config: ChatConfig,
+  model: ChatModel,
+  grant_text: string,
+  workspace_root: string
+) -> ChatModel = do
+  if command_take_ready() != 0 then
+    return finish_command(config, model)
+  end
   const polled = transport_poll()
   const updated = match polled
     | TransportIdle => model
-    | TransportDone(delivery) => settle(config, model, delivery)
+    | TransportDone(delivery) => settle(config, model, delivery, grant_text, workspace_root)
   updated
 end
 

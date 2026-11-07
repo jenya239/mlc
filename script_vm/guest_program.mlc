@@ -4,6 +4,7 @@ import { resume_guest, run_guest_halt } from './executor_guest'
 import { GuestHalt } from './executor_halt'
 import { heap_element_count, heap_get_element, heap_object_type_id } from './heap'
 import { Heap, heap_new, heap_type_string } from './heap_types'
+import { string_heap_from_bytes } from './string_heap'
 import { host_import_manifest } from './host_imports'
 import { lower_source } from './lower/lower_module'
 import { decode_module } from './module_blob'
@@ -22,6 +23,8 @@ import {
 
 extern fn string_from_byte_u8(value: i32) -> string =
   "mlc::net::string_from_byte_u8" from "mlc/net/websocket_abi.hpp"
+extern fn string_byte_u8(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" thread_safe
 extern fn env_get_or(key: string, default_value: string) -> string =
   "mlc::env::get_or" from "mlc/env/env_abi.hpp" blocking
 extern fn file_read_to_string(path: string) -> string =
@@ -144,17 +147,65 @@ fn continue_yielded(halt: GuestHalt, prototypes: [FunctionProto]) -> GuestHalt =
   continue_halt(heap, state, prototypes)
 end
 
-fn answer_host(halt: GuestHalt, prototypes: [FunctionProto]) -> GuestHalt =
+fn text_bytes(text: string) -> [i32] = do
+  let mut bytes: [i32] = []
+  let mut index = 0
+  while index < text.byte_size() do
+    bytes.push(string_byte_u8(text, index))
+    index = index + 1
+  end
+  bytes
+end
+
+fn file_read_request(halt: GuestHalt) -> bool =
+  operation_name(halt.state.host_import_index) == "file.read_granted"
+
+fn argument_is_zero(halt: GuestHalt) -> bool =
+  match value_decode(halt.argument) {
+    ValueInt32(number) => number == 0,
+    _ => false
+  }
+
+fn granted_block(text: string) -> string = do
+  let mut block = "granted_bytes=" + text.byte_size().to_string() + "\n" + text
+  if text.byte_size() == 0 || text.byte_at(text.byte_size() - 1) != "\n" then
+    block = block + "\n"
+  end
+  block
+end
+
+fn answer_host(halt: GuestHalt, prototypes: [FunctionProto], code: i32) -> GuestHalt =
   resume_guest(
     halt,
-    value_encode(ValueInt32(1)),
+    value_encode(ValueInt32(code)),
     halt.session_epoch,
     halt.incarnation,
     halt.code_epoch,
     prototypes
   )
 
-fn drive(halt: GuestHalt, prototypes: [FunctionProto]) -> string = do
+export fn guest_resume_text(halt: GuestHalt, prototypes: [FunctionProto], text: string) -> GuestHalt = do
+  let allocated = string_heap_from_bytes(halt.heap, text_bytes(text))
+  let staged = GuestHalt {
+    heap: allocated.heap,
+    state: halt.state,
+    outcome: halt.outcome,
+    session_epoch: halt.session_epoch,
+    incarnation: halt.incarnation,
+    code_epoch: halt.code_epoch,
+    argument: halt.argument
+  }
+  resume_guest(
+    staged,
+    allocated.value,
+    halt.session_epoch,
+    halt.incarnation,
+    halt.code_epoch,
+    prototypes
+  )
+end
+
+fn drive(halt: GuestHalt, prototypes: [FunctionProto], grant_text: string) -> string = do
   let mut current = halt
   let mut host_resumes = 0
   let mut report = ""
@@ -168,7 +219,13 @@ fn drive(halt: GuestHalt, prototypes: [FunctionProto]) -> string = do
       stopped = true
     else if current.outcome == "waiting" then
       report = report + host_line(current)
-      current = answer_host(current, prototypes)
+      if file_read_request(current) then
+        let body = if argument_is_zero(current) then grant_text else "" end
+        report = report + granted_block(body)
+        current = guest_resume_text(current, prototypes, body)
+      else
+        current = answer_host(current, prototypes, 1)
+      end
       host_resumes = host_resumes + 1
     else
       report = report + stop_text(current)
@@ -208,7 +265,7 @@ fn diagnostic_report(source: string) -> string = do
     + "hint=A function body is = expression or = do ... end. Braces, return, and semicolons are rejected.\n"
 end
 
-export fn guest_program_run(source: string) -> string = do
+export fn guest_program_run_with_grant(source: string, grant_text: string) -> string = do
   if blank_source(source) then
     return "outcome=empty\n"
   end
@@ -245,5 +302,8 @@ export fn guest_program_run(source: string) -> string = do
     empty_arguments(),
     run_limits_quantum(instruction_limit(), 0, quantum_limit())
   )
-  drive(halted, decoded.decoded_module.protos)
+  drive(halted, decoded.decoded_module.protos, grant_text)
 end
+
+export fn guest_program_run(source: string) -> string =
+  guest_program_run_with_grant(source, "")

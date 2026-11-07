@@ -88,7 +88,10 @@ fn main() -> i32 = do
   let mut cache = text_layout_cache_new()
   const scene = build_chat_scene()
   const root_children = scene.store.nodes[scene.store.root.index].children
-  if root_children.length() != 3 then
+  if root_children.length() != 4 then
+    return -1
+  end
+  if widget_id_equals(root_children[1], scene.presence) == false then
     return -1
   end
   if widget_id_equals(root_children[1], scene.transcript) then
@@ -116,12 +119,16 @@ fn main() -> i32 = do
   shaping = laid.shaping
   cache = laid.cache
   const header = rect_of(laid, root_children[0].index)
+  const presence = rect_of(laid, scene.presence.index)
   const transcript = rect_of(laid, scene.transcript.index)
   const composer = rect_of(laid, scene.composer.index)
   if transcript.x <= header.x || transcript.width >= 900 - 16 || transcript.width < 300 then
     return -3
   end
-  if transcript.y != header.y + header.height + theme.gap then
+  if presence.y != header.y + header.height + theme.gap then
+    return -4
+  end
+  if transcript.y != presence.y + presence.height + theme.gap then
     return -4
   end
   if composer.x != transcript.x || composer.width != transcript.width then

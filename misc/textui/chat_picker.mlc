@@ -17,8 +17,10 @@ import {
   pane_conversations,
   pane_models,
   pane_providers,
+  roster_with_row,
   show_conversations
 } from './chat_roster'
+import { journal_is_identifier } from './companion_journal'
 import { ChatScene } from './chat_scene'
 import { LayoutResult } from './layout_result'
 import { menu_list_id, menu_open } from './menu'
@@ -186,6 +188,9 @@ fn open_conversation(
   scene: ChatScene,
   selected: i32
 ) -> PickerParts = do
+  if journal_is_identifier(roster.conversation_identifiers, selected) then
+    return PickerParts { model: model, persistence: persistence, roster: roster_with_row(roster, selected), state: revert_row(state, scene, selected), replaced: true }
+  end
   if selected < 0 || selected >= roster.conversation_identifiers.length() then
     return unchanged_parts(model, persistence, roster, state)
   end

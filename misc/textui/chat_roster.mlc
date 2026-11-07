@@ -1,4 +1,5 @@
 import { ChatScene } from './chat_scene'
+import { journal_identifier, journal_is_identifier, journal_title } from './companion_journal'
 import { store_conversations_recent } from './chat_store'
 import { overlay_dismiss } from './overlay'
 import { WidgetStore, widget_store_set_list_texts } from './store'
@@ -99,21 +100,35 @@ export fn show_conversations(
 ) -> ChatListUpdate =
   install_conversations(store, state, scene, roster)
 
+export fn roster_with_row(roster: ChatRoster, row: i32) -> ChatRoster =
+  ChatRoster {
+    pane: pane_conversations(),
+    row: row,
+    conversation_row: row,
+    draft_provider: roster.draft_provider,
+    conversation_identifiers: roster.conversation_identifiers,
+    conversation_titles: roster.conversation_titles
+  }
+
 export fn roster_load(database: i32, conversation: i64) -> ChatRoster = do
   const recent = store_conversations_recent(database)
+  let mut identifiers: [i64] = []
   let mut titles: [string] = []
+  identifiers.push(journal_identifier())
+  titles.push(journal_title())
   let mut index = 0
   while index < recent.titles.length() do
+    identifiers.push(recent.identifiers[index])
     titles.push(visible_title(recent.titles[index]))
     index = index + 1
   end
-  const row = index_of_identifier(recent.identifiers, conversation)
+  const row = index_of_identifier(identifiers, conversation)
   ChatRoster {
     pane: pane_conversations(),
     row: row,
     conversation_row: row,
     draft_provider: 0 - 1,
-    conversation_identifiers: recent.identifiers,
+    conversation_identifiers: identifiers,
     conversation_titles: titles
   }
 end
@@ -143,5 +158,9 @@ export fn roster_refresh(
   if before_identifier == after_identifier && before_count == after_count then
     return ChatListUpdate { store: store, state: state, roster: roster }
   end
-  show_conversations(store, state, scene, roster_load(database, after_identifier))
+  const loaded = roster_load(database, after_identifier)
+  if journal_is_identifier(roster.conversation_identifiers, roster.conversation_row) then
+    return show_conversations(store, state, scene, roster_with_row(loaded, 0))
+  end
+  show_conversations(store, state, scene, loaded)
 end

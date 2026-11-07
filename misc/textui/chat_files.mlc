@@ -1,0 +1,126 @@
+import {
+  chat_json_field,
+  chat_json_index,
+  json_escape,
+  parsed_array,
+  parsed_object,
+  parsed_string
+} from './chat_json'
+import {
+  workspace_delete,
+  workspace_home,
+  workspace_list,
+  workspace_read,
+  workspace_search,
+  workspace_write
+} from './workspace_files'
+
+export type FileTool =
+  FileToolNone
+  | FileToolReady(string, string, string)
+
+fn tool_object(name: string, description: string, properties: string, required: string) -> string =
+  "{\"type\":\"function\",\"function\":{\"name\":\"" + name
+    + "\",\"description\":\"" + description
+    + "\",\"parameters\":{\"type\":\"object\",\"properties\":{" + properties
+    + "},\"required\":[" + required + "]}}}"
+
+export fn file_tool_items() -> string =
+  tool_object(
+    "file_list",
+    "List one directory. Use ~ or ~/path to read anywhere under the home directory. A relative path starts at the open gallery folder. Secret names are omitted.",
+    "\"path\":{\"type\":\"string\"}",
+    "\"path\""
+  )
+    + ","
+    + tool_object(
+      "file_search",
+      "Find a literal substring in file names and text. path may be ~ or a directory under the home directory. Secret names are skipped.",
+      "\"path\":{\"type\":\"string\"},\"query\":{\"type\":\"string\"}",
+      "\"path\",\"query\""
+    )
+    + ","
+    + tool_object(
+      "file_read",
+      "Read one text file under the home directory or the open gallery folder. ~ and ~/path are allowed. Images, secrets, and files over 262144 bytes are refused.",
+      "\"path\":{\"type\":\"string\"}",
+      "\"path\""
+    )
+    + ","
+    + tool_object(
+      "file_write",
+      "Create or overwrite one text file. Parent directories are created. System and secret paths are refused.",
+      "\"path\":{\"type\":\"string\"},\"content\":{\"type\":\"string\"}",
+      "\"path\",\"content\""
+    )
+    + ","
+    + tool_object(
+      "file_delete",
+      "Delete one file. Directories are refused. The same path rules as file_write apply.",
+      "\"path\":{\"type\":\"string\"}",
+      "\"path\""
+    )
+    + ","
+    + tool_object(
+      "run_command",
+      "Run one shell command as the user. This is not sandboxed. working_directory defaults to the open gallery folder. Use ~ for the home directory. No interactive input. Output stops at 32768 bytes or 20 seconds.",
+      "\"command\":{\"type\":\"string\"},\"working_directory\":{\"type\":\"string\"}",
+      "\"command\""
+    )
+
+fn known_file_tool(name: string) -> bool =
+  name == "file_list" || name == "file_search" || name == "file_read" || name == "file_write" || name == "file_delete" || name == "run_command"
+
+export fn chat_file_from_message(message: string) -> FileTool = do
+  const calls = parsed_array(chat_json_field(message, "tool_calls"))
+  if calls.byte_size() == 0 then
+    return FileToolNone
+  end
+  const first = parsed_object(chat_json_index(calls, 0))
+  const function_object = parsed_object(chat_json_field(first, "function"))
+  const name = parsed_string(chat_json_field(function_object, "name"))
+  if known_file_tool(name) == false then
+    return FileToolNone
+  end
+  let call_identifier = parsed_string(chat_json_field(first, "id"))
+  if call_identifier.byte_size() == 0 then
+    call_identifier = name
+  end
+  FileToolReady(name, call_identifier, parsed_string(chat_json_field(function_object, "arguments")))
+end
+
+export fn chat_file_assistant_tool(name: string, call_identifier: string, arguments: string) -> string =
+  "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\""
+    + json_escape(call_identifier)
+    + "\",\"type\":\"function\",\"function\":{\"name\":\""
+    + json_escape(name)
+    + "\",\"arguments\":\""
+    + json_escape(arguments)
+    + "\"}}]}"
+
+export fn workspace_tool_run(workspace_root: string, name: string, arguments: string) -> string = do
+  const home = workspace_home()
+  const path = parsed_string(chat_json_field(arguments, "path"))
+  if path == "" then
+    return "refused: path"
+  end
+  if name == "file_list" then
+    return workspace_list(home, workspace_root, path)
+  end
+  if name == "file_search" then
+    return workspace_search(home, workspace_root, path, parsed_string(chat_json_field(arguments, "query")))
+  end
+  if name == "file_read" then
+    return workspace_read(home, workspace_root, path)
+  end
+  if name == "file_write" then
+    if arguments.index_of("\"content\"") < 0 then
+      return "refused: content"
+    end
+    return workspace_write(home, workspace_root, path, parsed_string(chat_json_field(arguments, "content")))
+  end
+  if name == "file_delete" then
+    return workspace_delete(home, workspace_root, path)
+  end
+  "refused: tool"
+end

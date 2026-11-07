@@ -197,6 +197,9 @@ export fn splitter_laid_sash(
   return rect_new(own.x, first_y + first_height, own.width, theme.splitter_width)
 end
 
+export fn splitter_sash_contains(sash: Rect, row: bool, x: i32, y: i32) -> bool =
+  rect_contains(sash_hit_rect(sash, row), x, y)
+
 export fn splitter_sash_hit(
   store: WidgetStore,
   layout: LayoutResult,
@@ -209,7 +212,15 @@ export fn splitter_sash_hit(
     return false
   end
   const sash = splitter_laid_sash(store, layout, theme, id)
-  return rect_contains(sash_hit_rect(sash, splitter_is_row(store, id)), x, y)
+  return splitter_sash_contains(sash, splitter_is_row(store, id), x, y)
+end
+
+export fn sash_fill(theme: Theme, sash: Rect, hot: bool) -> DrawOp = do
+  let mut color = theme.splitter_sash
+  if hot then
+    color = theme.splitter_hover
+  end
+  OpFillRect(FillRectOp { rect: sash, color: color })
 end
 
 export fn paint_splitter_sash(
@@ -222,11 +233,8 @@ export fn paint_splitter_sash(
 ) -> [DrawOp] = do
   const id = store.nodes[node_index].id
   const sash = splitter_laid_sash(store, layout, theme, id)
-  let mut color = theme.splitter_sash
-  if state.hover.index == node_index || pointer_split_owns(state.pointer, id) then
-    color = theme.splitter_hover
-  end
+  const hot = state.hover.index == node_index || pointer_split_owns(state.pointer, id)
   let mut next = operations
-  next.push(OpFillRect(FillRectOp { rect: sash, color: color }))
+  next.push(sash_fill(theme, sash, hot))
   return next
 end

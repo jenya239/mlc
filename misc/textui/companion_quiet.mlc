@@ -1,0 +1,254 @@
+import { json_escape } from './chat_json'
+
+export type CompanionQuiet = {
+  digest: string,
+  stable_since_milliseconds: i32,
+  sent_digest: string,
+  remark: string,
+  attempt_milliseconds: i32,
+  attempted: i32,
+  waiting: i32,
+  history: [string],
+  sent_label: string,
+  sent_path: string
+}
+
+export fn companion_quiet_empty() -> CompanionQuiet =
+  CompanionQuiet {
+    digest: "",
+    stable_since_milliseconds: 0,
+    sent_digest: "",
+    remark: "",
+    attempt_milliseconds: 0,
+    attempted: 0,
+    waiting: 0,
+    history: [],
+    sent_label: "",
+    sent_path: ""
+  }
+
+export fn companion_empty_digest() -> string =
+  "Действия\nпока пусто\n\nКонтекст для модели\nпока пусто"
+
+export fn companion_settle_milliseconds() -> i32 = 2000
+
+export fn companion_cooldown_milliseconds() -> i32 = 15000
+
+fn elapsed_milliseconds(now_milliseconds: i32, start_milliseconds: i32) -> i32 = do
+  if now_milliseconds < start_milliseconds then
+    return 0
+  end
+  now_milliseconds - start_milliseconds
+end
+
+fn companion_with_digest(quiet: CompanionQuiet, digest: string, now_milliseconds: i32) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: digest,
+    stable_since_milliseconds: now_milliseconds,
+    sent_digest: quiet.sent_digest,
+    remark: quiet.remark,
+    attempt_milliseconds: quiet.attempt_milliseconds,
+    attempted: quiet.attempted,
+    waiting: quiet.waiting,
+    history: quiet.history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path
+  }
+
+export fn companion_quiet_advance(quiet: CompanionQuiet, digest: string, now_milliseconds: i32) -> CompanionQuiet = do
+  if digest == quiet.digest then
+    return quiet
+  end
+  companion_with_digest(quiet, digest, now_milliseconds)
+end
+
+export fn companion_quiet_due(quiet: CompanionQuiet, now_milliseconds: i32) -> bool = do
+  if quiet.waiting != 0 then
+    return false
+  end
+  if quiet.digest == "" || quiet.digest == companion_empty_digest() then
+    return false
+  end
+  if quiet.digest == quiet.sent_digest then
+    return false
+  end
+  if elapsed_milliseconds(now_milliseconds, quiet.stable_since_milliseconds) < companion_settle_milliseconds() then
+    return false
+  end
+  if quiet.attempted != 0 && elapsed_milliseconds(now_milliseconds, quiet.attempt_milliseconds) < companion_cooldown_milliseconds() then
+    return false
+  end
+  true
+end
+
+fn companion_marked(quiet: CompanionQuiet, now_milliseconds: i32, waiting: i32) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.digest,
+    remark: quiet.remark,
+    attempt_milliseconds: now_milliseconds,
+    attempted: 1,
+    waiting: waiting,
+    history: quiet.history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path
+  }
+
+export fn companion_quiet_commit(
+  quiet: CompanionQuiet,
+  now_milliseconds: i32,
+  waiting: i32,
+  label: string,
+  path: string
+) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.digest,
+    sent_label: label,
+    sent_path: path,
+    remark: quiet.remark,
+    attempt_milliseconds: now_milliseconds,
+    attempted: 1,
+    waiting: waiting,
+    history: quiet.history
+  }
+
+export fn companion_quiet_mark_sent(quiet: CompanionQuiet, now_milliseconds: i32) -> CompanionQuiet =
+  companion_marked(quiet, now_milliseconds, 0)
+
+export fn companion_quiet_begin_wait(quiet: CompanionQuiet, now_milliseconds: i32) -> CompanionQuiet =
+  companion_marked(quiet, now_milliseconds, 1)
+
+export fn companion_quiet_with_remark(quiet: CompanionQuiet, remark: string) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.sent_digest,
+    remark: remark,
+    attempt_milliseconds: quiet.attempt_milliseconds,
+    attempted: quiet.attempted,
+    waiting: quiet.waiting,
+    history: quiet.history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path
+  }
+
+export fn companion_quiet_with_history(quiet: CompanionQuiet, history: [string]) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.sent_digest,
+    remark: quiet.remark,
+    attempt_milliseconds: quiet.attempt_milliseconds,
+    attempted: quiet.attempted,
+    waiting: quiet.waiting,
+    history: history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path
+  }
+
+export fn companion_quiet_finish(quiet: CompanionQuiet, remark: string) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.sent_digest,
+    remark: remark,
+    attempt_milliseconds: quiet.attempt_milliseconds,
+    attempted: quiet.attempted,
+    waiting: 0,
+    history: quiet.history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path
+  }
+
+fn first_line(text: string) -> string = do
+  let mut index = 0
+  while index < text.byte_size() && text.byte_at(index) != "\n" do
+    index = index + 1
+  end
+  text.byte_substring(0, index).trim()
+end
+
+fn silence_line(line: string) -> bool = do
+  if line == "" || line == "тишина" || line == "Тишина" || line == "silence" || line == "Silence" then
+    return true
+  end
+  if line.byte_size() <= 16 && line.index_of("тишина") == 0 then
+    return true
+  end
+  if line.byte_size() <= 16 && line.index_of("silence") == 0 then
+    return true
+  end
+  false
+end
+
+export fn companion_remark_from_reply(text: string) -> string = do
+  const line = first_line(text)
+  if silence_line(line) then
+    return ""
+  end
+  if line.length() > 160 then
+    return line.substring(0, 160)
+  end
+  line
+end
+
+export fn companion_mind(occupation: string, quiet: CompanionQuiet) -> string = do
+  if occupation == "пока пусто" && quiet.waiting == 0 && quiet.remark == "" then
+    return "молчит"
+  end
+  if quiet.waiting != 0 then
+    return "сейчас"
+  end
+  if quiet.digest != quiet.sent_digest then
+    return "присматривается"
+  end
+  if quiet.remark != "" then
+    return quiet.remark
+  end
+  if quiet.attempted != 0 then
+    return "тишина"
+  end
+  "присматривается"
+end
+
+export fn companion_status(occupation: string, quiet: CompanionQuiet) -> string =
+  "занят: " + occupation + "\nдумает: " + companion_mind(occupation, quiet)
+
+export fn companion_state_marker() -> string =
+  "\n\nСостояние компаньона\n"
+
+export fn companion_journal_shown(digest: string, detail: string) -> string = do
+  if detail == "" then
+    return digest
+  end
+  digest + companion_state_marker() + detail
+end
+
+fn clipped_digest(digest: string) -> string = do
+  if digest.byte_size() <= 4000 then
+    return digest
+  end
+  let mut drop = 0
+  while drop < digest.length() && digest.substring(drop).byte_size() > 4000 do
+    drop = drop + 64
+  end
+  while drop > 0 && digest.substring(drop - 1).byte_size() <= 4000 do
+    drop = drop - 1
+  end
+  digest.substring(drop)
+end
+
+fn companion_instruction() -> string =
+  "Тебе передали один эпизод и имена с экрана, если они есть. Содержимое файлов не передавалось. Ответь одной короткой русской фразой о том, что перед человеком, опираясь на эти имена. Без совета и без вопроса. Если имён нет, ответь ровно: тишина"
+
+export fn companion_request_body(model: string, digest: string) -> string =
+  "{\"model\":\"" + json_escape(model) + "\",\"max_tokens\":60,\"messages\":[{\"role\":\"system\",\"content\":\"" + json_escape(companion_instruction()) + "\"},{\"role\":\"user\",\"content\":\"" + json_escape(clipped_digest(digest)) + "\"}]}"
+
+export fn companion_responses_body(model: string, digest: string) -> string = do
+  const instruction = "{\"role\":\"system\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + json_escape(companion_instruction()) + "\"}]}"
+  const user = "{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + json_escape(clipped_digest(digest)) + "\"}]}"
+  "{\"model\":\"" + json_escape(model) + "\",\"stream\":false,\"reasoning\":{\"effort\":\"low\"},\"input\":[" + instruction + "," + user + "]}"
+end

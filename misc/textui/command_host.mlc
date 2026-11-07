@@ -1,0 +1,26 @@
+export extern fn command_host_launch(
+  generation: i32,
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  command: string,
+  directory: string
+) -> i32 = "mlc::process::command_launch_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_take_ready() -> i32
+  = "mlc::process::command_take_ready_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_staged_generation() -> i32
+  = "mlc::process::command_staged_generation_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_staged_name() -> string
+  = "mlc::process::command_staged_name_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_staged_call_identifier() -> string
+  = "mlc::process::command_staged_call_identifier_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_staged_arguments() -> string
+  = "mlc::process::command_staged_arguments_value" from "mlc/process/command_mailbox.hpp" blocking
+
+export extern fn command_staged_text() -> string
+  = "mlc::process::command_staged_text_value" from "mlc/process/command_mailbox.hpp" blocking

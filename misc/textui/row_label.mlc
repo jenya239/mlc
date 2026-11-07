@@ -1,4 +1,5 @@
 import { WidgetId, WidgetKind, WidgetStore } from './store'
+import { UiEvent } from './ui_event'
 import { UiState } from './ui_state'
 import { list_selected_at } from './widget_list'
 
@@ -20,3 +21,13 @@ export fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId
     | KindScrollView => ""
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
+
+export fn log_activated_rows(store: WidgetStore, state: UiState, events: [UiEvent]) -> unit = do
+  let mut index = 0
+  while index < events.length() do
+    if events[index].activated then
+      println("[textui] activate " + activated_row_text(store, state, events[index].widget))
+    end
+    index = index + 1
+  end
+end

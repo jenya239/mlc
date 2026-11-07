@@ -1,0 +1,279 @@
+import { journal_episode_key, journal_focus, journal_occupation, journal_text, presence_caption } from '../companion_journal'
+import { companion_names_line } from '../companion_listing'
+import { ObservationSample, observation_frame_apply, observation_frame_empty } from '../companion_observe'
+import {
+  companion_empty_digest,
+  companion_journal_shown,
+  companion_mind,
+  companion_quiet_advance,
+  companion_quiet_begin_wait,
+  companion_quiet_commit,
+  companion_quiet_due,
+  companion_quiet_empty,
+  companion_quiet_mark_sent,
+  companion_quiet_with_remark,
+  companion_remark_from_reply,
+  companion_status,
+  companion_request_body,
+  companion_responses_body
+} from '../companion_quiet'
+import {
+  companion_activity_text,
+  companion_awareness,
+  companion_episode_formed,
+  companion_phase,
+  companion_quiet_note
+} from '../companion_trace'
+
+fn sample_at(directory_label: string, selected_name: string, now_milliseconds: i32) -> ObservationSample = do
+  let mut captions: [string] = []
+  ObservationSample {
+    selected_name: selected_name,
+    hovered_media_path: "",
+    playing: false,
+    track_name: "",
+    directory_label: directory_label,
+    directory_revision: 1,
+    button_captions: captions,
+    now_ms: now_milliseconds
+  }
+end
+
+fn dwell_sample(now_milliseconds: i32) -> ObservationSample =
+  sample_at("/photos", "a.txt", now_milliseconds)
+
+fn note_count(count: i32) -> i32 = do
+  let mut quiet = companion_quiet_empty()
+  let mut index = 0
+  while index < count do
+    quiet = companion_quiet_note(quiet, 0, "n" + index.to_string())
+    index = index + 1
+  end
+  if quiet.history.length() != 16 then
+    return 31
+  end
+  if quiet.history[0] != "0 с  n4" then
+    return 32
+  end
+  0
+end
+
+fn repeated(mark: string, count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + mark
+    index = index + 1
+  end
+  text
+end
+
+fn main() -> i32 = do
+  if journal_text(observation_frame_empty()) != companion_empty_digest() then
+    return 1
+  end
+  let mut quiet = companion_quiet_advance(companion_quiet_empty(), companion_empty_digest(), 0)
+  if companion_quiet_due(quiet, 9000) then
+    return 2
+  end
+  quiet = companion_quiet_advance(quiet, "Действия\nвыбор a", 1000)
+  if companion_quiet_due(quiet, 2999) then
+    return 3
+  end
+  if companion_quiet_due(quiet, 3000) == false then
+    return 4
+  end
+  quiet = companion_quiet_begin_wait(quiet, 3000)
+  if companion_quiet_due(quiet, 90000) then
+    return 5
+  end
+  quiet = companion_quiet_mark_sent(quiet, 3000)
+  if companion_quiet_due(quiet, 20000) then
+    return 6
+  end
+  quiet = companion_quiet_advance(quiet, "Действия\nвыбор b", 10000)
+  if companion_quiet_due(quiet, 12000) then
+    return 7
+  end
+  if companion_quiet_due(quiet, 70000) == false then
+    return 8
+  end
+  if companion_remark_from_reply("тишина") != "" then
+    return 9
+  end
+  if companion_remark_from_reply("тишина.") != "" then
+    return 10
+  end
+  if companion_remark_from_reply("  долгий просмотр\nещё строка") != "долгий просмотр" then
+    return 11
+  end
+  if companion_remark_from_reply(repeated("я", 200)) != repeated("я", 160) then
+    return 12
+  end
+  const shown = companion_journal_shown("Действия\nвыбор a", "долгий просмотр")
+  if shown != "Действия\nвыбор a\n\nСостояние компаньона\nдолгий просмотр" then
+    return 13
+  end
+  const body = companion_request_body("small-model", "HEAD" + repeated("x", 4000) + "TAIL")
+  if body.index_of("\"tools\"") >= 0 || body.index_of("run_command") >= 0 then
+    return 14
+  end
+  if body.index_of("HEAD") >= 0 || body.index_of("TAIL") < 0 || body.index_of("small-model") < 0 then
+    return 15
+  end
+  if body.index_of("тишина") < 0 then
+    return 16
+  end
+  const responses = companion_responses_body("muse", "HEAD" + repeated("x", 4000) + "TAIL")
+  if responses.index_of("\"tools\"") >= 0 || responses.index_of("run_command") >= 0 then
+    return 17
+  end
+  if responses.index_of("input_text") < 0 || responses.index_of("HEAD") >= 0 || responses.index_of("TAIL") < 0 then
+    return 18
+  end
+  const opened = observation_frame_apply(observation_frame_empty(), dwell_sample(1000))
+  const stayed = observation_frame_apply(opened, dwell_sample(8000))
+  if journal_episode_key(opened) != journal_episode_key(stayed) then
+    return 19
+  end
+  if journal_text(opened) == journal_text(stayed) then
+    return 20
+  end
+  if journal_occupation(opened) != "выбор a.txt" then
+    return 21
+  end
+  const watching = companion_status("выбор a.txt", companion_quiet_empty())
+  if watching != "занят: выбор a.txt\nдумает: присматривается" then
+    return 22
+  end
+  const thought = companion_status(
+    "выбор a.txt",
+    companion_quiet_with_remark(companion_quiet_mark_sent(companion_quiet_advance(companion_quiet_empty(), "эпизод", 0), 0), "долгий просмотр")
+  )
+  if thought != "занят: выбор a.txt\nдумает: долгий просмотр" then
+    return 23
+  end
+  const thinking = companion_status("выбор b.txt", companion_quiet_begin_wait(companion_quiet_advance(companion_quiet_empty(), "эпизод", 0), 0))
+  if thinking != "занят: выбор b.txt\nдумает: сейчас" then
+    return 24
+  end
+  if companion_phase(companion_quiet_empty(), 0) != "нет эпизода" then
+    return 25
+  end
+  const advanced = companion_quiet_advance(companion_quiet_empty(), "эпизод", 1000)
+  if companion_phase(advanced, 1500) != "эпизод ещё не устоялся" then
+    return 26
+  end
+  if companion_phase(advanced, 3000) != "готов спросить модель" then
+    return 27
+  end
+  const sent = companion_quiet_mark_sent(advanced, 3000)
+  const moved = companion_quiet_advance(sent, "другой", 4000)
+  if companion_phase(moved, 5000) != "эпизод ещё не устоялся" then
+    return 28
+  end
+  if companion_phase(moved, 7000) != "пауза между запросами" then
+    return 29
+  end
+  const remarked = companion_quiet_with_remark(sent, "долгий просмотр")
+  if companion_phase(remarked, 3000) != "фраза относится к этому эпизоду" then
+    return 30
+  end
+  const capped = note_count(20)
+  if capped != 0 then
+    return capped
+  end
+  const noted = companion_quiet_note(companion_quiet_empty(), 2500, "запрос отправлен")
+  if noted.history.length() != 1 || noted.history[0] != "2 с  запрос отправлен" then
+    return 33
+  end
+  const activity = companion_activity_text("выбор a.txt", "/photos/a.txt", remarked, 3000)
+  if activity.index_of("фаза: фраза относится к этому эпизоду") < 0 || activity.index_of("История\nпока пусто") < 0 then
+    return 34
+  end
+  const detailed = companion_journal_shown("Действия\nвыбор a", activity)
+  if presence_caption(detailed) != "занят: выбор a.txt · думает: долгий просмотр" then
+    return 35
+  end
+  if presence_caption("нет секции") != "занят: пока пусто · думает: молчит" then
+    return 36
+  end
+  const request = companion_request_body("small-model", "Действия\nвыбор a")
+  if request.index_of("Состояние компаньона") >= 0 || request.index_of("История") >= 0 then
+    return 37
+  end
+  if companion_phase(companion_quiet_begin_wait(advanced, 3000), 3000) != "жду ответ" then
+    return 38
+  end
+  if companion_phase(companion_quiet_with_remark(sent, ""), 3000) != "по этому эпизоду тишина" then
+    return 39
+  end
+  if companion_phase(companion_quiet_with_remark(sent, "модель недоступна"), 3000) != "модель недоступна" then
+    return 40
+  end
+  const photos = journal_focus(observation_frame_apply(observation_frame_empty(), sample_at("/photos", "a.txt", 1000)), "")
+  const other = journal_focus(observation_frame_apply(observation_frame_empty(), sample_at("/other", "a.txt", 1000)), "")
+  if photos.key == other.key || photos.label != other.label || photos.label != "выбор a.txt" then
+    return 41
+  end
+  if photos.path != "/photos/a.txt" || other.path != "/other/a.txt" then
+    return 42
+  end
+  if photos.prompt.index_of("/photos") >= 0 || photos.prompt.index_of("содержимое файлов не передавалось") < 0 then
+    return 43
+  end
+  const started = companion_quiet_advance(companion_quiet_empty(), photos.key, 1000)
+  if companion_episode_formed(started, 2999) then
+    return 44
+  end
+  if companion_episode_formed(started, 3000) == false then
+    return 45
+  end
+  const jumped = companion_quiet_advance(started, other.key, 2000)
+  if companion_episode_formed(jumped, 3999) then
+    return 46
+  end
+  const bound = companion_quiet_commit(started, 3000, 0, photos.label, photos.path)
+  const phrased = companion_quiet_with_remark(bound, "долгий просмотр")
+  if companion_awareness(phrased) != "интерпретация" then
+    return 47
+  end
+  const later = companion_quiet_advance(phrased, other.key, 4000)
+  if companion_mind(other.label, later) != "присматривается" then
+    return 48
+  end
+  if companion_awareness(later) != "регистрация" then
+    return 49
+  end
+  const late = companion_activity_text(other.label, other.path, later, 4000)
+  if late.index_of("поздний ответ не про этот файл: долгий просмотр · выбор a.txt · /photos/a.txt") < 0 then
+    return 50
+  end
+  if late.index_of("думает: долгий просмотр") >= 0 || late.index_of("эпизод: нет") < 0 then
+    return 51
+  end
+  if journal_focus(observation_frame_empty(), "").key != companion_empty_digest() then
+    return 52
+  end
+  let mut names: [string] = []
+  names.push(".env")
+  names.push("song.mp3")
+  names.push("shot.png")
+  names.push("notes.txt")
+  const screen = companion_names_line(names)
+  if screen != "song.mp3 (аудио), shot.png (изображение), notes.txt (текст)" then
+    return 53
+  end
+  const named = journal_focus(observation_frame_apply(observation_frame_empty(), sample_at("/photos", "a.txt", 1000)), screen)
+  if named.prompt.index_of("на экране: " + screen) < 0 || named.prompt.index_of("/photos") >= 0 then
+    return 54
+  end
+  if named.key == photos.key then
+    return 55
+  end
+  const answered = companion_quiet_mark_sent(companion_quiet_advance(companion_quiet_empty(), named.key, 1000), 3000)
+  if companion_mind("каталог Downloads", answered) != "тишина" then
+    return 56
+  end
+  0
+end

@@ -14,20 +14,21 @@ import { ChatModel, chat_model_new } from './chat_model'
 import { database_file_path, database_open } from './chat_database'
 import { ChatPersistence, persistence_closed, persistence_restore } from './chat_persistence'
 import { ChatRoster, roster_empty, roster_install, roster_load } from './chat_roster'
+import { journal_is_identifier } from './companion_journal'
 import { store_route_read, store_state_read } from './chat_store'
 import { WidgetStore } from './store'
 import { ChatScene, build_chat_scene } from './chat_scene'
 import { chat_initial_state } from './chat_update'
 import { chat_sync_chrome } from './chat_meter'
 import { FrameSignature, frame_signature } from './frame_request'
-import { LayoutResult } from './layout_result'
+import { LayoutResult, layout_shift } from './layout_result'
 import { layout_ui } from './layout_pass'
 import { Rect, rect_new } from './geometry'
 import { theme_default } from './theme'
 import { TextShapingState, text_shaping_new } from '../gui/text_shaping'
 import { TextLayoutCache, text_layout_cache_new } from './text_layout'
 import { DrawOp } from './draw_op'
-import { UiState } from './ui_state'
+import { UiState, ui_state_with_listing_revision } from './ui_state'
 import { field_align_scroll } from './widget_field'
 import { block_scroll_bottom } from './block_index'
 import {
@@ -58,7 +59,11 @@ export type ChatWorld = {
   persistence: ChatPersistence,
   catalog: ChatCatalog,
   roster: ChatRoster,
-  dismiss_picker: i32
+  dismiss_picker: i32,
+  origin_x: i32,
+  journal_text: string,
+  file_grant_text: string,
+  workspace_root: string
 }
 
 export fn chat_transcript_rect(layout: LayoutResult, scene: ChatScene) -> Rect = do
@@ -147,7 +152,152 @@ fn chat_world_build(
     persistence: persistence,
     catalog: catalog,
     roster: listed.roster,
-    dismiss_picker: 0
+    dismiss_picker: 0,
+    origin_x: 0,
+    journal_text: "",
+    file_grant_text: "",
+    workspace_root: ""
+  }
+end
+
+fn chat_world_copy(
+  world: ChatWorld,
+  origin_x: i32,
+  layout: LayoutResult,
+  presented: FrameSignature,
+  dismiss_picker: i32
+) -> ChatWorld =
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: layout,
+    presented: presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight,
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: dismiss_picker,
+    origin_x: origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
+  }
+
+export fn chat_world_move(world: ChatWorld, origin_x: i32, width: i32, height: i32) -> ChatWorld =
+  chat_world_copy(
+    world,
+    origin_x,
+    layout_shift(world.layout, origin_x - world.origin_x, 0),
+    frame_signature(world.state, width + 1, height),
+    world.dismiss_picker
+  )
+
+export fn chat_world_set_origin(world: ChatWorld, origin_x: i32) -> ChatWorld =
+  chat_world_copy(world, origin_x, world.layout, world.presented, world.dismiss_picker)
+
+export fn chat_world_dismiss(world: ChatWorld) -> ChatWorld =
+  chat_world_copy(world, world.origin_x, world.layout, world.presented, 1)
+
+export fn chat_world_note_journal(world: ChatWorld, text: string) -> ChatWorld = do
+  if world.journal_text == text then
+    return world
+  end
+  let mut state = world.state
+  if journal_is_identifier(world.roster.conversation_identifiers, world.roster.conversation_row) then
+    state = ui_state_with_listing_revision(state, state.listing_revision + 1)
+  end
+  ChatWorld {
+    store: world.store,
+    state: state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: world.presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight,
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: world.dismiss_picker,
+    origin_x: world.origin_x,
+    journal_text: text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: world.workspace_root
+  }
+end
+
+export fn chat_world_with_grant_text(world: ChatWorld, file_grant_text: string) -> ChatWorld = do
+  if world.file_grant_text == file_grant_text then
+    return world
+  end
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: world.presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight,
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: world.dismiss_picker,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: file_grant_text,
+    workspace_root: world.workspace_root
+  }
+end
+
+export fn chat_world_with_workspace_root(world: ChatWorld, workspace_root: string) -> ChatWorld = do
+  if world.workspace_root == workspace_root then
+    return world
+  end
+  ChatWorld {
+    store: world.store,
+    state: world.state,
+    model: world.model,
+    view: world.view,
+    selection: world.selection,
+    scene: world.scene,
+    config: world.config,
+    shaping: world.shaping,
+    cache: world.cache,
+    layout: world.layout,
+    presented: world.presented,
+    painted_under: world.painted_under,
+    painted_over: world.painted_over,
+    code_highlight: world.code_highlight,
+    persistence: world.persistence,
+    catalog: world.catalog,
+    roster: world.roster,
+    dismiss_picker: world.dismiss_picker,
+    origin_x: world.origin_x,
+    journal_text: world.journal_text,
+    file_grant_text: world.file_grant_text,
+    workspace_root: workspace_root
   }
 end
 

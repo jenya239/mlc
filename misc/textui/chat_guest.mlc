@@ -1,3 +1,4 @@
+import { file_tool_items } from './chat_files'
 import {
   chat_json_field,
   chat_json_index,
@@ -20,8 +21,10 @@ fn guest_contract() -> string = do
     + "  0\n"
     + "end\n"
     + "A body is = expression or = do ... end. The last expression is the result. Braces, return, and semicolons are rejected.\n"
-    + "Host calls take literals only. set_label_text(\"text\") sets the gallery label. set_effect_mode(0) is Off, 1 is Lens, 2 is Cyber, 3 is Fractal. reload_listing() restarts the window. log_host(\"text\") prints from the gallery. timer_after(milliseconds) returns immediately and does not change the window. The gallery applies queued host calls after this chat closes.\n"
-    + "Read outcome=, value=, and host= lines. If outcome=lower_failed, send a corrected source to run_guest."
+    + "Host calls take literals only. set_label_text(\"text\") sets the gallery label. set_effect_mode(0) is Off, 1 is Lens, 2 is Cyber, 3 is Fractal. reload_listing() restarts the window. log_host(\"text\") prints from the gallery. timer_after(milliseconds) returns immediately and does not change the window. file_read_granted(0) returns the text of the current file when the host grant allows it. The guest cannot name a path. An image or a refused file returns an empty string. Return that text from run to show it. The gallery applies queued host calls while this chat is open.\n"
+    + "Read outcome=, value=, and host= lines. If outcome=lower_failed, send a corrected source to run_guest.\n"
+    + "file_read, file_list, and file_search may use ~ or ~/path and can read ordinary files anywhere under the home directory, not only the open gallery folder. A relative path without ~ starts at the gallery folder. file_write and file_delete use the same folders. System directories, .env, keys, .ssh, browser profiles, and mail stores are refused and return no file bytes.\n"
+    + "run_command runs one shell command as the user and is not sandboxed. working_directory defaults to the open gallery folder. ~ is the home directory. There is no interactive input. Output stops at 32768 bytes or 20 seconds."
 end
 
 export fn chat_guest_system(existing: string) -> string = do
@@ -32,7 +35,9 @@ export fn chat_guest_system(existing: string) -> string = do
 end
 
 export fn chat_guest_tools_suffix() -> string =
-  ",\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"run_guest\",\"description\":\"Run one trusted MLC guest. Example: export fn run() -> i32 = 2 + 2. A block is = do ... end, and its last expression is the result. Braces, return, and semicolons are rejected. set_effect_mode(2) is Cyber.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source\":{\"type\":\"string\"}},\"required\":[\"source\"]}}}]"
+  ",\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"run_guest\",\"description\":\"Run one trusted MLC guest. Example: export fn run() -> i32 = 2 + 2. A block is = do ... end, and its last expression is the result. Braces, return, and semicolons are rejected. set_effect_mode(2) is Cyber.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source\":{\"type\":\"string\"}},\"required\":[\"source\"]}}},"
+    + file_tool_items()
+    + "]"
 
 export fn chat_guest_from_message(message: string) -> GuestCall = do
   const calls = parsed_array(chat_json_field(message, "tool_calls"))

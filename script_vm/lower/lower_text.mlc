@@ -16,7 +16,7 @@ import {
 } from './lower_builder'
 import { diagnostic_at, emit_instruction, is_lower_int } from './lower_control'
 import { LowerScope, lower_scope_fail, lower_scope_lookup } from './lower_scope'
-import { host_import_effect_set, host_import_host_log, host_import_listing_reload } from '../host_imports'
+import { host_import_effect_set, host_import_file_read_granted, host_import_host_log, host_import_listing_reload } from '../host_imports'
 import {
   lower_label_set_text_host_call,
   lower_operation_host_call,
@@ -247,6 +247,34 @@ fn lower_string_host_call(
     _ => unknown_name(scope, source_span)
   }
 
+fn lower_file_read_granted(
+  scope: ref mut LowerScope,
+  builder: ref mut ProtoBuilder,
+  arguments: [Shared<Expr>],
+  source_span: Span,
+  target: i32
+) -> LowerType =
+  match arguments[0] {
+    ExprInt(number, _) => do
+      if number != 0 then
+        unknown_name(scope, source_span)
+      else
+        do
+          let mark = proto_builder_register_mark(builder)
+          let argument_register = proto_builder_register_allocate(builder)
+          proto_builder_load_constant(builder, argument_register, value_encode(ValueInt32(0)))
+          emit_instruction(
+            builder,
+            lower_operation_host_call(host_import_file_read_granted().operation_id, target, argument_register)
+          )
+          proto_builder_register_release_to(builder, mark)
+          LowerInt
+        end
+      end
+    end,
+    _ => unknown_name(scope, source_span)
+  }
+
 fn lower_reload_listing(
   builder: ref mut ProtoBuilder,
   target: i32
@@ -331,6 +359,8 @@ export fn lower_text_named(
     )
   else if name == "reload_listing" && arguments.length() == 0 then
     lower_reload_listing(builder, target)
+  else if name == "file_read_granted" && arguments.length() == 1 then
+    lower_file_read_granted(scope, builder, arguments, source_span, target)
   else
     unknown_name(scope, source_span)
   end

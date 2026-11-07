@@ -1,0 +1,221 @@
+import { normalize_path, path_inside_jail } from './directory_jail'
+
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_read_to_string(path: string) -> string
+  = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
+
+export type FileAccess = {
+  grant_root: string,
+  grant_revision: i32,
+  grant_jail: string,
+  grant_active: bool,
+  cached_file: string,
+  note: string,
+  body: string,
+  code: i32,
+  bytes_read: i32,
+  window_started_ms: i32
+}
+
+fn code_ready() -> i32 = 0
+
+fn code_none() -> i32 = 1
+
+fn code_outside() -> i32 = 2
+
+fn code_too_large() -> i32 = 4
+
+fn code_missing() -> i32 = 5
+
+fn code_revoked() -> i32 = 6
+
+fn code_budget() -> i32 = 7
+
+fn text_byte_limit() -> i32 = 4096
+
+fn preview_byte_limit() -> i32 = 160
+
+fn window_byte_limit() -> i32 = 262144
+
+fn window_span_ms() -> i32 = 3600000
+
+export fn file_access_empty() -> FileAccess =
+  FileAccess {
+    grant_root: "",
+    grant_revision: 0,
+    grant_jail: "",
+    grant_active: false,
+    cached_file: "",
+    note: "",
+    body: "",
+    code: code_none(),
+    bytes_read: 0,
+    window_started_ms: 0
+  }
+
+fn ends_with(path: string, suffix: string) -> bool = do
+  if path.byte_size() < suffix.byte_size() then
+    return false
+  end
+  path.byte_substring(path.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn text_file(path: string) -> bool =
+  ends_with(path, ".txt") || ends_with(path, ".TXT") || ends_with(path, ".md") || ends_with(path, ".MD")
+    || ends_with(path, ".json") || ends_with(path, ".JSON") || ends_with(path, ".mlc") || ends_with(path, ".MLC")
+
+fn kind_label(path: string) -> string = do
+  if text_file(path) then
+    return "текст"
+  end
+  if ends_with(path, ".png") || ends_with(path, ".jpg") || ends_with(path, ".jpeg") || ends_with(path, ".webp") || ends_with(path, ".gif") then
+    return "изображение"
+  end
+  if ends_with(path, ".mp3") || ends_with(path, ".flac") || ends_with(path, ".ogg") || ends_with(path, ".wav") || ends_with(path, ".m4a") then
+    return "аудио"
+  end
+  if ends_with(path, ".mp4") || ends_with(path, ".mov") || ends_with(path, ".mkv") || ends_with(path, ".webm") || ends_with(path, ".avi") then
+    return "видео"
+  end
+  "файл"
+end
+
+fn size_label(size: i32) -> string = do
+  if size < 1024 then
+    return size.to_string() + " B"
+  end
+  if size < 1048576 then
+    return (size / 1024).to_string() + " KB"
+  end
+  (size / 1048576).to_string() + " MB"
+end
+
+fn collapse_preview(text: string) -> string = do
+  let mut collapsed = ""
+  let mut index = 0
+  let mut limit = text.byte_size()
+  if limit > preview_byte_limit() then
+    limit = preview_byte_limit()
+  end
+  while index < limit do
+    const mark = text.byte_substring(index, 1)
+    if mark == "\n" || mark == "\r" then
+      collapsed = collapsed + " "
+    else
+      collapsed = collapsed + mark
+    end
+    index = index + 1
+  end
+  collapsed
+end
+
+fn copy_access(
+  access: FileAccess,
+  grant_root: string,
+  grant_revision: i32,
+  grant_jail: string,
+  grant_active: bool,
+  cached_file: string,
+  note: string,
+  body: string,
+  code: i32,
+  bytes_read: i32,
+  window_started_ms: i32
+) -> FileAccess =
+  FileAccess {
+    grant_root: grant_root,
+    grant_revision: grant_revision,
+    grant_jail: grant_jail,
+    grant_active: grant_active,
+    cached_file: cached_file,
+    note: note,
+    body: body,
+    code: code,
+    bytes_read: bytes_read,
+    window_started_ms: window_started_ms
+  }
+
+fn window_expired(access: FileAccess, now_ms: i32) -> bool =
+  now_ms < access.window_started_ms || now_ms - access.window_started_ms >= window_span_ms()
+
+export fn file_access_revoke(access: FileAccess, revision: i32, jail: string) -> FileAccess = do
+  if access.grant_active == false then
+    return access
+  end
+  if access.grant_revision == revision && access.grant_jail == normalize_path(jail) then
+    return access
+  end
+  copy_access(
+    access, access.grant_root, access.grant_revision, access.grant_jail, false,
+    "", "каталог сменился", "", code_revoked(), access.bytes_read, access.window_started_ms
+  )
+end
+
+fn same_cached_file(access: FileAccess, file_path: string, directory: string, jail: string, revision: i32) -> bool =
+  access.grant_active && access.cached_file == file_path && access.grant_root == directory
+    && access.grant_jail == jail && access.grant_revision == revision
+
+export fn file_access_advance(
+  access: FileAccess,
+  directory: string,
+  file_path: string,
+  jail: string,
+  revision: i32,
+  now_ms: i32
+) -> FileAccess = do
+  let mut bytes_read = access.bytes_read
+  let mut window_started_ms = access.window_started_ms
+  if window_expired(access, now_ms) then
+    bytes_read = 0
+    window_started_ms = now_ms
+  end
+  const grant_root = normalize_path(directory)
+  const grant_jail = normalize_path(jail)
+  const opened = grant_root != "" && grant_jail != "" && path_inside_jail(grant_jail, grant_root)
+  if opened && same_cached_file(access, normalize_path(file_path), grant_root, grant_jail, revision) && window_expired(access, now_ms) == false then
+    return access
+  end
+  if opened == false then
+    return copy_access(access, grant_root, revision, grant_jail, false, "", "", "", code_none(), bytes_read, window_started_ms)
+  end
+  const absolute = normalize_path(file_path)
+  if absolute == "" then
+    return copy_access(access, grant_root, revision, grant_jail, true, "", "", "", code_none(), bytes_read, window_started_ms)
+  end
+  if path_inside_jail(grant_jail, absolute) == false then
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "вне каталога", "", code_outside(), bytes_read, window_started_ms)
+  end
+  if path_inside_jail(grant_root, absolute) == false then
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "нет разрешения", "", code_none(), bytes_read, window_started_ms)
+  end
+  const size = file_byte_size(absolute)
+  if size < 0 then
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "файл исчез", "", code_missing(), bytes_read, window_started_ms)
+  end
+  const label = kind_label(absolute)
+  if text_file(absolute) && size > text_byte_limit() then
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "слишком большой", "", code_too_large(), bytes_read, window_started_ms)
+  end
+  if text_file(absolute) && bytes_read + size > window_byte_limit() then
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "предел чтения исчерпан", "", code_budget(), bytes_read, window_started_ms)
+  end
+  if text_file(absolute) == false then
+    return copy_access(
+      access, grant_root, revision, grant_jail, true, absolute,
+      label + " " + size_label(size), "", code_ready(), bytes_read, window_started_ms
+    )
+  end
+  const body = file_read_to_string(absolute)
+  if body.byte_size() > text_byte_limit() then
+    return copy_access(
+      access, grant_root, revision, grant_jail, true, absolute,
+      "слишком большой", "", code_too_large(), bytes_read, window_started_ms
+    )
+  end
+  copy_access(
+    access, grant_root, revision, grant_jail, true, absolute,
+    label + " " + size_label(size) + " «" + collapse_preview(body) + "»", body,
+    code_ready(), bytes_read + size, window_started_ms
+  )
+end

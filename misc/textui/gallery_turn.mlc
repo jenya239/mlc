@@ -1,0 +1,367 @@
+import { button_caption, input_clear_buttons } from './app_input'
+import { ObservationFrame } from './companion_observe'
+import { companion_observer_apply } from './companion_observer'
+import { LayoutColumnResult, layout_ui } from './layout_pass'
+import { CursorLens } from './cursor_lens'
+import { follow_directory_jailed, open_parent_jailed } from './directory_browse'
+import { DialogTarget, dialog_host_jailed } from './dialog'
+import { file_commands } from './file_commands'
+import { file_clipboard_publish } from './file_clipboard_os'
+import {
+  FrameSignature,
+  frame_request,
+  frame_request_layouts,
+  frame_request_paints
+} from './frame_request'
+import { gallery_frame_advance, gallery_frame_signature } from './gallery_frame'
+import { GalleryGuest, gallery_guest_clear_requests, gallery_guest_with_store } from './gallery_guest'
+import { apply_host_queue } from './host_command'
+import { widget_inspect_report } from './inspect'
+import { apply_checkbox_click } from './jail_switch'
+import { menu_apply, menu_host_step } from './menu'
+import { music_host } from './music_host'
+import { overlay_apply, overlay_dismiss } from './overlay'
+import { path_bar_current } from './path_bar'
+import { PathHistory, path_history_visit } from './path_history'
+import { apply_path_click_jailed } from './path_travel'
+import { log_activated_rows } from './row_label'
+import { WidgetStore, widget_id_is_none, widget_id_none } from './store'
+import { SubmitResources } from './submit'
+import { hit_test } from './hit'
+import { Theme } from './theme'
+import { UiInput } from './ui_input'
+import { UiState, ui_state_with_pick } from './ui_state'
+import { ui_update } from './ui_update'
+import { apply_toolbar } from './visual_effect'
+import { field_align_scroll } from './widget_field'
+
+export type GalleryTurn = {
+  resources: SubmitResources,
+  lens: CursorLens,
+  column: LayoutColumnResult,
+  guest: GalleryGuest,
+  store: WidgetStore,
+  state: UiState,
+  effect_mode: i32,
+  jail_root: string,
+  sandbox_root: string,
+  dense_enabled: bool,
+  path_history: PathHistory,
+  target_list: i32,
+  target_row: i32,
+  right_was_down: bool,
+  reported_inspect: i32,
+  presented: FrameSignature,
+  reload_requested: bool,
+  observation: ObservationFrame
+}
+
+export type GalleryTurnResult = {
+  turn: GalleryTurn,
+  next_signature: FrameSignature,
+  paint: bool,
+  chat_requested: bool
+}
+
+fn gallery_turn_make(
+  resources: SubmitResources,
+  lens: CursorLens,
+  column: LayoutColumnResult,
+  guest: GalleryGuest,
+  store: WidgetStore,
+  state: UiState,
+  effect_mode: i32,
+  jail_root: string,
+  sandbox_root: string,
+  dense_enabled: bool,
+  path_history: PathHistory,
+  target_list: i32,
+  target_row: i32,
+  right_was_down: bool,
+  reported_inspect: i32,
+  presented: FrameSignature,
+  reload_requested: bool,
+  observation: ObservationFrame
+) -> GalleryTurn =
+  GalleryTurn {
+    resources: resources,
+    lens: lens,
+    column: column,
+    guest: guest,
+    store: store,
+    state: state,
+    effect_mode: effect_mode,
+    jail_root: jail_root,
+    sandbox_root: sandbox_root,
+    dense_enabled: dense_enabled,
+    path_history: path_history,
+    target_list: target_list,
+    target_row: target_row,
+    right_was_down: right_was_down,
+    reported_inspect: reported_inspect,
+    presented: presented,
+    reload_requested: reload_requested,
+    observation: observation
+  }
+
+export fn gallery_turn_with_presented(turn: GalleryTurn, presented: FrameSignature) -> GalleryTurn =
+  gallery_turn_make(
+    turn.resources, turn.lens, turn.column, turn.guest, turn.store, turn.state, turn.effect_mode,
+    turn.jail_root, turn.sandbox_root, turn.dense_enabled, turn.path_history,
+    turn.target_list, turn.target_row, turn.right_was_down, turn.reported_inspect,
+    presented, turn.reload_requested, turn.observation
+  )
+
+export fn gallery_turn_after_paint(
+  turn: GalleryTurn,
+  resources: SubmitResources,
+  column: LayoutColumnResult,
+  lens: CursorLens,
+  presented: FrameSignature
+) -> GalleryTurn =
+  gallery_turn_make(
+    resources, lens, column, turn.guest, turn.store, turn.state, turn.effect_mode,
+    turn.jail_root, turn.sandbox_root, turn.dense_enabled, turn.path_history,
+    turn.target_list, turn.target_row, turn.right_was_down, turn.reported_inspect,
+    presented, turn.reload_requested, turn.observation
+  )
+
+export fn gallery_turn_settle(
+  turn: GalleryTurn,
+  theme: Theme,
+  viewport_width: i32,
+  viewport_height: i32
+) -> GalleryTurnResult = do
+  const early = gallery_frame_signature(turn.guest, turn.state, viewport_width, viewport_height)
+  const request = frame_request(turn.presented, early)
+  let mut column = turn.column
+  let mut state = turn.state
+  if frame_request_layouts(request) then
+    column = layout_ui(
+      turn.store, theme, turn.column.shaping, turn.column.cache,
+      viewport_width, viewport_height, turn.state.scroll_offsets, turn.state.splitter_ratios
+    )
+    state = field_align_scroll(turn.store, column.layout, theme, state)
+  end
+  const next_signature = gallery_frame_signature(turn.guest, state, viewport_width, viewport_height)
+  let mut reported_inspect = turn.reported_inspect
+  if state.pick_enabled && widget_id_is_none(state.inspected) == false then
+    if state.inspected.index != reported_inspect then
+      println(widget_inspect_report(turn.store, column.layout, state.inspected))
+      reported_inspect = state.inspected.index
+    end
+  end
+  GalleryTurnResult {
+    turn: gallery_turn_make(
+      turn.resources, turn.lens, column, turn.guest, turn.store, state, turn.effect_mode,
+      turn.jail_root, turn.sandbox_root, turn.dense_enabled, turn.path_history,
+      turn.target_list, turn.target_row, turn.right_was_down, reported_inspect,
+      turn.presented, turn.reload_requested, turn.observation
+    ),
+    next_signature: next_signature,
+    paint: frame_request_paints(request),
+    chat_requested: false
+  }
+end
+
+export fn gallery_turn_apply_queue(turn: GalleryTurn) -> GalleryTurn = do
+  let cleared = gallery_guest_clear_requests(turn.guest)
+  let queued = apply_host_queue(cleared)
+  let mut effect_mode = turn.effect_mode
+  if queued.effect_requested then
+    effect_mode = queued.effect_mode
+  end
+  let mut reload_requested = turn.reload_requested
+  if queued.reload_requested then
+    reload_requested = true
+  end
+  gallery_turn_make(
+    turn.resources, turn.lens, turn.column, queued, queued.store, turn.state, effect_mode,
+    turn.jail_root, turn.sandbox_root, turn.dense_enabled, turn.path_history,
+    turn.target_list, turn.target_row, turn.right_was_down, turn.reported_inspect,
+    turn.presented, reload_requested, turn.observation
+  )
+end
+
+export fn gallery_turn(
+  turn: GalleryTurn,
+  input: UiInput,
+  theme: Theme,
+  viewport_width: i32,
+  viewport_height: i32,
+  right_down: bool,
+  script_ticks: bool,
+  dismiss_overlay: bool
+) -> GalleryTurnResult = do
+  let mut store = turn.store
+  let mut state = turn.state
+  let mut guest = turn.guest
+  let mut jail_root = turn.jail_root
+  let mut sandbox_root = turn.sandbox_root
+  let mut dense_enabled = turn.dense_enabled
+  let mut effect_mode = turn.effect_mode
+  let mut path_history = turn.path_history
+  let mut target_list = turn.target_list
+  let mut target_row = turn.target_row
+  let mut right_was_down = turn.right_was_down
+  let mut reload_requested = turn.reload_requested
+  let mut pointer = input
+  if dismiss_overlay && state.overlay_open then
+    const closed = overlay_dismiss(store, state)
+    store = closed.store
+    state = closed.state
+  end
+  const menued = menu_host_step(
+    store, turn.column.layout, theme, state, right_down, right_was_down,
+    pointer.mouse_x, pointer.mouse_y, target_list, target_row
+  )
+  store = menued.store
+  state = menued.state
+  right_was_down = menued.right_down
+  target_list = menued.target_list
+  target_row = menued.target_row
+  if pointer.left_pressed then
+    const hit = hit_test(store, turn.column.layout, theme, pointer.mouse_x, pointer.mouse_y)
+    if widget_id_is_none(hit) == false && button_caption(store, hit) == "Pick" then
+      if state.pick_enabled then
+        state = ui_state_with_pick(state, false, widget_id_none())
+      else
+        state = ui_state_with_pick(state, true, hit)
+      end
+      pointer = input_clear_buttons(pointer)
+    end
+  end
+  const clipboard_before = state.clipboard.clipboard
+  const updated = ui_update(store, turn.column.layout, theme, state, pointer)
+  state = updated.state
+  store = updated.store
+  const layered = overlay_apply(store, state, updated.events)
+  store = layered.store
+  state = layered.state
+  const chosen = menu_apply(store, state, updated.events)
+  store = chosen.store
+  state = chosen.state
+  const prompted = dialog_host_jailed(
+    store, state, updated.events, DialogTarget { list_index: target_list, row: target_row }, jail_root
+  )
+  store = prompted.store
+  state = prompted.state
+  const commanded = file_commands(
+    store, state, pointer, updated.events,
+    DialogTarget { list_index: target_list, row: target_row }, jail_root
+  )
+  store = commanded.store
+  state = commanded.state
+  log_activated_rows(store, state, updated.events)
+  const path_before_browse = path_bar_current(store)
+  const revision_before_browse = state.listing_revision
+  let mut hidden_index = 0
+  while hidden_index < updated.events.length() do
+    const switched = apply_checkbox_click(
+      store, state, updated.events[hidden_index].widget, sandbox_root, jail_root
+    )
+    store = switched.store
+    state = switched.state
+    jail_root = switched.root
+    hidden_index = hidden_index + 1
+  end
+  let mut browsed = follow_directory_jailed(store, state, updated.events, jail_root)
+  if updated.list_back then
+    browsed = open_parent_jailed(browsed.store, browsed.state, jail_root)
+  end
+  store = browsed.store
+  state = browsed.state
+  path_history = path_history_visit(path_history, path_before_browse, path_bar_current(store))
+  if state.listing_revision != revision_before_browse then
+    dense_enabled = false
+  end
+  const heard = music_host(
+    store, state, turn.column.layout, theme, updated.events, jail_root,
+    pointer.mouse_x, pointer.mouse_y, pointer.left_down
+  )
+  store = heard.store
+  state = heard.state
+  if script_ticks then
+    guest = gallery_frame_advance(guest, store, updated.events, input.now_ms)
+    store = guest.store
+    if guest.reload_requested then
+      reload_requested = true
+    end
+    if guest.effect_requested then
+      effect_mode = guest.effect_mode
+    end
+  else
+    guest = gallery_guest_with_store(guest, store)
+  end
+  const settled = gallery_turn_settle(
+    gallery_turn_make(
+      turn.resources, turn.lens, turn.column, guest, store, state, effect_mode,
+      jail_root, sandbox_root, dense_enabled, path_history, target_list, target_row,
+      right_was_down, turn.reported_inspect, turn.presented, reload_requested, turn.observation
+    ),
+    theme, viewport_width, viewport_height
+  )
+  store = settled.turn.store
+  state = settled.turn.state
+  guest = settled.turn.guest
+  jail_root = settled.turn.jail_root
+  sandbox_root = settled.turn.sandbox_root
+  dense_enabled = settled.turn.dense_enabled
+  effect_mode = settled.turn.effect_mode
+  path_history = settled.turn.path_history
+  target_list = settled.turn.target_list
+  target_row = settled.turn.target_row
+  right_was_down = settled.turn.right_was_down
+  reload_requested = settled.turn.reload_requested
+  let mut chat_requested = false
+  let mut event_index = 0
+  while event_index < updated.events.length() do
+    const owner = updated.events[event_index].widget
+    const stepped = apply_path_click_jailed(store, state, path_history, owner, jail_root)
+    store = stepped.store
+    state = stepped.state
+    path_history = stepped.history
+    if stepped.changed then
+      dense_enabled = false
+    end
+    const caption = button_caption(store, owner)
+    const acted = apply_toolbar(
+      store, state, theme, settled.turn.column.layout, owner, caption, dense_enabled, effect_mode
+    )
+    if caption == "Chat" then
+      chat_requested = true
+    else
+      store = acted.store
+      effect_mode = acted.effect_mode
+    end
+    state = acted.state
+    dense_enabled = acted.dense_enabled
+    if acted.reload then
+      reload_requested = true
+    end
+    if acted.copied then
+      file_clipboard_publish(state.clipboard.clipboard)
+    end
+    event_index = event_index + 1
+  end
+  if pointer.copy_pressed && pointer.control_down then
+    file_clipboard_publish(state.clipboard.clipboard)
+  end
+  const cut_pressed = (pointer.binding_key == "x" && pointer.control_down) || (pointer.binding_key == "delete" && pointer.shift_down)
+  if cut_pressed && state.clipboard.clipboard != clipboard_before then
+    file_clipboard_publish(state.clipboard.clipboard)
+  end
+  const observed = companion_observer_apply(
+    turn.observation, store, state, updated.events, jail_root, pointer.now_ms
+  )
+  GalleryTurnResult {
+    turn: gallery_turn_make(
+      settled.turn.resources, settled.turn.lens, settled.turn.column, guest, store, state, effect_mode,
+      jail_root, sandbox_root, dense_enabled, path_history, target_list, target_row,
+      right_was_down, settled.turn.reported_inspect, settled.turn.presented, reload_requested, observed
+    ),
+    next_signature: settled.next_signature,
+    paint: settled.paint,
+    chat_requested: chat_requested
+  }
+end

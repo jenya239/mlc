@@ -1,0 +1,49 @@
+import { command_run_limited } from '../command_run'
+
+fn home() -> string = "/home/jenya"
+
+fn elsewhere() -> string = "/tmp"
+
+fn refuses(text: string, code: string) -> bool =
+  text.index_of(code) == 0
+
+fn main() -> i32 = do
+  if refuses(command_run_limited(home(), elsewhere(), "", "", 1000, 1000), "refused: command") == false then
+    return 1
+  end
+  if refuses(command_run_limited(home(), elsewhere(), "pwd", "/no/such/command_directory", 1000, 1000), "refused: directory") == false then
+    return 2
+  end
+  const printed = command_run_limited(home(), elsewhere(), "printf 'COMMAND_MARKER_91\n'", "", 5000, 1000)
+  if printed != "exit 0\nCOMMAND_MARKER_91\n" then
+    return 3
+  end
+  const here = command_run_limited(home(), elsewhere(), "pwd", "", 5000, 1000)
+  if here.index_of("/tmp") < 0 || here.index_of("exit 0\n") != 0 then
+    return 4
+  end
+  const home_directory = command_run_limited(home(), elsewhere(), "pwd", "~", 5000, 1000)
+  if home_directory.index_of("/home/jenya") < 0 then
+    return 5
+  end
+  const failed = command_run_limited(home(), elsewhere(), "exit 3", "", 5000, 1000)
+  if failed != "exit 3\n" then
+    return 6
+  end
+  const stopped = command_run_limited(home(), elsewhere(), "sleep 5", "", 400, 1000)
+  if stopped.index_of("timeout\n") != 0 then
+    return 7
+  end
+  const flood = command_run_limited(
+    home(),
+    elsewhere(),
+    "i=0; while [ \"$i\" -lt 40 ]; do printf 'abcdefghij'; i=$((i+1)); done",
+    "",
+    5000,
+    64
+  )
+  if flood.index_of("truncated\n") != 0 || flood.byte_size() > 80 then
+    return 8
+  end
+  0
+end

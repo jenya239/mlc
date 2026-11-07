@@ -1,5 +1,5 @@
 import { HttpsHeader, HttpsRequest } from '../../../lib/mlc/common/stdlib/net/https_request.mlc'
-import { ReplyFailed, ReplyGuestCall, ReplyOutcome, ReplyText } from '../chat_model'
+import { ReplyFailed, ReplyFileCall, ReplyGuestCall, ReplyOutcome, ReplyText } from '../chat_model'
 import {
   TransportDone,
   TransportIdle,
@@ -34,6 +34,7 @@ fn outcome_is_failure(outcome: ReplyOutcome) -> bool =
     | ReplyFailed(_) => true
     | ReplyText(_) => false
     | ReplyGuestCall(_, _) => false
+    | ReplyFileCall(_, _, _) => false
 
 fn poll_is_done(polled: TransportPoll) -> bool =
   match polled

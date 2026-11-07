@@ -6,7 +6,13 @@ import {
   HttpsRequest,
   HttpsResult
 } from '../../lib/mlc/common/stdlib/net/https_request.mlc'
-import { ChatMessage, ChatRole, ReplyFailed, ReplyGuestCall, ReplyOutcome, ReplyText } from './chat_model'
+import { ChatMessage, ChatRole, ReplyFailed, ReplyFileCall, ReplyGuestCall, ReplyOutcome, ReplyText } from './chat_model'
+import {
+  FileToolNone,
+  FileToolReady,
+  chat_file_assistant_tool,
+  chat_file_from_message
+} from './chat_files'
 import {
   GuestCallNone,
   GuestCallReady,
@@ -224,6 +230,19 @@ export fn chat_build_guest_followup(
   https_request(config, completions_body(config, messages, trailer))
 end
 
+export fn chat_build_file_followup(
+  config: ChatConfig,
+  messages: [ChatMessage],
+  name: string,
+  call_identifier: string,
+  arguments: string,
+  result: string
+) -> HttpsRequest = do
+  const trailer = "," + chat_file_assistant_tool(name, call_identifier, arguments) + ","
+    + chat_guest_tool_result(call_identifier, result)
+  https_request(config, completions_body(config, messages, trailer))
+end
+
 export fn chat_prepare(config: ChatConfig, messages: [ChatMessage]) -> ChatRequestResult = do
   if config.api_key.byte_size() == 0 then
     return ChatRequestRefused(ReplyFailed("MLC_CHAT_API_KEY не задан"))
@@ -312,10 +331,13 @@ fn success_reply(body: string) -> ReplyOutcome = do
   if message.byte_size() == 0 then
     return ReplyFailed("пустой ответ")
   end
-  const guest_call = chat_guest_from_message(message)
-  match guest_call do
-    | GuestCallReady(call_identifier, source) => ReplyGuestCall(call_identifier, source)
-    | GuestCallNone => content_reply(message)
+  const file_tool = chat_file_from_message(message)
+  match file_tool do
+    | FileToolReady(name, call_identifier, arguments) => ReplyFileCall(name, call_identifier, arguments)
+    | FileToolNone => match chat_guest_from_message(message) do
+        | GuestCallReady(call_identifier, source) => ReplyGuestCall(call_identifier, source)
+        | GuestCallNone => content_reply(message)
+      end
   end
 end
 

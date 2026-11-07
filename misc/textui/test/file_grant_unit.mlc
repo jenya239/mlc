@@ -1,0 +1,179 @@
+import { file_access_advance, file_access_empty, file_access_revoke } from '../file_access'
+import { journal_text } from '../companion_journal'
+import {
+  ObservationSample,
+  observation_frame_apply,
+  observation_frame_empty,
+  observation_frame_with_file_access
+} from '../companion_observe'
+import { guest_program_run, guest_program_run_with_grant } from '../../../script_vm/guest_program'
+import { lower_source } from '../../../script_vm/lower/lower_module'
+
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn jail_root() -> string = "/home/jenya/workspaces/current/mlc"
+
+fn sample_root() -> string = "/home/jenya/workspaces/current/mlc/tmp"
+
+fn text_path() -> string = "/home/jenya/workspaces/current/mlc/tmp/file_grant_sample.txt"
+
+fn picture_path() -> string = "/home/jenya/workspaces/current/mlc/tmp/file_grant_sample.png"
+
+fn repeat_mark(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + "a"
+    index = index + 1
+  end
+  text
+end
+
+fn outside_cases() -> i32 = do
+  const outside = file_access_advance(
+    file_access_empty(), "/jail/photos", "/jail2/secret.txt", "/jail", 1, 0
+  )
+  if outside.code != 2 || outside.note != "вне каталога" then
+    return 1
+  end
+  const parent = file_access_advance(
+    file_access_empty(), "/jail", "/jail/../outside.txt", "/jail", 1, 0
+  )
+  if parent.code != 2 then
+    return 2
+  end
+  const prefixed = file_access_advance(
+    file_access_empty(), "/jail/photos", "/jail2/a.txt", "/jail", 1, 10
+  )
+  if prefixed.code != 2 then
+    return 3
+  end
+  0
+end
+
+fn revoke_cases() -> i32 = do
+  const issued = file_access_advance(
+    file_access_empty(), sample_root(), text_path(), jail_root(), 3, 0
+  )
+  const revoked = file_access_revoke(issued, 4, jail_root())
+  if revoked.grant_active || revoked.code != 6 then
+    return 4
+  end
+  const same_jail = file_access_revoke(issued, 3, "/other")
+  if same_jail.grant_active || same_jail.code != 6 then
+    return 5
+  end
+  0
+end
+
+fn read_cases() -> i32 = do
+  const body = repeat_mark(180) + "UNIQUE_TAIL"
+  if file_write_string(text_path(), body) == false then
+    return 6
+  end
+  if file_write_string(picture_path(), "UNIQUE_BYTES") == false then
+    return 7
+  end
+  const text = file_access_advance(file_access_empty(), sample_root(), text_path(), jail_root(), 1, 0)
+  if text.code != 0 || text.note.index_of("UNIQUE_TAIL") >= 0 || text.note.index_of("текст") < 0 || text.body.index_of("UNIQUE_TAIL") < 0 then
+    return 8
+  end
+  const again = file_access_advance(text, sample_root(), text_path(), jail_root(), 1, 20)
+  if again.bytes_read != text.bytes_read || again.note != text.note then
+    return 9
+  end
+  const picture = file_access_advance(file_access_empty(), sample_root(), picture_path(), jail_root(), 1, 0)
+  if picture.code != 0 || picture.body != "" || picture.note.index_of("UNIQUE_BYTES") >= 0 || picture.note.index_of("изображение") < 0 then
+    return 10
+  end
+  const missing = file_access_advance(
+    file_access_empty(), sample_root(), sample_root() + "/file_grant_missing.txt", jail_root(), 1, 0
+  )
+  if missing.code != 5 then
+    return 11
+  end
+  0
+end
+
+fn panel_cases() -> i32 = do
+  let mut captions: [string] = []
+  const frame = observation_frame_apply(
+    observation_frame_empty(),
+    ObservationSample {
+      selected_name: "shot.png",
+      hovered_media_path: "",
+      playing: false,
+      track_name: "",
+      directory_label: "",
+      directory_revision: 0,
+      button_captions: captions,
+      now_ms: 10
+    }
+  )
+  const stamped = observation_frame_with_file_access(
+    frame,
+    file_access_advance(file_access_empty(), sample_root(), text_path(), jail_root(), 1, 0)
+  )
+  const text = journal_text(stamped)
+  const marker = text.index_of("Контекст для модели")
+  if marker < 0 || text.substring(0, marker).index_of("UNIQUE_TAIL") >= 0 || text.index_of("текст") < 0 then
+    return 12
+  end
+  0
+end
+
+fn lowered_clean(source: string) -> bool =
+  lower_source(source).diagnostics.length() == 0
+
+fn guest_cases() -> i32 = do
+  const accepted = "export fn run() -> i32 = file_read_granted(0)"
+  if lowered_clean(accepted) == false then
+    return 13
+  end
+  if lowered_clean("export fn run() -> i32 = file_read_granted(1)") then
+    return 14
+  end
+  if lowered_clean("export fn run() -> i32 = file_read_granted(name)") then
+    return 15
+  end
+  const ready = guest_program_run_with_grant(accepted, "hello")
+  if ready.index_of("value=hello") < 0 || ready.index_of("granted_bytes=5") < 0 then
+    return 16
+  end
+  const denied = guest_program_run(accepted)
+  if denied.index_of("granted_bytes=0") < 0 || denied.index_of("value=hello") >= 0 then
+    return 17
+  end
+  const lines = guest_program_run_with_grant(accepted, "ab\ncd")
+  if lines.index_of("granted_bytes=5") < 0 || lines.index_of("ab\ncd") < 0 || lines.index_of("value=ab cd") < 0 then
+    return 18
+  end
+  const file_text = guest_program_run_with_grant(accepted, file_access_advance(
+    file_access_empty(), sample_root(), text_path(), jail_root(), 1, 0
+  ).body)
+  if file_text.index_of("UNIQUE_TAIL") < 0 then
+    return 19
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const outside = outside_cases()
+  if outside != 0 then
+    return outside
+  end
+  const revoked = revoke_cases()
+  if revoked != 0 then
+    return revoked
+  end
+  const read = read_cases()
+  if read != 0 then
+    return read
+  end
+  const panel = panel_cases()
+  if panel != 0 then
+    return panel
+  end
+  guest_cases()
+end

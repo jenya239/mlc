@@ -12,53 +12,30 @@ import {
   glfw_gl_mouse_right_down
 } from '../../lib/mlc/common/stdlib/gl/gl_window.mlc'
 import { theme_default } from './theme'
-import { WidgetId, WidgetStore, widget_id_is_none } from './store'
 import { open_scripted_gallery } from './gallery_script'
-import {
-  gallery_frame_advance,
-  gallery_frame_signature,
-  gallery_frame_wait_seconds
-} from './gallery_frame'
+import { gallery_frame_signature, gallery_frame_wait_seconds } from './gallery_frame'
+import { GalleryTurn, gallery_turn, gallery_turn_after_paint, gallery_turn_settle } from './gallery_turn'
 import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
-import { layout_ui } from './layout_pass'
-import {
-  frame_request,
-  frame_request_layouts,
-  frame_request_paints, frame_signature_hover_only
-} from './frame_request'
+import { LayoutColumnResult, layout_ui } from './layout_pass'
+import { frame_signature_hover_only } from './frame_request'
 import { submit_ui_frame } from './hover_damage'
-import {
-  cursor_lens_bind,
-  cursor_lens_create,
-  cursor_lens_destroy
-} from './cursor_lens'
+import { cursor_lens_bind, cursor_lens_create, cursor_lens_destroy } from './cursor_lens'
 import { idle_scene, scene_finish } from './scene_present'
-import { field_align_scroll } from './widget_field'
 import { submit_create, submit_destroy } from './submit'
-import { UiState, ui_state_new, ui_state_with_pick } from './ui_state'
-import { activated_row_text } from './row_label'
-import { ui_update } from './ui_update'
+import { ui_state_new } from './ui_state'
 import { host_buttons_new, host_now_ms, host_poll_input, host_wait_for_input } from './host_input'
-import { apply_toolbar } from './visual_effect'
-import { hit_test } from './hit'
-import { widget_inspect_report } from './inspect'
-import { button_caption, input_clear_buttons } from './app_input'
 import { remember_window } from './window_placement'
 import { gallery_start, session_with_directory, window_session_load, window_session_store } from './window_session'
-import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
-import { apply_checkbox_click } from './jail_switch'
-import { path_history_empty, path_history_visit } from './path_history'
-import { path_bar_current } from './path_bar'
-import { apply_path_click_jailed } from './path_travel'
-import { attach_about_card, overlay_apply, overlay_dismiss } from './overlay'
-import { attach_file_menu, menu_apply, menu_host_step } from './menu'
-import { DialogTarget, attach_dialog, dialog_host_jailed } from './dialog'
-import { file_commands } from './file_commands'
-import { file_clipboard_publish } from './file_clipboard_os'
+import { open_directory_jailed } from './directory_browse'
+import { path_history_empty } from './path_history'
+import { attach_about_card } from './overlay'
+import { attach_file_menu } from './menu'
+import { attach_dialog } from './dialog'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
-import { music_host, music_playing, music_release } from './music_host'
-import { chat_frames } from './chat_host'
+import { music_playing, music_release } from './music_host'
+import { chat_live_run } from './chat_live'
+import { observation_frame_empty } from './companion_observe'
 export fn application_reload_status() -> i32 = 75
 
 fn main() -> i32 = do
@@ -88,306 +65,162 @@ fn main() -> i32 = do
   let mut store = attach_dialog(attach_file_menu(attach_about_card(guest.store)))
   let mut shaping = text_shaping_new()
   let mut cache = text_layout_cache_new()
-
   println("[textui] gallery — drag to select, Copy / Ctrl+C, Ping, Reload, Pick, Dense. Esc to quit")
-
   let mut max_frames = 0
   if has("MLC_TEXTUI_BENCH") then max_frames = 8 end
-
   let mut state = ui_state_new()
   const started = gallery_start(store, session)
   store = started.store
-  let mut sandbox_root = started.sandbox
-  let mut jail_root = started.jail_root
-  const opened = open_directory_jailed(store, state, started.path, jail_root)
+  const opened = open_directory_jailed(store, state, started.path, started.jail_root)
   store = opened.store
-  state = opened.state
-  state = session_with_directory(state, store, session)
-  let mut dense_enabled = session.dense
+  state = session_with_directory(opened.state, store, session)
+  let mut laid_out = layout_ui(
+    store, theme, shaping, cache, glfw_gl_window_width(), glfw_gl_window_height(),
+    state.scroll_offsets, state.splitter_ratios
+  )
+  const presented = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
+  let mut turn = GalleryTurn {
+    resources: resources,
+    lens: lens,
+    column: laid_out,
+    guest: guest,
+    store: store,
+    state: state,
+    effect_mode: started.effect_mode,
+    jail_root: started.jail_root,
+    sandbox_root: started.sandbox,
+    dense_enabled: session.dense,
+    path_history: path_history_empty(),
+    target_list: 0 - 1,
+    target_row: 0 - 1,
+    right_was_down: false,
+    reported_inspect: 0 - 1,
+    presented: presented,
+    reload_requested: false,
+    observation: observation_frame_empty()
+  }
   let mut buttons = host_buttons_new()
   let mut frame_index = 0
-  let mut reported_inspect = -1
-  let mut reload_requested = false
   let mut close_window = false
-  let mut laid_out = layout_ui(
-    store,
-    theme,
-    shaping,
-    cache,
-    glfw_gl_window_width(),
-    glfw_gl_window_height(),
-    state.scroll_offsets,
-    state.splitter_ratios
-  )
-  shaping = laid_out.shaping
-  cache = laid_out.cache
-  let mut presented = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
   let mut composed = false
-  let mut target_list = 0 - 1
-  let mut target_row = 0 - 1
-  let mut path_history = path_history_empty()
-  let mut effect_mode = started.effect_mode
   let mut saved_session = ""
   let mut sample_after_present = true
   let mut escape_was_down = false
-  let mut right_was_down = false
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
-      host_wait_for_input(gallery_frame_wait_seconds(guest, effect_mode, image_preview_playing(), music_playing(), host_now_ms()))
+      host_wait_for_input(gallery_frame_wait_seconds(
+        turn.guest, turn.effect_mode, image_preview_playing(), music_playing(), host_now_ms()
+      ))
     end
     sample_after_present = false
     const escape_down = glfw_gl_key_escape_down() != 0
     const escape_pressed = escape_down && escape_was_down == false
-    const overlay_was_open = state.overlay_open
-    if escape_pressed && overlay_was_open then
-      const closed = overlay_dismiss(store, state)
-      store = closed.store
-      state = closed.state
-    end
-    if escape_pressed && overlay_was_open == false then
+    if escape_pressed && turn.state.overlay_open == false then
       break
     end
     escape_was_down = escape_down
     const polled = host_poll_input(buttons, host_now_ms())
     buttons = polled.buttons
-    let mut input = polled.input
-    const menued = menu_host_step(
-      store, laid_out.layout, theme, state,
-      glfw_gl_mouse_right_down() != 0, right_was_down,
-      input.mouse_x, input.mouse_y, target_list, target_row
+    const viewport_width = glfw_gl_window_width()
+    const viewport_height = glfw_gl_window_height()
+    const stepped = gallery_turn(
+      turn, polled.input, theme, viewport_width, viewport_height,
+      glfw_gl_mouse_right_down() != 0, true, escape_pressed
     )
-    store = menued.store
-    state = menued.state
-    right_was_down = menued.right_down
-    target_list = menued.target_list
-    target_row = menued.target_row
-    if input.left_pressed then
-      const hit = hit_test(store, laid_out.layout, theme, input.mouse_x, input.mouse_y)
-      if widget_id_is_none(hit) == false && button_caption(store, hit) == "Pick" then
-        if state.pick_enabled then
-          state = ui_state_with_pick(state, false, widget_id_none())
-        else
-          state = ui_state_with_pick(state, true, hit)
-        end
-        input = input_clear_buttons(input)
+    turn = stepped.turn
+    let mut paints = stepped.paint
+    let mut next_signature = stepped.next_signature
+    if stepped.chat_requested then
+      const hosted = chat_live_run(turn, theme)
+      if hosted.error_code != 0 then
+        return hosted.error_code
       end
-    end
-    const clipboard_before = state.clipboard.clipboard
-    const updated = ui_update(store, laid_out.layout, theme, state, input)
-    state = updated.state
-    store = updated.store
-    const layered = overlay_apply(store, state, updated.events)
-    store = layered.store
-    state = layered.state
-    const chosen = menu_apply(store, state, updated.events)
-    store = chosen.store
-    state = chosen.state
-    const prompted = dialog_host_jailed(
-      store, state, updated.events, DialogTarget { list_index: target_list, row: target_row },
-      jail_root
-    )
-    store = prompted.store
-    state = prompted.state
-    const commanded = file_commands(
-      store,
-      state,
-      input,
-      updated.events,
-      DialogTarget { list_index: target_list, row: target_row },
-      jail_root
-    )
-    store = commanded.store
-    state = commanded.state
-    let mut activation_index = 0
-    while activation_index < updated.events.length() do
-      if updated.events[activation_index].activated then
-        println(
-          "[textui] activate " + activated_row_text(
-            store, state, updated.events[activation_index].widget
-          )
-        )
-      end
-      activation_index = activation_index + 1
-    end
-    const path_before_browse = path_bar_current(store)
-    const revision_before_browse = state.listing_revision
-    let mut hidden_index = 0
-    while hidden_index < updated.events.length() do
-      const hidden_owner = updated.events[hidden_index].widget
-      const switched = apply_checkbox_click(
-        store, state, hidden_owner, sandbox_root, jail_root
+      const settled = gallery_turn_settle(
+        hosted.turn, theme, glfw_gl_window_width(), glfw_gl_window_height()
       )
-      store = switched.store
-      state = switched.state
-      jail_root = switched.root
-      hidden_index = hidden_index + 1
-    end
-    let mut browsed = follow_directory_jailed(store, state, updated.events, jail_root)
-    if updated.list_back then
-      browsed = open_parent_jailed(browsed.store, browsed.state, jail_root)
-    end
-    store = browsed.store
-    state = browsed.state
-    path_history = path_history_visit(path_history, path_before_browse, path_bar_current(store))
-    if state.listing_revision != revision_before_browse then
-      dense_enabled = false
-    end
-    const heard = music_host(store, state, laid_out.layout, theme, updated.events, jail_root, input.mouse_x, input.mouse_y, input.left_down)
-    store = heard.store
-    state = heard.state
-    guest = gallery_frame_advance(guest, store, updated.events, host_now_ms())
-    store = guest.store
-    if guest.reload_requested then
-      reload_requested = true
-    end
-    if guest.effect_requested then
-      effect_mode = guest.effect_mode
-    end
-    const early_signature = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
-    const request = frame_request(presented, early_signature)
-    if frame_request_layouts(request) then
-      laid_out = layout_ui(
-        store,
-        theme,
-        shaping,
-        cache,
-        glfw_gl_window_width(),
-        glfw_gl_window_height(),
-        state.scroll_offsets,
-        state.splitter_ratios
-      )
-      shaping = laid_out.shaping
-      cache = laid_out.cache
-      state = field_align_scroll(store, laid_out.layout, theme, state)
-    end
-    const next_signature = gallery_frame_signature(guest, state, glfw_gl_window_width(), glfw_gl_window_height())
-    if state.pick_enabled && widget_id_is_none(state.inspected) == false then
-      if state.inspected.index != reported_inspect then
-        println(widget_inspect_report(store, laid_out.layout, state.inspected))
-        reported_inspect = state.inspected.index
+      turn = settled.turn
+      next_signature = settled.next_signature
+      paints = true
+      if hosted.window_closed then
+        close_window = true
       end
+      escape_was_down = true
+      sample_after_present = true
     end
-    let mut event_index = 0
-    while event_index < updated.events.length() do
-      const owner = updated.events[event_index].widget
-      const stepped = apply_path_click_jailed(store, state, path_history, owner, jail_root)
-      store = stepped.store
-      state = stepped.state
-      path_history = stepped.history
-      if stepped.changed then
-        dense_enabled = false
-      end
-      const caption = button_caption(store, owner)
-      let mut acted = apply_toolbar(
-        store, state, theme, laid_out.layout, owner, caption,
-        dense_enabled, effect_mode
-      )
-      if caption == "Chat" then
-        const hosted = chat_frames(resources, shaping, 0, jail_root)
-        resources = hosted.resources
-        shaping = hosted.shaping
-        if hosted.error_code != 0 then
-          submit_destroy(hosted.resources)
-          cursor_lens_destroy(lens)
-          image_preview_release()
-          music_release()
-          remember_window()
-          glfw_gl_context_end()
-          return hosted.error_code
-        end
-        if hosted.window_closed then
-          close_window = true
-        end
-        escape_was_down = true
-        presented = gallery_frame_signature(guest, state, 0, 0)
-        sample_after_present = true
-      end
-      store = acted.store
-      state = acted.state
-      dense_enabled = acted.dense_enabled
-      effect_mode = acted.effect_mode
-      if acted.reload then
-        reload_requested = true
-      end
-      if acted.copied then
-        file_clipboard_publish(state.clipboard.clipboard)
-      end
-      event_index = event_index + 1
-    end
-    if polled.input.copy_pressed && polled.input.control_down then
-      file_clipboard_publish(state.clipboard.clipboard)
-    end
-    const cut_pressed = (polled.input.binding_key == "x" && polled.input.control_down) || (polled.input.binding_key == "delete" && polled.input.shift_down)
-    if cut_pressed && state.clipboard.clipboard != clipboard_before then
-      file_clipboard_publish(state.clipboard.clipboard)
-    end
-    let mut paints = frame_request_paints(request)
     if frame_index == 0 then
       paints = true
     end
-    const window_width = glfw_gl_window_width()
-    const window_height = glfw_gl_window_height()
-    image_preview_arm(store, state, laid_out.layout, theme, jail_root, effect_mode, lens.framebuffer)
+    image_preview_arm(
+      turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, turn.lens.framebuffer
+    )
     if image_preview_needs_paint() != 0 then
       paints = true
     end
     if paints then
-      lens = cursor_lens_bind(lens, window_width, window_height, effect_mode)
-      image_preview_arm(store, state, laid_out.layout, theme, jail_root, effect_mode, lens.framebuffer)
+      const window_width = glfw_gl_window_width()
+      const window_height = glfw_gl_window_height()
+      let mut lens_now = cursor_lens_bind(turn.lens, window_width, window_height, turn.effect_mode)
+      image_preview_arm(
+        turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, lens_now.framebuffer
+      )
       const submitted = submit_ui_frame(
-        resources,
-        shaping,
-        theme,
-        store,
-        laid_out.layout,
-        state,
-        presented,
-        next_signature,
-        window_width,
-        window_height,
-        composed,
-        jail_root
+        turn.resources, turn.column.shaping, theme, turn.store, turn.column.layout, turn.state,
+        turn.presented, next_signature, window_width, window_height, composed, turn.jail_root
       )
       composed = true
       if submitted.error_code != 0 then
         submit_destroy(submitted.resources)
-        cursor_lens_destroy(lens)
+        cursor_lens_destroy(lens_now)
         remember_window()
         glfw_gl_context_end()
         return submitted.error_code
       end
-      resources = submitted.resources
-      shaping = submitted.shaping
-      const clean_window = frame_index == 0 || frame_signature_hover_only(presented, next_signature) == false
-      lens = scene_finish(lens, input.mouse_x, input.mouse_y, window_width, window_height, clean_window, effect_mode)
-      presented = next_signature
+      const clean_window = frame_index == 0 || frame_signature_hover_only(turn.presented, next_signature) == false
+      lens_now = scene_finish(
+        lens_now, polled.input.mouse_x, polled.input.mouse_y, window_width, window_height, clean_window, turn.effect_mode
+      )
+      turn = gallery_turn_after_paint(
+        turn,
+        submitted.resources,
+        LayoutColumnResult { shaping: submitted.shaping, cache: turn.column.cache, layout: turn.column.layout },
+        lens_now,
+        next_signature
+      )
       glfw_gl_context_swap_poll()
       sample_after_present = true
     end
     if paints == false && composed then
-      lens = idle_scene(lens, input.mouse_x, input.mouse_y, window_width, window_height, effect_mode, music_playing())
+      turn = gallery_turn_after_paint(
+        turn, turn.resources, turn.column,
+        idle_scene(
+          turn.lens, polled.input.mouse_x, polled.input.mouse_y,
+          glfw_gl_window_width(), glfw_gl_window_height(), turn.effect_mode, music_playing()
+        ),
+        turn.presented
+      )
     end
     frame_index = frame_index + 1
     if max_frames > 0 && frame_index >= max_frames then
       break
     end
-    if reload_requested || close_window then
+    if turn.reload_requested || close_window then
       break
     end
     saved_session = window_session_store(
-      saved_session, store, effect_mode, sandbox_root, jail_root, state.splitter_ratios, dense_enabled
+      saved_session, turn.store, turn.effect_mode, turn.sandbox_root, turn.jail_root,
+      turn.state.splitter_ratios, turn.dense_enabled
     )
   end
-
   saved_session = window_session_store(
-    saved_session, store, effect_mode, sandbox_root, jail_root, state.splitter_ratios, dense_enabled
+    saved_session, turn.store, turn.effect_mode, turn.sandbox_root, turn.jail_root,
+    turn.state.splitter_ratios, turn.dense_enabled
   )
-  submit_destroy(resources)
-  cursor_lens_destroy(lens)
+  submit_destroy(turn.resources)
+  cursor_lens_destroy(turn.lens)
   image_preview_release()
   music_release()
   glfw_gl_context_end()
-  if reload_requested then
+  if turn.reload_requested then
     return application_reload_status()
   end
   println("[textui] closed frames=" + frame_index.to_string())

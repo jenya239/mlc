@@ -48,7 +48,7 @@ fn poll_until_settled(config: ChatConfig, model: ChatModel) -> ChatModel = do
   let mut current = model
   let mut ticks = 0
   while ticks < 1500 && current.pending do
-    current = chat_session_poll(config, current)
+    current = chat_session_poll(config, current, "", "")
     if current.pending then
       const slept = sleep_milliseconds(10)
       if slept < 0 then
@@ -64,7 +64,7 @@ fn poll_until_idle(config: ChatConfig, model: ChatModel) -> ChatModel = do
   let mut current = model
   let mut ticks = 0
   while ticks < 1500 do
-    current = chat_session_poll(config, current)
+    current = chat_session_poll(config, current, "", "")
     if transport_in_flight() == 0 then
       return current
     end
