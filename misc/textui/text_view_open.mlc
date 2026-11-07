@@ -1,0 +1,138 @@
+import { text_line_separator_bytes, text_paragraph_separator_bytes } from './text_line'
+import {
+  TextDocument,
+  text_document_from_bytes,
+  text_document_with_unloaded_tail
+} from './text_document'
+import { KindLabel, KindTextView, LabelData, WidgetKind } from './store'
+
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_read_range(path: string, offset: i32, length: i32) -> string
+  = "mlc::file::file_read_range_value" from "mlc/io/file_abi.hpp" blocking
+
+export fn kind_is_text_view(kind: WidgetKind) -> bool =
+  match kind
+    | KindTextView => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindCheckbox(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+    | KindIcon(_) => false
+
+export type TextViewOpen = {
+  kind: WidgetKind,
+  document: TextDocument,
+  list_row_count: i32,
+  list_row_height: i32
+}
+
+fn rejected(list_row_count: i32, list_row_height: i32) -> TextViewOpen = do
+  TextViewOpen {
+    kind: KindLabel(LabelData { text: "" }),
+    document: text_document_from_bytes(""),
+    list_row_count: list_row_count,
+    list_row_height: list_row_height
+  }
+end
+
+fn separator_width(bytes: string, index: i32) -> i32 = do
+  const size = bytes.byte_size()
+  if index >= size then
+    return 0
+  end
+  const current = bytes.byte_at(index)
+  if current == "\r" then
+    if index + 1 < size && bytes.byte_at(index + 1) == "\n" then
+      return 2
+    end
+    return 1
+  end
+  if current == "\n" then
+    return 1
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_line_separator_bytes() then
+    return 3
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_paragraph_separator_bytes() then
+    return 3
+  end
+  0
+end
+
+fn ends_on_break(bytes: string) -> bool = do
+  const size = bytes.byte_size()
+  if size == 0 then
+    return false
+  end
+  const last = bytes.byte_at(size - 1)
+  if last == "\n" || last == "\r" then
+    return true
+  end
+  if size >= 3 && separator_width(bytes, size - 3) == 3 then
+    return true
+  end
+  false
+end
+
+fn prefix_through_break(bytes: string) -> string = do
+  let mut index = 0
+  while index < bytes.byte_size() do
+    const width = separator_width(bytes, index)
+    if width > 0 then
+      return bytes.byte_substring(0, index + width)
+    end
+    index = index + 1
+  end
+  bytes
+end
+
+fn loaded_bytes(path: string, file_size: i32, window_budget: i32) -> string = do
+  let mut budget = window_budget
+  if budget < 0 then
+    budget = 0
+  end
+  if budget > file_size then
+    budget = file_size
+  end
+  let mut loaded = ""
+  if budget > 0 then
+    loaded = file_read_range(path, 0, budget)
+  end
+  if loaded.byte_size() < file_size && ends_on_break(loaded) == false then
+    const rest = file_read_range(path, loaded.byte_size(), file_size - loaded.byte_size())
+    loaded = loaded + prefix_through_break(rest)
+  end
+  loaded
+end
+
+export fn text_view_open(
+  path: string,
+  window_budget: i32,
+  list_row_count: i32,
+  list_row_height: i32
+) -> TextViewOpen = do
+  const file_size = file_byte_size(path)
+  if file_size < 0 then
+    return rejected(list_row_count, list_row_height)
+  end
+  const loaded = loaded_bytes(path, file_size, window_budget)
+  let mut tail_length = file_size - loaded.byte_size()
+  if tail_length < 0 then
+    tail_length = 0
+  end
+  let mut document = text_document_from_bytes(loaded)
+  if tail_length > 0 then
+    document = text_document_with_unloaded_tail(loaded, loaded.byte_size(), tail_length)
+  end
+  TextViewOpen {
+    kind: KindTextView,
+    document: document,
+    list_row_count: list_row_count,
+    list_row_height: list_row_height
+  }
+end

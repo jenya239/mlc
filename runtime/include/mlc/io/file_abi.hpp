@@ -99,6 +99,32 @@ inline int32_t file_byte_size_value(String path) {
   }
 }
 
+inline String file_read_range_value(String path, int32_t offset, int32_t length) {
+  if (offset < 0 || length <= 0) {
+    return String("");
+  }
+  try {
+    std::ifstream input(path.as_std_string(), std::ios::binary);
+    if (!input) {
+      return String("");
+    }
+    input.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!input) {
+      return String("");
+    }
+    std::string buffer(static_cast<std::size_t>(length), '\0');
+    input.read(buffer.data(), static_cast<std::streamsize>(length));
+    const auto read_count = input.gcount();
+    if (read_count <= 0) {
+      return String("");
+    }
+    buffer.resize(static_cast<std::size_t>(read_count));
+    return String(buffer);
+  } catch (...) {
+    return String("");
+  }
+}
+
 inline Array<String> list_dir_names_value(String path) {
   try {
     return list_dir_names(path);

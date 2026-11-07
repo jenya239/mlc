@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=8
+STEP=9
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -156,7 +156,8 @@ verify: красный `tmp/text_view_rows_unit/bin` → RUN:1. После ок�
 
 ### STEP=8 — открытие файла
 
-status: pending
+status: done
+verify: красный `tmp/text_view_open_unit/bin` → RUN:1. После диапазона: `compiler/out/mlcc -o tmp/text_view_open_unit misc/textui/test/text_view_open_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_open_unit tmp/text_view_open_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D4 закрыто
 
 Красный тест: файл из трёх строк открывается новым видом, не меткой. Число и высота строк списка файлов не меняются. Окно короче буфера оставляет непрочитанный промежуток, и строки из него не создаются.

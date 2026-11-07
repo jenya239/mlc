@@ -1,0 +1,46 @@
+import {
+  text_document_line_count,
+  text_document_unloaded_byte_length,
+  text_document_unloaded_count,
+  text_document_unloaded_file_offset
+} from '../text_document'
+import { kind_is_text_view, text_view_open } from '../text_view_open'
+
+extern fn make_temp_directory(prefix: string) -> string
+  = "mlc::file::make_temp_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn main() -> i32 = do
+  const directory = make_temp_directory("text-view-open")
+  if directory == "" || write_string(directory + "/three.txt", "a\nb\nc") == false then
+    return 8
+  end
+  if write_string(directory + "/long.txt", "a\nb\nc\nd\n") == false then
+    return 9
+  end
+  const opened = text_view_open(directory + "/three.txt", 4096, 4, 22)
+  if kind_is_text_view(opened.kind) == false then
+    return 1
+  end
+  if opened.list_row_count != 4 || opened.list_row_height != 22 then
+    return 2
+  end
+  if text_document_line_count(opened.document) != 3 || text_document_unloaded_count(opened.document) != 0 then
+    return 3
+  end
+  const partial = text_view_open(directory + "/long.txt", 3, 4, 22)
+  if kind_is_text_view(partial.kind) == false then
+    return 4
+  end
+  if partial.list_row_count != 4 || partial.list_row_height != 22 then
+    return 5
+  end
+  if text_document_line_count(partial.document) != 2 then
+    return 6
+  end
+  if text_document_unloaded_count(partial.document) != 1 || text_document_unloaded_file_offset(partial.document) != 4 || text_document_unloaded_byte_length(partial.document) != 4 then
+    return 7
+  end
+  0
+end
