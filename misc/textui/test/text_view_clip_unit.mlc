@@ -1,0 +1,73 @@
+import { text_document_from_bytes, text_document_line, text_document_line_count } from '../text_document'
+import { TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from '../text_shape_cache'
+import { KindTextView } from '../store'
+import { text_view_move_horizontal, text_view_press, text_view_state_with_cache } from '../text_view_input'
+import { text_view_replace } from '../text_view_selection'
+import { TextViewState, text_view_state_new } from '../text_view_state'
+
+fn combining_acute() -> string = "́"
+
+fn boundary_position(state: TextViewState, line_identifier: i32, boundary_index: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && boundary_index < entry.boundary_positions.length() then
+      return entry.boundary_positions[boundary_index]
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn main() -> i32 = do
+  const text = "ab" + "e" + combining_acute()
+  const document = text_document_from_bytes(text)
+  if text_document_line_count(document) != 1 || text_document_line(document, 0).text.byte_size() != 5 then
+    return 9
+  end
+  let mut requests: [TextShapeRequest] = []
+  requests.push(TextShapeRequest {
+    line_identifier: 0,
+    revision: 0,
+    token_revision: 0,
+    text: text_document_line(document, 0).text
+  })
+  const cache = text_shape_cache_frame(
+    text_shape_cache_empty("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16, 0, 4),
+    requests,
+    0,
+    0 - 1,
+    0
+  )
+  if cache.entries.length() != 1 then
+    return 9
+  end
+  if cache.entries[0].shaped_byte_count != 2 then
+    return 1
+  end
+  if text_document_line(document, 0).text.byte_size() != 5 then
+    return 2
+  end
+  const state = text_view_state_with_cache(
+    text_view_state_new(16, 16, 0, "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16),
+    cache
+  )
+  const edge = boundary_position(state, 0, 2)
+  if edge < 0 then
+    return 9
+  end
+  const placed = text_view_press(state, document, KindTextView, 0, edge)
+  const moved = text_view_move_horizontal(placed, document, 1, false)
+  if placed.caret_byte != 2 || moved.caret_byte != 2 then
+    return 3
+  end
+  const rejected = text_view_replace(moved, document, 2, 2, "z")
+  if rejected.accepted || text_document_line(rejected.document, 0).text.byte_size() != 5 then
+    return 4
+  end
+  const accepted = text_view_replace(moved, document, 0, 1, "q")
+  if accepted.accepted == false || text_document_line(accepted.document, 0).text.byte_at(0) != "q" then
+    return 5
+  end
+  0
+end

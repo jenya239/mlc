@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=11
+STEP=12
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -188,7 +188,8 @@ verify: красный `tmp/text_view_input_unit/bin` → RUN:1. После ка
 
 ### STEP=11 — длинная строка
 
-status: pending
+status: done
+verify: красный `tmp/text_view_clip_unit/bin` → RUN:1. После обрезки: `compiler/out/mlcc -o tmp/text_view_clip_unit misc/textui/test/text_view_clip_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_clip_unit tmp/text_view_clip_unit/bin` → LINK:0, бинарь → RUN:0. Повтор `tmp/text_shape_cache_unit` → SHAPE_RUN:0, `tmp/text_view_input_unit` → INPUT_RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D2 закрыто
 
 Красный тест: строка длиннее предела шейпится до границы графемы. Документ остаётся целым. Каретка и правка в нешейпленном хвосте отказывают.

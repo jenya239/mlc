@@ -25,7 +25,8 @@ export type TextShapeEntry = {
   byte_limit: i32,
   advances: [i32],
   boundary_positions: [i32],
-  height: i32
+  height: i32,
+  shaped_byte_count: i32
 }
 
 export type TextShapeCache = {
@@ -128,8 +129,28 @@ fn line_height(shaping: TextShapingState, font_path: string, pixel_size: i32) ->
   measured
 end
 
+fn prefix_within_limit(text: string, byte_limit: i32) -> string = do
+  if byte_limit <= 0 then
+    return ""
+  end
+  if text.byte_size() <= byte_limit then
+    return text
+  end
+  const boundaries = text_grapheme_boundaries(text)
+  let mut limit = 0
+  let mut index = 0
+  while index < boundaries.length() do
+    if boundaries[index] <= byte_limit then
+      limit = boundaries[index]
+    end
+    index = index + 1
+  end
+  text.byte_substring(0, limit)
+end
+
 fn shape_request(shaping: TextShapingState, cache: TextShapeCache, request: TextShapeRequest) -> ShapedLine = do
-  const shaped = text_shaping_shape(shaping, cache.font_path, cache.pixel_size, request.text)
+  const prefix = prefix_within_limit(request.text, cache.byte_limit)
+  const shaped = text_shaping_shape(shaping, cache.font_path, cache.pixel_size, prefix)
   const advances = copied_advances(shaped.glyph_count)
   const clusters = copied_clusters(shaped.glyph_count)
   ShapedLine {
@@ -143,8 +164,9 @@ fn shape_request(shaping: TextShapingState, cache: TextShapeCache, request: Text
       wrap_pixels: cache.wrap_pixels,
       byte_limit: cache.byte_limit,
       advances: advances,
-      boundary_positions: boundary_positions(request.text, advances, clusters),
-      height: line_height(shaped.state, cache.font_path, cache.pixel_size)
+      boundary_positions: boundary_positions(prefix, advances, clusters),
+      height: line_height(shaped.state, cache.font_path, cache.pixel_size),
+      shaped_byte_count: prefix.byte_size()
     }
   }
 end

@@ -1,7 +1,12 @@
-import { TextDocument, text_document_line } from './text_document'
+import { TextDocument, TextReplaceResult, text_document_line, text_document_replace } from './text_document'
+import { TextEdit } from './text_edit'
 import { TextLine } from './text_line'
 import { text_grapheme_boundaries } from './text_graphemes'
-import { text_line_index_of_identifier, text_line_index_offset_of } from './text_line_index'
+import {
+  text_line_index_line_of,
+  text_line_index_of_identifier,
+  text_line_index_offset_of
+} from './text_line_index'
 import { TextViewState } from './text_view_state'
 import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
 
@@ -72,4 +77,36 @@ export fn text_view_selection_spans(state: TextViewState, document: TextDocument
   end
   spans.push(span_for(state, line, start_byte, finish_byte))
   spans
+end
+
+fn replace_rejected(document: TextDocument) -> TextReplaceResult = do
+  TextReplaceResult {
+    document: document,
+    edit: TextEdit { start_offset: 0, end_offset: 0, inserted_text: "", removed_text: "" },
+    accepted: false
+  }
+end
+
+export fn text_view_replace(
+  state: TextViewState,
+  document: TextDocument,
+  start_offset: i32,
+  end_offset: i32,
+  inserted_text: string
+) -> TextReplaceResult = do
+  if start_offset < 0 || end_offset < start_offset then
+    return replace_rejected(document)
+  end
+  const located = text_line_index_line_of(document.line_index, start_offset)
+  const origin = text_line_index_offset_of(located.index, located.value)
+  const line = text_document_line(document, located.value)
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  if found < 0 then
+    return replace_rejected(document)
+  end
+  const limit = origin.value + state.shape_cache.entries[found].shaped_byte_count
+  if start_offset >= limit || end_offset > limit then
+    return replace_rejected(document)
+  end
+  text_document_replace(document, start_offset, end_offset, inserted_text)
 end

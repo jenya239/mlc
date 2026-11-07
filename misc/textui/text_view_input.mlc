@@ -129,7 +129,7 @@ fn requests_including(requests: [TextShapeRequest], line: TextLine) -> [TextShap
   included
 end
 
-fn state_with_cache(state: TextViewState, cache: TextShapeCache) -> TextViewState = do
+export fn text_view_state_with_cache(state: TextViewState, cache: TextShapeCache) -> TextViewState = do
   TextViewState {
     anchor_line_identifier: state.anchor_line_identifier,
     anchor_vertical_offset: state.anchor_vertical_offset,
@@ -162,7 +162,7 @@ fn ensure_line_shaped(state: TextViewState, document: TextDocument, line: TextLi
     state.shape_cache.hover_line,
     state.horizontal_scroll
   )
-  state_with_cache(state, cache)
+  text_view_state_with_cache(state, cache)
 end
 
 fn absolute_difference(left: i32, right: i32) -> i32 = do
@@ -307,6 +307,10 @@ export fn text_view_move_horizontal(
   end
   const next_line = text_document_line(document, next_index)
   const shaped = ensure_line_shaped(state, document, next_line)
+  const found = text_view_entry_index(shaped, next_line.line_identifier, next_line.revision)
+  if found >= 0 && next_byte > shaped.shape_cache.entries[found].shaped_byte_count then
+    return state
+  end
   place(shaped, next_line.line_identifier, next_byte, 0, false, keep_bound)
 end
 
