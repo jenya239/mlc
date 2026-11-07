@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=10
+STEP=11
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -177,7 +177,8 @@ verify: красный `tmp/text_view_hover_unit/bin` → RUN:1. После то
 
 ### STEP=10 — каретка и выделение
 
-status: pending
+status: done
+verify: красный `tmp/text_view_input_unit/bin` → RUN:1. После каретки: `compiler/out/mlcc -o tmp/text_view_input_unit misc/textui/test/text_view_input_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_input_unit tmp/text_view_input_unit/bin` → LINK:0, бинарь → RUN:0. Повтор `tmp/text_view_hover_unit` → HOVER_RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 
 Красный тест: клик ставит позицию на графему. Влево и вправо шагают графемой. Вниз помнит `goal_x` и не теряет колонку на короткой следующей строке. Стрелка шейпит не больше строки назначения. Shift+вправо пишет диапазон глобальными байтами. Клик по метке каретку не двигает.
 

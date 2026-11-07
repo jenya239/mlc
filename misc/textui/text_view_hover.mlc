@@ -42,7 +42,14 @@ fn state_with_token(state: TextViewState, token: TextHoverToken) -> TextViewStat
     content_width: state.content_width,
     layout_height: state.layout_height,
     shape_cache: state.shape_cache,
-    hover_token: token
+    hover_token: token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
   }
 end
 

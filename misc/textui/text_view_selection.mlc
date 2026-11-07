@@ -1,0 +1,75 @@
+import { TextDocument, text_document_line } from './text_document'
+import { TextLine } from './text_line'
+import { text_grapheme_boundaries } from './text_graphemes'
+import { text_line_index_of_identifier, text_line_index_offset_of } from './text_line_index'
+import { TextViewState } from './text_view_state'
+import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
+
+export type TextSelectionRange = {
+  anchor_offset: i32,
+  focus_offset: i32
+}
+
+export type TextSelectionSpan = {
+  line_identifier: i32,
+  left: i32,
+  right: i32
+}
+
+fn global_byte(document: TextDocument, line_identifier: i32, byte_offset: i32) -> i32 = do
+  const line_index = text_line_index_of_identifier(document.line_index, line_identifier)
+  if line_index < 0 then
+    return byte_offset
+  end
+  text_line_index_offset_of(document.line_index, line_index).value + byte_offset
+end
+
+export fn text_view_selection_range(state: TextViewState, document: TextDocument) -> TextSelectionRange = do
+  TextSelectionRange {
+    anchor_offset: global_byte(document, state.bound_line_identifier, state.bound_byte),
+    focus_offset: global_byte(document, state.caret_line_identifier, state.caret_byte)
+  }
+end
+
+fn span_for(state: TextViewState, line: TextLine, start_byte: i32, finish_byte: i32) -> TextSelectionSpan = do
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  let mut left = 0
+  let mut right = 0
+  if found >= 0 then
+    const boundaries = text_grapheme_boundaries(line.text)
+    const positions = state.shape_cache.entries[found].boundary_positions
+    left = text_view_position_of_byte(boundaries, positions, start_byte)
+    right = text_view_position_of_byte(boundaries, positions, finish_byte)
+  end
+  if left > right then
+    const swap = left
+    left = right
+    right = swap
+  end
+  TextSelectionSpan {
+    line_identifier: line.line_identifier,
+    left: left,
+    right: right
+  }
+end
+
+export fn text_view_selection_spans(state: TextViewState, document: TextDocument) -> [TextSelectionSpan] = do
+  let mut spans: [TextSelectionSpan] = []
+  if state.bound_line_identifier == state.caret_line_identifier && state.bound_byte == state.caret_byte then
+    return spans
+  end
+  const line_index = text_line_index_of_identifier(document.line_index, state.caret_line_identifier)
+  if line_index < 0 || state.bound_line_identifier != state.caret_line_identifier then
+    return spans
+  end
+  const line = text_document_line(document, line_index)
+  let mut start_byte = state.bound_byte
+  let mut finish_byte = state.caret_byte
+  if start_byte > finish_byte then
+    const swap = start_byte
+    start_byte = finish_byte
+    finish_byte = swap
+  end
+  spans.push(span_for(state, line, start_byte, finish_byte))
+  spans
+end

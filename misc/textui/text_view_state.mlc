@@ -10,6 +10,10 @@ export type TextHoverToken = {
   present: bool
 }
 
+export type TextCaretAffinity =
+  AffinityDownstream
+  | AffinityUpstream
+
 export type TextViewState = {
   anchor_line_identifier: i32,
   anchor_vertical_offset: i32,
@@ -19,7 +23,14 @@ export type TextViewState = {
   content_width: i32,
   layout_height: i32,
   shape_cache: TextShapeCache,
-  hover_token: TextHoverToken
+  hover_token: TextHoverToken,
+  caret_line_identifier: i32,
+  caret_byte: i32,
+  bound_line_identifier: i32,
+  bound_byte: i32,
+  caret_affinity: TextCaretAffinity,
+  goal_x: i32,
+  goal_x_present: bool
 }
 
 fn hover_token_absent() -> TextHoverToken = do
@@ -58,7 +69,14 @@ export fn text_view_state_new(
     content_width: content_width,
     layout_height: viewport_height,
     shape_cache: text_shape_cache_empty(font_path, pixel_size, 0, 4096),
-    hover_token: hover_token_absent()
+    hover_token: hover_token_absent(),
+    caret_line_identifier: 0,
+    caret_byte: 0,
+    bound_line_identifier: 0,
+    bound_byte: 0,
+    caret_affinity: AffinityDownstream,
+    goal_x: 0,
+    goal_x_present: false
   }
 end
 
@@ -145,7 +163,14 @@ export fn text_view_frame(state: TextViewState, document: TextDocument) -> TextV
     content_width: grown_content_width(state, cache),
     layout_height: state.viewport_height,
     shape_cache: cache,
-    hover_token: state.hover_token
+    hover_token: state.hover_token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
   }
 end
 
@@ -178,6 +203,13 @@ export fn text_view_wheel(state: TextViewState, document: TextDocument, delta: i
     content_width: state.content_width,
     layout_height: state.viewport_height,
     shape_cache: state.shape_cache,
-    hover_token: state.hover_token
+    hover_token: state.hover_token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
   }
 end

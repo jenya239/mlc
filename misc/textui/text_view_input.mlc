@@ -1,0 +1,339 @@
+import { TextDocument, text_document_line, text_document_line_count } from './text_document'
+import { TextLine } from './text_line'
+import { text_grapheme_boundaries } from './text_graphemes'
+import { text_line_index_of_identifier } from './text_line_index'
+import { TextShapeCache, TextShapeRequest, text_shape_cache_frame } from './text_shape_cache'
+import { WidgetKind } from './store'
+import { AffinityDownstream, TextViewState } from './text_view_state'
+
+fn kind_moves_caret(kind: WidgetKind) -> bool =
+  match kind
+    | KindTextView => true
+    | KindBox(_) => false
+    | KindLabel(_) => false
+    | KindButton(_) => false
+    | KindCheckbox(_) => false
+    | KindScrollView => false
+    | KindListView(_) => false
+    | KindSplitter(_) => false
+    | KindTextField(_) => false
+    | KindIcon(_) => false
+
+fn empty_requests() -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests
+end
+
+fn line_index_of(document: TextDocument, line_identifier: i32) -> i32 = do
+  text_line_index_of_identifier(document.line_index, line_identifier)
+end
+
+fn request_for_line(line: TextLine) -> TextShapeRequest = do
+  TextShapeRequest {
+    line_identifier: line.line_identifier,
+    revision: line.revision,
+    token_revision: 0,
+    text: line.text
+  }
+end
+
+fn write_caret(
+  state: TextViewState,
+  caret_line_identifier: i32,
+  caret_byte: i32,
+  bound_line_identifier: i32,
+  bound_byte: i32,
+  goal_x: i32,
+  goal_x_present: bool
+) -> TextViewState = do
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.layout_height,
+    shape_cache: state.shape_cache,
+    hover_token: state.hover_token,
+    caret_line_identifier: caret_line_identifier,
+    caret_byte: caret_byte,
+    bound_line_identifier: bound_line_identifier,
+    bound_byte: bound_byte,
+    caret_affinity: AffinityDownstream,
+    goal_x: goal_x,
+    goal_x_present: goal_x_present
+  }
+end
+
+fn place(
+  state: TextViewState,
+  line_identifier: i32,
+  byte_offset: i32,
+  goal_x: i32,
+  goal_x_present: bool,
+  keep_bound: bool
+) -> TextViewState = do
+  let mut bound_line_identifier = line_identifier
+  let mut bound_byte = byte_offset
+  if keep_bound then
+    bound_line_identifier = state.bound_line_identifier
+    bound_byte = state.bound_byte
+  end
+  write_caret(
+    state,
+    line_identifier,
+    byte_offset,
+    bound_line_identifier,
+    bound_byte,
+    goal_x,
+    goal_x_present
+  )
+end
+
+export fn text_view_entry_index(state: TextViewState, line_identifier: i32, revision: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && entry.revision == revision then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn requests_keeping(state: TextViewState, document: TextDocument) -> [TextShapeRequest] = do
+  let mut requests = empty_requests()
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const line_index = line_index_of(document, state.shape_cache.entries[index].line_identifier)
+    if line_index >= 0 then
+      requests.push(request_for_line(text_document_line(document, line_index)))
+    end
+    index = index + 1
+  end
+  requests
+end
+
+fn requests_including(requests: [TextShapeRequest], line: TextLine) -> [TextShapeRequest] = do
+  let mut index = 0
+  while index < requests.length() do
+    if requests[index].line_identifier == line.line_identifier then
+      return requests
+    end
+    index = index + 1
+  end
+  let mut included = requests
+  included.push(request_for_line(line))
+  included
+end
+
+fn state_with_cache(state: TextViewState, cache: TextShapeCache) -> TextViewState = do
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.layout_height,
+    shape_cache: cache,
+    hover_token: state.hover_token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
+  }
+end
+
+fn ensure_line_shaped(state: TextViewState, document: TextDocument, line: TextLine) -> TextViewState = do
+  if text_view_entry_index(state, line.line_identifier, line.revision) >= 0 then
+    return state
+  end
+  const requests = requests_including(requests_keeping(state, document), line)
+  const cache = text_shape_cache_frame(
+    state.shape_cache,
+    requests,
+    line.line_identifier,
+    state.shape_cache.hover_line,
+    state.horizontal_scroll
+  )
+  state_with_cache(state, cache)
+end
+
+fn absolute_difference(left: i32, right: i32) -> i32 = do
+  if left >= right then
+    return left - right
+  end
+  right - left
+end
+
+fn nearest_byte(boundaries: [i32], positions: [i32], pointer_x: i32) -> i32 = do
+  if boundaries.length() == 0 || positions.length() == 0 then
+    return 0
+  end
+  let mut best_index = 0
+  let mut best_distance = absolute_difference(positions[0], pointer_x)
+  let mut index = 1
+  while index < boundaries.length() && index < positions.length() do
+    const distance = absolute_difference(positions[index], pointer_x)
+    if distance < best_distance then
+      best_distance = distance
+      best_index = index
+    end
+    index = index + 1
+  end
+  boundaries[best_index]
+end
+
+export fn text_view_position_of_byte(boundaries: [i32], positions: [i32], byte_offset: i32) -> i32 = do
+  let mut index = 0
+  while index < boundaries.length() && index < positions.length() do
+    if boundaries[index] == byte_offset then
+      return positions[index]
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn boundary_cursor(boundaries: [i32], byte_offset: i32) -> i32 = do
+  let mut index = 0
+  while index < boundaries.length() do
+    if boundaries[index] == byte_offset then
+      return index
+    end
+    if boundaries[index] > byte_offset then
+      if index == 0 then
+        return 0
+      end
+      return index - 1
+    end
+    index = index + 1
+  end
+  if boundaries.length() == 0 then
+    return 0
+  end
+  boundaries.length() - 1
+end
+
+fn step_grapheme(text: string, byte_offset: i32, delta: i32) -> i32 = do
+  const boundaries = text_grapheme_boundaries(text)
+  if boundaries.length() == 0 then
+    return byte_offset
+  end
+  let mut next = boundary_cursor(boundaries, byte_offset)
+  if delta > 0 then
+    next = next + 1
+  end
+  if delta < 0 then
+    next = next - 1
+  end
+  if next < 0 then
+    next = 0
+  end
+  if next >= boundaries.length() then
+    next = boundaries.length() - 1
+  end
+  boundaries[next]
+end
+
+fn byte_on_line(state: TextViewState, line: TextLine, pointer_x: i32) -> i32 = do
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  if found < 0 then
+    return 0
+  end
+  const entry = state.shape_cache.entries[found]
+  nearest_byte(text_grapheme_boundaries(line.text), entry.boundary_positions, pointer_x)
+end
+
+fn caret_position(state: TextViewState, line: TextLine) -> i32 = do
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  if found < 0 then
+    return 0
+  end
+  const entry = state.shape_cache.entries[found]
+  text_view_position_of_byte(text_grapheme_boundaries(line.text), entry.boundary_positions, state.caret_byte)
+end
+
+export fn text_view_press(
+  state: TextViewState,
+  document: TextDocument,
+  kind: WidgetKind,
+  line_identifier: i32,
+  pointer_x: i32
+) -> TextViewState = do
+  if kind_moves_caret(kind) == false then
+    return state
+  end
+  const line_index = line_index_of(document, line_identifier)
+  if line_index < 0 then
+    return state
+  end
+  const line = text_document_line(document, line_index)
+  const shaped = ensure_line_shaped(state, document, line)
+  const byte_offset = byte_on_line(shaped, line, pointer_x + state.horizontal_scroll)
+  place(shaped, line.line_identifier, byte_offset, 0, false, false)
+end
+
+export fn text_view_move_horizontal(
+  state: TextViewState,
+  document: TextDocument,
+  delta: i32,
+  keep_bound: bool
+) -> TextViewState = do
+  if delta == 0 then
+    return state
+  end
+  const line_index = line_index_of(document, state.caret_line_identifier)
+  if line_index < 0 then
+    return state
+  end
+  const line = text_document_line(document, line_index)
+  const stepped = step_grapheme(line.text, state.caret_byte, delta)
+  let mut next_index = line_index
+  let mut next_byte = stepped
+  if delta > 0 && stepped == state.caret_byte && line_index + 1 < text_document_line_count(document) then
+    next_index = line_index + 1
+    next_byte = 0
+  end
+  if delta < 0 && stepped == state.caret_byte && line_index > 0 then
+    next_index = line_index - 1
+    next_byte = text_document_line(document, next_index).text.byte_size()
+  end
+  const next_line = text_document_line(document, next_index)
+  const shaped = ensure_line_shaped(state, document, next_line)
+  place(shaped, next_line.line_identifier, next_byte, 0, false, keep_bound)
+end
+
+export fn text_view_move_vertical(
+  state: TextViewState,
+  document: TextDocument,
+  delta: i32,
+  keep_bound: bool
+) -> TextViewState = do
+  if delta == 0 then
+    return state
+  end
+  const line_index = line_index_of(document, state.caret_line_identifier)
+  if line_index < 0 then
+    return state
+  end
+  const target_index = line_index + delta
+  if target_index < 0 || target_index >= text_document_line_count(document) then
+    return state
+  end
+  const line = text_document_line(document, line_index)
+  let mut goal_x = state.goal_x
+  if state.goal_x_present == false then
+    goal_x = caret_position(state, line)
+  end
+  const target = text_document_line(document, target_index)
+  const shaped = ensure_line_shaped(state, document, target)
+  const byte_offset = byte_on_line(shaped, target, goal_x)
+  place(shaped, target.line_identifier, byte_offset, goal_x, true, keep_bound)
+end

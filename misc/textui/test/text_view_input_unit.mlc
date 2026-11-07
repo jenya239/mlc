@@ -1,0 +1,106 @@
+import { text_document_from_bytes, text_document_line_count } from '../text_document'
+import { text_line_index_offset_of } from '../text_line_index'
+import { KindLabel, KindTextView, LabelData } from '../store'
+import {
+  text_view_move_horizontal,
+  text_view_move_vertical,
+  text_view_press
+} from '../text_view_input'
+import { text_view_selection_range, text_view_selection_spans } from '../text_view_selection'
+import { TextViewState, text_view_frame, text_view_state_new } from '../text_view_state'
+
+fn combining_acute() -> string = "́"
+
+fn boundary_count(state: TextViewState, line_identifier: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier then
+      return entry.boundary_positions.length()
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn boundary_position(state: TextViewState, line_identifier: i32, boundary_index: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && boundary_index < entry.boundary_positions.length() then
+      return entry.boundary_positions[boundary_index]
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn entry_has_line(state: TextViewState, line_identifier: i32) -> bool = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    if state.shape_cache.entries[index].line_identifier == line_identifier then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const document = text_document_from_bytes("e" + combining_acute() + "abcd\na\nzzzzzzzz")
+  if text_document_line_count(document) != 3 then
+    return 9
+  end
+  const state = text_view_state_new(
+    16,
+    16,
+    0,
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    16
+  )
+  const framed = text_view_frame(state, document)
+  if framed.shape_cache.shape_call_count != 1 then
+    return 9
+  end
+  const cluster_x = boundary_position(framed, 0, 1)
+  const end_x = boundary_position(framed, 0, boundary_count(framed, 0) - 1)
+  if cluster_x < 0 || end_x < 0 then
+    return 9
+  end
+  const clicked = text_view_press(framed, document, KindTextView, 0, cluster_x)
+  if clicked.caret_line_identifier != 0 || clicked.caret_byte != 3 then
+    return 1
+  end
+  const left = text_view_move_horizontal(clicked, document, 0 - 1, false)
+  if left.caret_byte != 0 || left.shape_cache.shape_call_count != 1 then
+    return 2
+  end
+  const right = text_view_move_horizontal(left, document, 1, false)
+  if right.caret_byte != 3 || right.shape_cache.shape_call_count != 1 then
+    return 3
+  end
+  const at_end = text_view_press(right, document, KindTextView, 0, end_x)
+  const down = text_view_move_vertical(at_end, document, 1, false)
+  if down.caret_line_identifier != 1 || down.caret_byte != 1 || down.goal_x_present == false || down.goal_x != end_x then
+    return 4
+  end
+  if down.shape_cache.shape_call_count != 2 || entry_has_line(down, 2) then
+    return 5
+  end
+  const origin = text_view_press(down, document, KindTextView, 1, boundary_position(down, 1, 0))
+  const shifted = text_view_move_horizontal(origin, document, 1, true)
+  const line_offset = text_line_index_offset_of(document.line_index, 1).value
+  const range = text_view_selection_range(shifted, document)
+  if range.anchor_offset != line_offset || range.focus_offset != line_offset + 1 then
+    return 6
+  end
+  const spans = text_view_selection_spans(shifted, document)
+  if spans.length() != 1 || spans[0].line_identifier != 1 || spans[0].left != boundary_position(down, 1, 0) || spans[0].right != boundary_position(down, 1, 1) then
+    return 7
+  end
+  const labeled = text_view_press(shifted, document, KindLabel(LabelData { text: "" }), 0, end_x)
+  if labeled.caret_line_identifier != shifted.caret_line_identifier || labeled.caret_byte != shifted.caret_byte then
+    return 8
+  end
+  0
+end
