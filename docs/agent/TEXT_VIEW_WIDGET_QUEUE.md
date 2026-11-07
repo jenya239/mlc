@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=15
+STEP=16
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -226,7 +226,8 @@ verify: красный `tmp/text_view_save_unit/bin` → RUN:1. После за�
 
 ### STEP=15 — подсветка
 
-status: pending
+status: done
+verify: красный `tmp/text_highlight_unit/bin` → RUN:1. После токенизатора: `compiler/out/mlcc -o tmp/text_highlight_unit misc/textui/test/text_highlight_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_highlight_unit tmp/text_highlight_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D6 закрыто, только комментарии
 
 Красный тест: токенизатор строки принимает `state_in` и отдаёт `state_out`. Совпавший `state_out` останавливает проход. Открытый блочный комментарий идёт по бюджету строк на кадр. Смена `token_rev` пересобирает одну строку. Hover токенизатор не вызывает.

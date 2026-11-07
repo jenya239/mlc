@@ -1,0 +1,184 @@
+export type TextHighlightMode =
+  ModeCode
+  | ModeBlock
+
+export type TextHighlightSpan = {
+  start_offset: i32,
+  end_offset: i32
+}
+
+export type TextHighlightLine = {
+  mode_out: TextHighlightMode,
+  spans: [TextHighlightSpan]
+}
+
+export type TextHighlightRecord = {
+  stored: bool,
+  mode_out: TextHighlightMode
+}
+
+export type TextHighlightCursor = {
+  watermark: i32,
+  mode: TextHighlightMode,
+  records: [TextHighlightRecord],
+  scanned: i32
+}
+
+fn mode_is_block(mode: TextHighlightMode) -> bool =
+  match mode
+    | ModeBlock => true
+    | ModeCode => false
+
+fn empty_spans() -> [TextHighlightSpan] = do
+  let mut spans: [TextHighlightSpan] = []
+  spans
+end
+
+fn empty_records() -> [TextHighlightRecord] = do
+  let mut records: [TextHighlightRecord] = []
+  records
+end
+
+fn blank_record() -> TextHighlightRecord = do
+  TextHighlightRecord { stored: false, mode_out: ModeCode }
+end
+
+fn find_marker(text: string, start: i32, first: string, second: string) -> i32 = do
+  let mut index = start
+  const limit = text.byte_size() - 1
+  while index < limit do
+    if text.byte_at(index) == first && text.byte_at(index + 1) == second then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn earlier_marker(left: i32, right: i32) -> i32 = do
+  if left < 0 then
+    return right
+  end
+  if right < 0 then
+    return left
+  end
+  if left <= right then
+    return left
+  end
+  right
+end
+
+export fn text_highlight_line(text: string, mode: TextHighlightMode) -> TextHighlightLine = do
+  let mut spans = empty_spans()
+  let mut index = 0
+  let mut block = mode_is_block(mode)
+  let mut block_start = 0
+  while index < text.byte_size() do
+    if block then
+      const close = find_marker(text, index, "*", "/")
+      if close < 0 then
+        spans.push(TextHighlightSpan { start_offset: block_start, end_offset: text.byte_size() })
+        return TextHighlightLine { mode_out: ModeBlock, spans: spans }
+      end
+      spans.push(TextHighlightSpan { start_offset: block_start, end_offset: close + 2 })
+      index = close + 2
+      block = false
+    else
+      const line_mark = find_marker(text, index, "/", "/")
+      const block_mark = find_marker(text, index, "/", "*")
+      const chosen = earlier_marker(line_mark, block_mark)
+      if chosen < 0 then
+        return TextHighlightLine { mode_out: ModeCode, spans: spans }
+      end
+      if line_mark >= 0 && chosen == line_mark then
+        spans.push(TextHighlightSpan { start_offset: line_mark, end_offset: text.byte_size() })
+        return TextHighlightLine { mode_out: ModeCode, spans: spans }
+      end
+      block = true
+      block_start = block_mark
+      index = block_mark + 2
+    end
+  end
+  if block then
+    spans.push(TextHighlightSpan { start_offset: block_start, end_offset: text.byte_size() })
+    return TextHighlightLine { mode_out: ModeBlock, spans: spans }
+  end
+  TextHighlightLine { mode_out: ModeCode, spans: spans }
+end
+
+fn record_at(records: [TextHighlightRecord], index: i32) -> TextHighlightRecord = do
+  if index < 0 || index >= records.length() then
+    return blank_record()
+  end
+  records[index]
+end
+
+fn store_record(records: [TextHighlightRecord], index: i32, mode: TextHighlightMode) -> [TextHighlightRecord] = do
+  let mut copy = records
+  while copy.length() < index do
+    copy.push(blank_record())
+  end
+  const record = TextHighlightRecord { stored: true, mode_out: mode }
+  if copy.length() == index then
+    copy.push(record)
+  else
+    copy.set(index, record)
+  end
+  copy
+end
+
+export fn text_highlight_cursor_new() -> TextHighlightCursor = do
+  TextHighlightCursor {
+    watermark: 0,
+    mode: ModeCode,
+    records: empty_records(),
+    scanned: 0
+  }
+end
+
+export fn text_highlight_resume(cursor: TextHighlightCursor, line_index: i32) -> TextHighlightCursor = do
+  let mut mode = ModeCode
+  if line_index > 0 then
+    mode = record_at(cursor.records, line_index - 1).mode_out
+  end
+  TextHighlightCursor {
+    watermark: line_index,
+    mode: mode,
+    records: cursor.records,
+    scanned: cursor.scanned
+  }
+end
+
+export fn text_highlight_ensure(cursor: TextHighlightCursor, lines: [string], budget: i32) -> TextHighlightCursor = do
+  if cursor.watermark >= lines.length() || budget <= 0 then
+    return cursor
+  end
+  let mut index = cursor.watermark
+  let mut mode = cursor.mode
+  let mut records = cursor.records
+  let mut scanned = cursor.scanned
+  let mut used = 0
+  while index < lines.length() && used < budget do
+    const highlighted = text_highlight_line(lines[index], mode)
+    const previous = record_at(cursor.records, index)
+    records = store_record(records, index, highlighted.mode_out)
+    scanned = scanned + 1
+    used = used + 1
+    if previous.stored && mode_is_block(previous.mode_out) == mode_is_block(highlighted.mode_out) then
+      return TextHighlightCursor {
+        watermark: lines.length(),
+        mode: highlighted.mode_out,
+        records: records,
+        scanned: scanned
+      }
+    end
+    mode = highlighted.mode_out
+    index = index + 1
+  end
+  TextHighlightCursor {
+    watermark: index,
+    mode: mode,
+    records: records,
+    scanned: scanned
+  }
+end

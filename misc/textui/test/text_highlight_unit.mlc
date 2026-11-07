@@ -1,0 +1,87 @@
+import { text_document_from_bytes } from '../text_document'
+import {
+  ModeCode,
+  text_highlight_cursor_new,
+  text_highlight_ensure,
+  text_highlight_line,
+  text_highlight_resume
+} from '../text_highlight'
+import { TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from '../text_shape_cache'
+import { text_view_hover } from '../text_view_hover'
+import { text_view_frame, text_view_state_new } from '../text_view_state'
+
+fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+fn block_lines() -> [string] = do
+  let mut lines: [string] = []
+  lines.push("/*")
+  let mut index = 0
+  while index < 8 do
+    lines.push("a")
+    index = index + 1
+  end
+  lines
+end
+
+fn code_lines() -> [string] = do
+  let mut lines: [string] = []
+  lines.push("code")
+  lines.push("more")
+  lines.push("tail")
+  lines
+end
+
+fn changed_lines() -> [string] = do
+  let mut lines: [string] = []
+  lines.push("code")
+  lines.push("changed")
+  lines.push("tail")
+  lines
+end
+
+fn shape_requests(token_revision: i32) -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests.push(TextShapeRequest { line_identifier: 1, revision: 0, token_revision: 0, text: "one" })
+  requests.push(TextShapeRequest { line_identifier: 2, revision: 0, token_revision: token_revision, text: "two" })
+  requests.push(TextShapeRequest { line_identifier: 3, revision: 0, token_revision: 0, text: "three" })
+  requests
+end
+
+fn main() -> i32 = do
+  const comment = text_highlight_line("// a", ModeCode)
+  if comment.spans.length() != 1 || comment.spans[0].start_offset != 0 || comment.spans[0].end_offset != 4 then
+    return 1
+  end
+  const opened = text_highlight_line("/*", ModeCode)
+  const closed = text_highlight_line("*/", opened.mode_out)
+  if closed.spans.length() != 1 || closed.spans[0].end_offset != 2 then
+    return 2
+  end
+  const lines = block_lines()
+  const first = text_highlight_ensure(text_highlight_cursor_new(), lines, 3)
+  if first.watermark != 3 || first.scanned != 3 then
+    return 3
+  end
+  const second = text_highlight_ensure(first, lines, 3)
+  if second.watermark != 6 || second.scanned != 6 then
+    return 4
+  end
+  const full = text_highlight_ensure(text_highlight_cursor_new(), code_lines(), 10)
+  const stopped = text_highlight_ensure(text_highlight_resume(full, 1), changed_lines(), 10)
+  if stopped.scanned != full.scanned + 1 then
+    return 5
+  end
+  const cache = text_shape_cache_empty(font_path(), 16, 0, 4096)
+  const shaped = text_shape_cache_frame(cache, shape_requests(0), 0, 0 - 1, 0)
+  const revised = text_shape_cache_frame(shaped, shape_requests(1), 0, 0 - 1, 0)
+  if revised.shape_call_count != shaped.shape_call_count + 1 then
+    return 6
+  end
+  const document = text_document_from_bytes("ab")
+  const state = text_view_frame(text_view_state_new(16, 16, 0, font_path(), 16), document)
+  const hovered = text_view_hover(state, document, 0, 0)
+  if hovered.state.shape_cache.shape_call_count != state.shape_cache.shape_call_count || stopped.scanned != full.scanned + 1 then
+    return 7
+  end
+  0
+end
