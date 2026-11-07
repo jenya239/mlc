@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=2
+STEP=3
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -89,8 +89,8 @@ verify: красный `tmp/text_document_unit/bin` → RUN:1. После раз
 
 ### STEP=2 — байты не портятся
 
-status: pending
-решение: D1 закрыто
+status: done
+verify: красный `tmp/text_document_bytes_unit/bin` → RUN:4. После правки: `compiler/out/mlcc -o tmp/text_document_bytes_unit misc/textui/test/text_document_bytes_unit.mlc` → BYTES_MLCC:0, линковка → BYTES_LINK:0, бинарь → BYTES_RUN:0. Тот же прогон `tmp/text_document_unit` → UNIT_MLCC:0, UNIT_LINK:0, UNIT_RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0.
 
 Красный тест: `\r\n`, `\r`, U+2028 и U+2029 возвращаются теми же байтами. Хвостовой перевод строки не добавляется. Невалидный UTF-8 даёт `origin=lossy`, сборка байтов отказывает. Документ с загруженным началом и непрочитанным хвостом не разбирает хвост на строки, правка начала не меняет длину хвоста, `to_bytes` всего файла отказывает. Потолка байт, после которого файл становится `truncated`, нет.
 

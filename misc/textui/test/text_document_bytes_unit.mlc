@@ -1,0 +1,125 @@
+import {
+  text_document_from_bytes,
+  text_document_is_complete,
+  text_document_is_writable,
+  text_document_line,
+  text_document_line_count,
+  text_document_set_line_text,
+  text_document_to_bytes,
+  text_document_unloaded_byte_length,
+  text_document_unloaded_count,
+  text_document_unloaded_file_offset,
+  text_document_with_unloaded_tail
+} from '../text_document'
+import { text_line_separator_bytes, text_paragraph_separator_bytes } from '../text_line'
+
+fn invalid_lead() -> string = "ÿ"
+
+fn preserved_breaks() -> i32 = do
+  const carriage = text_document_from_bytes("a\r\nb\rc")
+  const carriage_bytes = text_document_to_bytes(carriage)
+  if carriage_bytes.accepted == false || carriage_bytes.bytes != "a\r\nb\rc" then
+    return 1
+  end
+  const feed = text_document_from_bytes("a\n")
+  const feed_bytes = text_document_to_bytes(feed)
+  if text_document_line_count(feed) != 1 || feed_bytes.accepted == false || feed_bytes.bytes != "a\n" then
+    return 2
+  end
+  const separators = text_document_from_bytes("a" + text_line_separator_bytes() + "b" + text_paragraph_separator_bytes() + "c")
+  const separator_bytes = text_document_to_bytes(separators)
+  if separator_bytes.accepted == false || separator_bytes.bytes != "a" + text_line_separator_bytes() + "b" + text_paragraph_separator_bytes() + "c" then
+    return 3
+  end
+  0
+end
+
+fn lossy_utf8() -> i32 = do
+  const document = text_document_from_bytes("a" + invalid_lead() + "b")
+  if text_document_is_complete(document) then
+    return 4
+  end
+  if text_document_is_writable(document) then
+    return 5
+  end
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted then
+    return 6
+  end
+  const edited = text_document_set_line_text(document, 0, "changed")
+  if text_document_line(edited, 0).text == "changed" then
+    return 7
+  end
+  0
+end
+
+fn unread_tail() -> i32 = do
+  const document = text_document_with_unloaded_tail("ab\ncd", 5, 40)
+  if text_document_line_count(document) != 2 then
+    return 8
+  end
+  if text_document_unloaded_count(document) != 1 then
+    return 9
+  end
+  if text_document_unloaded_byte_length(document) != 40 || text_document_unloaded_file_offset(document) != 5 then
+    return 10
+  end
+  if text_document_to_bytes(document).accepted then
+    return 11
+  end
+  const edited = text_document_set_line_text(document, 0, "ZZ")
+  if text_document_line(edited, 0).text != "ZZ" then
+    return 12
+  end
+  if text_document_line_count(edited) != 2 then
+    return 13
+  end
+  if text_document_unloaded_byte_length(edited) != 40 || text_document_unloaded_file_offset(edited) != 5 then
+    return 14
+  end
+  if text_document_to_bytes(edited).accepted then
+    return 15
+  end
+  0
+end
+
+fn repeated_letter(count: i32) -> string = do
+  let mut text = "a"
+  while text.byte_size() < count do
+    text = text + text
+  end
+  text.byte_substring(0, count)
+end
+
+fn no_byte_ceiling() -> i32 = do
+  const bytes = repeated_letter(1048577)
+  const document = text_document_from_bytes(bytes)
+  if text_document_is_complete(document) == false || text_document_line_count(document) != 1 then
+    return 16
+  end
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false || assembled.bytes.byte_size() != 1048577 then
+    return 17
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const breaks = preserved_breaks()
+  if breaks != 0 then
+    return breaks
+  end
+  const lossy = lossy_utf8()
+  if lossy != 0 then
+    return lossy
+  end
+  const tail = unread_tail()
+  if tail != 0 then
+    return tail
+  end
+  const ceiling = no_byte_ceiling()
+  if ceiling != 0 then
+    return ceiling
+  end
+  0
+end

@@ -46,7 +46,8 @@ fn three_lines() -> i32 = do
   if third.text != "c" || terminator_mark(third.terminator) != 6 || third.line_identifier != 2 then
     return 4
   end
-  if text_document_to_bytes(document) != "a\nb\nc" then
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false || assembled.bytes != "a\nb\nc" then
     return 5
   end
   if text_document_is_writable(document) == false || text_document_is_complete(document) == false then
@@ -70,7 +71,8 @@ fn empty_input() -> i32 = do
   if line.text != "" || terminator_mark(line.terminator) != 6 then
     return 10
   end
-  if text_document_to_bytes(document) != "" then
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false || assembled.bytes != "" then
     return 11
   end
   0
@@ -85,7 +87,8 @@ fn trailing_line_feed() -> i32 = do
   if line.text != "a" || terminator_mark(line.terminator) != 1 then
     return 13
   end
-  if text_document_to_bytes(document) != "a\n" then
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false || assembled.bytes != "a\n" then
     return 14
   end
   0
@@ -93,7 +96,8 @@ end
 
 fn round_trip(bytes: string, failure: i32) -> i32 = do
   const document = text_document_from_bytes(bytes)
-  if text_document_to_bytes(document) != bytes then
+  const assembled = text_document_to_bytes(document)
+  if assembled.accepted == false || assembled.bytes != bytes then
     return failure
   end
   0

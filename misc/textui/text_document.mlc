@@ -14,6 +14,8 @@ import {
   text_paragraph_separator_bytes
 } from './text_line'
 
+import { text_bytes_are_utf8 } from './text_document_load'
+
 export type LoadedPiece = {
   lines: [TextLine]
 }
@@ -44,16 +46,82 @@ export type TextDocument = {
   next_line_identifier: i32
 }
 
-fn document_with_lines(lines: [TextLine], next_line_identifier: i32) -> TextDocument = do
+export type TextByteAssembly = {
+  bytes: string,
+  accepted: bool
+}
+
+fn document_with_lines(lines: [TextLine], next_line_identifier: i32, origin: TextOrigin, writable: bool) -> TextDocument = do
   let loaded = LoadedPiece { lines: lines }
   let mut pieces: [TextPiece] = []
   pieces.push(PieceLoaded(loaded))
   TextDocument {
     pieces: pieces,
-    origin: OriginComplete,
-    writable: true,
+    origin: origin,
+    writable: writable,
     next_line_identifier: next_line_identifier
   }
+end
+
+fn piece_is_loaded(piece: TextPiece) -> bool =
+  match piece
+    | PieceLoaded(_) => true
+    | PieceUnloaded(_) => false
+
+fn piece_is_unloaded(piece: TextPiece) -> bool =
+  match piece
+    | PieceLoaded(_) => false
+    | PieceUnloaded(_) => true
+
+fn piece_unloaded_byte_length(piece: TextPiece) -> i32 =
+  match piece
+    | PieceLoaded(_) => 0
+    | PieceUnloaded(span) => span.byte_length
+
+fn piece_unloaded_file_offset(piece: TextPiece) -> i32 =
+  match piece
+    | PieceLoaded(_) => 0
+    | PieceUnloaded(span) => span.file_offset
+
+fn empty_text_lines() -> [TextLine] = do
+  let mut lines: [TextLine] = []
+  lines
+end
+
+fn loaded_lines_of(piece: TextPiece) -> LoadedPiece =
+  match piece
+    | PieceLoaded(loaded) => loaded
+    | PieceUnloaded(_) => LoadedPiece { lines: empty_text_lines() }
+
+fn loaded_with_line_text(piece: LoadedPiece, line_index: i32, text: string) -> LoadedPiece = do
+  let mut lines: [TextLine] = []
+  let mut index = 0
+  while index < piece.lines.length() do
+    const line = piece.lines[index]
+    if index == line_index then
+      lines.push(TextLine {
+        line_identifier: line.line_identifier,
+        revision: line.revision,
+        text: text,
+        terminator: line.terminator
+      })
+    else
+      lines.push(line)
+    end
+    index = index + 1
+  end
+  LoadedPiece { lines: lines }
+end
+
+fn document_has_unloaded_piece(document: TextDocument) -> bool = do
+  let mut index = 0
+  while index < document.pieces.length() do
+    if piece_is_unloaded(document.pieces[index]) then
+      return true
+    end
+    index = index + 1
+  end
+  false
 end
 
 fn loaded_piece_bytes(piece: LoadedPiece) -> string = do
@@ -121,17 +189,85 @@ end
 
 export fn text_document_from_bytes(bytes: string) -> TextDocument = do
   const lines = split_lines(bytes)
-  document_with_lines(lines, lines.length())
+  if text_bytes_are_utf8(bytes) then
+    return document_with_lines(lines, lines.length(), OriginComplete, true)
+  end
+  document_with_lines(lines, lines.length(), OriginLossy, false)
 end
 
-export fn text_document_to_bytes(document: TextDocument) -> string = do
+export fn text_document_to_bytes(document: TextDocument) -> TextByteAssembly = do
+  if document.writable == false || document_has_unloaded_piece(document) then
+    return TextByteAssembly { bytes: "", accepted: false }
+  end
   let mut bytes = ""
   let mut index = 0
   while index < document.pieces.length() do
     bytes = bytes + piece_bytes(document.pieces[index])
     index = index + 1
   end
-  bytes
+  TextByteAssembly { bytes: bytes, accepted: true }
+end
+
+export fn text_document_with_unloaded_tail(loaded_bytes: string, file_offset: i32, byte_length: i32) -> TextDocument = do
+  const loaded = text_document_from_bytes(loaded_bytes)
+  if byte_length <= 0 then
+    return loaded
+  end
+  let mut pieces = loaded.pieces
+  pieces.push(PieceUnloaded(UnloadedPiece { file_offset: file_offset, byte_length: byte_length }))
+  TextDocument {
+    pieces: pieces,
+    origin: loaded.origin,
+    writable: false,
+    next_line_identifier: loaded.next_line_identifier
+  }
+end
+
+fn origin_is_complete(origin: TextOrigin) -> bool =
+  match origin
+    | OriginComplete => true
+    | OriginLossy => false
+
+export fn text_document_set_line_text(document: TextDocument, line_index: i32, text: string) -> TextDocument = do
+  if origin_is_complete(document.origin) == false then
+    return document
+  end
+  if document.pieces.length() == 0 || piece_is_loaded(document.pieces[0]) == false then
+    return document
+  end
+  const loaded = loaded_lines_of(document.pieces[0])
+  if line_index < 0 || line_index >= loaded.lines.length() then
+    return document
+  end
+  let mut pieces = document.pieces
+  pieces.set(0, PieceLoaded(loaded_with_line_text(loaded, line_index, text)))
+  TextDocument {
+    pieces: pieces,
+    origin: document.origin,
+    writable: document.writable,
+    next_line_identifier: document.next_line_identifier
+  }
+end
+
+export fn text_document_unloaded_byte_length(document: TextDocument) -> i32 = do
+  let mut total = 0
+  let mut index = 0
+  while index < document.pieces.length() do
+    total = total + piece_unloaded_byte_length(document.pieces[index])
+    index = index + 1
+  end
+  total
+end
+
+export fn text_document_unloaded_file_offset(document: TextDocument) -> i32 = do
+  let mut index = 0
+  while index < document.pieces.length() do
+    if piece_is_unloaded(document.pieces[index]) then
+      return piece_unloaded_file_offset(document.pieces[index])
+    end
+    index = index + 1
+  end
+  0
 end
 
 fn piece_line_count(piece: TextPiece) -> i32 =
@@ -172,10 +308,9 @@ export fn text_document_is_writable(document: TextDocument) -> bool = do
   document.writable
 end
 
-export fn text_document_is_complete(document: TextDocument) -> bool =
-  match document.origin
-    | OriginComplete => true
-    | OriginLossy => false
+export fn text_document_is_complete(document: TextDocument) -> bool = do
+  origin_is_complete(document.origin)
+end
 
 export fn text_document_unloaded_count(document: TextDocument) -> i32 = do
   let mut count = 0
