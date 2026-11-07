@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=5
+STEP=6
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -120,7 +120,8 @@ verify: красный `tmp/text_document_edit_unit/bin` → RUN:1. После �
 
 ### STEP=5 — графема и слово
 
-status: pending
+status: done
+verify: красный `tmp/text_grapheme_unit/bin` → RUN:1. После границ: `compiler/out/mlcc -o tmp/text_grapheme_unit misc/textui/test/text_grapheme_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_grapheme_unit tmp/text_grapheme_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0.
 
 Красный тест: слово в `ab cd`. Кластер `e` с акутом — одна граница. ZWJ, флаг, CJK и иврит не режутся. Повтор при том же `rev` не пересчитывает границы. Смена `rev` пересчитывает.
 

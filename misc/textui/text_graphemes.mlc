@@ -1,0 +1,348 @@
+extern fn string_byte_value(text: string, index: i32) -> i32 =
+  "mlc::net::string_byte_u8" from "mlc/net/websocket_abi.hpp" blocking
+
+export type TextGraphemeLine = {
+  line_identifier: i32,
+  revision: i32,
+  text: string
+}
+
+export type TextGraphemeCache = {
+  line_identifier: i32,
+  revision: i32,
+  offsets: [i32],
+  word_marks: [i32],
+  builds: i32,
+  stored: bool
+}
+
+export type TextGraphemeQuery = {
+  cache: TextGraphemeCache,
+  start_offset: i32,
+  end_offset: i32
+}
+
+type TextGraphemeKind =
+  GraphemeWord
+  | GraphemeExtend
+  | GraphemeJoiner
+  | GraphemeRegional
+  | GraphemePicture
+  | GraphemeOther
+
+type TextCodepoint = {
+  width: i32,
+  kind: TextGraphemeKind
+}
+
+type TextGraphemeUnits = {
+  offsets: [i32],
+  word_marks: [i32]
+}
+
+fn empty_offsets() -> [i32] = do
+  let mut offsets: [i32] = []
+  offsets
+end
+
+export fn text_grapheme_cache_empty() -> TextGraphemeCache = do
+  TextGraphemeCache {
+    line_identifier: 0 - 1,
+    revision: 0 - 1,
+    offsets: empty_offsets(),
+    word_marks: empty_offsets(),
+    builds: 0,
+    stored: false
+  }
+end
+
+fn encoded_sequence_width(lead: i32) -> i32 = do
+  if lead < 128 then
+    return 1
+  end
+  if lead < 192 then
+    return 1
+  end
+  if lead < 224 then
+    return 2
+  end
+  if lead < 240 then
+    return 3
+  end
+  if lead < 248 then
+    return 4
+  end
+  1
+end
+
+fn payload_value(text: string, index: i32, width: i32) -> i32 = do
+  const lead = string_byte_value(text, index)
+  if width <= 1 then
+    if lead < 0 then
+      return 0
+    end
+    return lead
+  end
+  const first = string_byte_value(text, index + 1)
+  if width == 2 then
+    return ((lead & 31) << 6) | (first & 63)
+  end
+  const second = string_byte_value(text, index + 2)
+  if width == 3 then
+    return ((lead & 15) << 12) | ((first & 63) << 6) | (second & 63)
+  end
+  const third = string_byte_value(text, index + 3)
+  ((lead & 7) << 18) | ((first & 63) << 12) | ((second & 63) << 6) | (third & 63)
+end
+
+fn single_byte_word(value: i32) -> bool = do
+  if value >= 48 && value <= 57 then
+    return true
+  end
+  if value >= 65 && value <= 90 then
+    return true
+  end
+  if value >= 97 && value <= 122 then
+    return true
+  end
+  value == 95
+end
+
+fn classify_codepoint(value: i32) -> TextGraphemeKind = do
+  if value >= 768 && value <= 879 then
+    return GraphemeExtend
+  end
+  if value == 8205 then
+    return GraphemeJoiner
+  end
+  if value >= 127462 && value <= 127487 then
+    return GraphemeRegional
+  end
+  if value >= 128102 && value <= 128105 then
+    return GraphemePicture
+  end
+  if single_byte_word(value) then
+    return GraphemeWord
+  end
+  if value >= 1488 && value <= 1514 then
+    return GraphemeWord
+  end
+  if value >= 19968 && value <= 40959 then
+    return GraphemeWord
+  end
+  GraphemeOther
+end
+
+fn read_codepoint(text: string, index: i32) -> TextCodepoint = do
+  const lead = string_byte_value(text, index)
+  let mut width = encoded_sequence_width(lead)
+  if width < 1 || index + width > text.byte_size() then
+    width = 1
+  end
+  TextCodepoint { width: width, kind: classify_codepoint(payload_value(text, index, width)) }
+end
+
+fn kind_is_word(kind: TextGraphemeKind) -> bool =
+  match kind
+    | GraphemeWord => true
+    | GraphemeExtend => false
+    | GraphemeJoiner => false
+    | GraphemeRegional => false
+    | GraphemePicture => false
+    | GraphemeOther => false
+
+fn kind_is_extend(kind: TextGraphemeKind) -> bool =
+  match kind
+    | GraphemeExtend => true
+    | GraphemeWord => false
+    | GraphemeJoiner => false
+    | GraphemeRegional => false
+    | GraphemePicture => false
+    | GraphemeOther => false
+
+fn kind_is_joiner(kind: TextGraphemeKind) -> bool =
+  match kind
+    | GraphemeJoiner => true
+    | GraphemeWord => false
+    | GraphemeExtend => false
+    | GraphemeRegional => false
+    | GraphemePicture => false
+    | GraphemeOther => false
+
+fn kind_is_regional(kind: TextGraphemeKind) -> bool =
+  match kind
+    | GraphemeRegional => true
+    | GraphemeWord => false
+    | GraphemeExtend => false
+    | GraphemeJoiner => false
+    | GraphemePicture => false
+    | GraphemeOther => false
+
+fn kind_is_picture(kind: TextGraphemeKind) -> bool =
+  match kind
+    | GraphemePicture => true
+    | GraphemeWord => false
+    | GraphemeExtend => false
+    | GraphemeJoiner => false
+    | GraphemeRegional => false
+    | GraphemeOther => false
+
+fn cluster_joins(previous: TextGraphemeKind, current: TextGraphemeKind, regional_open: bool) -> bool = do
+  if kind_is_extend(current) || kind_is_joiner(current) then
+    return true
+  end
+  if kind_is_joiner(previous) && kind_is_picture(current) then
+    return true
+  end
+  if kind_is_regional(previous) && kind_is_regional(current) && regional_open then
+    return true
+  end
+  false
+end
+
+fn word_mark_of(kind: TextGraphemeKind) -> i32 = do
+  if kind_is_word(kind) then
+    return 1
+  end
+  0
+end
+
+fn text_grapheme_units(text: string) -> TextGraphemeUnits = do
+  let mut offsets: [i32] = []
+  let mut word_marks: [i32] = []
+  offsets.push(0)
+  if text.byte_size() == 0 then
+    return TextGraphemeUnits { offsets: offsets, word_marks: word_marks }
+  end
+  const first = read_codepoint(text, 0)
+  let mut cluster_mark = word_mark_of(first.kind)
+  let mut previous = first.kind
+  let mut regional_open = kind_is_regional(first.kind)
+  let mut index = first.width
+  while index < text.byte_size() do
+    const current = read_codepoint(text, index)
+    const joined = cluster_joins(previous, current.kind, regional_open)
+    if joined == false then
+      offsets.push(index)
+      word_marks.push(cluster_mark)
+      cluster_mark = word_mark_of(current.kind)
+    end
+    if kind_is_regional(current.kind) then
+      if joined && kind_is_regional(previous) then
+        regional_open = false
+      else
+        regional_open = true
+      end
+    else
+      regional_open = false
+    end
+    previous = current.kind
+    index = index + current.width
+  end
+  word_marks.push(cluster_mark)
+  offsets.push(text.byte_size())
+  TextGraphemeUnits { offsets: offsets, word_marks: word_marks }
+end
+
+export fn text_grapheme_boundaries(text: string) -> [i32] = do
+  text_grapheme_units(text).offsets
+end
+
+fn cluster_index(offsets: [i32], count: i32, byte_offset: i32, size: i32) -> i32 = do
+  let mut cursor = 0
+  while cursor < count do
+    if byte_offset >= offsets[cursor] && byte_offset < offsets[cursor + 1] then
+      return cursor
+    end
+    cursor = cursor + 1
+  end
+  if byte_offset == size && count > 0 then
+    return count - 1
+  end
+  0 - 1
+end
+
+fn range_in_units(units: TextGraphemeUnits, byte_offset: i32, size: i32) -> TextGraphemeQuery = do
+  const count = units.word_marks.length()
+  if count == 0 then
+    return TextGraphemeQuery {
+      cache: text_grapheme_cache_empty(),
+      start_offset: 0,
+      end_offset: 0
+    }
+  end
+  let mut byte = byte_offset
+  if byte < 0 then
+    byte = 0
+  end
+  if byte > size then
+    byte = size
+  end
+  const index = cluster_index(units.offsets, count, byte, size)
+  if index < 0 then
+    return TextGraphemeQuery {
+      cache: text_grapheme_cache_empty(),
+      start_offset: byte,
+      end_offset: byte
+    }
+  end
+  if units.word_marks[index] == 0 then
+    return TextGraphemeQuery {
+      cache: text_grapheme_cache_empty(),
+      start_offset: units.offsets[index],
+      end_offset: units.offsets[index]
+    }
+  end
+  let mut left = index
+  while left > 0 && units.word_marks[left - 1] == 1 do
+    left = left - 1
+  end
+  let mut right = index
+  while right + 1 < count && units.word_marks[right + 1] == 1 do
+    right = right + 1
+  end
+  TextGraphemeQuery {
+    cache: text_grapheme_cache_empty(),
+    start_offset: units.offsets[left],
+    end_offset: units.offsets[right + 1]
+  }
+end
+
+fn cache_matches(cache: TextGraphemeCache, line: TextGraphemeLine) -> bool = do
+  if cache.stored == false then
+    return false
+  end
+  cache.line_identifier == line.line_identifier && cache.revision == line.revision
+end
+
+fn cache_with_units(cache: TextGraphemeCache, line: TextGraphemeLine, units: TextGraphemeUnits) -> TextGraphemeCache = do
+  TextGraphemeCache {
+    line_identifier: line.line_identifier,
+    revision: line.revision,
+    offsets: units.offsets,
+    word_marks: units.word_marks,
+    builds: cache.builds + 1,
+    stored: true
+  }
+end
+
+export fn text_grapheme_word_range(
+  cache: TextGraphemeCache,
+  line: TextGraphemeLine,
+  byte_offset: i32
+) -> TextGraphemeQuery = do
+  let mut current = cache
+  if cache_matches(cache, line) == false then
+    current = cache_with_units(cache, line, text_grapheme_units(line.text))
+  end
+  const range = range_in_units(
+    TextGraphemeUnits { offsets: current.offsets, word_marks: current.word_marks },
+    byte_offset,
+    line.text.byte_size()
+  )
+  TextGraphemeQuery {
+    cache: current,
+    start_offset: range.start_offset,
+    end_offset: range.end_offset
+  }
+end

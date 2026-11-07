@@ -1,0 +1,95 @@
+import {
+  TextGraphemeLine,
+  text_grapheme_boundaries,
+  text_grapheme_cache_empty,
+  text_grapheme_word_range
+} from '../text_graphemes'
+
+fn combining_acute() -> string = "́"
+
+fn family_sequence() -> string = "👨‍👩‍👧‍👦"
+
+fn flag_sequence() -> string = "🇺🇸"
+
+fn one_cluster(text: string, width: i32) -> bool = do
+  const offsets = text_grapheme_boundaries(text)
+  offsets.length() == 2 && offsets[0] == 0 && offsets[1] == width && text.byte_size() == width
+end
+
+fn words() -> i32 = do
+  const line = TextGraphemeLine { line_identifier: 1, revision: 0, text: "ab cd" }
+  const cache = text_grapheme_cache_empty()
+  const left = text_grapheme_word_range(cache, line, 1)
+  if left.start_offset != 0 || left.end_offset != 2 then
+    return 1
+  end
+  const space = text_grapheme_word_range(left.cache, line, 2)
+  if space.start_offset != 2 || space.end_offset != 2 then
+    return 2
+  end
+  const right = text_grapheme_word_range(space.cache, line, 3)
+  if right.start_offset != 3 || right.end_offset != 5 then
+    return 3
+  end
+  0
+end
+
+fn clusters() -> i32 = do
+  const acute = "e" + combining_acute()
+  if one_cluster(acute, 3) == false then
+    return 4
+  end
+  if one_cluster(family_sequence(), family_sequence().byte_size()) == false then
+    return 5
+  end
+  if one_cluster(flag_sequence(), flag_sequence().byte_size()) == false then
+    return 6
+  end
+  if one_cluster("字", 3) == false then
+    return 7
+  end
+  if one_cluster("א", 2) == false then
+    return 8
+  end
+  const ideographs = TextGraphemeLine { line_identifier: 2, revision: 0, text: "字字" }
+  const ideograph_word = text_grapheme_word_range(text_grapheme_cache_empty(), ideographs, 0)
+  if ideograph_word.start_offset != 0 || ideograph_word.end_offset != 6 then
+    return 9
+  end
+  const hebrew = TextGraphemeLine { line_identifier: 3, revision: 0, text: "אב" }
+  const hebrew_word = text_grapheme_word_range(text_grapheme_cache_empty(), hebrew, 0)
+  if hebrew_word.start_offset != 0 || hebrew_word.end_offset != 4 then
+    return 10
+  end
+  0
+end
+
+fn repeated_revision() -> i32 = do
+  const line = TextGraphemeLine { line_identifier: 4, revision: 1, text: "ab cd" }
+  const first = text_grapheme_word_range(text_grapheme_cache_empty(), line, 1)
+  if first.cache.builds != 1 || first.start_offset != 0 || first.end_offset != 2 then
+    return 11
+  end
+  const second = text_grapheme_word_range(first.cache, line, 3)
+  if second.cache.builds != 1 || second.start_offset != 3 || second.end_offset != 5 then
+    return 12
+  end
+  const changed = TextGraphemeLine { line_identifier: 4, revision: 2, text: "ab cd" }
+  const third = text_grapheme_word_range(second.cache, changed, 1)
+  if third.cache.builds != 2 || third.start_offset != 0 || third.end_offset != 2 then
+    return 13
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const word = words()
+  if word != 0 then
+    return word
+  end
+  const cluster = clusters()
+  if cluster != 0 then
+    return cluster
+  end
+  repeated_revision()
+end
