@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=13
+STEP=14
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -206,7 +206,8 @@ verify: красный `tmp/text_view_keys_unit/bin` → RUN:1. После кл�
 
 ### STEP=13 — отмена
 
-status: pending
+status: done
+verify: красный `tmp/text_undo_unit/bin` → RUN:1. После стека: `compiler/out/mlcc -o tmp/text_undo_unit misc/textui/test/text_undo_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_undo_unit tmp/text_undo_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D8 закрыто, стек 64, команды сверх ядра не делать
 
 Красный тест: запись хранит обратный `Edit` и позицию каретки до и после. Размер записи — порядок правки, не файла. Новая правка очищает redo.

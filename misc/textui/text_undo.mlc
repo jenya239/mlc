@@ -1,0 +1,200 @@
+import { TextDocument, text_document_replace } from './text_document'
+import { TextEdit, text_edit_invert } from './text_edit'
+
+export type TextUndoCaret = {
+  line_identifier: i32,
+  byte_offset: i32
+}
+
+export type TextUndoRecord = {
+  edit: TextEdit,
+  caret_before: TextUndoCaret,
+  caret_after: TextUndoCaret
+}
+
+export type TextUndoStack = {
+  undo_records: [TextUndoRecord],
+  redo_records: [TextUndoRecord],
+  limit: i32
+}
+
+export type TextUndoApply = {
+  stack: TextUndoStack,
+  document: TextDocument,
+  caret: TextUndoCaret,
+  accepted: bool
+}
+
+fn empty_records() -> [TextUndoRecord] = do
+  let mut records: [TextUndoRecord] = []
+  records
+end
+
+fn empty_caret() -> TextUndoCaret = do
+  TextUndoCaret { line_identifier: 0, byte_offset: 0 }
+end
+
+fn empty_record() -> TextUndoRecord = do
+  TextUndoRecord {
+    edit: TextEdit { start_offset: 0, end_offset: 0, inserted_text: "", removed_text: "" },
+    caret_before: empty_caret(),
+    caret_after: empty_caret()
+  }
+end
+
+fn rejected(stack: TextUndoStack, document: TextDocument) -> TextUndoApply = do
+  TextUndoApply {
+    stack: stack,
+    document: document,
+    caret: empty_caret(),
+    accepted: false
+  }
+end
+
+export fn text_undo_stack_new(limit: i32) -> TextUndoStack = do
+  TextUndoStack {
+    undo_records: empty_records(),
+    redo_records: empty_records(),
+    limit: limit
+  }
+end
+
+fn records_without_first(records: [TextUndoRecord]) -> [TextUndoRecord] = do
+  let mut kept: [TextUndoRecord] = []
+  let mut index = 1
+  while index < records.length() do
+    kept.push(records[index])
+    index = index + 1
+  end
+  kept
+end
+
+fn records_without_last(records: [TextUndoRecord]) -> [TextUndoRecord] = do
+  let mut kept: [TextUndoRecord] = []
+  let mut index = 0
+  const last = records.length() - 1
+  while index < last do
+    kept.push(records[index])
+    index = index + 1
+  end
+  kept
+end
+
+fn remember(records: [TextUndoRecord], record: TextUndoRecord, limit: i32) -> [TextUndoRecord] = do
+  if limit <= 0 then
+    return empty_records()
+  end
+  let mut kept = records
+  if kept.length() >= limit then
+    kept = records_without_first(kept)
+  end
+  kept.push(record)
+  kept
+end
+
+export fn text_undo_push(
+  stack: TextUndoStack,
+  edit: TextEdit,
+  caret_before: TextUndoCaret,
+  caret_after: TextUndoCaret
+) -> TextUndoStack = do
+  TextUndoStack {
+    undo_records: remember(stack.undo_records, TextUndoRecord {
+      edit: text_edit_invert(edit),
+      caret_before: caret_before,
+      caret_after: caret_after
+    }, stack.limit),
+    redo_records: empty_records(),
+    limit: stack.limit
+  }
+end
+
+export fn text_undo_latest(stack: TextUndoStack) -> TextUndoRecord = do
+  const count = stack.undo_records.length()
+  if count == 0 then
+    return empty_record()
+  end
+  stack.undo_records[count - 1]
+end
+
+export fn text_undo_oldest(stack: TextUndoStack) -> TextUndoRecord = do
+  if stack.undo_records.length() == 0 then
+    return empty_record()
+  end
+  stack.undo_records[0]
+end
+
+export fn text_undo_undo_count(stack: TextUndoStack) -> i32 = do
+  stack.undo_records.length()
+end
+
+export fn text_undo_redo_count(stack: TextUndoStack) -> i32 = do
+  stack.redo_records.length()
+end
+
+fn apply_record(document: TextDocument, record: TextUndoRecord) -> TextUndoApply = do
+  const replaced = text_document_replace(
+    document,
+    record.edit.start_offset,
+    record.edit.end_offset,
+    record.edit.inserted_text
+  )
+  TextUndoApply {
+    stack: text_undo_stack_new(0),
+    document: replaced.document,
+    caret: empty_caret(),
+    accepted: replaced.accepted
+  }
+end
+
+export fn text_undo_undo(stack: TextUndoStack, document: TextDocument) -> TextUndoApply = do
+  const count = stack.undo_records.length()
+  if count == 0 then
+    return rejected(stack, document)
+  end
+  const record = stack.undo_records[count - 1]
+  const applied = apply_record(document, record)
+  if applied.accepted == false then
+    return rejected(stack, document)
+  end
+  TextUndoApply {
+    stack: TextUndoStack {
+      undo_records: records_without_last(stack.undo_records),
+      redo_records: remember(stack.redo_records, TextUndoRecord {
+        edit: text_edit_invert(record.edit),
+        caret_before: record.caret_before,
+        caret_after: record.caret_after
+      }, stack.limit),
+      limit: stack.limit
+    },
+    document: applied.document,
+    caret: record.caret_before,
+    accepted: true
+  }
+end
+
+export fn text_undo_redo(stack: TextUndoStack, document: TextDocument) -> TextUndoApply = do
+  const count = stack.redo_records.length()
+  if count == 0 then
+    return rejected(stack, document)
+  end
+  const record = stack.redo_records[count - 1]
+  const applied = apply_record(document, record)
+  if applied.accepted == false then
+    return rejected(stack, document)
+  end
+  TextUndoApply {
+    stack: TextUndoStack {
+      undo_records: remember(stack.undo_records, TextUndoRecord {
+        edit: text_edit_invert(record.edit),
+        caret_before: record.caret_before,
+        caret_after: record.caret_after
+      }, stack.limit),
+      redo_records: records_without_last(stack.redo_records),
+      limit: stack.limit
+    },
+    document: applied.document,
+    caret: record.caret_after,
+    accepted: true
+  }
+end

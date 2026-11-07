@@ -1,0 +1,93 @@
+import {
+  text_document_from_bytes,
+  text_document_replace,
+  text_document_to_bytes
+} from '../text_document'
+import { TextEdit } from '../text_edit'
+import {
+  TextUndoCaret,
+  text_undo_latest,
+  text_undo_oldest,
+  text_undo_push,
+  text_undo_redo,
+  text_undo_redo_count,
+  text_undo_stack_new,
+  text_undo_undo,
+  text_undo_undo_count
+} from '../text_undo'
+
+fn caret_at(byte_offset: i32) -> TextUndoCaret = do
+  TextUndoCaret { line_identifier: 0, byte_offset: byte_offset }
+end
+
+fn long_text() -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < 200 do
+    text = text + "line\n"
+    index = index + 1
+  end
+  text
+end
+
+fn edit_insert(inserted_text: string) -> TextEdit = do
+  TextEdit {
+    start_offset: 0,
+    end_offset: 0,
+    inserted_text: inserted_text,
+    removed_text: ""
+  }
+end
+
+fn main() -> i32 = do
+  const document = text_document_from_bytes("ab")
+  const replaced = text_document_replace(document, 1, 1, "x")
+  if replaced.accepted == false || replaced.edit.inserted_text != "x" then
+    return 9
+  end
+  const stack = text_undo_push(text_undo_stack_new(64), replaced.edit, caret_at(1), caret_at(2))
+  const record = text_undo_latest(stack)
+  if record.edit.removed_text != "x" || record.edit.inserted_text.byte_size() != 0 then
+    return 1
+  end
+  if record.caret_before.byte_offset != 1 || record.caret_after.byte_offset != 2 || record.caret_before.line_identifier != 0 then
+    return 2
+  end
+  const long_document = text_document_from_bytes(long_text())
+  const long_replaced = text_document_replace(long_document, 0, 0, "x")
+  const long_record = text_undo_latest(text_undo_push(text_undo_stack_new(64), long_replaced.edit, caret_at(0), caret_at(1)))
+  const payload = long_record.edit.removed_text.byte_size() + long_record.edit.inserted_text.byte_size()
+  const assembled = text_document_to_bytes(long_replaced.document)
+  if assembled.accepted == false || assembled.bytes.byte_size() < 500 then
+    return 9
+  end
+  if payload != 1 || payload >= assembled.bytes.byte_size() then
+    return 3
+  end
+  const undone = text_undo_undo(stack, replaced.document)
+  if undone.accepted == false || text_document_to_bytes(undone.document).bytes != "ab" || undone.caret.byte_offset != 1 then
+    return 4
+  end
+  if text_undo_redo_count(undone.stack) != 1 then
+    return 9
+  end
+  const redone = text_undo_redo(undone.stack, undone.document)
+  if redone.accepted == false || text_document_to_bytes(redone.document).bytes != "axb" || redone.caret.byte_offset != 2 then
+    return 5
+  end
+  const cleared = text_undo_push(undone.stack, replaced.edit, caret_at(1), caret_at(2))
+  if text_undo_redo_count(cleared) != 0 then
+    return 6
+  end
+  let mut limited = text_undo_stack_new(64)
+  limited = text_undo_push(limited, edit_insert("A"), caret_at(0), caret_at(1))
+  let mut index = 0
+  while index < 64 do
+    limited = text_undo_push(limited, edit_insert("B"), caret_at(0), caret_at(1))
+    index = index + 1
+  end
+  if text_undo_undo_count(limited) != 64 || text_undo_oldest(limited).edit.removed_text != "B" then
+    return 7
+  end
+  0
+end
