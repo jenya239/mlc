@@ -80,6 +80,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindSplitter(_) => []
     | KindTextField(_) => []
     | KindIcon(_) => []
+    | KindTextView => []
 
 fn file_list_texts(store: WidgetStore) -> [string] = do
   let mut seen = 0
@@ -173,6 +174,7 @@ fn row_name(kind: WidgetKind, row: i32) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
 
 fn hovered_row_name(store: WidgetStore, state: UiState) -> string = do
   const owner = state.hover

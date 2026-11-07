@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=9
+STEP=10
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -166,7 +166,8 @@ verify: красный `tmp/text_view_open_unit/bin` → RUN:1. После ди�
 
 ### STEP=9 — hover слова
 
-status: pending
+status: done
+verify: красный `tmp/text_view_hover_unit/bin` → RUN:1. После токена: `compiler/out/mlcc -o tmp/text_view_hover_unit misc/textui/test/text_view_hover_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_hover_unit tmp/text_view_hover_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. `bash scripts/run_textui_hover_bench.sh` → ok, `hover_damage_min_us=363`, `hover_full_min_us=25543`. Бюджет не поднят.
 
 Красный тест: движение внутри слова не просит шейпинг. Смена слова красит ряды старого и нового слова. Точка на несобранной строке даёт пустой hover и не вызывает шейпер.
 

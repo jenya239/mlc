@@ -16,6 +16,7 @@ fn kind_name(kind: WidgetKind) -> string =
   match kind
     | KindLabel(_) => "Label"
     | KindIcon(_) => "Icon"
+    | KindTextView => "TextView"
     | KindButton(_) => "Button"
     | KindCheckbox(_) => "Checkbox"
     | KindBox(_) => "Box"
@@ -28,6 +29,7 @@ fn kind_text(kind: WidgetKind) -> string =
   match kind
     | KindLabel(data) => data.text
     | KindIcon(icon) => icon.name
+    | KindTextView => ""
     | KindButton(data) => data.text
     | KindCheckbox(data) => data.text
     | KindBox(_) => ""

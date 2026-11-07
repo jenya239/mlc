@@ -1,0 +1,79 @@
+import { text_document_from_bytes, text_document_line_count } from '../text_document'
+import { text_view_hover } from '../text_view_hover'
+import { TextViewState, text_view_frame, text_view_state_new } from '../text_view_state'
+
+fn boundary_position(state: TextViewState, line_identifier: i32, boundary_index: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && boundary_index < entry.boundary_positions.length() then
+      return entry.boundary_positions[boundary_index]
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn row_listed(rows: [i32], line_identifier: i32) -> bool = do
+  let mut index = 0
+  while index < rows.length() do
+    if rows[index] == line_identifier then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const document = text_document_from_bytes("alpha beta\ngamma\naway")
+  if text_document_line_count(document) != 3 then
+    return 9
+  end
+  const state = text_view_state_new(
+    32,
+    16,
+    0,
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    16
+  )
+  const framed = text_view_frame(state, document)
+  if framed.shape_cache.shape_call_count != 2 then
+    return 8
+  end
+  const inside_left = boundary_position(framed, 0, 1)
+  const inside_right = boundary_position(framed, 0, 3)
+  const next_word = boundary_position(framed, 1, 1)
+  if inside_left < 0 || inside_right < 0 || next_word < 0 then
+    return 8
+  end
+  const first = text_view_hover(framed, document, 0, inside_left)
+  const second = text_view_hover(first.state, document, 0, inside_right)
+  if second.state.shape_cache.shape_call_count != 2 then
+    return 1
+  end
+  if second.row_identifiers.length() != 0 then
+    return 2
+  end
+  if second.state.hover_token.present == false || second.state.hover_token.line_identifier != 0 || second.state.hover_token.revision != 0 || second.state.hover_token.start_offset != 0 || second.state.hover_token.end_offset != 5 then
+    return 3
+  end
+  const changed = text_view_hover(second.state, document, 1, next_word)
+  if changed.state.shape_cache.shape_call_count != 2 then
+    return 4
+  end
+  if changed.row_identifiers.length() != 2 || row_listed(changed.row_identifiers, 0) == false || row_listed(changed.row_identifiers, 1) == false then
+    return 5
+  end
+  if changed.fill_present == false || changed.fill_left != boundary_position(framed, 1, 0) || changed.fill_right != boundary_position(framed, 1, 5) then
+    return 6
+  end
+  const missed = text_view_hover(changed.state, document, 2, 0)
+  if missed.state.hover_token.present then
+    return 7
+  end
+  if missed.state.shape_cache.shape_call_count != 2 then
+    return 7
+  end
+  0
+end

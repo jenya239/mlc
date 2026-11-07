@@ -15,6 +15,7 @@ export fn activated_row_text(store: WidgetStore, state: UiState, owner: WidgetId
     | KindListView(data) => list_text_at(data.texts, list_selected_at(state.list_selected, owner.index))
     | KindLabel(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
     | KindButton(_) => ""
     | KindCheckbox(_) => ""
     | KindBox(_) => ""

@@ -161,6 +161,7 @@ fn paint_node(
     )
     | KindSplitter(_) => operations
     | KindTextField(_) => operations
+    | KindTextView => operations
   end
   if overflow_is_hidden(node.overflow) then
     current_operations.push(OpPushClip(rect))

@@ -2,6 +2,14 @@ import { TextDocument, text_document_line, text_document_line_count } from './te
 import { text_line_index_of_identifier } from './text_line_index'
 import { TextShapeCache, TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from './text_shape_cache'
 
+export type TextHoverToken = {
+  line_identifier: i32,
+  revision: i32,
+  start_offset: i32,
+  end_offset: i32,
+  present: bool
+}
+
 export type TextViewState = {
   anchor_line_identifier: i32,
   anchor_vertical_offset: i32,
@@ -10,8 +18,19 @@ export type TextViewState = {
   horizontal_scroll: i32,
   content_width: i32,
   layout_height: i32,
-  shape_cache: TextShapeCache
+  shape_cache: TextShapeCache,
+  hover_token: TextHoverToken
 }
+
+fn hover_token_absent() -> TextHoverToken = do
+  TextHoverToken {
+    line_identifier: 0,
+    revision: 0,
+    start_offset: 0,
+    end_offset: 0,
+    present: false
+  }
+end
 
 fn empty_identifiers() -> [i32] = do
   let mut identifiers: [i32] = []
@@ -38,7 +57,8 @@ export fn text_view_state_new(
     horizontal_scroll: 0,
     content_width: content_width,
     layout_height: viewport_height,
-    shape_cache: text_shape_cache_empty(font_path, pixel_size, 0, 4096)
+    shape_cache: text_shape_cache_empty(font_path, pixel_size, 0, 4096),
+    hover_token: hover_token_absent()
   }
 end
 
@@ -124,7 +144,8 @@ export fn text_view_frame(state: TextViewState, document: TextDocument) -> TextV
     horizontal_scroll: state.horizontal_scroll,
     content_width: grown_content_width(state, cache),
     layout_height: state.viewport_height,
-    shape_cache: cache
+    shape_cache: cache,
+    hover_token: state.hover_token
   }
 end
 
@@ -156,6 +177,7 @@ export fn text_view_wheel(state: TextViewState, document: TextDocument, delta: i
     horizontal_scroll: state.horizontal_scroll,
     content_width: state.content_width,
     layout_height: state.viewport_height,
-    shape_cache: state.shape_cache
+    shape_cache: state.shape_cache,
+    hover_token: state.hover_token
   }
 end

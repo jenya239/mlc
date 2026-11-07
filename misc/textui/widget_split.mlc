@@ -138,6 +138,7 @@ export fn splitter_placement_for(
     | KindBox(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindLabel(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindIcon(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
+    | KindTextView => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindButton(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindCheckbox(_) => splitter_placement(true, 500, 0, 0, x, y, width, height)
     | KindScrollView => splitter_placement(true, 500, 0, 0, x, y, width, height)
@@ -159,6 +160,7 @@ fn splitter_is_row(store: WidgetStore, id: WidgetId) -> bool =
     | KindBox(_) => true
     | KindLabel(_) => true
     | KindIcon(_) => true
+    | KindTextView => true
     | KindButton(_) => true
     | KindCheckbox(_) => true
     | KindScrollView => true

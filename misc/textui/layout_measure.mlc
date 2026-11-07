@@ -98,6 +98,7 @@ export fn measure_node_at(
       work: work,
       size: size_new(theme.font_size_pixels, theme.font_size_pixels)
     }
+    | KindTextView => MeasureResult { work: work, size: size_new(0, 0) }
     | KindButton(data) => measure_button_kind(work, store, theme, id, data.text)
     | KindCheckbox(data) => measure_checkbox(work, theme, id.index, data.text)
     | KindBox(_) => measure_box_node(work, store, theme, id)
@@ -219,6 +220,7 @@ export fn measure_node_wide(
     end
     | KindLabel(_) => measure_node_at(work, store, theme, id)
     | KindIcon(_) => measure_node_at(work, store, theme, id)
+    | KindTextView => measure_node_at(work, store, theme, id)
     | KindButton(_) => measure_node_at(work, store, theme, id)
     | KindCheckbox(_) => measure_node_at(work, store, theme, id)
     | KindBox(_) => measure_node_at(work, store, theme, id)

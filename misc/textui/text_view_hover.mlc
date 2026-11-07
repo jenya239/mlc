@@ -1,0 +1,195 @@
+import { TextDocument, text_document_line } from './text_document'
+import { text_line_index_of_identifier } from './text_line_index'
+import {
+  TextGraphemeLine,
+  text_grapheme_boundaries,
+  text_grapheme_cache_empty,
+  text_grapheme_word_range
+} from './text_graphemes'
+import { TextShapeEntry } from './text_shape_cache'
+import { TextHoverToken, TextViewState } from './text_view_state'
+
+export type TextViewHoverResult = {
+  state: TextViewState,
+  row_identifiers: [i32],
+  fill_present: bool,
+  fill_left: i32,
+  fill_right: i32
+}
+
+fn token_absent() -> TextHoverToken = do
+  TextHoverToken {
+    line_identifier: 0,
+    revision: 0,
+    start_offset: 0,
+    end_offset: 0,
+    present: false
+  }
+end
+
+fn empty_rows() -> [i32] = do
+  let mut rows: [i32] = []
+  rows
+end
+
+fn state_with_token(state: TextViewState, token: TextHoverToken) -> TextViewState = do
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.layout_height,
+    shape_cache: state.shape_cache,
+    hover_token: token
+  }
+end
+
+fn tokens_match(left: TextHoverToken, right: TextHoverToken) -> bool = do
+  if left.present == false || right.present == false then
+    return false
+  end
+  left.line_identifier == right.line_identifier &&
+    left.revision == right.revision &&
+    left.start_offset == right.start_offset &&
+    left.end_offset == right.end_offset
+end
+
+fn shaped_entry_index(state: TextViewState, line_identifier: i32, revision: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && entry.revision == revision then
+      return index
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn byte_at_pointer(boundaries: [i32], positions: [i32], pointer_x: i32) -> i32 = do
+  if boundaries.length() == 0 || positions.length() == 0 then
+    return 0
+  end
+  let mut index = 0
+  let mut chosen = 0
+  while index + 1 < positions.length() && index + 1 < boundaries.length() do
+    if pointer_x < positions[index + 1] then
+      return boundaries[index]
+    end
+    chosen = index + 1
+    index = index + 1
+  end
+  boundaries[chosen]
+end
+
+fn position_at_byte(boundaries: [i32], positions: [i32], byte_offset: i32) -> i32 = do
+  let mut index = 0
+  while index < boundaries.length() && index < positions.length() do
+    if boundaries[index] == byte_offset then
+      return positions[index]
+    end
+    index = index + 1
+  end
+  0
+end
+
+fn changed_rows(previous: TextHoverToken, next: TextHoverToken) -> [i32] = do
+  let mut rows = empty_rows()
+  if previous.present then
+    rows.push(previous.line_identifier)
+  end
+  if next.present then
+    if previous.present == false || previous.line_identifier != next.line_identifier then
+      rows.push(next.line_identifier)
+    end
+  end
+  rows
+end
+
+fn token_at_entry(
+  entry: TextShapeEntry,
+  line_identifier: i32,
+  revision: i32,
+  text: string,
+  pointer_x: i32
+) -> TextHoverToken = do
+  const boundaries = text_grapheme_boundaries(text)
+  const byte_offset = byte_at_pointer(boundaries, entry.boundary_positions, pointer_x)
+  const query = text_grapheme_word_range(
+    text_grapheme_cache_empty(),
+    TextGraphemeLine {
+      line_identifier: line_identifier,
+      revision: revision,
+      text: text
+    },
+    byte_offset
+  )
+  if query.start_offset >= query.end_offset then
+    return token_absent()
+  end
+  TextHoverToken {
+    line_identifier: line_identifier,
+    revision: revision,
+    start_offset: query.start_offset,
+    end_offset: query.end_offset,
+    present: true
+  }
+end
+
+fn kept_result(state: TextViewState) -> TextViewHoverResult = do
+  TextViewHoverResult {
+    state: state,
+    row_identifiers: empty_rows(),
+    fill_present: false,
+    fill_left: 0,
+    fill_right: 0
+  }
+end
+
+export fn text_view_hover(
+  state: TextViewState,
+  document: TextDocument,
+  line_identifier: i32,
+  pointer_x: i32
+) -> TextViewHoverResult = do
+  const line_index = text_line_index_of_identifier(document.line_index, line_identifier)
+  if line_index < 0 then
+    return kept_result(state_with_token(state, token_absent()))
+  end
+  const line = text_document_line(document, line_index)
+  const entry_index = shaped_entry_index(state, line.line_identifier, line.revision)
+  if entry_index < 0 then
+    const cleared = state_with_token(state, token_absent())
+    return TextViewHoverResult {
+      state: cleared,
+      row_identifiers: changed_rows(state.hover_token, token_absent()),
+      fill_present: false,
+      fill_left: 0,
+      fill_right: 0
+    }
+  end
+  const entry = state.shape_cache.entries[entry_index]
+  const content_x = pointer_x + state.horizontal_scroll
+  const next = token_at_entry(entry, line.line_identifier, line.revision, line.text, content_x)
+  if tokens_match(state.hover_token, next) then
+    return kept_result(state)
+  end
+  const boundaries = text_grapheme_boundaries(line.text)
+  let mut fill_present = false
+  let mut fill_left = 0
+  let mut fill_right = 0
+  if next.present then
+    fill_present = true
+    fill_left = position_at_byte(boundaries, entry.boundary_positions, next.start_offset)
+    fill_right = position_at_byte(boundaries, entry.boundary_positions, next.end_offset)
+  end
+  TextViewHoverResult {
+    state: state_with_token(state, next),
+    row_identifiers: changed_rows(state.hover_token, next),
+    fill_present: fill_present,
+    fill_left: fill_left,
+    fill_right: fill_right
+  }
+end
