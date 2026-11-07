@@ -1,9 +1,12 @@
 import { journal_episode_key, journal_focus, journal_occupation, journal_text, presence_caption } from '../companion_journal'
 import { companion_names_line } from '../companion_listing'
-import { ObservationSample, observation_frame_apply, observation_frame_empty } from '../companion_observe'
+import { file_access_with_excerpt } from '../file_access'
+import { ObservationSample, observation_frame_apply, observation_frame_empty, observation_frame_with_file_access } from '../companion_observe'
 import {
   companion_empty_digest,
   companion_journal_shown,
+  companion_memory_find,
+  companion_memory_remember,
   companion_mind,
   companion_quiet_advance,
   companion_quiet_begin_wait,
@@ -233,7 +236,7 @@ fn main() -> i32 = do
   if companion_episode_formed(jumped, 3999) then
     return 46
   end
-  const bound = companion_quiet_commit(started, 3000, 0, photos.label, photos.path)
+  const bound = companion_quiet_commit(started, 3000, 0, photos.label, photos.path, 0 - 1, 0 - 1, 0)
   const phrased = companion_quiet_with_remark(bound, "долгий просмотр")
   if companion_awareness(phrased) != "интерпретация" then
     return 47
@@ -274,6 +277,59 @@ fn main() -> i32 = do
   const answered = companion_quiet_mark_sent(companion_quiet_advance(companion_quiet_empty(), named.key, 1000), 3000)
   if companion_mind("каталог Downloads", answered) != "тишина" then
     return 56
+  end
+  const prepared = observation_frame_with_file_access(
+    observation_frame_apply(observation_frame_empty(), sample_at("/photos", "a.txt", 1000)),
+    file_access_with_excerpt("/photos/a.txt", 12, 40, "hello text")
+  )
+  const excerpted = journal_focus(prepared, "")
+  if excerpted.prompt.index_of("начало файла: «hello text»") < 0 || excerpted.prompt.index_of("/photos") >= 0 then
+    return 57
+  end
+  if excerpted.prompt.index_of("содержимое файлов не передавалось") >= 0 || excerpted.excerpt_included != 1 then
+    return 58
+  end
+  if excerpted.key.index_of("\n12\n40") < 0 || excerpted.key.index_of("hello") >= 0 then
+    return 59
+  end
+  const analyzed = companion_quiet_with_remark(
+    companion_quiet_commit(
+      companion_quiet_advance(companion_quiet_empty(), excerpted.key, 1000),
+      3000, 0, excerpted.label, excerpted.path, 12, 40, 1
+    ),
+    "заметки"
+  )
+  if companion_awareness(analyzed) != "разбор текста" then
+    return 60
+  end
+  const remembered = companion_memory_remember(analyzed, analyzed.sent_path, analyzed.sent_byte_size, analyzed.sent_modified_seconds, analyzed.remark)
+  const hit = companion_memory_find(remembered, "/photos/a.txt", 12, 40)
+  if hit.found == false || hit.remark != "заметки" then
+    return 61
+  end
+  if companion_memory_find(remembered, "/photos/a.txt", 12, 41).found then
+    return 62
+  end
+  let mut playing_captions: [string] = []
+  const playing = observation_frame_with_file_access(
+    observation_frame_apply(
+      observation_frame_empty(),
+      ObservationSample {
+        selected_name: "a.txt",
+        hovered_media_path: "",
+        playing: true,
+        track_name: "/music/song.mp3",
+        directory_label: "/photos",
+        directory_revision: 1,
+        button_captions: playing_captions,
+        now_ms: 1000
+      }
+    ),
+    file_access_with_excerpt("/photos/a.txt", 12, 40, "hello text")
+  )
+  const track = journal_focus(playing, "")
+  if track.prompt.index_of("начало файла") >= 0 || track.prompt.index_of("содержимое файлов не передавалось") < 0 then
+    return 63
   end
   0
 end

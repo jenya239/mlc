@@ -1,14 +1,11 @@
 import {
   ObservationFrame,
-  ObservationKind,
-  ObservationMedia,
   ObservationSample,
-  ObservationSelect,
   observation_frame_apply,
   observation_frame_with_file_access,
   observation_subject_name
 } from './companion_observe'
-import { file_access_advance } from './file_access'
+import { file_access_consider } from './file_access'
 import { strip_trailing_slash } from './directory_rows'
 import { normalize_path, path_inside_jail } from './directory_jail'
 import { hovered_image_path } from './image_preview'
@@ -138,30 +135,17 @@ fn observation_sample(
     now_ms: now_ms
   }
 
-fn file_kind(kind: ObservationKind) -> bool =
-  match kind
-    | ObservationSelect => true
-    | ObservationMedia => true
-    | ObservationPlay => false
-    | ObservationDirectory => false
-    | ObservationButton => false
-
-fn latest_file_name(frame: ObservationFrame) -> string = do
-  let mut index = frame.ring.items.length() - 1
-  while index >= 0 do
-    if file_kind(frame.ring.items[index].kind) then
-      return frame.ring.items[index].subject
-    end
-    index = index - 1
-  end
-  ""
-end
-
-fn current_file_path(directory: string, file_name: string) -> string = do
-  if directory == "" || file_name == "" then
+fn episode_file_path(frame: ObservationFrame, directory: string) -> string = do
+  if frame.playing || frame.selected_name == "" then
     return ""
   end
-  strip_trailing_slash(directory) + "/" + file_name
+  if frame.selected_name.byte_size() > 0 && frame.selected_name.byte_at(0) == "/" then
+    return frame.selected_name
+  end
+  if directory == "" then
+    return frame.selected_name
+  end
+  strip_trailing_slash(directory) + "/" + observation_subject_name(frame.selected_name)
 end
 
 export fn companion_observer_apply(
@@ -176,10 +160,10 @@ export fn companion_observer_apply(
   const directory = path_bar_current(store)
   observation_frame_with_file_access(
     applied,
-    file_access_advance(
+    file_access_consider(
       frame.file_access,
       directory,
-      current_file_path(directory, latest_file_name(applied)),
+      episode_file_path(applied, directory),
       root,
       state.listing_revision,
       now_ms

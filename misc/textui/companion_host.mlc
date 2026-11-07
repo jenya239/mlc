@@ -13,6 +13,8 @@ import {
 import {
   CompanionQuiet,
   companion_quiet_advance,
+  companion_memory_find,
+  companion_memory_remember,
   companion_quiet_commit,
   companion_quiet_due,
   companion_quiet_finish,
@@ -104,10 +106,13 @@ fn companion_subject(label: string) -> string = do
 end
 
 fn companion_noted_reply(quiet: CompanionQuiet, now_milliseconds: i32, remark: string) -> CompanionQuiet = do
-  const finished = companion_quiet_finish(quiet, remark)
-  let mut line = "ответ" + companion_subject(quiet.sent_label) + ": " + remark
+  let mut finished = companion_quiet_finish(quiet, remark)
+  finished = companion_memory_remember(
+    finished, finished.sent_path, finished.sent_byte_size, finished.sent_modified_seconds, remark
+  )
+  let mut line = "ответ" + companion_subject(finished.sent_label) + ": " + remark
   if remark == "" then
-    line = "ответ" + companion_subject(quiet.sent_label) + ": тишина"
+    line = "ответ" + companion_subject(finished.sent_label) + ": тишина"
   end
   companion_quiet_note(finished, now_milliseconds, line)
 end
@@ -143,12 +148,29 @@ fn companion_host_take(quiet: CompanionQuiet, now_milliseconds: i32) -> Companio
   end
 end
 
+fn companion_host_commit(
+  quiet: CompanionQuiet,
+  now_milliseconds: i32,
+  waiting: i32,
+  label: string,
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt_included: i32
+) -> CompanionQuiet =
+  companion_quiet_commit(
+    quiet, now_milliseconds, waiting, label, path, byte_size, modified_seconds, excerpt_included
+  )
+
 export fn companion_host_step(
   quiet: CompanionQuiet,
   episode: string,
   prompt: string,
   label: string,
   path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt_included: i32,
   now_milliseconds: i32,
   config: ChatConfig
 ) -> CompanionQuiet = do
@@ -162,26 +184,44 @@ export fn companion_host_step(
     )
   end
   if companion_quiet_due(next, now_milliseconds) then
-    if companion_supported(config) == false then
+    const remembered = companion_memory_find(next, path, byte_size, modified_seconds)
+    if remembered.found then
       next = companion_quiet_note(
-        companion_quiet_with_remark(companion_quiet_commit(next, now_milliseconds, 0, label, path), "модель недоступна"),
+        companion_quiet_with_remark(
+          companion_host_commit(next, now_milliseconds, 0, label, path, byte_size, modified_seconds, excerpt_included),
+          remembered.remark
+        ),
         now_milliseconds,
-        "запрос не отправлен" + companion_subject(label) + ": модель недоступна"
+        "фраза из памяти" + companion_subject(label)
       )
     else
-      const launched = companion_launch(companion_request(config, prompt))
-      if launched != 0 then
+      if companion_supported(config) == false then
         next = companion_quiet_note(
-          companion_quiet_with_remark(companion_quiet_commit(next, now_milliseconds, 1, label, path), "смотрю журнал"),
+          companion_quiet_with_remark(
+            companion_host_commit(next, now_milliseconds, 0, label, path, byte_size, modified_seconds, excerpt_included),
+            "модель недоступна"
+          ),
           now_milliseconds,
-          "запрос отправлен" + companion_subject(label)
+          "запрос не отправлен" + companion_subject(label) + ": модель недоступна"
         )
       else
-        next = companion_quiet_note(
-          companion_quiet_commit(next, now_milliseconds, 0, label, path),
-          now_milliseconds,
-          "запрос не начат" + companion_subject(label)
-        )
+        const launched = companion_launch(companion_request(config, prompt))
+        if launched != 0 then
+          next = companion_quiet_note(
+            companion_quiet_with_remark(
+              companion_host_commit(next, now_milliseconds, 1, label, path, byte_size, modified_seconds, excerpt_included),
+              "смотрю журнал"
+            ),
+            now_milliseconds,
+            "запрос отправлен" + companion_subject(label)
+          )
+        else
+          next = companion_quiet_note(
+            companion_host_commit(next, now_milliseconds, 0, label, path, byte_size, modified_seconds, excerpt_included),
+            now_milliseconds,
+            "запрос не начат" + companion_subject(label)
+          )
+        end
       end
     end
   end

@@ -1,5 +1,6 @@
 import { Observation, ObservationFrame, observation_subject_name } from './companion_observe'
 import { companion_state_marker } from './companion_quiet'
+import { normalize_path } from './directory_jail'
 import { ChatMessage, ChatModel, RoleAssistant } from './chat_model'
 import {
   LabelData,
@@ -96,36 +97,106 @@ export type JournalFocus = {
   key: string,
   label: string,
   path: string,
-  prompt: string
+  prompt: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt_included: i32
 }
 
-fn journal_focus_empty() -> JournalFocus =
-  JournalFocus { key: journal_empty_text(), label: "", path: "", prompt: "" }
+fn unknown_measure() -> i32 = 0 - 1
 
-fn journal_focus_of(kind_label: string, path: string, screen: string) -> JournalFocus = do
+fn journal_focus_empty() -> JournalFocus =
+  JournalFocus {
+    key: journal_empty_text(),
+    label: "",
+    path: "",
+    prompt: "",
+    byte_size: unknown_measure(),
+    modified_seconds: unknown_measure(),
+    excerpt_included: 0
+  }
+
+fn selected_focus_path(frame: ObservationFrame) -> string = do
+  if frame.selected_name == "" then
+    return ""
+  end
+  const candidate = frame.file_access.candidate_path
+  if candidate != "" && observation_subject_name(candidate) == observation_subject_name(frame.selected_name) then
+    return candidate
+  end
+  frame.selected_name
+end
+
+fn focus_excerpt(frame: ObservationFrame, path: string) -> string = do
+  if path == "" || frame.file_access.excerpt == "" then
+    return ""
+  end
+  if normalize_path(path) != frame.file_access.cached_file then
+    return ""
+  end
+  frame.file_access.excerpt
+end
+
+fn focus_measured(frame: ObservationFrame, path: string) -> bool = do
+  if path == "" || frame.file_access.modified_seconds < 0 then
+    return false
+  end
+  normalize_path(path) == frame.file_access.candidate_path
+end
+
+fn journal_focus_of(
+  kind_label: string,
+  path: string,
+  screen: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt: string
+) -> JournalFocus = do
   const label = kind_label + " " + observation_subject_name(path)
   let mut prompt = "Эпизод\n" + label + "\n"
   if screen != "" then
     prompt = prompt + "на экране: " + screen + "\n"
   end
-  prompt = prompt + "осведомлённость: регистрация\nсодержимое файлов не передавалось"
+  let mut excerpt_included = 0
+  if excerpt != "" then
+    prompt = prompt + "осведомлённость: разбор текста\nначало файла: «" + excerpt + "»"
+    excerpt_included = 1
+  else
+    prompt = prompt + "осведомлённость: регистрация\nсодержимое файлов не передавалось"
+  end
+  let mut key = kind_label + "\n" + path + "\n" + screen
+  if modified_seconds >= 0 then
+    key = key + "\n" + byte_size.to_string() + "\n" + modified_seconds.to_string()
+  end
   JournalFocus {
-    key: kind_label + "\n" + path + "\n" + screen,
+    key: key,
     label: label,
     path: path,
-    prompt: prompt
+    prompt: prompt,
+    byte_size: byte_size,
+    modified_seconds: modified_seconds,
+    excerpt_included: excerpt_included
   }
 end
 
 export fn journal_focus(frame: ObservationFrame, screen: string) -> JournalFocus = do
   if frame.playing && frame.track_name != "" then
-    return journal_focus_of("воспроизведение", frame.track_name, screen)
+    return journal_focus_of("воспроизведение", frame.track_name, screen, unknown_measure(), unknown_measure(), "")
   end
-  if frame.selected_name != "" then
-    return journal_focus_of("выбор", frame.selected_name, screen)
+  const selected_path = selected_focus_path(frame)
+  if selected_path != "" then
+    let mut byte_size = unknown_measure()
+    let mut modified_seconds = unknown_measure()
+    if focus_measured(frame, selected_path) then
+      byte_size = frame.file_access.byte_size
+      modified_seconds = frame.file_access.modified_seconds
+    end
+    return journal_focus_of(
+      "выбор", selected_path, screen, byte_size, modified_seconds, focus_excerpt(frame, selected_path)
+    )
   end
   if frame.directory_label != "" then
-    return journal_focus_of("каталог", frame.directory_label, screen)
+    return journal_focus_of("каталог", frame.directory_label, screen, unknown_measure(), unknown_measure(), "")
   end
   journal_focus_empty()
 end

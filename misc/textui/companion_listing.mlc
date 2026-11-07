@@ -51,7 +51,7 @@ fn name_kind(name: string) -> string = do
   "файл"
 end
 
-fn secret_file_name(name: string) -> bool = do
+export fn companion_secret_name(name: string) -> bool = do
   if name == "" || name == "." || name == ".." || name == ".env" then
     return true
   end
@@ -70,7 +70,7 @@ export fn companion_names_line(names: [string]) -> string = do
   let mut index = 0
   while index < names.length() do
     const name = names[index]
-    if secret_file_name(name) == false then
+    if companion_secret_name(name) == false then
       if kept < name_limit() then
         if line != "" then
           line = line + ", "

@@ -1,5 +1,17 @@
 import { json_escape } from './chat_json'
 
+export type CompanionMemory = {
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  remark: string
+}
+
+export type CompanionMemoryHit = {
+  found: bool,
+  remark: string
+}
+
 export type CompanionQuiet = {
   digest: string,
   stable_since_milliseconds: i32,
@@ -10,8 +22,19 @@ export type CompanionQuiet = {
   waiting: i32,
   history: [string],
   sent_label: string,
-  sent_path: string
+  sent_path: string,
+  sent_byte_size: i32,
+  sent_modified_seconds: i32,
+  sent_excerpt: i32,
+  memory: [CompanionMemory]
 }
+
+fn unknown_measure() -> i32 = 0 - 1
+
+fn memory_empty() -> [CompanionMemory] = do
+  let mut memory: [CompanionMemory] = []
+  memory
+end
 
 export fn companion_quiet_empty() -> CompanionQuiet =
   CompanionQuiet {
@@ -24,7 +47,11 @@ export fn companion_quiet_empty() -> CompanionQuiet =
     waiting: 0,
     history: [],
     sent_label: "",
-    sent_path: ""
+    sent_path: "",
+    sent_byte_size: unknown_measure(),
+    sent_modified_seconds: unknown_measure(),
+    sent_excerpt: 0,
+    memory: memory_empty()
   }
 
 export fn companion_empty_digest() -> string =
@@ -52,7 +79,11 @@ fn companion_with_digest(quiet: CompanionQuiet, digest: string, now_milliseconds
     waiting: quiet.waiting,
     history: quiet.history,
     sent_label: quiet.sent_label,
-    sent_path: quiet.sent_path
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: quiet.memory
   }
 
 export fn companion_quiet_advance(quiet: CompanionQuiet, digest: string, now_milliseconds: i32) -> CompanionQuiet = do
@@ -92,7 +123,11 @@ fn companion_marked(quiet: CompanionQuiet, now_milliseconds: i32, waiting: i32) 
     waiting: waiting,
     history: quiet.history,
     sent_label: quiet.sent_label,
-    sent_path: quiet.sent_path
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: quiet.memory
   }
 
 export fn companion_quiet_commit(
@@ -100,7 +135,10 @@ export fn companion_quiet_commit(
   now_milliseconds: i32,
   waiting: i32,
   label: string,
-  path: string
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt_included: i32
 ) -> CompanionQuiet =
   CompanionQuiet {
     digest: quiet.digest,
@@ -108,11 +146,15 @@ export fn companion_quiet_commit(
     sent_digest: quiet.digest,
     sent_label: label,
     sent_path: path,
+    sent_byte_size: byte_size,
+    sent_modified_seconds: modified_seconds,
+    sent_excerpt: excerpt_included,
     remark: quiet.remark,
     attempt_milliseconds: now_milliseconds,
     attempted: 1,
     waiting: waiting,
-    history: quiet.history
+    history: quiet.history,
+    memory: quiet.memory
   }
 
 export fn companion_quiet_mark_sent(quiet: CompanionQuiet, now_milliseconds: i32) -> CompanionQuiet =
@@ -132,7 +174,11 @@ export fn companion_quiet_with_remark(quiet: CompanionQuiet, remark: string) -> 
     waiting: quiet.waiting,
     history: quiet.history,
     sent_label: quiet.sent_label,
-    sent_path: quiet.sent_path
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: quiet.memory
   }
 
 export fn companion_quiet_with_history(quiet: CompanionQuiet, history: [string]) -> CompanionQuiet =
@@ -146,7 +192,29 @@ export fn companion_quiet_with_history(quiet: CompanionQuiet, history: [string])
     waiting: quiet.waiting,
     history: history,
     sent_label: quiet.sent_label,
-    sent_path: quiet.sent_path
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: quiet.memory
+  }
+
+export fn companion_quiet_with_memory(quiet: CompanionQuiet, memory: [CompanionMemory]) -> CompanionQuiet =
+  CompanionQuiet {
+    digest: quiet.digest,
+    stable_since_milliseconds: quiet.stable_since_milliseconds,
+    sent_digest: quiet.sent_digest,
+    remark: quiet.remark,
+    attempt_milliseconds: quiet.attempt_milliseconds,
+    attempted: quiet.attempted,
+    waiting: quiet.waiting,
+    history: quiet.history,
+    sent_label: quiet.sent_label,
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: memory
   }
 
 export fn companion_quiet_finish(quiet: CompanionQuiet, remark: string) -> CompanionQuiet =
@@ -160,7 +228,11 @@ export fn companion_quiet_finish(quiet: CompanionQuiet, remark: string) -> Compa
     waiting: 0,
     history: quiet.history,
     sent_label: quiet.sent_label,
-    sent_path: quiet.sent_path
+    sent_path: quiet.sent_path,
+    sent_byte_size: quiet.sent_byte_size,
+    sent_modified_seconds: quiet.sent_modified_seconds,
+    sent_excerpt: quiet.sent_excerpt,
+    memory: quiet.memory
   }
 
 fn first_line(text: string) -> string = do
@@ -242,7 +314,67 @@ fn clipped_digest(digest: string) -> string = do
 end
 
 fn companion_instruction() -> string =
-  "Тебе передали один эпизод и имена с экрана, если они есть. Содержимое файлов не передавалось. Ответь одной короткой русской фразой о том, что перед человеком, опираясь на эти имена. Без совета и без вопроса. Если имён нет, ответь ровно: тишина"
+  "Тебе передали один эпизод и имена с экрана, если они есть. Если передано начало файла, это первые символы одного текстового файла, не весь файл. Ответь одной короткой русской фразой о том, что перед человеком. Без совета и без вопроса. Если нет ни имён, ни начала файла, ответь ровно: тишина"
+
+fn memory_limit() -> i32 = 16
+
+fn memory_same(item: CompanionMemory, path: string, byte_size: i32, modified_seconds: i32) -> bool =
+  item.path == path && item.byte_size == byte_size && item.modified_seconds == modified_seconds
+
+export fn companion_memory_find(
+  quiet: CompanionQuiet,
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32
+) -> CompanionMemoryHit = do
+  if path == "" || modified_seconds < 0 then
+    return CompanionMemoryHit { found: false, remark: "" }
+  end
+  let mut index = quiet.memory.length() - 1
+  while index >= 0 do
+    if memory_same(quiet.memory[index], path, byte_size, modified_seconds) then
+      return CompanionMemoryHit { found: true, remark: quiet.memory[index].remark }
+    end
+    index = index - 1
+  end
+  CompanionMemoryHit { found: false, remark: "" }
+end
+
+export fn companion_memory_remember(
+  quiet: CompanionQuiet,
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  remark: string
+) -> CompanionQuiet = do
+  if path == "" || modified_seconds < 0 || remark == "модель недоступна" then
+    return quiet
+  end
+  let mut kept: [CompanionMemory] = []
+  let mut index = 0
+  while index < quiet.memory.length() do
+    if memory_same(quiet.memory[index], path, byte_size, modified_seconds) == false then
+      kept.push(quiet.memory[index])
+    end
+    index = index + 1
+  end
+  kept.push(CompanionMemory {
+    path: path,
+    byte_size: byte_size,
+    modified_seconds: modified_seconds,
+    remark: remark
+  })
+  if kept.length() > memory_limit() then
+    let mut trimmed: [CompanionMemory] = []
+    let mut start = kept.length() - memory_limit()
+    while start < kept.length() do
+      trimmed.push(kept[start])
+      start = start + 1
+    end
+    kept = trimmed
+  end
+  companion_quiet_with_memory(quiet, kept)
+end
 
 export fn companion_request_body(model: string, digest: string) -> string =
   "{\"model\":\"" + json_escape(model) + "\",\"max_tokens\":60,\"messages\":[{\"role\":\"system\",\"content\":\"" + json_escape(companion_instruction()) + "\"},{\"role\":\"user\",\"content\":\"" + json_escape(clipped_digest(digest)) + "\"}]}"

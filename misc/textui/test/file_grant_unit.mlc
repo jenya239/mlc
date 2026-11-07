@@ -1,4 +1,10 @@
-import { file_access_advance, file_access_empty, file_access_revoke } from '../file_access'
+import {
+  file_access_advance,
+  file_access_consider,
+  file_access_empty,
+  file_access_revoke,
+  file_access_with_modified
+} from '../file_access'
 import { journal_text } from '../companion_journal'
 import {
   ObservationSample,
@@ -96,6 +102,70 @@ fn read_cases() -> i32 = do
   0
 end
 
+fn settle_cases() -> i32 = do
+  const early = file_access_consider(file_access_empty(), sample_root(), text_path(), jail_root(), 1, 0)
+  if early.body != "" || early.excerpt != "" || early.note.index_of("текст") < 0 then
+    return 20
+  end
+  const waiting = file_access_consider(early, sample_root(), text_path(), jail_root(), 1, 1999)
+  if waiting.body != "" || waiting.excerpt != "" then
+    return 21
+  end
+  const ready = file_access_consider(waiting, sample_root(), text_path(), jail_root(), 1, 2000)
+  if ready.body.index_of("UNIQUE_TAIL") < 0 || ready.excerpt.index_of("UNIQUE_TAIL") >= 0 || ready.excerpt == "" then
+    return 22
+  end
+  const cached = file_access_consider(ready, sample_root(), text_path(), jail_root(), 1, 2500)
+  if cached.bytes_read != ready.bytes_read || cached.excerpt != ready.excerpt then
+    return 23
+  end
+  if file_write_string(text_path(), "SECOND") == false then
+    return 24
+  end
+  const stamped = file_access_with_modified(cached, cached.modified_seconds + 1)
+  const edited = file_access_consider(stamped, sample_root(), text_path(), jail_root(), 1, 3000)
+  if edited.body != "SECOND" || edited.excerpt != "SECOND" then
+    return 25
+  end
+  const other_path = sample_root() + "/file_grant_other.txt"
+  if file_write_string(other_path, "OTHER") == false then
+    return 26
+  end
+  const switched = file_access_consider(edited, sample_root(), other_path, jail_root(), 1, 8000)
+  if switched.body != "" || switched.excerpt != "" then
+    return 27
+  end
+  const other = file_access_consider(switched, sample_root(), other_path, jail_root(), 1, 10000)
+  if other.body != "OTHER" then
+    return 28
+  end
+  const secret_path = sample_root() + "/.env"
+  if file_write_string(secret_path, "SECRET_TOKEN") == false then
+    return 29
+  end
+  const secret = file_access_consider(other, sample_root(), secret_path, jail_root(), 1, 11000)
+  const secret_later = file_access_consider(secret, sample_root(), secret_path, jail_root(), 1, 14000)
+  if secret_later.body != "" || secret_later.excerpt != "" || secret_later.note.index_of("SECRET_TOKEN") >= 0 || secret_later.note != "секрет" then
+    return 30
+  end
+  if file_write_string(text_path(), repeat_mark(180) + "UNIQUE_TAIL") == false then
+    return 31
+  end
+  0
+end
+
+fn open_folder_cases() -> i32 = do
+  const early = file_access_consider(file_access_empty(), sample_root(), text_path(), "", 1, 0)
+  if early.body != "" || early.note.index_of("текст") < 0 then
+    return 32
+  end
+  const ready = file_access_consider(early, sample_root(), text_path(), "", 1, 2000)
+  if ready.body.index_of("UNIQUE_TAIL") < 0 || ready.excerpt == "" then
+    return 33
+  end
+  0
+end
+
 fn panel_cases() -> i32 = do
   let mut captions: [string] = []
   const frame = observation_frame_apply(
@@ -170,6 +240,14 @@ fn main() -> i32 = do
   const read = read_cases()
   if read != 0 then
     return read
+  end
+  const settled = settle_cases()
+  if settled != 0 then
+    return settled
+  end
+  const opened = open_folder_cases()
+  if opened != 0 then
+    return opened
   end
   const panel = panel_cases()
   if panel != 0 then

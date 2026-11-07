@@ -1,7 +1,10 @@
+import { companion_secret_name } from './companion_listing'
 import { normalize_path, path_inside_jail } from './directory_jail'
 
 extern fn file_byte_size(path: string) -> i32
   = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_modified_seconds(path: string) -> i32
+  = "mlc::file::file_modified_seconds_value" from "mlc/io/file_abi.hpp" blocking
 extern fn file_read_to_string(path: string) -> string
   = "mlc::file::read_to_string_value" from "mlc/io/file_abi.hpp" blocking
 
@@ -15,8 +18,15 @@ export type FileAccess = {
   body: string,
   code: i32,
   bytes_read: i32,
-  window_started_ms: i32
+  window_started_ms: i32,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt: string,
+  candidate_path: string,
+  candidate_since_milliseconds: i32
 }
+
+fn unknown_measure() -> i32 = 0 - 1
 
 fn code_ready() -> i32 = 0
 
@@ -32,6 +42,8 @@ fn code_revoked() -> i32 = 6
 
 fn code_budget() -> i32 = 7
 
+fn code_secret() -> i32 = 8
+
 fn text_byte_limit() -> i32 = 4096
 
 fn preview_byte_limit() -> i32 = 160
@@ -39,6 +51,8 @@ fn preview_byte_limit() -> i32 = 160
 fn window_byte_limit() -> i32 = 262144
 
 fn window_span_ms() -> i32 = 3600000
+
+fn text_settle_milliseconds() -> i32 = 2000
 
 export fn file_access_empty() -> FileAccess =
   FileAccess {
@@ -51,7 +65,12 @@ export fn file_access_empty() -> FileAccess =
     body: "",
     code: code_none(),
     bytes_read: 0,
-    window_started_ms: 0
+    window_started_ms: 0,
+    byte_size: unknown_measure(),
+    modified_seconds: unknown_measure(),
+    excerpt: "",
+    candidate_path: "",
+    candidate_since_milliseconds: 0
   }
 
 fn ends_with(path: string, suffix: string) -> bool = do
@@ -64,6 +83,21 @@ end
 fn text_file(path: string) -> bool =
   ends_with(path, ".txt") || ends_with(path, ".TXT") || ends_with(path, ".md") || ends_with(path, ".MD")
     || ends_with(path, ".json") || ends_with(path, ".JSON") || ends_with(path, ".mlc") || ends_with(path, ".MLC")
+
+fn base_name(path: string) -> string = do
+  let mut separator = unknown_measure()
+  let mut index = 0
+  while index < path.byte_size() do
+    if path.byte_at(index) == "/" then
+      separator = index
+    end
+    index = index + 1
+  end
+  if separator < 0 then
+    return path
+  end
+  path.byte_substring(separator + 1, path.byte_size() - separator - 1)
+end
 
 fn kind_label(path: string) -> string = do
   if text_file(path) then
@@ -121,7 +155,10 @@ fn copy_access(
   body: string,
   code: i32,
   bytes_read: i32,
-  window_started_ms: i32
+  window_started_ms: i32,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt: string
 ) -> FileAccess =
   FileAccess {
     grant_root: grant_root,
@@ -133,7 +170,12 @@ fn copy_access(
     body: body,
     code: code,
     bytes_read: bytes_read,
-    window_started_ms: window_started_ms
+    window_started_ms: window_started_ms,
+    byte_size: byte_size,
+    modified_seconds: modified_seconds,
+    excerpt: excerpt,
+    candidate_path: access.candidate_path,
+    candidate_since_milliseconds: access.candidate_since_milliseconds
   }
 
 fn window_expired(access: FileAccess, now_ms: i32) -> bool =
@@ -148,21 +190,32 @@ export fn file_access_revoke(access: FileAccess, revision: i32, jail: string) ->
   end
   copy_access(
     access, access.grant_root, access.grant_revision, access.grant_jail, false,
-    "", "каталог сменился", "", code_revoked(), access.bytes_read, access.window_started_ms
+    "", "каталог сменился", "", code_revoked(), access.bytes_read, access.window_started_ms,
+    unknown_measure(), unknown_measure(), ""
   )
 end
 
-fn same_cached_file(access: FileAccess, file_path: string, directory: string, jail: string, revision: i32) -> bool =
+fn same_cached_file(
+  access: FileAccess,
+  file_path: string,
+  directory: string,
+  jail: string,
+  revision: i32,
+  byte_size: i32,
+  modified_seconds: i32
+) -> bool =
   access.grant_active && access.cached_file == file_path && access.grant_root == directory
     && access.grant_jail == jail && access.grant_revision == revision
+    && access.byte_size == byte_size && access.modified_seconds == modified_seconds
 
-export fn file_access_advance(
+fn file_access_read(
   access: FileAccess,
   directory: string,
   file_path: string,
   jail: string,
   revision: i32,
-  now_ms: i32
+  now_ms: i32,
+  read_text: bool
 ) -> FileAccess = do
   let mut bytes_read = access.bytes_read
   let mut window_started_ms = access.window_started_ms
@@ -173,49 +226,167 @@ export fn file_access_advance(
   const grant_root = normalize_path(directory)
   const grant_jail = normalize_path(jail)
   const opened = grant_root != "" && grant_jail != "" && path_inside_jail(grant_jail, grant_root)
-  if opened && same_cached_file(access, normalize_path(file_path), grant_root, grant_jail, revision) && window_expired(access, now_ms) == false then
-    return access
-  end
   if opened == false then
-    return copy_access(access, grant_root, revision, grant_jail, false, "", "", "", code_none(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, false, "", "", "", code_none(), bytes_read, window_started_ms, unknown_measure(), unknown_measure(), "")
   end
   const absolute = normalize_path(file_path)
   if absolute == "" then
-    return copy_access(access, grant_root, revision, grant_jail, true, "", "", "", code_none(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, "", "", "", code_none(), bytes_read, window_started_ms, unknown_measure(), unknown_measure(), "")
   end
   if path_inside_jail(grant_jail, absolute) == false then
-    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "вне каталога", "", code_outside(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "вне каталога", "", code_outside(), bytes_read, window_started_ms, unknown_measure(), unknown_measure(), "")
   end
   if path_inside_jail(grant_root, absolute) == false then
-    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "нет разрешения", "", code_none(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "нет разрешения", "", code_none(), bytes_read, window_started_ms, unknown_measure(), unknown_measure(), "")
   end
   const size = file_byte_size(absolute)
   if size < 0 then
-    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "файл исчез", "", code_missing(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "файл исчез", "", code_missing(), bytes_read, window_started_ms, unknown_measure(), unknown_measure(), "")
+  end
+  const modified_seconds = file_modified_seconds(absolute)
+  if companion_secret_name(base_name(absolute)) then
+    return copy_access(access, grant_root, revision, grant_jail, true, "", "секрет", "", code_secret(), bytes_read, window_started_ms, size, modified_seconds, "")
+  end
+  if same_cached_file(access, absolute, grant_root, grant_jail, revision, size, modified_seconds) && window_expired(access, now_ms) == false then
+    return access
   end
   const label = kind_label(absolute)
   if text_file(absolute) && size > text_byte_limit() then
-    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "слишком большой", "", code_too_large(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "слишком большой", "", code_too_large(), bytes_read, window_started_ms, size, modified_seconds, "")
   end
   if text_file(absolute) && bytes_read + size > window_byte_limit() then
-    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "предел чтения исчерпан", "", code_budget(), bytes_read, window_started_ms)
+    return copy_access(access, grant_root, revision, grant_jail, true, absolute, "предел чтения исчерпан", "", code_budget(), bytes_read, window_started_ms, size, modified_seconds, "")
   end
   if text_file(absolute) == false then
     return copy_access(
       access, grant_root, revision, grant_jail, true, absolute,
-      label + " " + size_label(size), "", code_ready(), bytes_read, window_started_ms
+      label + " " + size_label(size), "", code_ready(), bytes_read, window_started_ms,
+      size, modified_seconds, ""
+    )
+  end
+  if read_text == false then
+    return copy_access(
+      access, grant_root, revision, grant_jail, true, "",
+      label + " " + size_label(size), "", code_ready(), bytes_read, window_started_ms,
+      size, modified_seconds, ""
     )
   end
   const body = file_read_to_string(absolute)
   if body.byte_size() > text_byte_limit() then
     return copy_access(
       access, grant_root, revision, grant_jail, true, absolute,
-      "слишком большой", "", code_too_large(), bytes_read, window_started_ms
+      "слишком большой", "", code_too_large(), bytes_read, window_started_ms, size, modified_seconds, ""
     )
   end
+  const excerpt = collapse_preview(body)
   copy_access(
     access, grant_root, revision, grant_jail, true, absolute,
-    label + " " + size_label(size) + " «" + collapse_preview(body) + "»", body,
-    code_ready(), bytes_read + size, window_started_ms
+    label + " " + size_label(size) + " «" + excerpt + "»", body,
+    code_ready(), bytes_read + size, window_started_ms, size, modified_seconds, excerpt
   )
 end
+
+export fn file_access_advance(
+  access: FileAccess,
+  directory: string,
+  file_path: string,
+  jail: string,
+  revision: i32,
+  now_ms: i32
+) -> FileAccess =
+  file_access_read(access, directory, file_path, jail, revision, now_ms, true)
+
+fn elapsed_milliseconds(now_ms: i32, start_ms: i32) -> i32 = do
+  if now_ms < start_ms then
+    return 0
+  end
+  now_ms - start_ms
+end
+
+fn with_candidate(access: FileAccess, candidate_path: string, candidate_since_milliseconds: i32) -> FileAccess =
+  FileAccess {
+    grant_root: access.grant_root,
+    grant_revision: access.grant_revision,
+    grant_jail: access.grant_jail,
+    grant_active: access.grant_active,
+    cached_file: access.cached_file,
+    note: access.note,
+    body: access.body,
+    code: access.code,
+    bytes_read: access.bytes_read,
+    window_started_ms: access.window_started_ms,
+    byte_size: access.byte_size,
+    modified_seconds: access.modified_seconds,
+    excerpt: access.excerpt,
+    candidate_path: candidate_path,
+    candidate_since_milliseconds: candidate_since_milliseconds
+  }
+
+export fn file_access_consider(
+  access: FileAccess,
+  directory: string,
+  file_path: string,
+  jail: string,
+  revision: i32,
+  now_ms: i32
+) -> FileAccess = do
+  const absolute = normalize_path(file_path)
+  let mut bounded_jail = jail
+  if normalize_path(jail) == "" then
+    bounded_jail = directory
+  end
+  let mut held = access
+  let mut read_text = false
+  if absolute != access.candidate_path then
+    held = with_candidate(access, absolute, now_ms)
+  else
+    if absolute != "" && elapsed_milliseconds(now_ms, access.candidate_since_milliseconds) >= text_settle_milliseconds() then
+      read_text = true
+    end
+  end
+  const measured = file_access_read(held, directory, file_path, bounded_jail, revision, now_ms, read_text)
+  with_candidate(measured, held.candidate_path, held.candidate_since_milliseconds)
+end
+
+export fn file_access_with_modified(access: FileAccess, modified_seconds: i32) -> FileAccess =
+  FileAccess {
+    grant_root: access.grant_root,
+    grant_revision: access.grant_revision,
+    grant_jail: access.grant_jail,
+    grant_active: access.grant_active,
+    cached_file: access.cached_file,
+    note: access.note,
+    body: access.body,
+    code: access.code,
+    bytes_read: access.bytes_read,
+    window_started_ms: access.window_started_ms,
+    byte_size: access.byte_size,
+    modified_seconds: modified_seconds,
+    excerpt: access.excerpt,
+    candidate_path: access.candidate_path,
+    candidate_since_milliseconds: access.candidate_since_milliseconds
+  }
+
+export fn file_access_with_excerpt(
+  path: string,
+  byte_size: i32,
+  modified_seconds: i32,
+  excerpt: string
+) -> FileAccess =
+  FileAccess {
+    grant_root: "",
+    grant_revision: 0,
+    grant_jail: "",
+    grant_active: true,
+    cached_file: path,
+    note: "",
+    body: "",
+    code: code_ready(),
+    bytes_read: 0,
+    window_started_ms: 0,
+    byte_size: byte_size,
+    modified_seconds: modified_seconds,
+    excerpt: excerpt,
+    candidate_path: path,
+    candidate_since_milliseconds: 0
+  }

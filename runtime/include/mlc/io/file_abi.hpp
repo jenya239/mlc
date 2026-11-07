@@ -5,6 +5,7 @@
 
 #include "mlc/io/file.hpp"
 #include <cstdint>
+#include <sys/stat.h>
 #include <system_error>
 
 namespace mlc {
@@ -147,6 +148,19 @@ inline bool file_write_range_value(String path, int32_t offset, String content) 
   } catch (...) {
     return false;
   }
+}
+
+// Seconds since the Unix epoch, or -1 when the file cannot be stated.
+// i32 saturates in 2038; a failed stat must stay distinguishable from a real stamp.
+inline int32_t file_modified_seconds_value(String path) {
+  struct stat file_status;
+  if (stat(path.as_std_string().c_str(), &file_status) != 0) {
+    return -1;
+  }
+  if (file_status.st_mtime < 0 || file_status.st_mtime > static_cast<time_t>(INT32_MAX)) {
+    return -1;
+  }
+  return static_cast<int32_t>(file_status.st_mtime);
 }
 
 inline Array<String> list_dir_names_value(String path) {

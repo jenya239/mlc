@@ -103,6 +103,9 @@ export fn companion_awareness(quiet: CompanionQuiet) -> string = do
     return "регистрация"
   end
   if quiet.digest == quiet.sent_digest && quiet.remark != "" && quiet.remark != "модель недоступна" && quiet.remark != "смотрю журнал" then
+    if quiet.sent_excerpt != 0 then
+      return "разбор текста"
+    end
     return "интерпретация"
   end
   "регистрация"

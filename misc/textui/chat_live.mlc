@@ -140,7 +140,8 @@ export fn chat_live_run(turn: GalleryTurn, theme: Theme) -> ChatLiveResult = do
       end
     end
     if running then
-      const polled = host_poll_input(buttons, host_now_ms())
+      const now_ms = host_now_ms()
+      const polled = host_poll_input(buttons, now_ms)
       buttons = polled.buttons
       const route = host_pane_route(pane, theme, width, height, polled.input)
       pane = route.pane
@@ -164,7 +165,10 @@ export fn chat_live_run(turn: GalleryTurn, theme: Theme) -> ChatLiveResult = do
         focus.prompt,
         focus.label,
         focus.path,
-        host_now_ms(),
+        focus.byte_size,
+        focus.modified_seconds,
+        focus.excerpt_included,
+        now_ms,
         world.config
       )
       const occupation = journal_occupation(settled.turn.observation)
@@ -172,7 +176,7 @@ export fn chat_live_run(turn: GalleryTurn, theme: Theme) -> ChatLiveResult = do
         world,
         companion_journal_shown(
           digest,
-          companion_activity_text(occupation, focus.path, companion, host_now_ms())
+          companion_activity_text(occupation, focus.path, companion, now_ms)
         )
       )
       world = chat_world_with_grant_text(world, settled.turn.observation.file_access.body)
