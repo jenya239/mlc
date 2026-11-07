@@ -1,0 +1,97 @@
+import { text_document_from_bytes, text_document_line, text_document_line_count } from '../text_document'
+import { TextLine, text_line_new, TerminatorNone } from '../text_line'
+import {
+  text_line_index_clear_counts,
+  text_line_index_from_lines,
+  text_line_index_line_of,
+  text_line_index_of_identifier,
+  text_line_index_offset_of,
+  text_line_index_set_width
+} from '../text_line_index'
+
+fn document_lines(bytes: string) -> [TextLine] = do
+  const document = text_document_from_bytes(bytes)
+  let mut lines: [TextLine] = []
+  let mut index = 0
+  while index < text_document_line_count(document) do
+    lines.push(text_document_line(document, index))
+    index = index + 1
+  end
+  lines
+end
+
+fn inverse_lines() -> i32 = do
+  const lines = document_lines("a\nb\nc")
+  let mut index = text_line_index_from_lines(lines)
+  const middle = text_line_index_offset_of(index, 1)
+  if middle.value != 2 then
+    return 1
+  end
+  index = middle.index
+  let mut line_index = 0
+  while line_index < 3 do
+    const offset = text_line_index_offset_of(index, line_index)
+    index = offset.index
+    const line = text_line_index_line_of(index, offset.value)
+    index = line.index
+    if line.value != line_index then
+      return 2
+    end
+    const back = text_line_index_offset_of(index, line.value)
+    index = back.index
+    if back.value != offset.value then
+      return 3
+    end
+    line_index = line_index + 1
+  end
+  const inside = text_line_index_line_of(index, 3)
+  if inside.value != 1 then
+    return 4
+  end
+  if text_line_index_of_identifier(inside.index, lines[2].line_identifier) != 2 then
+    return 5
+  end
+  0
+end
+
+fn many_lines(count: i32) -> [TextLine] = do
+  let mut lines: [TextLine] = []
+  let mut index = 0
+  while index < count do
+    lines.push(text_line_new(index, "a", TerminatorNone))
+    index = index + 1
+  end
+  lines
+end
+
+fn far_offset() -> i32 = do
+  const line_count = 200000
+  const built = text_line_index_clear_counts(text_line_index_from_lines(many_lines(line_count)))
+  const edited = text_line_index_set_width(built, 0, 11)
+  const far = text_line_index_offset_of(edited, line_count)
+  if far.value != 200010 then
+    return 6
+  end
+  const middle = text_line_index_offset_of(far.index, 100000)
+  if middle.value != 100010 then
+    return 7
+  end
+  if middle.index.updates >= 64 then
+    return 8
+  end
+  if middle.index.reads >= 64 then
+    return 9
+  end
+  if text_line_index_of_identifier(middle.index, 199999) != 199999 then
+    return 10
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const inverse = inverse_lines()
+  if inverse != 0 then
+    return inverse
+  end
+  far_offset()
+end

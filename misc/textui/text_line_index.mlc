@@ -1,0 +1,202 @@
+import { TextLine, text_line_terminator_bytes } from './text_line'
+
+export type TextLineIndex = {
+  widths: [i32],
+  tree: [i32],
+  line_identifiers: [i32],
+  identifier_indexes: [i32],
+  reads: i32,
+  updates: i32
+}
+
+export type TextLineIndexQuery = {
+  index: TextLineIndex,
+  value: i32
+}
+
+fn line_width(line: TextLine) -> i32 = do
+  line.text.byte_size() + text_line_terminator_bytes(line.terminator).byte_size()
+end
+
+fn empty_numbers() -> [i32] = do
+  let mut numbers: [i32] = []
+  numbers
+end
+
+fn filled_numbers(count: i32, value: i32) -> [i32] = do
+  let mut numbers: [i32] = []
+  let mut index = 0
+  while index < count do
+    numbers.push(value)
+    index = index + 1
+  end
+  numbers
+end
+
+fn lowest_set_bit(value: i32) -> i32 = do
+  value & (0 - value)
+end
+
+fn index_with_tree(index: TextLineIndex, widths: [i32], tree: [i32], reads: i32, updates: i32) -> TextLineIndex = do
+  TextLineIndex {
+    widths: widths,
+    tree: tree,
+    line_identifiers: index.line_identifiers,
+    identifier_indexes: index.identifier_indexes,
+    reads: reads,
+    updates: updates
+  }
+end
+
+fn add_width(index: TextLineIndex, line_index: i32, delta: i32) -> TextLineIndex = do
+  let mut tree = index.tree
+  let mut node = line_index + 1
+  let mut updates = index.updates
+  const count = index.widths.length()
+  while node <= count do
+    updates = updates + 1
+    tree.set(node, tree[node] + delta)
+    node = node + lowest_set_bit(node)
+  end
+  index_with_tree(index, index.widths, tree, index.reads, updates)
+end
+
+fn prefix_sum(index: TextLineIndex, count: i32) -> TextLineIndexQuery = do
+  let mut cursor = count
+  let mut sum = 0
+  let mut reads = index.reads
+  while cursor > 0 do
+    reads = reads + 1
+    sum = sum + index.tree[cursor]
+    cursor = cursor - lowest_set_bit(cursor)
+  end
+  TextLineIndexQuery {
+    index: index_with_tree(index, index.widths, index.tree, reads, index.updates),
+    value: sum
+  }
+end
+
+fn maximum_identifier(lines: [TextLine]) -> i32 = do
+  if lines.length() == 0 then
+    return 0 - 1
+  end
+  let mut maximum = lines[0].line_identifier
+  let mut index = 1
+  while index < lines.length() do
+    if lines[index].line_identifier > maximum then
+      maximum = lines[index].line_identifier
+    end
+    index = index + 1
+  end
+  maximum
+end
+
+fn identifier_indexes_for(lines: [TextLine]) -> [i32] = do
+  const maximum = maximum_identifier(lines)
+  if maximum < 0 then
+    return empty_numbers()
+  end
+  let mut indexes = filled_numbers(maximum + 1, 0 - 1)
+  let mut index = 0
+  while index < lines.length() do
+    indexes.set(lines[index].line_identifier, index)
+    index = index + 1
+  end
+  indexes
+end
+
+fn line_identifiers_for(lines: [TextLine]) -> [i32] = do
+  let mut identifiers = empty_numbers()
+  let mut index = 0
+  while index < lines.length() do
+    identifiers.push(lines[index].line_identifier)
+    index = index + 1
+  end
+  identifiers
+end
+
+export fn text_line_index_clear_counts(index: TextLineIndex) -> TextLineIndex = do
+  index_with_tree(index, index.widths, index.tree, 0, 0)
+end
+
+export fn text_line_index_from_lines(lines: [TextLine]) -> TextLineIndex = do
+  let mut widths = empty_numbers()
+  let mut index = 0
+  while index < lines.length() do
+    widths.push(line_width(lines[index]))
+    index = index + 1
+  end
+  let mut built = TextLineIndex {
+    widths: widths,
+    tree: filled_numbers(lines.length() + 1, 0),
+    line_identifiers: line_identifiers_for(lines),
+    identifier_indexes: identifier_indexes_for(lines),
+    reads: 0,
+    updates: 0
+  }
+  let mut line_index = 0
+  while line_index < lines.length() do
+    built = add_width(built, line_index, built.widths[line_index])
+    line_index = line_index + 1
+  end
+  text_line_index_clear_counts(built)
+end
+
+export fn text_line_index_offset_of(index: TextLineIndex, line_index: i32) -> TextLineIndexQuery = do
+  let mut limit = line_index
+  if limit < 0 then
+    limit = 0
+  end
+  if limit > index.widths.length() then
+    limit = index.widths.length()
+  end
+  prefix_sum(index, limit)
+end
+
+export fn text_line_index_line_of(index: TextLineIndex, offset: i32) -> TextLineIndexQuery = do
+  const count = index.widths.length()
+  if count == 0 then
+    return TextLineIndexQuery { index: index, value: 0 }
+  end
+  const total = prefix_sum(index, count)
+  if offset >= total.value then
+    return TextLineIndexQuery { index: total.index, value: count - 1 }
+  end
+  if offset < 0 then
+    return TextLineIndexQuery { index: total.index, value: 0 }
+  end
+  let mut low = 0
+  let mut high = count - 1
+  let mut current = total.index
+  while low < high do
+    const middle = (low + high) / 2
+    const probe = prefix_sum(current, middle + 1)
+    current = probe.index
+    if probe.value > offset then
+      high = middle
+    else
+      low = middle + 1
+    end
+  end
+  TextLineIndexQuery { index: current, value: low }
+end
+
+export fn text_line_index_of_identifier(index: TextLineIndex, identifier: i32) -> i32 = do
+  if identifier < 0 || identifier >= index.identifier_indexes.length() then
+    return 0 - 1
+  end
+  index.identifier_indexes[identifier]
+end
+
+export fn text_line_index_set_width(index: TextLineIndex, line_index: i32, width: i32) -> TextLineIndex = do
+  if line_index < 0 || line_index >= index.widths.length() || width < 0 then
+    return index
+  end
+  const delta = width - index.widths[line_index]
+  if delta == 0 then
+    return index
+  end
+  let mut widths = index.widths
+  widths.set(line_index, width)
+  add_width(index_with_tree(index, widths, index.tree, index.reads, index.updates), line_index, delta)
+end

@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=3
+STEP=4
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -98,7 +98,8 @@ verify: красный `tmp/text_document_bytes_unit/bin` → RUN:4. После 
 
 ### STEP=3 — смещение за логарифм
 
-status: pending
+status: done
+verify: красный `tmp/text_line_index_unit/bin` → RUN:1. После дерева: `compiler/out/mlcc -o tmp/text_line_index_unit misc/textui/test/text_line_index_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_line_index_unit tmp/text_line_index_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0.
 
 Красный тест: `offset_of` и `line_of` взаимны. Смена длины первой строки в документе на 200 000 строк не портит далёкое смещение. Линейный пересчёт всех начал этот тест не принимает.
 
