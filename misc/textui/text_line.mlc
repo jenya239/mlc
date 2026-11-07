@@ -1,0 +1,40 @@
+export type LineTerminator =
+  TerminatorLineFeed
+  | TerminatorCarriageReturnLineFeed
+  | TerminatorCarriageReturn
+  | TerminatorLineSeparator
+  | TerminatorParagraphSeparator
+  | TerminatorNone
+
+export type TextLine = {
+  line_identifier: i32,
+  revision: i32,
+  text: string,
+  terminator: LineTerminator
+}
+
+export fn text_line_separator_bytes() -> string = " "
+
+export fn text_paragraph_separator_bytes() -> string = " "
+
+export fn text_line_terminator_bytes(terminator: LineTerminator) -> string =
+  match terminator
+    | TerminatorLineFeed => "\n"
+    | TerminatorCarriageReturnLineFeed => "\r\n"
+    | TerminatorCarriageReturn => "\r"
+    | TerminatorLineSeparator => text_line_separator_bytes()
+    | TerminatorParagraphSeparator => text_paragraph_separator_bytes()
+    | TerminatorNone => ""
+
+export fn text_line_new(line_identifier: i32, text: string, terminator: LineTerminator) -> TextLine = do
+  TextLine {
+    line_identifier: line_identifier,
+    revision: 0,
+    text: text,
+    terminator: terminator
+  }
+end
+
+export fn text_line_blank() -> TextLine = do
+  text_line_new(0, "", TerminatorNone)
+end

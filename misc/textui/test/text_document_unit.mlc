@@ -1,0 +1,124 @@
+import {
+  text_document_from_bytes,
+  text_document_is_complete,
+  text_document_is_writable,
+  text_document_line,
+  text_document_line_count,
+  text_document_next_line_identifier,
+  text_document_to_bytes,
+  text_document_unloaded_count
+} from '../text_document'
+import {
+  LineTerminator,
+  TerminatorCarriageReturn,
+  TerminatorCarriageReturnLineFeed,
+  TerminatorLineFeed,
+  TerminatorLineSeparator,
+  TerminatorNone,
+  TerminatorParagraphSeparator,
+  text_line_separator_bytes,
+  text_paragraph_separator_bytes
+} from '../text_line'
+
+fn terminator_mark(terminator: LineTerminator) -> i32 =
+  match terminator
+    | TerminatorLineFeed => 1
+    | TerminatorCarriageReturnLineFeed => 2
+    | TerminatorCarriageReturn => 3
+    | TerminatorLineSeparator => 4
+    | TerminatorParagraphSeparator => 5
+    | TerminatorNone => 6
+
+fn three_lines() -> i32 = do
+  const document = text_document_from_bytes("a\nb\nc")
+  if text_document_line_count(document) != 3 then
+    return 1
+  end
+  const first = text_document_line(document, 0)
+  if first.text != "a" || terminator_mark(first.terminator) != 1 || first.line_identifier != 0 || first.revision != 0 then
+    return 2
+  end
+  const second = text_document_line(document, 1)
+  if second.text != "b" || terminator_mark(second.terminator) != 1 || second.line_identifier != 1 then
+    return 3
+  end
+  const third = text_document_line(document, 2)
+  if third.text != "c" || terminator_mark(third.terminator) != 6 || third.line_identifier != 2 then
+    return 4
+  end
+  if text_document_to_bytes(document) != "a\nb\nc" then
+    return 5
+  end
+  if text_document_is_writable(document) == false || text_document_is_complete(document) == false then
+    return 6
+  end
+  if text_document_unloaded_count(document) != 0 then
+    return 7
+  end
+  if text_document_next_line_identifier(document) != 3 then
+    return 8
+  end
+  0
+end
+
+fn empty_input() -> i32 = do
+  const document = text_document_from_bytes("")
+  if text_document_line_count(document) != 1 then
+    return 9
+  end
+  const line = text_document_line(document, 0)
+  if line.text != "" || terminator_mark(line.terminator) != 6 then
+    return 10
+  end
+  if text_document_to_bytes(document) != "" then
+    return 11
+  end
+  0
+end
+
+fn trailing_line_feed() -> i32 = do
+  const document = text_document_from_bytes("a\n")
+  if text_document_line_count(document) != 1 then
+    return 12
+  end
+  const line = text_document_line(document, 0)
+  if line.text != "a" || terminator_mark(line.terminator) != 1 then
+    return 13
+  end
+  if text_document_to_bytes(document) != "a\n" then
+    return 14
+  end
+  0
+end
+
+fn round_trip(bytes: string, failure: i32) -> i32 = do
+  const document = text_document_from_bytes(bytes)
+  if text_document_to_bytes(document) != bytes then
+    return failure
+  end
+  0
+end
+
+fn main() -> i32 = do
+  const three = three_lines()
+  if three != 0 then
+    return three
+  end
+  const empty = empty_input()
+  if empty != 0 then
+    return empty
+  end
+  const trailing = trailing_line_feed()
+  if trailing != 0 then
+    return trailing
+  end
+  const carriage = round_trip("a\r\nb\rc", 15)
+  if carriage != 0 then
+    return carriage
+  end
+  const separators = round_trip("a" + text_line_separator_bytes() + "b" + text_paragraph_separator_bytes() + "c", 16)
+  if separators != 0 then
+    return separators
+  end
+  0
+end

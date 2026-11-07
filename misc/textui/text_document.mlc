@@ -1,0 +1,195 @@
+import {
+  LineTerminator,
+  TerminatorCarriageReturn,
+  TerminatorCarriageReturnLineFeed,
+  TerminatorLineFeed,
+  TerminatorLineSeparator,
+  TerminatorNone,
+  TerminatorParagraphSeparator,
+  TextLine,
+  text_line_blank,
+  text_line_new,
+  text_line_separator_bytes,
+  text_line_terminator_bytes,
+  text_paragraph_separator_bytes
+} from './text_line'
+
+export type LoadedPiece = {
+  lines: [TextLine]
+}
+
+export type UnloadedPiece = {
+  file_offset: i32,
+  byte_length: i32
+}
+
+export type TextPiece =
+  PieceLoaded(LoadedPiece)
+  | PieceUnloaded(UnloadedPiece)
+
+export type TextOrigin =
+  OriginComplete
+  | OriginLossy
+
+type LineBreak = {
+  present: bool,
+  terminator: LineTerminator,
+  width: i32
+}
+
+export type TextDocument = {
+  pieces: [TextPiece],
+  origin: TextOrigin,
+  writable: bool,
+  next_line_identifier: i32
+}
+
+fn document_with_lines(lines: [TextLine], next_line_identifier: i32) -> TextDocument = do
+  let loaded = LoadedPiece { lines: lines }
+  let mut pieces: [TextPiece] = []
+  pieces.push(PieceLoaded(loaded))
+  TextDocument {
+    pieces: pieces,
+    origin: OriginComplete,
+    writable: true,
+    next_line_identifier: next_line_identifier
+  }
+end
+
+fn loaded_piece_bytes(piece: LoadedPiece) -> string = do
+  let mut bytes = ""
+  let mut index = 0
+  while index < piece.lines.length() do
+    const line = piece.lines[index]
+    bytes = bytes + line.text + text_line_terminator_bytes(line.terminator)
+    index = index + 1
+  end
+  bytes
+end
+
+fn piece_bytes(piece: TextPiece) -> string =
+  match piece
+    | PieceLoaded(loaded) => loaded_piece_bytes(loaded)
+    | PieceUnloaded(_) => ""
+
+fn line_break_at(bytes: string, index: i32) -> LineBreak = do
+  const size = bytes.byte_size()
+  if index >= size then
+    return LineBreak { present: false, terminator: TerminatorNone, width: 0 }
+  end
+  const current = bytes.byte_at(index)
+  if current == "\r" then
+    if index + 1 < size && bytes.byte_at(index + 1) == "\n" then
+      return LineBreak { present: true, terminator: TerminatorCarriageReturnLineFeed, width: 2 }
+    end
+    return LineBreak { present: true, terminator: TerminatorCarriageReturn, width: 1 }
+  end
+  if current == "\n" then
+    return LineBreak { present: true, terminator: TerminatorLineFeed, width: 1 }
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_line_separator_bytes() then
+    return LineBreak { present: true, terminator: TerminatorLineSeparator, width: 3 }
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_paragraph_separator_bytes() then
+    return LineBreak { present: true, terminator: TerminatorParagraphSeparator, width: 3 }
+  end
+  LineBreak { present: false, terminator: TerminatorNone, width: 0 }
+end
+
+fn split_lines(bytes: string) -> [TextLine] = do
+  let mut lines: [TextLine] = []
+  let mut start = 0
+  let mut index = 0
+  let mut next_identifier = 0
+  const size = bytes.byte_size()
+  while index < size do
+    const found = line_break_at(bytes, index)
+    if found.present then
+      lines.push(text_line_new(next_identifier, bytes.byte_substring(start, index - start), found.terminator))
+      next_identifier = next_identifier + 1
+      index = index + found.width
+      start = index
+    else
+      index = index + 1
+    end
+  end
+  if start < size || lines.length() == 0 then
+    lines.push(text_line_new(next_identifier, bytes.byte_substring(start, size - start), TerminatorNone))
+  end
+  lines
+end
+
+export fn text_document_from_bytes(bytes: string) -> TextDocument = do
+  const lines = split_lines(bytes)
+  document_with_lines(lines, lines.length())
+end
+
+export fn text_document_to_bytes(document: TextDocument) -> string = do
+  let mut bytes = ""
+  let mut index = 0
+  while index < document.pieces.length() do
+    bytes = bytes + piece_bytes(document.pieces[index])
+    index = index + 1
+  end
+  bytes
+end
+
+fn piece_line_count(piece: TextPiece) -> i32 =
+  match piece
+    | PieceLoaded(loaded) => loaded.lines.length()
+    | PieceUnloaded(_) => 0
+
+export fn text_document_line_count(document: TextDocument) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < document.pieces.length() do
+    count = count + piece_line_count(document.pieces[index])
+    index = index + 1
+  end
+  count
+end
+
+fn line_in_loaded(piece: LoadedPiece, line_index: i32) -> TextLine = do
+  if line_index < 0 || line_index >= piece.lines.length() then
+    return text_line_blank()
+  end
+  piece.lines[line_index]
+end
+
+fn line_from_piece(piece: TextPiece, line_index: i32) -> TextLine =
+  match piece
+    | PieceLoaded(loaded) => line_in_loaded(loaded, line_index)
+    | PieceUnloaded(_) => text_line_blank()
+
+export fn text_document_line(document: TextDocument, line_index: i32) -> TextLine = do
+  if document.pieces.length() == 0 then
+    return text_line_blank()
+  end
+  line_from_piece(document.pieces[0], line_index)
+end
+
+export fn text_document_is_writable(document: TextDocument) -> bool = do
+  document.writable
+end
+
+export fn text_document_is_complete(document: TextDocument) -> bool =
+  match document.origin
+    | OriginComplete => true
+    | OriginLossy => false
+
+export fn text_document_unloaded_count(document: TextDocument) -> i32 = do
+  let mut count = 0
+  let mut index = 0
+  while index < document.pieces.length() do
+    const added = match document.pieces[index]
+      | PieceLoaded(_) => 0
+      | PieceUnloaded(_) => 1
+    count = count + added
+    index = index + 1
+  end
+  count
+end
+
+export fn text_document_next_line_identifier(document: TextDocument) -> i32 = do
+  document.next_line_identifier
+end
