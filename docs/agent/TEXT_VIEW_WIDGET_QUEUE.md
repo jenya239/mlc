@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=7
+STEP=8
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -143,7 +143,8 @@ verify: красный `tmp/text_shape_cache_unit/bin` → RUN:1. После к�
 
 ### STEP=7 — видимые ряды
 
-status: pending
+status: done
+verify: красный `tmp/text_view_rows_unit/bin` → RUN:1. После окна: `compiler/out/mlcc -o tmp/text_view_rows_unit misc/textui/test/text_view_rows_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_rows_unit tmp/text_view_rows_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D7 закрыто, колонки номеров нет
 
 Красный тест: документ на 5000 коротких строк после первого кадра шейпит только видимое окно. Колесо на одну строку шейпит одну входящую строку.

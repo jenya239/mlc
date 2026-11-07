@@ -1,0 +1,22 @@
+import { TextDocument } from './text_document'
+import { TextViewState, text_view_visible_identifiers } from './text_view_state'
+
+export type TextViewRowPaint = {
+  line_identifier: i32
+}
+
+export type TextViewPaintItem =
+  PaintRow(TextViewRowPaint)
+  | PaintBar
+
+export fn text_view_paint_items(state: TextViewState, document: TextDocument) -> [TextViewPaintItem] = do
+  let mut items: [TextViewPaintItem] = []
+  let mut index = 0
+  const identifiers = text_view_visible_identifiers(state, document)
+  while index < identifiers.length() do
+    items.push(PaintRow(TextViewRowPaint { line_identifier: identifiers[index] }))
+    index = index + 1
+  end
+  items.push(PaintBar)
+  items
+end

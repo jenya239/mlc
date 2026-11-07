@@ -1,0 +1,161 @@
+import { TextDocument, text_document_line, text_document_line_count } from './text_document'
+import { text_line_index_of_identifier } from './text_line_index'
+import { TextShapeCache, TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from './text_shape_cache'
+
+export type TextViewState = {
+  anchor_line_identifier: i32,
+  anchor_vertical_offset: i32,
+  viewport_height: i32,
+  row_height: i32,
+  horizontal_scroll: i32,
+  content_width: i32,
+  layout_height: i32,
+  shape_cache: TextShapeCache
+}
+
+fn empty_identifiers() -> [i32] = do
+  let mut identifiers: [i32] = []
+  identifiers
+end
+
+fn empty_requests() -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests
+end
+
+export fn text_view_state_new(
+  viewport_height: i32,
+  row_height: i32,
+  content_width: i32,
+  font_path: string,
+  pixel_size: i32
+) -> TextViewState = do
+  TextViewState {
+    anchor_line_identifier: 0,
+    anchor_vertical_offset: 0,
+    viewport_height: viewport_height,
+    row_height: row_height,
+    horizontal_scroll: 0,
+    content_width: content_width,
+    layout_height: viewport_height,
+    shape_cache: text_shape_cache_empty(font_path, pixel_size, 0, 4096)
+  }
+end
+
+fn anchor_index(document: TextDocument, line_identifier: i32) -> i32 = do
+  const found = text_line_index_of_identifier(document.line_index, line_identifier)
+  const count = text_document_line_count(document)
+  if found < 0 || found >= count then
+    return 0
+  end
+  found
+end
+
+export fn text_view_visible_identifiers(state: TextViewState, document: TextDocument) -> [i32] = do
+  let mut identifiers = empty_identifiers()
+  if state.row_height <= 0 || state.viewport_height <= 0 then
+    return identifiers
+  end
+  let mut index = anchor_index(document, state.anchor_line_identifier)
+  let mut used = 0 - state.anchor_vertical_offset
+  const count = text_document_line_count(document)
+  while index < count && used < state.viewport_height do
+    identifiers.push(text_document_line(document, index).line_identifier)
+    used = used + state.row_height
+    index = index + 1
+  end
+  identifiers
+end
+
+fn request_for_identifier(document: TextDocument, line_identifier: i32) -> TextShapeRequest = do
+  const line = text_document_line(document, anchor_index(document, line_identifier))
+  TextShapeRequest {
+    line_identifier: line.line_identifier,
+    revision: line.revision,
+    token_revision: 0,
+    text: line.text
+  }
+end
+
+fn visible_requests(state: TextViewState, document: TextDocument) -> [TextShapeRequest] = do
+  const identifiers = text_view_visible_identifiers(state, document)
+  let mut requests = empty_requests()
+  let mut index = 0
+  while index < identifiers.length() do
+    requests.push(request_for_identifier(document, identifiers[index]))
+    index = index + 1
+  end
+  requests
+end
+
+fn entry_span(positions: [i32]) -> i32 = do
+  if positions.length() == 0 then
+    return 0
+  end
+  positions[positions.length() - 1]
+end
+
+fn grown_content_width(state: TextViewState, cache: TextShapeCache) -> i32 = do
+  let mut width = state.content_width
+  let mut index = 0
+  while index < cache.entries.length() do
+    const span = entry_span(cache.entries[index].boundary_positions)
+    if span > width then
+      width = span
+    end
+    index = index + 1
+  end
+  width
+end
+
+export fn text_view_frame(state: TextViewState, document: TextDocument) -> TextViewState = do
+  const cache = text_shape_cache_frame(
+    state.shape_cache,
+    visible_requests(state, document),
+    0,
+    0 - 1,
+    state.horizontal_scroll
+  )
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: grown_content_width(state, cache),
+    layout_height: state.viewport_height,
+    shape_cache: cache
+  }
+end
+
+export fn text_view_wheel(state: TextViewState, document: TextDocument, delta: i32) -> TextViewState = do
+  if delta == 0 then
+    return state
+  end
+  const count = text_document_line_count(document)
+  if count <= 0 then
+    return state
+  end
+  let mut next = anchor_index(document, state.anchor_line_identifier)
+  if delta > 0 then
+    next = next + 1
+  else
+    next = next - 1
+  end
+  if next < 0 then
+    next = 0
+  end
+  if next >= count then
+    next = count - 1
+  end
+  TextViewState {
+    anchor_line_identifier: text_document_line(document, next).line_identifier,
+    anchor_vertical_offset: 0,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.viewport_height,
+    shape_cache: state.shape_cache
+  }
+end

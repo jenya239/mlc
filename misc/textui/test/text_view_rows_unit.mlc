@@ -1,0 +1,53 @@
+import { text_document_from_bytes, text_document_line_count } from '../text_document'
+import { PaintBar, PaintRow, text_view_paint_items } from '../text_view_paint'
+import { text_view_frame, text_view_state_new, text_view_wheel } from '../text_view_state'
+
+fn repeated_lines(count: i32) -> string = do
+  let mut text = "a\n"
+  let mut filled = 1
+  while filled + filled <= count do
+    text = text + text
+    filled = filled + filled
+  end
+  while filled < count do
+    text = text + "a\n"
+    filled = filled + 1
+  end
+  text
+end
+
+fn main() -> i32 = do
+  const document = text_document_from_bytes(repeated_lines(5000))
+  if text_document_line_count(document) != 5000 then
+    return 7
+  end
+  const state = text_view_state_new(
+    160,
+    16,
+    10000,
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    16
+  )
+  const first = text_view_frame(state, document)
+  if first.shape_cache.shape_call_count != 10 then
+    return 1
+  end
+  const wheeled = text_view_wheel(first, document, 1)
+  const second = text_view_frame(wheeled, document)
+  if second.shape_cache.shape_call_count != 11 then
+    return 2
+  end
+  if second.layout_height != 160 then
+    return 3
+  end
+  if second.content_width < 10000 then
+    return 4
+  end
+  const painted = text_view_paint_items(second, document)
+  if painted.length() != 11 then
+    return 5
+  end
+  match painted[painted.length() - 1]
+    | PaintBar => 0
+    | PaintRow(_) => 6
+end
