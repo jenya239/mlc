@@ -1,3 +1,17 @@
+import {
+  TerminatorCarriageReturn,
+  TerminatorCarriageReturnLineFeed,
+  TerminatorLineFeed,
+  TerminatorLineSeparator,
+  TerminatorNone,
+  TerminatorParagraphSeparator,
+  LineTerminator,
+  TextLine,
+  text_line_new,
+  text_line_separator_bytes,
+  text_paragraph_separator_bytes
+} from './text_line'
+
 fn utf8_bounds() -> string = "€¿Âßà áìíŸîïðñóô"
 
 fn utf8_bound(index: i32) -> string = do
@@ -92,5 +106,58 @@ export fn text_bytes_are_utf8(bytes: string) -> bool = do
     end
   end
   true
+end
+
+type LineBreak = {
+  present: bool,
+  terminator: LineTerminator,
+  width: i32
+}
+
+fn line_break_at(bytes: string, index: i32) -> LineBreak = do
+  const size = bytes.byte_size()
+  if index >= size then
+    return LineBreak { present: false, terminator: TerminatorNone, width: 0 }
+  end
+  const current = bytes.byte_at(index)
+  if current == "\r" then
+    if index + 1 < size && bytes.byte_at(index + 1) == "\n" then
+      return LineBreak { present: true, terminator: TerminatorCarriageReturnLineFeed, width: 2 }
+    end
+    return LineBreak { present: true, terminator: TerminatorCarriageReturn, width: 1 }
+  end
+  if current == "\n" then
+    return LineBreak { present: true, terminator: TerminatorLineFeed, width: 1 }
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_line_separator_bytes() then
+    return LineBreak { present: true, terminator: TerminatorLineSeparator, width: 3 }
+  end
+  if index + 3 <= size && bytes.byte_substring(index, 3) == text_paragraph_separator_bytes() then
+    return LineBreak { present: true, terminator: TerminatorParagraphSeparator, width: 3 }
+  end
+  LineBreak { present: false, terminator: TerminatorNone, width: 0 }
+end
+
+export fn text_lines_from_bytes(bytes: string) -> [TextLine] = do
+  let mut lines: [TextLine] = []
+  let mut start = 0
+  let mut index = 0
+  let mut next_identifier = 0
+  const size = bytes.byte_size()
+  while index < size do
+    const found = line_break_at(bytes, index)
+    if found.present then
+      lines.push(text_line_new(next_identifier, bytes.byte_substring(start, index - start), found.terminator))
+      next_identifier = next_identifier + 1
+      index = index + found.width
+      start = index
+    else
+      index = index + 1
+    end
+  end
+  if start < size || lines.length() == 0 then
+    lines.push(text_line_new(next_identifier, bytes.byte_substring(start, size - start), TerminatorNone))
+  end
+  lines
 end
 

@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=4
+STEP=5
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -109,7 +109,8 @@ verify: красный `tmp/text_line_index_unit/bin` → RUN:1. После де
 
 ### STEP=4 — правка возвращает Edit
 
-status: pending
+status: done
+verify: красный `tmp/text_document_edit_unit/bin` → RUN:1. После правки: `compiler/out/mlcc -o tmp/text_document_edit_unit misc/textui/test/text_document_edit_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_document_edit_unit tmp/text_document_edit_unit/bin` → LINK:0, бинарь → RUN:0. Повтор `tmp/text_document_unit` → UNIT_RUN:0, `tmp/text_document_bytes_unit` → BYTES_RUN:0, `tmp/text_line_index_unit` → INDEX_RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0.
 
 Красный тест: `replace` возвращает `Edit`. Чужие строки сохраняют `id` и `rev`. У затронутой `rev` растёт, `id` не переиспользуется. `map_offset` различает gravity. `invert` возвращает прежние байты.
 

@@ -1,0 +1,277 @@
+import { TextLine, text_line_new, text_line_terminator_bytes } from './text_line'
+import { text_lines_from_bytes } from './text_document_load'
+import {
+  TextLineIndex,
+  text_line_index_from_recorded,
+  text_line_index_line_of,
+  text_line_index_offset_of,
+  text_line_index_set_identifier,
+  text_line_index_set_width
+} from './text_line_index'
+
+export type TextEdit = {
+  start_offset: i32,
+  end_offset: i32,
+  inserted_text: string,
+  removed_text: string
+}
+
+export type TextGravity =
+  GravityBefore
+  | GravityAfter
+
+export type TextEditApply = {
+  lines: [TextLine],
+  line_index: TextLineIndex,
+  next_line_identifier: i32,
+  edit: TextEdit
+}
+
+type EditedLines = {
+  lines: [TextLine],
+  next_line_identifier: i32
+}
+
+fn gravity_is_before(gravity: TextGravity) -> bool =
+  match gravity
+    | GravityBefore => true
+    | GravityAfter => false
+
+export fn text_edit_invert(edit: TextEdit) -> TextEdit = do
+  TextEdit {
+    start_offset: edit.start_offset,
+    end_offset: edit.start_offset + edit.inserted_text.byte_size(),
+    inserted_text: edit.removed_text,
+    removed_text: edit.inserted_text
+  }
+end
+
+export fn text_edit_map_offset(edit: TextEdit, offset: i32, gravity: TextGravity) -> i32 = do
+  const removed_width = edit.end_offset - edit.start_offset
+  const delta = edit.inserted_text.byte_size() - removed_width
+  if offset < edit.start_offset then
+    return offset
+  end
+  if offset == edit.start_offset then
+    if gravity_is_before(gravity) then
+      return offset
+    end
+    return edit.start_offset + edit.inserted_text.byte_size()
+  end
+  if offset >= edit.end_offset then
+    return offset + delta
+  end
+  if gravity_is_before(gravity) then
+    return edit.start_offset
+  end
+  edit.start_offset + edit.inserted_text.byte_size()
+end
+
+fn clamp_offset(offset: i32, size: i32) -> i32 = do
+  if offset < 0 then
+    return 0
+  end
+  if offset > size then
+    return size
+  end
+  offset
+end
+
+fn line_byte_width(line: TextLine) -> i32 = do
+  line.text.byte_size() + text_line_terminator_bytes(line.terminator).byte_size()
+end
+
+fn span_bytes(lines: [TextLine], start_line: i32, end_line: i32) -> string = do
+  let mut bytes = ""
+  let mut index = start_line
+  while index <= end_line do
+    const line = lines[index]
+    bytes = bytes + line.text + text_line_terminator_bytes(line.terminator)
+    index = index + 1
+  end
+  bytes
+end
+
+fn lines_after_edit(fresh: [TextLine], kept: TextLine, next_line_identifier: i32) -> EditedLines = do
+  let mut lines: [TextLine] = []
+  if fresh.length() == 0 then
+    return EditedLines { lines: lines, next_line_identifier: next_line_identifier }
+  end
+  lines.push(TextLine {
+    line_identifier: kept.line_identifier,
+    revision: kept.revision + 1,
+    text: fresh[0].text,
+    terminator: fresh[0].terminator
+  })
+  let mut next_identifier = next_line_identifier
+  let mut index = 1
+  while index < fresh.length() do
+    lines.push(text_line_new(next_identifier, fresh[index].text, fresh[index].terminator))
+    next_identifier = next_identifier + 1
+    index = index + 1
+  end
+  EditedLines { lines: lines, next_line_identifier: next_identifier }
+end
+
+fn splice_lines(lines: [TextLine], start_line: i32, end_line: i32, fresh: [TextLine]) -> [TextLine] = do
+  let mut result: [TextLine] = []
+  let mut index = 0
+  while index < start_line do
+    result.push(lines[index])
+    index = index + 1
+  end
+  let mut fresh_index = 0
+  while fresh_index < fresh.length() do
+    result.push(fresh[fresh_index])
+    fresh_index = fresh_index + 1
+  end
+  index = end_line + 1
+  while index < lines.length() do
+    result.push(lines[index])
+    index = index + 1
+  end
+  result
+end
+
+fn splice_numbers(values: [i32], start_line: i32, end_line: i32, middle: [i32]) -> [i32] = do
+  let mut result: [i32] = []
+  let mut index = 0
+  while index < start_line do
+    result.push(values[index])
+    index = index + 1
+  end
+  let mut middle_index = 0
+  while middle_index < middle.length() do
+    result.push(middle[middle_index])
+    middle_index = middle_index + 1
+  end
+  index = end_line + 1
+  while index < values.length() do
+    result.push(values[index])
+    index = index + 1
+  end
+  result
+end
+
+fn fresh_widths(lines: [TextLine]) -> [i32] = do
+  let mut widths: [i32] = []
+  let mut index = 0
+  while index < lines.length() do
+    widths.push(line_byte_width(lines[index]))
+    index = index + 1
+  end
+  widths
+end
+
+fn fresh_identifiers(lines: [TextLine]) -> [i32] = do
+  let mut identifiers: [i32] = []
+  let mut index = 0
+  while index < lines.length() do
+    identifiers.push(lines[index].line_identifier)
+    index = index + 1
+  end
+  identifiers
+end
+
+fn index_after_same_count(index: TextLineIndex, start_line: i32, fresh: [TextLine]) -> TextLineIndex = do
+  let mut updated = index
+  let mut cursor = 0
+  while cursor < fresh.length() do
+    updated = text_line_index_set_width(updated, start_line + cursor, line_byte_width(fresh[cursor]))
+    updated = text_line_index_set_identifier(updated, start_line + cursor, fresh[cursor].line_identifier)
+    cursor = cursor + 1
+  end
+  updated
+end
+
+fn index_after_edit(index: TextLineIndex, start_line: i32, end_line: i32, fresh: [TextLine]) -> TextLineIndex = do
+  const previous_count = end_line - start_line + 1
+  if fresh.length() == previous_count then
+    return index_after_same_count(index, start_line, fresh)
+  end
+  text_line_index_from_recorded(
+    splice_numbers(index.widths, start_line, end_line, fresh_widths(fresh)),
+    splice_numbers(index.line_identifiers, start_line, end_line, fresh_identifiers(fresh))
+  )
+end
+
+fn unchanged_edit(
+  lines: [TextLine],
+  line_index: TextLineIndex,
+  next_line_identifier: i32,
+  start_offset: i32,
+  end_offset: i32,
+  inserted_text: string
+) -> TextEditApply = do
+  TextEditApply {
+    lines: lines,
+    line_index: line_index,
+    next_line_identifier: next_line_identifier,
+    edit: TextEdit {
+      start_offset: start_offset,
+      end_offset: end_offset,
+      inserted_text: inserted_text,
+      removed_text: ""
+    }
+  }
+end
+
+export fn text_edit_apply(
+  lines: [TextLine],
+  line_index: TextLineIndex,
+  next_line_identifier: i32,
+  start_offset: i32,
+  end_offset: i32,
+  inserted_text: string
+) -> TextEditApply = do
+  if lines.length() == 0 then
+    return unchanged_edit(lines, line_index, next_line_identifier, start_offset, end_offset, inserted_text)
+  end
+  const total = text_line_index_offset_of(line_index, lines.length())
+  let mut clamped_start = clamp_offset(start_offset, total.value)
+  let mut clamped_end = clamp_offset(end_offset, total.value)
+  if clamped_start > clamped_end then
+    const swapped = clamped_start
+    clamped_start = clamped_end
+    clamped_end = swapped
+  end
+  const start_query = text_line_index_line_of(total.index, clamped_start)
+  let mut end_probe = clamped_start
+  if clamped_end > clamped_start then
+    end_probe = clamped_end - 1
+  end
+  const end_query = text_line_index_line_of(start_query.index, end_probe)
+  let mut end_line = end_query.value
+  const boundary = text_line_index_offset_of(end_query.index, end_line + 1)
+  if clamped_end > clamped_start && boundary.value == clamped_end && end_line + 1 < lines.length() then
+    end_line = end_line + 1
+  end
+  const start_line = start_query.value
+  const origin = text_line_index_offset_of(boundary.index, start_line)
+  const span = span_bytes(lines, start_line, end_line)
+  let mut local_from = clamped_start - origin.value
+  let mut local_to = clamped_end - origin.value
+  if local_from < 0 then
+    local_from = 0
+  end
+  if local_to < local_from then
+    local_to = local_from
+  end
+  if local_to > span.byte_size() then
+    local_to = span.byte_size()
+  end
+  const removed = span.byte_substring(local_from, local_to - local_from)
+  const merged = span.byte_substring(0, local_from) + inserted_text + span.byte_substring(local_to, span.byte_size() - local_to)
+  const edited = lines_after_edit(text_lines_from_bytes(merged), lines[start_line], next_line_identifier)
+  TextEditApply {
+    lines: splice_lines(lines, start_line, end_line, edited.lines),
+    line_index: index_after_edit(origin.index, start_line, end_line, edited.lines),
+    next_line_identifier: edited.next_line_identifier,
+    edit: TextEdit {
+      start_offset: clamped_start,
+      end_offset: clamped_end,
+      inserted_text: inserted_text,
+      removed_text: removed
+    }
+  }
+end

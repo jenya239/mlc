@@ -1,20 +1,7 @@
-import {
-  LineTerminator,
-  TerminatorCarriageReturn,
-  TerminatorCarriageReturnLineFeed,
-  TerminatorLineFeed,
-  TerminatorLineSeparator,
-  TerminatorNone,
-  TerminatorParagraphSeparator,
-  TextLine,
-  text_line_blank,
-  text_line_new,
-  text_line_separator_bytes,
-  text_line_terminator_bytes,
-  text_paragraph_separator_bytes
-} from './text_line'
-
-import { text_bytes_are_utf8 } from './text_document_load'
+import { TextLine, text_line_blank, text_line_terminator_bytes } from './text_line'
+import { text_bytes_are_utf8, text_lines_from_bytes } from './text_document_load'
+import { text_line_index_from_lines, text_line_index_set_width, TextLineIndex } from './text_line_index'
+import { TextEdit, text_edit_apply } from './text_edit'
 
 export type LoadedPiece = {
   lines: [TextLine]
@@ -33,17 +20,12 @@ export type TextOrigin =
   OriginComplete
   | OriginLossy
 
-type LineBreak = {
-  present: bool,
-  terminator: LineTerminator,
-  width: i32
-}
-
 export type TextDocument = {
   pieces: [TextPiece],
   origin: TextOrigin,
   writable: bool,
-  next_line_identifier: i32
+  next_line_identifier: i32,
+  line_index: TextLineIndex
 }
 
 export type TextByteAssembly = {
@@ -59,7 +41,8 @@ fn document_with_lines(lines: [TextLine], next_line_identifier: i32, origin: Tex
     pieces: pieces,
     origin: origin,
     writable: writable,
-    next_line_identifier: next_line_identifier
+    next_line_identifier: next_line_identifier,
+    line_index: text_line_index_from_lines(lines)
   }
 end
 
@@ -140,55 +123,8 @@ fn piece_bytes(piece: TextPiece) -> string =
     | PieceLoaded(loaded) => loaded_piece_bytes(loaded)
     | PieceUnloaded(_) => ""
 
-fn line_break_at(bytes: string, index: i32) -> LineBreak = do
-  const size = bytes.byte_size()
-  if index >= size then
-    return LineBreak { present: false, terminator: TerminatorNone, width: 0 }
-  end
-  const current = bytes.byte_at(index)
-  if current == "\r" then
-    if index + 1 < size && bytes.byte_at(index + 1) == "\n" then
-      return LineBreak { present: true, terminator: TerminatorCarriageReturnLineFeed, width: 2 }
-    end
-    return LineBreak { present: true, terminator: TerminatorCarriageReturn, width: 1 }
-  end
-  if current == "\n" then
-    return LineBreak { present: true, terminator: TerminatorLineFeed, width: 1 }
-  end
-  if index + 3 <= size && bytes.byte_substring(index, 3) == text_line_separator_bytes() then
-    return LineBreak { present: true, terminator: TerminatorLineSeparator, width: 3 }
-  end
-  if index + 3 <= size && bytes.byte_substring(index, 3) == text_paragraph_separator_bytes() then
-    return LineBreak { present: true, terminator: TerminatorParagraphSeparator, width: 3 }
-  end
-  LineBreak { present: false, terminator: TerminatorNone, width: 0 }
-end
-
-fn split_lines(bytes: string) -> [TextLine] = do
-  let mut lines: [TextLine] = []
-  let mut start = 0
-  let mut index = 0
-  let mut next_identifier = 0
-  const size = bytes.byte_size()
-  while index < size do
-    const found = line_break_at(bytes, index)
-    if found.present then
-      lines.push(text_line_new(next_identifier, bytes.byte_substring(start, index - start), found.terminator))
-      next_identifier = next_identifier + 1
-      index = index + found.width
-      start = index
-    else
-      index = index + 1
-    end
-  end
-  if start < size || lines.length() == 0 then
-    lines.push(text_line_new(next_identifier, bytes.byte_substring(start, size - start), TerminatorNone))
-  end
-  lines
-end
-
 export fn text_document_from_bytes(bytes: string) -> TextDocument = do
-  const lines = split_lines(bytes)
+  const lines = text_lines_from_bytes(bytes)
   if text_bytes_are_utf8(bytes) then
     return document_with_lines(lines, lines.length(), OriginComplete, true)
   end
@@ -219,7 +155,8 @@ export fn text_document_with_unloaded_tail(loaded_bytes: string, file_offset: i3
     pieces: pieces,
     origin: loaded.origin,
     writable: false,
-    next_line_identifier: loaded.next_line_identifier
+    next_line_identifier: loaded.next_line_identifier,
+    line_index: loaded.line_index
   }
 end
 
@@ -241,11 +178,14 @@ export fn text_document_set_line_text(document: TextDocument, line_index: i32, t
   end
   let mut pieces = document.pieces
   pieces.set(0, PieceLoaded(loaded_with_line_text(loaded, line_index, text)))
+  const replacement = loaded_with_line_text(loaded, line_index, text).lines[line_index]
+  const width = replacement.text.byte_size() + text_line_terminator_bytes(replacement.terminator).byte_size()
   TextDocument {
     pieces: pieces,
     origin: document.origin,
     writable: document.writable,
-    next_line_identifier: document.next_line_identifier
+    next_line_identifier: document.next_line_identifier,
+    line_index: text_line_index_set_width(document.line_index, line_index, width)
   }
 end
 
@@ -327,4 +267,54 @@ end
 
 export fn text_document_next_line_identifier(document: TextDocument) -> i32 = do
   document.next_line_identifier
+end
+
+export type TextReplaceResult = {
+  document: TextDocument,
+  edit: TextEdit,
+  accepted: bool
+}
+
+fn text_replace_rejected(document: TextDocument) -> TextReplaceResult = do
+  TextReplaceResult {
+    document: document,
+    edit: TextEdit { start_offset: 0, end_offset: 0, inserted_text: "", removed_text: "" },
+    accepted: false
+  }
+end
+
+export fn text_document_replace(
+  document: TextDocument,
+  start_offset: i32,
+  end_offset: i32,
+  inserted_text: string
+) -> TextReplaceResult = do
+  if origin_is_complete(document.origin) == false then
+    return text_replace_rejected(document)
+  end
+  if document.pieces.length() == 0 || piece_is_loaded(document.pieces[0]) == false then
+    return text_replace_rejected(document)
+  end
+  const loaded = loaded_lines_of(document.pieces[0])
+  const applied = text_edit_apply(
+    loaded.lines,
+    document.line_index,
+    document.next_line_identifier,
+    start_offset,
+    end_offset,
+    inserted_text
+  )
+  let mut pieces = document.pieces
+  pieces.set(0, PieceLoaded(LoadedPiece { lines: applied.lines }))
+  TextReplaceResult {
+    document: TextDocument {
+      pieces: pieces,
+      origin: document.origin,
+      writable: document.writable,
+      next_line_identifier: applied.next_line_identifier,
+      line_index: applied.line_index
+    },
+    edit: applied.edit,
+    accepted: true
+  }
 end

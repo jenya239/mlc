@@ -76,30 +76,33 @@ fn prefix_sum(index: TextLineIndex, count: i32) -> TextLineIndexQuery = do
   }
 end
 
-fn maximum_identifier(lines: [TextLine]) -> i32 = do
-  if lines.length() == 0 then
+fn maximum_number(numbers: [i32]) -> i32 = do
+  if numbers.length() == 0 then
     return 0 - 1
   end
-  let mut maximum = lines[0].line_identifier
+  let mut maximum = numbers[0]
   let mut index = 1
-  while index < lines.length() do
-    if lines[index].line_identifier > maximum then
-      maximum = lines[index].line_identifier
+  while index < numbers.length() do
+    if numbers[index] > maximum then
+      maximum = numbers[index]
     end
     index = index + 1
   end
   maximum
 end
 
-fn identifier_indexes_for(lines: [TextLine]) -> [i32] = do
-  const maximum = maximum_identifier(lines)
+fn identifier_indexes_from_numbers(identifiers: [i32]) -> [i32] = do
+  const maximum = maximum_number(identifiers)
   if maximum < 0 then
     return empty_numbers()
   end
   let mut indexes = filled_numbers(maximum + 1, 0 - 1)
   let mut index = 0
-  while index < lines.length() do
-    indexes.set(lines[index].line_identifier, index)
+  while index < identifiers.length() do
+    const identifier = identifiers[index]
+    if identifier >= 0 && identifier <= maximum then
+      indexes.set(identifier, index)
+    end
     index = index + 1
   end
   indexes
@@ -119,6 +122,23 @@ export fn text_line_index_clear_counts(index: TextLineIndex) -> TextLineIndex = 
   index_with_tree(index, index.widths, index.tree, 0, 0)
 end
 
+export fn text_line_index_from_recorded(widths: [i32], line_identifiers: [i32]) -> TextLineIndex = do
+  let mut built = TextLineIndex {
+    widths: widths,
+    tree: filled_numbers(widths.length() + 1, 0),
+    line_identifiers: line_identifiers,
+    identifier_indexes: identifier_indexes_from_numbers(line_identifiers),
+    reads: 0,
+    updates: 0
+  }
+  let mut line_index = 0
+  while line_index < widths.length() do
+    built = add_width(built, line_index, built.widths[line_index])
+    line_index = line_index + 1
+  end
+  text_line_index_clear_counts(built)
+end
+
 export fn text_line_index_from_lines(lines: [TextLine]) -> TextLineIndex = do
   let mut widths = empty_numbers()
   let mut index = 0
@@ -126,20 +146,7 @@ export fn text_line_index_from_lines(lines: [TextLine]) -> TextLineIndex = do
     widths.push(line_width(lines[index]))
     index = index + 1
   end
-  let mut built = TextLineIndex {
-    widths: widths,
-    tree: filled_numbers(lines.length() + 1, 0),
-    line_identifiers: line_identifiers_for(lines),
-    identifier_indexes: identifier_indexes_for(lines),
-    reads: 0,
-    updates: 0
-  }
-  let mut line_index = 0
-  while line_index < lines.length() do
-    built = add_width(built, line_index, built.widths[line_index])
-    line_index = line_index + 1
-  end
-  text_line_index_clear_counts(built)
+  text_line_index_from_recorded(widths, line_identifiers_for(lines))
 end
 
 export fn text_line_index_offset_of(index: TextLineIndex, line_index: i32) -> TextLineIndexQuery = do
@@ -199,4 +206,37 @@ export fn text_line_index_set_width(index: TextLineIndex, line_index: i32, width
   let mut widths = index.widths
   widths.set(line_index, width)
   add_width(index_with_tree(index, widths, index.tree, index.reads, index.updates), line_index, delta)
+end
+
+fn grow_missing_identifiers(indexes: [i32], size: i32) -> [i32] = do
+  let mut grown = indexes
+  while grown.length() < size do
+    grown.push(0 - 1)
+  end
+  grown
+end
+
+export fn text_line_index_set_identifier(index: TextLineIndex, line_index: i32, identifier: i32) -> TextLineIndex = do
+  if line_index < 0 || line_index >= index.line_identifiers.length() || identifier < 0 then
+    return index
+  end
+  const previous = index.line_identifiers[line_index]
+  if previous == identifier then
+    return index
+  end
+  let mut line_identifiers = index.line_identifiers
+  line_identifiers.set(line_index, identifier)
+  let mut identifier_indexes = grow_missing_identifiers(index.identifier_indexes, identifier + 1)
+  if previous >= 0 && previous < identifier_indexes.length() && identifier_indexes[previous] == line_index then
+    identifier_indexes.set(previous, 0 - 1)
+  end
+  identifier_indexes.set(identifier, line_index)
+  TextLineIndex {
+    widths: index.widths,
+    tree: index.tree,
+    line_identifiers: line_identifiers,
+    identifier_indexes: identifier_indexes,
+    reads: index.reads,
+    updates: index.updates
+  }
 end
