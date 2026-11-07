@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=16
+STEP=17
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -238,7 +238,8 @@ verify: красный `tmp/text_highlight_unit/bin` → RUN:1. После то�
 
 ### STEP=16 — перенос и высоты
 
-status: pending
+status: done
+verify: красный `tmp/text_heights_unit/bin` → RUN:1. После дерева высот: `compiler/out/mlcc -o tmp/text_heights_unit misc/textui/test/text_heights_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_heights_unit tmp/text_heights_unit/bin` → LINK:0, бинарь → RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D5 закрыто
 
 Красный тест: `wrap_px` входит в ключ. Число рядов абзаца берётся из его кэша. Смена ширины не создаёт новый документ. Несобранный абзац оценивается одним рядом. Поиск ряда по y не суммирует массив. Уточнение высоты выше якоря не двигает строку под якорем.

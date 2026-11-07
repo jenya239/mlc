@@ -1,0 +1,82 @@
+import { text_document_from_bytes, text_document_line, text_document_line_count } from '../text_document'
+import {
+  TextHeightAnchor,
+  text_height_index_new,
+  text_height_row_at_y,
+  text_height_rows_of,
+  text_height_set_rows,
+  text_height_viewport_y
+} from '../text_heights'
+import { TextShapeCache, TextShapeRequest, text_shape_cache_empty, text_shape_cache_frame } from '../text_shape_cache'
+
+fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+fn identifiers_until(count: i32) -> [i32] = do
+  let mut identifiers: [i32] = []
+  let mut index = 0
+  while index < count do
+    identifiers.push(index)
+    index = index + 1
+  end
+  identifiers
+end
+
+fn shape_request() -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests.push(TextShapeRequest { line_identifier: 1, revision: 0, token_revision: 0, text: "one" })
+  requests
+end
+
+fn cache_with_wrap(cache: TextShapeCache, wrap_pixels: i32) -> TextShapeCache = do
+  TextShapeCache {
+    shaping: cache.shaping,
+    font_path: cache.font_path,
+    pixel_size: cache.pixel_size,
+    wrap_pixels: wrap_pixels,
+    byte_limit: cache.byte_limit,
+    entries: cache.entries,
+    shape_call_count: cache.shape_call_count,
+    caret_line: cache.caret_line,
+    hover_line: cache.hover_line,
+    scroll_y: cache.scroll_y
+  }
+end
+
+fn main() -> i32 = do
+  const estimated = text_height_index_new([10, 20, 30], 10)
+  if text_height_rows_of(estimated, 10) != 1 || text_height_rows_of(estimated, 30) != 1 then
+    return 1
+  end
+  const measured = text_height_set_rows(estimated, 20, 4)
+  if text_height_rows_of(measured, 20) != 4 || text_height_rows_of(measured, 10) != 1 then
+    return 2
+  end
+  const document = text_document_from_bytes("ab\ncd")
+  const cache = text_shape_cache_empty(font_path(), 16, 0, 4096)
+  const shaped = text_shape_cache_frame(cache, shape_request(), 0, 0 - 1, 0)
+  const wrapped = text_shape_cache_frame(cache_with_wrap(shaped, 40), shape_request(), 0, 0 - 1, 0)
+  if wrapped.shape_call_count != shaped.shape_call_count + 1 then
+    return 3
+  end
+  if text_document_line_count(document) != 2 || text_document_line(document, 1).line_identifier != 1 then
+    return 3
+  end
+  const wide = text_height_index_new(identifiers_until(64), 10)
+  const placed = text_height_row_at_y(wide, 630)
+  if placed.line_identifier != 63 || placed.subrow != 0 || placed.index.reads >= 64 then
+    return 4
+  end
+  const uneven = text_height_set_rows(text_height_index_new([10, 20, 30], 10), 20, 3)
+  const inside = text_height_row_at_y(uneven, 25)
+  if inside.line_identifier != 20 || inside.subrow != 1 then
+    return 5
+  end
+  const anchor = TextHeightAnchor { line_identifier: 20, subrow: 0, vertical_offset: 0 }
+  const before = text_height_viewport_y(estimated, anchor, 30)
+  const refined = text_height_set_rows(estimated, 10, 4)
+  const after = text_height_viewport_y(refined, anchor, 30)
+  if before.value != 10 || after.value != 10 || anchor.line_identifier != 20 then
+    return 6
+  end
+  0
+end

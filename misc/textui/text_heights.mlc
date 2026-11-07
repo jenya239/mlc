@@ -1,0 +1,243 @@
+export type TextHeightAnchor = {
+  line_identifier: i32,
+  subrow: i32,
+  vertical_offset: i32
+}
+
+export type TextHeightIndex = {
+  row_counts: [i32],
+  tree: [i32],
+  line_identifiers: [i32],
+  identifier_indexes: [i32],
+  row_height: i32,
+  reads: i32
+}
+
+export type TextHeightPlace = {
+  index: TextHeightIndex,
+  line_identifier: i32,
+  subrow: i32
+}
+
+export type TextHeightQuery = {
+  index: TextHeightIndex,
+  value: i32
+}
+
+fn empty_numbers() -> [i32] = do
+  let mut numbers: [i32] = []
+  numbers
+end
+
+fn filled_numbers(count: i32, value: i32) -> [i32] = do
+  let mut numbers: [i32] = []
+  let mut index = 0
+  while index < count do
+    numbers.push(value)
+    index = index + 1
+  end
+  numbers
+end
+
+fn lowest_set_bit(value: i32) -> i32 = do
+  value & (0 - value)
+end
+
+fn maximum_number(numbers: [i32]) -> i32 = do
+  if numbers.length() == 0 then
+    return 0 - 1
+  end
+  let mut maximum = numbers[0]
+  let mut index = 1
+  while index < numbers.length() do
+    if numbers[index] > maximum then
+      maximum = numbers[index]
+    end
+    index = index + 1
+  end
+  maximum
+end
+
+fn identifier_indexes_from_numbers(identifiers: [i32]) -> [i32] = do
+  const maximum = maximum_number(identifiers)
+  if maximum < 0 then
+    return empty_numbers()
+  end
+  let mut indexes = filled_numbers(maximum + 1, 0 - 1)
+  let mut index = 0
+  while index < identifiers.length() do
+    const identifier = identifiers[index]
+    if identifier >= 0 && identifier <= maximum then
+      indexes.set(identifier, index)
+    end
+    index = index + 1
+  end
+  indexes
+end
+
+fn index_with_tree(index: TextHeightIndex, row_counts: [i32], tree: [i32], reads: i32) -> TextHeightIndex = do
+  TextHeightIndex {
+    row_counts: row_counts,
+    tree: tree,
+    line_identifiers: index.line_identifiers,
+    identifier_indexes: index.identifier_indexes,
+    row_height: index.row_height,
+    reads: reads
+  }
+end
+
+fn add_rows(index: TextHeightIndex, line_index: i32, delta: i32) -> TextHeightIndex = do
+  let mut tree = index.tree
+  let mut node = line_index + 1
+  const count = index.row_counts.length()
+  while node <= count do
+    tree.set(node, tree[node] + delta)
+    node = node + lowest_set_bit(node)
+  end
+  index_with_tree(index, index.row_counts, tree, index.reads)
+end
+
+fn prefix_sum(index: TextHeightIndex, count: i32) -> TextHeightQuery = do
+  let mut cursor = count
+  let mut sum = 0
+  let mut reads = index.reads
+  while cursor > 0 do
+    reads = reads + 1
+    sum = sum + index.tree[cursor]
+    cursor = cursor - lowest_set_bit(cursor)
+  end
+  TextHeightQuery {
+    index: index_with_tree(index, index.row_counts, index.tree, reads),
+    value: sum
+  }
+end
+
+fn line_index_of(index: TextHeightIndex, line_identifier: i32) -> i32 = do
+  if line_identifier < 0 || line_identifier >= index.identifier_indexes.length() then
+    return 0 - 1
+  end
+  index.identifier_indexes[line_identifier]
+end
+
+fn line_of_row(index: TextHeightIndex, ordinal: i32) -> TextHeightQuery = do
+  const count = index.row_counts.length()
+  if count == 0 then
+    return TextHeightQuery { index: index, value: 0 }
+  end
+  const total = prefix_sum(index, count)
+  if ordinal >= total.value then
+    return TextHeightQuery { index: total.index, value: count - 1 }
+  end
+  if ordinal < 0 then
+    return TextHeightQuery { index: total.index, value: 0 }
+  end
+  let mut low = 0
+  let mut high = count - 1
+  let mut current = total.index
+  while low < high do
+    const middle = (low + high) / 2
+    const probe = prefix_sum(current, middle + 1)
+    current = probe.index
+    if probe.value > ordinal then
+      high = middle
+    else
+      low = middle + 1
+    end
+  end
+  TextHeightQuery { index: current, value: low }
+end
+
+fn row_ordinal(index: TextHeightIndex, y: i32) -> i32 = do
+  let mut height = index.row_height
+  if height <= 0 then
+    height = 1
+  end
+  if y <= 0 then
+    return 0
+  end
+  y / height
+end
+
+export fn text_height_index_new(line_identifiers: [i32], row_height: i32) -> TextHeightIndex = do
+  let mut built = TextHeightIndex {
+    row_counts: filled_numbers(line_identifiers.length(), 1),
+    tree: filled_numbers(line_identifiers.length() + 1, 0),
+    line_identifiers: line_identifiers,
+    identifier_indexes: identifier_indexes_from_numbers(line_identifiers),
+    row_height: row_height,
+    reads: 0
+  }
+  let mut line_index = 0
+  while line_index < line_identifiers.length() do
+    built = add_rows(built, line_index, 1)
+    line_index = line_index + 1
+  end
+  index_with_tree(built, built.row_counts, built.tree, 0)
+end
+
+export fn text_height_rows_of(index: TextHeightIndex, line_identifier: i32) -> i32 = do
+  const line_index = line_index_of(index, line_identifier)
+  if line_index < 0 then
+    return 1
+  end
+  index.row_counts[line_index]
+end
+
+export fn text_height_set_rows(index: TextHeightIndex, line_identifier: i32, row_count: i32) -> TextHeightIndex = do
+  const line_index = line_index_of(index, line_identifier)
+  if line_index < 0 || row_count < 1 then
+    return index
+  end
+  let mut row_counts = index.row_counts
+  const delta = row_count - row_counts[line_index]
+  row_counts.set(line_index, row_count)
+  add_rows(index_with_tree(index, row_counts, index.tree, index.reads), line_index, delta)
+end
+
+export fn text_height_row_at_y(index: TextHeightIndex, y: i32) -> TextHeightPlace = do
+  const count = index.row_counts.length()
+  if count == 0 then
+    return TextHeightPlace { index: index, line_identifier: 0, subrow: 0 }
+  end
+  const located = line_of_row(index, row_ordinal(index, y))
+  const origin = prefix_sum(located.index, located.value)
+  let mut subrow = row_ordinal(origin.index, y) - origin.value
+  const rows = origin.index.row_counts[located.value]
+  if subrow < 0 then
+    subrow = 0
+  end
+  if subrow >= rows && rows > 0 then
+    subrow = rows - 1
+  end
+  TextHeightPlace {
+    index: origin.index,
+    line_identifier: origin.index.line_identifiers[located.value],
+    subrow: subrow
+  }
+end
+
+fn row_top(index: TextHeightIndex, line_identifier: i32) -> TextHeightQuery = do
+  const line_index = line_index_of(index, line_identifier)
+  if line_index < 0 then
+    return TextHeightQuery { index: index, value: 0 }
+  end
+  const prefix = prefix_sum(index, line_index)
+  let mut height = index.row_height
+  if height <= 0 then
+    height = 1
+  end
+  TextHeightQuery { index: prefix.index, value: prefix.value * height }
+end
+
+export fn text_height_viewport_y(index: TextHeightIndex, anchor: TextHeightAnchor, line_identifier: i32) -> TextHeightQuery = do
+  const anchor_top = row_top(index, anchor.line_identifier)
+  const line_top = row_top(anchor_top.index, line_identifier)
+  let mut height = index.row_height
+  if height <= 0 then
+    height = 1
+  end
+  TextHeightQuery {
+    index: line_top.index,
+    value: line_top.value - anchor_top.value - anchor.subrow * height - anchor.vertical_offset
+  }
+end
