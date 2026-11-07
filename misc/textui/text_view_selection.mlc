@@ -1,4 +1,5 @@
 import { TextDocument, TextReplaceResult, text_document_line, text_document_replace } from './text_document'
+import { text_line_terminator_bytes } from './text_line'
 import { TextEdit } from './text_edit'
 import { TextLine } from './text_line'
 import { text_grapheme_boundaries } from './text_graphemes'
@@ -104,8 +105,16 @@ export fn text_view_replace(
   if found < 0 then
     return replace_rejected(document)
   end
-  const limit = origin.value + state.shape_cache.entries[found].shaped_byte_count
-  if start_offset >= limit || end_offset > limit then
+  const entry = state.shape_cache.entries[found]
+  const text_limit = origin.value + line.text.byte_size()
+  const line_limit = text_limit + text_line_terminator_bytes(line.terminator).byte_size()
+  if entry.shaped_byte_count < line.text.byte_size() then
+    const shaped_limit = origin.value + entry.shaped_byte_count
+    if start_offset >= shaped_limit || end_offset > shaped_limit then
+      return replace_rejected(document)
+    end
+  end
+  if start_offset > line_limit || end_offset > line_limit then
     return replace_rejected(document)
   end
   text_document_replace(document, start_offset, end_offset, inserted_text)

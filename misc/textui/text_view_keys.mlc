@@ -1,0 +1,260 @@
+import { TextDocument, text_document_line, text_document_line_count } from './text_document'
+import { text_line_terminator_bytes } from './text_line'
+import { text_grapheme_boundaries } from './text_graphemes'
+import {
+  text_line_index_line_of,
+  text_line_index_of_identifier,
+  text_line_index_offset_of
+} from './text_line_index'
+import { TextShapeRequest, text_shape_cache_frame } from './text_shape_cache'
+import { GravityAfter, text_edit_map_offset } from './text_edit'
+import { text_view_state_with_cache } from './text_view_input'
+import { text_view_replace } from './text_view_selection'
+import { TextViewState, text_view_visible_identifiers } from './text_view_state'
+
+export type TextViewKeyResult = {
+  state: TextViewState,
+  document: TextDocument,
+  accepted: bool
+}
+
+fn unchanged(state: TextViewState, document: TextDocument) -> TextViewKeyResult = do
+  TextViewKeyResult {
+    state: state,
+    document: document,
+    accepted: false
+  }
+end
+
+fn line_index_of(document: TextDocument, line_identifier: i32) -> i32 = do
+  text_line_index_of_identifier(document.line_index, line_identifier)
+end
+
+fn line_origin(document: TextDocument, line_identifier: i32) -> i32 = do
+  const line_index = line_index_of(document, line_identifier)
+  if line_index < 0 then
+    return 0
+  end
+  text_line_index_offset_of(document.line_index, line_index).value
+end
+
+fn global_offset(document: TextDocument, line_identifier: i32, byte_offset: i32) -> i32 = do
+  line_origin(document, line_identifier) + byte_offset
+end
+
+fn earlier_boundary(text: string, byte_offset: i32) -> i32 = do
+  const boundaries = text_grapheme_boundaries(text)
+  let mut chosen = byte_offset
+  let mut index = 0
+  while index < boundaries.length() do
+    if boundaries[index] < byte_offset then
+      chosen = boundaries[index]
+    end
+    index = index + 1
+  end
+  chosen
+end
+
+fn later_boundary(text: string, byte_offset: i32) -> i32 = do
+  const boundaries = text_grapheme_boundaries(text)
+  let mut index = 0
+  while index < boundaries.length() do
+    if boundaries[index] > byte_offset then
+      return boundaries[index]
+    end
+    index = index + 1
+  end
+  byte_offset
+end
+
+fn empty_requests() -> [TextShapeRequest] = do
+  let mut requests: [TextShapeRequest] = []
+  requests
+end
+
+fn key_visible_requests(state: TextViewState, document: TextDocument) -> [TextShapeRequest] = do
+  const identifiers = text_view_visible_identifiers(state, document)
+  let mut requests = empty_requests()
+  let mut index = 0
+  while index < identifiers.length() do
+    const line_index = line_index_of(document, identifiers[index])
+    if line_index >= 0 then
+      const line = text_document_line(document, line_index)
+      requests.push(TextShapeRequest {
+        line_identifier: line.line_identifier,
+        revision: line.revision,
+        token_revision: 0,
+        text: line.text
+      })
+    end
+    index = index + 1
+  end
+  requests
+end
+
+type TextCaretPlace = {
+  line_identifier: i32,
+  byte_offset: i32
+}
+
+fn place_of(document: TextDocument, offset: i32) -> TextCaretPlace = do
+  const located = text_line_index_line_of(document.line_index, offset)
+  const origin = text_line_index_offset_of(located.index, located.value)
+  let mut byte_offset = offset - origin.value
+  const line = text_document_line(document, located.value)
+  if byte_offset < 0 then
+    byte_offset = 0
+  end
+  if byte_offset > line.text.byte_size() then
+    byte_offset = line.text.byte_size()
+  end
+  TextCaretPlace {
+    line_identifier: line.line_identifier,
+    byte_offset: byte_offset
+  }
+end
+
+fn state_at(
+  state: TextViewState,
+  cache_state: TextViewState,
+  caret_line_identifier: i32,
+  caret_byte: i32,
+  bound_line_identifier: i32,
+  bound_byte: i32
+) -> TextViewState = do
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.layout_height,
+    shape_cache: cache_state.shape_cache,
+    hover_token: state.hover_token,
+    caret_line_identifier: caret_line_identifier,
+    caret_byte: caret_byte,
+    bound_line_identifier: bound_line_identifier,
+    bound_byte: bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: 0,
+    goal_x_present: false
+  }
+end
+
+fn apply_replace(
+  state: TextViewState,
+  document: TextDocument,
+  start_offset: i32,
+  finish_offset: i32,
+  inserted_text: string
+) -> TextViewKeyResult = do
+  const replaced = text_view_replace(state, document, start_offset, finish_offset, inserted_text)
+  if replaced.accepted == false then
+    return unchanged(state, document)
+  end
+  const caret_offset = global_offset(document, state.caret_line_identifier, state.caret_byte)
+  const bound_offset = global_offset(document, state.bound_line_identifier, state.bound_byte)
+  const mapped_caret = text_edit_map_offset(replaced.edit, caret_offset, GravityAfter)
+  const mapped_bound = text_edit_map_offset(replaced.edit, bound_offset, GravityAfter)
+  const caret_place = place_of(replaced.document, mapped_caret)
+  const bound_place = place_of(replaced.document, mapped_bound)
+  const shaped = text_shape_cache_frame(
+    state.shape_cache,
+    key_visible_requests(state, replaced.document),
+    caret_place.line_identifier,
+    state.shape_cache.hover_line,
+    state.shape_cache.scroll_y
+  )
+  const cached = text_view_state_with_cache(state, shaped)
+  TextViewKeyResult {
+    state: state_at(
+      state,
+      cached,
+      caret_place.line_identifier,
+      caret_place.byte_offset,
+      bound_place.line_identifier,
+      bound_place.byte_offset
+    ),
+    document: replaced.document,
+    accepted: true
+  }
+end
+
+fn selection_start(state: TextViewState, document: TextDocument) -> i32 = do
+  const caret_offset = global_offset(document, state.caret_line_identifier, state.caret_byte)
+  const bound_offset = global_offset(document, state.bound_line_identifier, state.bound_byte)
+  if caret_offset < bound_offset then
+    return caret_offset
+  end
+  bound_offset
+end
+
+fn selection_finish(state: TextViewState, document: TextDocument) -> i32 = do
+  const caret_offset = global_offset(document, state.caret_line_identifier, state.caret_byte)
+  const bound_offset = global_offset(document, state.bound_line_identifier, state.bound_byte)
+  if caret_offset > bound_offset then
+    return caret_offset
+  end
+  bound_offset
+end
+
+export fn text_view_insert_text(
+  state: TextViewState,
+  document: TextDocument,
+  text: string
+) -> TextViewKeyResult = do
+  apply_replace(state, document, selection_start(state, document), selection_finish(state, document), text)
+end
+
+export fn text_view_break_line(state: TextViewState, document: TextDocument) -> TextViewKeyResult = do
+  text_view_insert_text(state, document, "\n")
+end
+
+export fn text_view_backspace(state: TextViewState, document: TextDocument) -> TextViewKeyResult = do
+  const start_offset = selection_start(state, document)
+  const finish_offset = selection_finish(state, document)
+  if start_offset != finish_offset then
+    return apply_replace(state, document, start_offset, finish_offset, "")
+  end
+  const line_index = line_index_of(document, state.caret_line_identifier)
+  if line_index < 0 then
+    return unchanged(state, document)
+  end
+  const line = text_document_line(document, line_index)
+  if state.caret_byte > 0 then
+    const local_start = earlier_boundary(line.text, state.caret_byte)
+    const origin = line_origin(document, line.line_identifier)
+    return apply_replace(state, document, origin + local_start, origin + state.caret_byte, "")
+  end
+  if line_index == 0 then
+    return unchanged(state, document)
+  end
+  const previous = text_document_line(document, line_index - 1)
+  const origin = line_origin(document, line.line_identifier)
+  const removed = text_line_terminator_bytes(previous.terminator).byte_size()
+  apply_replace(state, document, origin - removed, origin, "")
+end
+
+export fn text_view_delete_forward(state: TextViewState, document: TextDocument) -> TextViewKeyResult = do
+  const start_offset = selection_start(state, document)
+  const finish_offset = selection_finish(state, document)
+  if start_offset != finish_offset then
+    return apply_replace(state, document, start_offset, finish_offset, "")
+  end
+  const line_index = line_index_of(document, state.caret_line_identifier)
+  if line_index < 0 then
+    return unchanged(state, document)
+  end
+  const line = text_document_line(document, line_index)
+  const origin = line_origin(document, line.line_identifier)
+  if state.caret_byte < line.text.byte_size() then
+    const local_finish = later_boundary(line.text, state.caret_byte)
+    return apply_replace(state, document, origin + state.caret_byte, origin + local_finish, "")
+  end
+  if line_index + 1 >= text_document_line_count(document) then
+    return unchanged(state, document)
+  end
+  const removed = text_line_terminator_bytes(line.terminator).byte_size()
+  apply_replace(state, document, origin + line.text.byte_size(), origin + line.text.byte_size() + removed, "")
+end

@@ -28,7 +28,7 @@ Stop.
 ## next
 
 ```
-STEP=12
+STEP=13
 TRACK=TEXT_VIEW_WIDGET
 ```
 
@@ -196,7 +196,8 @@ verify: красный `tmp/text_view_clip_unit/bin` → RUN:1. После об�
 
 ### STEP=12 — клавиатура
 
-status: pending
+status: done
+verify: красный `tmp/text_view_keys_unit/bin` → RUN:1. После клавиш: `compiler/out/mlcc -o tmp/text_view_keys_unit misc/textui/test/text_view_keys_unit.mlc` → MLCC:0, `compiler/build_bin.sh tmp/text_view_keys_unit tmp/text_view_keys_unit/bin` → LINK:0, бинарь → RUN:0. Повтор `tmp/text_view_clip_unit` → CLIP_RUN:0. `ruby scripts/run_textui_file_size.rb` → SIZE:0. Кадр галереи и попадание не менялись, hover bench не запускался.
 решение: D5 закрыто, перенос этот шаг не ждёт
 
 Красный тест: символ шейпит одну строку каретки. Enter шейпит две затронутые, строки ниже сохраняют `id`. Backspace в начале строки шейпит одну, если результат виден. `lossy` клавишу игнорирует. Правок в непрочитанном промежутке нет.

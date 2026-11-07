@@ -1,0 +1,106 @@
+import {
+  text_document_from_bytes,
+  text_document_is_complete,
+  text_document_line,
+  text_document_line_count,
+  text_document_unloaded_byte_length,
+  text_document_unloaded_file_offset,
+  text_document_with_unloaded_tail
+} from '../text_document'
+import { KindTextView } from '../store'
+import { text_view_press } from '../text_view_input'
+import { text_view_replace } from '../text_view_selection'
+import {
+  text_view_backspace,
+  text_view_break_line,
+  text_view_delete_forward,
+  text_view_insert_text
+} from '../text_view_keys'
+import { TextViewState, text_view_frame, text_view_state_new } from '../text_view_state'
+
+fn invalid_lead() -> string = "ÿ"
+
+fn boundary_position(state: TextViewState, line_identifier: i32, boundary_index: i32) -> i32 = do
+  let mut index = 0
+  while index < state.shape_cache.entries.length() do
+    const entry = state.shape_cache.entries[index]
+    if entry.line_identifier == line_identifier && boundary_index < entry.boundary_positions.length() then
+      return entry.boundary_positions[boundary_index]
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn opened(bytes: string) -> TextViewState = do
+  text_view_frame(
+    text_view_state_new(48, 16, 0, "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16),
+    text_document_from_bytes(bytes)
+  )
+end
+
+fn main() -> i32 = do
+  const document = text_document_from_bytes("ab\ncd\nef")
+  if text_document_line_count(document) != 3 then
+    return 9
+  end
+  const framed = opened("ab\ncd\nef")
+  if framed.shape_cache.shape_call_count != 3 || boundary_position(framed, 0, 1) < 0 then
+    return 9
+  end
+  const placed = text_view_press(framed, document, KindTextView, 0, boundary_position(framed, 0, 1))
+  if placed.caret_byte != 1 then
+    return 9
+  end
+  const inserted = text_view_insert_text(placed, document, "x")
+  if inserted.state.shape_cache.shape_call_count != 4 then
+    return 1
+  end
+  if text_document_line(inserted.document, 0).text != "axb" || text_document_line(inserted.document, 2).line_identifier != 2 || text_document_line(inserted.document, 2).revision != 0 then
+    return 2
+  end
+  const broken = text_view_break_line(placed, document)
+  if broken.state.shape_cache.shape_call_count != 5 then
+    return 3
+  end
+  if text_document_line_count(broken.document) != 4 || text_document_line(broken.document, 2).line_identifier != 1 || text_document_line(broken.document, 3).line_identifier != 2 then
+    return 4
+  end
+  const joined_document = text_document_from_bytes("ab\ncd")
+  const joined_frame = opened("ab\ncd")
+  const joined_caret = text_view_press(joined_frame, joined_document, KindTextView, 1, boundary_position(joined_frame, 1, 0))
+  const joined = text_view_backspace(joined_caret, joined_document)
+  if joined.state.shape_cache.shape_call_count != 3 || text_document_line(joined.document, 0).text != "abcd" || text_document_line(joined.document, 0).line_identifier != 0 then
+    return 5
+  end
+  const deleted_document = text_document_from_bytes("ab")
+  const deleted_frame = opened("ab")
+  const deleted = text_view_delete_forward(deleted_frame, deleted_document)
+  if deleted.state.shape_cache.shape_call_count != 2 || text_document_line(deleted.document, 0).text != "b" then
+    return 6
+  end
+  const lossy_document = text_document_from_bytes("a" + invalid_lead())
+  if text_document_is_complete(lossy_document) then
+    return 9
+  end
+  const lossy_frame = opened("a" + invalid_lead())
+  const lossy = text_view_insert_text(lossy_frame, lossy_document, "x")
+  if lossy.accepted || text_document_line(lossy.document, 0).text.byte_size() != text_document_line(lossy_document, 0).text.byte_size() || lossy.state.shape_cache.shape_call_count != lossy_frame.shape_cache.shape_call_count then
+    return 7
+  end
+  const tailed = text_document_with_unloaded_tail("ab", 2, 4)
+  const tailed_frame = text_view_frame(
+    text_view_state_new(16, 16, 0, "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16),
+    tailed
+  )
+  const tailed_caret = text_view_press(tailed_frame, tailed, KindTextView, 0, boundary_position(tailed_frame, 0, 1))
+  const tailed_insert = text_view_insert_text(tailed_caret, tailed, "x")
+  if text_document_unloaded_byte_length(tailed_insert.document) != 4 || text_document_unloaded_file_offset(tailed_insert.document) != 2 then
+    return 8
+  end
+  const tail_edit = text_view_replace(tailed_frame, tailed, 3, 3, "z")
+  if tail_edit.accepted then
+    return 8
+  end
+  0
+end
