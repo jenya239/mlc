@@ -28,6 +28,7 @@ import { list_selected_at, list_selected_put } from './widget_list'
 import { scroll_offsets_put } from './widget_scroll'
 import { directory_listing_ordered, directory_target, parent_path } from './directory_rows'
 import { file_sort_order_of } from './file_sort'
+import { file_columns_publish } from './file_columns'
 import { listing_at_jail_root, normalize_path, path_inside_jail } from './directory_jail'
 import { checkbox_named_checked, checkbox_toggle } from './checkbox'
 import { path_bar_sync } from './path_bar'
@@ -171,6 +172,7 @@ fn open_directory_in(store: WidgetStore, state: UiState, path: string, root: str
     root
   )
   if listing.directories.length() == 0 then
+    file_columns_publish(0 - 1, "", [])
     return view_of(store, state)
   end
   const path_field = first_text_field(store)
@@ -185,6 +187,9 @@ fn open_directory_in(store: WidgetStore, state: UiState, path: string, root: str
   end
   if widget_id_is_none(file_list) == false then
     next_store = widget_store_set_list_texts(next_store, file_list, listing.files)
+    file_columns_publish(file_list.index, normalized, listing.files)
+  else
+    file_columns_publish(0 - 1, "", [])
   end
   let mut next_state = reset_list_selection(release_listing_pointer(state), directory_list)
   next_state = reset_list_selection(next_state, file_list)

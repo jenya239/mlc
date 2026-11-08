@@ -4,7 +4,7 @@ import { companion_observer_apply } from './companion_observer'
 import { LayoutColumnResult, layout_ui } from './layout_pass'
 import { CursorLens } from './cursor_lens'
 import { follow_directory_jailed, open_directory_jailed, open_parent_jailed } from './directory_browse'
-import { file_sort_is, file_sort_next, file_sort_set } from './file_sort'
+import { file_sort_is, file_sort_order, file_sort_show } from './file_sort'
 import { DialogTarget, dialog_host_jailed } from './dialog'
 import { file_commands } from './file_commands'
 import { file_clipboard_publish } from './file_clipboard_os'
@@ -327,7 +327,7 @@ export fn gallery_turn(
     end
     const caption = button_caption(store, owner)
     if file_sort_is(caption) then
-      store = file_sort_set(store, owner, file_sort_next(caption))
+      store = file_sort_show(store, file_sort_order(caption))
       const refreshed = open_directory_jailed(store, state, path_bar_current(store), jail_root)
       store = refreshed.store
       state = refreshed.state

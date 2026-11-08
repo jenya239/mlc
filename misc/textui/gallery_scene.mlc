@@ -59,9 +59,19 @@ export fn build_label_gallery() -> WidgetStore = do
     true
   )
   const file_column = store.nodes[store.nodes.length() - 1].id
-  store = widget_store_add_button(
-    store, file_column, ButtonData { text: "Name" }, OverflowVisible, 0, true
+  store = widget_store_add_box(
+    store,
+    file_column,
+    BoxData { direction: DirectionRow, padding: 0, gap: 4 },
+    OverflowVisible,
+    0,
+    true
   )
+  const sort_row = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_button(store, sort_row, ButtonData { text: "Name" }, OverflowVisible, 0, true)
+  store = widget_store_add_button(store, sort_row, ButtonData { text: "Time" }, OverflowVisible, 0, true)
+  store = widget_store_add_button(store, sort_row, ButtonData { text: "Size" }, OverflowVisible, 0, true)
+  store = widget_store_add_button(store, sort_row, ButtonData { text: "Type" }, OverflowVisible, 0, true)
   store = widget_store_add_scroll_view(store, file_column, 1, true)
   const scroller = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_list_view(

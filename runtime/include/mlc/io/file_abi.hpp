@@ -5,6 +5,8 @@
 
 #include "mlc/io/file.hpp"
 #include <cstdint>
+#include <cstdio>
+#include <ctime>
 #include <sys/stat.h>
 #include <system_error>
 
@@ -161,6 +163,32 @@ inline int32_t file_modified_seconds_value(String path) {
     return -1;
   }
   return static_cast<int32_t>(file_status.st_mtime);
+}
+
+// Compact local stamp "08.11 20:47". Empty when the seconds are not a real stamp.
+inline String format_local_stamp_value(int32_t seconds) {
+  if (seconds < 0) {
+    return String();
+  }
+  const time_t stamp = static_cast<time_t>(seconds);
+  struct tm local_time;
+  if (localtime_r(&stamp, &local_time) == nullptr) {
+    return String();
+  }
+  char buffer[16];
+  const int written = std::snprintf(
+    buffer,
+    sizeof(buffer),
+    "%02d.%02d %02d:%02d",
+    local_time.tm_mday,
+    local_time.tm_mon + 1,
+    local_time.tm_hour,
+    local_time.tm_min
+  );
+  if (written <= 0) {
+    return String();
+  }
+  return String(buffer);
 }
 
 inline Array<String> list_dir_names_value(String path) {

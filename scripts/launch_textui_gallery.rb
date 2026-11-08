@@ -39,7 +39,14 @@ loop do
   compile_gallery(compile_script) if need_build?(binary, textui_root)
   abort "launch_textui_gallery: missing #{binary}" unless File.executable?(binary)
   system(binary)
-  status = $?.nil? ? 1 : $?.exitstatus
+  status = 1
+  unless $?.nil?
+    if $?.signaled?
+      status = 128 + $?.termsig
+    elsif !$?.exitstatus.nil?
+      status = $?.exitstatus
+    end
+  end
   next if status == application_reload_status
 
   exit status

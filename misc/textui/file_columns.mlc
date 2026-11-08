@@ -1,0 +1,151 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { Rect, rect_new } from './geometry'
+import { ColorRgba, Theme } from './theme'
+import { DrawOp, TextOp } from './draw_op'
+
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_modified_seconds(path: string) -> i32
+  = "mlc::file::file_modified_seconds_value" from "mlc/io/file_abi.hpp" blocking
+extern fn format_local_stamp(seconds: i32) -> string
+  = "mlc::file::format_local_stamp_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_columns_publish_value(list_index: i32, sizes: [string], dates: [string]) -> unit
+  = "mlc::file_columns::publish_value" from "mlc/textui/file_columns.hpp" blocking
+extern fn file_column_size(list_index: i32, row: i32) -> string
+  = "mlc::file_columns::size_at_value" from "mlc/textui/file_columns.hpp" blocking
+extern fn file_column_date(list_index: i32, row: i32) -> string
+  = "mlc::file_columns::date_at_value" from "mlc/textui/file_columns.hpp" blocking
+extern fn file_columns_bound() -> i32
+  = "mlc::file_columns::bound_value" from "mlc/textui/file_columns.hpp" blocking
+
+fn tenths_digit(remainder: i32, unit: i32) -> i32 = do
+  if unit < 10 then
+    return 0
+  end
+  let mut digit = remainder / (unit / 10)
+  if digit > 9 then
+    digit = 9
+  end
+  if digit < 0 then
+    digit = 0
+  end
+  return digit
+end
+
+fn scaled_count(bytes: i32, unit: i32) -> string = do
+  const whole = bytes / unit
+  const fraction = tenths_digit(bytes - whole * unit, unit)
+  if whole >= 10 || fraction == 0 then
+    return whole.to_string()
+  end
+  return whole.to_string() + "." + fraction.to_string()
+end
+
+export fn format_byte_count(bytes: i32) -> string = do
+  if bytes < 0 then
+    return ""
+  end
+  if bytes < 1024 then
+    return bytes.to_string() + " B"
+  end
+  if bytes < 1024 * 1024 then
+    return scaled_count(bytes, 1024) + " K"
+  end
+  if bytes < 1024 * 1024 * 1024 then
+    return scaled_count(bytes, 1024 * 1024) + " M"
+  end
+  return scaled_count(bytes, 1024 * 1024 * 1024) + " G"
+end
+
+export fn file_columns_publish(list_index: i32, directory: string, names: [string]) -> unit = do
+  let mut sizes: [string] = []
+  let mut dates: [string] = []
+  let mut index = 0
+  while index < names.length() do
+    const path = join_path(strip_trailing_slash(directory), names[index])
+    sizes.push(format_byte_count(file_byte_size(path)))
+    dates.push(format_local_stamp(file_modified_seconds(path)))
+    index = index + 1
+  end
+  file_columns_publish_value(list_index, sizes, dates)
+end
+
+fn size_column_width(theme: Theme) -> i32 =
+  theme.font_size_pixels * 4 + 4
+
+fn date_column_width(theme: Theme) -> i32 =
+  theme.font_size_pixels * 7 + 4
+
+export fn file_columns_reserved(theme: Theme) -> i32 = do
+  if file_columns_bound() < 0 then
+    return 0
+  end
+  return size_column_width(theme) + date_column_width(theme) + theme.padding
+end
+
+fn usable_right(theme: Theme, row: Rect, right_limit: i32) -> i32 = do
+  let mut right = row.x + row.width
+  if right_limit >= 0 && right > right_limit then
+    right = right_limit
+  else if right_limit < 0 then
+    right = right - theme.scrollbar_width
+  end
+  return right
+end
+
+fn reserve_for(theme: Theme, list_index: i32, usable: i32) -> i32 = do
+  if file_columns_bound() != list_index then
+    return 0
+  end
+  const reserved = file_columns_reserved(theme)
+  if usable - reserved < theme.font_size_pixels * 8 then
+    return 0
+  end
+  return reserved
+end
+
+export fn paint_row_name_and_columns(
+  operations: [DrawOp],
+  theme: Theme,
+  list_index: i32,
+  row_index: i32,
+  row: Rect,
+  text_x: i32,
+  text_y: i32,
+  text: string,
+  color: ColorRgba,
+  right_limit: i32
+) -> [DrawOp] = do
+  let mut next = operations
+  const usable = usable_right(theme, row, right_limit) - row.x
+  const reserved = reserve_for(theme, list_index, usable)
+  if reserved > 0 then
+    next.push(OpPushClip(rect_new(row.x, row.y, usable - reserved, row.height)))
+  end
+  next.push(OpText(TextOp {
+    origin_x: text_x,
+    origin_y: text_y,
+    color: color,
+    text: text
+  }))
+  if reserved == 0 then
+    return next
+  end
+  next.push(OpPopClip)
+  const right = row.x + usable
+  const date_x = right - date_column_width(theme)
+  const size_x = date_x - size_column_width(theme)
+  next.push(OpText(TextOp {
+    origin_x: size_x,
+    origin_y: text_y,
+    color: theme.muted,
+    text: file_column_size(list_index, row_index)
+  }))
+  next.push(OpText(TextOp {
+    origin_x: date_x,
+    origin_y: text_y,
+    color: theme.muted,
+    text: file_column_date(list_index, row_index)
+  }))
+  return next
+end

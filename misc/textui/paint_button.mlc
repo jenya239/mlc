@@ -1,4 +1,5 @@
 import { Theme, theme_content_inset, ColorRgba } from './theme'
+import { file_sort_marked, file_sort_plain } from './file_sort'
 import { rect_inset, rect_new } from './geometry'
 import { WidgetId, widget_id_equals } from './store'
 import { LayoutResult } from './layout_result'
@@ -54,6 +55,32 @@ export fn paint_path_crumb_frame(
     origin_y: band_y,
     color: theme.foreground,
     text: caption
+  }))
+  updated
+end
+
+export fn paint_sort_chip(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  let mut updated = operations
+  if file_sort_marked(caption) || widget_id_equals(state.hover, WidgetId { index: node_index }) then
+    let mut fill = theme.button_hover
+    if file_sort_marked(caption) then
+      fill = theme.list_selected
+    end
+    updated.push(OpFillRect(FillRectOp { rect: rect, color: fill }))
+  end
+  updated.push(OpText(TextOp {
+    origin_x: rect.x + 2,
+    origin_y: rect.y,
+    color: theme.foreground,
+    text: file_sort_plain(caption)
   }))
   updated
 end

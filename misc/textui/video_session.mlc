@@ -1,0 +1,328 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { Rect, rect_contains } from './geometry'
+import { LayoutResult } from './layout_result'
+import { WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none } from './store'
+import { UiState } from './ui_state'
+
+extern fn video_play_full(path: string) -> unit
+  = "mlc::image_preview::video_play_full_value" from "mlc/gl/image_preview.hpp" blocking
+extern fn video_toggle_paused() -> unit
+  = "mlc::image_preview::video_toggle_paused" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_seek_milliseconds(milliseconds: i32) -> unit
+  = "mlc::image_preview::video_seek_milliseconds" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_set_borrowed(borrowed: i32) -> unit
+  = "mlc::image_preview::video_transport_set_borrowed" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_take_step() -> i32
+  = "mlc::image_preview::video_transport_take_step" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_take_toggle() -> i32
+  = "mlc::image_preview::video_transport_take_toggle" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_take_seek() -> i32
+  = "mlc::image_preview::video_transport_take_seek" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_seek_target() -> i32
+  = "mlc::image_preview::video_transport_seek_target" from "mlc/gl/video_preview.hpp" blocking
+
+export type VideoSession = {
+  engaged: bool,
+  pinned_path: string,
+  dwell_path: string,
+  dwell_started_ms: i32,
+  shown_path: string,
+  shown_full: bool
+}
+
+fn ends_with(text: string, suffix: string) -> bool = do
+  if text.byte_size() < suffix.byte_size() then
+    return false
+  end
+  return text.byte_substring(text.byte_size() - suffix.byte_size(), suffix.byte_size()) == suffix
+end
+
+fn video_name(name: string) -> bool = do
+  if ends_with(name, ".mp4") || ends_with(name, ".MP4") || ends_with(name, ".m4v") || ends_with(name, ".M4V") then
+    return true
+  end
+  if ends_with(name, ".mov") || ends_with(name, ".MOV") || ends_with(name, ".mkv") || ends_with(name, ".MKV") then
+    return true
+  end
+  if ends_with(name, ".webm") || ends_with(name, ".WEBM") || ends_with(name, ".avi") || ends_with(name, ".AVI") then
+    return true
+  end
+  return ends_with(name, ".ogv") || ends_with(name, ".OGV")
+end
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+    | KindIcon(_) => []
+    | KindTextView => []
+
+fn file_list_index(store: WidgetStore) -> i32 = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return index
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return 0 - 1
+end
+
+fn file_list_rect(store: WidgetStore, layout: LayoutResult) -> Rect = do
+  const list_index = file_list_index(store)
+  if list_index < 0 || list_index >= layout.rects.length() then
+    return Rect { x: 0, y: 0, width: 0, height: 0 }
+  end
+  const parent = store.nodes[list_index].parent
+  if widget_id_is_none(parent) == false && parent.index >= 0 && parent.index < layout.rects.length() then
+    return layout.rects[parent.index]
+  end
+  return layout.rects[list_index]
+end
+
+fn row_on_file_list(store: WidgetStore, state: UiState) -> string = do
+  const list_index = file_list_index(store)
+  if list_index < 0 || state.hover.index != list_index then
+    return ""
+  end
+  const texts = list_texts(store.nodes[list_index].kind)
+  if state.list_hover_row < 0 || state.list_hover_row >= texts.length() then
+    return ""
+  end
+  return texts[state.list_hover_row]
+end
+
+fn video_path(store: WidgetStore, root: string, name: string) -> string = do
+  if video_name(name) == false then
+    return ""
+  end
+  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  return path
+end
+
+fn inside_directory(directory: string, path: string) -> bool = do
+  const prefix = strip_trailing_slash(directory) + "/"
+  if path.byte_size() <= prefix.byte_size() then
+    return false
+  end
+  return path.byte_substring(0, prefix.byte_size()) == prefix
+end
+
+fn video_ordinal(store: WidgetStore, root: string, path: string) -> i32 = do
+  const list_index = file_list_index(store)
+  if list_index < 0 then
+    return 0 - 1
+  end
+  const names = list_texts(store.nodes[list_index].kind)
+  let mut ordinal = 0
+  let mut index = 0
+  while index < names.length() do
+    const candidate = video_path(store, root, names[index])
+    if candidate != "" then
+      if candidate == path then
+        return ordinal
+      end
+      ordinal = ordinal + 1
+    end
+    index = index + 1
+  end
+  return 0 - 1
+end
+
+fn video_at_ordinal(store: WidgetStore, root: string, ordinal: i32) -> string = do
+  const list_index = file_list_index(store)
+  if list_index < 0 || ordinal < 0 then
+    return ""
+  end
+  const names = list_texts(store.nodes[list_index].kind)
+  let mut seen = 0
+  let mut index = 0
+  while index < names.length() do
+    const candidate = video_path(store, root, names[index])
+    if candidate != "" then
+      if seen == ordinal then
+        return candidate
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  return ""
+end
+
+fn stepped_video(store: WidgetStore, root: string, path: string, step: i32) -> string = do
+  const ordinal = video_ordinal(store, root, path)
+  if ordinal < 0 then
+    return path
+  end
+  const next = video_at_ordinal(store, root, ordinal + step)
+  if next == "" then
+    return path
+  end
+  return next
+end
+
+fn moved_pin(store: WidgetStore, root: string, path: string, step: i32) -> string = do
+  let mut pinned = path
+  let mut left = step
+  while left != 0 do
+    let mut next = pinned
+    if left > 0 then
+      next = stepped_video(store, root, pinned, 1)
+      left = left - 1
+    else
+      next = stepped_video(store, root, pinned, 0 - 1)
+      left = left + 1
+    end
+    if next == pinned then
+      left = 0
+    else
+      pinned = next
+    end
+  end
+  return pinned
+end
+
+fn session_make(
+  engaged: bool,
+  pinned_path: string,
+  dwell_path: string,
+  dwell_started_ms: i32,
+  shown_path: string,
+  shown_full: bool
+) -> VideoSession =
+  VideoSession {
+    engaged: engaged,
+    pinned_path: pinned_path,
+    dwell_path: dwell_path,
+    dwell_started_ms: dwell_started_ms,
+    shown_path: shown_path,
+    shown_full: shown_full
+  }
+
+fn shown(session: VideoSession, path: string, full: bool) -> VideoSession = do
+  if full && path != "" && (session.shown_path != path || session.shown_full == false) then
+    video_play_full(path)
+  end
+  let mut shown_full = false
+  if full && path != "" then
+    shown_full = true
+  end
+  return session_make(
+    session.engaged,
+    session.pinned_path,
+    session.dwell_path,
+    session.dwell_started_ms,
+    path,
+    shown_full
+  )
+end
+
+export fn video_session_new() -> VideoSession =
+  session_make(false, "", "", 0, "", false)
+
+export fn video_session_media_path(session: VideoSession) -> string = do
+  if session.pinned_path != "" then
+    return session.pinned_path
+  end
+  return session.shown_path
+end
+
+export fn video_session_tick(
+  session: VideoSession,
+  store: WidgetStore,
+  state: UiState,
+  layout: LayoutResult,
+  root: string,
+  mouse_x: i32,
+  mouse_y: i32,
+  pressed: bool,
+  now_ms: i32
+) -> VideoSession = do
+  const directory = path_bar_current(store)
+  const in_list = rect_contains(file_list_rect(store, layout), mouse_x, mouse_y)
+  const row = row_on_file_list(store, state)
+  const hovered = video_path(store, root, row)
+  let mut engaged = session.engaged
+  let mut pinned = session.pinned_path
+  if pressed && in_list && hovered != "" then
+    pinned = hovered
+    engaged = true
+  else if pressed && in_list && row != "" && hovered == "" then
+    pinned = ""
+  end
+  if pinned != "" && inside_directory(directory, pinned) == false then
+    pinned = ""
+  end
+  const step = video_transport_take_step()
+  const toggle = video_transport_take_toggle()
+  let mut seek_ms = 0
+  let mut have_seek = false
+  if video_transport_take_seek() != 0 then
+    have_seek = true
+    seek_ms = video_transport_seek_target()
+  end
+  if pinned != "" && step != 0 then
+    pinned = moved_pin(store, root, pinned, step)
+  end
+  if pinned != "" && toggle != 0 then
+    video_toggle_paused()
+  end
+  if pinned != "" && have_seek then
+    video_seek_milliseconds(seek_ms)
+  end
+  if in_list == false then
+    engaged = false
+  end
+  let mut dwell_path = session.dwell_path
+  let mut dwell_started_ms = session.dwell_started_ms
+  let mut play_path = ""
+  let mut play_full = false
+  if pinned != "" then
+    play_path = pinned
+    play_full = true
+  else if in_list == false || hovered == "" then
+    dwell_path = ""
+    dwell_started_ms = 0
+  else if engaged then
+    play_path = hovered
+    play_full = true
+    dwell_path = hovered
+    dwell_started_ms = now_ms
+  else if dwell_path != hovered then
+    play_path = hovered
+    dwell_path = hovered
+    dwell_started_ms = now_ms
+  else if now_ms - dwell_started_ms >= 5000 then
+    engaged = true
+    play_path = hovered
+    play_full = true
+  else
+    play_path = hovered
+  end
+  let mut borrowed = 0
+  if pinned != "" then
+    borrowed = 1
+  end
+  video_transport_set_borrowed(borrowed)
+  return shown(
+    session_make(engaged, pinned, dwell_path, dwell_started_ms, session.shown_path, session.shown_full),
+    play_path,
+    play_full
+  )
+end

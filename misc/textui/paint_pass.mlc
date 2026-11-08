@@ -16,7 +16,8 @@ import { Selection, selection_is_empty, selection_none } from './selection'
 import { text_layout_selection_rects } from './text_layout_hit'
 import { UiState, ui_state_new, ui_state_with } from './ui_state'
 import { text_layout_text_ops } from './text_layout_paint'
-import { paint_button_frame, paint_path_crumb_frame } from './paint_button'
+import { paint_button_frame, paint_path_crumb_frame, paint_sort_chip } from './paint_button'
+import { file_sort_is } from './file_sort'
 import {
   scroll_content_height,
   scroll_content_overflows,
@@ -105,6 +106,9 @@ fn paint_kind_button(
 ) -> [DrawOp] = do
   if path_bar_is_crumb(store, WidgetId { index: node_index }) then
     return paint_path_crumb(theme, layout, state, node_index, caption, operations)
+  end
+  if file_sort_is(caption) then
+    return paint_sort_chip(theme, layout, state, node_index, caption, operations)
   end
   return paint_button(theme, layout, state, node_index, caption, operations)
 end

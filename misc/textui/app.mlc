@@ -32,9 +32,9 @@ import { path_history_empty } from './path_history'
 import { attach_about_card } from './overlay'
 import { attach_file_menu } from './menu'
 import { attach_dialog } from './dialog'
-import { hovered_image_path, image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
+import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { hovered_text_path } from './text_view_preview'
-import { video_hover_sound_new, video_hover_sound_tick } from './video_hover_sound'
+import { video_session_media_path, video_session_new, video_session_tick } from './video_session'
 import { music_playing, music_release } from './music_host'
 import { chat_live_run } from './chat_live'
 import { observation_frame_empty } from './companion_observe'
@@ -109,7 +109,7 @@ fn main() -> i32 = do
   let mut sample_after_present = true
   let mut escape_was_down = false
   let mut shown_text_path = ""
-  let mut video_sound = video_hover_sound_new()
+  let mut video_session = video_session_new()
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input(gallery_frame_wait_seconds(
@@ -154,13 +154,21 @@ fn main() -> i32 = do
     if frame_index == 0 then
       paints = true
     end
-    image_preview_arm(
-      turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, turn.lens.framebuffer
-    )
-    video_sound = video_hover_sound_tick(
-      video_sound,
-      hovered_image_path(turn.store, turn.state, turn.jail_root),
+    video_session = video_session_tick(
+      video_session,
+      turn.store,
+      turn.state,
+      turn.column.layout,
+      turn.jail_root,
+      polled.input.mouse_x,
+      polled.input.mouse_y,
+      polled.input.left_pressed,
       host_now_ms()
+    )
+    const media_path = video_session_media_path(video_session)
+    image_preview_arm(
+      turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, turn.lens.framebuffer,
+      media_path
     )
     if image_preview_needs_paint() != 0 then
       paints = true
@@ -174,7 +182,8 @@ fn main() -> i32 = do
       const window_height = glfw_gl_window_height()
       let mut lens_now = cursor_lens_bind(turn.lens, window_width, window_height, turn.effect_mode)
       image_preview_arm(
-        turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, lens_now.framebuffer
+        turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, lens_now.framebuffer,
+        media_path
       )
       const text_changed = shown_text_path != text_path
       const submitted = submit_ui_frame(

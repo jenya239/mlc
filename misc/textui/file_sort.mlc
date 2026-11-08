@@ -36,58 +36,47 @@ fn button_text(kind: WidgetKind) -> string =
     | KindIcon(_) => ""
     | KindTextView => ""
 
-export fn file_sort_caption(order_name: string) -> string = do
-  if order_name == file_sort_time() then
-    return caption_time()
+export fn file_sort_plain(caption: string) -> string = do
+  if caption.byte_size() > 0 && caption.byte_at(0) == "*" then
+    return caption.byte_substring(1, caption.byte_size() - 1)
   end
-  if order_name == file_sort_size() then
-    return caption_size()
-  end
-  if order_name == file_sort_kind() then
-    return caption_kind()
-  end
-  return caption_name()
+  return caption
 end
 
-export fn file_sort_is(caption: string) -> bool =
-  caption == caption_name() || caption == caption_time() || caption == caption_size() || caption == caption_kind()
+export fn file_sort_marked(caption: string) -> bool =
+  caption.byte_size() > 0 && caption.byte_at(0) == "*"
+
+export fn file_sort_is(caption: string) -> bool = do
+  const plain = file_sort_plain(caption)
+  return plain == caption_name() || plain == caption_time() || plain == caption_size() || plain == caption_kind()
+end
 
 export fn file_sort_order(caption: string) -> string = do
-  if caption == caption_time() then
+  const plain = file_sort_plain(caption)
+  if plain == caption_time() then
     return file_sort_time()
   end
-  if caption == caption_size() then
+  if plain == caption_size() then
     return file_sort_size()
   end
-  if caption == caption_kind() then
+  if plain == caption_kind() then
     return file_sort_kind()
   end
   return file_sort_name()
 end
 
 export fn file_sort_next(caption: string) -> string = do
-  if caption == caption_name() then
+  const plain = file_sort_plain(caption)
+  if plain == caption_name() then
     return caption_time()
   end
-  if caption == caption_time() then
+  if plain == caption_time() then
     return caption_size()
   end
-  if caption == caption_size() then
+  if plain == caption_size() then
     return caption_kind()
   end
   return caption_name()
-end
-
-fn sort_button(store: WidgetStore) -> WidgetId = do
-  let mut index = 0
-  while index < store.nodes.length() do
-    const text = button_text(store.nodes[index].kind)
-    if file_sort_is(text) then
-      return store.nodes[index].id
-    end
-    index = index + 1
-  end
-  return WidgetId { index: 0 - 1 }
 end
 
 fn store_with_button_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
@@ -112,15 +101,31 @@ fn store_with_button_text(store: WidgetStore, id: WidgetId, text: string) -> Wid
 end
 
 export fn file_sort_order_of(store: WidgetStore) -> string = do
-  const id = sort_button(store)
-  if id.index < 0 || id.index >= store.nodes.length() then
-    return file_sort_name()
+  let mut index = 0
+  while index < store.nodes.length() do
+    const text = button_text(store.nodes[index].kind)
+    if file_sort_marked(text) && file_sort_is(text) then
+      return file_sort_order(text)
+    end
+    index = index + 1
   end
-  return file_sort_order(button_text(store.nodes[id.index].kind))
+  return file_sort_name()
 end
 
-export fn file_sort_show(store: WidgetStore, order_name: string) -> WidgetStore =
-  store_with_button_text(store, sort_button(store), file_sort_caption(order_name))
-
-export fn file_sort_set(store: WidgetStore, id: WidgetId, caption: string) -> WidgetStore =
-  store_with_button_text(store, id, caption)
+export fn file_sort_show(store: WidgetStore, order_name: string) -> WidgetStore = do
+  let mut next = store
+  let mut index = 0
+  while index < next.nodes.length() do
+    const text = button_text(next.nodes[index].kind)
+    if file_sort_is(text) then
+      const plain = file_sort_plain(text)
+      let mut shown = plain
+      if file_sort_order(plain) == order_name then
+        shown = "*" + plain
+      end
+      next = store_with_button_text(next, next.nodes[index].id, shown)
+    end
+    index = index + 1
+  end
+  return next
+end

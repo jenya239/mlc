@@ -700,6 +700,22 @@ void ensure_bars() {
 
 }  // namespace
 
+void video_play_full_value(mlc::String path) {
+  const std::string key = path.as_std_string();
+  if (key.empty()) {
+    return;
+  }
+  shown_key = key;
+  paint_needed = true;
+  video_mode = true;
+  video_path = key;
+  live_width = 0;
+  live_height = 0;
+  live_uploaded = 0;
+  current_slot = -1;
+  video_play_full(key);
+}
+
 void video_replay_value(mlc::String path) {
   const std::string key = path.as_std_string();
   if (key.empty()) {
@@ -951,7 +967,17 @@ int32_t picture_fit_height_value() {
 }
 
 int32_t playing_value() {
+  if (video_is_paused()) {
+    return 0;
+  }
+  if (video_is_full()) {
+    return 2;
+  }
   return video_is_active() ? 1 : 0;
+}
+
+mlc::String video_path_value() {
+  return mlc::String(video_path);
 }
 
 void discard() {

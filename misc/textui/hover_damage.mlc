@@ -9,10 +9,11 @@ import {
   widget_id_is_none
 } from './store'
 import { LayoutResult } from './layout_result'
-import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp } from './draw_op'
 import { FrameSignature, frame_signature_hover_only } from './frame_request'
 import { UiState } from './ui_state'
 import { list_row_height, list_row_inset, list_row_marked, list_selected_at, list_text_dx } from './widget_list'
+import { paint_row_name_and_columns } from './file_columns'
 import { list_icon_name, paint_named_icon } from './icon'
 import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
 import { menu_list_id } from './menu'
@@ -26,7 +27,6 @@ import { TextShapingState } from '../gui/text_shaping'
 import { SubmitFrameResult, SubmitResources, submit_frame } from './submit'
 import { submit_painted_layers } from './submit_layers'
 import { cursor_lens_show_window } from './cursor_lens'
-
 fn button_text(kind: WidgetKind) -> string =
   match kind
     | KindButton(data) => data.text
@@ -308,12 +308,18 @@ fn paint_list_change(
         theme.foreground
       )
     end
-    patched.push(OpText(TextOp {
-      origin_x: list_rect.x + theme.padding + list_text_dx(theme, menu == false),
-      origin_y: list_rect.y + row * row_height + list_row_inset(theme),
-      color: theme.foreground,
-      text: texts[row]
-    }))
+    patched = paint_row_name_and_columns(
+      patched,
+      theme,
+      list_index,
+      row,
+      damage_row_rect(list_rect, row, row_count, row_height, menu, limit),
+      list_rect.x + theme.padding + list_text_dx(theme, menu == false),
+      list_rect.y + row * row_height + list_row_inset(theme),
+      texts[row],
+      theme.foreground,
+      limit
+    )
     index = index + 1
   end
   patched.push(OpPopClip)

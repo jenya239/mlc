@@ -199,7 +199,7 @@ export fn chat_live_run(turn: GalleryTurn, theme: Theme) -> ChatLiveResult = do
         lens = cursor_lens_bind(lens, width, height, settled.turn.effect_mode)
         image_preview_arm(
           settled.turn.store, settled.turn.state, settled.turn.column.layout, theme,
-          settled.turn.jail_root, settled.turn.effect_mode, lens.framebuffer
+          settled.turn.jail_root, settled.turn.effect_mode, lens.framebuffer, ""
         )
         const gallery = submit_painted_layers(
           resources, shaping, theme,

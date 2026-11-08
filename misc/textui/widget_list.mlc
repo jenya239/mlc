@@ -1,9 +1,10 @@
 import { Rect, rect_new, rect_intersect, rect_is_empty } from './geometry'
 import { Theme } from './theme'
 import { ColorRgba } from './theme'
-import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp, StrokeRectOp } from './draw_op'
 import { LayoutResult } from './layout_result'
 import { list_icon_name, paint_named_icon } from './icon'
+import { paint_row_name_and_columns } from './file_columns'
 import { WidgetStore, WidgetId, kind_is_list_view, widget_id_is_none } from './store'
 import { UiState } from './ui_state'
 import { scroll_content_child } from './widget_scroll'
@@ -205,12 +206,18 @@ export fn paint_list_rows(
           ink
         )
       end
-      next.push(OpText(TextOp {
-        origin_x: row.x + theme.padding + list_text_dx(theme, show_icons),
-        origin_y: row.y + list_row_inset(theme),
-        color: ink,
-        text: texts[index]
-      }))
+      next = paint_row_name_and_columns(
+        next,
+        theme,
+        node_index,
+        index,
+        row,
+        row.x + theme.padding + list_text_dx(theme, show_icons),
+        row.y + list_row_inset(theme),
+        texts[index],
+        ink,
+        0 - 1
+      )
     end
     index = index + 1
   end

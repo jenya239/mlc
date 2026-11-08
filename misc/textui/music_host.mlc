@@ -48,6 +48,22 @@ extern fn music_queue_index() -> i32
   = "mlc::music_player::queue_index_value" from "mlc/audio/music_player.hpp" blocking
 extern fn music_restore_player(paths: string, start_index: i32, position_milliseconds: i32, paused: i32) -> unit
   = "mlc::music_player::restore_value" from "mlc/audio/music_player.hpp" blocking
+extern fn video_transport_borrowed() -> i32
+  = "mlc::image_preview::video_transport_borrowed" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_request_step(step: i32) -> unit
+  = "mlc::image_preview::video_transport_request_step" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_request_toggle() -> unit
+  = "mlc::image_preview::video_transport_request_toggle" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_transport_request_seek(milliseconds: i32) -> unit
+  = "mlc::image_preview::video_transport_request_seek" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_position_milliseconds() -> i32
+  = "mlc::image_preview::video_position_milliseconds" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_duration_milliseconds() -> i32
+  = "mlc::image_preview::video_duration_milliseconds" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_is_paused() -> bool
+  = "mlc::image_preview::video_is_paused" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_shown_path() -> string
+  = "mlc::image_preview::video_path_value" from "mlc/gl/image_preview.hpp" blocking
 
 export type MusicView = {
   store: WidgetStore,
@@ -161,7 +177,22 @@ fn start_folder(store: WidgetStore, state: UiState, root: string, chosen: string
   end
 end
 
-fn seek_at(layout: LayoutResult, id: WidgetId, mouse_x: i32) -> unit = do
+fn file_title(path: string) -> string = do
+  let mut start = 0
+  let mut index = 0
+  while index < path.byte_size() do
+    if path.byte_at(index) == "/" then
+      start = index + 1
+    end
+    index = index + 1
+  end
+  if start >= path.byte_size() then
+    return path
+  end
+  return path.byte_substring(start, path.byte_size() - start)
+end
+
+fn seek_at(layout: LayoutResult, id: WidgetId, mouse_x: i32, duration: i32, video: bool) -> unit = do
   if widget_id_is_none(id) == false && id.index >= 0 && id.index < layout.rects.length() then
     const rect = layout.rects[id.index]
     if rect.width > 0 then
@@ -172,9 +203,13 @@ fn seek_at(layout: LayoutResult, id: WidgetId, mouse_x: i32) -> unit = do
       if local > rect.width then
         local = rect.width
       end
-      const duration = music_duration_milliseconds()
       if duration > 0 then
-        music_seek(local * duration / rect.width)
+        const milliseconds = local * duration / rect.width
+        if video then
+          video_transport_request_seek(milliseconds)
+        else
+          music_seek(milliseconds)
+        end
       end
     end
   end
@@ -254,6 +289,7 @@ export fn music_host(
   mouse_y: i32,
   left_down: bool
 ) -> MusicView = do
+  const borrowed = video_transport_borrowed() != 0
   let mut next_store = store
   let mut index = 0
   while index < events.length() do
@@ -266,16 +302,25 @@ export fn music_host(
     end
     if event.activated == false && widget_id_is_none(event.widget) == false then
       const caption = button_text(next_store.nodes[event.widget.index].kind)
-      if caption == "Prev" then
+      if caption == "Prev" && borrowed then
+        video_transport_request_step(0 - 1)
+      end
+      if caption == "Prev" && borrowed == false then
         music_previous()
       end
-      if caption == "Next" then
+      if caption == "Next" && borrowed then
+        video_transport_request_step(1)
+      end
+      if caption == "Next" && borrowed == false then
         music_next()
       end
-      if transport_caption(caption) && music_active() != 0 then
+      if transport_caption(caption) && borrowed then
+        video_transport_request_toggle()
+      end
+      if transport_caption(caption) && borrowed == false && music_active() != 0 then
         music_toggle()
       end
-      if transport_caption(caption) && music_active() == 0 then
+      if transport_caption(caption) && borrowed == false && music_active() == 0 then
         start_folder(next_store, state, root, "")
       end
     end
@@ -285,17 +330,29 @@ export fn music_host(
   if left_down && widget_id_is_none(progress) == false then
     const hit = hit_test(next_store, layout, theme, mouse_x, mouse_y)
     if widget_id_is_none(hit) == false && hit.index == progress.index then
-      seek_at(layout, progress, mouse_x)
+      if borrowed then
+        seek_at(layout, progress, mouse_x, video_duration_milliseconds(), true)
+      else
+        seek_at(layout, progress, mouse_x, music_duration_milliseconds(), false)
+      end
     end
   end
   let mut changed = false
-  const play_caption = caption_now()
+  let mut play_caption = caption_now()
+  let mut bar = progress_caption(music_title(), music_position_milliseconds(), music_duration_milliseconds())
+  if borrowed then
+    if video_is_paused() then
+      play_caption = "Play"
+    else
+      play_caption = "Pause"
+    end
+    bar = progress_caption(file_title(video_shown_path()), video_position_milliseconds(), video_duration_milliseconds())
+  end
   const transport = find_transport(next_store)
   if widget_id_is_none(transport) == false && button_text(next_store.nodes[transport.index].kind) != play_caption then
     next_store = set_button_text(next_store, transport, play_caption)
     changed = true
   end
-  const bar = progress_caption(music_title(), music_position_milliseconds(), music_duration_milliseconds())
   if widget_id_is_none(progress) == false && button_text(next_store.nodes[progress.index].kind) != bar then
     next_store = set_button_text(next_store, progress, bar)
     changed = true

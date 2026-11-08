@@ -13,6 +13,7 @@ import { label_preferred_size } from './widget_label'
 import { button_preferred_size } from './widget_button'
 import { list_content_height } from './widget_list'
 import { path_bar_is_crumb } from './path_bar'
+import { file_sort_is } from './file_sort'
 import { LayoutWork, MeasureResult, layout_work_with_text } from './layout_work'
 import { field_layout_at_width } from './layout_width'
 
@@ -73,8 +74,9 @@ fn measure_button_kind(
   text: string
 ) -> MeasureResult = do
   const crumb = path_bar_is_crumb(store, id)
+  const sort_chip = file_sort_is(text)
   const measured = measure_caption(work, theme, id.index, text, crumb == false)
-  if crumb == false then
+  if crumb == false && sort_chip == false then
     return measured
   end
   return MeasureResult {

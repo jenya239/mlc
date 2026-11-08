@@ -8,6 +8,7 @@ import { LayoutResult } from './layout_result'
 import { Rect, rect_new } from './geometry'
 import { Theme } from './theme'
 import { list_row_height } from './widget_list'
+import { file_columns_reserved } from './file_columns'
 import { UiState } from './ui_state'
 import { gl_bind_framebuffer, gl_get_integer_at } from '../../lib/mlc/common/stdlib/gl/glad_gl.mlc'
 
@@ -260,7 +261,7 @@ export fn preview_side_rect(store: WidgetStore, layout: LayoutResult, theme: The
   const icon_span = theme.font_size_pixels + theme.font_size_pixels / 6
   const text_start = rect.x + margin + icon_span
   let mut band_left = mean_name_end(store, layout, theme, text_start) + margin
-  const band_right = rect.x + rect.width - theme.padding * 4
+  const band_right = rect.x + rect.width - theme.padding * 4 - file_columns_reserved(theme)
   const band_top = rect.y + margin
   let mut band_height = rect.height - margin * 2
   if band_height < 1 then
@@ -313,9 +314,14 @@ export fn image_preview_arm(
   theme: Theme,
   root: string,
   effect_mode: i32,
-  scene_framebuffer: i32
+  scene_framebuffer: i32,
+  media_path: string
 ) -> unit = do
-  image_preview_load(hovered_image_path(store, state, root))
+  let mut path = hovered_image_path(store, state, root)
+  if media_path != "" then
+    path = media_path
+  end
+  image_preview_load(path)
   const band = preview_side_rect(store, layout, theme)
   image_preview_arm_rect(band.x, band.y, band.width, band.height, effect_mode, scene_framebuffer)
   const stage = equalizer_rect(store, layout)
