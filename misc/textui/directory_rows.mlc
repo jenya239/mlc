@@ -4,6 +4,10 @@ extern fn list_dir_names(path: string) -> [string]
   = "mlc::file::list_dir_names_value" from "mlc/io/file_abi.hpp" blocking
 extern fn list_dir_is_directory_flags(path: string) -> [i32]
   = "mlc::file::list_dir_is_directory_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_byte_size(path: string) -> i32
+  = "mlc::file::file_byte_size_value" from "mlc/io/file_abi.hpp" blocking
+extern fn file_modified_seconds(path: string) -> i32
+  = "mlc::file::file_modified_seconds_value" from "mlc/io/file_abi.hpp" blocking
 
 type DirEntry = {
   name: string,
@@ -101,7 +105,7 @@ export fn directory_name_visible(name: string, show_hidden: bool) -> bool = do
   return true
 end
 
-export fn directory_listing(path: string, show_hidden: bool) -> DirectoryListing = do
+fn collected_listing(path: string, show_hidden: bool) -> DirectoryListing = do
   const normalized = strip_trailing_slash(path)
   if is_directory(normalized) == false then
     return empty_listing()
@@ -125,3 +129,114 @@ export fn directory_listing(path: string, show_hidden: bool) -> DirectoryListing
   end
   return DirectoryListing { directories: directories, files: files }
 end
+
+fn padded_number(value: i32) -> string = do
+  let mut number = value
+  if number < 0 then
+    number = 0
+  end
+  let mut text = number.to_string()
+  while text.byte_size() < 10 do
+    text = "0" + text
+  end
+  return text
+end
+
+fn extension_of(name: string) -> string = do
+  let mut dot = 0 - 1
+  let mut index = 0
+  while index < name.byte_size() do
+    if name.byte_at(index) == "." then
+      dot = index
+    end
+    index = index + 1
+  end
+  if dot < 0 || dot + 1 >= name.byte_size() then
+    return ""
+  end
+  return name.byte_substring(dot + 1, name.byte_size() - dot - 1)
+end
+
+fn order_key(directory: string, name: string, order_name: string) -> string = do
+  if order_name == "time" then
+    return padded_number(file_modified_seconds(join_path(directory, name)))
+  end
+  if order_name == "size" then
+    return padded_number(file_byte_size(join_path(directory, name)))
+  end
+  if order_name == "type" then
+    return extension_of(name) + " " + name
+  end
+  return name
+end
+
+fn larger_first(order_name: string) -> bool =
+  order_name == "time" || order_name == "size"
+
+fn sorted_names(directory: string, names: [string], order_name: string) -> [string] = do
+  let mut ordered: [string] = []
+  let mut keys: [string] = []
+  let mut index = 0
+  while index < names.length() do
+    ordered.push(names[index])
+    keys.push(order_key(directory, names[index], order_name))
+    index = index + 1
+  end
+  const reverse = larger_first(order_name)
+  let mut left = 1
+  while left < ordered.length() do
+    let mut right = left
+    while right > 0 do
+      let mut earlier = keys[right] < keys[right - 1]
+      if reverse then
+        earlier = keys[right - 1] < keys[right]
+      end
+      if earlier == false then
+        break
+      end
+      const swapped_name = ordered[right]
+      const swapped_key = keys[right]
+      ordered.set(right, ordered[right - 1])
+      keys.set(right, keys[right - 1])
+      ordered.set(right - 1, swapped_name)
+      keys.set(right - 1, swapped_key)
+      right = right - 1
+    end
+    left = left + 1
+  end
+  return ordered
+end
+
+fn sorted_directories(names: [string]) -> [string] = do
+  let mut tail: [string] = []
+  let mut index = 0
+  while index < names.length() do
+    if names[index] != ".." then
+      tail.push(names[index])
+    end
+    index = index + 1
+  end
+  const ordered = sorted_names("", tail, "name")
+  let mut result: [string] = []
+  result.push("..")
+  index = 0
+  while index < ordered.length() do
+    result.push(ordered[index])
+    index = index + 1
+  end
+  return result
+end
+
+export fn directory_listing_ordered(path: string, show_hidden: bool, order_name: string) -> DirectoryListing = do
+  const listing = collected_listing(path, show_hidden)
+  if listing.directories.length() == 0 then
+    return listing
+  end
+  return DirectoryListing {
+    directories: sorted_directories(listing.directories),
+    files: sorted_names(strip_trailing_slash(path), listing.files, order_name)
+  }
+end
+
+export fn directory_listing(path: string, show_hidden: bool) -> DirectoryListing =
+  directory_listing_ordered(path, show_hidden, "name")

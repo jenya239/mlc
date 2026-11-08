@@ -50,7 +50,19 @@ export fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_list_view(
     store, directory_scroller, ListData { texts: directory_rows }, 0, true
   )
-  store = widget_store_add_scroll_view(store, splitter, 1, true)
+  store = widget_store_add_box(
+    store,
+    splitter,
+    BoxData { direction: DirectionColumn, padding: 0, gap: 2 },
+    OverflowVisible,
+    1,
+    true
+  )
+  const file_column = store.nodes[store.nodes.length() - 1].id
+  store = widget_store_add_button(
+    store, file_column, ButtonData { text: "Name" }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_scroll_view(store, file_column, 1, true)
   const scroller = store.nodes[store.nodes.length() - 1].id
   store = widget_store_add_list_view(
     store, scroller, ListData { texts: file_rows }, 0, true

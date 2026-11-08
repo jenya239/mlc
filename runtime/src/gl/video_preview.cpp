@@ -254,6 +254,23 @@ void ensure_decoder() {
 
 }  // namespace
 
+void video_replay(const std::string& path) {
+  SharedVideo& video = shared_video();
+  {
+    std::lock_guard<std::mutex> guard(video.mutex);
+    video.active = true;
+    video.path = path;
+    video.path_changed = true;
+    video.pixels.clear();
+    video.width = 0;
+    video.height = 0;
+    video.serial += 1;
+    video.cancel.store(true);
+  }
+  video.condition.notify_all();
+  ensure_decoder();
+}
+
 void video_watch(const std::string& path) {
   SharedVideo& video = shared_video();
   {

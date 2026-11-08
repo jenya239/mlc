@@ -1,7 +1,7 @@
 import { Theme } from './theme'
 import { wrap_line_starts } from './text_layout_wrap'
 import {
-  TextLine,
+  PlacedLine,
   TextCluster,
   PlacedText,
   place_visual_lines
@@ -23,7 +23,7 @@ export type TextLayout = {
   wrap_width: WrapWidth,
   pixel_width: i32,
   pixel_height: i32,
-  lines: [TextLine],
+  lines: [PlacedLine],
   clusters: [TextCluster]
 }
 
@@ -50,7 +50,7 @@ export fn wrap_width_pixels(limit: i32) -> WrapWidth =
   WrapWidthPixels(limit)
 
 export fn text_layout_empty() -> TextLayout = do
-  let mut lines: [TextLine] = []
+  let mut lines: [PlacedLine] = []
   let mut clusters: [TextCluster] = []
   TextLayout {
     text: "",
@@ -168,7 +168,7 @@ fn place_hard_line(
   paragraph_clusters: [TextCluster],
   wrap_width: WrapWidth,
   line_height: i32,
-  lines: [TextLine],
+  lines: [PlacedLine],
   clusters: [TextCluster],
   pixel_width: i32,
   line_index: i32
@@ -194,7 +194,7 @@ fn build_hard_line_layout(
 ) -> HardLineLayout = do
   const line_height = text_shaping_line_height(shaping, font_path, pixel_size)
   let mut current = shaping
-  let mut lines: [TextLine] = []
+  let mut lines: [PlacedLine] = []
   let mut clusters: [TextCluster] = []
   let mut pixel_width = 0
   let mut paragraph_start = 0

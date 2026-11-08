@@ -1,4 +1,4 @@
-export type TextLine = {
+export type PlacedLine = {
   byte_start: i32,
   byte_end: i32,
   top: i32,
@@ -14,7 +14,7 @@ export type TextCluster = {
 }
 
 export type PlacedText = {
-  lines: [TextLine],
+  lines: [PlacedLine],
   clusters: [TextCluster],
   pixel_width: i32,
   next_line_index: i32
@@ -26,7 +26,7 @@ export fn place_visual_lines(
   paragraph_clusters: [TextCluster],
   starts: [i32],
   line_height: i32,
-  lines: [TextLine],
+  lines: [PlacedLine],
   clusters: [TextCluster],
   pixel_width: i32,
   line_index: i32
@@ -66,7 +66,7 @@ export fn place_visual_lines(
     if cluster_x > next_pixel_width then
       next_pixel_width = cluster_x
     end
-    next_lines.push(TextLine {
+    next_lines.push(PlacedLine {
       byte_start: byte_start,
       byte_end: byte_end,
       top: next_line_index * line_height,

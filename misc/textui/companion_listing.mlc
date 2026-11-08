@@ -6,6 +6,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindBox(_) => []
     | KindLabel(_) => []
     | KindIcon(_) => []
+    | KindTextView => []
     | KindButton(_) => []
     | KindCheckbox(_) => []
     | KindScrollView => []

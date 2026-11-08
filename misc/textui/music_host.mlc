@@ -199,6 +199,9 @@ export fn music_playing() -> i32 = do
   return 1
 end
 
+export fn music_play_path(path: string) -> unit =
+  music_play_list(path, 0)
+
 export fn music_release() -> unit =
   music_release_player()
 

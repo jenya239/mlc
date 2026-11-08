@@ -26,7 +26,8 @@ import {
 import { UiEvent } from './ui_event'
 import { list_selected_at, list_selected_put } from './widget_list'
 import { scroll_offsets_put } from './widget_scroll'
-import { directory_listing, directory_target, parent_path } from './directory_rows'
+import { directory_listing_ordered, directory_target, parent_path } from './directory_rows'
+import { file_sort_order_of } from './file_sort'
 import { listing_at_jail_root, normalize_path, path_inside_jail } from './directory_jail'
 import { checkbox_named_checked, checkbox_toggle } from './checkbox'
 import { path_bar_sync } from './path_bar'
@@ -54,6 +55,9 @@ fn nth_list(store: WidgetStore, ordinal: i32) -> WidgetId = do
   return widget_id_none()
 end
 
+export fn directory_list_id(store: WidgetStore) -> WidgetId =
+  nth_list(store, 0)
+
 fn first_text_field(store: WidgetStore) -> WidgetId = do
   let mut index = 0
   while index < store.nodes.length() do
@@ -71,6 +75,7 @@ fn field_text(kind: WidgetKind) -> string =
     | KindBox(_) => ""
     | KindLabel(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
     | KindButton(_) => ""
     | KindCheckbox(_) => ""
     | KindScrollView => ""
@@ -83,6 +88,7 @@ fn list_texts(kind: WidgetKind) -> [string] =
     | KindBox(_) => []
     | KindLabel(_) => []
     | KindIcon(_) => []
+    | KindTextView => []
     | KindButton(_) => []
     | KindCheckbox(_) => []
     | KindScrollView => []
@@ -160,7 +166,7 @@ fn open_directory_in(store: WidgetStore, state: UiState, path: string, root: str
     return view_of(store, state)
   end
   const listing = listing_at_jail_root(
-    directory_listing(normalized, checkbox_named_checked(store, "Hidden")),
+    directory_listing_ordered(normalized, checkbox_named_checked(store, "Hidden"), file_sort_order_of(store)),
     normalized,
     root
   )

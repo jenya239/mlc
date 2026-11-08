@@ -54,6 +54,7 @@ fn kind_is_label(kind: WidgetKind) -> bool =
     | KindSplitter(_) => false
     | KindTextField(_) => false
     | KindIcon(_) => false
+    | KindTextView => false
 
 fn widget_is_label(store: WidgetStore, widget: WidgetId) -> bool = do
   if widget.index < 0 || widget.index >= store.nodes.length() then

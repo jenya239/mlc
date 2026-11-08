@@ -10,3 +10,6 @@ end
 
 export fn pointer_past_slop(ax: i32, ay: i32, bx: i32, by: i32) -> bool =
   distance_squared(ax, ay, bx, by) >= slop_pixels() * slop_pixels()
+
+export fn pointer_past_pixels(ax: i32, ay: i32, bx: i32, by: i32, pixels: i32) -> bool =
+  distance_squared(ax, ay, bx, by) >= pixels * pixels

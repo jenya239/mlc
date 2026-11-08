@@ -21,6 +21,7 @@ fn list_row_count(store: WidgetStore, id: WidgetId) -> i32 = do
     | KindBox(_) => 0
     | KindLabel(_) => 0
     | KindIcon(_) => 0
+    | KindTextView => 0
     | KindButton(_) => 0
     | KindCheckbox(_) => 0
     | KindScrollView => 0

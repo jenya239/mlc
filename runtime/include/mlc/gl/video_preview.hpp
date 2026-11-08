@@ -8,6 +8,7 @@ namespace mlc {
 namespace image_preview {
 
 void video_watch(const std::string& path);
+void video_replay(const std::string& path);
 void video_clear();
 void video_shutdown();
 bool video_is_active();

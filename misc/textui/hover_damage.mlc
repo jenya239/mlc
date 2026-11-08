@@ -19,6 +19,7 @@ import { menu_list_id } from './menu'
 import { kind_is_clickable } from './user_select'
 import { paint_button, paint_overlay_frame, paint_path_crumb, paint_tree_frame } from './paint_pass'
 import { paint_preview_caption } from './preview_caption'
+import { paint_text_view_preview } from './text_view_preview'
 import { path_bar_is_crumb } from './path_bar'
 import { checkbox_caption, checkbox_mark, kind_is_checkbox, paint_checkbox } from './checkbox'
 import { TextShapingState } from '../gui/text_shaping'
@@ -362,9 +363,11 @@ export fn submit_ui_frame(
   window_width: i32,
   window_height: i32,
   composed: bool,
-  root: string
+  root: string,
+  previous_text_path: string,
+  text_path: string
 ) -> SubmitFrameResult = do
-  if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) then
+  if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) && previous_text_path == text_path then
     const damage = paint_hover_damage(theme, store, layout, state, presented, next)
     if damage.length() > 0 then
       const into_texture = submit_frame(
@@ -383,7 +386,7 @@ export fn submit_ui_frame(
     resources,
     shaping,
     theme,
-    paint_preview_caption(theme, store, layout, state, root, paint_tree_frame(theme, store, layout, state)),
+    paint_text_view_preview(theme, store, layout, paint_preview_caption(theme, store, layout, state, root, paint_tree_frame(theme, store, layout, state)), text_path),
     paint_overlay_frame(theme, store, layout, state),
     window_width,
     window_height

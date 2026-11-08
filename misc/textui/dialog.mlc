@@ -112,6 +112,7 @@ fn label_text(kind: WidgetKind) -> string =
   match kind
     | KindLabel(data) => data.text
     | KindIcon(icon) => icon.name
+    | KindTextView => ""
     | KindBox(_) => ""
     | KindButton(_) => ""
     | KindCheckbox(_) => ""
@@ -126,6 +127,7 @@ fn list_texts_of(kind: WidgetKind) -> [string] =
     | KindBox(_) => []
     | KindLabel(_) => []
     | KindIcon(_) => []
+    | KindTextView => []
     | KindButton(_) => []
     | KindCheckbox(_) => []
     | KindScrollView => []

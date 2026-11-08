@@ -1,0 +1,242 @@
+import { Rect, rect_is_empty, rect_new } from './geometry'
+import { Theme } from './theme'
+import { WidgetKind, WidgetStore, widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { UiState } from './ui_state'
+import { list_row_height, list_row_inset } from './widget_list'
+import { image_preview_file_pane } from './image_preview'
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_bar_current } from './path_bar'
+import { path_inside_jail } from './directory_jail'
+import { text_document_line, text_document_line_count } from './text_document'
+import { kind_is_text_view, text_view_open } from './text_view_open'
+import { text_grapheme_boundaries } from './text_graphemes'
+
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+fn ends_with(name: string, suffix: string) -> bool = do
+  const name_size = name.byte_size()
+  const suffix_size = suffix.byte_size()
+  if suffix_size == 0 || name_size < suffix_size then
+    return false
+  end
+  return name.byte_substring(name_size - suffix_size, suffix_size) == suffix
+end
+
+fn secret_file_name(name: string) -> bool = do
+  if name == "" || name == "." || name == ".." || name == ".env" then
+    return true
+  end
+  if name.byte_size() >= 5 && name.byte_substring(0, 5) == ".env." then
+    return true
+  end
+  if name.byte_size() >= 6 && name.byte_substring(0, 6) == "id_rsa" then
+    return true
+  end
+  if name.byte_size() >= 10 && name.byte_substring(0, 10) == "id_ed25519" then
+    return true
+  end
+  ends_with(name, ".pem") || ends_with(name, ".key") || ends_with(name, ".kdbx")
+end
+
+fn text_suffix(name: string) -> bool = do
+  let mut suffixes: [string] = []
+  suffixes.push(".txt")
+  suffixes.push(".TXT")
+  suffixes.push(".md")
+  suffixes.push(".MD")
+  suffixes.push(".mlc")
+  suffixes.push(".MLC")
+  suffixes.push(".json")
+  suffixes.push(".JSON")
+  suffixes.push(".rb")
+  suffixes.push(".js")
+  suffixes.push(".ts")
+  suffixes.push(".css")
+  suffixes.push(".html")
+  suffixes.push(".xml")
+  suffixes.push(".yml")
+  suffixes.push(".yaml")
+  suffixes.push(".toml")
+  suffixes.push(".csv")
+  suffixes.push(".log")
+  suffixes.push(".hpp")
+  suffixes.push(".h")
+  suffixes.push(".cpp")
+  suffixes.push(".c")
+  suffixes.push(".rs")
+  suffixes.push(".py")
+  suffixes.push(".sh")
+  suffixes.push(".markdown")
+  let mut index = 0
+  while index < suffixes.length() do
+    if ends_with(name, suffixes[index]) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+export fn text_file_name(name: string) -> bool = do
+  if secret_file_name(name) then
+    return false
+  end
+  text_suffix(name)
+end
+
+fn list_text_at(texts: [string], row: i32) -> string = do
+  if row < 0 || row >= texts.length() then
+    return ""
+  end
+  return texts[row]
+end
+
+fn row_name(kind: WidgetKind, row: i32) -> string =
+  match kind
+    | KindListView(data) => list_text_at(data.texts, row)
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindButton(_) => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+    | KindIcon(_) => ""
+    | KindTextView => ""
+
+fn hovered_row_name(store: WidgetStore, state: UiState) -> string = do
+  const owner = state.hover
+  if owner.index < 0 || owner.index >= store.nodes.length() then
+    return ""
+  end
+  return row_name(store.nodes[owner.index].kind, state.list_hover_row)
+end
+
+export fn hovered_text_path(store: WidgetStore, state: UiState, root: string) -> string = do
+  if state.overlay_open then
+    return ""
+  end
+  const name = hovered_row_name(store, state)
+  if text_file_name(name) == false then
+    return ""
+  end
+  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  if is_directory(path) then
+    return ""
+  end
+  return path
+end
+
+fn preview_prefix(text: string) -> string = do
+  const limit = 180
+  if text.byte_size() <= limit then
+    return text
+  end
+  let mut sample = text
+  if text.byte_size() > 256 then
+    sample = text.byte_substring(0, 256)
+  end
+  const bounds = text_grapheme_boundaries(sample)
+  let mut limit_byte = 0
+  let mut index = 0
+  while index < bounds.length() do
+    if bounds[index] <= limit && bounds[index] > limit_byte then
+      limit_byte = bounds[index]
+    end
+    index = index + 1
+  end
+  if limit_byte < 1 then
+    return ""
+  end
+  sample.byte_substring(0, limit_byte)
+end
+
+fn window_budget(row_limit: i32) -> i32 = do
+  let mut budget = row_limit * 48
+  if budget < 32 then
+    budget = 32
+  end
+  if budget > 16384 then
+    budget = 16384
+  end
+  budget
+end
+
+export fn text_view_preview_lines(path: string, row_limit: i32) -> [string] = do
+  let mut lines: [string] = []
+  if path == "" || row_limit < 1 then
+    return lines
+  end
+  const opened = text_view_open(path, window_budget(row_limit), row_limit, 1)
+  if kind_is_text_view(opened.kind) == false then
+    return lines
+  end
+  let mut index = 0
+  let mut count = text_document_line_count(opened.document)
+  if count > row_limit then
+    count = row_limit
+  end
+  while index < count do
+    lines.push(preview_prefix(text_document_line(opened.document, index).text))
+    index = index + 1
+  end
+  lines
+end
+
+export fn paint_text_view_preview(
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  operations: [DrawOp],
+  path: string
+) -> [DrawOp] = do
+  if path == "" then
+    return operations
+  end
+  const pane = image_preview_file_pane(store)
+  if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.clips.length() then
+    return operations
+  end
+  const clip = layout.clips[pane.index]
+  if rect_is_empty(clip) || clip.width < 80 || clip.height < 16 then
+    return operations
+  end
+  const band_width = clip.width / 2
+  if band_width < 40 then
+    return operations
+  end
+  const row_height = list_row_height(theme)
+  let mut row_count = (clip.height - theme.padding * 2) / row_height
+  if row_count < 1 then
+    return operations
+  end
+  if row_count > 40 then
+    row_count = 40
+  end
+  const lines = text_view_preview_lines(path, row_count)
+  if lines.length() == 0 then
+    return operations
+  end
+  const band = rect_new(clip.x + clip.width - band_width, clip.y, band_width, clip.height)
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp { rect: band, color: theme.background }))
+  painted.push(OpPushClip(band))
+  let mut index = 0
+  while index < lines.length() do
+    painted.push(OpText(TextOp {
+      origin_x: band.x + theme.padding,
+      origin_y: band.y + theme.padding + index * row_height + list_row_inset(theme),
+      color: theme.foreground,
+      text: lines[index]
+    }))
+    index = index + 1
+  end
+  painted.push(OpPopClip)
+  painted
+end

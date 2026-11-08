@@ -171,6 +171,7 @@ fn label_text(kind: WidgetKind) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
 
 fn button_text(kind: WidgetKind) -> string =
   match kind
@@ -183,6 +184,7 @@ fn button_text(kind: WidgetKind) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
 
 fn set_button(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
   if id.index < 0 || id.index >= store.nodes.length() then

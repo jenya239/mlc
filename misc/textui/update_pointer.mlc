@@ -1,5 +1,6 @@
 import { Theme } from './theme'
-import { WidgetStore, WidgetId, widget_id_none, widget_id_is_none } from './store'
+import { WidgetStore, WidgetId, widget_id_equals, widget_id_none, widget_id_is_none } from './store'
+import { directory_list_id } from './directory_browse'
 import { LayoutResult } from './layout_result'
 import { handle_press } from './update_pointer_press'
 import { apply_pick_press } from './inspect'
@@ -98,8 +99,11 @@ export fn update_pointer(
   end
   if input.left_pressed && current.pick_enabled == false then
     current = handle_press(store, layout, theme, current, input)
-    if pointer_is_list(current.pointer) && last_press_count(current) >= 2 then
-      events.push(ui_event_row_activated(pointer_list_owner(current.pointer)))
+    if pointer_is_list(current.pointer) then
+      const directory_pane = widget_id_equals(pointer_list_owner(current.pointer), directory_list_id(store))
+      if directory_pane || last_press_count(current) >= 2 then
+        events.push(ui_event_row_activated(pointer_list_owner(current.pointer)))
+      end
     end
   end
   if input.left_down then

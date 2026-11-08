@@ -74,6 +74,7 @@ fn renamed_button(kind: WidgetKind, text: string) -> WidgetKind =
     | KindSplitter(data) => KindSplitter(data)
     | KindTextField(data) => KindTextField(data)
     | KindIcon(data) => KindIcon(data)
+    | KindTextView => KindTextView
 
 fn button_text(kind: WidgetKind) -> string =
   match kind
@@ -86,6 +87,7 @@ fn button_text(kind: WidgetKind) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
 
 fn set_button_text(store: WidgetStore, id: WidgetId, text: string) -> WidgetStore = do
   const node = store.nodes[id.index]

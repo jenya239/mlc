@@ -7,6 +7,7 @@ namespace mlc {
 namespace image_preview {
 
 int32_t load_value(mlc::String path);
+void video_replay_value(mlc::String path);
 void arm_value(
   int32_t dest_x,
   int32_t dest_y,

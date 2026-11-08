@@ -1,0 +1,87 @@
+import { text_file_name, text_view_preview_lines } from '../text_view_preview'
+
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+
+fn note_path() -> string = "/home/jenya/workspaces/current/mlc/tmp/text_view_preview_note.txt"
+
+fn long_path() -> string = "/home/jenya/workspaces/current/mlc/tmp/text_view_preview_long.txt"
+
+fn wide_path() -> string = "/home/jenya/workspaces/current/mlc/tmp/text_view_preview_wide.txt"
+
+fn long_body() -> string = do
+  let mut body = ""
+  let mut index = 0
+  while index < 40 do
+    body = body + "0123456789\n"
+    index = index + 1
+  end
+  body + "TAIL\n"
+end
+
+fn wide_body() -> string = do
+  let mut body = ""
+  let mut index = 0
+  while index < 300 do
+    body = body + "a"
+    index = index + 1
+  end
+  body
+end
+
+fn contains_tail(lines: [string]) -> bool = do
+  let mut index = 0
+  while index < lines.length() do
+    if lines[index] == "TAIL" then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  if text_file_name("note.txt") == false then
+    return 1
+  end
+  if text_file_name("pic.png") then
+    return 2
+  end
+  if text_file_name("clip.mp4") then
+    return 3
+  end
+  if text_file_name(".env") then
+    return 4
+  end
+  if text_file_name("id_rsa") then
+    return 5
+  end
+  if text_file_name("NOTE.TXT") == false then
+    return 6
+  end
+  if file_write_string(note_path(), "one\ntwo\n") == false then
+    return 7
+  end
+  const note = text_view_preview_lines(note_path(), 8)
+  if note.length() != 2 || note[0] != "one" || note[1] != "two" then
+    return 8
+  end
+  if file_write_string(long_path(), long_body()) == false then
+    return 9
+  end
+  const head = text_view_preview_lines(long_path(), 1)
+  if head.length() < 1 || head.length() >= 15 || head[0] != "0123456789" || contains_tail(head) then
+    return 10
+  end
+  if file_write_string(wide_path(), wide_body()) == false then
+    return 11
+  end
+  const wide = text_view_preview_lines(wide_path(), 4)
+  if wide.length() != 1 || wide[0].byte_size() > 180 || wide[0].byte_size() < 1 then
+    return 12
+  end
+  if text_view_preview_lines(note_path() + ".missing", 4).length() != 0 then
+    return 13
+  end
+  0
+end

@@ -50,6 +50,7 @@ fn field_is_multiline(kind: WidgetKind) -> bool =
     | KindListView(_) => false
     | KindSplitter(_) => false
     | KindIcon(_) => false
+    | KindTextView => false
 
 fn moved(
   store: WidgetStore,

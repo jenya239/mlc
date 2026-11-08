@@ -249,6 +249,7 @@ fn label_text(kind: WidgetKind) -> string =
     | KindSplitter(_) => ""
     | KindTextField(_) => ""
     | KindIcon(_) => ""
+    | KindTextView => ""
 
 export type JournalHeader = {
   store: WidgetStore,

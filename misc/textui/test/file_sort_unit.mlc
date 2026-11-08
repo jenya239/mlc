@@ -1,0 +1,43 @@
+import { directory_listing_ordered } from '../directory_rows'
+import { file_sort_kind, file_sort_next, file_sort_order, file_sort_size, file_sort_time } from '../file_sort'
+
+extern fn file_write_string(path: string, content: string) -> bool
+  = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
+extern fn create_directories(path: string) -> bool
+  = "mlc::file::create_directories_value" from "mlc/io/file_abi.hpp" blocking
+
+fn root() -> string = "/home/jenya/workspaces/current/mlc/tmp/file_sort_fixture"
+
+fn main() -> i32 = do
+  if file_sort_next("Name") != "Time" || file_sort_order("Time") != file_sort_time() then
+    return 1
+  end
+  if file_sort_next("Time") != "Size" || file_sort_order("Size") != file_sort_size() then
+    return 2
+  end
+  if file_sort_next("Size") != "Type" || file_sort_order("Type") != file_sort_kind() then
+    return 3
+  end
+  if file_sort_next("Type") != "Name" then
+    return 4
+  end
+  if create_directories(root()) == false then
+    return 5
+  end
+  if file_write_string(root() + "/b.txt", "bb") == false || file_write_string(root() + "/a.dat", "a") == false then
+    return 6
+  end
+  const by_name = directory_listing_ordered(root(), false, "name")
+  if by_name.files.length() != 2 || by_name.files[0] != "a.dat" || by_name.files[1] != "b.txt" then
+    return 7
+  end
+  const by_size = directory_listing_ordered(root(), false, "size")
+  if by_size.files.length() != 2 || by_size.files[0] != "b.txt" || by_size.files[1] != "a.dat" then
+    return 8
+  end
+  const by_kind = directory_listing_ordered(root(), false, "type")
+  if by_kind.files.length() != 2 || by_kind.files[0] != "a.dat" || by_kind.files[1] != "b.txt" then
+    return 9
+  end
+  0
+end

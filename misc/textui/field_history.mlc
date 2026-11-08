@@ -30,6 +30,7 @@ fn field_data_of(kind: WidgetKind) -> FieldData =
     | KindBox(_) => field_data_new("")
     | KindLabel(_) => field_data_new("")
     | KindIcon(_) => field_data_new("")
+    | KindTextView => field_data_new("")
     | KindButton(_) => field_data_new("")
     | KindCheckbox(_) => field_data_new("")
     | KindScrollView => field_data_new("")

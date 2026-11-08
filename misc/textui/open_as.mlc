@@ -25,6 +25,7 @@ fn list_names(kind: WidgetKind) -> [string] =
     | KindBox(_) => []
     | KindLabel(_) => []
     | KindIcon(_) => []
+    | KindTextView => []
     | KindButton(_) => []
     | KindCheckbox(_) => []
     | KindScrollView => []

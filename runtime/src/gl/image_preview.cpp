@@ -700,6 +700,22 @@ void ensure_bars() {
 
 }  // namespace
 
+void video_replay_value(mlc::String path) {
+  const std::string key = path.as_std_string();
+  if (key.empty()) {
+    return;
+  }
+  shown_key = key;
+  paint_needed = true;
+  video_mode = true;
+  video_path = key;
+  live_width = 0;
+  live_height = 0;
+  live_uploaded = 0;
+  current_slot = -1;
+  video_replay(key);
+}
+
 int32_t load_value(mlc::String path) {
   const std::string key = path.as_std_string();
   if (key != shown_key) {
