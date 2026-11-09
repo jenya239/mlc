@@ -11,8 +11,10 @@ import { text_document_line } from './text_document'
 import { text_line_index_of_identifier } from './text_line_index'
 import { text_grapheme_boundaries } from './text_graphemes'
 import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
-import { text_view_selection_spans } from './text_view_selection'
+import { text_view_line_selection } from './text_view_selection'
 import { text_view_visible_identifiers } from './text_view_state'
+import { scroll_bar_rect, scroll_thumb_rect } from './widget_scroll'
+import { text_editor_bar_visible, text_editor_content_height, text_editor_scroll_offset } from './text_editor_pointer'
 import { TextEditor } from './text_editor'
 import { focus_is_text_field } from './list_marks'
 
@@ -129,26 +131,24 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
   const origin_x = band.x + theme.padding
   const origin_y = band.y + theme.padding
   const identifiers = text_view_visible_identifiers(editor.view, editor.document)
-  const spans = text_view_selection_spans(editor.view, editor.document)
   let mut index = 0
   while index < identifiers.length() do
     const line_index = text_line_index_of_identifier(editor.document.line_index, identifiers[index])
     if line_index >= 0 then
       const line = text_document_line(editor.document, line_index)
-      let mut span_index = 0
-      while span_index < spans.length() do
-        if spans[span_index].line_identifier == line.line_identifier && spans[span_index].right > spans[span_index].left then
-          painted.push(OpFillRect(FillRectOp {
-            rect: rect_new(
-              origin_x + spans[span_index].left,
-              origin_y + index * row_height,
-              spans[span_index].right - spans[span_index].left,
-              row_height
-            ),
-            color: theme.selection_background
-          }))
-        end
-        span_index = span_index + 1
+      const span = text_view_line_selection(editor.view, editor.document, line.line_identifier)
+      const span_left = span.left - editor.view.horizontal_scroll
+      const span_right = span.right - editor.view.horizontal_scroll
+      if span_right > span_left then
+        painted.push(OpFillRect(FillRectOp {
+          rect: rect_new(
+            origin_x + span_left,
+            origin_y + index * row_height,
+            span_right - span_left,
+            row_height
+          ),
+          color: theme.selection_background
+        }))
       end
       painted.push(OpText(TextOp {
         origin_x: origin_x,
@@ -173,6 +173,16 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
     painted.push(OpFillRect(FillRectOp {
       rect: rect_new(origin_x + caret_x(editor), origin_y + caret_row * row_height, 2, row_height),
       color: theme.foreground
+    }))
+  end
+  if text_editor_bar_visible(editor) then
+    painted.push(OpFillRect(FillRectOp {
+      rect: scroll_bar_rect(theme, band),
+      color: theme.scrollbar_track
+    }))
+    painted.push(OpFillRect(FillRectOp {
+      rect: scroll_thumb_rect(theme, band, text_editor_scroll_offset(editor), text_editor_content_height(editor)),
+      color: theme.scrollbar_thumb
     }))
   end
   painted.push(OpPopClip)

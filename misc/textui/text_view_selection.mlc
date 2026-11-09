@@ -1,4 +1,4 @@
-import { TextDocument, TextReplaceResult, text_document_line, text_document_replace } from './text_document'
+import { TextDocument, TextReplaceResult, text_document_line, text_document_line_count, text_document_replace } from './text_document'
 import { text_line_terminator_bytes } from './text_line'
 import { TextEdit } from './text_edit'
 import { TextLine } from './text_line'
@@ -46,6 +46,12 @@ fn span_for(state: TextViewState, line: TextLine, start_byte: i32, finish_byte: 
     const positions = state.shape_cache.entries[found].boundary_positions
     left = text_view_position_of_byte(boundaries, positions, start_byte)
     right = text_view_position_of_byte(boundaries, positions, finish_byte)
+  else
+    if state.content_width > 8 then
+      right = state.content_width
+    else
+      right = 8
+    end
   end
   if left > right then
     const swap = left
@@ -59,24 +65,70 @@ fn span_for(state: TextViewState, line: TextLine, start_byte: i32, finish_byte: 
   }
 end
 
-export fn text_view_selection_spans(state: TextViewState, document: TextDocument) -> [TextSelectionSpan] = do
-  let mut spans: [TextSelectionSpan] = []
+fn selection_empty(line_identifier: i32) -> TextSelectionSpan =
+  TextSelectionSpan { line_identifier: line_identifier, left: 0, right: 0 }
+
+export fn text_view_line_selection(state: TextViewState, document: TextDocument, line_identifier: i32) -> TextSelectionSpan = do
   if state.bound_line_identifier == state.caret_line_identifier && state.bound_byte == state.caret_byte then
-    return spans
+    return selection_empty(line_identifier)
   end
-  const line_index = text_line_index_of_identifier(document.line_index, state.caret_line_identifier)
-  if line_index < 0 || state.bound_line_identifier != state.caret_line_identifier then
-    return spans
+  const caret_index = text_line_index_of_identifier(document.line_index, state.caret_line_identifier)
+  const bound_index = text_line_index_of_identifier(document.line_index, state.bound_line_identifier)
+  const line_index = text_line_index_of_identifier(document.line_index, line_identifier)
+  if caret_index < 0 || bound_index < 0 || line_index < 0 then
+    return selection_empty(line_identifier)
+  end
+  let mut start_index = bound_index
+  let mut start_byte = state.bound_byte
+  let mut finish_index = caret_index
+  let mut finish_byte = state.caret_byte
+  if start_index > finish_index || (start_index == finish_index && start_byte > finish_byte) then
+    const swap_index = start_index
+    const swap_byte = start_byte
+    start_index = finish_index
+    start_byte = finish_byte
+    finish_index = swap_index
+    finish_byte = swap_byte
+  end
+  if line_index < start_index || line_index > finish_index then
+    return selection_empty(line_identifier)
   end
   const line = text_document_line(document, line_index)
-  let mut start_byte = state.bound_byte
-  let mut finish_byte = state.caret_byte
-  if start_byte > finish_byte then
-    const swap = start_byte
-    start_byte = finish_byte
-    finish_byte = swap
+  let mut local_start = 0
+  let mut local_finish = line.text.byte_size()
+  if line_index == start_index then
+    local_start = start_byte
   end
-  spans.push(span_for(state, line, start_byte, finish_byte))
+  if line_index == finish_index then
+    local_finish = finish_byte
+  end
+  if local_finish < local_start then
+    return selection_empty(line_identifier)
+  end
+  if local_finish == local_start then
+    if line_index > start_index && line_index < finish_index then
+      let mut width = state.content_width
+      if width < 8 then
+        width = 8
+      end
+      return TextSelectionSpan { line_identifier: line.line_identifier, left: 0, right: width }
+    end
+    return selection_empty(line_identifier)
+  end
+  span_for(state, line, local_start, local_finish)
+end
+
+export fn text_view_selection_spans(state: TextViewState, document: TextDocument) -> [TextSelectionSpan] = do
+  let mut spans: [TextSelectionSpan] = []
+  let mut index = 0
+  const count = text_document_line_count(document)
+  while index < count do
+    const span = text_view_line_selection(state, document, text_document_line(document, index).line_identifier)
+    if span.right > span.left then
+      spans.push(span)
+    end
+    index = index + 1
+  end
   spans
 end
 
@@ -86,6 +138,61 @@ fn replace_rejected(document: TextDocument) -> TextReplaceResult = do
     edit: TextEdit { start_offset: 0, end_offset: 0, inserted_text: "", removed_text: "" },
     accepted: false
   }
+end
+
+fn offset_in_unshaped_tail(state: TextViewState, document: TextDocument, offset: i32, closing_boundary: bool) -> bool = do
+  const located = text_line_index_line_of(document.line_index, offset)
+  const origin = text_line_index_offset_of(located.index, located.value)
+  const line = text_document_line(document, located.value)
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  if found < 0 then
+    return true
+  end
+  const entry = state.shape_cache.entries[found]
+  const line_limit = origin.value + line.text.byte_size() + text_line_terminator_bytes(line.terminator).byte_size()
+  if offset > line_limit then
+    return true
+  end
+  if entry.shaped_byte_count < line.text.byte_size() then
+    const shaped_limit = origin.value + entry.shaped_byte_count
+    if closing_boundary && offset > shaped_limit then
+      return true
+    end
+    if closing_boundary == false && offset >= shaped_limit then
+      return true
+    end
+  end
+  false
+end
+
+fn end_crosses_start_tail(state: TextViewState, document: TextDocument, start_offset: i32, end_offset: i32) -> bool = do
+  const located = text_line_index_line_of(document.line_index, start_offset)
+  const origin = text_line_index_offset_of(located.index, located.value)
+  const line = text_document_line(document, located.value)
+  const found = text_view_entry_index(state, line.line_identifier, line.revision)
+  if found < 0 then
+    return true
+  end
+  const entry = state.shape_cache.entries[found]
+  if entry.shaped_byte_count >= line.text.byte_size() then
+    return false
+  end
+  end_offset > origin.value + entry.shaped_byte_count
+end
+
+fn middle_line_hides_tail(state: TextViewState, document: TextDocument, start_offset: i32, end_offset: i32) -> bool = do
+  const start_index = text_line_index_line_of(document.line_index, start_offset).value
+  const finish_index = text_line_index_line_of(document.line_index, end_offset).value
+  let mut index = start_index + 1
+  while index < finish_index do
+    const line = text_document_line(document, index)
+    const found = text_view_entry_index(state, line.line_identifier, line.revision)
+    if found >= 0 && state.shape_cache.entries[found].shaped_byte_count < line.text.byte_size() then
+      return true
+    end
+    index = index + 1
+  end
+  false
 end
 
 export fn text_view_replace(
@@ -98,23 +205,16 @@ export fn text_view_replace(
   if start_offset < 0 || end_offset < start_offset then
     return replace_rejected(document)
   end
-  const located = text_line_index_line_of(document.line_index, start_offset)
-  const origin = text_line_index_offset_of(located.index, located.value)
-  const line = text_document_line(document, located.value)
-  const found = text_view_entry_index(state, line.line_identifier, line.revision)
-  if found < 0 then
+  if offset_in_unshaped_tail(state, document, start_offset, false) then
     return replace_rejected(document)
   end
-  const entry = state.shape_cache.entries[found]
-  const text_limit = origin.value + line.text.byte_size()
-  const line_limit = text_limit + text_line_terminator_bytes(line.terminator).byte_size()
-  if entry.shaped_byte_count < line.text.byte_size() then
-    const shaped_limit = origin.value + entry.shaped_byte_count
-    if start_offset >= shaped_limit || end_offset > shaped_limit then
-      return replace_rejected(document)
-    end
+  if offset_in_unshaped_tail(state, document, end_offset, true) then
+    return replace_rejected(document)
   end
-  if start_offset > line_limit || end_offset > line_limit then
+  if end_crosses_start_tail(state, document, start_offset, end_offset) then
+    return replace_rejected(document)
+  end
+  if middle_line_hides_tail(state, document, start_offset, end_offset) then
     return replace_rejected(document)
   end
   text_document_replace(document, start_offset, end_offset, inserted_text)

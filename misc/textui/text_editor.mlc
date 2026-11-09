@@ -1,8 +1,9 @@
 import { TextDocument, text_document_from_bytes, text_document_line } from './text_document'
 import { KindTextView } from './store'
 import { kind_is_text_view, text_view_open } from './text_view_open'
-import { TextViewState, text_view_frame, text_view_state_new, text_view_visible_identifiers, text_view_wheel } from './text_view_state'
-import { text_view_move_horizontal, text_view_move_vertical, text_view_press } from './text_view_input'
+import { text_line_index_of_identifier } from './text_line_index'
+import { TextViewState, text_view_frame, text_view_scroll_to_index, text_view_state_new, text_view_visible_identifiers } from './text_view_state'
+import { text_view_move_horizontal, text_view_move_vertical, text_view_press_at } from './text_view_input'
 import { text_view_backspace, text_view_break_line, text_view_delete_forward, text_view_insert_text } from './text_view_keys'
 import { text_view_save } from './text_view_save'
 import { UiInput } from './ui_input'
@@ -12,8 +13,16 @@ export type TextEditor = {
   document: TextDocument,
   view: TextViewState,
   open: bool,
-  revision: i32
+  revision: i32,
+  gesture: i32,
+  edge_clock_ms: i32
 }
+
+export fn text_editor_gesture_idle() -> i32 = 0
+
+export fn text_editor_gesture_selecting() -> i32 = 1
+
+export fn text_editor_gesture_scrolling() -> i32 = 2
 
 export type TextEditorChoice =
   EditorKeep
@@ -39,7 +48,9 @@ export fn text_editor_closed(font_path: string, pixel_size: i32) -> TextEditor =
     document: document,
     view: text_view_state_new(1, 1, 0, font_path, pixel_size),
     open: false,
-    revision: 0
+    revision: 0,
+    gesture: text_editor_gesture_idle(),
+    edge_clock_ms: 0
   }
 end
 
@@ -49,14 +60,31 @@ fn editor_with(editor: TextEditor, path: string, document: TextDocument, view: T
     document: document,
     view: view,
     open: open,
-    revision: editor.revision + 1
+    revision: editor.revision + 1,
+    gesture: editor.gesture,
+    edge_clock_ms: editor.edge_clock_ms
   }
+
+export fn text_editor_with_gesture(editor: TextEditor, gesture: i32, edge_clock_ms: i32) -> TextEditor = do
+  if editor.gesture == gesture && editor.edge_clock_ms == edge_clock_ms then
+    return editor
+  end
+  TextEditor {
+    path: editor.path,
+    document: editor.document,
+    view: editor.view,
+    open: editor.open,
+    revision: editor.revision,
+    gesture: gesture,
+    edge_clock_ms: edge_clock_ms
+  }
+end
 
 export fn text_editor_close(editor: TextEditor) -> TextEditor = do
   if editor.open == false then
     return editor
   end
-  editor_with(editor, "", editor.document, editor.view, false)
+  text_editor_with_gesture(editor_with(editor, "", editor.document, editor.view, false), text_editor_gesture_idle(), 0)
 end
 
 export fn text_editor_choice(
@@ -102,8 +130,8 @@ export fn text_editor_open_document(
   const height = viewport_of(viewport_height, row_height)
   let mut view = text_view_frame(text_view_state_new(height, row_height, 0, font_path, pixel_size), document)
   const first = text_document_line(document, 0)
-  view = text_view_press(view, document, KindTextView, first.line_identifier, 0)
-  editor_with(editor, path, document, view, true)
+  view = text_view_press_at(view, document, KindTextView, first.line_identifier, 0, false)
+  text_editor_with_gesture(editor_with(editor, path, document, view, true), text_editor_gesture_idle(), 0)
 end
 
 export fn text_editor_open_path(
@@ -138,21 +166,50 @@ fn with_view(editor: TextEditor, view: TextViewState) -> TextEditor = do
   editor_with(editor, editor.path, editor.document, view, true)
 end
 
-export fn text_editor_place(editor: TextEditor, origin_x: i32, origin_y: i32, row_height: i32, mouse_x: i32, mouse_y: i32) -> TextEditor = do
+export fn text_editor_place(
+  editor: TextEditor,
+  origin_x: i32,
+  origin_y: i32,
+  row_height: i32,
+  mouse_x: i32,
+  mouse_y: i32,
+  keep_bound: bool
+) -> TextEditor = do
   if editor.open == false || row_height < 1 then
     return editor
   end
-  const local_y = mouse_y - origin_y
-  if local_y < 0 then
-    return editor
-  end
-  const row = local_y / row_height
   const identifiers = text_view_visible_identifiers(editor.view, editor.document)
-  if row < 0 || row >= identifiers.length() then
+  if identifiers.length() == 0 then
     return editor
   end
-  const placed = text_view_press(editor.view, editor.document, KindTextView, identifiers[row], mouse_x - origin_x)
+  let mut row = 0
+  const local_y = mouse_y - origin_y
+  if local_y > 0 then
+    row = local_y / row_height
+  end
+  if row < 0 then
+    row = 0
+  end
+  if row >= identifiers.length() then
+    row = identifiers.length() - 1
+  end
+  const placed = text_view_press_at(
+    editor.view,
+    editor.document,
+    KindTextView,
+    identifiers[row],
+    mouse_x - origin_x,
+    keep_bound
+  )
   with_view(editor, placed)
+end
+
+export fn text_editor_scroll_to_line(editor: TextEditor, line_index: i32) -> TextEditor = do
+  if editor.open == false then
+    return editor
+  end
+  const framed = text_view_frame(text_view_scroll_to_index(editor.view, editor.document, line_index), editor.document)
+  with_view(editor, framed)
 end
 
 export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused: bool, overlay_open: bool, jail: string) -> TextEditor = do
@@ -200,7 +257,8 @@ export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused
     moved = true
   end
   if input.wheel_y != 0 then
-    view = text_view_frame(text_view_wheel(view, editor.document, input.wheel_y), editor.document)
+    const anchor = text_line_index_of_identifier(editor.document.line_index, view.anchor_line_identifier)
+    view = text_view_frame(text_view_scroll_to_index(view, editor.document, anchor + input.wheel_y), editor.document)
     moved = true
   end
   if moved then

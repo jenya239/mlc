@@ -260,12 +260,13 @@ fn caret_position(state: TextViewState, line: TextLine) -> i32 = do
   text_view_position_of_byte(text_grapheme_boundaries(line.text), entry.boundary_positions, state.caret_byte)
 end
 
-export fn text_view_press(
+export fn text_view_press_at(
   state: TextViewState,
   document: TextDocument,
   kind: WidgetKind,
   line_identifier: i32,
-  pointer_x: i32
+  pointer_x: i32,
+  keep_bound: bool
 ) -> TextViewState = do
   if kind_moves_caret(kind) == false then
     return state
@@ -277,8 +278,17 @@ export fn text_view_press(
   const line = text_document_line(document, line_index)
   const shaped = ensure_line_shaped(state, document, line)
   const byte_offset = byte_on_line(shaped, line, pointer_x + state.horizontal_scroll)
-  place(shaped, line.line_identifier, byte_offset, 0, false, false)
+  place(shaped, line.line_identifier, byte_offset, 0, false, keep_bound)
 end
+
+export fn text_view_press(
+  state: TextViewState,
+  document: TextDocument,
+  kind: WidgetKind,
+  line_identifier: i32,
+  pointer_x: i32
+) -> TextViewState =
+  text_view_press_at(state, document, kind, line_identifier, pointer_x, false)
 
 export fn text_view_move_horizontal(
   state: TextViewState,

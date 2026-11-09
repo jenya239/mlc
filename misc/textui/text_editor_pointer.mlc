@@ -1,0 +1,123 @@
+import { Rect, rect_contains, rect_is_empty } from './geometry'
+import { Theme } from './theme'
+import { UiInput } from './ui_input'
+import { text_line_index_of_identifier } from './text_line_index'
+import { text_view_frame, text_view_maximum_anchor, text_view_with_viewport } from './text_view_state'
+import {
+  scroll_bar_rect,
+  scroll_clamp_offset,
+  scroll_offset_from_track
+} from './widget_scroll'
+import {
+  TextEditor,
+  text_editor_gesture_idle,
+  text_editor_gesture_scrolling,
+  text_editor_gesture_selecting,
+  text_editor_place,
+  text_editor_scroll_to_line,
+  text_editor_with_gesture
+} from './text_editor'
+
+export fn text_editor_content_height(editor: TextEditor) -> i32 = do
+  if editor.view.row_height < 1 then
+    return 0
+  end
+  text_view_maximum_anchor(editor.view, editor.document) * editor.view.row_height + editor.view.viewport_height
+end
+
+export fn text_editor_scroll_offset(editor: TextEditor) -> i32 = do
+  if editor.view.row_height < 1 then
+    return 0
+  end
+  const index = text_line_index_of_identifier(editor.document.line_index, editor.view.anchor_line_identifier)
+  if index < 0 then
+    return 0
+  end
+  index * editor.view.row_height
+end
+
+export fn text_editor_bar_visible(editor: TextEditor) -> bool =
+  editor.open && text_view_maximum_anchor(editor.view, editor.document) > 0
+
+fn fitted(editor: TextEditor, viewport_height: i32) -> TextEditor = do
+  if viewport_height < 1 || viewport_height == editor.view.viewport_height then
+    return editor
+  end
+  const framed = text_view_frame(text_view_with_viewport(editor.view, viewport_height), editor.document)
+  TextEditor {
+    path: editor.path,
+    document: editor.document,
+    view: framed,
+    open: editor.open,
+    revision: editor.revision + 1,
+    gesture: editor.gesture,
+    edge_clock_ms: editor.edge_clock_ms
+  }
+end
+
+fn line_for_pointer(editor: TextEditor, band: Rect, pointer_y: i32) -> i32 = do
+  const content_height = text_editor_content_height(editor)
+  const pixels = scroll_clamp_offset(
+    scroll_offset_from_track(band, pointer_y, content_height),
+    content_height,
+    band.height
+  )
+  if editor.view.row_height < 1 then
+    return 0
+  end
+  pixels / editor.view.row_height
+end
+
+fn edge_scroll(editor: TextEditor, band: Rect, input: UiInput) -> TextEditor = do
+  let mut delta = 0
+  if input.mouse_y < band.y then
+    delta = 0 - 1
+  end
+  if input.mouse_y >= band.y + band.height then
+    delta = 1
+  end
+  if delta == 0 then
+    return editor
+  end
+  if editor.edge_clock_ms != 0 then
+    if input.now_ms - editor.edge_clock_ms < 48 then
+      return editor
+    end
+  end
+  const index = text_line_index_of_identifier(editor.document.line_index, editor.view.anchor_line_identifier)
+  const scrolled = text_editor_scroll_to_line(editor, index + delta)
+  text_editor_with_gesture(scrolled, scrolled.gesture, input.now_ms)
+end
+
+export fn text_editor_pointer(
+  editor: TextEditor,
+  band: Rect,
+  theme: Theme,
+  row_height: i32,
+  input: UiInput
+) -> TextEditor = do
+  if editor.open == false || rect_is_empty(band) then
+    return editor
+  end
+  let mut current = fitted(editor, band.height)
+  if input.left_down == false then
+    return text_editor_with_gesture(current, text_editor_gesture_idle(), 0)
+  end
+  const on_bar = text_editor_bar_visible(current) && rect_contains(scroll_bar_rect(theme, band), input.mouse_x, input.mouse_y)
+  if current.gesture == text_editor_gesture_scrolling() || (input.left_pressed && on_bar) then
+    current = text_editor_scroll_to_line(current, line_for_pointer(current, band, input.mouse_y))
+    return text_editor_with_gesture(current, text_editor_gesture_scrolling(), current.edge_clock_ms)
+  end
+  const origin_x = band.x + theme.padding
+  const origin_y = band.y + theme.padding
+  if input.left_pressed && rect_contains(band, input.mouse_x, input.mouse_y) then
+    current = text_editor_place(current, origin_x, origin_y, row_height, input.mouse_x, input.mouse_y, input.shift_down)
+    return text_editor_with_gesture(current, text_editor_gesture_selecting(), current.edge_clock_ms)
+  end
+  if current.gesture == text_editor_gesture_selecting() then
+    current = edge_scroll(current, band, input)
+    current = text_editor_place(current, origin_x, origin_y, row_height, input.mouse_x, input.mouse_y, true)
+    return text_editor_with_gesture(current, text_editor_gesture_selecting(), current.edge_clock_ms)
+  end
+  current
+end

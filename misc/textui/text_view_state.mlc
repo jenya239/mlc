@@ -174,6 +174,87 @@ export fn text_view_frame(state: TextViewState, document: TextDocument) -> TextV
   }
 end
 
+export fn text_view_page_rows(state: TextViewState) -> i32 = do
+  if state.row_height < 1 || state.viewport_height < 1 then
+    return 1
+  end
+  let mut rows = 0
+  let mut used = 0
+  while used < state.viewport_height do
+    rows = rows + 1
+    used = used + state.row_height
+  end
+  if rows < 1 then
+    return 1
+  end
+  rows
+end
+
+export fn text_view_maximum_anchor(state: TextViewState, document: TextDocument) -> i32 = do
+  const extra = text_document_line_count(document) - text_view_page_rows(state)
+  if extra < 0 then
+    return 0
+  end
+  extra
+end
+
+export fn text_view_with_viewport(state: TextViewState, viewport_height: i32) -> TextViewState = do
+  if viewport_height < 1 || viewport_height == state.viewport_height then
+    return state
+  end
+  TextViewState {
+    anchor_line_identifier: state.anchor_line_identifier,
+    anchor_vertical_offset: state.anchor_vertical_offset,
+    viewport_height: viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: viewport_height,
+    shape_cache: state.shape_cache,
+    hover_token: state.hover_token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
+  }
+end
+
+export fn text_view_scroll_to_index(state: TextViewState, document: TextDocument, line_index: i32) -> TextViewState = do
+  let mut next = line_index
+  if next < 0 then
+    next = 0
+  end
+  const maximum = text_view_maximum_anchor(state, document)
+  if next > maximum then
+    next = maximum
+  end
+  const current = anchor_index(document, state.anchor_line_identifier)
+  if next == current && state.anchor_vertical_offset == 0 then
+    return state
+  end
+  TextViewState {
+    anchor_line_identifier: text_document_line(document, next).line_identifier,
+    anchor_vertical_offset: 0,
+    viewport_height: state.viewport_height,
+    row_height: state.row_height,
+    horizontal_scroll: state.horizontal_scroll,
+    content_width: state.content_width,
+    layout_height: state.layout_height,
+    shape_cache: state.shape_cache,
+    hover_token: state.hover_token,
+    caret_line_identifier: state.caret_line_identifier,
+    caret_byte: state.caret_byte,
+    bound_line_identifier: state.bound_line_identifier,
+    bound_byte: state.bound_byte,
+    caret_affinity: state.caret_affinity,
+    goal_x: state.goal_x,
+    goal_x_present: state.goal_x_present
+  }
+end
+
 export fn text_view_wheel(state: TextViewState, document: TextDocument, delta: i32) -> TextViewState = do
   if delta == 0 then
     return state

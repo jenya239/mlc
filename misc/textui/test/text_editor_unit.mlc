@@ -1,4 +1,7 @@
-import { text_document_from_bytes, text_document_line } from '../text_document'
+import { text_document_from_bytes, text_document_line, text_document_line_count, text_document_to_bytes } from '../text_document'
+import { text_line_index_of_identifier } from '../text_line_index'
+import { rect_new } from '../geometry'
+import { theme_default } from '../theme'
 import {
   text_editor_choice,
   text_editor_closed,
@@ -7,6 +10,9 @@ import {
   text_editor_open_document,
   text_editor_opens
 } from '../text_editor'
+import { text_editor_bar_visible, text_editor_pointer } from '../text_editor_pointer'
+import { text_view_selection_spans } from '../text_view_selection'
+import { text_view_maximum_anchor } from '../text_view_state'
 import { UiInput } from '../ui_input'
 
 fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -29,6 +35,54 @@ fn input_with(text: string, binding_key: string, control_down: bool, backspace_p
     enter_pressed: false,
     paste_text: ""
   }
+
+fn pointer_input(mouse_x: i32, mouse_y: i32, left_pressed: bool, left_down: bool, shift_down: bool) -> UiInput =
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: shift_down,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn wheel_input(wheel_y: i32) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: wheel_y,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn repeated_lines(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + "abcdef\n"
+    index = index + 1
+  end
+  text
+end
 
 fn main() -> i32 = do
   const keep = text_editor_choice(false, "", false, true, false, "Makefile", "/tmp/Makefile")
@@ -82,6 +136,108 @@ fn main() -> i32 = do
   const ignored = text_editor_on_input(inserted, input_with("Q", "", false, false), true, false, "")
   if text_document_line(ignored.document, 0).text != "Zab" then
     return 11
+  end
+  if text_editor_bar_visible(editor) then
+    return 12
+  end
+  const theme = theme_default()
+  const long_band = rect_new(10, 20, 200, 48)
+  const long_editor = text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "",
+    text_document_from_bytes(repeated_lines(20)),
+    48,
+    16,
+    font_path(),
+    16
+  )
+  if text_editor_bar_visible(long_editor) == false || text_document_line_count(long_editor.document) != 20 then
+    return 13
+  end
+  const bar_x = long_band.x + long_band.width - theme.scrollbar_width
+  const scrolled = text_editor_pointer(
+    long_editor,
+    long_band,
+    theme,
+    16,
+    pointer_input(bar_x, long_band.y + long_band.height - 1, true, true, false)
+  )
+  const scrolled_anchor = text_line_index_of_identifier(scrolled.document.line_index, scrolled.view.anchor_line_identifier)
+  if scrolled_anchor != text_view_maximum_anchor(scrolled.view, scrolled.document) then
+    return 14
+  end
+  if scrolled.view.caret_line_identifier != long_editor.view.caret_line_identifier || scrolled.view.caret_byte != 0 then
+    return 15
+  end
+  const wheeled = text_editor_on_input(long_editor, wheel_input(1), false, false, "")
+  const wheeled_anchor = text_line_index_of_identifier(wheeled.document.line_index, wheeled.view.anchor_line_identifier)
+  if wheeled_anchor != 1 then
+    return 16
+  end
+  const capped = text_editor_on_input(wheeled, wheel_input(100), false, false, "")
+  const capped_anchor = text_line_index_of_identifier(capped.document.line_index, capped.view.anchor_line_identifier)
+  if capped_anchor != text_view_maximum_anchor(capped.view, capped.document) then
+    return 17
+  end
+  const upward = text_editor_on_input(long_editor, wheel_input(0 - 3), false, false, "")
+  if text_line_index_of_identifier(upward.document.line_index, upward.view.anchor_line_identifier) != 0 then
+    return 18
+  end
+  const select_band = rect_new(10, 20, 240, 64)
+  const source = text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "",
+    text_document_from_bytes("abcdef\nabcdef\nzzzz"),
+    64,
+    16,
+    font_path(),
+    16
+  )
+  const origin_x = select_band.x + theme.padding
+  const origin_y = select_band.y + theme.padding
+  const pressed = text_editor_pointer(source, select_band, theme, 16, pointer_input(origin_x, origin_y, true, true, false))
+  if pressed.view.caret_byte != 0 || pressed.view.bound_byte != 0 then
+    return 19
+  end
+  const dragged = text_editor_pointer(
+    pressed,
+    select_band,
+    theme,
+    16,
+    pointer_input(origin_x + 40, origin_y + 16, false, true, false)
+  )
+  if dragged.view.bound_line_identifier == dragged.view.caret_line_identifier then
+    return 20
+  end
+  if dragged.view.caret_byte == 0 then
+    return 21
+  end
+  const spans = text_view_selection_spans(dragged.view, dragged.document)
+  if spans.length() < 2 || spans[0].right <= spans[0].left then
+    return 22
+  end
+  const deleted = text_editor_on_input(dragged, input_with("", "", false, true), false, false, "")
+  const before = text_document_to_bytes(dragged.document)
+  const after = text_document_to_bytes(deleted.document)
+  if before.accepted == false || after.accepted == false || after.bytes.byte_size() >= before.bytes.byte_size() then
+    return 23
+  end
+  if after.bytes.index_of("zzzz") < 0 || after.bytes.index_of("abcdef\nabcdef") >= 0 then
+    return 24
+  end
+  const released = text_editor_pointer(pressed, select_band, theme, 16, pointer_input(origin_x, origin_y, false, false, false))
+  const shifted = text_editor_pointer(
+    released,
+    select_band,
+    theme,
+    16,
+    pointer_input(origin_x + 40, origin_y, true, true, true)
+  )
+  if shifted.view.bound_byte != 0 || shifted.view.caret_byte == 0 then
+    return 25
+  end
+  if text_view_selection_spans(shifted.view, shifted.document).length() != 1 then
+    return 26
   end
   0
 end

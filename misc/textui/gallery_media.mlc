@@ -9,8 +9,9 @@ import { UiInput } from './ui_input'
 import { UiState } from './ui_state'
 import { list_row_height } from './widget_list'
 import { text_file_name } from './text_kind'
-import { TextEditor, text_editor_choice, text_editor_close, text_editor_closes, text_editor_on_input, text_editor_open_path, text_editor_opens, text_editor_place } from './text_editor'
+import { TextEditor, text_editor_choice, text_editor_close, text_editor_closes, text_editor_on_input, text_editor_open_path, text_editor_opens } from './text_editor'
 import { text_editor_band, text_editor_pointer_inside } from './text_editor_paint'
+import { text_editor_pointer } from './text_editor_pointer'
 import { focus_is_text_field } from './list_marks'
 import { VideoSession, video_session_media_path, video_session_tick } from './video_session'
 
@@ -120,23 +121,18 @@ export fn gallery_media_step(
   const press_in_editor = input.left_pressed && text_editor_pointer_inside(next_editor, store, layout, input.mouse_x, input.mouse_y)
   const candidate = candidate_path(store, root, name)
   const choice = text_editor_choice(next_editor.open, next_editor.path, input.left_pressed, in_file_list, press_in_editor, name, candidate)
+  let mut opened_now = false
   if text_editor_opens(choice) then
     const band = text_editor_band(store, layout)
     next_editor = text_editor_open_path(next_editor, candidate, band.height, list_row_height(theme), theme.font_path, theme.font_size_pixels)
+    opened_now = true
   end
   if text_editor_closes(choice) then
     next_editor = text_editor_close(next_editor)
   end
-  if press_in_editor then
+  if next_editor.open && opened_now == false then
     const band = text_editor_band(store, layout)
-    next_editor = text_editor_place(
-      next_editor,
-      band.x + theme.padding,
-      band.y + theme.padding,
-      list_row_height(theme),
-      input.mouse_x,
-      input.mouse_y
-    )
+    next_editor = text_editor_pointer(next_editor, band, theme, list_row_height(theme), input)
   end
   next_editor = text_editor_on_input(next_editor, input, focus_is_text_field(store, state), state.overlay_open, root)
   const next_video = video_session_tick(
