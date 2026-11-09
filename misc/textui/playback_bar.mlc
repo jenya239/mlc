@@ -1,0 +1,212 @@
+export type PlaybackReading = {
+  position_milliseconds: i32,
+  duration_milliseconds: i32,
+  title: string
+}
+
+export fn playback_reading_empty() -> PlaybackReading =
+  PlaybackReading { position_milliseconds: 0, duration_milliseconds: 0, title: "" }
+
+export fn playback_reading_of(
+  title: string,
+  position_milliseconds: i32,
+  duration_milliseconds: i32
+) -> PlaybackReading =
+  PlaybackReading {
+    position_milliseconds: position_milliseconds,
+    duration_milliseconds: duration_milliseconds,
+    title: title
+  }
+
+export fn playback_spectrum_mark() -> string = "Spectrum"
+
+fn playback_bar_prefix() -> string = "Playback "
+
+fn playback_digit_count() -> i32 = 9
+
+fn playback_title_offset() -> i32 =
+  playback_bar_prefix().byte_size() + playback_digit_count() + 1 + playback_digit_count() + 1
+
+export fn playback_track_minimum_width(font_size_pixels: i32) -> i32 =
+  font_size_pixels * 16
+
+export fn playback_spectrum_width(font_size_pixels: i32) -> i32 =
+  font_size_pixels * 8
+
+export fn playback_shown_position(position_milliseconds: i32, duration_milliseconds: i32) -> i32 = do
+  if position_milliseconds <= 0 then
+    return 0
+  end
+  if duration_milliseconds <= 1000 then
+    return position_milliseconds
+  end
+  const step = duration_milliseconds / 1000
+  if step <= 1 then
+    return position_milliseconds
+  end
+  return position_milliseconds / step * step
+end
+
+export fn playback_scrub_commits(shown_before: i32, pointer_milliseconds: i32, duration_milliseconds: i32) -> bool = do
+  const before = playback_shown_position(shown_before, duration_milliseconds)
+  const pointed = playback_shown_position(pointer_milliseconds, duration_milliseconds)
+  return before != pointed
+end
+
+export fn playback_transport_is(caption: string) -> bool =
+  caption == "Play" || caption == "Pause"
+
+export fn playback_pointer_engaged(left_down: bool, press_on_bar: bool) -> bool =
+  left_down && press_on_bar
+
+fn clamp_milliseconds(value: i32) -> i32 = do
+  if value < 0 then
+    return 0
+  end
+  if value > 999999999 then
+    return 999999999
+  end
+  return value
+end
+
+fn pad_two(value: i32) -> string = do
+  if value < 10 then
+    return "0" + value.to_string()
+  end
+  return value.to_string()
+end
+
+fn pad_milliseconds(value: i32) -> string = do
+  let mut text = clamp_milliseconds(value).to_string()
+  while text.byte_size() < playback_digit_count() do
+    text = "0" + text
+  end
+  return text
+end
+
+fn digit_value(character: string) -> i32 = do
+  if character == "0" then
+    return 0
+  end
+  if character == "1" then
+    return 1
+  end
+  if character == "2" then
+    return 2
+  end
+  if character == "3" then
+    return 3
+  end
+  if character == "4" then
+    return 4
+  end
+  if character == "5" then
+    return 5
+  end
+  if character == "6" then
+    return 6
+  end
+  if character == "7" then
+    return 7
+  end
+  if character == "8" then
+    return 8
+  end
+  if character == "9" then
+    return 9
+  end
+  return 0
+end
+
+fn read_digits(caption: string, offset: i32) -> i32 = do
+  let mut value = 0
+  let mut index = 0
+  while index < playback_digit_count() do
+    value = value * 10 + digit_value(caption.byte_at(offset + index))
+    index = index + 1
+  end
+  return value
+end
+
+export fn playback_bar_text(reading: PlaybackReading) -> string =
+  playback_bar_prefix() + pad_milliseconds(reading.position_milliseconds) + " " + pad_milliseconds(reading.duration_milliseconds) + " " + reading.title
+
+export fn playback_bar_is(caption: string) -> bool = do
+  const prefix = playback_bar_prefix()
+  if caption.byte_size() < playback_title_offset() then
+    return false
+  end
+  return caption.byte_substring(0, prefix.byte_size()) == prefix
+end
+
+export fn playback_spectrum_is(caption: string) -> bool =
+  caption == playback_spectrum_mark()
+
+export fn playback_bar_reading(caption: string) -> PlaybackReading = do
+  if playback_bar_is(caption) == false then
+    return playback_reading_empty()
+  end
+  const position_offset = playback_bar_prefix().byte_size()
+  const duration_offset = position_offset + playback_digit_count() + 1
+  const title = caption.byte_substring(playback_title_offset(), caption.byte_size() - playback_title_offset())
+  return PlaybackReading {
+    position_milliseconds: read_digits(caption, position_offset),
+    duration_milliseconds: read_digits(caption, duration_offset),
+    title: title
+  }
+end
+
+export fn playback_fraction_thousandths(position_milliseconds: i32, duration_milliseconds: i32) -> i32 = do
+  if duration_milliseconds <= 0 || position_milliseconds <= 0 then
+    return 0
+  end
+  if position_milliseconds >= duration_milliseconds then
+    return 1000
+  end
+  if duration_milliseconds > 2000000 then
+    const seconds = duration_milliseconds / 1000
+    if seconds > 0 then
+      let mut thousandths = position_milliseconds / seconds
+      if thousandths > 1000 then
+        thousandths = 1000
+      end
+      return thousandths
+    end
+  end
+  return position_milliseconds * 1000 / duration_milliseconds
+end
+
+export fn playback_seek_milliseconds(
+  origin_x: i32,
+  width: i32,
+  pointer_x: i32,
+  duration_milliseconds: i32
+) -> i32 = do
+  if width <= 0 || duration_milliseconds <= 0 then
+    return 0
+  end
+  let mut local = pointer_x - origin_x
+  if local < 0 then
+    local = 0
+  end
+  if local >= width then
+    return duration_milliseconds
+  end
+  const quotient = duration_milliseconds / width
+  const remainder = duration_milliseconds - quotient * width
+  return local * quotient + local * remainder / width
+end
+
+export fn playback_clock(milliseconds: i32) -> string = do
+  let mut seconds = milliseconds / 1000
+  if seconds < 0 then
+    seconds = 0
+  end
+  const hours = seconds / 3600
+  const minutes = (seconds - hours * 3600) / 60
+  const remain = seconds - hours * 3600 - minutes * 60
+  if hours > 0 then
+    return hours.to_string() + ":" + pad_two(minutes) + ":" + pad_two(remain)
+  end
+  return minutes.to_string() + ":" + pad_two(remain)
+end

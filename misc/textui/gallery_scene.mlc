@@ -17,6 +17,7 @@ import {
 } from './store'
 import { widget_store_add_checkbox } from './checkbox'
 import { add_path_row } from './path_bar'
+import { playback_bar_text, playback_reading_empty, playback_spectrum_mark } from './playback_bar'
 
 fn root_box_data() -> BoxData =
   BoxData { direction: DirectionColumn, padding: 8, gap: 10 }
@@ -110,7 +111,7 @@ export fn build_label_gallery() -> WidgetStore = do
     store, row, ButtonData { text: "Prev" }, OverflowVisible, 0, true
   )
   store = widget_store_add_button(
-    store, row, ButtonData { text: "0:00 [----------------] 0:00" }, OverflowVisible, 0, true
+    store, row, ButtonData { text: playback_bar_text(playback_reading_empty()) }, OverflowVisible, 2, true
   )
   store = widget_store_add_button(
     store, row, ButtonData { text: "Next" }, OverflowVisible, 0, true
@@ -118,6 +119,9 @@ export fn build_label_gallery() -> WidgetStore = do
   store = widget_store_add_button(
     store, row, ButtonData { text: "Play" }, OverflowVisible, 0, true
   )
+  store = widget_store_add_button(
+    store, row, ButtonData { text: playback_spectrum_mark() }, OverflowVisible, 1, true
+  )
   store = widget_store_add_checkbox(store, row, "Jail", true, 0, true)
-  return widget_store_add_box(store, row, row_box_data(), OverflowVisible, 1, true)
+  return store
 end

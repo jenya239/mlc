@@ -1,0 +1,52 @@
+import { Rect, rect_new } from './geometry'
+import { LayoutResult } from './layout_result'
+import { playback_bar_is, playback_spectrum_is } from './playback_bar'
+import { WidgetId, WidgetKind, WidgetStore, widget_id_none } from './store'
+
+fn button_caption(kind: WidgetKind) -> string =
+  match kind
+    | KindButton(data) => data.text
+    | KindBox(_) => ""
+    | KindLabel(_) => ""
+    | KindIcon(_) => ""
+    | KindTextView => ""
+    | KindCheckbox(_) => ""
+    | KindScrollView => ""
+    | KindListView(_) => ""
+    | KindSplitter(_) => ""
+    | KindTextField(_) => ""
+
+fn find_marked(store: WidgetStore, spectrum: bool) -> WidgetId = do
+  let mut index = 0
+  while index < store.nodes.length() do
+    const caption = button_caption(store.nodes[index].kind)
+    let mut matched = playback_bar_is(caption)
+    if spectrum then
+      matched = playback_spectrum_is(caption)
+    end
+    if matched then
+      return store.nodes[index].id
+    end
+    index = index + 1
+  end
+  return widget_id_none()
+end
+
+export fn playback_bar_widget(store: WidgetStore) -> WidgetId =
+  find_marked(store, false)
+
+export fn playback_spectrum_widget(store: WidgetStore) -> WidgetId =
+  find_marked(store, true)
+
+fn placed_rect(layout: LayoutResult, widget: WidgetId) -> Rect = do
+  if widget.index < 0 then
+    return rect_new(0, 0, 0, 0)
+  end
+  if widget.index >= layout.rects.length() then
+    return rect_new(0, 0, 0, 0)
+  end
+  return layout.rects[widget.index]
+end
+
+export fn playback_spectrum_rect(store: WidgetStore, layout: LayoutResult) -> Rect =
+  placed_rect(layout, playback_spectrum_widget(store))

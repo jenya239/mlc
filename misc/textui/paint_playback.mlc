@@ -1,0 +1,149 @@
+import { DrawOp, FillRectOp, StrokeRectOp, TextOp } from './draw_op'
+import { Rect, rect_inset, rect_new } from './geometry'
+import { LayoutResult } from './layout_result'
+import {
+  playback_bar_reading,
+  playback_clock,
+  playback_fraction_thousandths
+} from './playback_bar'
+import { Theme, theme_content_inset, ColorRgba } from './theme'
+import { UiState, pointer_click_owns } from './ui_state'
+import { WidgetId, widget_id_equals } from './store'
+
+fn track_color(theme: Theme, state: UiState, node_index: i32) -> ColorRgba = do
+  const owner = WidgetId { index: node_index }
+  if pointer_click_owns(state.pointer, owner) then
+    return theme.button_pressed
+  end
+  if widget_id_equals(state.hover, owner) then
+    return theme.button_hover
+  end
+  return theme.button_background
+end
+
+fn clock_width(theme: Theme, text: string) -> i32 = do
+  let mut width = text.byte_size() * theme.font_size_pixels / 2
+  if width < theme.font_size_pixels then
+    width = theme.font_size_pixels
+  end
+  return width
+end
+
+fn paint_clock(operations: [DrawOp], theme: Theme, origin_x: i32, origin_y: i32, text: string) -> [DrawOp] = do
+  let mut updated = operations
+  updated.push(OpText(TextOp {
+    origin_x: origin_x,
+    origin_y: origin_y,
+    color: theme.foreground,
+    text: text
+  }))
+  return updated
+end
+
+fn paint_title(operations: [DrawOp], theme: Theme, rect: Rect, title: string, left_edge: i32, right_edge: i32) -> [DrawOp] = do
+  if title == "" then
+    return operations
+  end
+  if right_edge - left_edge < theme.font_size_pixels * 2 then
+    return operations
+  end
+  let mut title_width = title.byte_size() * theme.font_size_pixels / 2
+  if title_width > right_edge - left_edge then
+    return operations
+  end
+  let mut updated = operations
+  updated.push(OpText(TextOp {
+    origin_x: left_edge + (right_edge - left_edge - title_width) / 2,
+    origin_y: rect.y + theme_content_inset(theme),
+    color: theme.muted,
+    text: title
+  }))
+  return updated
+end
+
+export fn paint_playback_bar(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  caption: string,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const reading = playback_bar_reading(caption)
+  const fraction = playback_fraction_thousandths(reading.position_milliseconds, reading.duration_milliseconds)
+  const rect = layout.rects[node_index]
+  const border = 1
+  const inner = rect_inset(rect, border)
+  let mut played_width = inner.width * fraction / 1000
+  if played_width < 0 then
+    played_width = 0
+  end
+  if played_width > inner.width then
+    played_width = inner.width
+  end
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp { rect: inner, color: track_color(theme, state, node_index) }))
+  if played_width > 0 then
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(inner.x, inner.y, played_width, inner.height),
+      color: theme.inspect_hover
+    }))
+  end
+  if inner.width > 2 then
+    let mut playhead_x = inner.x + played_width - 1
+    if playhead_x < inner.x then
+      playhead_x = inner.x
+    end
+    if playhead_x > inner.x + inner.width - 2 then
+      playhead_x = inner.x + inner.width - 2
+    end
+    updated.push(OpFillRect(FillRectOp {
+      rect: rect_new(playhead_x, inner.y, 2, inner.height),
+      color: theme.foreground
+    }))
+  end
+  updated.push(OpStrokeRect(StrokeRectOp {
+    rect: rect,
+    color: theme.button_stroke,
+    line_width: border
+  }))
+  const inset = theme_content_inset(theme)
+  const left_clock = playback_clock(reading.position_milliseconds)
+  const right_clock = playback_clock(reading.duration_milliseconds)
+  let mut right_x = rect.x + rect.width - inset - clock_width(theme, right_clock)
+  if right_x < rect.x + inset then
+    right_x = rect.x + inset
+  end
+  updated = paint_clock(updated, theme, rect.x + inset, rect.y + inset, left_clock)
+  updated = paint_clock(updated, theme, right_x, rect.y + inset, right_clock)
+  return paint_title(
+    updated,
+    theme,
+    rect,
+    reading.title,
+    rect.x + inset + clock_width(theme, left_clock) + inset,
+    right_x - inset
+  )
+end
+
+export fn paint_playback_spectrum(
+  theme: Theme,
+  layout: LayoutResult,
+  state: UiState,
+  node_index: i32,
+  operations: [DrawOp]
+) -> [DrawOp] = do
+  const rect = layout.rects[node_index]
+  const border = 1
+  let mut updated = operations
+  updated.push(OpFillRect(FillRectOp {
+    rect: rect_inset(rect, border),
+    color: track_color(theme, state, node_index)
+  }))
+  updated.push(OpStrokeRect(StrokeRectOp {
+    rect: rect,
+    color: theme.button_stroke,
+    line_width: border
+  }))
+  return updated
+end

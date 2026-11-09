@@ -1,0 +1,64 @@
+import { Theme } from './theme'
+import { WidgetStore } from './store'
+import { LayoutResult } from './layout_result'
+import { FrameSignature, frame_signature_hover_only } from './frame_request'
+import { UiState } from './ui_state'
+import { paint_overlay_frame, paint_tree_frame } from './paint_pass'
+import { paint_preview_caption } from './preview_caption'
+import { paint_text_view_preview } from './text_view_preview'
+import { paint_hover_damage } from './hover_damage'
+import { TextShapingState } from '../gui/text_shaping'
+import { SubmitFrameResult, SubmitResources, submit_frame } from './submit'
+import { submit_painted_layers } from './submit_layers'
+import { cursor_lens_show_window } from './cursor_lens'
+import { TextEditor } from './text_editor'
+import { paint_text_editor } from './text_editor_paint'
+
+export fn submit_ui_frame(
+  resources: SubmitResources,
+  shaping: TextShapingState,
+  theme: Theme,
+  store: WidgetStore,
+  layout: LayoutResult,
+  state: UiState,
+  presented: FrameSignature,
+  next: FrameSignature,
+  window_width: i32,
+  window_height: i32,
+  composed: bool,
+  root: string,
+  previous_text_path: string,
+  text_path: string,
+  editor: TextEditor
+) -> SubmitFrameResult = do
+  if editor.open == false && composed && state.overlay_open == false && frame_signature_hover_only(presented, next) && previous_text_path == text_path then
+    const damage = paint_hover_damage(theme, store, layout, state, presented, next)
+    if damage.length() > 0 then
+      const into_texture = submit_frame(
+        resources, shaping, theme, damage, window_width, window_height, false
+      )
+      if into_texture.error_code != 0 then
+        return into_texture
+      end
+      cursor_lens_show_window()
+      return submit_frame(
+        into_texture.resources, into_texture.shaping, theme, damage, window_width, window_height, false
+      )
+    end
+  end
+  let mut operations = paint_preview_caption(theme, store, layout, state, root, paint_tree_frame(theme, store, layout, state))
+  if editor.open then
+    operations = paint_text_editor(theme, store, layout, operations, editor)
+  else
+    operations = paint_text_view_preview(theme, store, layout, operations, text_path)
+  end
+  submit_painted_layers(
+    resources,
+    shaping,
+    theme,
+    operations,
+    paint_overlay_frame(theme, store, layout, state),
+    window_width,
+    window_height
+  )
+end

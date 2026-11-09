@@ -252,7 +252,9 @@ export fn video_session_tick(
   mouse_x: i32,
   mouse_y: i32,
   pressed: bool,
-  now_ms: i32
+  now_ms: i32,
+  block_playback: bool,
+  ignore_file_press: bool
 ) -> VideoSession = do
   const directory = path_bar_current(store)
   const in_list = rect_contains(file_list_rect(store, layout), mouse_x, mouse_y)
@@ -260,10 +262,14 @@ export fn video_session_tick(
   const hovered = video_path(store, root, row)
   let mut engaged = session.engaged
   let mut pinned = session.pinned_path
-  if pressed && in_list && hovered != "" then
+  let mut file_press = pressed
+  if ignore_file_press then
+    file_press = false
+  end
+  if file_press && in_list && hovered != "" then
     pinned = hovered
     engaged = true
-  else if pressed && in_list && row != "" && hovered == "" then
+  else if file_press && in_list && row != "" && hovered == "" then
     pinned = ""
   end
   if pinned != "" && inside_directory(directory, pinned) == false then
@@ -276,6 +282,10 @@ export fn video_session_tick(
   if video_transport_take_seek() != 0 then
     have_seek = true
     seek_ms = video_transport_seek_target()
+  end
+  if block_playback then
+    video_transport_set_borrowed(0)
+    return shown(session_make(false, "", "", 0, "", false), "", false)
   end
   if pinned != "" && step != 0 then
     pinned = moved_pin(store, root, pinned, step)

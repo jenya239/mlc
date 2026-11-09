@@ -1,0 +1,87 @@
+import { text_document_from_bytes, text_document_line } from '../text_document'
+import {
+  text_editor_choice,
+  text_editor_closed,
+  text_editor_closes,
+  text_editor_on_input,
+  text_editor_open_document,
+  text_editor_opens
+} from '../text_editor'
+import { UiInput } from '../ui_input'
+
+fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+fn input_with(text: string, binding_key: string, control_down: bool, backspace_pressed: bool) -> UiInput =
+  UiInput {
+    mouse_x: 0,
+    mouse_y: 0,
+    left_pressed: false,
+    left_down: false,
+    left_released: false,
+    control_down: control_down,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: text,
+    binding_key: binding_key,
+    shift_down: false,
+    backspace_pressed: backspace_pressed,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn main() -> i32 = do
+  const keep = text_editor_choice(false, "", false, true, false, "Makefile", "/tmp/Makefile")
+  if text_editor_opens(keep) || text_editor_closes(keep) then
+    return 1
+  end
+  const opened = text_editor_choice(false, "", true, true, false, "README", "/tmp/README")
+  if text_editor_opens(opened) == false then
+    return 2
+  end
+  const same = text_editor_choice(true, "/tmp/README", true, true, false, "README", "/tmp/README")
+  if text_editor_opens(same) || text_editor_closes(same) then
+    return 3
+  end
+  const closed = text_editor_choice(true, "/tmp/README", true, true, false, "clip.mp4", "")
+  if text_editor_closes(closed) == false then
+    return 4
+  end
+  const inside = text_editor_choice(true, "/tmp/README", true, true, true, "clip.mp4", "")
+  if text_editor_opens(inside) || text_editor_closes(inside) then
+    return 5
+  end
+  const outside = text_editor_choice(true, "/tmp/README", true, false, false, "clip.mp4", "")
+  if text_editor_closes(outside) then
+    return 6
+  end
+  const editor = text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "/home/jenya/workspaces/current/mlc/tmp/text_editor_unit_note.txt",
+    text_document_from_bytes("ab"),
+    64,
+    16,
+    font_path(),
+    16
+  )
+  if editor.open == false || text_document_line(editor.document, 0).text != "ab" then
+    return 7
+  end
+  const inserted = text_editor_on_input(editor, input_with("Z", "", false, false), false, false, "")
+  if text_document_line(inserted.document, 0).text != "Zab" then
+    return 8
+  end
+  const saved = text_editor_on_input(inserted, input_with("s", "s", true, false), false, false, "")
+  if text_document_line(saved.document, 0).text != "Zab" then
+    return 9
+  end
+  const removed = text_editor_on_input(inserted, input_with("", "", false, true), false, false, "")
+  if text_document_line(removed.document, 0).text != "ab" then
+    return 10
+  end
+  const ignored = text_editor_on_input(inserted, input_with("Q", "", false, false), true, false, "")
+  if text_document_line(ignored.document, 0).text != "Zab" then
+    return 11
+  end
+  0
+end

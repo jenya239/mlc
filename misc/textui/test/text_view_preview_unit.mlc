@@ -1,4 +1,5 @@
-import { text_file_name, text_view_preview_lines } from '../text_view_preview'
+import { text_view_preview_lines } from '../text_view_preview'
+import { text_file_name } from '../text_kind'
 
 extern fn file_write_string(path: string, content: string) -> bool
   = "mlc::file::write_string_value" from "mlc/io/file_abi.hpp" blocking
@@ -58,6 +59,15 @@ fn main() -> i32 = do
   end
   if text_file_name("NOTE.TXT") == false then
     return 6
+  end
+  if text_file_name("Makefile") == false || text_file_name("README") == false || text_file_name(".gitignore") == false then
+    return 14
+  end
+  if text_file_name("song.MP3") || text_file_name("photo.JPEG") || text_file_name("archive.zip") || text_file_name("library.so") then
+    return 15
+  end
+  if text_file_name("diagram.svg") == false || text_file_name("notes.conf") == false then
+    return 16
   end
   if file_write_string(note_path(), "one\ntwo\n") == false then
     return 7

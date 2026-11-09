@@ -2,8 +2,9 @@ import { join_path, strip_trailing_slash } from './directory_rows'
 import { path_inside_jail } from './directory_jail'
 import { open_as_image_path } from './open_as_pin'
 import { path_bar_current } from './path_bar'
-import { WidgetId, WidgetKind, WidgetStore, kind_is_box, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
+import { WidgetId, WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none, widget_id_none } from './store'
 import { music_playing } from './music_host'
+import { playback_spectrum_rect } from './playback_slot'
 import { LayoutResult } from './layout_result'
 import { Rect, rect_new } from './geometry'
 import { Theme } from './theme'
@@ -295,18 +296,6 @@ export fn preview_side_rect(store: WidgetStore, layout: LayoutResult, theme: The
   return rect_new(left, top, card_width, card_height)
 end
 
-fn equalizer_rect(store: WidgetStore, layout: LayoutResult) -> Rect = do
-  let mut index = 0
-  while index < store.nodes.length() do
-    const node = store.nodes[index]
-    if node.grow > 0 && kind_is_box(node.kind) && index < layout.rects.length() then
-      return layout.rects[index]
-    end
-    index = index + 1
-  end
-  return rect_new(0, 0, 0, 0)
-end
-
 export fn image_preview_arm(
   store: WidgetStore,
   state: UiState,
@@ -315,16 +304,20 @@ export fn image_preview_arm(
   root: string,
   effect_mode: i32,
   scene_framebuffer: i32,
-  media_path: string
+  media_path: string,
+  hold_still: bool
 ) -> unit = do
-  let mut path = hovered_image_path(store, state, root)
-  if media_path != "" then
-    path = media_path
+  let mut path = ""
+  if hold_still == false then
+    path = hovered_image_path(store, state, root)
+    if media_path != "" then
+      path = media_path
+    end
   end
   image_preview_load(path)
   const band = preview_side_rect(store, layout, theme)
   image_preview_arm_rect(band.x, band.y, band.width, band.height, effect_mode, scene_framebuffer)
-  const stage = equalizer_rect(store, layout)
+  const stage = playback_spectrum_rect(store, layout)
   if music_playing() == 0 then
     image_preview_bars_arm(0, 0, 0, 0, scene_framebuffer)
   end

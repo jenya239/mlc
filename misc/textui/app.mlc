@@ -19,7 +19,7 @@ import { text_shaping_new } from '../gui/text_shaping'
 import { text_layout_cache_new } from './text_layout'
 import { LayoutColumnResult, layout_ui } from './layout_pass'
 import { frame_signature_hover_only } from './frame_request'
-import { submit_ui_frame } from './hover_damage'
+import { submit_ui_frame } from './frame_submit'
 import { cursor_lens_bind, cursor_lens_create, cursor_lens_destroy } from './cursor_lens'
 import { idle_scene, scene_finish } from './scene_present'
 import { submit_create, submit_destroy } from './submit'
@@ -34,8 +34,11 @@ import { attach_file_menu } from './menu'
 import { attach_dialog } from './dialog'
 import { image_preview_arm, image_preview_needs_paint, image_preview_playing, image_preview_release } from './image_preview'
 import { hovered_text_path } from './text_view_preview'
-import { video_session_media_path, video_session_new, video_session_tick } from './video_session'
-import { music_playing, music_release } from './music_host'
+import { text_editor_closed } from './text_editor'
+import { text_editor_prepare_input } from './text_editor_paint'
+import { gallery_media_step } from './gallery_media'
+import { video_session_new } from './video_session'
+import { music_follow_video, music_playing, music_release } from './music_host'
 import { chat_live_run } from './chat_live'
 import { observation_frame_empty } from './companion_observe'
 export fn application_reload_status() -> i32 = 75
@@ -110,6 +113,8 @@ fn main() -> i32 = do
   let mut escape_was_down = false
   let mut shown_text_path = ""
   let mut video_session = video_session_new()
+  let mut editor = text_editor_closed(theme.font_path, theme.font_size_pixels)
+  let mut music_yielded = false
   while glfw_gl_context_should_close() == 0 do
     if sample_after_present == false && max_frames == 0 then
       host_wait_for_input(gallery_frame_wait_seconds(
@@ -127,8 +132,9 @@ fn main() -> i32 = do
     buttons = polled.buttons
     const viewport_width = glfw_gl_window_width()
     const viewport_height = glfw_gl_window_height()
+    const turn_input = text_editor_prepare_input(editor, turn.store, turn.state, turn.column.layout, polled.input)
     const stepped = gallery_turn(
-      turn, polled.input, theme, viewport_width, viewport_height,
+      turn, turn_input, theme, viewport_width, viewport_height,
       glfw_gl_mouse_right_down() != 0, true, escape_pressed
     )
     turn = stepped.turn
@@ -154,27 +160,31 @@ fn main() -> i32 = do
     if frame_index == 0 then
       paints = true
     end
-    video_session = video_session_tick(
+    const media = gallery_media_step(
+      editor,
       video_session,
       turn.store,
       turn.state,
       turn.column.layout,
+      theme,
       turn.jail_root,
-      polled.input.mouse_x,
-      polled.input.mouse_y,
-      polled.input.left_pressed,
+      polled.input,
       host_now_ms()
     )
-    const media_path = video_session_media_path(video_session)
+    editor = media.editor
+    video_session = media.video
+    const media_path = media.media_path
+    const hold_still = media.hold_still
     image_preview_arm(
       turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, turn.lens.framebuffer,
-      media_path
+      media_path, hold_still
     )
+    music_yielded = music_follow_video(music_yielded)
     if image_preview_needs_paint() != 0 then
       paints = true
     end
     const text_path = hovered_text_path(turn.store, turn.state, turn.jail_root)
-    if text_path != shown_text_path then
+    if text_path != shown_text_path || media.editor_changed then
       paints = true
     end
     if paints then
@@ -183,13 +193,13 @@ fn main() -> i32 = do
       let mut lens_now = cursor_lens_bind(turn.lens, window_width, window_height, turn.effect_mode)
       image_preview_arm(
         turn.store, turn.state, turn.column.layout, theme, turn.jail_root, turn.effect_mode, lens_now.framebuffer,
-        media_path
+        media_path, hold_still
       )
       const text_changed = shown_text_path != text_path
       const submitted = submit_ui_frame(
         turn.resources, turn.column.shaping, theme, turn.store, turn.column.layout, turn.state,
         turn.presented, next_signature, window_width, window_height, composed, turn.jail_root,
-        shown_text_path, text_path
+        shown_text_path, text_path, editor
       )
       shown_text_path = text_path
       composed = true
@@ -200,7 +210,7 @@ fn main() -> i32 = do
         glfw_gl_context_end()
         return submitted.error_code
       end
-      const clean_window = frame_index == 0 || text_changed || frame_signature_hover_only(turn.presented, next_signature) == false
+      const clean_window = frame_index == 0 || text_changed || media.editor_changed || frame_signature_hover_only(turn.presented, next_signature) == false
       lens_now = scene_finish(
         lens_now, polled.input.mouse_x, polled.input.mouse_y, window_width, window_height, clean_window, turn.effect_mode
       )

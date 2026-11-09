@@ -14,6 +14,12 @@ import { button_preferred_size } from './widget_button'
 import { list_content_height } from './widget_list'
 import { path_bar_is_crumb } from './path_bar'
 import { file_sort_is } from './file_sort'
+import {
+  playback_bar_is,
+  playback_spectrum_is,
+  playback_spectrum_width,
+  playback_track_minimum_width
+} from './playback_bar'
 import { LayoutWork, MeasureResult, layout_work_with_text } from './layout_work'
 import { field_layout_at_width } from './layout_width'
 
@@ -76,6 +82,18 @@ fn measure_button_kind(
   const crumb = path_bar_is_crumb(store, id)
   const sort_chip = file_sort_is(text)
   const measured = measure_caption(work, theme, id.index, text, crumb == false)
+  if playback_bar_is(text) then
+    return MeasureResult {
+      work: measured.work,
+      size: size_new(playback_track_minimum_width(theme.font_size_pixels), measured.size.height)
+    }
+  end
+  if playback_spectrum_is(text) then
+    return MeasureResult {
+      work: measured.work,
+      size: size_new(playback_spectrum_width(theme.font_size_pixels), measured.size.height)
+    }
+  end
   if crumb == false && sort_chip == false then
     return measured
   end

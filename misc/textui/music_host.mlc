@@ -2,8 +2,9 @@ import { join_path, strip_trailing_slash } from './directory_rows'
 import { path_inside_jail } from './directory_jail'
 import { path_bar_current } from './path_bar'
 import { activated_row_text } from './row_label'
-import { folder_queue, progress_caption } from './music_queue'
-import { hit_test } from './hit'
+import { folder_queue } from './music_queue'
+import { playback_bar_is, playback_bar_reading, playback_bar_text, playback_pointer_engaged, playback_reading_of, playback_scrub_commits, playback_seek_milliseconds, playback_shown_position, playback_transport_is } from './playback_bar'
+import { playback_output_decide } from './playback_output'
 import { LayoutResult } from './layout_result'
 import { Theme } from './theme'
 import {
@@ -16,7 +17,7 @@ import {
   widget_store_keep
 } from './store'
 import { UiEvent } from './ui_event'
-import { UiState, ui_state_with_listing_revision } from './ui_state'
+import { UiState, pointer_click_owns, ui_state_with_listing_revision } from './ui_state'
 
 extern fn music_play_list(paths: string, start_index: i32) -> unit
   = "mlc::music_player::play_list_value" from "mlc/audio/music_player.hpp" blocking
@@ -62,6 +63,8 @@ extern fn video_duration_milliseconds() -> i32
   = "mlc::image_preview::video_duration_milliseconds" from "mlc/gl/video_preview.hpp" blocking
 extern fn video_is_paused() -> bool
   = "mlc::image_preview::video_is_paused" from "mlc/gl/video_preview.hpp" blocking
+extern fn video_is_full() -> bool
+  = "mlc::image_preview::video_is_full" from "mlc/gl/video_preview.hpp" blocking
 extern fn video_shown_path() -> string
   = "mlc::image_preview::video_path_value" from "mlc/gl/image_preview.hpp" blocking
 
@@ -113,12 +116,8 @@ fn renamed_button(kind: WidgetKind, text: string) -> WidgetKind =
     | KindIcon(data) => KindIcon(data)
     | KindTextView => KindTextView
 
-fn transport_caption(text: string) -> bool = do
-  if text.byte_size() >= 5 && text.byte_substring(0, 5) == "Pause" then
-    return true
-  end
-  return text.byte_size() >= 4 && text.byte_substring(0, 4) == "Play"
-end
+fn transport_caption(text: string) -> bool =
+  playback_transport_is(text)
 
 fn find_transport(store: WidgetStore) -> WidgetId = do
   let mut index = 0
@@ -148,21 +147,13 @@ fn caption_now() -> string = do
   return "Play"
 end
 
-fn progress_button(text: string) -> bool = do
-  let mut index = 0
-  while index + 2 <= text.byte_size() do
-    if text.byte_substring(index, 2) == " [" then
-      return true
-    end
-    index = index + 1
-  end
-  return false
-end
+fn press_on_widget(state: UiState, widget: WidgetId) -> bool =
+  pointer_click_owns(state.pointer, widget)
 
 fn find_progress(store: WidgetStore) -> WidgetId = do
   let mut index = 0
   while index < store.nodes.length() do
-    if progress_button(button_text(store.nodes[index].kind)) then
+    if playback_bar_is(button_text(store.nodes[index].kind)) then
       return store.nodes[index].id
     end
     index = index + 1
@@ -192,29 +183,6 @@ fn file_title(path: string) -> string = do
   return path.byte_substring(start, path.byte_size() - start)
 end
 
-fn seek_at(layout: LayoutResult, id: WidgetId, mouse_x: i32, duration: i32, video: bool) -> unit = do
-  if widget_id_is_none(id) == false && id.index >= 0 && id.index < layout.rects.length() then
-    const rect = layout.rects[id.index]
-    if rect.width > 0 then
-      let mut local = mouse_x - rect.x
-      if local < 0 then
-        local = 0
-      end
-      if local > rect.width then
-        local = rect.width
-      end
-      if duration > 0 then
-        const milliseconds = local * duration / rect.width
-        if video then
-          video_transport_request_seek(milliseconds)
-        else
-          music_seek(milliseconds)
-        end
-      end
-    end
-  end
-end
-
 fn audio_path(store: WidgetStore, state: UiState, owner: WidgetId, root: string) -> string = do
   const name = activated_row_text(store, state, owner)
   if audio_file_name(name) == false then
@@ -239,6 +207,17 @@ export fn music_play_path(path: string) -> unit =
 
 export fn music_release() -> unit =
   music_release_player()
+
+export fn music_follow_video(yielded: bool) -> bool = do
+  const decision = playback_output_decide(video_is_full(), music_active() != 0, music_paused() != 0, yielded)
+  if decision.pause_music then
+    music_toggle()
+  end
+  if decision.resume_music then
+    music_toggle()
+  end
+  return decision.yielded
+end
 
 export fn music_track() -> string =
   music_path()
@@ -290,6 +269,7 @@ export fn music_host(
   left_down: bool
 ) -> MusicView = do
   const borrowed = video_transport_borrowed() != 0
+  const music_free = video_is_full() == false
   let mut next_store = store
   let mut index = 0
   while index < events.length() do
@@ -305,49 +285,72 @@ export fn music_host(
       if caption == "Prev" && borrowed then
         video_transport_request_step(0 - 1)
       end
-      if caption == "Prev" && borrowed == false then
+      if caption == "Prev" && borrowed == false && music_free then
         music_previous()
       end
       if caption == "Next" && borrowed then
         video_transport_request_step(1)
       end
-      if caption == "Next" && borrowed == false then
+      if caption == "Next" && borrowed == false && music_free then
         music_next()
       end
       if transport_caption(caption) && borrowed then
         video_transport_request_toggle()
       end
-      if transport_caption(caption) && borrowed == false && music_active() != 0 then
+      if transport_caption(caption) && borrowed == false && music_free && music_active() != 0 then
         music_toggle()
       end
-      if transport_caption(caption) && borrowed == false && music_active() == 0 then
+      if transport_caption(caption) && borrowed == false && music_free && music_active() == 0 then
         start_folder(next_store, state, root, "")
       end
     end
     index = index + 1
   end
   const progress = find_progress(next_store)
-  if left_down && widget_id_is_none(progress) == false then
-    const hit = hit_test(next_store, layout, theme, mouse_x, mouse_y)
-    if widget_id_is_none(hit) == false && hit.index == progress.index then
-      if borrowed then
-        seek_at(layout, progress, mouse_x, video_duration_milliseconds(), true)
-      else
-        seek_at(layout, progress, mouse_x, music_duration_milliseconds(), false)
+  let mut scrubbing = false
+  let mut scrub_position = 0
+  if playback_pointer_engaged(left_down, press_on_widget(state, progress)) then
+    if widget_id_is_none(progress) == false then
+      if progress.index < layout.rects.length() then
+        let mut duration = music_duration_milliseconds()
+        if borrowed then
+          duration = video_duration_milliseconds()
+        end
+        const rect = layout.rects[progress.index]
+        const pointer_milliseconds = playback_seek_milliseconds(rect.x, rect.width, mouse_x, duration)
+        const shown_before = playback_bar_reading(button_text(next_store.nodes[progress.index].kind)).position_milliseconds
+        if playback_scrub_commits(shown_before, pointer_milliseconds, duration) then
+          if borrowed then
+            video_transport_request_seek(pointer_milliseconds)
+          end
+          if borrowed == false && music_free then
+            music_seek(pointer_milliseconds)
+          end
+        end
+        scrubbing = true
+        scrub_position = playback_shown_position(pointer_milliseconds, duration)
       end
     end
   end
   let mut changed = false
   let mut play_caption = caption_now()
-  let mut bar = progress_caption(music_title(), music_position_milliseconds(), music_duration_milliseconds())
+  let mut position = playback_shown_position(music_position_milliseconds(), music_duration_milliseconds())
+  let mut bar_duration = music_duration_milliseconds()
+  let mut title = music_title()
   if borrowed then
     if video_is_paused() then
       play_caption = "Play"
     else
       play_caption = "Pause"
     end
-    bar = progress_caption(file_title(video_shown_path()), video_position_milliseconds(), video_duration_milliseconds())
+    position = playback_shown_position(video_position_milliseconds(), video_duration_milliseconds())
+    bar_duration = video_duration_milliseconds()
+    title = file_title(video_shown_path())
   end
+  if scrubbing then
+    position = scrub_position
+  end
+  const bar = playback_bar_text(playback_reading_of(title, position, bar_duration))
   const transport = find_transport(next_store)
   if widget_id_is_none(transport) == false && button_text(next_store.nodes[transport.index].kind) != play_caption then
     next_store = set_button_text(next_store, transport, play_caption)

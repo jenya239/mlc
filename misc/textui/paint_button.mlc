@@ -1,5 +1,7 @@
 import { Theme, theme_content_inset, ColorRgba } from './theme'
 import { file_sort_marked, file_sort_plain } from './file_sort'
+import { playback_bar_is, playback_spectrum_is } from './playback_bar'
+import { paint_playback_bar, paint_playback_spectrum } from './paint_playback'
 import { rect_inset, rect_new } from './geometry'
 import { WidgetId, widget_id_equals } from './store'
 import { LayoutResult } from './layout_result'
@@ -93,6 +95,12 @@ export fn paint_button_frame(
   caption: string,
   operations: [DrawOp]
 ) -> [DrawOp] = do
+  if playback_bar_is(caption) then
+    return paint_playback_bar(theme, layout, state, node_index, caption, operations)
+  end
+  if playback_spectrum_is(caption) then
+    return paint_playback_spectrum(theme, layout, state, node_index, operations)
+  end
   const rect = layout.rects[node_index]
   const inset = theme_content_inset(theme)
   const border = 1

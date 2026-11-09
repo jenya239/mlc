@@ -1,0 +1,166 @@
+import { rect_new, Rect } from '../geometry'
+import { layout_result_from_rects } from '../layout_result'
+import {
+  playback_bar_is,
+  playback_bar_reading,
+  playback_bar_text,
+  playback_clock,
+  playback_fraction_thousandths,
+  playback_pointer_engaged,
+  playback_reading_empty,
+  playback_reading_of,
+  playback_scrub_commits,
+  playback_seek_milliseconds,
+  playback_shown_position,
+  playback_spectrum_is,
+  playback_spectrum_mark,
+  playback_spectrum_width,
+  playback_track_minimum_width,
+  playback_transport_is
+} from '../playback_bar'
+import { playback_bar_widget, playback_spectrum_rect } from '../playback_slot'
+import {
+  BoxData,
+  ButtonData,
+  DirectionColumn,
+  OverflowVisible,
+  widget_id_none,
+  widget_store_add_box,
+  widget_store_add_button,
+  widget_store_empty
+} from '../store'
+
+fn main() -> i32 = do
+  if playback_fraction_thousandths(500, 0) != 0 then
+    return 1
+  end
+  if playback_fraction_thousandths(0 - 5, 1000) != 0 then
+    return 1
+  end
+  if playback_fraction_thousandths(500, 1000) != 500 then
+    return 2
+  end
+  if playback_fraction_thousandths(1500, 1000) != 1000 then
+    return 3
+  end
+  if playback_fraction_thousandths(3600000, 7200000) != 500 then
+    return 4
+  end
+  if playback_seek_milliseconds(80, 400, 280, 4000) != 2000 then
+    return 5
+  end
+  if playback_seek_milliseconds(80, 400, 0, 4000) != 0 then
+    return 6
+  end
+  if playback_seek_milliseconds(80, 400, 900, 4000) != 4000 then
+    return 7
+  end
+  if playback_seek_milliseconds(0, 2000, 1000, 7200000) != 3600000 then
+    return 8
+  end
+  if playback_seek_milliseconds(0, 0, 10, 1000) != 0 then
+    return 9
+  end
+  if playback_seek_milliseconds(0, 10, 5, 0) != 0 then
+    return 9
+  end
+  if playback_pointer_engaged(true, true) == false then
+    return 10
+  end
+  if playback_pointer_engaged(true, false) then
+    return 11
+  end
+  if playback_pointer_engaged(false, true) then
+    return 11
+  end
+  if playback_clock(0) != "0:00" then
+    return 12
+  end
+  if playback_clock(61000) != "1:01" then
+    return 12
+  end
+  if playback_clock(3661000) != "1:01:01" then
+    return 12
+  end
+  const reading = playback_reading_of("Night", 1500, 90000)
+  const parsed = playback_bar_reading(playback_bar_text(reading))
+  if parsed.position_milliseconds != 1500 then
+    return 13
+  end
+  if parsed.duration_milliseconds != 90000 || parsed.title != "Night" then
+    return 13
+  end
+  if playback_bar_is("Play") then
+    return 14
+  end
+  if playback_bar_is("0:00 [----------------] 0:00") then
+    return 14
+  end
+  if playback_spectrum_is("Play") then
+    return 14
+  end
+  if playback_spectrum_is(playback_spectrum_mark()) == false then
+    return 15
+  end
+  if playback_bar_is(playback_bar_text(playback_reading_empty())) == false then
+    return 15
+  end
+  if playback_track_minimum_width(12) != 192 then
+    return 16
+  end
+  if playback_spectrum_width(12) != 96 then
+    return 16
+  end
+  let mut store = widget_store_empty()
+  store = widget_store_add_box(
+    store,
+    widget_id_none(),
+    BoxData { direction: DirectionColumn, padding: 0, gap: 0 },
+    OverflowVisible,
+    1,
+    true
+  )
+  store = widget_store_add_button(
+    store, store.root, ButtonData { text: playback_spectrum_mark() }, OverflowVisible, 0, true
+  )
+  store = widget_store_add_button(
+    store, store.root, ButtonData { text: playback_bar_text(playback_reading_of("Night", 0, 4000)) }, OverflowVisible, 1, true
+  )
+  let mut rects: [Rect] = []
+  rects.push(rect_new(0, 0, 900, 700))
+  rects.push(rect_new(640, 660, playback_spectrum_width(12), 28))
+  rects.push(rect_new(80, 660, 400, 28))
+  const layout = layout_result_from_rects(store, rects)
+  const stage = playback_spectrum_rect(store, layout)
+  if stage.x != 640 then
+    return 17
+  end
+  if stage.y != 660 || stage.height != 28 then
+    return 17
+  end
+  if stage.width != playback_spectrum_width(12) then
+    return 17
+  end
+  if playback_bar_widget(store).index != 2 then
+    return 18
+  end
+  if playback_transport_is("Play") == false || playback_transport_is("Pause") == false then
+    return 19
+  end
+  if playback_transport_is(playback_bar_text(playback_reading_empty())) || playback_transport_is("Player") then
+    return 19
+  end
+  if playback_shown_position(2001, 4000) != 2000 || playback_shown_position(3600100, 7200000) != 3600000 then
+    return 20
+  end
+  if playback_shown_position(0 - 4, 4000) != 0 || playback_shown_position(100, 500) != 100 then
+    return 20
+  end
+  if playback_scrub_commits(2000, 2001, 4000) then
+    return 21
+  end
+  if playback_scrub_commits(2000, 2005, 4000) == false then
+    return 21
+  end
+  0
+end

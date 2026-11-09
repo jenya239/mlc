@@ -1,0 +1,180 @@
+import { Rect, rect_contains, rect_is_empty, rect_new } from './geometry'
+import { Theme } from './theme'
+import { WidgetStore, widget_id_is_none } from './store'
+import { LayoutResult } from './layout_result'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { UiInput } from './ui_input'
+import { UiState } from './ui_state'
+import { list_row_height, list_row_inset } from './widget_list'
+import { image_preview_file_pane } from './image_preview'
+import { text_document_line } from './text_document'
+import { text_line_index_of_identifier } from './text_line_index'
+import { text_grapheme_boundaries } from './text_graphemes'
+import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
+import { text_view_selection_spans } from './text_view_selection'
+import { text_view_visible_identifiers } from './text_view_state'
+import { TextEditor } from './text_editor'
+import { focus_is_text_field } from './list_marks'
+
+export fn text_editor_band(store: WidgetStore, layout: LayoutResult) -> Rect = do
+  const pane = image_preview_file_pane(store)
+  if widget_id_is_none(pane) || pane.index < 0 || pane.index >= layout.clips.length() then
+    return rect_new(0, 0, 0, 0)
+  end
+  const clip = layout.clips[pane.index]
+  if rect_is_empty(clip) || clip.width < 80 || clip.height < 16 then
+    return rect_new(0, 0, 0, 0)
+  end
+  const band_width = clip.width / 2
+  if band_width < 40 then
+    return rect_new(0, 0, 0, 0)
+  end
+  rect_new(clip.x + clip.width - band_width, clip.y, band_width, clip.height)
+end
+
+export fn text_editor_pointer_inside(editor: TextEditor, store: WidgetStore, layout: LayoutResult, mouse_x: i32, mouse_y: i32) -> bool = do
+  if editor.open == false then
+    return false
+  end
+  rect_contains(text_editor_band(store, layout), mouse_x, mouse_y)
+end
+
+export fn text_editor_prepare_input(
+  editor: TextEditor,
+  store: WidgetStore,
+  state: UiState,
+  layout: LayoutResult,
+  input: UiInput
+) -> UiInput = do
+  if editor.open == false || state.overlay_open || focus_is_text_field(store, state) then
+    return input
+  end
+  let mut wheel_y = input.wheel_y
+  if text_editor_pointer_inside(editor, store, layout, input.mouse_x, input.mouse_y) then
+    wheel_y = 0
+  end
+  UiInput {
+    mouse_x: input.mouse_x,
+    mouse_y: input.mouse_y,
+    left_pressed: input.left_pressed,
+    left_down: input.left_down,
+    left_released: input.left_released,
+    control_down: input.control_down,
+    copy_pressed: input.copy_pressed,
+    wheel_y: wheel_y,
+    now_ms: input.now_ms,
+    text: "",
+    binding_key: "",
+    shift_down: input.shift_down,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+end
+
+fn clipped_line(text: string) -> string = do
+  const limit = 512
+  if text.byte_size() <= limit then
+    return text
+  end
+  let mut sample = text
+  if text.byte_size() > 768 then
+    sample = text.byte_substring(0, 768)
+  end
+  const bounds = text_grapheme_boundaries(sample)
+  let mut limit_byte = 0
+  let mut index = 0
+  while index < bounds.length() do
+    if bounds[index] <= limit && bounds[index] > limit_byte then
+      limit_byte = bounds[index]
+    end
+    index = index + 1
+  end
+  if limit_byte < 1 then
+    return ""
+  end
+  sample.byte_substring(0, limit_byte)
+end
+
+fn caret_x(editor: TextEditor) -> i32 = do
+  const line_index = text_line_index_of_identifier(editor.document.line_index, editor.view.caret_line_identifier)
+  if line_index < 0 then
+    return 0
+  end
+  const line = text_document_line(editor.document, line_index)
+  const found = text_view_entry_index(editor.view, line.line_identifier, line.revision)
+  if found < 0 then
+    return 0
+  end
+  const boundaries = text_grapheme_boundaries(line.text)
+  const positions = editor.view.shape_cache.entries[found].boundary_positions
+  text_view_position_of_byte(boundaries, positions, editor.view.caret_byte) - editor.view.horizontal_scroll
+end
+
+export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResult, operations: [DrawOp], editor: TextEditor) -> [DrawOp] = do
+  if editor.open == false then
+    return operations
+  end
+  const band = text_editor_band(store, layout)
+  if rect_is_empty(band) then
+    return operations
+  end
+  const row_height = list_row_height(theme)
+  if row_height < 1 then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp { rect: band, color: theme.background }))
+  painted.push(OpPushClip(band))
+  const origin_x = band.x + theme.padding
+  const origin_y = band.y + theme.padding
+  const identifiers = text_view_visible_identifiers(editor.view, editor.document)
+  const spans = text_view_selection_spans(editor.view, editor.document)
+  let mut index = 0
+  while index < identifiers.length() do
+    const line_index = text_line_index_of_identifier(editor.document.line_index, identifiers[index])
+    if line_index >= 0 then
+      const line = text_document_line(editor.document, line_index)
+      let mut span_index = 0
+      while span_index < spans.length() do
+        if spans[span_index].line_identifier == line.line_identifier && spans[span_index].right > spans[span_index].left then
+          painted.push(OpFillRect(FillRectOp {
+            rect: rect_new(
+              origin_x + spans[span_index].left,
+              origin_y + index * row_height,
+              spans[span_index].right - spans[span_index].left,
+              row_height
+            ),
+            color: theme.selection_background
+          }))
+        end
+        span_index = span_index + 1
+      end
+      painted.push(OpText(TextOp {
+        origin_x: origin_x,
+        origin_y: origin_y + index * row_height + list_row_inset(theme),
+        color: theme.foreground,
+        text: clipped_line(line.text)
+      }))
+    end
+    index = index + 1
+  end
+  let mut caret_row = 0
+  let mut caret_found = false
+  let mut caret_index = 0
+  while caret_index < identifiers.length() do
+    if identifiers[caret_index] == editor.view.caret_line_identifier then
+      caret_row = caret_index
+      caret_found = true
+    end
+    caret_index = caret_index + 1
+  end
+  if caret_found then
+    painted.push(OpFillRect(FillRectOp {
+      rect: rect_new(origin_x + caret_x(editor), origin_y + caret_row * row_height, 2, row_height),
+      color: theme.foreground
+    }))
+  end
+  painted.push(OpPopClip)
+  painted
+end

@@ -36,7 +36,7 @@ unless body.include?("paint_hover_damage") && body.include?("frame_signature_hov
   warn "[textui hover] FAIL: hover diffs must go through paint_hover_damage"
   exit 1
 end
-' "$ROOT_DIR/misc/textui/hover_damage.mlc"
+' "$ROOT_DIR/misc/textui/frame_submit.mlc"
 
 export TMPDIR="${TMPDIR:-$ROOT_DIR/tmp}"
 export MLCC_OBJ_CLEAN="${MLCC_OBJ_CLEAN:-1}"

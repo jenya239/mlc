@@ -10,7 +10,7 @@ import {
 } from './store'
 import { LayoutResult } from './layout_result'
 import { DrawOp, FillRectOp } from './draw_op'
-import { FrameSignature, frame_signature_hover_only } from './frame_request'
+import { FrameSignature } from './frame_request'
 import { UiState } from './ui_state'
 import { list_row_height, list_row_inset, list_row_marked, list_selected_at, list_text_dx } from './widget_list'
 import { paint_row_name_and_columns } from './file_columns'
@@ -18,15 +18,9 @@ import { list_icon_name, paint_named_icon } from './icon'
 import { scroll_content_height, scroll_content_overflows } from './widget_scroll'
 import { menu_list_id } from './menu'
 import { kind_is_clickable } from './user_select'
-import { paint_button, paint_overlay_frame, paint_path_crumb, paint_tree_frame } from './paint_pass'
-import { paint_preview_caption } from './preview_caption'
-import { paint_text_view_preview } from './text_view_preview'
+import { paint_button, paint_path_crumb } from './paint_pass'
 import { path_bar_is_crumb } from './path_bar'
 import { checkbox_caption, checkbox_mark, kind_is_checkbox, paint_checkbox } from './checkbox'
-import { TextShapingState } from '../gui/text_shaping'
-import { SubmitFrameResult, SubmitResources, submit_frame } from './submit'
-import { submit_painted_layers } from './submit_layers'
-import { cursor_lens_show_window } from './cursor_lens'
 fn button_text(kind: WidgetKind) -> string =
   match kind
     | KindButton(data) => data.text
@@ -355,46 +349,4 @@ export fn paint_hover_damage(
     index = index + 1
   end
   return operations
-end
-
-export fn submit_ui_frame(
-  resources: SubmitResources,
-  shaping: TextShapingState,
-  theme: Theme,
-  store: WidgetStore,
-  layout: LayoutResult,
-  state: UiState,
-  presented: FrameSignature,
-  next: FrameSignature,
-  window_width: i32,
-  window_height: i32,
-  composed: bool,
-  root: string,
-  previous_text_path: string,
-  text_path: string
-) -> SubmitFrameResult = do
-  if composed && state.overlay_open == false && frame_signature_hover_only(presented, next) && previous_text_path == text_path then
-    const damage = paint_hover_damage(theme, store, layout, state, presented, next)
-    if damage.length() > 0 then
-      const into_texture = submit_frame(
-        resources, shaping, theme, damage, window_width, window_height, false
-      )
-      if into_texture.error_code != 0 then
-        return into_texture
-      end
-      cursor_lens_show_window()
-      return submit_frame(
-        into_texture.resources, into_texture.shaping, theme, damage, window_width, window_height, false
-      )
-    end
-  end
-  return submit_painted_layers(
-    resources,
-    shaping,
-    theme,
-    paint_text_view_preview(theme, store, layout, paint_preview_caption(theme, store, layout, state, root, paint_tree_frame(theme, store, layout, state)), text_path),
-    paint_overlay_frame(theme, store, layout, state),
-    window_width,
-    window_height
-  )
 end

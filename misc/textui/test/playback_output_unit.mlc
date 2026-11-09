@@ -1,0 +1,37 @@
+import { playback_output_decide } from '../playback_output'
+
+fn main() -> i32 = do
+  const paused = playback_output_decide(true, true, false, false)
+  if paused.pause_music == false || paused.resume_music || paused.yielded == false then
+    return 1
+  end
+  const already_paused = playback_output_decide(true, true, true, false)
+  if already_paused.pause_music || already_paused.resume_music || already_paused.yielded then
+    return 2
+  end
+  const held = playback_output_decide(true, true, true, true)
+  if held.pause_music || held.resume_music || held.yielded == false then
+    return 3
+  end
+  const again = playback_output_decide(true, true, false, true)
+  if again.pause_music == false || again.yielded == false then
+    return 4
+  end
+  const quiet = playback_output_decide(true, false, false, true)
+  if quiet.pause_music || quiet.resume_music || quiet.yielded then
+    return 5
+  end
+  const restored = playback_output_decide(false, true, true, true)
+  if restored.resume_music == false || restored.pause_music || restored.yielded then
+    return 6
+  end
+  const gone = playback_output_decide(false, false, true, true)
+  if gone.resume_music || gone.yielded then
+    return 7
+  end
+  const untouched = playback_output_decide(false, true, false, false)
+  if untouched.pause_music || untouched.resume_music || untouched.yielded then
+    return 8
+  end
+  0
+end

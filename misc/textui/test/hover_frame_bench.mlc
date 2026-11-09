@@ -17,7 +17,9 @@ import { layout_ui } from '../layout_pass'
 import { paint_overlay_frame, paint_tree_frame } from '../paint_pass'
 import { frame_signature, frame_signature_hover_only } from '../frame_request'
 import { UiState, ui_state_new, ui_state_with, ui_state_with_list_hover_row } from '../ui_state'
-import { paint_hover_damage, submit_ui_frame } from '../hover_damage'
+import { paint_hover_damage } from '../hover_damage'
+import { submit_ui_frame } from '../frame_submit'
+import { text_editor_closed } from '../text_editor'
 import { submit_create, submit_destroy } from '../submit'
 import { cursor_lens_bind, cursor_lens_create, cursor_lens_destroy, cursor_lens_present } from '../cursor_lens'
 import { submit_painted_layers } from '../submit_layers'
@@ -168,7 +170,8 @@ fn main() -> i32 = do
       true,
       "",
       "",
-      ""
+      "",
+      text_editor_closed(theme.font_path, theme.font_size_pixels)
     )
     resources = painted.resources
     shaping = painted.shaping

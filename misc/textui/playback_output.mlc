@@ -1,0 +1,33 @@
+export type PlaybackYield = {
+  yielded: bool,
+  pause_music: bool,
+  resume_music: bool
+}
+
+fn playback_yield(yielded: bool, pause_music: bool, resume_music: bool) -> PlaybackYield =
+  PlaybackYield { yielded: yielded, pause_music: pause_music, resume_music: resume_music }
+
+export fn playback_output_decide(
+  video_holds_speakers: bool,
+  music_active: bool,
+  music_paused: bool,
+  yielded: bool
+) -> PlaybackYield = do
+  if video_holds_speakers then
+    if music_active then
+      if music_paused == false then
+        return playback_yield(true, true, false)
+      end
+      return playback_yield(yielded, false, false)
+    end
+    return playback_yield(false, false, false)
+  end
+  if yielded then
+    if music_active then
+      if music_paused then
+        return playback_yield(false, false, true)
+      end
+    end
+  end
+  return playback_yield(false, false, false)
+end

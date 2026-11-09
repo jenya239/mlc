@@ -214,6 +214,7 @@ void play_path(const std::string& path) {
   AVPacket* packet = av_packet_alloc();
   AVFrame* frame = av_frame_alloc();
   int64_t samples_written = 0;
+  int64_t skip_until_milliseconds = -1;
   while (same_request(path) && packet != nullptr && frame != nullptr && wait_if_paused(path)) {
     const int32_t seek_to = music.seek_milliseconds.exchange(-1);
     if (seek_to >= 0) {
@@ -222,6 +223,7 @@ void play_path(const std::string& path) {
       avcodec_flush_buffers(codec);
       pa_simple_flush(pulse, &pulse_error);
       samples_written = static_cast<int64_t>(seek_to) * k_rate / 1000;
+      skip_until_milliseconds = seek_to;
       music.position_milliseconds.store(seek_to);
     }
     if (av_read_frame(format, packet) < 0) {
@@ -231,6 +233,19 @@ void play_path(const std::string& path) {
       while (avcodec_receive_frame(codec, frame) == 0 && same_request(path)) {
         if (wait_if_paused(path) == false) {
           break;
+        }
+        int64_t frame_milliseconds = -1;
+        if (frame->pts != AV_NOPTS_VALUE) {
+          frame_milliseconds = av_rescale_q(frame->pts, stream->time_base, AVRational{1, 1000});
+        }
+        if (skip_until_milliseconds >= 0 && frame_milliseconds >= 0 && frame_milliseconds + 80 < skip_until_milliseconds) {
+          av_frame_unref(frame);
+          continue;
+        }
+        if (skip_until_milliseconds >= 0) {
+          const int64_t origin = frame_milliseconds >= 0 ? frame_milliseconds : skip_until_milliseconds;
+          samples_written = origin * k_rate / 1000;
+          skip_until_milliseconds = -1;
         }
         const int output_count = swr_get_out_samples(resampler, frame->nb_samples) + 32;
         std::vector<int16_t> output(static_cast<size_t>(output_count) * k_channels);
@@ -405,8 +420,16 @@ void seek_value(int32_t milliseconds) {
   if (milliseconds < 0) {
     milliseconds = 0;
   }
-  shared_music().seek_milliseconds.store(milliseconds);
-  shared_music().position_milliseconds.store(milliseconds);
+  SharedMusic& music = shared_music();
+  const int32_t pending = music.seek_milliseconds.load();
+  if (pending == milliseconds) {
+    return;
+  }
+  if (pending < 0 && music.position_milliseconds.load() == milliseconds) {
+    return;
+  }
+  music.seek_milliseconds.store(milliseconds);
+  music.position_milliseconds.store(milliseconds);
 }
 
 void toggle_value() {

@@ -1,0 +1,169 @@
+import { join_path, strip_trailing_slash } from './directory_rows'
+import { path_inside_jail } from './directory_jail'
+import { path_bar_current } from './path_bar'
+import { Rect, rect_contains } from './geometry'
+import { LayoutResult } from './layout_result'
+import { Theme } from './theme'
+import { WidgetKind, WidgetStore, kind_is_list_view, widget_id_is_none } from './store'
+import { UiInput } from './ui_input'
+import { UiState } from './ui_state'
+import { list_row_height } from './widget_list'
+import { text_file_name } from './text_kind'
+import { TextEditor, text_editor_choice, text_editor_close, text_editor_closes, text_editor_on_input, text_editor_open_path, text_editor_opens, text_editor_place } from './text_editor'
+import { text_editor_band, text_editor_pointer_inside } from './text_editor_paint'
+import { focus_is_text_field } from './list_marks'
+import { VideoSession, video_session_media_path, video_session_tick } from './video_session'
+
+extern fn is_directory(path: string) -> bool
+  = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
+
+export type GalleryMedia = {
+  editor: TextEditor,
+  video: VideoSession,
+  media_path: string,
+  hold_still: bool,
+  editor_changed: bool
+}
+
+fn list_texts(kind: WidgetKind) -> [string] =
+  match kind
+    | KindListView(data) => data.texts
+    | KindBox(_) => []
+    | KindLabel(_) => []
+    | KindButton(_) => []
+    | KindCheckbox(_) => []
+    | KindScrollView => []
+    | KindSplitter(_) => []
+    | KindTextField(_) => []
+    | KindIcon(_) => []
+    | KindTextView => []
+
+fn file_list_index(store: WidgetStore) -> i32 = do
+  let mut seen = 0
+  let mut index = 0
+  while index < store.nodes.length() do
+    if kind_is_list_view(store.nodes[index].kind) then
+      if seen == 1 then
+        return index
+      end
+      seen = seen + 1
+    end
+    index = index + 1
+  end
+  0 - 1
+end
+
+fn file_list_rect(store: WidgetStore, layout: LayoutResult) -> Rect = do
+  const list_index = file_list_index(store)
+  if list_index < 0 || list_index >= layout.rects.length() then
+    return Rect { x: 0, y: 0, width: 0, height: 0 }
+  end
+  const parent = store.nodes[list_index].parent
+  if widget_id_is_none(parent) == false && parent.index >= 0 && parent.index < layout.rects.length() then
+    return layout.rects[parent.index]
+  end
+  layout.rects[list_index]
+end
+
+fn hovered_file_name(store: WidgetStore, state: UiState) -> string = do
+  const list_index = file_list_index(store)
+  if list_index < 0 || state.hover.index != list_index then
+    return ""
+  end
+  const texts = list_texts(store.nodes[list_index].kind)
+  if state.list_hover_row < 0 || state.list_hover_row >= texts.length() then
+    return ""
+  end
+  texts[state.list_hover_row]
+end
+
+fn inside_directory(directory: string, path: string) -> bool = do
+  const prefix = strip_trailing_slash(directory) + "/"
+  if path.byte_size() <= prefix.byte_size() then
+    return false
+  end
+  path.byte_substring(0, prefix.byte_size()) == prefix
+end
+
+fn candidate_path(store: WidgetStore, root: string, name: string) -> string = do
+  if text_file_name(name) == false then
+    return ""
+  end
+  const path = join_path(strip_trailing_slash(path_bar_current(store)), name)
+  if path_inside_jail(root, path) == false then
+    return ""
+  end
+  if is_directory(path) then
+    return ""
+  end
+  path
+end
+
+export fn gallery_media_step(
+  editor: TextEditor,
+  video: VideoSession,
+  store: WidgetStore,
+  state: UiState,
+  layout: LayoutResult,
+  theme: Theme,
+  root: string,
+  input: UiInput,
+  now_ms: i32
+) -> GalleryMedia = do
+  const revision_before = editor.revision
+  let mut next_editor = editor
+  if next_editor.open && inside_directory(path_bar_current(store), next_editor.path) == false then
+    next_editor = text_editor_close(next_editor)
+  end
+  const name = hovered_file_name(store, state)
+  const in_file_list = rect_contains(file_list_rect(store, layout), input.mouse_x, input.mouse_y)
+  const press_in_editor = input.left_pressed && text_editor_pointer_inside(next_editor, store, layout, input.mouse_x, input.mouse_y)
+  const candidate = candidate_path(store, root, name)
+  const choice = text_editor_choice(next_editor.open, next_editor.path, input.left_pressed, in_file_list, press_in_editor, name, candidate)
+  if text_editor_opens(choice) then
+    const band = text_editor_band(store, layout)
+    next_editor = text_editor_open_path(next_editor, candidate, band.height, list_row_height(theme), theme.font_path, theme.font_size_pixels)
+  end
+  if text_editor_closes(choice) then
+    next_editor = text_editor_close(next_editor)
+  end
+  if press_in_editor then
+    const band = text_editor_band(store, layout)
+    next_editor = text_editor_place(
+      next_editor,
+      band.x + theme.padding,
+      band.y + theme.padding,
+      list_row_height(theme),
+      input.mouse_x,
+      input.mouse_y
+    )
+  end
+  next_editor = text_editor_on_input(next_editor, input, focus_is_text_field(store, state), state.overlay_open, root)
+  const next_video = video_session_tick(
+    video,
+    store,
+    state,
+    layout,
+    root,
+    input.mouse_x,
+    input.mouse_y,
+    input.left_pressed,
+    now_ms,
+    next_editor.open,
+    press_in_editor
+  )
+  let mut media_path = ""
+  let mut hold_still = false
+  if next_editor.open then
+    hold_still = true
+  else
+    media_path = video_session_media_path(next_video)
+  end
+  GalleryMedia {
+    editor: next_editor,
+    video: next_video,
+    media_path: media_path,
+    hold_still: hold_still,
+    editor_changed: next_editor.revision != revision_before
+  }
+end

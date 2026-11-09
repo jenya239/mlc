@@ -55,52 +55,6 @@ fn file_list(store: WidgetStore) -> WidgetId = do
   return widget_id_none()
 end
 
-fn clock_text(milliseconds: i32) -> string = do
-  let mut seconds = milliseconds / 1000
-  if seconds < 0 then
-    seconds = 0
-  end
-  const minutes = seconds / 60
-  const remain = seconds - minutes * 60
-  if remain < 10 then
-    return minutes.to_string() + ":0" + remain.to_string()
-  end
-  return minutes.to_string() + ":" + remain.to_string()
-end
-
-fn bar_cells(position: i32, duration: i32) -> string = do
-  let mut filled = 0
-  if duration > 0 then
-    filled = position * 16 / duration
-  end
-  if filled < 0 then
-    filled = 0
-  end
-  if filled > 16 then
-    filled = 16
-  end
-  let mut cells = ""
-  let mut index = 0
-  while index < 16 do
-    if index < filled then
-      cells = cells + "#"
-    end
-    if index >= filled then
-      cells = cells + "-"
-    end
-    index = index + 1
-  end
-  return cells
-end
-
-export fn progress_caption(name: string, position: i32, duration: i32) -> string = do
-  const bar = clock_text(position) + " [" + bar_cells(position, duration) + "] " + clock_text(duration)
-  if name == "" then
-    return bar
-  end
-  return name + "  " + bar
-end
-
 export fn folder_queue(store: WidgetStore, state: UiState, root: string, chosen: string) -> MusicQueue = do
   const list = file_list(store)
   if widget_id_is_none(list) then

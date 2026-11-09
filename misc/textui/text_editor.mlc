@@ -1,0 +1,225 @@
+import { TextDocument, text_document_from_bytes, text_document_line } from './text_document'
+import { KindTextView } from './store'
+import { kind_is_text_view, text_view_open } from './text_view_open'
+import { TextViewState, text_view_frame, text_view_state_new, text_view_visible_identifiers, text_view_wheel } from './text_view_state'
+import { text_view_move_horizontal, text_view_move_vertical, text_view_press } from './text_view_input'
+import { text_view_backspace, text_view_break_line, text_view_delete_forward, text_view_insert_text } from './text_view_keys'
+import { text_view_save } from './text_view_save'
+import { UiInput } from './ui_input'
+
+export type TextEditor = {
+  path: string,
+  document: TextDocument,
+  view: TextViewState,
+  open: bool,
+  revision: i32
+}
+
+export type TextEditorChoice =
+  EditorKeep
+  | EditorClose
+  | EditorOpen
+
+export fn text_editor_opens(choice: TextEditorChoice) -> bool =
+  match choice
+    | EditorOpen => true
+    | EditorKeep => false
+    | EditorClose => false
+
+export fn text_editor_closes(choice: TextEditorChoice) -> bool =
+  match choice
+    | EditorClose => true
+    | EditorKeep => false
+    | EditorOpen => false
+
+export fn text_editor_closed(font_path: string, pixel_size: i32) -> TextEditor = do
+  const document = text_document_from_bytes("")
+  TextEditor {
+    path: "",
+    document: document,
+    view: text_view_state_new(1, 1, 0, font_path, pixel_size),
+    open: false,
+    revision: 0
+  }
+end
+
+fn editor_with(editor: TextEditor, path: string, document: TextDocument, view: TextViewState, open: bool) -> TextEditor =
+  TextEditor {
+    path: path,
+    document: document,
+    view: view,
+    open: open,
+    revision: editor.revision + 1
+  }
+
+export fn text_editor_close(editor: TextEditor) -> TextEditor = do
+  if editor.open == false then
+    return editor
+  end
+  editor_with(editor, "", editor.document, editor.view, false)
+end
+
+export fn text_editor_choice(
+  editor_open: bool,
+  current_path: string,
+  pressed: bool,
+  in_file_list: bool,
+  press_in_editor: bool,
+  name: string,
+  candidate: string
+) -> TextEditorChoice = do
+  if pressed == false || press_in_editor || in_file_list == false || name == "" then
+    return EditorKeep
+  end
+  if candidate != "" then
+    if editor_open && candidate == current_path then
+      return EditorKeep
+    end
+    return EditorOpen
+  end
+  EditorClose
+end
+
+fn viewport_of(viewport_height: i32, row_height: i32) -> i32 = do
+  if viewport_height >= row_height && row_height > 0 then
+    return viewport_height
+  end
+  if row_height > 0 then
+    return row_height * 8
+  end
+  1
+end
+
+export fn text_editor_open_document(
+  editor: TextEditor,
+  path: string,
+  document: TextDocument,
+  viewport_height: i32,
+  row_height: i32,
+  font_path: string,
+  pixel_size: i32
+) -> TextEditor = do
+  const height = viewport_of(viewport_height, row_height)
+  let mut view = text_view_frame(text_view_state_new(height, row_height, 0, font_path, pixel_size), document)
+  const first = text_document_line(document, 0)
+  view = text_view_press(view, document, KindTextView, first.line_identifier, 0)
+  editor_with(editor, path, document, view, true)
+end
+
+export fn text_editor_open_path(
+  editor: TextEditor,
+  path: string,
+  viewport_height: i32,
+  row_height: i32,
+  font_path: string,
+  pixel_size: i32
+) -> TextEditor = do
+  const opened = text_view_open(path, 65536, 40, row_height)
+  if kind_is_text_view(opened.kind) == false then
+    return editor
+  end
+  text_editor_open_document(editor, path, opened.document, viewport_height, row_height, font_path, pixel_size)
+end
+
+fn view_changed(before: TextViewState, after: TextViewState) -> bool = do
+  if before.caret_line_identifier != after.caret_line_identifier || before.caret_byte != after.caret_byte then
+    return true
+  end
+  if before.bound_line_identifier != after.bound_line_identifier || before.bound_byte != after.bound_byte then
+    return true
+  end
+  before.anchor_line_identifier != after.anchor_line_identifier || before.anchor_vertical_offset != after.anchor_vertical_offset
+end
+
+fn with_view(editor: TextEditor, view: TextViewState) -> TextEditor = do
+  if view_changed(editor.view, view) == false then
+    return editor
+  end
+  editor_with(editor, editor.path, editor.document, view, true)
+end
+
+export fn text_editor_place(editor: TextEditor, origin_x: i32, origin_y: i32, row_height: i32, mouse_x: i32, mouse_y: i32) -> TextEditor = do
+  if editor.open == false || row_height < 1 then
+    return editor
+  end
+  const local_y = mouse_y - origin_y
+  if local_y < 0 then
+    return editor
+  end
+  const row = local_y / row_height
+  const identifiers = text_view_visible_identifiers(editor.view, editor.document)
+  if row < 0 || row >= identifiers.length() then
+    return editor
+  end
+  const placed = text_view_press(editor.view, editor.document, KindTextView, identifiers[row], mouse_x - origin_x)
+  with_view(editor, placed)
+end
+
+export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused: bool, overlay_open: bool, jail: string) -> TextEditor = do
+  if editor.open == false || field_focused || overlay_open then
+    return editor
+  end
+  if input.control_down && input.binding_key == "s" then
+    text_view_save(editor.path, jail, editor.document)
+    return editor
+  end
+  if input.backspace_pressed then
+    const result = text_view_backspace(editor.view, editor.document)
+    if result.accepted then
+      return editor_with(editor, editor.path, result.document, result.state, true)
+    end
+  end
+  if input.enter_pressed then
+    const result = text_view_break_line(editor.view, editor.document)
+    if result.accepted then
+      return editor_with(editor, editor.path, result.document, result.state, true)
+    end
+  end
+  if input.binding_key == "delete" then
+    const result = text_view_delete_forward(editor.view, editor.document)
+    if result.accepted then
+      return editor_with(editor, editor.path, result.document, result.state, true)
+    end
+  end
+  let mut view = editor.view
+  let mut moved = false
+  if input.binding_key == "left" then
+    view = text_view_move_horizontal(view, editor.document, 0 - 1, input.shift_down)
+    moved = true
+  end
+  if input.binding_key == "right" then
+    view = text_view_move_horizontal(view, editor.document, 1, input.shift_down)
+    moved = true
+  end
+  if input.binding_key == "up" then
+    view = text_view_move_vertical(view, editor.document, 0 - 1, input.shift_down)
+    moved = true
+  end
+  if input.binding_key == "down" then
+    view = text_view_move_vertical(view, editor.document, 1, input.shift_down)
+    moved = true
+  end
+  if input.wheel_y != 0 then
+    view = text_view_frame(text_view_wheel(view, editor.document, input.wheel_y), editor.document)
+    moved = true
+  end
+  if moved then
+    return with_view(editor, view)
+  end
+  if input.control_down then
+    return editor
+  end
+  if input.paste_text != "" then
+    const result = text_view_insert_text(editor.view, editor.document, input.paste_text)
+    if result.accepted then
+      return editor_with(editor, editor.path, result.document, result.state, true)
+    end
+  end
+  if input.text != "" && input.enter_pressed == false && input.backspace_pressed == false then
+    const result = text_view_insert_text(editor.view, editor.document, input.text)
+    if result.accepted then
+      return editor_with(editor, editor.path, result.document, result.state, true)
+    end
+  end
+  editor
+end

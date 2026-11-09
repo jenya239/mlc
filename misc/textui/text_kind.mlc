@@ -1,0 +1,137 @@
+fn ends_with_folded(name: string, suffix: string) -> bool = do
+  if suffix.byte_size() == 0 || name.byte_size() < suffix.byte_size() then
+    return false
+  end
+  const tail = name.byte_substring(name.byte_size() - suffix.byte_size(), suffix.byte_size())
+  let mut folded = ""
+  let mut index = 0
+  while index < tail.byte_size() do
+    const byte = tail.byte_substring(index, 1)
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    const lower = "abcdefghijklmnopqrstuvwxyz"
+    const found = upper.index_of(byte)
+    if found < 0 then
+      folded = folded + byte
+    else
+      folded = folded + lower.byte_substring(found, 1)
+    end
+    index = index + 1
+  end
+  folded == suffix
+end
+
+fn blocked_suffix(name: string) -> bool = do
+  let mut suffixes: [string] = []
+  suffixes.push(".png")
+  suffixes.push(".jpg")
+  suffixes.push(".jpeg")
+  suffixes.push(".gif")
+  suffixes.push(".webp")
+  suffixes.push(".bmp")
+  suffixes.push(".ico")
+  suffixes.push(".tif")
+  suffixes.push(".tiff")
+  suffixes.push(".heic")
+  suffixes.push(".avif")
+  suffixes.push(".mp3")
+  suffixes.push(".wav")
+  suffixes.push(".flac")
+  suffixes.push(".ogg")
+  suffixes.push(".oga")
+  suffixes.push(".aac")
+  suffixes.push(".m4a")
+  suffixes.push(".opus")
+  suffixes.push(".wma")
+  suffixes.push(".aiff")
+  suffixes.push(".aif")
+  suffixes.push(".mp4")
+  suffixes.push(".m4v")
+  suffixes.push(".mov")
+  suffixes.push(".mkv")
+  suffixes.push(".webm")
+  suffixes.push(".avi")
+  suffixes.push(".mpg")
+  suffixes.push(".mpeg")
+  suffixes.push(".wmv")
+  suffixes.push(".ogv")
+  suffixes.push(".zip")
+  suffixes.push(".gz")
+  suffixes.push(".tgz")
+  suffixes.push(".tar")
+  suffixes.push(".bz2")
+  suffixes.push(".xz")
+  suffixes.push(".7z")
+  suffixes.push(".rar")
+  suffixes.push(".deb")
+  suffixes.push(".rpm")
+  suffixes.push(".iso")
+  suffixes.push(".dmg")
+  suffixes.push(".img")
+  suffixes.push(".exe")
+  suffixes.push(".dll")
+  suffixes.push(".so")
+  suffixes.push(".dylib")
+  suffixes.push(".a")
+  suffixes.push(".o")
+  suffixes.push(".bin")
+  suffixes.push(".class")
+  suffixes.push(".jar")
+  suffixes.push(".wasm")
+  suffixes.push(".pyc")
+  suffixes.push(".pyo")
+  suffixes.push(".pdf")
+  suffixes.push(".doc")
+  suffixes.push(".docx")
+  suffixes.push(".xls")
+  suffixes.push(".xlsx")
+  suffixes.push(".ppt")
+  suffixes.push(".pptx")
+  suffixes.push(".db")
+  suffixes.push(".sqlite")
+  suffixes.push(".sqlite3")
+  suffixes.push(".ttf")
+  suffixes.push(".otf")
+  suffixes.push(".woff")
+  suffixes.push(".woff2")
+  suffixes.push(".psd")
+  suffixes.push(".blend")
+  suffixes.push(".cr2")
+  suffixes.push(".nef")
+  let mut index = 0
+  while index < suffixes.length() do
+    if ends_with_folded(name, suffixes[index]) then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn secret_file_name(name: string) -> bool = do
+  if name == "" || name == "." || name == ".." || name == ".env" then
+    return true
+  end
+  if name.byte_size() >= 5 && name.byte_substring(0, 5) == ".env." then
+    return true
+  end
+  if name.byte_size() >= 6 && name.byte_substring(0, 6) == "id_rsa" then
+    return true
+  end
+  if name.byte_size() >= 10 && name.byte_substring(0, 10) == "id_ed25519" then
+    return true
+  end
+  ends_with_folded(name, ".pem") || ends_with_folded(name, ".key") || ends_with_folded(name, ".kdbx")
+end
+
+export fn text_file_name(name: string) -> bool = do
+  if secret_file_name(name) then
+    return false
+  end
+  if name.byte_size() > 0 && name.byte_at(name.byte_size() - 1) == "/" then
+    return false
+  end
+  if blocked_suffix(name) then
+    return false
+  end
+  true
+end

@@ -189,6 +189,7 @@ void play_soundtrack(std::string path, uint64_t request) {
   AVFrame* frame = av_frame_alloc();
   uint32_t heard_loop = started_loop;
   uint32_t heard_seek = video.seek_serial.load();
+  int64_t skip_audio_until = -1;
   bool finished = false;
   while (finished == false && soundtrack_current(path, request) && packet != nullptr && frame != nullptr) {
     {
@@ -215,6 +216,7 @@ void play_soundtrack(std::string path, uint64_t request) {
       avcodec_flush_buffers(codec);
       pa_simple_flush(pulse, &pulse_error);
       heard_seek = seek_now;
+      skip_audio_until = milliseconds;
       if (still_paused) {
         continue;
       }
@@ -224,6 +226,7 @@ void play_soundtrack(std::string path, uint64_t request) {
       av_seek_frame(format, stream_index, 0, AVSEEK_FLAG_BACKWARD);
       avcodec_flush_buffers(codec);
       pa_simple_flush(pulse, &pulse_error);
+      skip_audio_until = -1;
       heard_loop = loop;
     }
     const int read = av_read_frame(format, packet);
@@ -240,6 +243,17 @@ void play_soundtrack(std::string path, uint64_t request) {
     }
     if (packet->stream_index == stream_index && avcodec_send_packet(codec, packet) == 0) {
       while (finished == false && avcodec_receive_frame(codec, frame) == 0 && soundtrack_current(path, request)) {
+        int64_t frame_milliseconds = -1;
+        if (frame->pts != AV_NOPTS_VALUE) {
+          frame_milliseconds = av_rescale_q(frame->pts, stream->time_base, AVRational{1, 1000});
+        }
+        if (skip_audio_until >= 0 && frame_milliseconds >= 0 && frame_milliseconds + 80 < skip_audio_until) {
+          av_frame_unref(frame);
+          continue;
+        }
+        if (skip_audio_until >= 0) {
+          skip_audio_until = -1;
+        }
         const int output_count = swr_get_out_samples(resampler, frame->nb_samples);
         if (output_count < 0 || output_count > 1000000 || frame->extended_data == nullptr) {
           av_frame_unref(frame);
@@ -301,7 +315,27 @@ struct ScalerSlot {
   int format = -1;
 };
 
+bool frame_waits_for_seek(int64_t milliseconds) {
+  SharedVideo& video = shared_video();
+  std::lock_guard<std::mutex> guard(video.mutex);
+  if (video.seek_pending) {
+    return true;
+  }
+  if (milliseconds >= 0 && video.seek_milliseconds > 80 && milliseconds + 80 < video.seek_milliseconds) {
+    return true;
+  }
+  return false;
+}
+
 bool publish_scaled(AVFrame* frame, ScalerSlot* scaler, int32_t long_side, FramePace* pace, uint64_t request) {
+  const int64_t stamp = frame->best_effort_timestamp != AV_NOPTS_VALUE ? frame->best_effort_timestamp : frame->pts;
+  int64_t shown_milliseconds = -1;
+  if (stamp != AV_NOPTS_VALUE) {
+    shown_milliseconds = av_rescale_q(stamp, pace->time_base, AVRational{1, 1000});
+  }
+  if (frame_waits_for_seek(shown_milliseconds)) {
+    return true;
+  }
   av_frame_apply_cropping(frame, 0);
   if (frame->width < 1 || frame->height < 1 || frame->data[0] == nullptr) {
     return false;
@@ -371,7 +405,7 @@ bool publish_scaled(AVFrame* frame, ScalerSlot* scaler, int32_t long_side, Frame
     const int64_t stamp = frame->best_effort_timestamp != AV_NOPTS_VALUE ? frame->best_effort_timestamp : frame->pts;
     if (stamp != AV_NOPTS_VALUE) {
       const int64_t millis = av_rescale_q(stamp, pace->time_base, AVRational{1, 1000});
-      if (millis >= 0) {
+      if (millis >= 0 && video.seek_pending == false && (video.seek_milliseconds <= 80 || millis + 80 >= video.seek_milliseconds)) {
         video.position_milliseconds = millis;
       }
     }
@@ -826,6 +860,9 @@ void video_seek_milliseconds(int32_t milliseconds) {
     }
     if (video.duration_milliseconds > 0 && target > video.duration_milliseconds) {
       target = video.duration_milliseconds;
+    }
+    if (target == video.seek_milliseconds && (video.seek_pending || video.position_milliseconds == target)) {
+      return;
     }
     video.seek_milliseconds = target;
     video.position_milliseconds = target;

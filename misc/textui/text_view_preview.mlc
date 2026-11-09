@@ -12,80 +12,10 @@ import { path_inside_jail } from './directory_jail'
 import { text_document_line, text_document_line_count } from './text_document'
 import { kind_is_text_view, text_view_open } from './text_view_open'
 import { text_grapheme_boundaries } from './text_graphemes'
+import { text_file_name } from './text_kind'
 
 extern fn is_directory(path: string) -> bool
   = "mlc::file::is_directory_value" from "mlc/io/file_abi.hpp" blocking
-
-fn ends_with(name: string, suffix: string) -> bool = do
-  const name_size = name.byte_size()
-  const suffix_size = suffix.byte_size()
-  if suffix_size == 0 || name_size < suffix_size then
-    return false
-  end
-  return name.byte_substring(name_size - suffix_size, suffix_size) == suffix
-end
-
-fn secret_file_name(name: string) -> bool = do
-  if name == "" || name == "." || name == ".." || name == ".env" then
-    return true
-  end
-  if name.byte_size() >= 5 && name.byte_substring(0, 5) == ".env." then
-    return true
-  end
-  if name.byte_size() >= 6 && name.byte_substring(0, 6) == "id_rsa" then
-    return true
-  end
-  if name.byte_size() >= 10 && name.byte_substring(0, 10) == "id_ed25519" then
-    return true
-  end
-  ends_with(name, ".pem") || ends_with(name, ".key") || ends_with(name, ".kdbx")
-end
-
-fn text_suffix(name: string) -> bool = do
-  let mut suffixes: [string] = []
-  suffixes.push(".txt")
-  suffixes.push(".TXT")
-  suffixes.push(".md")
-  suffixes.push(".MD")
-  suffixes.push(".mlc")
-  suffixes.push(".MLC")
-  suffixes.push(".json")
-  suffixes.push(".JSON")
-  suffixes.push(".rb")
-  suffixes.push(".js")
-  suffixes.push(".ts")
-  suffixes.push(".css")
-  suffixes.push(".html")
-  suffixes.push(".xml")
-  suffixes.push(".yml")
-  suffixes.push(".yaml")
-  suffixes.push(".toml")
-  suffixes.push(".csv")
-  suffixes.push(".log")
-  suffixes.push(".hpp")
-  suffixes.push(".h")
-  suffixes.push(".cpp")
-  suffixes.push(".c")
-  suffixes.push(".rs")
-  suffixes.push(".py")
-  suffixes.push(".sh")
-  suffixes.push(".markdown")
-  let mut index = 0
-  while index < suffixes.length() do
-    if ends_with(name, suffixes[index]) then
-      return true
-    end
-    index = index + 1
-  end
-  false
-end
-
-export fn text_file_name(name: string) -> bool = do
-  if secret_file_name(name) then
-    return false
-  end
-  text_suffix(name)
-end
 
 fn list_text_at(texts: [string], row: i32) -> string = do
   if row < 0 || row >= texts.length() then
