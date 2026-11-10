@@ -1,0 +1,218 @@
+import { syntax_language_javascript, syntax_scans_strings, syntax_uses_backtick, syntax_uses_triple_quote } from "./text_syntax_language"
+import {
+  SyntaxMark,
+  syntax_kind_number,
+  syntax_kind_string,
+  syntax_mark_plain,
+  syntax_mark_rejected,
+  syntax_mark_sticky,
+  syntax_quote_backtick,
+  syntax_quote_double,
+  syntax_quote_none,
+  syntax_quote_single
+} from "./text_syntax_kind"
+
+fn rejected() -> SyntaxMark = syntax_mark_rejected()
+
+fn plain_mark(finish: i32, kind: i32) -> SyntaxMark =
+  syntax_mark_plain(finish, kind)
+
+fn sticky_mark(finish: i32, kind: i32, mode_block: bool, mode_quote: i32) -> SyntaxMark =
+  syntax_mark_sticky(finish, kind, mode_block, mode_quote)
+
+export fn equals_at(text: string, index: i32, needle: string) -> bool = do
+  const size = needle.byte_size()
+  if index < 0 then
+    return false
+  end
+  if index + size > text.byte_size() then
+    return false
+  end
+  text.byte_substring(index, size) == needle
+end
+
+fn is_digit(character: string) -> bool = do
+  if character >= "0" && character <= "9" then
+    return true
+  end
+  false
+end
+
+export fn is_hex(character: string) -> bool = do
+  if is_digit(character) then
+    return true
+  end
+  if character >= "a" && character <= "f" then
+    return true
+  end
+  if character >= "A" && character <= "F" then
+    return true
+  end
+  false
+end
+
+export fn is_letter(character: string) -> bool = do
+  if character >= "a" && character <= "z" then
+    return true
+  end
+  if character >= "A" && character <= "Z" then
+    return true
+  end
+  character == "_"
+end
+
+export fn is_ident_start(character: string, language: i32) -> bool = do
+  if is_letter(character) then
+    return true
+  end
+  if language == syntax_language_javascript() && character == "$" then
+    return true
+  end
+  false
+end
+
+fn is_ident_continue(character: string) -> bool = do
+  if is_letter(character) then
+    return true
+  end
+  is_digit(character)
+end
+
+export fn find_closer(text: string, start: i32, closer: string) -> i32 = do
+  let mut index = start
+  const size = closer.byte_size()
+  while index < text.byte_size() do
+    if text.byte_at(index) == "\\" then
+      index = index + 2
+    else
+      if equals_at(text, index, closer) then
+        return index + size
+      end
+      index = index + 1
+    end
+  end
+  0 - 1
+end
+
+export fn read_identifier(text: string, start: i32) -> i32 = do
+  let mut index = start + 1
+  while index < text.byte_size() do
+    if is_ident_continue(text.byte_at(index)) == false then
+      return index
+    end
+    index = index + 1
+  end
+  index
+end
+
+fn finish_number(text: string, start: i32) -> i32 = do
+  let mut index = start
+  if equals_at(text, index, "0x") || equals_at(text, index, "0X") then
+    index = index + 2
+    while index < text.byte_size() do
+      if is_hex(text.byte_at(index)) == false then
+        return index
+      end
+      index = index + 1
+    end
+    return index
+  end
+  while index < text.byte_size() do
+    if is_digit(text.byte_at(index)) == false then
+      break
+    end
+    index = index + 1
+  end
+  if index < text.byte_size() then
+    if text.byte_at(index) == "." then
+      if index + 1 < text.byte_size() then
+        if is_digit(text.byte_at(index + 1)) then
+          index = index + 1
+          while index < text.byte_size() do
+            if is_digit(text.byte_at(index)) == false then
+              break
+            end
+            index = index + 1
+          end
+        end
+      end
+    end
+  end
+  if index < text.byte_size() then
+    const exponent_mark = text.byte_at(index)
+    if exponent_mark == "e" || exponent_mark == "E" then
+    let mut exponent = index + 1
+    if exponent < text.byte_size() then
+      const sign = text.byte_at(exponent)
+      if sign == "+" || sign == "-" then
+        exponent = exponent + 1
+      end
+    end
+    if exponent < text.byte_size() then
+      if is_digit(text.byte_at(exponent)) then
+        index = exponent
+        while index < text.byte_size() do
+          if is_digit(text.byte_at(index)) == false then
+            return index
+          end
+          index = index + 1
+        end
+      end
+    end
+    end
+  end
+  index
+end
+
+fn take_quoted(text: string, index: i32, opener_size: i32, closer: string, quote_mode: i32, continue_unclosed: bool) -> SyntaxMark = do
+  const found = find_closer(text, index + opener_size, closer)
+  if found < 0 then
+    let mut sticky = syntax_quote_none()
+    if continue_unclosed then
+      sticky = quote_mode
+    end
+    return sticky_mark(text.byte_size(), syntax_kind_string(), false, sticky)
+  end
+  plain_mark(found, syntax_kind_string())
+end
+
+export fn take_string(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if syntax_scans_strings(language) == false then
+    return rejected()
+  end
+  const character = text.byte_at(index)
+  if character == "\"" && syntax_uses_triple_quote(language) && equals_at(text, index, "\"\"\"") then
+    return take_quoted(text, index, 3, "\"\"\"", syntax_quote_double(), true)
+  end
+  if character == "'" && syntax_uses_triple_quote(language) && equals_at(text, index, "'''") then
+    return take_quoted(text, index, 3, "'''", syntax_quote_single(), true)
+  end
+  if character == "\"" then
+    return take_quoted(text, index, 1, "\"", syntax_quote_double(), false)
+  end
+  if character == "'" then
+    return take_quoted(text, index, 1, "'", syntax_quote_single(), false)
+  end
+  if character == "`" then
+    return take_quoted(text, index, 1, "`", syntax_quote_backtick(), syntax_uses_backtick(language))
+  end
+  rejected()
+end
+
+
+export fn take_number(text: string, index: i32) -> SyntaxMark = do
+  const character = text.byte_at(index)
+  if is_digit(character) == false then
+    if character != "." then
+      return rejected()
+    end
+    if index + 1 >= text.byte_size() || is_digit(text.byte_at(index + 1)) == false then
+      return rejected()
+    end
+  end
+  const finish = finish_number(text, index)
+  if finish <= index then
+    return rejected()
+  end
+  plain_mark(finish, syntax_kind_number())
+end

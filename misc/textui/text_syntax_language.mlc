@@ -1,0 +1,231 @@
+export fn syntax_language_plain() -> i32 = 0
+
+export fn syntax_language_c() -> i32 = 1
+
+export fn syntax_language_mlc() -> i32 = 2
+
+export fn syntax_language_javascript() -> i32 = 3
+
+export fn syntax_language_python() -> i32 = 4
+
+export fn syntax_language_ruby() -> i32 = 5
+
+export fn syntax_language_shell() -> i32 = 6
+
+export fn syntax_language_json() -> i32 = 7
+
+export fn syntax_language_html() -> i32 = 8
+
+export fn syntax_language_css() -> i32 = 9
+
+export fn syntax_language_go() -> i32 = 10
+
+export fn syntax_language_rust() -> i32 = 11
+
+export fn syntax_language_java() -> i32 = 12
+
+export fn syntax_comment_none() -> i32 = 0
+
+export fn syntax_comment_slash() -> i32 = 1
+
+export fn syntax_comment_hash() -> i32 = 2
+
+export fn syntax_comment_both() -> i32 = 3
+
+export fn syntax_comment_markup() -> i32 = 4
+
+export fn syntax_word_keyword() -> i32 = 1
+
+export fn syntax_word_type() -> i32 = 2
+
+fn name_ends_with(name: string, suffix: string) -> bool = do
+  if suffix.byte_size() == 0 || name.byte_size() < suffix.byte_size() then
+    return false
+  end
+  const tail = name.byte_substring(name.byte_size() - suffix.byte_size(), suffix.byte_size())
+  let mut folded = ""
+  let mut index = 0
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  const lower = "abcdefghijklmnopqrstuvwxyz"
+  while index < tail.byte_size() do
+    const byte = tail.byte_substring(index, 1)
+    const found = upper.index_of(byte)
+    if found < 0 then
+      folded = folded + byte
+    else
+      folded = folded + lower.byte_substring(found, 1)
+    end
+    index = index + 1
+  end
+  folded == suffix
+end
+
+fn file_name(path: string) -> string = do
+  let mut slash = 0 - 1
+  let mut index = 0
+  while index < path.byte_size() do
+    if path.byte_at(index) == "/" then
+      slash = index
+    end
+    index = index + 1
+  end
+  if slash < 0 then
+    return path
+  end
+  path.byte_substring(slash + 1, path.byte_size() - slash - 1)
+end
+
+export fn syntax_language_from_path(path: string) -> i32 = do
+  const name = file_name(path)
+  if name_ends_with(name, ".html") || name_ends_with(name, ".htm") || name_ends_with(name, ".xml") || name_ends_with(name, ".svg") then
+    return syntax_language_html()
+  end
+  if name_ends_with(name, ".css") || name_ends_with(name, ".scss") then
+    return syntax_language_css()
+  end
+  if name_ends_with(name, ".json") then
+    return syntax_language_json()
+  end
+  if name_ends_with(name, ".mlc") then
+    return syntax_language_mlc()
+  end
+  if name_ends_with(name, ".c") || name_ends_with(name, ".h") || name_ends_with(name, ".cc") || name_ends_with(name, ".cpp") || name_ends_with(name, ".cxx") || name_ends_with(name, ".hh") || name_ends_with(name, ".hpp") || name_ends_with(name, ".hxx") then
+    return syntax_language_c()
+  end
+  if name_ends_with(name, ".js") || name_ends_with(name, ".jsx") || name_ends_with(name, ".mjs") || name_ends_with(name, ".cjs") || name_ends_with(name, ".ts") || name_ends_with(name, ".tsx") || name_ends_with(name, ".mts") || name_ends_with(name, ".cts") then
+    return syntax_language_javascript()
+  end
+  if name_ends_with(name, ".py") then
+    return syntax_language_python()
+  end
+  if name_ends_with(name, ".rb") then
+    return syntax_language_ruby()
+  end
+  if name_ends_with(name, ".sh") || name_ends_with(name, ".bash") || name_ends_with(name, ".zsh") then
+    return syntax_language_shell()
+  end
+  if name_ends_with(name, ".go") then
+    return syntax_language_go()
+  end
+  if name_ends_with(name, ".rs") then
+    return syntax_language_rust()
+  end
+  if name_ends_with(name, ".java") then
+    return syntax_language_java()
+  end
+  syntax_language_plain()
+end
+
+export fn syntax_comment_family(language: i32) -> i32 = do
+  if language == syntax_language_plain() || language == syntax_language_c() || language == syntax_language_javascript() || language == syntax_language_css() || language == syntax_language_go() || language == syntax_language_rust() || language == syntax_language_java() then
+    return syntax_comment_slash()
+  end
+  if language == syntax_language_python() || language == syntax_language_ruby() || language == syntax_language_shell() then
+    return syntax_comment_hash()
+  end
+  if language == syntax_language_mlc() then
+    return syntax_comment_both()
+  end
+  if language == syntax_language_html() then
+    return syntax_comment_markup()
+  end
+  syntax_comment_none()
+end
+
+export fn syntax_scans_strings(language: i32) -> bool = do
+  if language == syntax_language_plain() then
+    return false
+  end
+  true
+end
+
+export fn syntax_uses_triple_quote(language: i32) -> bool =
+  language == syntax_language_python()
+
+export fn syntax_uses_backtick(language: i32) -> bool = do
+  if language == syntax_language_mlc() || language == syntax_language_javascript() || language == syntax_language_shell() then
+    return true
+  end
+  false
+end
+
+fn packed_has(packed: string, word: string) -> bool = do
+  if word == "" then
+    return false
+  end
+  const needle = " " + word + " "
+  const haystack = " " + packed + " "
+  if haystack.index_of(needle) < 0 then
+    return false
+  end
+  true
+end
+
+fn keyword_text(language: i32) -> string = do
+  if language == syntax_language_mlc() then
+    return "fn type let mut const return break continue if then else unless while for in do end match with import module from as extern extend where spawn move true false self trait impl"
+  end
+  if language == syntax_language_c() then
+    return "if else for while do switch case break continue return class struct enum union public private protected virtual const static inline namespace template typename using new delete try catch throw true false nullptr auto sizeof typedef extern friend operator this goto default override"
+  end
+  if language == syntax_language_javascript() then
+    return "function const let var if else return for while do switch case break continue new this class extends import export from async await true false null undefined typeof instanceof of in try catch finally throw default yield interface type enum public private protected implements package"
+  end
+  if language == syntax_language_python() then
+    return "def class if elif else while for in return yield import from as try except finally with pass break continue lambda True False None and or not is async await raise assert global nonlocal del"
+  end
+  if language == syntax_language_ruby() then
+    return "def class module if elsif else unless while until for do end begin rescue ensure return yield self true false nil require include attr and or not then when case in"
+  end
+  if language == syntax_language_shell() then
+    return "if then else elif fi for while do done case esac function return in local export readonly"
+  end
+  if language == syntax_language_json() then
+    return "true false null"
+  end
+  if language == syntax_language_go() then
+    return "func package import var const type struct interface if else for range return switch case default break continue go defer map chan select true false nil fallthrough"
+  end
+  if language == syntax_language_rust() then
+    return "fn let mut const struct enum impl trait type if else match loop while for in return use mod pub self super where async await move ref true false as dyn unsafe extern crate"
+  end
+  if language == syntax_language_java() then
+    return "if else for while do switch case break continue return class interface enum public private protected static final new try catch finally throw throws import package extends implements this super true false null instanceof abstract synchronized volatile transient native default assert"
+  end
+  ""
+end
+
+fn type_text(language: i32) -> string = do
+  if language == syntax_language_mlc() then
+    return "i32 i64 u32 u64 f32 f64 bool string unit"
+  end
+  if language == syntax_language_c() then
+    return "int void char bool float double long short signed unsigned size_t int32_t int64_t uint32_t uint64_t"
+  end
+  if language == syntax_language_javascript() then
+    return "string number boolean any void never unknown object"
+  end
+  if language == syntax_language_python() then
+    return "int str bool float list dict tuple set bytes object"
+  end
+  if language == syntax_language_go() then
+    return "int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 string bool byte rune error float32 float64 uintptr"
+  end
+  if language == syntax_language_rust() then
+    return "i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 isize usize f32 f64 bool str String char"
+  end
+  if language == syntax_language_java() then
+    return "int boolean char byte short long float double void String"
+  end
+  ""
+end
+
+export fn syntax_word_kind(language: i32, word: string) -> i32 = do
+  if packed_has(keyword_text(language), word) then
+    return syntax_word_keyword()
+  end
+  if packed_has(type_text(language), word) then
+    return syntax_word_type()
+  end
+  0
+end

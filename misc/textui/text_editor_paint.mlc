@@ -2,12 +2,14 @@ import { Rect, rect_contains, rect_is_empty, rect_new } from './geometry'
 import { Theme } from './theme'
 import { WidgetStore, widget_id_is_none } from './store'
 import { LayoutResult } from './layout_result'
-import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { DrawOp, FillRectOp } from './draw_op'
 import { UiInput } from './ui_input'
 import { UiState } from './ui_state'
 import { list_row_height, list_row_inset } from './widget_list'
 import { image_preview_file_pane } from './image_preview'
-import { text_document_line } from './text_document'
+import { text_document_line, text_document_line_count } from './text_document'
+import { paint_editor_line_number, paint_editor_whitespace, text_editor_text_x } from './text_editor_gutter'
+import { paint_editor_minimap } from './text_editor_minimap'
 import { text_line_index_of_identifier } from './text_line_index'
 import { text_grapheme_boundaries } from './text_graphemes'
 import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
@@ -15,6 +17,7 @@ import { text_view_line_selection } from './text_view_selection'
 import { text_view_visible_identifiers } from './text_view_state'
 import { scroll_bar_rect, scroll_thumb_rect } from './widget_scroll'
 import { text_editor_bar_visible, text_editor_content_height, text_editor_scroll_offset } from './text_editor_pointer'
+import { paint_editor_line_text } from './text_editor_highlight'
 import { TextEditor } from './text_editor'
 import { focus_is_text_field } from './list_marks'
 
@@ -74,30 +77,6 @@ export fn text_editor_prepare_input(
   }
 end
 
-fn clipped_line(text: string) -> string = do
-  const limit = 512
-  if text.byte_size() <= limit then
-    return text
-  end
-  let mut sample = text
-  if text.byte_size() > 768 then
-    sample = text.byte_substring(0, 768)
-  end
-  const bounds = text_grapheme_boundaries(sample)
-  let mut limit_byte = 0
-  let mut index = 0
-  while index < bounds.length() do
-    if bounds[index] <= limit && bounds[index] > limit_byte then
-      limit_byte = bounds[index]
-    end
-    index = index + 1
-  end
-  if limit_byte < 1 then
-    return ""
-  end
-  sample.byte_substring(0, limit_byte)
-end
-
 fn caret_x(editor: TextEditor) -> i32 = do
   const line_index = text_line_index_of_identifier(editor.document.line_index, editor.view.caret_line_identifier)
   if line_index < 0 then
@@ -128,7 +107,8 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
   let mut painted = operations
   painted.push(OpFillRect(FillRectOp { rect: band, color: theme.background }))
   painted.push(OpPushClip(band))
-  const origin_x = band.x + theme.padding
+  const line_count = text_document_line_count(editor.document)
+  const origin_x = text_editor_text_x(band.x, theme, line_count)
   const origin_y = band.y + theme.padding
   const identifiers = text_view_visible_identifiers(editor.view, editor.document)
   let mut index = 0
@@ -136,6 +116,8 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
     const line_index = text_line_index_of_identifier(editor.document.line_index, identifiers[index])
     if line_index >= 0 then
       const line = text_document_line(editor.document, line_index)
+      const row_y = origin_y + index * row_height
+      painted = paint_editor_line_number(painted, theme, band.x, row_y, line_index, line_count)
       const span = text_view_line_selection(editor.view, editor.document, line.line_identifier)
       const span_left = span.left - editor.view.horizontal_scroll
       const span_right = span.right - editor.view.horizontal_scroll
@@ -143,19 +125,23 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
         painted.push(OpFillRect(FillRectOp {
           rect: rect_new(
             origin_x + span_left,
-            origin_y + index * row_height,
+            row_y,
             span_right - span_left,
             row_height
           ),
           color: theme.selection_background
         }))
       end
-      painted.push(OpText(TextOp {
-        origin_x: origin_x,
-        origin_y: origin_y + index * row_height + list_row_inset(theme),
-        color: theme.foreground,
-        text: clipped_line(line.text)
-      }))
+      painted = paint_editor_line_text(
+        painted,
+        theme,
+        editor,
+        line,
+        line_index,
+        origin_x,
+        row_y + list_row_inset(theme)
+      )
+      painted = paint_editor_whitespace(painted, editor, line, origin_x, row_y, row_height)
     end
     index = index + 1
   end
@@ -175,6 +161,7 @@ export fn paint_text_editor(theme: Theme, store: WidgetStore, layout: LayoutResu
       color: theme.foreground
     }))
   end
+  painted = paint_editor_minimap(painted, theme, editor, band)
   if text_editor_bar_visible(editor) then
     painted.push(OpFillRect(FillRectOp {
       rect: scroll_bar_rect(theme, band),

@@ -1,0 +1,320 @@
+import { Rect, rect_is_empty, rect_new } from './geometry'
+import { ColorRgba, Theme, color_rgba_new } from './theme'
+import { DrawOp, FillRectOp, StrokeRectOp } from './draw_op'
+import { text_document_line, text_document_line_count } from './text_document'
+import { text_line_index_of_identifier } from './text_line_index'
+import { text_view_page_rows } from './text_view_state'
+import { text_highlight_mode_before, text_highlight_mode_block, text_highlight_mode_quote } from './text_highlight'
+import { text_syntax_line } from './text_syntax'
+import { TextSyntaxLine, TextSyntaxSpan } from './text_syntax_kind'
+import { syntax_color_for_kind } from './text_editor_highlight'
+import { TextEditor } from './text_editor'
+
+export fn text_editor_minimap_width() -> i32 = 48
+
+export fn text_editor_minimap_row_pixels() -> i32 = 2
+
+export fn minimap_viewport_color() -> ColorRgba =
+  color_rgba_new(0.75, 0.78, 0.82, 0.22)
+
+export fn text_editor_minimap_rect(theme: Theme, band: Rect) -> Rect = do
+  const width = text_editor_minimap_width()
+  const origin_x = band.x + band.width - theme.scrollbar_width - width
+  if origin_x < band.x + 40 then
+    return rect_new(0, 0, 0, 0)
+  end
+  if band.height < text_editor_minimap_row_pixels() then
+    return rect_new(0, 0, 0, 0)
+  end
+  rect_new(origin_x, band.y, width, band.height)
+end
+
+export fn text_editor_minimap_capacity(band_height: i32) -> i32 = do
+  if band_height < text_editor_minimap_row_pixels() then
+    return 1
+  end
+  const rows = band_height / text_editor_minimap_row_pixels()
+  if rows < 1 then
+    return 1
+  end
+  rows
+end
+
+fn editor_anchor_index(editor: TextEditor) -> i32 = do
+  const index = text_line_index_of_identifier(editor.document.line_index, editor.view.anchor_line_identifier)
+  if index < 0 then
+    return 0
+  end
+  index
+end
+
+export fn text_editor_minimap_first(editor: TextEditor, band_height: i32) -> i32 = do
+  const line_count = text_document_line_count(editor.document)
+  const capacity = text_editor_minimap_capacity(band_height)
+  if line_count <= capacity then
+    return 0
+  end
+  const page_rows = text_view_page_rows(editor.view)
+  let mut first_line = editor_anchor_index(editor)
+  if page_rows < capacity then
+    first_line = first_line - (capacity - page_rows) / 2
+  end
+  if first_line < 0 then
+    first_line = 0
+  end
+  let mut maximum_first = line_count - capacity
+  if maximum_first < 0 then
+    maximum_first = 0
+  end
+  if first_line > maximum_first then
+    first_line = maximum_first
+  end
+  first_line
+end
+
+export fn text_editor_minimap_last_line(editor: TextEditor, band_height: i32) -> i32 = do
+  const first_line = text_editor_minimap_first(editor, band_height)
+  let mut last_line = first_line + text_editor_minimap_capacity(band_height) - 1
+  const line_count = text_document_line_count(editor.document)
+  if last_line >= line_count then
+    last_line = line_count - 1
+  end
+  if last_line < 0 then
+    last_line = 0
+  end
+  last_line
+end
+
+export fn text_editor_minimap_line(editor: TextEditor, band: Rect, pointer_y: i32) -> i32 = do
+  const first_line = text_editor_minimap_first(editor, band.height)
+  let mut local_y = pointer_y - band.y
+  if local_y < 0 then
+    local_y = 0
+  end
+  if band.height > 0 then
+    if local_y >= band.height then
+      local_y = band.height - 1
+    end
+  end
+  let mut line_index = first_line
+  if text_editor_minimap_row_pixels() > 0 then
+    line_index = first_line + local_y / text_editor_minimap_row_pixels()
+  end
+  const line_count = text_document_line_count(editor.document)
+  if line_index >= line_count then
+    line_index = line_count - 1
+  end
+  if line_index < 0 then
+    line_index = 0
+  end
+  line_index
+end
+
+fn color_at_byte(theme: Theme, spans: [TextSyntaxSpan], byte_index: i32) -> ColorRgba = do
+  let mut index = 0
+  while index < spans.length() do
+    const span = spans[index]
+    if byte_index >= span.start_offset then
+      if byte_index < span.end_offset then
+        return syntax_color_for_kind(span.kind, theme)
+      end
+    end
+    index = index + 1
+  end
+  theme.foreground
+end
+
+fn column_advance(character: string) -> i32 = do
+  if character == "\t" then
+    return 2
+  end
+  1
+end
+
+fn is_minimap_gap(character: string) -> bool = do
+  if character == " " then
+    return true
+  end
+  character == "\t"
+end
+
+fn remembered_color(red: f64, green: f64, blue: f64) -> ColorRgba =
+  color_rgba_new(red, green, blue, 1.0)
+
+fn colors_differ(color: ColorRgba, red: f64, green: f64, blue: f64) -> bool = do
+  if color.red != red then
+    return true
+  end
+  if color.green != green then
+    return true
+  end
+  color.blue != blue
+end
+
+fn push_minimap_run(operations: [DrawOp], origin_x: i32, origin_y: i32, column: i32, width: i32, color: ColorRgba) -> [DrawOp] = do
+  if width < 1 then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp {
+    rect: rect_new(origin_x + column, origin_y, width, text_editor_minimap_row_pixels()),
+    color: color
+  }))
+  painted
+end
+
+fn minimap_sample(text: string, limit: i32) -> string = do
+  if limit < 1 then
+    return ""
+  end
+  if text.byte_size() <= limit then
+    return text
+  end
+  text.byte_substring(0, limit)
+end
+
+fn paint_minimap_columns(
+  operations: [DrawOp],
+  theme: Theme,
+  syntax: TextSyntaxLine,
+  text: string,
+  origin_x: i32,
+  origin_y: i32,
+  limit: i32
+) -> [DrawOp] = do
+  let mut painted = operations
+  let mut byte_index = 0
+  let mut column_index = 0
+  let mut open_column = 0 - 1
+  let mut open_red = 0.0
+  let mut open_green = 0.0
+  let mut open_blue = 0.0
+  while byte_index < text.byte_size() do
+    if column_index >= limit then
+      break
+    end
+    const character = text.byte_at(byte_index)
+    const step = column_advance(character)
+    if is_minimap_gap(character) then
+      if open_column >= 0 then
+        painted = push_minimap_run(painted, origin_x, origin_y, open_column, column_index - open_column, remembered_color(open_red, open_green, open_blue))
+        open_column = 0 - 1
+      end
+    else
+      const color = color_at_byte(theme, syntax.spans, byte_index)
+      if open_column < 0 then
+        open_column = column_index
+        open_red = color.red
+        open_green = color.green
+        open_blue = color.blue
+      else
+        if colors_differ(color, open_red, open_green, open_blue) then
+          painted = push_minimap_run(painted, origin_x, origin_y, open_column, column_index - open_column, remembered_color(open_red, open_green, open_blue))
+          open_column = column_index
+          open_red = color.red
+          open_green = color.green
+          open_blue = color.blue
+        end
+      end
+    end
+    let mut next_column = column_index + step
+    if next_column > limit then
+      next_column = limit
+    end
+    column_index = next_column
+    byte_index = byte_index + 1
+  end
+  if open_column >= 0 then
+    painted = push_minimap_run(painted, origin_x, origin_y, open_column, column_index - open_column, remembered_color(open_red, open_green, open_blue))
+  end
+  painted
+end
+
+fn paint_minimap_line(
+  operations: [DrawOp],
+  theme: Theme,
+  editor: TextEditor,
+  line_index: i32,
+  origin_x: i32,
+  origin_y: i32,
+  limit: i32
+) -> [DrawOp] = do
+  const line = text_document_line(editor.document, line_index)
+  const record = text_highlight_mode_before(editor.highlight, line_index)
+  let mut block_comment = false
+  let mut quote_mode = 0
+  if record.stored then
+    block_comment = text_highlight_mode_block(record.mode_out)
+    quote_mode = text_highlight_mode_quote(record.mode_out)
+  end
+  const sample = minimap_sample(line.text, limit + 32)
+  const syntax = text_syntax_line(sample, block_comment, quote_mode, editor.highlight.language)
+  paint_minimap_columns(operations, theme, syntax, sample, origin_x, origin_y, limit)
+end
+
+fn paint_minimap_overlay(operations: [DrawOp], theme: Theme, editor: TextEditor, band: Rect, area: Rect) -> [DrawOp] = do
+  const first_line = text_editor_minimap_first(editor, band.height)
+  let mut top_lines = editor_anchor_index(editor) - first_line
+  if top_lines < 0 then
+    top_lines = 0
+  end
+  let mut top = top_lines * text_editor_minimap_row_pixels()
+  let mut height = text_view_page_rows(editor.view) * text_editor_minimap_row_pixels()
+  if height < text_editor_minimap_row_pixels() then
+    height = text_editor_minimap_row_pixels()
+  end
+  if top >= area.height then
+    top = area.height - text_editor_minimap_row_pixels()
+  end
+  if top < 0 then
+    top = 0
+  end
+  if top + height > area.height then
+    height = area.height - top
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp {
+    rect: rect_new(area.x, area.y + top, area.width, height),
+    color: minimap_viewport_color()
+  }))
+  painted.push(OpStrokeRect(StrokeRectOp {
+    rect: rect_new(area.x, area.y + top, area.width, height),
+    color: theme.foreground,
+    line_width: 1
+  }))
+  painted
+end
+
+export fn paint_editor_minimap(operations: [DrawOp], theme: Theme, editor: TextEditor, band: Rect) -> [DrawOp] = do
+  const area = text_editor_minimap_rect(theme, band)
+  if rect_is_empty(area) then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp {
+    rect: area,
+    color: theme.scrollbar_track
+  }))
+  const first_line = text_editor_minimap_first(editor, band.height)
+  const line_count = text_document_line_count(editor.document)
+  const capacity = text_editor_minimap_capacity(band.height)
+  let mut line_index = first_line
+  let mut row_index = 0
+  while row_index < capacity do
+    if line_index >= line_count then
+      break
+    end
+    painted = paint_minimap_line(
+      painted,
+      theme,
+      editor,
+      line_index,
+      area.x,
+      band.y + row_index * text_editor_minimap_row_pixels(),
+      area.width
+    )
+    line_index = line_index + 1
+    row_index = row_index + 1
+  end
+  paint_minimap_overlay(painted, theme, editor, band, area)
+end

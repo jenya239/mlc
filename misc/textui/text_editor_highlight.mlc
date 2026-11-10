@@ -1,0 +1,194 @@
+import { ColorRgba, Theme, color_rgba_new } from './theme'
+import { DrawOp, TextOp } from './draw_op'
+import { TextLine } from './text_line'
+import { text_document_line, text_document_line_count } from './text_document'
+import { text_grapheme_boundaries } from './text_graphemes'
+import { text_line_index_of_identifier } from './text_line_index'
+import { text_highlight_feed, text_highlight_mode_before, text_highlight_mode_block, text_highlight_mode_quote } from './text_highlight'
+import { syntax_kind_comment, syntax_kind_keyword, syntax_kind_number, syntax_kind_string, syntax_kind_type } from './text_syntax_kind'
+import { text_syntax_line } from './text_syntax'
+import { text_view_entry_index, text_view_position_of_byte } from './text_view_input'
+import { text_view_visible_identifiers } from './text_view_state'
+import { TextEditor, text_editor_with_highlight } from './text_editor'
+
+fn visible_last_line(editor: TextEditor) -> i32 = do
+  const identifiers = text_view_visible_identifiers(editor.view, editor.document)
+  if identifiers.length() == 0 then
+    return 0 - 1
+  end
+  text_line_index_of_identifier(editor.document.line_index, identifiers[identifiers.length() - 1])
+end
+
+export fn text_editor_highlight_through(editor: TextEditor, last_index: i32) -> TextEditor = do
+  if editor.open == false then
+    return editor
+  end
+  let mut target = visible_last_line(editor)
+  if last_index > target then
+    target = last_index
+  end
+  if target < 0 then
+    return editor
+  end
+  let mut cursor = editor.highlight
+  let mut used = 0
+  const count = text_document_line_count(editor.document)
+  while cursor.watermark < count && cursor.watermark <= target && used < 128 do
+    const line = text_document_line(editor.document, cursor.watermark)
+    cursor = text_highlight_feed(cursor, line.text, count)
+    used = used + 1
+  end
+  if used == 0 then
+    return editor
+  end
+  text_editor_with_highlight(editor, cursor)
+end
+
+export fn text_editor_highlight_advance(editor: TextEditor) -> TextEditor =
+  text_editor_highlight_through(editor, visible_last_line(editor))
+
+fn clipped_text(text: string) -> string = do
+  const limit = 512
+  if text.byte_size() <= limit then
+    return text
+  end
+  let mut sample = text
+  if text.byte_size() > 768 then
+    sample = text.byte_substring(0, 768)
+  end
+  const bounds = text_grapheme_boundaries(sample)
+  let mut limit_byte = 0
+  let mut index = 0
+  while index < bounds.length() do
+    if bounds[index] <= limit && bounds[index] > limit_byte then
+      limit_byte = bounds[index]
+    end
+    index = index + 1
+  end
+  if limit_byte < 1 then
+    return ""
+  end
+  sample.byte_substring(0, limit_byte)
+end
+
+export fn syntax_comment_color() -> ColorRgba =
+  color_rgba_new(0.42, 0.72, 0.48, 1.0)
+
+export fn syntax_string_color() -> ColorRgba =
+  color_rgba_new(0.95, 0.74, 0.38, 1.0)
+
+export fn syntax_keyword_color() -> ColorRgba =
+  color_rgba_new(0.45, 0.75, 0.98, 1.0)
+
+export fn syntax_number_color() -> ColorRgba =
+  color_rgba_new(0.80, 0.58, 0.96, 1.0)
+
+export fn syntax_type_color() -> ColorRgba =
+  color_rgba_new(0.38, 0.84, 0.78, 1.0)
+
+export fn syntax_color_for_kind(kind: i32, theme: Theme) -> ColorRgba = do
+  if kind == syntax_kind_comment() then
+    return syntax_comment_color()
+  end
+  if kind == syntax_kind_string() then
+    return syntax_string_color()
+  end
+  if kind == syntax_kind_keyword() then
+    return syntax_keyword_color()
+  end
+  if kind == syntax_kind_number() then
+    return syntax_number_color()
+  end
+  if kind == syntax_kind_type() then
+    return syntax_type_color()
+  end
+  theme.foreground
+end
+
+fn paint_piece(
+  operations: [DrawOp],
+  origin_x: i32,
+  origin_y: i32,
+  color: ColorRgba,
+  text: string,
+  start_byte: i32,
+  finish_byte: i32,
+  boundaries: [i32],
+  positions: [i32],
+  horizontal_scroll: i32
+) -> [DrawOp] = do
+  if finish_byte <= start_byte then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpText(TextOp {
+    origin_x: origin_x + text_view_position_of_byte(boundaries, positions, start_byte) - horizontal_scroll,
+    origin_y: origin_y,
+    color: color,
+    text: text.byte_substring(start_byte, finish_byte - start_byte)
+  }))
+  painted
+end
+
+export fn paint_editor_line_text(
+  operations: [DrawOp],
+  theme: Theme,
+  editor: TextEditor,
+  line: TextLine,
+  line_index: i32,
+  origin_x: i32,
+  origin_y: i32
+) -> [DrawOp] = do
+  const visible = clipped_text(line.text)
+  if visible == "" then
+    return operations
+  end
+  const found = text_view_entry_index(editor.view, line.line_identifier, line.revision)
+  const mode = text_highlight_mode_before(editor.highlight, line_index)
+  if found < 0 || mode.stored == false then
+    let mut plain = operations
+    plain.push(OpText(TextOp {
+      origin_x: origin_x,
+      origin_y: origin_y,
+      color: theme.foreground,
+      text: visible
+    }))
+    return plain
+  end
+  const highlighted = text_syntax_line(
+    line.text,
+    text_highlight_mode_block(mode.mode_out),
+    text_highlight_mode_quote(mode.mode_out),
+    editor.highlight.language
+  )
+  const boundaries = text_grapheme_boundaries(line.text)
+  const positions = editor.view.shape_cache.entries[found].boundary_positions
+  const limit = visible.byte_size()
+  if highlighted.spans.length() == 0 then
+    return paint_piece(operations, origin_x, origin_y, theme.foreground, line.text, 0, limit, boundaries, positions, editor.view.horizontal_scroll)
+  end
+  let mut painted = operations
+  let mut byte = 0
+  let mut span_index = 0
+  while span_index < highlighted.spans.length() do
+    const span = highlighted.spans[span_index]
+    if span.start_offset >= limit then
+      span_index = highlighted.spans.length()
+    else
+      if span.start_offset > byte then
+        painted = paint_piece(painted, origin_x, origin_y, theme.foreground, line.text, byte, span.start_offset, boundaries, positions, editor.view.horizontal_scroll)
+      end
+      let mut finish = span.end_offset
+      if finish > limit then
+        finish = limit
+      end
+      painted = paint_piece(painted, origin_x, origin_y, syntax_color_for_kind(span.kind, theme), line.text, span.start_offset, finish, boundaries, positions, editor.view.horizontal_scroll)
+      byte = finish
+      span_index = span_index + 1
+    end
+  end
+  if byte < limit then
+    painted = paint_piece(painted, origin_x, origin_y, theme.foreground, line.text, byte, limit, boundaries, positions, editor.view.horizontal_scroll)
+  end
+  painted
+end

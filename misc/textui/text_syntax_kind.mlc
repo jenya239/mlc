@@ -1,0 +1,64 @@
+export fn syntax_kind_comment() -> i32 = 1
+
+export fn syntax_kind_string() -> i32 = 2
+
+export fn syntax_kind_keyword() -> i32 = 3
+
+export fn syntax_kind_number() -> i32 = 4
+
+export fn syntax_kind_type() -> i32 = 5
+
+export fn syntax_quote_none() -> i32 = 0
+
+export fn syntax_quote_double() -> i32 = 1
+
+export fn syntax_quote_single() -> i32 = 2
+
+export fn syntax_quote_backtick() -> i32 = 3
+
+export type TextSyntaxSpan = {
+  start_offset: i32,
+  end_offset: i32,
+  kind: i32
+}
+
+export type TextSyntaxLine = {
+  mode_block: bool,
+  mode_quote: i32,
+  spans: [TextSyntaxSpan]
+}
+
+export type SyntaxMark = {
+  finish: i32,
+  kind: i32,
+  accepted: bool,
+  mode_block: bool,
+  mode_quote: i32
+}
+
+export fn syntax_mark_rejected() -> SyntaxMark =
+  SyntaxMark {
+    finish: 0,
+    kind: 0,
+    accepted: false,
+    mode_block: false,
+    mode_quote: syntax_quote_none()
+  }
+
+export fn syntax_mark_plain(finish: i32, kind: i32) -> SyntaxMark =
+  SyntaxMark {
+    finish: finish,
+    kind: kind,
+    accepted: true,
+    mode_block: false,
+    mode_quote: syntax_quote_none()
+  }
+
+export fn syntax_mark_sticky(finish: i32, kind: i32, mode_block: bool, mode_quote: i32) -> SyntaxMark =
+  SyntaxMark {
+    finish: finish,
+    kind: kind,
+    accepted: true,
+    mode_block: mode_block,
+    mode_quote: mode_quote
+  }

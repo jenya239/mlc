@@ -5,6 +5,8 @@ import { text_line_index_of_identifier } from './text_line_index'
 import { TextViewState, text_view_frame, text_view_scroll_to_index, text_view_state_new, text_view_visible_identifiers } from './text_view_state'
 import { text_view_move_horizontal, text_view_move_vertical, text_view_press_at } from './text_view_input'
 import { text_view_backspace, text_view_break_line, text_view_delete_forward, text_view_insert_text } from './text_view_keys'
+import { TextHighlightCursor, text_highlight_cursor_new, text_highlight_cursor_with_language, text_highlight_invalidate } from './text_highlight'
+import { syntax_language_from_path } from './text_syntax_language'
 import { text_view_save } from './text_view_save'
 import { UiInput } from './ui_input'
 
@@ -15,7 +17,10 @@ export type TextEditor = {
   open: bool,
   revision: i32,
   gesture: i32,
-  edge_clock_ms: i32
+  edge_clock_ms: i32,
+  highlight: TextHighlightCursor,
+  minimap_grab_line: i32,
+  minimap_grab_y: i32
 }
 
 export fn text_editor_gesture_idle() -> i32 = 0
@@ -23,6 +28,8 @@ export fn text_editor_gesture_idle() -> i32 = 0
 export fn text_editor_gesture_selecting() -> i32 = 1
 
 export fn text_editor_gesture_scrolling() -> i32 = 2
+
+export fn text_editor_gesture_minimap() -> i32 = 3
 
 export type TextEditorChoice =
   EditorKeep
@@ -50,7 +57,10 @@ export fn text_editor_closed(font_path: string, pixel_size: i32) -> TextEditor =
     open: false,
     revision: 0,
     gesture: text_editor_gesture_idle(),
-    edge_clock_ms: 0
+    edge_clock_ms: 0,
+    highlight: text_highlight_cursor_new(),
+    minimap_grab_line: 0,
+    minimap_grab_y: 0
   }
 end
 
@@ -62,7 +72,10 @@ fn editor_with(editor: TextEditor, path: string, document: TextDocument, view: T
     open: open,
     revision: editor.revision + 1,
     gesture: editor.gesture,
-    edge_clock_ms: editor.edge_clock_ms
+    edge_clock_ms: editor.edge_clock_ms,
+    highlight: editor.highlight,
+    minimap_grab_line: editor.minimap_grab_line,
+    minimap_grab_y: editor.minimap_grab_y
   }
 
 export fn text_editor_with_gesture(editor: TextEditor, gesture: i32, edge_clock_ms: i32) -> TextEditor = do
@@ -76,9 +89,50 @@ export fn text_editor_with_gesture(editor: TextEditor, gesture: i32, edge_clock_
     open: editor.open,
     revision: editor.revision,
     gesture: gesture,
-    edge_clock_ms: edge_clock_ms
+    edge_clock_ms: edge_clock_ms,
+    highlight: editor.highlight,
+    minimap_grab_line: editor.minimap_grab_line,
+    minimap_grab_y: editor.minimap_grab_y
   }
 end
+
+export fn text_editor_with_minimap_grab(
+  editor: TextEditor,
+  gesture: i32,
+  edge_clock_ms: i32,
+  grab_line: i32,
+  grab_y: i32
+) -> TextEditor = do
+  if editor.gesture == gesture && editor.edge_clock_ms == edge_clock_ms && editor.minimap_grab_line == grab_line && editor.minimap_grab_y == grab_y then
+    return editor
+  end
+  TextEditor {
+    path: editor.path,
+    document: editor.document,
+    view: editor.view,
+    open: editor.open,
+    revision: editor.revision,
+    gesture: gesture,
+    edge_clock_ms: edge_clock_ms,
+    highlight: editor.highlight,
+    minimap_grab_line: grab_line,
+    minimap_grab_y: grab_y
+  }
+end
+
+export fn text_editor_with_highlight(editor: TextEditor, highlight: TextHighlightCursor) -> TextEditor =
+  TextEditor {
+    path: editor.path,
+    document: editor.document,
+    view: editor.view,
+    open: editor.open,
+    revision: editor.revision,
+    gesture: editor.gesture,
+    edge_clock_ms: editor.edge_clock_ms,
+    highlight: highlight,
+    minimap_grab_line: editor.minimap_grab_line,
+    minimap_grab_y: editor.minimap_grab_y
+  }
 
 export fn text_editor_close(editor: TextEditor) -> TextEditor = do
   if editor.open == false then
@@ -131,7 +185,10 @@ export fn text_editor_open_document(
   let mut view = text_view_frame(text_view_state_new(height, row_height, 0, font_path, pixel_size), document)
   const first = text_document_line(document, 0)
   view = text_view_press_at(view, document, KindTextView, first.line_identifier, 0, false)
-  text_editor_with_gesture(editor_with(editor, path, document, view, true), text_editor_gesture_idle(), 0)
+  text_editor_with_highlight(
+    text_editor_with_gesture(editor_with(editor, path, document, view, true), text_editor_gesture_idle(), 0),
+    text_highlight_cursor_with_language(syntax_language_from_path(path))
+  )
 end
 
 export fn text_editor_open_path(
@@ -212,6 +269,15 @@ export fn text_editor_scroll_to_line(editor: TextEditor, line_index: i32) -> Tex
   with_view(editor, framed)
 end
 
+fn accepted_edit(editor: TextEditor, document: TextDocument, view: TextViewState) -> TextEditor = do
+  let mut line_index = text_line_index_of_identifier(document.line_index, view.caret_line_identifier)
+  if line_index < 0 then
+    line_index = 0
+  end
+  const invalidated = text_editor_with_highlight(editor, text_highlight_invalidate(editor.highlight, line_index))
+  editor_with(invalidated, invalidated.path, document, view, true)
+end
+
 export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused: bool, overlay_open: bool, jail: string) -> TextEditor = do
   if editor.open == false || field_focused || overlay_open then
     return editor
@@ -223,19 +289,19 @@ export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused
   if input.backspace_pressed then
     const result = text_view_backspace(editor.view, editor.document)
     if result.accepted then
-      return editor_with(editor, editor.path, result.document, result.state, true)
+      return accepted_edit(editor, result.document, result.state)
     end
   end
   if input.enter_pressed then
     const result = text_view_break_line(editor.view, editor.document)
     if result.accepted then
-      return editor_with(editor, editor.path, result.document, result.state, true)
+      return accepted_edit(editor, result.document, result.state)
     end
   end
   if input.binding_key == "delete" then
     const result = text_view_delete_forward(editor.view, editor.document)
     if result.accepted then
-      return editor_with(editor, editor.path, result.document, result.state, true)
+      return accepted_edit(editor, result.document, result.state)
     end
   end
   let mut view = editor.view
@@ -270,13 +336,13 @@ export fn text_editor_on_input(editor: TextEditor, input: UiInput, field_focused
   if input.paste_text != "" then
     const result = text_view_insert_text(editor.view, editor.document, input.paste_text)
     if result.accepted then
-      return editor_with(editor, editor.path, result.document, result.state, true)
+      return accepted_edit(editor, result.document, result.state)
     end
   end
   if input.text != "" && input.enter_pressed == false && input.backspace_pressed == false then
     const result = text_view_insert_text(editor.view, editor.document, input.text)
     if result.accepted then
-      return editor_with(editor, editor.path, result.document, result.state, true)
+      return accepted_edit(editor, result.document, result.state)
     end
   end
   editor

@@ -1,6 +1,13 @@
+import { syntax_language_c } from './text_syntax_language'
+import { syntax_quote_backtick, syntax_quote_double, syntax_quote_none, syntax_quote_single } from './text_syntax_kind'
+import { text_syntax_line } from './text_syntax'
+
 export type TextHighlightMode =
   ModeCode
   | ModeBlock
+  | ModeQuoteDouble
+  | ModeQuoteSingle
+  | ModeQuoteBacktick
 
 export type TextHighlightSpan = {
   start_offset: i32,
@@ -21,13 +28,56 @@ export type TextHighlightCursor = {
   watermark: i32,
   mode: TextHighlightMode,
   records: [TextHighlightRecord],
-  scanned: i32
+  scanned: i32,
+  language: i32
 }
 
-fn mode_is_block(mode: TextHighlightMode) -> bool =
+fn mode_code(mode: TextHighlightMode) -> i32 =
   match mode
-    | ModeBlock => true
-    | ModeCode => false
+    | ModeCode => 0
+    | ModeBlock => 1
+    | ModeQuoteDouble => 2
+    | ModeQuoteSingle => 3
+    | ModeQuoteBacktick => 4
+
+fn mode_is_block(mode: TextHighlightMode) -> bool =
+  mode_code(mode) == 1
+
+fn mode_same(left: TextHighlightMode, right: TextHighlightMode) -> bool =
+  mode_code(left) == mode_code(right)
+
+export fn text_highlight_mode_block(mode: TextHighlightMode) -> bool =
+  mode_is_block(mode)
+
+export fn text_highlight_mode_quote(mode: TextHighlightMode) -> i32 = do
+  const code = mode_code(mode)
+  if code == 2 then
+    return syntax_quote_double()
+  end
+  if code == 3 then
+    return syntax_quote_single()
+  end
+  if code == 4 then
+    return syntax_quote_backtick()
+  end
+  syntax_quote_none()
+end
+
+fn mode_from_flags(block: bool, quote: i32) -> TextHighlightMode = do
+  if quote == syntax_quote_double() then
+    return ModeQuoteDouble
+  end
+  if quote == syntax_quote_single() then
+    return ModeQuoteSingle
+  end
+  if quote == syntax_quote_backtick() then
+    return ModeQuoteBacktick
+  end
+  if block then
+    return ModeBlock
+  end
+  ModeCode
+end
 
 fn empty_spans() -> [TextHighlightSpan] = do
   let mut spans: [TextHighlightSpan] = []
@@ -127,14 +177,80 @@ fn store_record(records: [TextHighlightRecord], index: i32, mode: TextHighlightM
   copy
 end
 
-export fn text_highlight_cursor_new() -> TextHighlightCursor = do
+export fn text_highlight_mode_before(cursor: TextHighlightCursor, line_index: i32) -> TextHighlightRecord = do
+  if line_index <= 0 then
+    return TextHighlightRecord { stored: true, mode_out: ModeCode }
+  end
+  record_at(cursor.records, line_index - 1)
+end
+
+export fn text_highlight_invalidate(cursor: TextHighlightCursor, line_index: i32) -> TextHighlightCursor = do
+  let mut watermark = line_index
+  if watermark < 0 then
+    watermark = 0
+  end
+  if cursor.watermark < watermark then
+    watermark = cursor.watermark
+  end
+  let mut records = empty_records()
+  let mut index = 0
+  while index < watermark && index < cursor.records.length() do
+    records.push(cursor.records[index])
+    index = index + 1
+  end
+  let mut mode = ModeCode
+  if watermark > 0 then
+    const previous = record_at(records, watermark - 1)
+    if previous.stored then
+      mode = previous.mode_out
+    end
+  end
+  TextHighlightCursor {
+    watermark: watermark,
+    mode: mode,
+    records: records,
+    scanned: cursor.scanned,
+    language: cursor.language
+  }
+end
+
+export fn text_highlight_feed(cursor: TextHighlightCursor, text: string, line_count: i32) -> TextHighlightCursor = do
+  if cursor.watermark >= line_count then
+    return cursor
+  end
+  const syntax = text_syntax_line(
+    text,
+    mode_is_block(cursor.mode),
+    text_highlight_mode_quote(cursor.mode),
+    cursor.language
+  )
+  const mode_out = mode_from_flags(syntax.mode_block, syntax.mode_quote)
+  const previous = record_at(cursor.records, cursor.watermark)
+  const records = store_record(cursor.records, cursor.watermark, mode_out)
+  let mut watermark = cursor.watermark + 1
+  if previous.stored && mode_same(previous.mode_out, mode_out) then
+    watermark = line_count
+  end
+  TextHighlightCursor {
+    watermark: watermark,
+    mode: mode_out,
+    records: records,
+    scanned: cursor.scanned + 1,
+    language: cursor.language
+  }
+end
+
+export fn text_highlight_cursor_with_language(language: i32) -> TextHighlightCursor =
   TextHighlightCursor {
     watermark: 0,
     mode: ModeCode,
     records: empty_records(),
-    scanned: 0
+    scanned: 0,
+    language: language
   }
-end
+
+export fn text_highlight_cursor_new() -> TextHighlightCursor =
+  text_highlight_cursor_with_language(syntax_language_c())
 
 export fn text_highlight_resume(cursor: TextHighlightCursor, line_index: i32) -> TextHighlightCursor = do
   let mut mode = ModeCode
@@ -145,7 +261,8 @@ export fn text_highlight_resume(cursor: TextHighlightCursor, line_index: i32) ->
     watermark: line_index,
     mode: mode,
     records: cursor.records,
-    scanned: cursor.scanned
+    scanned: cursor.scanned,
+    language: cursor.language
   }
 end
 
@@ -164,12 +281,13 @@ export fn text_highlight_ensure(cursor: TextHighlightCursor, lines: [string], bu
     records = store_record(records, index, highlighted.mode_out)
     scanned = scanned + 1
     used = used + 1
-    if previous.stored && mode_is_block(previous.mode_out) == mode_is_block(highlighted.mode_out) then
+    if previous.stored && mode_same(previous.mode_out, highlighted.mode_out) then
       return TextHighlightCursor {
         watermark: lines.length(),
         mode: highlighted.mode_out,
         records: records,
-        scanned: scanned
+        scanned: scanned,
+        language: cursor.language
       }
     end
     mode = highlighted.mode_out
@@ -179,6 +297,7 @@ export fn text_highlight_ensure(cursor: TextHighlightCursor, lines: [string], bu
     watermark: index,
     mode: mode,
     records: records,
-    scanned: scanned
+    scanned: scanned,
+    language: cursor.language
   }
 end

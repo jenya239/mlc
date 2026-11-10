@@ -1,0 +1,126 @@
+import { ColorRgba, Theme, color_rgba_new } from './theme'
+import { DrawOp, FillRectOp, TextOp } from './draw_op'
+import { rect_new } from './geometry'
+import { TextLine } from './text_line'
+import { text_grapheme_boundaries } from './text_graphemes'
+import { list_row_inset } from './widget_list'
+import { text_view_entry_index } from './text_view_input'
+import { TextEditor } from './text_editor'
+
+export fn editor_whitespace_color() -> ColorRgba =
+  color_rgba_new(0.70, 0.74, 0.78, 0.55)
+
+fn column_width(theme: Theme) -> i32 = do
+  let mut width = theme.font_size_pixels * 2 / 3
+  if width < 6 then
+    width = 6
+  end
+  width
+end
+
+fn digit_count(value: i32) -> i32 = do
+  let mut count = 1
+  let mut rest = value
+  if rest < 1 then
+    rest = 1
+  end
+  while rest >= 10 do
+    rest = rest / 10
+    count = count + 1
+  end
+  if count < 2 then
+    return 2
+  end
+  count
+end
+
+export fn text_editor_gutter_width(theme: Theme, line_count: i32) -> i32 =
+  column_width(theme) * digit_count(line_count) + theme.gap
+
+export fn text_editor_text_x(band_x: i32, theme: Theme, line_count: i32) -> i32 =
+  band_x + theme.padding + text_editor_gutter_width(theme, line_count)
+
+export fn paint_editor_line_number(
+  operations: [DrawOp],
+  theme: Theme,
+  band_x: i32,
+  row_y: i32,
+  line_index: i32,
+  line_count: i32
+) -> [DrawOp] = do
+  const label = (line_index + 1).to_string()
+  let mut missing = digit_count(line_count) - label.byte_size()
+  if missing < 0 then
+    missing = 0
+  end
+  let mut painted = operations
+  painted.push(OpText(TextOp {
+    origin_x: band_x + theme.padding + missing * column_width(theme),
+    origin_y: row_y + list_row_inset(theme),
+    color: theme.muted,
+    text: label
+  }))
+  painted
+end
+
+fn paint_space(operations: [DrawOp], left: i32, top: i32, width: i32, row_height: i32) -> [DrawOp] = do
+  if width < 2 then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp {
+    rect: rect_new(left + width / 2 - 1, top + row_height / 2 - 1, 2, 2),
+    color: editor_whitespace_color()
+  }))
+  painted
+end
+
+fn paint_tab(operations: [DrawOp], left: i32, top: i32, width: i32, row_height: i32) -> [DrawOp] = do
+  if width < 4 then
+    return operations
+  end
+  let mut painted = operations
+  painted.push(OpFillRect(FillRectOp {
+    rect: rect_new(left + 1, top + row_height / 2, width - 2, 1),
+    color: editor_whitespace_color()
+  }))
+  painted
+end
+
+export fn paint_editor_whitespace(
+  operations: [DrawOp],
+  editor: TextEditor,
+  line: TextLine,
+  text_x: i32,
+  row_y: i32,
+  row_height: i32
+) -> [DrawOp] = do
+  const found = text_view_entry_index(editor.view, line.line_identifier, line.revision)
+  if found < 0 then
+    return operations
+  end
+  const entry = editor.view.shape_cache.entries[found]
+  const boundaries = text_grapheme_boundaries(line.text)
+  const positions = entry.boundary_positions
+  let mut painted = operations
+  let mut index = 0
+  while index + 1 < boundaries.length() do
+    if index + 1 < positions.length() then
+      const start = boundaries[index]
+      const finish = boundaries[index + 1]
+      if finish == start + 1 && start < entry.shaped_byte_count then
+        const left = text_x + positions[index] - editor.view.horizontal_scroll
+        const right = text_x + positions[index + 1] - editor.view.horizontal_scroll
+        const character = line.text.byte_at(start)
+        if character == " " then
+          painted = paint_space(painted, left, row_y, right - left, row_height)
+        end
+        if character == "\t" then
+          painted = paint_tab(painted, left, row_y, right - left, row_height)
+        end
+      end
+    end
+    index = index + 1
+  end
+  painted
+end

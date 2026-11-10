@@ -1,7 +1,7 @@
 import { text_document_from_bytes, text_document_line, text_document_line_count, text_document_to_bytes } from '../text_document'
 import { text_line_index_of_identifier } from '../text_line_index'
 import { rect_new } from '../geometry'
-import { theme_default } from '../theme'
+import { Theme, theme_default } from '../theme'
 import {
   text_editor_choice,
   text_editor_closed,
@@ -11,8 +11,12 @@ import {
   text_editor_opens
 } from '../text_editor'
 import { text_editor_bar_visible, text_editor_pointer } from '../text_editor_pointer'
+import { editor_whitespace_color, paint_editor_line_number, paint_editor_whitespace, text_editor_gutter_width, text_editor_text_x } from '../text_editor_gutter'
+import { paint_editor_line_text, syntax_comment_color, text_editor_highlight_advance } from '../text_editor_highlight'
+import { text_highlight_line, text_highlight_mode_before } from '../text_highlight'
 import { text_view_selection_spans } from '../text_view_selection'
 import { text_view_maximum_anchor } from '../text_view_state'
+import { DrawOp } from '../draw_op'
 import { UiInput } from '../ui_input'
 
 fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -82,6 +86,74 @@ fn repeated_lines(count: i32) -> string = do
     index = index + 1
   end
   text
+end
+
+fn fill_matches(operations: [DrawOp], width: i32, height: i32, alpha: f64) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.rect.width == width && data.rect.height == height && data.color.alpha == alpha
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn fill_bar(operations: [DrawOp], alpha: f64) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.rect.height == 1 && data.rect.width > 2 && data.color.alpha == alpha
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn text_matches(operations: [DrawOp], text: string, red: f64) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(data) => data.text == text && data.color.red == red
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn comment_painted(operations: [DrawOp], theme: Theme) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(text) => text.text.index_of("//") == 0 && text.color.red == syntax_comment_color().red
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
 end
 
 fn main() -> i32 = do
@@ -193,7 +265,7 @@ fn main() -> i32 = do
     font_path(),
     16
   )
-  const origin_x = select_band.x + theme.padding
+  const origin_x = text_editor_text_x(select_band.x, theme, text_document_line_count(source.document))
   const origin_y = select_band.y + theme.padding
   const pressed = text_editor_pointer(source, select_band, theme, 16, pointer_input(origin_x, origin_y, true, true, false))
   if pressed.view.caret_byte != 0 || pressed.view.bound_byte != 0 then
@@ -238,6 +310,78 @@ fn main() -> i32 = do
   end
   if text_view_selection_spans(shifted.view, shifted.document).length() != 1 then
     return 26
+  end
+  const comment_editor = text_editor_highlight_advance(text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "",
+    text_document_from_bytes("alpha // note"),
+    64,
+    16,
+    font_path(),
+    16
+  ))
+  const comment_line = text_document_line(comment_editor.document, 0)
+  const comment_mode = text_highlight_mode_before(comment_editor.highlight, 0)
+  const comment_spans = text_highlight_line(comment_line.text, comment_mode.mode_out)
+  if comment_mode.stored == false || comment_spans.spans.length() != 1 || comment_spans.spans[0].start_offset != 6 then
+    return 27
+  end
+  let mut comment_operations: [DrawOp] = []
+  comment_operations = paint_editor_line_text(comment_operations, theme, comment_editor, comment_line, 0, 0, 0)
+  if comment_painted(comment_operations, theme) == false then
+    return 28
+  end
+  const block_editor = text_editor_highlight_advance(text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "",
+    text_document_from_bytes("/*\nstill\n*/\ncode"),
+    80,
+    16,
+    font_path(),
+    16
+  ))
+  const block_inside = text_highlight_line(
+    text_document_line(block_editor.document, 1).text,
+    text_highlight_mode_before(block_editor.highlight, 1).mode_out
+  )
+  const trailing_code = text_highlight_line(
+    text_document_line(block_editor.document, 3).text,
+    text_highlight_mode_before(block_editor.highlight, 3).mode_out
+  )
+  if text_highlight_mode_before(block_editor.highlight, 1).stored == false || block_inside.spans.length() != 1 then
+    return 29
+  end
+  if trailing_code.spans.length() != 0 then
+    return 30
+  end
+  const edited = text_editor_on_input(comment_editor, input_with("Z", "", false, false), false, false, "")
+  if edited.highlight.watermark != 0 then
+    return 31
+  end
+  if text_editor_gutter_width(theme, 100) <= text_editor_gutter_width(theme, 9) then
+    return 32
+  end
+  const spaced = text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "spaced.txt",
+    text_document_from_bytes("a b\n\t"),
+    64,
+    16,
+    font_path(),
+    16
+  )
+  let mut marks: [DrawOp] = []
+  marks = paint_editor_whitespace(marks, spaced, text_document_line(spaced.document, 0), 0, 0, 16)
+  marks = paint_editor_whitespace(marks, spaced, text_document_line(spaced.document, 1), 0, 16, 16)
+  marks = paint_editor_line_number(marks, theme, 0, 0, 0, 2)
+  if fill_matches(marks, 2, 2, editor_whitespace_color().alpha) == false then
+    return 33
+  end
+  if fill_bar(marks, editor_whitespace_color().alpha) == false then
+    return 34
+  end
+  if text_matches(marks, "1", theme.muted.red) == false then
+    return 35
   end
   0
 end

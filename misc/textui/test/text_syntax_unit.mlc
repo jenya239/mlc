@@ -1,0 +1,188 @@
+import { text_document_from_bytes, text_document_line } from '../text_document'
+import { DrawOp } from '../draw_op'
+import { theme_default } from '../theme'
+import { text_editor_closed, text_editor_open_document } from '../text_editor'
+import { paint_editor_line_text, syntax_comment_color, syntax_keyword_color, syntax_number_color, syntax_type_color, text_editor_highlight_advance } from '../text_editor_highlight'
+import { text_syntax_line } from '../text_syntax'
+import {
+  syntax_kind_comment,
+  syntax_kind_keyword,
+  syntax_kind_number,
+  syntax_kind_string,
+  syntax_kind_type,
+  syntax_quote_double,
+  syntax_quote_none
+} from '../text_syntax_kind'
+import {
+  syntax_language_c,
+  syntax_language_from_path,
+  syntax_language_html,
+  syntax_language_json,
+  syntax_language_mlc,
+  syntax_language_plain,
+  syntax_language_python
+} from '../text_syntax_language'
+
+fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+fn covers(source: string, line_text: string, piece: string, kind: i32, language: i32) -> bool = do
+  const start = source.index_of(piece)
+  if start < 0 then
+    return false
+  end
+  const line = text_syntax_line(line_text, false, syntax_quote_none(), language)
+  let mut index = 0
+  while index < line.spans.length() do
+    const span = line.spans[index]
+    if span.start_offset == start && span.kind == kind then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn has_kind(source: string, kind: i32, language: i32) -> bool = do
+  const line = text_syntax_line(source, false, syntax_quote_none(), language)
+  let mut index = 0
+  while index < line.spans.length() do
+    if line.spans[index].kind == kind then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn line_has(line_block: bool, line_text: string, kind: i32, language: i32) -> bool = do
+  const line = text_syntax_line(line_text, line_block, syntax_quote_none(), language)
+  let mut index = 0
+  while index < line.spans.length() do
+    if line.spans[index].kind == kind then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn painted(operations: [DrawOp], text: string, red: f64) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpText(operation) => operation.text == text && operation.color.red == red
+      | OpFillRect(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  if syntax_language_from_path("notes/sample.mlc") != syntax_language_mlc() then
+    return 1
+  end
+  if syntax_language_from_path("Dir/Widget.CPP") != syntax_language_c() then
+    return 2
+  end
+  if syntax_language_from_path("page.html") != syntax_language_html() then
+    return 3
+  end
+  if syntax_language_from_path("readme") != syntax_language_plain() then
+    return 4
+  end
+  if syntax_language_from_path("File.H") != syntax_language_c() then
+    return 5
+  end
+  const sample = "fn answer() -> i32 = 1 // note"
+  if covers(sample, sample, "fn", syntax_kind_keyword(), syntax_language_mlc()) == false then
+    return 6
+  end
+  if covers(sample, sample, "i32", syntax_kind_type(), syntax_language_mlc()) == false then
+    return 7
+  end
+  if covers(sample, sample, "1", syntax_kind_number(), syntax_language_mlc()) == false then
+    return 8
+  end
+  if covers(sample, sample, "// note", syntax_kind_comment(), syntax_language_mlc()) == false then
+    return 9
+  end
+  const hidden = "let name = \"// not\""
+  if covers(hidden, hidden, "\"// not\"", syntax_kind_string(), syntax_language_mlc()) == false then
+    return 10
+  end
+  if has_kind(hidden, syntax_kind_comment(), syntax_language_mlc()) then
+    return 11
+  end
+  const python = "def run(): # note"
+  if covers(python, python, "def", syntax_kind_keyword(), syntax_language_python()) == false then
+    return 12
+  end
+  if covers(python, python, "# note", syntax_kind_comment(), syntax_language_python()) == false then
+    return 13
+  end
+  const json = "true // no"
+  if covers(json, json, "true", syntax_kind_keyword(), syntax_language_json()) == false then
+    return 14
+  end
+  if has_kind(json, syntax_kind_comment(), syntax_language_json()) then
+    return 15
+  end
+  const markup = "<!-- note --><div>"
+  if covers(markup, markup, "<!-- note -->", syntax_kind_comment(), syntax_language_html()) == false then
+    return 16
+  end
+  if covers(markup, markup, "<div", syntax_kind_keyword(), syntax_language_html()) == false then
+    return 17
+  end
+  const header = "#include <stdio.h>"
+  if covers(header, header, "#include", syntax_kind_keyword(), syntax_language_c()) == false then
+    return 18
+  end
+  const continued = text_syntax_line("still", true, syntax_quote_none(), syntax_language_c())
+  if continued.mode_block == false || continued.spans.length() != 1 || continued.spans[0].kind != syntax_kind_comment() then
+    return 19
+  end
+  const closed = text_syntax_line("*/ int", true, syntax_quote_none(), syntax_language_c())
+  if closed.mode_block || line_has(true, "*/ int", syntax_kind_type(), syntax_language_c()) == false then
+    return 20
+  end
+  const opened_quote = text_syntax_line("\"\"\"hello", false, syntax_quote_none(), syntax_language_python())
+  if opened_quote.mode_quote != syntax_quote_double() then
+    return 21
+  end
+  const closed_quote = text_syntax_line("still\"\"\"", false, syntax_quote_double(), syntax_language_python())
+  if closed_quote.mode_quote != syntax_quote_none() then
+    return 22
+  end
+  const theme = theme_default()
+  const editor = text_editor_highlight_advance(text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "widget.mlc",
+    text_document_from_bytes(sample),
+    64,
+    16,
+    font_path(),
+    16
+  ))
+  let mut operations: [DrawOp] = []
+  operations = paint_editor_line_text(operations, theme, editor, text_document_line(editor.document, 0), 0, 0, 0)
+  if painted(operations, "fn", syntax_keyword_color().red) == false then
+    return 23
+  end
+  if painted(operations, "i32", syntax_type_color().red) == false then
+    return 24
+  end
+  if painted(operations, "1", syntax_number_color().red) == false then
+    return 25
+  end
+  if painted(operations, "// note", syntax_comment_color().red) == false then
+    return 26
+  end
+  0
+end

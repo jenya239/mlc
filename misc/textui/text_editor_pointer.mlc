@@ -1,7 +1,10 @@
 import { Rect, rect_contains, rect_is_empty } from './geometry'
 import { Theme } from './theme'
 import { UiInput } from './ui_input'
+import { text_document_line_count } from './text_document'
 import { text_line_index_of_identifier } from './text_line_index'
+import { text_editor_text_x } from './text_editor_gutter'
+import { text_editor_minimap_line, text_editor_minimap_rect, text_editor_minimap_row_pixels } from './text_editor_minimap'
 import { text_view_frame, text_view_maximum_anchor, text_view_with_viewport } from './text_view_state'
 import {
   scroll_bar_rect,
@@ -11,11 +14,13 @@ import {
 import {
   TextEditor,
   text_editor_gesture_idle,
+  text_editor_gesture_minimap,
   text_editor_gesture_scrolling,
   text_editor_gesture_selecting,
   text_editor_place,
   text_editor_scroll_to_line,
-  text_editor_with_gesture
+  text_editor_with_gesture,
+  text_editor_with_minimap_grab
 } from './text_editor'
 
 export fn text_editor_content_height(editor: TextEditor) -> i32 = do
@@ -51,7 +56,10 @@ fn fitted(editor: TextEditor, viewport_height: i32) -> TextEditor = do
     open: editor.open,
     revision: editor.revision + 1,
     gesture: editor.gesture,
-    edge_clock_ms: editor.edge_clock_ms
+    edge_clock_ms: editor.edge_clock_ms,
+    highlight: editor.highlight,
+    minimap_grab_line: editor.minimap_grab_line,
+    minimap_grab_y: editor.minimap_grab_y
   }
 end
 
@@ -108,7 +116,24 @@ export fn text_editor_pointer(
     current = text_editor_scroll_to_line(current, line_for_pointer(current, band, input.mouse_y))
     return text_editor_with_gesture(current, text_editor_gesture_scrolling(), current.edge_clock_ms)
   end
-  const origin_x = band.x + theme.padding
+  const on_minimap = rect_contains(text_editor_minimap_rect(theme, band), input.mouse_x, input.mouse_y)
+  if current.gesture == text_editor_gesture_minimap() || (input.left_pressed && on_minimap) then
+    let mut line_index = current.minimap_grab_line
+    let mut grab_line = current.minimap_grab_line
+    let mut grab_y = current.minimap_grab_y
+    if input.left_pressed || current.gesture != text_editor_gesture_minimap() then
+      line_index = text_editor_minimap_line(current, band, input.mouse_y)
+      grab_line = line_index
+      grab_y = input.mouse_y
+    else
+      if text_editor_minimap_row_pixels() > 0 then
+        line_index = grab_line + (input.mouse_y - grab_y) / text_editor_minimap_row_pixels()
+      end
+    end
+    current = text_editor_scroll_to_line(current, line_index)
+    return text_editor_with_minimap_grab(current, text_editor_gesture_minimap(), current.edge_clock_ms, grab_line, grab_y)
+  end
+  const origin_x = text_editor_text_x(band.x, theme, text_document_line_count(current.document))
   const origin_y = band.y + theme.padding
   if input.left_pressed && rect_contains(band, input.mouse_x, input.mouse_y) then
     current = text_editor_place(current, origin_x, origin_y, row_height, input.mouse_x, input.mouse_y, input.shift_down)

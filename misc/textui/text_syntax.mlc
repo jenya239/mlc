@@ -1,0 +1,331 @@
+import {
+  syntax_comment_both,
+  syntax_comment_family,
+  syntax_comment_hash,
+  syntax_comment_markup,
+  syntax_comment_slash,
+  syntax_language_c,
+  syntax_language_css,
+  syntax_language_python,
+  syntax_language_ruby,
+  syntax_language_shell,
+  syntax_word_keyword,
+  syntax_word_kind,
+  syntax_word_type
+} from "./text_syntax_language"
+import {
+  SyntaxMark,
+  TextSyntaxLine,
+  TextSyntaxSpan,
+  syntax_kind_comment,
+  syntax_kind_keyword,
+  syntax_kind_number,
+  syntax_kind_type,
+  syntax_mark_plain,
+  syntax_mark_rejected,
+  syntax_mark_sticky,
+  syntax_quote_none
+} from "./text_syntax_kind"
+import {
+  equals_at,
+  find_closer,
+  is_hex,
+  is_ident_start,
+  is_letter,
+  read_identifier,
+  take_number,
+  take_string
+} from "./text_syntax_text"
+
+fn rejected() -> SyntaxMark = syntax_mark_rejected()
+
+fn plain_mark(finish: i32, kind: i32) -> SyntaxMark =
+  syntax_mark_plain(finish, kind)
+
+fn sticky_mark(finish: i32, kind: i32, mode_block: bool, mode_quote: i32) -> SyntaxMark =
+  syntax_mark_sticky(finish, kind, mode_block, mode_quote)
+
+fn empty_spans() -> [TextSyntaxSpan] = do
+  let mut spans: [TextSyntaxSpan] = []
+  spans
+end
+
+fn push_span(spans: [TextSyntaxSpan], start_offset: i32, end_offset: i32, kind: i32) -> [TextSyntaxSpan] = do
+  if kind == 0 || end_offset <= start_offset then
+    return spans
+  end
+  let mut copy = spans
+  copy.push(TextSyntaxSpan { start_offset: start_offset, end_offset: end_offset, kind: kind })
+  copy
+end
+
+fn slash_family(language: i32) -> bool = do
+  const family = syntax_comment_family(language)
+  if family == syntax_comment_slash() || family == syntax_comment_both() then
+    return true
+  end
+  false
+end
+
+fn hash_family(language: i32) -> bool = do
+  const family = syntax_comment_family(language)
+  if family == syntax_comment_hash() || family == syntax_comment_both() then
+    return true
+  end
+  false
+end
+
+fn take_hash_comment(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if hash_family(language) == false || text.byte_at(index) != "#" then
+    return rejected()
+  end
+  plain_mark(text.byte_size(), syntax_kind_comment())
+end
+
+fn take_slash_comment(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if slash_family(language) == false || text.byte_at(index) != "/" then
+    return rejected()
+  end
+  if equals_at(text, index, "//") then
+    return plain_mark(text.byte_size(), syntax_kind_comment())
+  end
+  if equals_at(text, index, "/*") == false then
+    return rejected()
+  end
+  const found = find_closer(text, index + 2, "*/")
+  if found < 0 then
+    return sticky_mark(text.byte_size(), syntax_kind_comment(), true, syntax_quote_none())
+  end
+  plain_mark(found, syntax_kind_comment())
+end
+
+fn take_markup(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if syntax_comment_family(language) != syntax_comment_markup() || text.byte_at(index) != "<" then
+    return rejected()
+  end
+  if equals_at(text, index, "<!--") then
+    const found = find_closer(text, index + 4, "-->")
+    if found < 0 then
+      return sticky_mark(text.byte_size(), syntax_kind_comment(), true, syntax_quote_none())
+    end
+    return plain_mark(found, syntax_kind_comment())
+  end
+  let mut cursor = index + 1
+  if cursor < text.byte_size() && text.byte_at(cursor) == "/" then
+    cursor = cursor + 1
+  end
+  if cursor < text.byte_size() && text.byte_at(cursor) == "!" then
+    cursor = cursor + 1
+  end
+  if cursor >= text.byte_size() || is_letter(text.byte_at(cursor)) == false then
+    return rejected()
+  end
+  plain_mark(read_identifier(text, cursor), syntax_kind_keyword())
+end
+
+fn take_directive(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if language != syntax_language_c() || text.byte_at(index) != "#" then
+    return rejected()
+  end
+  let mut cursor = index + 1
+  while cursor < text.byte_size() do
+    const character = text.byte_at(cursor)
+    if character != " " && character != "\t" then
+      break
+    end
+    cursor = cursor + 1
+  end
+  if cursor >= text.byte_size() || is_letter(text.byte_at(cursor)) == false then
+    return rejected()
+  end
+  plain_mark(read_identifier(text, cursor), syntax_kind_keyword())
+end
+
+fn take_hex_color(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if language != syntax_language_css() || text.byte_at(index) != "#" then
+    return rejected()
+  end
+  if index + 1 >= text.byte_size() || is_hex(text.byte_at(index + 1)) == false then
+    return rejected()
+  end
+  let mut cursor = index + 1
+  while cursor < text.byte_size() do
+    if is_hex(text.byte_at(cursor)) == false then
+      return plain_mark(cursor, syntax_kind_number())
+    end
+    cursor = cursor + 1
+  end
+  plain_mark(cursor, syntax_kind_number())
+end
+
+fn take_at_word(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if text.byte_at(index) != "@" then
+    return rejected()
+  end
+  if language != syntax_language_css() && language != syntax_language_python() then
+    return rejected()
+  end
+  if index + 1 >= text.byte_size() || is_letter(text.byte_at(index + 1)) == false then
+    return rejected()
+  end
+  plain_mark(read_identifier(text, index + 1), syntax_kind_keyword())
+end
+
+fn take_ruby_field(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if language != syntax_language_ruby() || text.byte_at(index) != "@" then
+    return rejected()
+  end
+  let mut cursor = index + 1
+  if cursor < text.byte_size() && text.byte_at(cursor) == "@" then
+    cursor = cursor + 1
+  end
+  if cursor >= text.byte_size() || is_letter(text.byte_at(cursor)) == false then
+    return rejected()
+  end
+  plain_mark(read_identifier(text, cursor), syntax_kind_type())
+end
+
+fn take_shell_variable(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if language != syntax_language_shell() || text.byte_at(index) != "$" then
+    return rejected()
+  end
+  if equals_at(text, index, "${") then
+    const found = find_closer(text, index + 2, "}")
+    if found < 0 then
+      return plain_mark(text.byte_size(), syntax_kind_type())
+    end
+    return plain_mark(found, syntax_kind_type())
+  end
+  if index + 1 >= text.byte_size() || is_letter(text.byte_at(index + 1)) == false then
+    return rejected()
+  end
+  plain_mark(read_identifier(text, index + 1), syntax_kind_type())
+end
+
+
+fn take_identifier(text: string, index: i32, language: i32) -> SyntaxMark = do
+  if is_ident_start(text.byte_at(index), language) == false then
+    return rejected()
+  end
+  const finish = read_identifier(text, index)
+  const word = text.byte_substring(index, finish - index)
+  const word_kind = syntax_word_kind(language, word)
+  if word_kind == syntax_word_keyword() then
+    return plain_mark(finish, syntax_kind_keyword())
+  end
+  if word_kind == syntax_word_type() then
+    return plain_mark(finish, syntax_kind_type())
+  end
+  plain_mark(finish, 0)
+end
+
+fn next_mark(text: string, index: i32, language: i32) -> SyntaxMark = do
+  const quoted = take_string(text, index, language)
+  if quoted.accepted then
+    return quoted
+  end
+  const hashed = take_hash_comment(text, index, language)
+  if hashed.accepted then
+    return hashed
+  end
+  const slashed = take_slash_comment(text, index, language)
+  if slashed.accepted then
+    return slashed
+  end
+  const markup = take_markup(text, index, language)
+  if markup.accepted then
+    return markup
+  end
+  const directive = take_directive(text, index, language)
+  if directive.accepted then
+    return directive
+  end
+  const hex_color = take_hex_color(text, index, language)
+  if hex_color.accepted then
+    return hex_color
+  end
+  const at_word = take_at_word(text, index, language)
+  if at_word.accepted then
+    return at_word
+  end
+  const ruby_field = take_ruby_field(text, index, language)
+  if ruby_field.accepted then
+    return ruby_field
+  end
+  const shell_variable = take_shell_variable(text, index, language)
+  if shell_variable.accepted then
+    return shell_variable
+  end
+  const number = take_number(text, index)
+  if number.accepted then
+    return number
+  end
+  take_identifier(text, index, language)
+end
+
+fn absorb_quote(text: string, quote: i32) -> SyntaxMark = do
+  let mut closer = "\"\"\""
+  if quote == syntax_quote_single() then
+    closer = "'''"
+  end
+  if quote == syntax_quote_backtick() then
+    closer = "`"
+  end
+  const found = find_closer(text, 0, closer)
+  if found < 0 then
+    return sticky_mark(text.byte_size(), syntax_kind_string(), false, quote)
+  end
+  plain_mark(found, syntax_kind_string())
+end
+
+fn absorb_block(text: string, language: i32) -> SyntaxMark = do
+  let mut closer = "*/"
+  if syntax_comment_family(language) == syntax_comment_markup() then
+    closer = "-->"
+  end
+  const found = find_closer(text, 0, closer)
+  if found < 0 then
+    return sticky_mark(text.byte_size(), syntax_kind_comment(), true, syntax_quote_none())
+  end
+  plain_mark(found, syntax_kind_comment())
+end
+
+export fn text_syntax_line(text: string, block: bool, quote: i32, language: i32) -> TextSyntaxLine = do
+  let mut spans = empty_spans()
+  let mut index = 0
+  if quote != syntax_quote_none() then
+    if text == "" then
+      return TextSyntaxLine { mode_block: false, mode_quote: quote, spans: spans }
+    end
+    const quoted = absorb_quote(text, quote)
+    spans = push_span(spans, 0, quoted.finish, quoted.kind)
+    if quoted.mode_quote != syntax_quote_none() then
+      return TextSyntaxLine { mode_block: false, mode_quote: quoted.mode_quote, spans: spans }
+    end
+    index = quoted.finish
+  end
+  if block && quote == syntax_quote_none() then
+    if text == "" then
+      return TextSyntaxLine { mode_block: true, mode_quote: syntax_quote_none(), spans: spans }
+    end
+    const continued = absorb_block(text, language)
+    spans = push_span(spans, 0, continued.finish, continued.kind)
+    if continued.mode_block then
+      return TextSyntaxLine { mode_block: true, mode_quote: syntax_quote_none(), spans: spans }
+    end
+    index = continued.finish
+  end
+  while index < text.byte_size() do
+    const mark = next_mark(text, index, language)
+    if mark.accepted && mark.finish > index then
+      spans = push_span(spans, index, mark.finish, mark.kind)
+      if mark.mode_block || mark.mode_quote != syntax_quote_none() then
+        return TextSyntaxLine { mode_block: mark.mode_block, mode_quote: mark.mode_quote, spans: spans }
+      end
+      index = mark.finish
+    else
+      index = index + 1
+    end
+  end
+  TextSyntaxLine { mode_block: false, mode_quote: syntax_quote_none(), spans: spans }
+end

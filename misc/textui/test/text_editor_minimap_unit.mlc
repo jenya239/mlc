@@ -1,0 +1,192 @@
+import { text_document_from_bytes, text_document_line_count } from '../text_document'
+import { text_line_index_of_identifier } from '../text_line_index'
+import { rect_new } from '../geometry'
+import { Theme, theme_default } from '../theme'
+import { text_editor_closed, text_editor_gesture_minimap, text_editor_open_document, text_editor_scroll_to_line } from '../text_editor'
+import { text_editor_pointer } from '../text_editor_pointer'
+import { text_editor_text_x } from '../text_editor_gutter'
+import { syntax_comment_color, syntax_keyword_color, text_editor_highlight_advance } from '../text_editor_highlight'
+import { text_highlight_mode_before, text_highlight_mode_block } from '../text_highlight'
+import { DrawOp } from '../draw_op'
+import { UiInput } from '../ui_input'
+import {
+  minimap_viewport_color,
+  paint_editor_minimap,
+  text_editor_minimap_first,
+  text_editor_minimap_last_line,
+  text_editor_minimap_rect,
+  text_editor_minimap_width
+} from '../text_editor_minimap'
+
+fn font_path() -> string = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+fn pointer_input(mouse_x: i32, mouse_y: i32, left_pressed: bool, left_down: bool) -> UiInput =
+  UiInput {
+    mouse_x: mouse_x,
+    mouse_y: mouse_y,
+    left_pressed: left_pressed,
+    left_down: left_down,
+    left_released: false,
+    control_down: false,
+    copy_pressed: false,
+    wheel_y: 0,
+    now_ms: 0,
+    text: "",
+    binding_key: "",
+    shift_down: false,
+    backspace_pressed: false,
+    enter_pressed: false,
+    paste_text: ""
+  }
+
+fn repeated_lines(count: i32) -> string = do
+  let mut text = ""
+  let mut index = 0
+  while index < count do
+    text = text + "abcdef\n"
+    index = index + 1
+  end
+  text
+end
+
+fn fill_matches(operations: [DrawOp], width: i32, height: i32, red: f64) -> bool = do
+  let mut index = 0
+  while index < operations.length() do
+    const found = match operations[index]
+      | OpFillRect(data) => data.rect.width == width && data.rect.height == height && data.color.red == red
+      | OpText(_) => false
+      | OpStrokeRect(_) => false
+      | OpPushClip(_) => false
+      | OpPopClip => false
+    if found then
+      return true
+    end
+    index = index + 1
+  end
+  false
+end
+
+fn main() -> i32 = do
+  const theme = theme_default()
+  const short_band = rect_new(10, 20, 200, 48)
+  const short_editor = text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "sample.mlc",
+    text_document_from_bytes("fn x\n"),
+    48,
+    16,
+    font_path(),
+    16
+  )
+  if text_editor_minimap_first(short_editor, short_band.height) != 0 then
+    return 1
+  end
+  const area = text_editor_minimap_rect(theme, short_band)
+  if area.x + area.width != short_band.x + short_band.width - theme.scrollbar_width then
+    return 2
+  end
+  if area.width != text_editor_minimap_width() then
+    return 3
+  end
+  let mut keyword_operations: [DrawOp] = []
+  keyword_operations = paint_editor_minimap(keyword_operations, theme, short_editor, short_band)
+  if fill_matches(keyword_operations, 2, 2, syntax_keyword_color().red) == false then
+    return 4
+  end
+  if fill_matches(keyword_operations, area.width, 6, minimap_viewport_color().red) == false then
+    return 5
+  end
+  const block_editor = text_editor_highlight_advance(text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "sample.mlc",
+    text_document_from_bytes("/*\nstill\n*/\n"),
+    64,
+    16,
+    font_path(),
+    16
+  ))
+  const continued = text_highlight_mode_before(block_editor.highlight, 1)
+  if continued.stored == false || text_highlight_mode_block(continued.mode_out) == false then
+    return 6
+  end
+  let mut comment_operations: [DrawOp] = []
+  comment_operations = paint_editor_minimap(comment_operations, theme, block_editor, short_band)
+  if fill_matches(comment_operations, 5, 2, syntax_comment_color().red) == false then
+    return 7
+  end
+  const long_band = rect_new(10, 20, 200, 40)
+  const long_editor = text_editor_scroll_to_line(text_editor_open_document(
+    text_editor_closed(font_path(), 16),
+    "notes.txt",
+    text_document_from_bytes(repeated_lines(80)),
+    40,
+    16,
+    font_path(),
+    16
+  ), 50)
+  if text_document_line_count(long_editor.document) != 80 then
+    return 8
+  end
+  if text_editor_minimap_first(long_editor, long_band.height) != 42 then
+    return 9
+  end
+  if text_editor_minimap_last_line(long_editor, long_band.height) != 61 then
+    return 10
+  end
+  const map_area = text_editor_minimap_rect(theme, long_band)
+  const caret_line = long_editor.view.caret_line_identifier
+  const jumped = text_editor_pointer(
+    long_editor,
+    long_band,
+    theme,
+    16,
+    pointer_input(map_area.x + 4, long_band.y + 10, true, true)
+  )
+  const jumped_anchor = text_line_index_of_identifier(jumped.document.line_index, jumped.view.anchor_line_identifier)
+  if jumped_anchor != 47 || jumped.gesture != text_editor_gesture_minimap() then
+    return 11
+  end
+  if jumped.view.caret_line_identifier != caret_line || jumped.view.caret_byte != 0 then
+    return 12
+  end
+  if jumped.view.bound_line_identifier != jumped.view.caret_line_identifier || jumped.view.bound_byte != 0 then
+    return 13
+  end
+  const held = text_editor_pointer(
+    jumped,
+    long_band,
+    theme,
+    16,
+    pointer_input(map_area.x + 4, long_band.y + 10, false, true)
+  )
+  const held_anchor = text_line_index_of_identifier(held.document.line_index, held.view.anchor_line_identifier)
+  if held_anchor != 47 || held.gesture != text_editor_gesture_minimap() then
+    return 14
+  end
+  const dragged = text_editor_pointer(
+    held,
+    long_band,
+    theme,
+    16,
+    pointer_input(map_area.x + 4, long_band.y + 20, false, true)
+  )
+  const dragged_anchor = text_line_index_of_identifier(dragged.document.line_index, dragged.view.anchor_line_identifier)
+  if dragged_anchor != 52 || dragged.gesture != text_editor_gesture_minimap() then
+    return 15
+  end
+  if dragged.view.caret_byte != 0 then
+    return 16
+  end
+  const text_x = text_editor_text_x(long_band.x, theme, text_document_line_count(long_editor.document))
+  const selected = text_editor_pointer(
+    long_editor,
+    long_band,
+    theme,
+    16,
+    pointer_input(text_x + 24, long_band.y + theme.padding, true, true)
+  )
+  if selected.view.caret_byte == 0 || selected.gesture == text_editor_gesture_minimap() then
+    return 17
+  end
+  0
+end
